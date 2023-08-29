@@ -695,6 +695,10 @@ type SearchIssuesRequest struct {
 	// - status, example:
 	//   - status = "OPEN"
 	//   - status = "DONE" | "CANCELED"
+	//
+	// - create_time, example:
+	//   - create_time <= "2022-01-01T12:00:00.000Z"
+	//   - create_time >= "2022-01-01T12:00:00.000Z"
 	Filter string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
 }
 

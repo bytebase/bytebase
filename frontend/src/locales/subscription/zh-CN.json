@@ -92,7 +92,11 @@
         "sync-schema-advanced": "高级",
         "sync-schema-advanced-tooltip": "同步任意的 schema 版本",
         "terraform-provider": "Terraform 集成",
-        "custom-approval": "自定义审批"
+        "custom-approval": "自定义审批",
+        "issue-advanced-search": "工单搜索",
+        "issue-advanced-search-basic": "30天内的历史",
+        "issue-advanced-search-basic-tooltip": "30 天之前的工单会被隐藏",
+        "issue-advanced-search-advanced": "无限制"
       }
     },
     "sql-editor": {

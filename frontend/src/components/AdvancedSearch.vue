@@ -4,10 +4,10 @@
       ref="inputRef"
       :value="state.searchText"
       :clearable="!!state.searchText"
-      :placeholder="$t('issue.advanced-search')"
+      :placeholder="$t('issue.advanced-search.self')"
       style="width: 100%"
       @update:value="onUpdate($event)"
-      @focus="state.showSearchItems = true"
+      @focus="state.showSearchScopes = true"
       @blur="onClear"
       @keyup="onKeydown"
     >
@@ -16,27 +16,27 @@
       </template>
     </NInput>
     <div
-      v-if="state.showSearchItems"
+      v-if="state.showSearchScopes"
       class="absolute z-50 top-full w-full divide-y divide-block-border bg-white shadow-md"
     >
       <div
-        v-for="item in searchItems"
-        :key="item.keyword"
+        v-for="item in searchScopes"
+        :key="item.id"
         class="flex gap-x-3 p-3 items-center cursor-pointer hover:bg-gray-100"
         @mousedown.prevent.stop="
           () => {
-            state.showSearchItems = false;
-            state.searchKeyword = item.keyword;
+            state.showSearchScopes = false;
+            state.currentScope = item.id;
           }
         "
       >
         <heroicons-outline:filter class="h-4 w-4 text-control" />
-        <span class="text-accent">{{ item.keyword }}</span>
+        <span class="text-accent">{{ item.title }}</span>
         <span class="text-control-light">{{ item.description }}</span>
       </div>
     </div>
     <div
-      v-if="state.searchKeyword && searchOptions.length > 0"
+      v-if="state.currentScope && searchOptions.length > 0"
       class="absolute z-50 top-full w-full divide-y divide-block-border bg-white shadow-md"
     >
       <div class="p-3 text-lg text-control-light">
@@ -48,7 +48,7 @@
           :key="option.id"
           class="flex gap-x-3 p-3 items-baseline cursor-pointer hover:bg-gray-100"
           @mousedown.prevent.stop="
-            onOptionSelect(state.searchKeyword, option.id)
+            onOptionSelect(state.currentScope, option.id)
           "
         >
           <component :is="option.label" class="text-control text-sm" />
@@ -63,17 +63,18 @@
 import { debounce } from "lodash-es";
 import { NInput } from "naive-ui";
 import { reactive, computed, h, VNode, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import GitIcon from "@/components/GitIcon.vue";
 import { useProjectV1ListByCurrentUser } from "@/store";
 import { Workflow } from "@/types/proto/v1/project_service";
 import { projectV1Name } from "@/utils";
 
-type SearchKeyword = "project";
+type SearchScopeId = "project";
 
 export interface SearchParams {
   query: string;
   scopes: {
-    id: SearchKeyword;
+    id: SearchScopeId;
     value: string;
   }[];
 }
@@ -95,10 +96,12 @@ const emit = defineEmits<{
   (event: "update", params: SearchParams): void;
 }>();
 
+const { t } = useI18n();
+
 interface LocalState {
   searchText: string;
-  showSearchItems: boolean;
-  searchKeyword?: SearchKeyword;
+  showSearchScopes: boolean;
+  currentScope?: SearchScopeId;
 }
 
 interface SearchOption {
@@ -106,8 +109,9 @@ interface SearchOption {
   label: VNode;
 }
 
-interface SearchItem {
-  keyword: SearchKeyword;
+interface SearchScope {
+  id: SearchScopeId;
+  title: string;
   description: string;
   options: SearchOption[];
 }
@@ -125,17 +129,18 @@ const buildSearchTextByParams = (params: SearchParams | undefined): string => {
 
 const state = reactive<LocalState>({
   searchText: buildSearchTextByParams(props.params),
-  showSearchItems: false,
+  showSearchScopes: false,
 });
 const inputRef = ref<InstanceType<typeof NInput>>();
 
 const { projectList } = useProjectV1ListByCurrentUser();
 
-const searchItems = computed((): SearchItem[] => {
+const searchScopes = computed((): SearchScope[] => {
   return [
     {
-      keyword: "project",
-      description: "Include only issues from this project",
+      id: "project",
+      title: t("issue.advanced-search.scope.project.title"),
+      description: t("issue.advanced-search.scope.project.description"),
       options: projectList.value.map((proj) => {
         const children: VNode[] = [
           h("span", { innerHTML: projectV1Name(proj) }),
@@ -153,22 +158,20 @@ const searchItems = computed((): SearchItem[] => {
 });
 
 const searchOptions = computed((): SearchOption[] => {
-  const item = searchItems.value.find(
-    (item) => item.keyword === state.searchKeyword
+  const item = searchScopes.value.find(
+    (item) => item.id === state.currentScope
   );
   return item?.options ?? [];
 });
 
 const searchKeyword = computed(() => {
-  if (!state.searchKeyword) {
-    return "";
-  }
-  return `${state.searchKeyword[0].toUpperCase()}${state.searchKeyword.slice(
-    1
-  )}`;
+  const scope = searchScopes.value.find(
+    (item) => item.id === state.currentScope
+  );
+  return scope?.title ?? "";
 });
 
-const onOptionSelect = (keyword: SearchKeyword, id: string) => {
+const onOptionSelect = (keyword: SearchScopeId, id: string) => {
   const search = `${keyword}:${id} ${query.value}`;
   state.searchText = search;
   debouncedUpdate();
@@ -176,8 +179,8 @@ const onOptionSelect = (keyword: SearchKeyword, id: string) => {
 };
 
 const onClear = () => {
-  state.showSearchItems = false;
-  state.searchKeyword = undefined;
+  state.showSearchScopes = false;
+  state.currentScope = undefined;
 };
 
 const debouncedUpdate = debounce(() => {
@@ -196,7 +199,7 @@ const query = computed(() => {
     const section = sections[i];
     const keyword = section.split(":")[0];
     const exist =
-      searchItems.value.findIndex((item) => item.keyword === keyword) >= 0;
+      searchScopes.value.findIndex((item) => item.id === keyword) >= 0;
     if (!exist) {
       break;
     }
@@ -212,7 +215,7 @@ const getSearchParamsByText = (text: string): SearchParams => {
     query: plainQuery,
     scopes: scopeText.split(" ").map((scope) => {
       return {
-        id: scope.split(":")[0] as SearchKeyword,
+        id: scope.split(":")[0] as SearchScopeId,
         value: scope.split(":")[1],
       };
     }),
@@ -230,7 +233,7 @@ const onKeydown = (e: KeyboardEvent) => {
     return;
   }
   if (!state.searchText) {
-    state.showSearchItems = true;
+    state.showSearchScopes = true;
     return;
   }
 
@@ -259,14 +262,14 @@ const onKeydown = (e: KeyboardEvent) => {
     return;
   }
 
-  const keyword = sections[i].split(":")[0] as SearchKeyword;
+  const currentScope = sections[i].split(":")[0] as SearchScopeId;
   const existed =
-    searchItems.value.findIndex((item) => item.keyword === keyword) >= 0;
+    searchScopes.value.findIndex((item) => item.id === currentScope) >= 0;
   if (!existed) {
     onClear();
     return;
   }
 
-  state.searchKeyword = keyword;
+  state.currentScope = currentScope;
 };
 </script>
