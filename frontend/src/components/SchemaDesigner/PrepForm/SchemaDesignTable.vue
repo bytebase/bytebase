@@ -63,10 +63,10 @@ const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
     {
       title: t("common.project"),
-      width: "minmax(auto, 8rem)",
+      width: "minmax(auto, 0.5fr)",
     },
-    { title: t("database.branch"), width: "minmax(auto, 8rem)" },
-    { title: t("schema-designer.parent-branch"), width: "minmax(auto, 8rem)" },
+    { title: t("database.branch"), width: "minmax(auto, 0.5fr)" },
+    { title: t("schema-designer.parent-branch"), width: "minmax(auto, 0.5fr)" },
     { title: t("common.database"), width: "1fr" },
     { title: "", width: "1fr" },
   ];

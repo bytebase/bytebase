@@ -26,7 +26,7 @@
             $t("database.branch-name")
           }}</span>
           <BBTextField
-            class="w-60 !py-1.5 text-sm"
+            class="w-60 text-sm"
             :value="state.schemaDesignName"
             :placeholder="$t('database.branch-name')"
             @input="
