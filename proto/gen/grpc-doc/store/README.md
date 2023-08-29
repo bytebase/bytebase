@@ -152,7 +152,6 @@
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
     - [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign)
-    - [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue)
     - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
   
     - [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type)
@@ -2318,7 +2317,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ----- | ---- | ----- | ----------- |
 | type | [SheetPayload.Type](#bytebase-store-SheetPayload-Type) |  |  |
 | vcs_payload | [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload) |  |  |
-| used_by_issues | [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue) | repeated | used_by_issues link to the issues where the sheet is used. |
 | schema_design | [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign) |  |  |
 
 
@@ -2339,22 +2337,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | baseline_sheet_id | [string](#string) |  | The id of the baseline sheet including the baseline full schema. |
 | baseline_schema_design_id | [string](#string) |  | The sheet id of the baseline schema design. Only valid when the schema design is a personal draft. |
 | baseline_change_history_id | [string](#string) |  | The id of the baseline change history including the baseline change history.(optional) |
-
-
-
-
-
-
-<a name="bytebase-store-SheetPayload-UsedByIssue"></a>
-
-### SheetPayload.UsedByIssue
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issue_id | [int64](#int64) |  |  |
-| issue_title | [string](#string) |  |  |
 
 
 
