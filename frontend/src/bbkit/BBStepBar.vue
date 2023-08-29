@@ -79,6 +79,7 @@ defineEmits<{
 const stepClass = (status: BBStepStatus) => {
   switch (status) {
     case "PENDING":
+    case "NOT_STARTED":
       return "bg-white border-2 border-control hover:border-control-hover";
     case "PENDING_ACTIVE":
       return "bg-white border-2 border-blue-600 text-blue-600 hover:text-blue-700 hover:border-blue-700";
