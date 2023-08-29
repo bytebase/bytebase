@@ -54,6 +54,7 @@ export type BBTabFilterItem = {
 };
 
 export type BBStepStatus =
+  | "NOT_STARTED"
   | "PENDING"
   | "PENDING_ACTIVE"
   | "PENDING_APPROVAL"

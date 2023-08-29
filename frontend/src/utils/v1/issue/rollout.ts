@@ -78,6 +78,11 @@ export const activeStageInRollout = (rollout: Rollout): Stage => {
   return emptyStage();
 };
 
+export const activeEnvironmentInRollout = (rollout: Rollout): string => {
+  const stage: Stage = activeStageInRollout(rollout);
+  return stage.environment;
+};
+
 export const findTaskByUID = (
   rollout: Rollout | undefined,
   uid: string
