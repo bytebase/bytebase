@@ -411,15 +411,16 @@ func isValidUUID(id string) bool {
 	return uuidMatcher.MatchString(id)
 }
 
-// theStrictestMaskingLevel returns the strictest masking level from the given levels.
-func theStrictestMaskingLevel(a, b storepb.MaskingLevel) storepb.MaskingLevel {
+// getTheStrictestMaskingLevel returns the strictest masking level from the given levels.
+func getTheStrictestMaskingLevel(a, b storepb.MaskingLevel) storepb.MaskingLevel {
 	if a > b {
 		return a
 	}
 	return b
 }
 
-func theKindestMaskingRule(a, b storepb.MaskingLevel) storepb.MaskingLevel {
+// getTheKindestMaskingRule returns the kindest masking level from the given levels.
+func getTheKindestMaskingRule(a, b storepb.MaskingLevel) storepb.MaskingLevel {
 	if a < b {
 		return a
 	}

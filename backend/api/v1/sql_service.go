@@ -1592,7 +1592,7 @@ func evalMaskingLevelOfDatabaseColumn(databaseMessage *store.DatabaseMessage, da
 								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrap(err, "expect bool result for masking rule")
 							}
 							if boolVar {
-								finalLevel = theStrictestMaskingLevel(finalLevel, maskingRule.MaskingLevel)
+								finalLevel = getTheStrictestMaskingLevel(finalLevel, maskingRule.MaskingLevel)
 								break
 							}
 						}
@@ -1646,7 +1646,7 @@ func evalMaskingLevelOfDatabaseColumn(databaseMessage *store.DatabaseMessage, da
 
 						// TODO(zp): Expectedly, a column should hit only one exception,
 						// but we can take the strictest level here to make the whole program more robust.
-						finalLevel = theKindestMaskingRule(finalLevel, filteredMaskingException.MaskingLevel)
+						finalLevel = getTheKindestMaskingRule(finalLevel, filteredMaskingException.MaskingLevel)
 					}
 					return finalLevel, nil
 				}
