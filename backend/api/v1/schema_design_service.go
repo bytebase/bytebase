@@ -437,6 +437,28 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
 	}
+	sheet, err := s.getSheet(ctx, &store.FindSheetMessage{
+		UID: &sheetUID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+	}
+	sheetPayload := &storepb.SheetPayload{}
+	if err := protojsonUnmarshaler.Unmarshal([]byte(sheet.Payload), sheetPayload); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to unmarshal sheet payload: %v", err))
+	}
+	// Find and delete the baseline sheet if it exists.
+	if sheetPayload.SchemaDesign != nil && sheetPayload.SchemaDesign.BaselineSheetId != "" {
+		baselineSheetUID, err := strconv.Atoi(sheetPayload.SchemaDesign.BaselineSheetId)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+		}
+		err = s.store.DeleteSheet(ctx, baselineSheetUID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete baseline sheet: %v", err))
+		}
+	}
+
 	err = s.store.DeleteSheet(ctx, sheetUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete sheet: %v", err))
