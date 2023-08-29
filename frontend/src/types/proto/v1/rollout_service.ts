@@ -135,6 +135,11 @@ export interface Plan_CreateDatabaseConfig {
    * Format: instances/{instance}/databases/{database}/backups/{backup-name}
    */
   backup: string;
+  /**
+   * The environment resource.
+   * Format: environments/prod where prod is the environment resource ID.
+   */
+  environment: string;
   /** labels of the database. */
   labels: { [key: string]: string };
 }
@@ -885,6 +890,7 @@ export interface Task_DatabaseCreate {
   sheet: string;
   characterSet: string;
   collation: string;
+  environment: string;
   labels: { [key: string]: string };
 }
 
@@ -1780,6 +1786,7 @@ function createBasePlan_CreateDatabaseConfig(): Plan_CreateDatabaseConfig {
     cluster: "",
     owner: "",
     backup: "",
+    environment: "",
     labels: {},
   };
 }
@@ -1810,8 +1817,11 @@ export const Plan_CreateDatabaseConfig = {
     if (message.backup !== "") {
       writer.uint32(66).string(message.backup);
     }
+    if (message.environment !== "") {
+      writer.uint32(74).string(message.environment);
+    }
     Object.entries(message.labels).forEach(([key, value]) => {
-      Plan_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
+      Plan_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(82).fork()).ldelim();
     });
     return writer;
   },
@@ -1884,9 +1894,16 @@ export const Plan_CreateDatabaseConfig = {
             break;
           }
 
-          const entry9 = Plan_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
-          if (entry9.value !== undefined) {
-            message.labels[entry9.key] = entry9.value;
+          message.environment = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          const entry10 = Plan_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
+          if (entry10.value !== undefined) {
+            message.labels[entry10.key] = entry10.value;
           }
           continue;
       }
@@ -1908,6 +1925,7 @@ export const Plan_CreateDatabaseConfig = {
       cluster: isSet(object.cluster) ? String(object.cluster) : "",
       owner: isSet(object.owner) ? String(object.owner) : "",
       backup: isSet(object.backup) ? String(object.backup) : "",
+      environment: isSet(object.environment) ? String(object.environment) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -1927,6 +1945,7 @@ export const Plan_CreateDatabaseConfig = {
     message.cluster !== undefined && (obj.cluster = message.cluster);
     message.owner !== undefined && (obj.owner = message.owner);
     message.backup !== undefined && (obj.backup = message.backup);
+    message.environment !== undefined && (obj.environment = message.environment);
     obj.labels = {};
     if (message.labels) {
       Object.entries(message.labels).forEach(([k, v]) => {
@@ -1950,6 +1969,7 @@ export const Plan_CreateDatabaseConfig = {
     message.cluster = object.cluster ?? "";
     message.owner = object.owner ?? "";
     message.backup = object.backup ?? "";
+    message.environment = object.environment ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = String(value);
@@ -4378,7 +4398,16 @@ export const Task = {
 };
 
 function createBaseTask_DatabaseCreate(): Task_DatabaseCreate {
-  return { project: "", database: "", table: "", sheet: "", characterSet: "", collation: "", labels: {} };
+  return {
+    project: "",
+    database: "",
+    table: "",
+    sheet: "",
+    characterSet: "",
+    collation: "",
+    environment: "",
+    labels: {},
+  };
 }
 
 export const Task_DatabaseCreate = {
@@ -4401,8 +4430,11 @@ export const Task_DatabaseCreate = {
     if (message.collation !== "") {
       writer.uint32(50).string(message.collation);
     }
+    if (message.environment !== "") {
+      writer.uint32(58).string(message.environment);
+    }
     Object.entries(message.labels).forEach(([key, value]) => {
-      Task_DatabaseCreate_LabelsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
+      Task_DatabaseCreate_LabelsEntry.encode({ key: key as any, value }, writer.uint32(66).fork()).ldelim();
     });
     return writer;
   },
@@ -4461,9 +4493,16 @@ export const Task_DatabaseCreate = {
             break;
           }
 
-          const entry7 = Task_DatabaseCreate_LabelsEntry.decode(reader, reader.uint32());
-          if (entry7.value !== undefined) {
-            message.labels[entry7.key] = entry7.value;
+          message.environment = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          const entry8 = Task_DatabaseCreate_LabelsEntry.decode(reader, reader.uint32());
+          if (entry8.value !== undefined) {
+            message.labels[entry8.key] = entry8.value;
           }
           continue;
       }
@@ -4483,6 +4522,7 @@ export const Task_DatabaseCreate = {
       sheet: isSet(object.sheet) ? String(object.sheet) : "",
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
       collation: isSet(object.collation) ? String(object.collation) : "",
+      environment: isSet(object.environment) ? String(object.environment) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -4500,6 +4540,7 @@ export const Task_DatabaseCreate = {
     message.sheet !== undefined && (obj.sheet = message.sheet);
     message.characterSet !== undefined && (obj.characterSet = message.characterSet);
     message.collation !== undefined && (obj.collation = message.collation);
+    message.environment !== undefined && (obj.environment = message.environment);
     obj.labels = {};
     if (message.labels) {
       Object.entries(message.labels).forEach(([k, v]) => {
@@ -4521,6 +4562,7 @@ export const Task_DatabaseCreate = {
     message.sheet = object.sheet ?? "";
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
+    message.environment = object.environment ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = String(value);

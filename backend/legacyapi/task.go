@@ -110,6 +110,7 @@ type TaskDatabaseCreatePayload struct {
 	SheetID      int    `json:"sheetId,omitempty"`
 	CharacterSet string `json:"character,omitempty"`
 	Collation    string `json:"collation,omitempty"`
+	Environment  string `json:"environment,omitempty"`
 	Labels       string `json:"labels,omitempty"`
 }
 

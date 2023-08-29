@@ -89,6 +89,7 @@ func convertToPlanSpecCreateDatabaseConfig(config *storepb.PlanConfig_Spec_Creat
 			Cluster:      c.Cluster,
 			Owner:        c.Owner,
 			Backup:       c.Backup,
+			Environment:  c.Environment,
 			Labels:       c.Labels,
 		},
 	}
@@ -109,6 +110,7 @@ func convertToPlanCreateDatabaseConfig(c *storepb.PlanConfig_CreateDatabaseConfi
 		Cluster:      c.Cluster,
 		Owner:        c.Owner,
 		Backup:       c.Backup,
+		Environment:  c.Environment,
 		Labels:       c.Labels,
 	}
 }
@@ -236,6 +238,7 @@ func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *s
 		Cluster:      c.Cluster,
 		Owner:        c.Owner,
 		Backup:       c.Backup,
+		Environment:  c.Environment,
 		Labels:       c.Labels,
 	}
 }
@@ -604,6 +607,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Sheet:        getResourceNameForSheet(project, payload.SheetID),
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
+				Environment:  payload.Environment,
 				Labels:       labels,
 			},
 		},
