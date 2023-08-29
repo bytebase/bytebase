@@ -20,7 +20,7 @@ var getSegmenter func() *gse.Segmenter
 
 func init() {
 	var segmenterDic gse.Segmenter
-	if err := segmenterDic.LoadDict(); err != nil {
+	if err := segmenterDic.LoadDictEmbed("zh"); err != nil {
 		panic(errors.Wrapf(err, "failed to load segmenter dictionary"))
 	}
 	getSegmenter = func() *gse.Segmenter {
