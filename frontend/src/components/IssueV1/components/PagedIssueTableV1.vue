@@ -133,6 +133,9 @@ const fetchData = (refresh = false) => {
 
       sessionState.value.updatedTs = Date.now();
       state.paginationToken = nextPageToken;
+      if (!nextPageToken) {
+        state.hasMore = false;
+      }
     })
     .finally(() => {
       state.loading = false;
