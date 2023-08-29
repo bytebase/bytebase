@@ -1580,8 +1580,8 @@
         "btn-text": "Restore this @.lower:{'common.project'}"
       },
       "schema-change-type": "Schema change type",
-      "select-schema-change-type-ddl": "Imperative - Migration-based migration. E.g., ALTER TABLE",
-      "select-schema-change-type-sdl": "Declarative - State-based migration. E.g., CREATE TABLE",
+      "select-schema-change-type-ddl": "Imperative - Specify the change with any DDL statements.",
+      "select-schema-change-type-sdl": "Declarative - Specify the desired schema. Only use CREATE TABLE/INDEX.",
       "schema-path-template-sdl-description": "The schema file describes the database's full schema."
     },
     "members": {
@@ -2664,7 +2664,8 @@
       "re-request-review-issue": "Re-request review issue?",
       "sent-back-issue": "Sent back issue",
       "re-requested-review": "re-requested issue review",
-      "no-one-matches-role": "No one matches the role, contact project owner to assign one."
+      "no-one-matches-role": "No one matches the role, contact project owner to assign one.",
+      "any-n-role-can-approve": "Any {role} can approve"
     },
     "send-back": "Send back"
   },
@@ -2814,6 +2815,7 @@
     "baseline-database": "Baseline database",
     "schema-version": "Schema version",
     "personal-draft": "Personal draft",
+    "baseline-version": "Baseline version",
     "save-draft": "Save draft",
     "merge-to-main": "Merge to main",
     "diff-editor": {

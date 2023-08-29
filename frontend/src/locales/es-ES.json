@@ -1579,8 +1579,8 @@
         "btn-text": "Restaurar este @.lower:{'common.project'}"
       },
       "schema-change-type": "Tipo de cambio de esquema",
-      "select-schema-change-type-ddl": "Migración basada en imperativo. Por ejemplo, ALTER TABLE",
-      "select-schema-change-type-sdl": "Migración basada en declaración de estado. Por ejemplo, CREATE TABLE",
+      "select-schema-change-type-ddl": "Imperativo: especifique el cambio con cualquier declaración DDL.",
+      "select-schema-change-type-sdl": "Declarativo: especifique el esquema deseado. Utilice únicamente CREAR TABLA/ÍNDICE.",
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos."
     },
     "members": {
@@ -2661,7 +2661,8 @@
       "re-request-review-issue": "¿Volver a solicitar revisión?",
       "sent-back-issue": "Problema devuelto",
       "re-requested-review": "revisión de problema nuevamente solicitada",
-      "no-one-matches-role": "Nadie coincide con el rol, comuníquese con el propietario del proyecto para asignar uno."
+      "no-one-matches-role": "Nadie coincide con el rol, comuníquese con el propietario del proyecto para asignar uno.",
+      "any-n-role-can-approve": "Cualquier {role} puede aprobar"
     },
     "send-back": "Enviar de vuelta"
   },
@@ -2812,6 +2813,7 @@
     "baseline-database": "Base de datos de referencia",
     "schema-version": "Versión del esquema",
     "personal-draft": "Borrador personal",
+    "baseline-version": "Versión de referencia",
     "save-draft": "Guardar borrador",
     "merge-to-main": "Fusionar a principal",
     "diff-editor": {

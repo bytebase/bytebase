@@ -674,25 +674,30 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 			DatabaseList: []db.DatabaseSchema{
 				{
 					Name: defaultDatabase,
-					TableList: []db.TableSchema{
+					SchemaList: []db.SchemaSchema{
 						{
-							Name: "public.t",
-							ColumnList: []db.ColumnInfo{
+							Name: "public",
+							TableList: []db.TableSchema{
 								{
-									Name:      "a",
-									Sensitive: true,
-								},
-								{
-									Name:      "b",
-									Sensitive: false,
-								},
-								{
-									Name:      "c",
-									Sensitive: false,
-								},
-								{
-									Name:      "d",
-									Sensitive: true,
+									Name: "t",
+									ColumnList: []db.ColumnInfo{
+										{
+											Name:      "a",
+											Sensitive: true,
+										},
+										{
+											Name:      "b",
+											Sensitive: false,
+										},
+										{
+											Name:      "c",
+											Sensitive: false,
+										},
+										{
+											Name:      "d",
+											Sensitive: true,
+										},
+									},
 								},
 							},
 						},

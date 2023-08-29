@@ -1575,8 +1575,8 @@
         "btn-text": "恢复这个@:common.project"
       },
       "schema-change-type": "Schema 变更类型",
-      "select-schema-change-type-ddl": "命令式 - 面向过程的 DDL 命令，如 ALTER TABLE",
-      "select-schema-change-type-sdl": "声明式 - 面向终态的 Schema 描述，如 CREATE TABLE",
+      "select-schema-change-type-ddl": "命令式 - 使用任意的 DDL 语句，描述变更命令。",
+      "select-schema-change-type-sdl": "声明式 - 仅使用 CREATE TABLE/INDEX，直接描述最终期望的 Schema。",
       "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。"
     },
     "members": {
@@ -2658,7 +2658,8 @@
       "re-request-review-issue": "请求再次审批工单？",
       "sent-back-issue": "退回工单",
       "re-requested-review": "再次请求审批工单",
-      "no-one-matches-role": "没有符合这个角色的用户，请联系项目管理员分配角色。"
+      "no-one-matches-role": "没有符合这个角色的用户，请联系项目管理员分配角色。",
+      "any-n-role-can-approve": "任意 {role} 可审批"
     },
     "send-back": "退回"
   },
@@ -2807,6 +2808,7 @@
     "baseline-database": "基准数据库",
     "schema-version": "Schema 版本",
     "personal-draft": "个人草稿",
+    "baseline-version": "基线版本",
     "save-draft": "保存草稿",
     "merge-to-main": "合并到主版本",
     "diff-editor": {

@@ -13,9 +13,17 @@
 
           <template #default>
             <div class="flex flex-col gap-y-2 text-sm">
-              <div class="whitespace-nowrap textlabel">
-                {{ approvalNodeText(step.step.nodes[0]) }}
-              </div>
+              <i18n-t
+                keypath="custom-approval.issue-review.any-n-role-can-approve"
+                tag="div"
+                class="whitespace-nowrap"
+              >
+                <template #role>
+                  <span class="textlabel">
+                    {{ approvalNodeText(step.step.nodes[0]) }}
+                  </span>
+                </template>
+              </i18n-t>
               <hr />
               <template v-if="!isExternalApprovalStep(step.step)">
                 <Approver v-if="step.status === 'APPROVED'" :step="step" />

@@ -8,11 +8,7 @@ export const protobufPackage = "bytebase.store";
 
 export interface SheetPayload {
   type: SheetPayload_Type;
-  vcsPayload?:
-    | SheetPayload_VCSPayload
-    | undefined;
-  /** used_by_issues link to the issues where the sheet is used. */
-  usedByIssues: SheetPayload_UsedByIssue[];
+  vcsPayload?: SheetPayload_VCSPayload | undefined;
   schemaDesign?: SheetPayload_SchemaDesign | undefined;
 }
 
@@ -60,11 +56,6 @@ export interface SheetPayload_VCSPayload {
   pushEvent?: PushEvent | undefined;
 }
 
-export interface SheetPayload_UsedByIssue {
-  issueId: number;
-  issueTitle: string;
-}
-
 export interface SheetPayload_SchemaDesign {
   /** The type of the schema design. */
   type: SheetPayload_SchemaDesign_Type;
@@ -74,6 +65,8 @@ export interface SheetPayload_SchemaDesign {
   baselineSheetId: string;
   /** The sheet id of the baseline schema design. Only valid when the schema design is a personal draft. */
   baselineSchemaDesignId: string;
+  /** The id of the baseline change history including the baseline change history.(optional) */
+  baselineChangeHistoryId: string;
 }
 
 export enum SheetPayload_SchemaDesign_Type {
@@ -118,7 +111,7 @@ export function sheetPayload_SchemaDesign_TypeToJSON(object: SheetPayload_Schema
 }
 
 function createBaseSheetPayload(): SheetPayload {
-  return { type: 0, vcsPayload: undefined, usedByIssues: [], schemaDesign: undefined };
+  return { type: 0, vcsPayload: undefined, schemaDesign: undefined };
 }
 
 export const SheetPayload = {
@@ -129,11 +122,8 @@ export const SheetPayload = {
     if (message.vcsPayload !== undefined) {
       SheetPayload_VCSPayload.encode(message.vcsPayload, writer.uint32(18).fork()).ldelim();
     }
-    for (const v of message.usedByIssues) {
-      SheetPayload_UsedByIssue.encode(v!, writer.uint32(26).fork()).ldelim();
-    }
     if (message.schemaDesign !== undefined) {
-      SheetPayload_SchemaDesign.encode(message.schemaDesign, writer.uint32(34).fork()).ldelim();
+      SheetPayload_SchemaDesign.encode(message.schemaDesign, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -164,13 +154,6 @@ export const SheetPayload = {
             break;
           }
 
-          message.usedByIssues.push(SheetPayload_UsedByIssue.decode(reader, reader.uint32()));
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
           message.schemaDesign = SheetPayload_SchemaDesign.decode(reader, reader.uint32());
           continue;
       }
@@ -186,9 +169,6 @@ export const SheetPayload = {
     return {
       type: isSet(object.type) ? sheetPayload_TypeFromJSON(object.type) : 0,
       vcsPayload: isSet(object.vcsPayload) ? SheetPayload_VCSPayload.fromJSON(object.vcsPayload) : undefined,
-      usedByIssues: Array.isArray(object?.usedByIssues)
-        ? object.usedByIssues.map((e: any) => SheetPayload_UsedByIssue.fromJSON(e))
-        : [],
       schemaDesign: isSet(object.schemaDesign) ? SheetPayload_SchemaDesign.fromJSON(object.schemaDesign) : undefined,
     };
   },
@@ -198,11 +178,6 @@ export const SheetPayload = {
     message.type !== undefined && (obj.type = sheetPayload_TypeToJSON(message.type));
     message.vcsPayload !== undefined &&
       (obj.vcsPayload = message.vcsPayload ? SheetPayload_VCSPayload.toJSON(message.vcsPayload) : undefined);
-    if (message.usedByIssues) {
-      obj.usedByIssues = message.usedByIssues.map((e) => e ? SheetPayload_UsedByIssue.toJSON(e) : undefined);
-    } else {
-      obj.usedByIssues = [];
-    }
     message.schemaDesign !== undefined &&
       (obj.schemaDesign = message.schemaDesign ? SheetPayload_SchemaDesign.toJSON(message.schemaDesign) : undefined);
     return obj;
@@ -218,7 +193,6 @@ export const SheetPayload = {
     message.vcsPayload = (object.vcsPayload !== undefined && object.vcsPayload !== null)
       ? SheetPayload_VCSPayload.fromPartial(object.vcsPayload)
       : undefined;
-    message.usedByIssues = object.usedByIssues?.map((e) => SheetPayload_UsedByIssue.fromPartial(e)) || [];
     message.schemaDesign = (object.schemaDesign !== undefined && object.schemaDesign !== null)
       ? SheetPayload_SchemaDesign.fromPartial(object.schemaDesign)
       : undefined;
@@ -365,79 +339,8 @@ export const SheetPayload_VCSPayload = {
   },
 };
 
-function createBaseSheetPayload_UsedByIssue(): SheetPayload_UsedByIssue {
-  return { issueId: 0, issueTitle: "" };
-}
-
-export const SheetPayload_UsedByIssue = {
-  encode(message: SheetPayload_UsedByIssue, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.issueId !== 0) {
-      writer.uint32(8).int64(message.issueId);
-    }
-    if (message.issueTitle !== "") {
-      writer.uint32(18).string(message.issueTitle);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SheetPayload_UsedByIssue {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSheetPayload_UsedByIssue();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.issueId = longToNumber(reader.int64() as Long);
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.issueTitle = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SheetPayload_UsedByIssue {
-    return {
-      issueId: isSet(object.issueId) ? Number(object.issueId) : 0,
-      issueTitle: isSet(object.issueTitle) ? String(object.issueTitle) : "",
-    };
-  },
-
-  toJSON(message: SheetPayload_UsedByIssue): unknown {
-    const obj: any = {};
-    message.issueId !== undefined && (obj.issueId = Math.round(message.issueId));
-    message.issueTitle !== undefined && (obj.issueTitle = message.issueTitle);
-    return obj;
-  },
-
-  create(base?: DeepPartial<SheetPayload_UsedByIssue>): SheetPayload_UsedByIssue {
-    return SheetPayload_UsedByIssue.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<SheetPayload_UsedByIssue>): SheetPayload_UsedByIssue {
-    const message = createBaseSheetPayload_UsedByIssue();
-    message.issueId = object.issueId ?? 0;
-    message.issueTitle = object.issueTitle ?? "";
-    return message;
-  },
-};
-
 function createBaseSheetPayload_SchemaDesign(): SheetPayload_SchemaDesign {
-  return { type: 0, engine: 0, baselineSheetId: "", baselineSchemaDesignId: "" };
+  return { type: 0, engine: 0, baselineSheetId: "", baselineSchemaDesignId: "", baselineChangeHistoryId: "" };
 }
 
 export const SheetPayload_SchemaDesign = {
@@ -453,6 +356,9 @@ export const SheetPayload_SchemaDesign = {
     }
     if (message.baselineSchemaDesignId !== "") {
       writer.uint32(34).string(message.baselineSchemaDesignId);
+    }
+    if (message.baselineChangeHistoryId !== "") {
+      writer.uint32(42).string(message.baselineChangeHistoryId);
     }
     return writer;
   },
@@ -492,6 +398,13 @@ export const SheetPayload_SchemaDesign = {
 
           message.baselineSchemaDesignId = reader.string();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.baselineChangeHistoryId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -507,6 +420,7 @@ export const SheetPayload_SchemaDesign = {
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       baselineSheetId: isSet(object.baselineSheetId) ? String(object.baselineSheetId) : "",
       baselineSchemaDesignId: isSet(object.baselineSchemaDesignId) ? String(object.baselineSchemaDesignId) : "",
+      baselineChangeHistoryId: isSet(object.baselineChangeHistoryId) ? String(object.baselineChangeHistoryId) : "",
     };
   },
 
@@ -516,6 +430,7 @@ export const SheetPayload_SchemaDesign = {
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     message.baselineSheetId !== undefined && (obj.baselineSheetId = message.baselineSheetId);
     message.baselineSchemaDesignId !== undefined && (obj.baselineSchemaDesignId = message.baselineSchemaDesignId);
+    message.baselineChangeHistoryId !== undefined && (obj.baselineChangeHistoryId = message.baselineChangeHistoryId);
     return obj;
   },
 
@@ -529,6 +444,7 @@ export const SheetPayload_SchemaDesign = {
     message.engine = object.engine ?? 0;
     message.baselineSheetId = object.baselineSheetId ?? "";
     message.baselineSchemaDesignId = object.baselineSchemaDesignId ?? "";
+    message.baselineChangeHistoryId = object.baselineChangeHistoryId ?? "";
     return message;
   },
 };

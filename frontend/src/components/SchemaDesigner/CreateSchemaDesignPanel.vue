@@ -11,6 +11,16 @@
   >
     <NDrawerContent :title="$t('database.new-branch')" :closable="true">
       <div class="space-y-3 w-full overflow-x-auto">
+        <div class="w-full flex flex-row justify-start items-center pt-1">
+          <span class="flex w-40 items-center shrink-0 text-sm">
+            {{ $t("common.project") }}
+          </span>
+          <ProjectSelect
+            class="!w-60 shrink-0"
+            :selected-id="state.projectId"
+            @select-project-id="handleProjectSelect"
+          />
+        </div>
         <div class="w-full flex flex-row justify-start items-center mt-1">
           <span class="flex w-40 items-center text-sm">{{
             $t("database.branch-name")
@@ -24,7 +34,14 @@
             "
           />
         </div>
+        <NDivider />
+        <div class="w-full flex flex-row justify-start items-center mt-1">
+          <span class="flex w-40 items-center text-sm font-medium">{{
+            $t("schema-designer.baseline-version")
+          }}</span>
+        </div>
         <BaselineSchemaSelector
+          :project-id="state.projectId"
           :baseline-schema="state.baselineSchema"
           @update="handleBaselineSchemaChange"
         />
@@ -32,7 +49,7 @@
           ref="schemaDesignerRef"
           :key="refreshId"
           class="!mt-6"
-          :readonly="readonly"
+          :readonly="true"
           :engine="state.schemaDesign.engine"
           :schema-design="state.schemaDesign"
         />
@@ -61,8 +78,8 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isUndefined, uniqueId } from "lodash-es";
-import { NButton, NDrawer, NDrawerContent } from "naive-ui";
+import { cloneDeep, uniqueId } from "lodash-es";
+import { NButton, NDrawer, NDrawerContent, NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -91,14 +108,13 @@ import { mergeSchemaEditToMetadata } from "./common/util";
 import SchemaDesigner from "./index.vue";
 
 interface BaselineSchema {
-  // The uid of project.
-  projectId?: string;
   // The uid of database.
   databaseId?: string;
   changeHistory?: ChangeHistory;
 }
 
 interface LocalState {
+  projectId?: string;
   schemaDesignName: string;
   baselineSchema: BaselineSchema;
   schemaDesign: SchemaDesign;
@@ -122,21 +138,13 @@ const schemaDesignStore = useSchemaDesignStore();
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
   schemaDesignName: "",
-  baselineSchema: {
-    projectId: props.projectId,
-  },
+  projectId: props.projectId,
+  baselineSchema: {},
   schemaDesign: SchemaDesign.fromPartial({
     type: SchemaDesign_Type.MAIN_BRANCH,
   }),
 });
 const refreshId = ref<string>("");
-const readonly = computed(() => {
-  return (
-    isUndefined(state.baselineSchema.projectId) ||
-    isUndefined(state.baselineSchema.databaseId) ||
-    isUndefined(state.baselineSchema.changeHistory)
-  );
-});
 
 watch(
   () => [
@@ -171,9 +179,7 @@ const prepareSchemaDesign = async () => {
 
 const allowConfirm = computed(() => {
   return (
-    state.schemaDesignName &&
-    state.baselineSchema.projectId &&
-    state.baselineSchema.databaseId
+    state.projectId && state.schemaDesignName && state.baselineSchema.databaseId
   );
 });
 
@@ -185,8 +191,16 @@ const confirmText = computed(() => {
   return t("common.create");
 });
 
+const handleProjectSelect = async (projectId: string) => {
+  state.projectId = projectId;
+};
+
 const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
   state.baselineSchema = baselineSchema;
+  if (baselineSchema.databaseId) {
+    const database = databaseStore.getDatabaseByUID(baselineSchema.databaseId);
+    state.projectId = database.projectEntity.uid;
+  }
   state.schemaDesign = await prepareSchemaDesign();
 };
 
@@ -208,7 +222,7 @@ const handleConfirm = async () => {
     return;
   }
 
-  const { project } = useProjectV1ByUID(state.baselineSchema.projectId || "");
+  const { project } = useProjectV1ByUID(state.projectId || "");
   const database = useDatabaseV1Store().getDatabaseByUID(
     state.baselineSchema.databaseId || ""
   );
@@ -244,6 +258,7 @@ const handleConfirm = async () => {
       type: SchemaDesign_Type.MAIN_BRANCH,
       baselineDatabase: baselineDatabase,
       baselineSheetName: baselineSheet.name,
+      baselineChangeHistoryId: state.baselineSchema.changeHistory?.uid,
     })
   );
   pushNotification({
