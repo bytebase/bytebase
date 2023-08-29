@@ -39,7 +39,7 @@ const emptyIssue = (legacyIssue: LegacyIssue) => {
 export const buildIssueFilter = (find: IssueFilter): string => {
   const filter: string[] = [];
   if (find.principal) {
-    filter.push(`user = "${find.principal}"`);
+    filter.push(`principal = "${find.principal}"`);
   }
   if (find.creator) {
     filter.push(`creator = "${find.creator}"`);

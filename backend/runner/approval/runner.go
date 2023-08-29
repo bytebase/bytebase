@@ -340,7 +340,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 	if issue.PlanUID == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
-	plan, err := s.GetPlan(ctx, *issue.PlanUID)
+	plan, err := s.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}

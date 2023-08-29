@@ -258,7 +258,8 @@
     "schedule": "Schedule",
     "state": "State",
     "condition": "Condition",
-    "search-user": "Search user"
+    "search-user": "Search user",
+    "branches": "Branches"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2816,6 +2817,7 @@
     "schema-version": "Schema version",
     "personal-draft": "Personal draft",
     "baseline-version": "Baseline version",
+    "parent-branch": "Parent branch",
     "save-draft": "Save draft",
     "merge-to-main": "Merge to main",
     "diff-editor": {
@@ -2835,7 +2837,8 @@
     "message": {
       "created-succeed": "Schema design created successfully",
       "updated-succeed": "Schema design updated successfully",
-      "merge-to-main-successfully": "Merge to main successfully"
+      "merge-to-main-successfully": "Merge to main successfully",
+      "updated-time-by-user": "Updated {time} by {user}"
     }
   },
   "cel": {

@@ -77,6 +77,9 @@ dependencies:
   inter-ui:
     specifier: 3.19.3
     version: 3.19.3
+  is-chinese:
+    specifier: ^2.0.0
+    version: 2.0.0
   js-base64:
     specifier: ^3.7.5
     version: 3.7.5
@@ -3562,6 +3565,10 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       binary-extensions: 2.2.0
+
+  /is-chinese@2.0.0:
+    resolution: {integrity: sha512-1BTwHrs0wHnNZTyMWM8MPpVEs8u4uvLnUA2QZGt6cFjqY82DZV3lKH6hBGHqu8eJxkAIYcelm1kBR8v8URS4yA==}
+    dev: false
 
   /is-core-module@2.11.0:
     resolution: {integrity: sha512-RRjxlvLDkD1YJwDbroBHMb+cukurkDWNyHx7D3oNB5x9rb5ogcksMC5wHCadcXoo67gVr/+3GFySh3134zi6rw==}

@@ -2,6 +2,9 @@
   <template v-if="hash === 'overview'">
     <ProjectOverviewPanel id="overview" :project="project" />
   </template>
+  <template v-if="hash === 'branches'">
+    <ProjectBranchesPanel id="branches" :project-id="project.uid" />
+  </template>
   <template v-if="hash === 'databases'">
     <ProjectDeploymentConfigPanel
       v-if="isTenantProject"
@@ -61,6 +64,7 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
+import ProjectBranchesPanel from "@/components/ProjectBranchesPanel.vue";
 import {
   useSearchDatabaseV1List,
   useDatabaseV1Store,

@@ -560,10 +560,12 @@ type FindIssueMessage struct {
 	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
 	// Only principleID or one of the following three fields can be set.
-	CreatorID     *int
-	AssigneeID    *int
-	SubscriberID  *int
-	NeedAttention *bool
+	CreatorID       *int
+	AssigneeID      *int
+	SubscriberID    *int
+	NeedAttention   *bool
+	CreatedTsBefore *int64
+	CreatedTsAfter  *int64
 
 	StatusList []api.IssueStatus
 	// If specified, only find issues whose ID is smaller that SinceID.
@@ -865,6 +867,12 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.AssigneeID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.assignee_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.CreatedTsBefore; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.created_ts < $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsAfter; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.created_ts > $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.NeedAttention; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.assignee_need_attention = $%d", len(args)+1)), append(args, *v)
 	}
@@ -875,11 +883,12 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.id <= $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Query; v != nil && *v != "" {
-		tsQuery := getTsQuery(*v)
-		from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
-		args = append(args, tsQuery)
-		where = append(where, "issue.ts_vector @@ query")
-		orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
+		if tsQuery := getTsQuery(*v); tsQuery != "" {
+			from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
+			args = append(args, tsQuery)
+			where = append(where, "issue.ts_vector @@ query")
+			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
+		}
 	}
 	if len(find.StatusList) != 0 {
 		var list []string
@@ -1090,9 +1099,6 @@ func getTsQuery(text string) string {
 			_, _ = tsQuery.WriteString("|")
 		}
 		_, _ = tsQuery.WriteString(fmt.Sprintf("%s:*", part))
-	}
-	if tsQuery.Len() == 0 {
-		return text
 	}
 	return tsQuery.String()
 }

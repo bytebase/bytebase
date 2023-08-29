@@ -12,10 +12,14 @@
 </template>
 
 <script lang="ts" setup>
+import isChinese from "is-chinese";
 import { computed, withDefaults } from "vue";
+import { SYSTEM_BOT_EMAIL } from "@/types";
 import { VueClass } from "@/utils";
 import { hashCode } from "./BBUtil";
 import { BBAvatarSizeType } from "./types";
+
+const DEFAULT_BRANDING_COLOR = "#4f46e5";
 
 const BACKGROUND_COLOR_LIST: string[] = [
   "#64748B",
@@ -55,6 +59,7 @@ const fontStyleClassMap: Map<BBAvatarSizeType, string> = new Map([
 const props = withDefaults(
   defineProps<{
     username?: string;
+    email?: string;
     size: BBAvatarSizeType;
     rounded?: boolean;
     backgroundColor?: string;
@@ -63,6 +68,7 @@ const props = withDefaults(
   }>(),
   {
     username: "",
+    email: "",
     size: "NORMAL",
     rounded: true,
     backgroundColor: "",
@@ -74,6 +80,35 @@ const props = withDefaults(
 const initials = computed(() => {
   if (props.username == "?") {
     return "?";
+  }
+
+  if (props.email === SYSTEM_BOT_EMAIL) {
+    return "BB";
+  }
+
+  // Priority
+  // 1. First Chinese character
+  // 2. At most the first 2 letters in email
+  // Fallback if email is invalid
+  // 1. The first and the last initial letter in title
+  // 2. The first initial letter in title
+
+  const chars = props.username.split("");
+  for (let i = 0; i < chars.length; i++) {
+    const ch = chars[i];
+    if (isChinese(ch)) {
+      return ch;
+    }
+  }
+
+  if (props.email) {
+    const nameInEmail = props.email.split("@")[0] ?? "";
+    if (nameInEmail.length >= 2) {
+      return nameInEmail.substring(0, 2).toUpperCase();
+    }
+    if (nameInEmail.length === 1) {
+      return nameInEmail.charAt(0).toUpperCase();
+    }
   }
 
   const parts = props.username.split(/[ -]/);
@@ -96,6 +131,13 @@ const initials = computed(() => {
 });
 
 const backgroundColor = computed(() => {
+  if (props.email === SYSTEM_BOT_EMAIL) {
+    return (
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-accent")
+        .trim() || DEFAULT_BRANDING_COLOR
+    );
+  }
   return (
     props.backgroundColor ||
     BACKGROUND_COLOR_LIST[
