@@ -7687,6 +7687,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | character_set | [string](#string) |  |  |
 | collation | [string](#string) |  |  |
+| environment | [string](#string) |  |  |
 | labels | [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry) | repeated |  |
 
 
