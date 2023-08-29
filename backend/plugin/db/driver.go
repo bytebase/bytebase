@@ -651,8 +651,10 @@ type TableSchema struct {
 
 // ColumnInfo is the column info using to extract sensitive fields.
 type ColumnInfo struct {
-	Name      string
-	Sensitive bool
+	Name string
+	// TODO(zp): retire Sensitive boolean flag.
+	Sensitive    bool
+	MaskingLevel storepb.MaskingLevel
 }
 
 // SensitiveField is the struct about SELECT fields.
