@@ -2836,6 +2836,7 @@
       "resolve-and-merge-again": "解决冲突并再次合并",
       "discard-changes": "丢弃修改",
       "action-confirm": "确认操作",
+      "duplicated-branch-name-found": "发现重复的分支名称。",
       "discard-changes-confirm": "您确定要丢弃所有修改吗？"
     },
     "tables": "表",
@@ -2848,6 +2849,10 @@
       "updated-succeed": "分支更新成功",
       "merge-to-main-successfully": "成功合并到主版本",
       "updated-time-by-user": "由 {user} 于 {time} 更新"
+    },
+    "action": {
+      "use-the-existing-branch": "使用已有分支",
+      "create-new-branch": "创建新分支"
     }
   },
   "cel": {

@@ -1,6 +1,5 @@
 import { cloneDeep, isEqual, uniq } from "lodash-es";
 import { useCurrentUserV1 } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import {
   Column,
   ForeignKey,
@@ -476,17 +475,13 @@ export const validateDatabaseMetadata = (
 
 export const generateForkedBranchName = (branch: SchemaDesign): string => {
   const currentUser = useCurrentUserV1();
-  const schemaDesignStore = useSchemaDesignStore();
   const parentBranchName = branch.title;
-  let branchName = `${currentUser.value.title}/${parentBranchName}`;
-  const foundIndex = schemaDesignStore.schemaDesignList.findIndex((item) => {
-    return item.title === branchName;
-  });
-  // If found, add a random string to the end of the branch name.
-  if (foundIndex > -1) {
-    branchName = `${
-      currentUser.value.title
-    }/${parentBranchName}-draft-${randomString(3).toLowerCase()}`;
-  }
+  const branchName =
+    `${currentUser.value.title}/${parentBranchName}-draft`.replaceAll(" ", "-");
   return branchName;
+};
+
+export const validateBranchName = (branchName: string): boolean => {
+  const regex = /^[a-zA-Z0-9-_/]+$/;
+  return regex.test(branchName);
 };

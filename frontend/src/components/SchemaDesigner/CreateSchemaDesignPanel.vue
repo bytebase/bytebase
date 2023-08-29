@@ -27,10 +27,12 @@
           }}</span>
           <BBTextField
             class="w-60 text-sm"
-            :value="state.schemaDesignName"
+            :value="state.schemaDesignTitle"
             :placeholder="$t('database.branch-name')"
             @input="
-              state.schemaDesignName = ($event.target as HTMLInputElement).value
+              state.schemaDesignTitle = (
+                $event.target as HTMLInputElement
+              ).value
             "
           />
         </div>
@@ -90,6 +92,7 @@ import {
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { databaseNamePrefix } from "@/store/modules/v1/common";
+import { UNKNOWN_ID } from "@/types";
 import {
   ChangeHistory,
   DatabaseMetadata,
@@ -104,7 +107,7 @@ import {
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
-import { mergeSchemaEditToMetadata } from "./common/util";
+import { mergeSchemaEditToMetadata, validateBranchName } from "./common/util";
 import SchemaDesigner from "./index.vue";
 
 interface BaselineSchema {
@@ -115,7 +118,7 @@ interface BaselineSchema {
 
 interface LocalState {
   projectId?: string;
-  schemaDesignName: string;
+  schemaDesignTitle: string;
   baselineSchema: BaselineSchema;
   schemaDesign: SchemaDesign;
 }
@@ -137,7 +140,7 @@ const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
-  schemaDesignName: "",
+  schemaDesignTitle: "",
   projectId: props.projectId,
   baselineSchema: {},
   schemaDesign: SchemaDesign.fromPartial({
@@ -179,7 +182,9 @@ const prepareSchemaDesign = async () => {
 
 const allowConfirm = computed(() => {
   return (
-    state.projectId && state.schemaDesignName && state.baselineSchema.databaseId
+    state.projectId &&
+    state.schemaDesignTitle &&
+    state.baselineSchema.databaseId
   );
 });
 
@@ -197,7 +202,10 @@ const handleProjectSelect = async (projectId: string) => {
 
 const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
   state.baselineSchema = baselineSchema;
-  if (baselineSchema.databaseId) {
+  if (
+    baselineSchema.databaseId &&
+    baselineSchema.databaseId !== String(UNKNOWN_ID)
+  ) {
     const database = databaseStore.getDatabaseByUID(baselineSchema.databaseId);
     state.projectId = database.projectEntity.uid;
   }
@@ -218,7 +226,12 @@ const handleConfirm = async () => {
     // Should not happen.
     throw new Error("schema designer is undefined");
   }
-  if (state.schemaDesignName === "") {
+  if (!validateBranchName(state.schemaDesignTitle)) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Branch name should valid characters: /^[a-zA-Z0-9-_/]+$/",
+    });
     return;
   }
 
@@ -237,7 +250,7 @@ const handleConfirm = async () => {
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
   // Create a baseline sheet for the schema design.
   const baselineSheet = await sheetStore.createSheet(project.value.name, {
-    name: `baseline schema of ${state.schemaDesignName}`,
+    title: `baseline schema of ${state.schemaDesignTitle}`,
     database: baselineDatabase,
     content: new TextEncoder().encode(state.schemaDesign.baselineSchema),
     visibility: Sheet_Visibility.VISIBILITY_PROJECT,
@@ -248,7 +261,7 @@ const handleConfirm = async () => {
   const createdSchemaDesign = await schemaDesignStore.createSchemaDesign(
     project.value.name,
     SchemaDesign.fromPartial({
-      title: state.schemaDesignName,
+      title: state.schemaDesignTitle,
       // Keep schema empty in frontend. Backend will generate the design schema.
       schema: "",
       schemaMetadata: metadata,

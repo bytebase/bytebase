@@ -94,16 +94,43 @@
 
         <NDivider />
 
-        <!-- 
-        TODO(steven): show baseline database selectors.  
+        <div class="w-full flex flex-row justify-start items-center mt-1">
+          <span class="flex w-40 items-center text-sm font-medium">{{
+            $t("schema-designer.baseline-version")
+          }}</span>
+        </div>
 
-        <BaselineSchemaSelector
-          :project-id="project.uid"
-          :baseline-schema="state.baselineSchema"
-          @update="handleBaselineSchemaChange"
-        />
+        <div class="w-full flex flex-row justify-start items-center">
+          <span class="flex w-40 items-center shrink-0 text-sm">
+            {{ $t("common.database") }}
+          </span>
+          <DatabaseInfo :database="baselineDatabase" />
+        </div>
 
-        <NDivider /> -->
+        <div class="w-full flex flex-row justify-start items-center">
+          <span class="flex w-40 items-center shrink-0 text-sm">
+            {{ $t("schema-designer.schema-version") }}
+          </span>
+          <div class="w-[calc(100%-10rem)]">
+            <div
+              v-if="changeHistory"
+              class="w-full flex flex-row justify-start items-center"
+            >
+              <span class="block pr-2 w-full max-w-[80%] truncate">
+                {{ changeHistory.version }} -
+                {{ changeHistory.description }}
+              </span>
+              <span class="text-control-light">
+                {{ humanizeDate(changeHistory.updateTime) }}
+              </span>
+            </div>
+            <template v-else>
+              {{ "Previously latest schema" }}
+            </template>
+          </div>
+        </div>
+
+        <NDivider />
 
         <div class="w-full flex flex-row justify-end gap-2">
           <template v-if="!state.isEditing">
@@ -160,6 +187,7 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import { cloneDeep, isEqual } from "lodash-es";
 import { Pen, X, Check } from "lucide-vue-next";
 import {
@@ -172,10 +200,16 @@ import {
   NIcon,
 } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import DatabaseInfo from "@/components/DatabaseInfo.vue";
+import {
+  pushNotification,
+  useChangeHistoryStore,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+} from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
@@ -188,6 +222,7 @@ import {
   generateForkedBranchName,
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
+  validateBranchName,
 } from "./common/util";
 import SchemaDesigner from "./index.vue";
 
@@ -209,7 +244,9 @@ const emit = defineEmits(["dismiss"]);
 
 const { t } = useI18n();
 const router = useRouter();
+const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
+const changeHistoryStore = useChangeHistoryStore();
 const schemaDesignStore = useSchemaDesignStore();
 const dialog = useDialog();
 const state = reactive<LocalState>({
@@ -235,6 +272,11 @@ const parentBranch = computed(() => {
   return undefined;
 });
 
+const changeHistory = computed(() => {
+  const changeHistoryName = `${baselineDatabase.value.name}/changeHistories/${schemaDesign.value.baselineChangeHistoryId}`;
+  return changeHistoryStore.getChangeHistoryByName(changeHistoryName);
+});
+
 const isSchemaDesignDraft = computed(() => {
   return schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT;
 });
@@ -248,19 +290,17 @@ const project = computed(() => {
 });
 
 const prepareBaselineDatabase = async () => {
-  await databaseStore.getOrFetchDatabaseByName(
+  const database = await databaseStore.getOrFetchDatabaseByName(
     schemaDesign.value.baselineDatabase
   );
+  await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(database.name);
 };
-
-onMounted(async () => {
-  await prepareBaselineDatabase();
-});
 
 watch(
   () => [state.schemaDesignName],
-  () => {
+  async () => {
     state.schemaDesignTitle = schemaDesign.value.title;
+    await prepareBaselineDatabase();
   },
   {
     immediate: true,
@@ -272,7 +312,15 @@ const handleSaveBranchTitle = async () => {
     pushNotification({
       module: "bytebase",
       style: "WARN",
-      title: "Schema design name cannot be empty.",
+      title: "Branch name cannot be empty.",
+    });
+    return;
+  }
+  if (!validateBranchName(state.schemaDesignTitle)) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Branch name should valid characters: /^[a-zA-Z0-9-_/]+$/",
     });
     return;
   }
@@ -308,16 +356,55 @@ const handleEdit = async () => {
   if (schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT) {
     state.isEditing = true;
   } else if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
-    // Create a new draft if it's a main branch.
-    const schemaDesignDraft = await schemaDesignStore.createSchemaDesignDraft({
-      ...schemaDesign.value,
-      title: generateForkedBranchName(schemaDesign.value),
-    });
-    // Select the newly created draft.
-    state.schemaDesignName = schemaDesignDraft.name;
-    createdBranchName.value = schemaDesignDraft.name;
-    // Trigger the edit mode.
-    handleEdit();
+    const branchName = generateForkedBranchName(schemaDesign.value);
+    const foundBranch = schemaDesignStore.schemaDesignList.find(
+      (schemaDesign) => {
+        return (
+          schemaDesign.creator === `users/${currentUser.value.email}` &&
+          schemaDesign.title === branchName
+        );
+      }
+    );
+    if (foundBranch) {
+      // Show a confirm dialog to let user decide whether to use the existing branch or create a new one.
+      dialog.create({
+        negativeText: t("schema-designer.action.use-the-existing-branch"),
+        positiveText: t("schema-designer.action.create-new-branch"),
+        title: t("schema-designer.diff-editor.action-confirm"),
+        content: t("schema-designer.diff-editor.duplicated-branch-name-found"),
+        autoFocus: false,
+        closable: false,
+        maskClosable: false,
+        closeOnEsc: false,
+        onNegativeClick: () => {
+          // Use the existing branch.
+          state.schemaDesignName = foundBranch.name;
+          handleEdit();
+        },
+        onPositiveClick: async () => {
+          // Create a new personal branch.
+          const newBranch = await schemaDesignStore.createSchemaDesignDraft({
+            ...schemaDesign.value,
+            title: branchName + `-${dayjs().format("YYYYMMDD")}`,
+          });
+          // Select the newly created draft.
+          state.schemaDesignName = newBranch.name;
+          createdBranchName.value = newBranch.name;
+          // Trigger the edit mode.
+          handleEdit();
+        },
+      });
+    } else {
+      const newBranch = await schemaDesignStore.createSchemaDesignDraft({
+        ...schemaDesign.value,
+        title: branchName,
+      });
+      // Select the newly created draft.
+      state.schemaDesignName = newBranch.name;
+      createdBranchName.value = newBranch.name;
+      // Trigger the edit mode.
+      handleEdit();
+    }
   } else {
     throw new Error(
       `Unsupported schema design type: ${schemaDesign.value.type}`
@@ -436,7 +523,7 @@ const handleSaveSchemaDesignDraft = async () => {
   state.isEditing = false;
 
   // If it's a personal draft, we will try to merge it to the parent branch.
-  if (isSchemaDesignDraft.value) {
+  if (schemaDesign.value.name === createdBranchName.value) {
     await handleMergeSchemaDesign(true);
   }
 };
@@ -492,6 +579,7 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
   }
   // Auto select the parent branch after merged.
   state.schemaDesignName = parentBranchName;
+  createdBranchName.value = "";
 };
 
 const handleMergeAfterConflictResolved = () => {

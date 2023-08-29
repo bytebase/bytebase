@@ -12,10 +12,12 @@
           {{ projectV1Name(getFormatedValue(schemaDesign).project) }}
         </div>
         <div class="bb-grid-cell">
-          {{ schemaDesign.title }}
+          <NEllipsis :line-clamp="1">{{ schemaDesign.title }}</NEllipsis>
         </div>
         <div class="bb-grid-cell">
-          {{ getFormatedValue(schemaDesign).parentBranch }}
+          <NEllipsis :line-clamp="1">{{
+            getFormatedValue(schemaDesign).parentBranch
+          }}</NEllipsis>
         </div>
         <div class="bb-grid-cell">
           <DatabaseInfo :database="getFormatedValue(schemaDesign).database" />
@@ -32,6 +34,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";

@@ -2841,6 +2841,7 @@
       "resolve-and-merge-again": "Resolver y fusionar nuevamente",
       "discard-changes": "Descartar cambios",
       "action-confirm": "Acción confirmada",
+      "duplicated-branch-name-found": "Se encontró un nombre de rama duplicado. Por favor, elige otro.",
       "discard-changes-confirm": "¿Estás seguro de que quieres descartar todas las modificaciones?"
     },
     "tables": "Tablas",
@@ -2853,6 +2854,10 @@
       "updated-succeed": "Diseño de esquema actualizado con éxito",
       "merge-to-main-successfully": "Fusionar con el principal exitosamente",
       "updated-time-by-user": "Actualizado por {user} en {time}"
+    },
+    "action": {
+      "use-the-existing-branch": "Usar la rama existente",
+      "create-new-branch": "Crear nueva rama"
     }
   },
   "cel": {
