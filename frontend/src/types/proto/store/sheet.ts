@@ -74,6 +74,8 @@ export interface SheetPayload_SchemaDesign {
   baselineSheetId: string;
   /** The sheet id of the baseline schema design. Only valid when the schema design is a personal draft. */
   baselineSchemaDesignId: string;
+  /** The id of the baseline change history including the baseline change history.(optional) */
+  baselineChangeHistoryId: string;
 }
 
 export enum SheetPayload_SchemaDesign_Type {
@@ -437,7 +439,7 @@ export const SheetPayload_UsedByIssue = {
 };
 
 function createBaseSheetPayload_SchemaDesign(): SheetPayload_SchemaDesign {
-  return { type: 0, engine: 0, baselineSheetId: "", baselineSchemaDesignId: "" };
+  return { type: 0, engine: 0, baselineSheetId: "", baselineSchemaDesignId: "", baselineChangeHistoryId: "" };
 }
 
 export const SheetPayload_SchemaDesign = {
@@ -453,6 +455,9 @@ export const SheetPayload_SchemaDesign = {
     }
     if (message.baselineSchemaDesignId !== "") {
       writer.uint32(34).string(message.baselineSchemaDesignId);
+    }
+    if (message.baselineChangeHistoryId !== "") {
+      writer.uint32(42).string(message.baselineChangeHistoryId);
     }
     return writer;
   },
@@ -492,6 +497,13 @@ export const SheetPayload_SchemaDesign = {
 
           message.baselineSchemaDesignId = reader.string();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.baselineChangeHistoryId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -507,6 +519,7 @@ export const SheetPayload_SchemaDesign = {
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       baselineSheetId: isSet(object.baselineSheetId) ? String(object.baselineSheetId) : "",
       baselineSchemaDesignId: isSet(object.baselineSchemaDesignId) ? String(object.baselineSchemaDesignId) : "",
+      baselineChangeHistoryId: isSet(object.baselineChangeHistoryId) ? String(object.baselineChangeHistoryId) : "",
     };
   },
 
@@ -516,6 +529,7 @@ export const SheetPayload_SchemaDesign = {
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     message.baselineSheetId !== undefined && (obj.baselineSheetId = message.baselineSheetId);
     message.baselineSchemaDesignId !== undefined && (obj.baselineSchemaDesignId = message.baselineSchemaDesignId);
+    message.baselineChangeHistoryId !== undefined && (obj.baselineChangeHistoryId = message.baselineChangeHistoryId);
     return obj;
   },
 
@@ -529,6 +543,7 @@ export const SheetPayload_SchemaDesign = {
     message.engine = object.engine ?? 0;
     message.baselineSheetId = object.baselineSheetId ?? "";
     message.baselineSchemaDesignId = object.baselineSchemaDesignId ?? "";
+    message.baselineChangeHistoryId = object.baselineChangeHistoryId ?? "";
     return message;
   },
 };
