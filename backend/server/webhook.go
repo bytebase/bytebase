@@ -2222,7 +2222,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		}
 
 		if issue.PlanUID != nil {
-			plan, err := s.store.GetPlan(ctx, *issue.PlanUID)
+			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 			if err != nil {
 				log.Error("failed to get plan", zap.Int64("plan ID", *issue.PlanUID), zap.Error(err))
 			}

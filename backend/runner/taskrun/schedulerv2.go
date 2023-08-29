@@ -160,15 +160,12 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 
 	// the latest checks of the plan must pass
 	pass, err := func() (bool, error) {
-		if issue.PlanUID == nil {
-			return true, nil
-		}
-		plan, err := s.store.GetPlan(ctx, *issue.PlanUID)
+		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get plan")
 		}
 		if plan == nil {
-			return false, errors.Errorf("plan %d not found", *issue.PlanUID)
+			return true, nil
 		}
 		planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{PlanUID: &plan.UID})
 		if err != nil {

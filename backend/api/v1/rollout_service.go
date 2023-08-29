@@ -59,7 +59,7 @@ func (s *RolloutService) GetPlan(ctx context.Context, request *v1pb.GetPlanReque
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	plan, err := s.store.GetPlan(ctx, planID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
 	}
@@ -258,7 +258,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	plan, err := s.store.GetPlan(ctx, planID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
 	}
@@ -340,7 +340,7 @@ func (s *RolloutService) RunPlanChecks(ctx context.Context, request *v1pb.RunPla
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	plan, err := s.store.GetPlan(ctx, planUID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planUID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
 	}
@@ -738,7 +738,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	oldPlan, err := s.store.GetPlan(ctx, planID)
+	oldPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan %q: %v", request.Plan.Name, err)
 	}
@@ -908,7 +908,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		return nil, status.Errorf(codes.Internal, "failed to update plan %q: %v", request.Plan.Name, err)
 	}
 
-	updatedPlan, err := s.store.GetPlan(ctx, oldPlan.UID)
+	updatedPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &oldPlan.UID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get updated plan %q: %v", request.Plan.Name, err)
 	}
