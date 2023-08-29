@@ -43,6 +43,10 @@ export interface SchemaDesign {
    * For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign}
    */
   baselineSheetName: string;
+  /** The baseline change history id. */
+  baselineChangeHistoryId?:
+    | string
+    | undefined;
   /** The type of the schema design. */
   type: SchemaDesign_Type;
   /** The etag of the schema design. */
@@ -216,6 +220,7 @@ function createBaseSchemaDesign(): SchemaDesign {
     engine: 0,
     baselineDatabase: "",
     baselineSheetName: "",
+    baselineChangeHistoryId: undefined,
     type: 0,
     etag: "",
     creator: "",
@@ -254,23 +259,26 @@ export const SchemaDesign = {
     if (message.baselineSheetName !== "") {
       writer.uint32(74).string(message.baselineSheetName);
     }
+    if (message.baselineChangeHistoryId !== undefined) {
+      writer.uint32(82).string(message.baselineChangeHistoryId);
+    }
     if (message.type !== 0) {
-      writer.uint32(80).int32(message.type);
+      writer.uint32(88).int32(message.type);
     }
     if (message.etag !== "") {
-      writer.uint32(90).string(message.etag);
+      writer.uint32(98).string(message.etag);
     }
     if (message.creator !== "") {
-      writer.uint32(98).string(message.creator);
+      writer.uint32(106).string(message.creator);
     }
     if (message.updater !== "") {
-      writer.uint32(106).string(message.updater);
+      writer.uint32(114).string(message.updater);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(114).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(122).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(122).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(130).fork()).ldelim();
     }
     return writer;
   },
@@ -346,42 +354,49 @@ export const SchemaDesign = {
           message.baselineSheetName = reader.string();
           continue;
         case 10:
-          if (tag !== 80) {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.baselineChangeHistoryId = reader.string();
+          continue;
+        case 11:
+          if (tag !== 88) {
             break;
           }
 
           message.type = reader.int32() as any;
-          continue;
-        case 11:
-          if (tag !== 90) {
-            break;
-          }
-
-          message.etag = reader.string();
           continue;
         case 12:
           if (tag !== 98) {
             break;
           }
 
-          message.creator = reader.string();
+          message.etag = reader.string();
           continue;
         case 13:
           if (tag !== 106) {
             break;
           }
 
-          message.updater = reader.string();
+          message.creator = reader.string();
           continue;
         case 14:
           if (tag !== 114) {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updater = reader.string();
           continue;
         case 15:
           if (tag !== 122) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 16:
+          if (tag !== 130) {
             break;
           }
 
@@ -409,6 +424,9 @@ export const SchemaDesign = {
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       baselineDatabase: isSet(object.baselineDatabase) ? String(object.baselineDatabase) : "",
       baselineSheetName: isSet(object.baselineSheetName) ? String(object.baselineSheetName) : "",
+      baselineChangeHistoryId: isSet(object.baselineChangeHistoryId)
+        ? String(object.baselineChangeHistoryId)
+        : undefined,
       type: isSet(object.type) ? schemaDesign_TypeFromJSON(object.type) : 0,
       etag: isSet(object.etag) ? String(object.etag) : "",
       creator: isSet(object.creator) ? String(object.creator) : "",
@@ -432,6 +450,7 @@ export const SchemaDesign = {
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     message.baselineDatabase !== undefined && (obj.baselineDatabase = message.baselineDatabase);
     message.baselineSheetName !== undefined && (obj.baselineSheetName = message.baselineSheetName);
+    message.baselineChangeHistoryId !== undefined && (obj.baselineChangeHistoryId = message.baselineChangeHistoryId);
     message.type !== undefined && (obj.type = schemaDesign_TypeToJSON(message.type));
     message.etag !== undefined && (obj.etag = message.etag);
     message.creator !== undefined && (obj.creator = message.creator);
@@ -461,6 +480,7 @@ export const SchemaDesign = {
     message.engine = object.engine ?? 0;
     message.baselineDatabase = object.baselineDatabase ?? "";
     message.baselineSheetName = object.baselineSheetName ?? "";
+    message.baselineChangeHistoryId = object.baselineChangeHistoryId ?? undefined;
     message.type = object.type ?? 0;
     message.etag = object.etag ?? "";
     message.creator = object.creator ?? "";

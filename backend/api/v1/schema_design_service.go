@@ -219,6 +219,10 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		// baselineSheetID is a reference to the baseline schema design.
 		schemaDesignSheetPayload.SchemaDesign.BaselineSchemaDesignId = baselineSheetID
 	}
+	if schemaDesign.BaselineChangeHistoryId != nil {
+		schemaDesignSheetPayload.SchemaDesign.BaselineChangeHistoryId = *schemaDesign.BaselineChangeHistoryId
+	}
+
 	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to marshal schema design sheet payload: %v", err))
@@ -553,7 +557,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}
 
 	name := fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.UID)
-	return &v1pb.SchemaDesign{
+	schemaDesign := &v1pb.SchemaDesign{
 		Name:                   name,
 		Title:                  sheet.Name,
 		Schema:                 schema,
@@ -569,7 +573,14 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		Updater:                fmt.Sprintf("users/%s", updater.Email),
 		CreateTime:             timestamppb.New(sheet.CreatedTime),
 		UpdateTime:             timestamppb.New(sheet.UpdatedTime),
-	}, nil
+	}
+
+	baselineChangeHistoryID := sheetPayload.SchemaDesign.BaselineChangeHistoryId
+	if baselineChangeHistoryID != "" {
+		schemaDesign.BaselineChangeHistoryId = &baselineChangeHistoryID
+	}
+
+	return schemaDesign, nil
 }
 
 // GenerateEtag generates etag for the given body.
