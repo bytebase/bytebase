@@ -212,8 +212,11 @@ message Plan {
     // backup is the resource name of the backup.
     // Format: instances/{instance}/databases/{database}/backups/{backup-name}
     string backup = 8;
+    // The environment resource.
+    // Format: environments/prod where prod is the environment resource ID.
+    string environment = 9 [(google.api.field_behavior) = OPTIONAL];
     // labels of the database.
-    map<string, string> labels = 9;
+    map<string, string> labels = 10;
   }
 
   message ChangeDatabaseConfig {
