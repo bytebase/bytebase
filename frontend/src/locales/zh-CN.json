@@ -1573,8 +1573,8 @@
         "btn-text": "恢复这个@:common.project"
       },
       "schema-change-type": "Schema 变更类型",
-      "select-schema-change-type-ddl": "命令式 - 面向过程的 DDL 命令，如 ALTER TABLE",
-      "select-schema-change-type-sdl": "声明式 - 面向终态的 Schema 描述，如 CREATE TABLE",
+      "select-schema-change-type-ddl": "命令式 - 使用任意的 DDL 语句，描述变更命令。",
+      "select-schema-change-type-sdl": "声明式 - 仅使用 CREATE TABLE/INDEX，直接描述最终期望的 Schema。",
       "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。"
     },
     "members": {

@@ -1577,8 +1577,8 @@
         "btn-text": "Restaurar este @.lower:{'common.project'}"
       },
       "schema-change-type": "Tipo de cambio de esquema",
-      "select-schema-change-type-ddl": "Migración basada en imperativo. Por ejemplo, ALTER TABLE",
-      "select-schema-change-type-sdl": "Migración basada en declaración de estado. Por ejemplo, CREATE TABLE",
+      "select-schema-change-type-ddl": "Imperativo: especifique el cambio con cualquier declaración DDL.",
+      "select-schema-change-type-sdl": "Declarativo: especifique el esquema deseado. Utilice únicamente CREAR TABLA/ÍNDICE.",
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos."
     },
     "members": {
