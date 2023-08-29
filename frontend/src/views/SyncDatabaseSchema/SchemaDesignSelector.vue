@@ -25,29 +25,23 @@
           <NRadio :checked="schemaDesign.name === selectedSchemaDesign?.name" />
         </div>
         <div class="bb-grid-cell">
-          <div class="flex flex-row justify-start items-center">
-            <EngineIcon
-              class="mr-2"
-              :engine="getFormatedValue(schemaDesign).engine"
-            />
-            <span>{{ schemaDesign.title }}</span>
-          </div>
+          {{ projectV1Name(getFormatedValue(schemaDesign).project) }}
         </div>
         <div class="bb-grid-cell">
-          {{ getFormatedValue(schemaDesign).project }}
+          {{ schemaDesign.title }}
         </div>
         <div class="bb-grid-cell">
-          {{ getFormatedValue(schemaDesign).creator }}
+          {{ getFormatedValue(schemaDesign).parentBranch }}
         </div>
         <div class="bb-grid-cell">
-          {{ getFormatedValue(schemaDesign).updater }}
+          <DatabaseInfo :database="getFormatedValue(schemaDesign).database" />
         </div>
         <div class="bb-grid-cell">
-          <HumanizeTs
-            :ts="(schemaDesign.updateTime?.getTime() ?? 0) / 1000"
-            class="ml-1"
-          />
+          <span class="text-gray-400">{{
+            getFormatedValue(schemaDesign).updatedTimeStr
+          }}</span>
         </div>
+
         <div class="bb-grid-cell">
           <NButton
             size="small"
@@ -86,12 +80,19 @@ import { NRadio } from "naive-ui";
 import { computed, ref, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
+import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import CreateSchemaDesignPanel from "@/components/SchemaDesigner/CreateSchemaDesignPanel.vue";
 import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
-import { useProjectV1Store, useUserStore } from "@/store";
-import { useSchemaDesignList } from "@/store/modules/schemaDesign";
+import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
+import {
+  useSchemaDesignList,
+  useSchemaDesignStore,
+} from "@/store/modules/schemaDesign";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import {
+  SchemaDesign,
+  SchemaDesign_Type,
+} from "@/types/proto/v1/schema_design_service";
 import { projectV1Name } from "@/utils";
 
 interface LocalState {
@@ -108,7 +109,10 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const userV1Store = useUserStore();
 const projectV1Store = useProjectV1Store();
+const databaseV1Store = useDatabaseV1Store();
+const schemaDesignStore = useSchemaDesignStore();
 const { schemaDesignList } = useSchemaDesignList();
 const state = reactive<LocalState>({
   showCreatePanel: false,
@@ -121,14 +125,14 @@ const selectedSchemaDesign = ref<SchemaDesign | undefined>(
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
     { title: "", width: "3rem" },
-    { title: t("database.branch"), width: "1fr" },
     {
       title: t("common.project"),
-      width: "1fr",
+      width: "minmax(auto, 8rem)",
     },
-    { title: t("common.creator"), width: "1fr" },
-    { title: t("common.updater"), width: "1fr" },
-    { title: t("common.updated-at"), width: "1fr" },
+    { title: t("database.branch"), width: "minmax(auto, 8rem)" },
+    { title: t("schema-designer.parent-branch"), width: "minmax(auto, 8rem)" },
+    { title: t("common.database"), width: "1fr" },
+    { title: "", width: "1fr" },
     { title: "", width: "5rem" },
   ];
 
@@ -138,20 +142,32 @@ const COLUMN_LIST = computed(() => {
 const getFormatedValue = (schemaDesign: SchemaDesign) => {
   const [projectName] = getProjectAndSchemaDesignSheetId(schemaDesign.name);
   const project = projectV1Store.getProjectByName(`projects/${projectName}`);
+  let parentBranch = "";
+  if (schemaDesign.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+    const parentSchemaDesign = schemaDesignStore.getSchemaDesignByName(
+      schemaDesign.baselineSheetName
+    );
+    if (parentSchemaDesign) {
+      parentBranch = parentSchemaDesign.title;
+    }
+  }
+
+  const updater = userV1Store.getUserByEmail(
+    schemaDesign.updater.split("/")[1]
+  );
+  const updatedTimeStr = t("schema-designer.message.updated-time-by-user", {
+    time: dayjs
+      .duration((schemaDesign.updateTime ?? new Date()).getTime() - Date.now())
+      .humanize(true),
+    user: updater?.title,
+  });
 
   return {
     name: schemaDesign.title,
-    project: projectV1Name(project),
-    engine: schemaDesign.engine,
-    creator:
-      useUserStore().getUserByIdentifier(schemaDesign.creator)?.title ??
-      schemaDesign.creator,
-    updater:
-      useUserStore().getUserByIdentifier(schemaDesign.updater)?.title ??
-      schemaDesign.updater,
-    updated: dayjs
-      .duration((schemaDesign.updateTime ?? new Date()).getTime() - Date.now())
-      .humanize(true),
+    project: project,
+    database: databaseV1Store.getDatabaseByName(schemaDesign.baselineDatabase),
+    parentBranch: parentBranch,
+    updatedTimeStr,
   };
 };
 

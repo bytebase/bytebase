@@ -258,7 +258,8 @@
     "schedule": "Horario",
     "state": "Estado",
     "condition": "Condición",
-    "search-user": "Buscar usuario"
+    "search-user": "Buscar usuario",
+    "branches": "Ramas"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2812,6 +2813,7 @@
     "schema-version": "Versión del esquema",
     "personal-draft": "Borrador personal",
     "baseline-version": "Versión de referencia",
+    "parent-branch": "Rama principal",
     "save-draft": "Guardar borrador",
     "merge-to-main": "Fusionar a principal",
     "diff-editor": {
@@ -2831,7 +2833,8 @@
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito",
-      "merge-to-main-successfully": "Fusionar con el principal exitosamente"
+      "merge-to-main-successfully": "Fusionar con el principal exitosamente",
+      "updated-time-by-user": "Actualizado por {user} en {time}"
     }
   },
   "cel": {
