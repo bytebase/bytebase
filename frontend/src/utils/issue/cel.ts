@@ -256,6 +256,13 @@ export const convertFromCELString = async (
       if (left === "request.time") {
         conditionExpression.expiredTime = (right as Date).toISOString();
       }
+    } else if (expr.operator === "_<=_") {
+      const [left, right] = expr.args;
+      if (typeof right === "number") {
+        if (left === "request.row_limit") {
+          conditionExpression.rowLimit = right;
+        }
+      }
     }
   }
   await processCondition(simpleExpr);
