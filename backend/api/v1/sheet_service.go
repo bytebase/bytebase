@@ -253,6 +253,16 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for starred", spec.value))
 			}
+		case "source":
+			switch spec.operator {
+			case comparatorTypeEqual:
+				source := store.SheetSource(spec.value)
+				sheetFind.Source = &source
+			case comparatorTypeNotEqual:
+				source := store.SheetSource(spec.value)
+				sheetFind.NotSource = &source
+			}
+
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid filter key %q", spec.key))
 		}
