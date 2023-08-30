@@ -179,6 +179,7 @@ watch(isCreating, (curr, prev) => {
 watch(
   () => issue.value,
   (issue) => {
+    if (state.isEditing) return;
     state.description = issue.description;
   },
   { immediate: true }
