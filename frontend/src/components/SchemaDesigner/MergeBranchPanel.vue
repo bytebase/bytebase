@@ -7,7 +7,7 @@
     @update:show="(show: boolean) => !show && emit('dismiss')"
   >
     <NDrawerContent
-      :title="$t('schema-designer.diff-editor.self')"
+      :title="$t('schema-designer.merge-branch')"
       :closable="true"
     >
       <div
@@ -21,20 +21,26 @@
             {{ $t("common.merge") }}
           </NButton>
         </div>
-        <div class="pt-4 pb-6 w-full flex flex-row justify-center items-center">
-          <NInput
-            class="!w-40 text-center"
-            readonly
-            :value="sourceBranch.title"
-          />
-          <div class="mx-16">
-            <MoveLeft :size="32" stroke-width="1" />
+        <div class="w-full pr-12 pt-4 pb-6 grid grid-cols-3">
+          <div class="flex flex-row justify-end">
+            <NInput
+              class="!w-4/5 text-center"
+              readonly
+              :value="sourceBranch.title"
+              size="large"
+            />
           </div>
-          <NInput
-            class="!w-40 text-center"
-            readonly
-            :value="targetBranch.title"
-          />
+          <div class="flex flex-row justify-center">
+            <MoveLeft :size="40" stroke-width="1" />
+          </div>
+          <div class="flex flex-row justify-start">
+            <NInput
+              class="!w-4/5 text-center"
+              readonly
+              :value="targetBranch.title"
+              size="large"
+            />
+          </div>
         </div>
         <div class="w-full grid grid-cols-2">
           <div class="col-span-1">
@@ -44,7 +50,7 @@
             <span>{{ $t("schema-designer.diff-editor.editing-schema") }}</span>
           </div>
         </div>
-        <div class="w-full h-[calc(100%-8rem)] border">
+        <div class="w-full h-[calc(100%-12rem)] border">
           <DiffEditor
             v-if="state.initialized"
             class="h-full"
@@ -103,6 +109,8 @@ const targetBranch = computed(() => {
 });
 
 onMounted(async () => {
+  // Fetching the latest source branch.
+  await schemaDesignStore.fetchSchemaDesignByName(props.sourceBranchName);
   state.editingSchema = targetBranch.value.schema;
   state.initialized = true;
 });
@@ -116,7 +124,7 @@ const handleSaveDraft = async (ignoreNotify?: boolean) => {
   const baselineSheet = await sheetStore.createSheet(
     `projects/${projectName}`,
     {
-      name: `baseline schema of ${sourceBranch.value.title}`,
+      title: `baseline schema of ${sourceBranch.value.title}`,
       database: targetBranch.value.baselineDatabase,
       content: new TextEncoder().encode(sourceBranch.value.schema),
       visibility: Sheet_Visibility.VISIBILITY_PROJECT,

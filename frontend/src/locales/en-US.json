@@ -2860,6 +2860,7 @@
       "resolve-and-merge-again": "Resolve and merge again",
       "discard-changes": "Discard changes",
       "action-confirm": "Action confirm",
+      "duplicated-branch-name-found": "Duplicated branch name found.",
       "discard-changes-confirm": "Are you sure you want to discard all modifications?"
     },
     "tables": "Tables",
@@ -2872,6 +2873,10 @@
       "updated-succeed": "Branch updated successfully",
       "merge-to-main-successfully": "Merge to main successfully",
       "updated-time-by-user": "Updated {time} by {user}"
+    },
+    "action": {
+      "use-the-existing-branch": "Use the existing branch",
+      "create-new-branch": "Create new branch"
     }
   },
   "cel": {
