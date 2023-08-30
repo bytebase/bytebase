@@ -488,7 +488,7 @@ const handleSaveSchemaDesignDraft = async () => {
 
   const updateMask = [];
   // Don't update branch title for new created branch.
-  if (schemaDesign.value.name !== createdBranchName.value) {
+  if (state.schemaDesignName !== createdBranchName.value) {
     if (schemaDesign.value.title !== state.schemaDesignTitle) {
       updateMask.push("title");
     }
@@ -557,8 +557,8 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
     // If there is conflict, we need to show the conflict and let user resolve it.
     if (error.code === Status.FAILED_PRECONDITION) {
       dialog.create({
+        negativeText: t("schema-designer.save-draft"),
         positiveText: t("schema-designer.diff-editor.resolve"),
-        negativeText: t("common.cancel"),
         title: t("schema-designer.diff-editor.auto-merge-failed"),
         content: t("schema-designer.diff-editor.need-to-resolve-conflicts"),
         autoFocus: true,
@@ -566,7 +566,11 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
         maskClosable: true,
         closeOnEsc: true,
         onNegativeClick: () => {
-          // nothing to do
+          // Clear the created branch state if save draft clicked.
+          if (state.schemaDesignName === createdBranchName.value) {
+            createdBranchName.value = "";
+            state.schemaDesignTitle = schemaDesign.value.title;
+          }
         },
         onPositiveClick: () => {
           state.showDiffEditor = true;
