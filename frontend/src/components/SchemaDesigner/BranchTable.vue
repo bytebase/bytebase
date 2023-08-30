@@ -4,27 +4,27 @@
       class="border"
       :show-placeholder="true"
       :column-list="COLUMN_LIST"
-      :data-source="schemaDesigns"
-      @click-row="clickSchemaDesign"
+      :data-source="branches"
+      @click-row="clickBranch"
     >
-      <template #item="{ item: schemaDesign }: { item: SchemaDesign }">
+      <template #item="{ item: branch }: { item: SchemaDesign }">
         <div v-if="!hideProjectColumn" class="bb-grid-cell">
-          {{ projectV1Name(getFormatedValue(schemaDesign).project) }}
+          {{ projectV1Name(getFormatedValue(branch).project) }}
         </div>
         <div class="bb-grid-cell">
-          <NEllipsis :line-clamp="1">{{ schemaDesign.title }}</NEllipsis>
+          <NEllipsis :line-clamp="1">{{ branch.title }}</NEllipsis>
         </div>
         <div class="bb-grid-cell">
           <NEllipsis :line-clamp="1">{{
-            getFormatedValue(schemaDesign).parentBranch
+            getFormatedValue(branch).parentBranch
           }}</NEllipsis>
         </div>
         <div class="bb-grid-cell">
-          <DatabaseInfo :database="getFormatedValue(schemaDesign).database" />
+          <DatabaseInfo :database="getFormatedValue(branch).database" />
         </div>
         <div class="bb-grid-cell">
           <span class="text-gray-400">{{
-            getFormatedValue(schemaDesign).updatedTimeStr
+            getFormatedValue(branch).updatedTimeStr
           }}</span>
         </div>
       </template>
@@ -53,7 +53,7 @@ const emit = defineEmits<{
 }>();
 
 const props = defineProps<{
-  schemaDesigns: SchemaDesign[];
+  branches: SchemaDesign[];
   hideProjectColumn?: boolean;
 }>();
 
@@ -80,39 +80,37 @@ const COLUMN_LIST = computed(() => {
   return columns;
 });
 
-const getFormatedValue = (schemaDesign: SchemaDesign) => {
-  const [projectName] = getProjectAndSchemaDesignSheetId(schemaDesign.name);
+const getFormatedValue = (branch: SchemaDesign) => {
+  const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
   const project = projectV1Store.getProjectByName(`projects/${projectName}`);
   let parentBranch = "";
-  if (schemaDesign.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+  if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT) {
     const parentSchemaDesign = schemaDesignStore.getSchemaDesignByName(
-      schemaDesign.baselineSheetName
+      branch.baselineSheetName
     );
     if (parentSchemaDesign) {
       parentBranch = parentSchemaDesign.title;
     }
   }
 
-  const updater = userV1Store.getUserByEmail(
-    schemaDesign.updater.split("/")[1]
-  );
+  const updater = userV1Store.getUserByEmail(branch.updater.split("/")[1]);
   const updatedTimeStr = t("schema-designer.message.updated-time-by-user", {
     time: dayjs
-      .duration((schemaDesign.updateTime ?? new Date()).getTime() - Date.now())
+      .duration((branch.updateTime ?? new Date()).getTime() - Date.now())
       .humanize(true),
     user: updater?.title,
   });
 
   return {
-    name: schemaDesign.title,
+    name: branch.title,
     project: project,
-    database: databaseV1Store.getDatabaseByName(schemaDesign.baselineDatabase),
+    database: databaseV1Store.getDatabaseByName(branch.baselineDatabase),
     parentBranch: parentBranch,
     updatedTimeStr,
   };
 };
 
-const clickSchemaDesign = (schemaDesign: SchemaDesign) => {
-  emit("click", schemaDesign);
+const clickBranch = (branch: SchemaDesign) => {
+  emit("click", branch);
 };
 </script>
