@@ -200,7 +200,7 @@ const handleUploadFile = (e: Event) => {
   fr.onload = async () => {
     const statement = fr.result as string;
     const sheet = await sheetStore.createSheet(DEFAULT_PROJECT_V1_NAME, {
-      name: file.name,
+      title: file.name,
       content: new TextEncoder().encode(statement),
       visibility: Sheet_Visibility.VISIBILITY_PROJECT,
       source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,

@@ -15,6 +15,7 @@
     <SchemaDesignTable
       v-if="ready"
       :schema-designs="sortedSchemaDesignList"
+      :hide-project-column="hideProjectColumn"
       @click="handleSchemaDesignItemClick"
     />
     <div v-else class="w-full h-[20rem] flex items-center justify-center">
@@ -54,6 +55,7 @@ import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 
 const props = defineProps<{
   projectId?: string;
+  hideProjectColumn?: boolean;
 }>();
 
 interface LocalState {

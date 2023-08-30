@@ -29,7 +29,7 @@
               >
                 <NButton
                   v-if="parentBranch"
-                  @click="() => handleMergeSchemaDesign()"
+                  @click="() => (state.showDiffEditor = true)"
                   >{{ $t("schema-designer.merge-branch") }}</NButton
                 >
                 <NButton type="primary" @click="handleApplySchemaDesignClick">{{
@@ -49,7 +49,7 @@
               class="w-60 text-sm"
               :readonly="!state.isEditingTitle"
               :value="state.schemaDesignTitle"
-              :placeholder="$t('database.branch-name')"
+              :placeholder="'feature/add-billing'"
               @input="
                 state.schemaDesignTitle = (
                   $event.target as HTMLInputElement
@@ -63,8 +63,8 @@
               @click="state.isEditingTitle = true"
             >
               <template #icon>
-                <NIcon>
-                  <Pen class="w-4 h-auto" />
+                <NIcon size="16">
+                  <Pen />
                 </NIcon>
               </template>
             </NButton>
@@ -94,16 +94,43 @@
 
         <NDivider />
 
-        <!-- 
-        TODO(steven): show baseline database selectors.  
+        <div class="w-full flex flex-row justify-start items-center mt-1">
+          <span class="flex w-40 items-center text-sm font-medium">{{
+            $t("schema-designer.baseline-version")
+          }}</span>
+        </div>
 
-        <BaselineSchemaSelector
-          :project-id="project.uid"
-          :baseline-schema="state.baselineSchema"
-          @update="handleBaselineSchemaChange"
-        />
+        <div class="w-full flex flex-row justify-start items-center">
+          <span class="flex w-40 items-center shrink-0 text-sm">
+            {{ $t("common.database") }}
+          </span>
+          <DatabaseInfo :database="baselineDatabase" />
+        </div>
 
-        <NDivider /> -->
+        <div class="w-full flex flex-row justify-start items-center">
+          <span class="flex w-40 items-center shrink-0 text-sm">
+            {{ $t("schema-designer.schema-version") }}
+          </span>
+          <div class="w-[calc(100%-10rem)]">
+            <div
+              v-if="changeHistory"
+              class="w-full flex flex-row justify-start items-center"
+            >
+              <span class="block pr-2 w-full max-w-[80%] truncate">
+                {{ changeHistory.version }} -
+                {{ changeHistory.description }}
+              </span>
+              <span class="text-control-light">
+                {{ humanizeDate(changeHistory.updateTime) }}
+              </span>
+            </div>
+            <template v-else>
+              {{ "Previously latest schema" }}
+            </template>
+          </div>
+        </div>
+
+        <NDivider />
 
         <div class="w-full flex flex-row justify-end gap-2">
           <template v-if="!state.isEditing">
@@ -152,7 +179,7 @@
 
   <MergeBranchPanel
     v-if="state.showDiffEditor"
-    :source-branch-name="parentBranch!.name"
+    :source-branch-name="schemaDesign.baselineSheetName"
     :target-branch-name="state.schemaDesignName"
     @dismiss="state.showDiffEditor = false"
     @try-merge="handleMergeAfterConflictResolved"
@@ -160,6 +187,7 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import { cloneDeep, isEqual } from "lodash-es";
 import { Pen, X, Check } from "lucide-vue-next";
 import {
@@ -172,10 +200,16 @@ import {
   NIcon,
 } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import DatabaseInfo from "@/components/DatabaseInfo.vue";
+import {
+  pushNotification,
+  useChangeHistoryStore,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+} from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
@@ -188,6 +222,7 @@ import {
   generateForkedBranchName,
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
+  validateBranchName,
 } from "./common/util";
 import SchemaDesigner from "./index.vue";
 
@@ -209,7 +244,9 @@ const emit = defineEmits(["dismiss"]);
 
 const { t } = useI18n();
 const router = useRouter();
+const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
+const changeHistoryStore = useChangeHistoryStore();
 const schemaDesignStore = useSchemaDesignStore();
 const dialog = useDialog();
 const state = reactive<LocalState>({
@@ -227,12 +264,21 @@ const schemaDesign = computed(() => {
 });
 
 const parentBranch = computed(() => {
-  if (schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+  // Show parent branch when the current branch is a personal draft and it's not the new created one.
+  if (
+    schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
+    state.schemaDesignName !== createdBranchName.value
+  ) {
     return schemaDesignStore.getSchemaDesignByName(
       schemaDesign.value.baselineSheetName || ""
     );
   }
   return undefined;
+});
+
+const changeHistory = computed(() => {
+  const changeHistoryName = `${baselineDatabase.value.name}/changeHistories/${schemaDesign.value.baselineChangeHistoryId}`;
+  return changeHistoryStore.getChangeHistoryByName(changeHistoryName);
 });
 
 const isSchemaDesignDraft = computed(() => {
@@ -248,19 +294,20 @@ const project = computed(() => {
 });
 
 const prepareBaselineDatabase = async () => {
-  await databaseStore.getOrFetchDatabaseByName(
+  const database = await databaseStore.getOrFetchDatabaseByName(
     schemaDesign.value.baselineDatabase
   );
+  await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(database.name);
 };
-
-onMounted(async () => {
-  await prepareBaselineDatabase();
-});
 
 watch(
   () => [state.schemaDesignName],
-  () => {
-    state.schemaDesignTitle = schemaDesign.value.title;
+  async () => {
+    // Only change branch title when it's not a new created one.
+    if (state.schemaDesignName !== createdBranchName.value) {
+      state.schemaDesignTitle = schemaDesign.value.title;
+    }
+    await prepareBaselineDatabase();
   },
   {
     immediate: true,
@@ -272,7 +319,15 @@ const handleSaveBranchTitle = async () => {
     pushNotification({
       module: "bytebase",
       style: "WARN",
-      title: "Schema design name cannot be empty.",
+      title: "Branch name cannot be empty.",
+    });
+    return;
+  }
+  if (!validateBranchName(state.schemaDesignTitle)) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Branch name should valid characters: /^(a-zA-Z)[a-zA-Z0-9-_/]+$/",
     });
     return;
   }
@@ -308,16 +363,55 @@ const handleEdit = async () => {
   if (schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT) {
     state.isEditing = true;
   } else if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
-    // Create a new draft if it's a main branch.
-    const schemaDesignDraft = await schemaDesignStore.createSchemaDesignDraft({
-      ...schemaDesign.value,
-      title: generateForkedBranchName(schemaDesign.value),
-    });
-    // Select the newly created draft.
-    state.schemaDesignName = schemaDesignDraft.name;
-    createdBranchName.value = schemaDesignDraft.name;
-    // Trigger the edit mode.
-    handleEdit();
+    const branchName = generateForkedBranchName(schemaDesign.value);
+    const foundBranch = schemaDesignStore.schemaDesignList.find(
+      (schemaDesign) => {
+        return (
+          schemaDesign.creator === `users/${currentUser.value.email}` &&
+          schemaDesign.title === branchName
+        );
+      }
+    );
+    if (foundBranch) {
+      // Show a confirm dialog to let user decide whether to use the existing branch or create a new one.
+      dialog.create({
+        negativeText: t("schema-designer.action.use-the-existing-branch"),
+        positiveText: t("schema-designer.action.create-new-branch"),
+        title: t("schema-designer.diff-editor.action-confirm"),
+        content: t("schema-designer.diff-editor.duplicated-branch-name-found"),
+        autoFocus: true,
+        closable: true,
+        maskClosable: true,
+        closeOnEsc: true,
+        onNegativeClick: () => {
+          // Use the existing branch.
+          state.schemaDesignName = foundBranch.name;
+          handleEdit();
+        },
+        onPositiveClick: async () => {
+          // Create a new personal branch.
+          const newBranch = await schemaDesignStore.createSchemaDesignDraft({
+            ...schemaDesign.value,
+            title: branchName + `-${dayjs().format("YYYYMMDD")}`,
+          });
+          // Select the newly created draft.
+          state.schemaDesignName = newBranch.name;
+          createdBranchName.value = newBranch.name;
+          // Trigger the edit mode.
+          handleEdit();
+        },
+      });
+    } else {
+      const newBranch = await schemaDesignStore.createSchemaDesignDraft({
+        ...schemaDesign.value,
+        title: branchName,
+      });
+      // Select the newly created draft.
+      state.schemaDesignName = newBranch.name;
+      createdBranchName.value = newBranch.name;
+      // Trigger the edit mode.
+      handleEdit();
+    }
   } else {
     throw new Error(
       `Unsupported schema design type: ${schemaDesign.value.type}`
@@ -333,12 +427,12 @@ const handleCancelEdit = async () => {
     )
   );
 
-  const parentBranchName = parentBranch.value?.name || "";
   // Only try to delete the branch if it's a new created personal draft.
   if (
     isSchemaDesignDraft.value &&
-    createdBranchName.value === state.schemaDesignName
+    state.schemaDesignName === createdBranchName.value
   ) {
+    const parentBranchName = schemaDesign.value.baselineSheetName;
     // If the metadata is changed, we need to confirm with user.
     if (!isEqual(metadata, schemaDesign.value.schemaMetadata)) {
       dialog.create({
@@ -347,10 +441,10 @@ const handleCancelEdit = async () => {
         positiveText: t("schema-designer.diff-editor.discard-changes"),
         title: t("schema-designer.diff-editor.action-confirm"),
         content: t("schema-designer.diff-editor.discard-changes-confirm"),
-        autoFocus: false,
-        closable: false,
-        maskClosable: false,
-        closeOnEsc: false,
+        autoFocus: true,
+        closable: true,
+        maskClosable: true,
+        closeOnEsc: true,
         onNegativeClick: () => {
           // nothing to do
         },
@@ -393,8 +487,11 @@ const handleSaveSchemaDesignDraft = async () => {
   }
 
   const updateMask = [];
-  if (schemaDesign.value.title !== state.schemaDesignTitle) {
-    updateMask.push("title");
+  // Don't update branch title for new created branch.
+  if (schemaDesign.value.name !== createdBranchName.value) {
+    if (schemaDesign.value.title !== state.schemaDesignTitle) {
+      updateMask.push("title");
+    }
   }
   const mergedMetadata = mergeSchemaEditToMetadata(
     designerState.editableSchemas,
@@ -427,16 +524,19 @@ const handleSaveSchemaDesignDraft = async () => {
       }),
       updateMask
     );
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("schema-designer.message.updated-succeed"),
-    });
+    // Only show the notification when the branch is not a new created one.
+    if (schemaDesign.value.name !== createdBranchName.value) {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("schema-designer.message.updated-succeed"),
+      });
+    }
   }
   state.isEditing = false;
 
   // If it's a personal draft, we will try to merge it to the parent branch.
-  if (isSchemaDesignDraft.value) {
+  if (schemaDesign.value.name === createdBranchName.value) {
     await handleMergeSchemaDesign(true);
   }
 };
@@ -447,7 +547,7 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
     await handleSaveSchemaDesignDraft();
   }
 
-  const parentBranchName = parentBranch.value!.name;
+  const parentBranchName = schemaDesign.value.baselineSheetName;
   try {
     await schemaDesignStore.mergeSchemaDesign({
       name: schemaDesign.value.name,
@@ -461,10 +561,10 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
         negativeText: t("common.cancel"),
         title: t("schema-designer.diff-editor.auto-merge-failed"),
         content: t("schema-designer.diff-editor.need-to-resolve-conflicts"),
-        autoFocus: false,
-        closable: false,
-        maskClosable: false,
-        closeOnEsc: false,
+        autoFocus: true,
+        closable: true,
+        maskClosable: true,
+        closeOnEsc: true,
         onNegativeClick: () => {
           // nothing to do
         },
@@ -492,6 +592,7 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
   }
   // Auto select the parent branch after merged.
   state.schemaDesignName = parentBranchName;
+  createdBranchName.value = "";
 };
 
 const handleMergeAfterConflictResolved = () => {
