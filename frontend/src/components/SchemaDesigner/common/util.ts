@@ -1,6 +1,5 @@
 import { cloneDeep, isEqual, uniq } from "lodash-es";
 import { useCurrentUserV1 } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import {
   Column,
   ForeignKey,
@@ -27,6 +26,10 @@ export const mergeSchemaEditToMetadata = (
 ): DatabaseMetadata => {
   for (const schemaEdit of schemaEdits) {
     if (schemaEdit.status === "created") {
+      // Remove schema if it exists.
+      metadata.schemas = metadata.schemas.filter(
+        (item) => item.name !== schemaEdit.name
+      );
       metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
       continue;
     } else if (schemaEdit.status === "dropped") {
@@ -39,10 +42,15 @@ export const mergeSchemaEditToMetadata = (
         (item) => item.name === schemaEdit.name
       );
       if (!schema) {
+        metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
         continue;
       }
       for (const tableEdit of schemaEdit.tableList) {
         if (tableEdit.status === "created") {
+          // Remove table if it exists.
+          schema.tables = schema.tables.filter(
+            (item) => item.name !== tableEdit.name
+          );
           schema.tables.push(transformTableEditToMetadata(tableEdit));
           continue;
         } else if (tableEdit.status === "dropped") {
@@ -55,10 +63,15 @@ export const mergeSchemaEditToMetadata = (
             (item) => item.name === tableEdit.name
           );
           if (!table) {
+            schema.tables.push(transformTableEditToMetadata(tableEdit));
             continue;
           }
           for (const columnEdit of tableEdit.columnList) {
             if (columnEdit.status === "created") {
+              // Remove column if it exists.
+              table.columns = table.columns.filter(
+                (item) => item.name !== columnEdit.name
+              );
               table.columns.push(transformColumnEditToMetadata(columnEdit));
               continue;
             } else if (columnEdit.status === "dropped") {
@@ -91,6 +104,16 @@ export const mergeSchemaEditToMetadata = (
               );
             }
           }
+        }
+      }
+      for (const table of schema.tables) {
+        const tableEdit = schemaEdit.tableList.find(
+          (item) => item.name === table.name
+        );
+        if (!tableEdit) {
+          schema.tables = schema.tables.filter(
+            (item) => item.name !== table.name
+          );
         }
       }
     }
@@ -166,6 +189,14 @@ export const mergeSchemaEditToMetadata = (
         }
       }
       table.foreignKeys.push(fk);
+    }
+  }
+  for (const schema of metadata.schemas) {
+    const schemaEdit = schemaEdits.find((item) => item.name === schema.name);
+    if (!schemaEdit) {
+      metadata.schemas = metadata.schemas.filter(
+        (item) => item.name !== schema.name
+      );
     }
   }
 
@@ -476,17 +507,13 @@ export const validateDatabaseMetadata = (
 
 export const generateForkedBranchName = (branch: SchemaDesign): string => {
   const currentUser = useCurrentUserV1();
-  const schemaDesignStore = useSchemaDesignStore();
   const parentBranchName = branch.title;
-  let branchName = `${currentUser.value.title}/${parentBranchName}`;
-  const foundIndex = schemaDesignStore.schemaDesignList.findIndex((item) => {
-    return item.title === branchName;
-  });
-  // If found, add a random string to the end of the branch name.
-  if (foundIndex > -1) {
-    branchName = `${
-      currentUser.value.title
-    }/${parentBranchName}-draft-${randomString(3).toLowerCase()}`;
-  }
+  const branchName =
+    `${currentUser.value.title}/${parentBranchName}-draft`.replaceAll(" ", "-");
   return branchName;
+};
+
+export const validateBranchName = (branchName: string): boolean => {
+  const regex = /^(a-zA-Z)[a-zA-Z0-9-_/]+$/;
+  return regex.test(branchName);
 };

@@ -8,14 +8,16 @@
       @click-row="clickSchemaDesign"
     >
       <template #item="{ item: schemaDesign }: { item: SchemaDesign }">
-        <div class="bb-grid-cell">
+        <div v-if="!hideProjectColumn" class="bb-grid-cell">
           {{ projectV1Name(getFormatedValue(schemaDesign).project) }}
         </div>
         <div class="bb-grid-cell">
-          {{ schemaDesign.title }}
+          <NEllipsis :line-clamp="1">{{ schemaDesign.title }}</NEllipsis>
         </div>
         <div class="bb-grid-cell">
-          {{ getFormatedValue(schemaDesign).parentBranch }}
+          <NEllipsis :line-clamp="1">{{
+            getFormatedValue(schemaDesign).parentBranch
+          }}</NEllipsis>
         </div>
         <div class="bb-grid-cell">
           <DatabaseInfo :database="getFormatedValue(schemaDesign).database" />
@@ -32,6 +34,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
@@ -49,8 +52,9 @@ const emit = defineEmits<{
   (event: "click", schemaDesign: SchemaDesign): void;
 }>();
 
-defineProps<{
+const props = defineProps<{
   schemaDesigns: SchemaDesign[];
+  hideProjectColumn?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -61,15 +65,17 @@ const schemaDesignStore = useSchemaDesignStore();
 
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
-    {
-      title: t("common.project"),
-      width: "minmax(auto, 0.5fr)",
-    },
     { title: t("database.branch"), width: "minmax(auto, 0.5fr)" },
     { title: t("schema-designer.parent-branch"), width: "minmax(auto, 0.5fr)" },
     { title: t("common.database"), width: "1fr" },
     { title: "", width: "1fr" },
   ];
+  if (!props.hideProjectColumn) {
+    columns.unshift({
+      title: t("common.project"),
+      width: "minmax(auto, 0.5fr)",
+    });
+  }
 
   return columns;
 });
