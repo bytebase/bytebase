@@ -602,12 +602,19 @@
       "global-masking-rule": "Regla de enmascaramiento global",
       "data-feature": "Característica de datos",
       "add-rule": "Agregar regla",
+      "grant-access": "Autorizará el acceso",
+      "never-expires": "Nunca expira",
       "masking-level": {
         "self": "Nivel de enmascaramiento",
         "selet-level": "Selecciona el nivel",
         "none": "Ninguna",
         "partial": "Parcial",
         "full": "Llena"
+      },
+      "action": {
+        "self": "Acción",
+        "query": "Consulta",
+        "export": "Exportar"
       }
     },
     "access-control": {

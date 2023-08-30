@@ -1,4 +1,4 @@
 import GlobalMaskingRule from "./GlobalMaskingRule.vue";
-import SensitiveColumnList from "./SensitiveColumnList.vue";
+import SensitiveColumnView from "./SensitiveColumnView.vue";
 
-export { SensitiveColumnList, GlobalMaskingRule };
+export { SensitiveColumnView, GlobalMaskingRule };

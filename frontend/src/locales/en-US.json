@@ -603,12 +603,19 @@
       "global-masking-rule": "Global Masking Rule",
       "data-feature": "Data Feature",
       "add-rule": "Add rule",
+      "grant-access": "Grant Access",
+      "never-expires": "Never expires",
       "masking-level": {
         "self": "Masking Level",
         "selet-level": "Select level",
         "none": "None",
         "partial": "Partial",
         "full": "Full"
+      },
+      "action": {
+        "self": "Action",
+        "query": "Query",
+        "export": "Export"
       }
     },
     "access-control": {

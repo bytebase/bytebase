@@ -15,14 +15,14 @@
     >
       <div class="mt-5">
         <BBTabPanel :active="state.selectedIndex === 0">
-          <SensitiveColumnList />
+          <SensitiveColumnView />
         </BBTabPanel>
         <BBTabPanel :active="state.selectedIndex === 1">
           <GlobalMaskingRule />
         </BBTabPanel>
       </div>
     </BBTab>
-    <SensitiveColumnList v-else />
+    <SensitiveColumnView v-else />
   </div>
 </template>
 
@@ -32,7 +32,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { BBTabItem } from "@/bbkit/types";
 import {
-  SensitiveColumnList,
+  SensitiveColumnView,
   GlobalMaskingRule,
 } from "@/components/SensitiveData";
 import { featureToRef } from "@/store";
