@@ -286,3 +286,17 @@ const maybeMigrateLegacyTab = (
   }
   return tab;
 };
+
+export const isTabClosable = (tab: TabInfo) => {
+  const { tabList } = useTabStore();
+
+  if (tabList.length > 1) {
+    // Not the only one tab
+    return true;
+  }
+  if (tabList.length === 1) {
+    // It's the only one tab, and it's closable if it's a sheet tab
+    return !!tab.sheetName;
+  }
+  return false;
+};

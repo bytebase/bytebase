@@ -1903,7 +1903,17 @@
       "connection": "连接"
     },
     "tab": {
-      "unsaved": "未保存"
+      "unsaved": "未保存",
+      "context-menu": {
+        "actions": {
+          "close": "关闭",
+          "close-others": "关闭其他",
+          "close-to-the-right": "关闭右侧所有的",
+          "close-saved": "关闭已保存的",
+          "close-all": "关闭所有",
+          "rename": "重命名"
+        }
+      }
     }
   },
   "schema-editor": {
