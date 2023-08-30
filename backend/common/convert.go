@@ -51,7 +51,7 @@ var MaskingRulePolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("database_name", cel.StringType),
 	cel.Variable("schema_name", cel.StringType),
 	cel.Variable("table_name", cel.StringType),
-	cel.Variable("column_classification", cel.StringType),
+	cel.Variable("column_classification_level", cel.StringType),
 }
 
 // MaskingExceptionPolicyCELAttributes are the variables when evaluating masking exception.
