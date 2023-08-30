@@ -26,13 +26,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Executor is the task executor.
@@ -107,7 +105,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 		if len(plans) == 1 {
 			planTypes := []store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport}
 			status := []store.PlanCheckRunStatus{store.PlanCheckRunStatusDone}
-			checks, err := stores.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+			runs, err := stores.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
 				PlanUID: &plans[0].UID,
 				Type:    &planTypes,
 				Status:  &status,
@@ -115,13 +113,31 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to list plan check runs")
 			}
-			sort.Slice(checks, func(i, j int) bool {
-				return checks[i].UID > checks[j].UID
+			sort.Slice(runs, func(i, j int) bool {
+				return runs[i].UID > runs[j].UID
 			})
-			if len(checks) > 0 && checks[0].Result != nil {
-				for _, result := range checks[0].Result.Results {
-					if report, ok := result.Report.(*storepb.PlanCheckRunResult_Result_SqlSummaryReport_); ok && report.SqlSummaryReport != nil {
-						mi.Payload.ChangedResources = report.SqlSummaryReport.ChangedResources
+			foundChangedResources := false
+			for _, run := range runs {
+				if foundChangedResources {
+					break
+				}
+				if run.Config.InstanceUid != int32(task.InstanceID) {
+					continue
+				}
+				if run.Config.DatabaseName != database.DatabaseName {
+					continue
+				}
+				if run.Result == nil {
+					continue
+				}
+				for _, result := range run.Result.Results {
+					if result.Status != storepb.PlanCheckRunResult_Result_SUCCESS {
+						continue
+					}
+					if report := result.GetSqlSummaryReport(); report != nil {
+						mi.Payload.ChangedResources = report.ChangedResources
+						foundChangedResources = true
+						break
 					}
 				}
 			}
