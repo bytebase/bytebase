@@ -12,7 +12,8 @@
           type="checkbox"
           class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
           :checked="checkedColumnIndex.has(row)"
-          @input.stop="
+          @click.stop=""
+          @input="
             toggleColumnChecked(
               row,
               ($event.target as HTMLInputElement).checked,
@@ -59,11 +60,11 @@
         <button
           :disabled="!allowAdmin"
           class="w-5 h-5 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-          @click.stop="$emit('click', item, 'EDIT')"
+          @click.stop="$emit('click', item, row, 'EDIT')"
         >
           <heroicons-outline:pencil class="w-4 h-4" />
         </button>
-        <NPopconfirm @positive-click="$emit('click', item, 'DELETE')">
+        <NPopconfirm @positive-click="$emit('click', item, row, 'DELETE')">
           <template #trigger>
             <button
               :disabled="!allowAdmin"
@@ -104,28 +105,33 @@ const props = defineProps<{
   rowClickable: boolean;
   rowSelectable: boolean;
   columnList: SensitiveColumn[];
+  checkedColumnIndexList: number[];
 }>();
 
 const emit = defineEmits<{
   (
     event: "click",
     item: SensitiveColumn,
+    row: number,
     action: "VIEW" | "DELETE" | "EDIT" | "SELECT"
   ): void;
-  (event: "checked:update", list: SensitiveColumn[]): void;
+  (event: "checked:update", list: number[]): void;
 }>();
 
 const { t } = useI18n();
-const checkedColumnIndex = ref<Set<number>>(new Set());
+const checkedColumnIndex = ref<Set<number>>(
+  new Set(props.checkedColumnIndexList)
+);
 
 watch(
-  () => checkedColumnIndex.value,
-  (checkedIndexList) => {
-    emit(
-      "checked:update",
-      [...checkedIndexList].map((i) => props.columnList[i])
-    );
-  }
+  () => props.columnList,
+  () => (checkedColumnIndex.value = new Set()),
+  { deep: true }
+);
+watch(
+  () => props.checkedColumnIndexList,
+  (val) => (checkedColumnIndex.value = new Set(val)),
+  { deep: true }
 );
 
 const currentUserV1 = useCurrentUserV1();
@@ -178,7 +184,6 @@ const COLUMN_LIST = computed((): BBGridColumn[] => {
     list.unshift({
       title: "",
       width: "minmax(auto, 3rem)",
-      // class: "w-[1%]",
     });
   }
   return list;
@@ -190,7 +195,7 @@ const clickRow = (
   row: number,
   e: MouseEvent
 ) => {
-  emit("click", item, "VIEW");
+  emit("click", item, row, "VIEW");
 };
 
 const getMaskingLevelText = (maskingLevel: MaskingLevel) => {
@@ -210,5 +215,7 @@ const toggleColumnChecked = (index: number, on: boolean, e: Event) => {
   } else {
     checkedColumnIndex.value.delete(index);
   }
+
+  emit("checked:update", [...checkedColumnIndex.value]);
 };
 </script>

@@ -1,10 +1,19 @@
 <template>
   <div class="w-full mt-4 space-y-4">
-    <EnvironmentTabFilter
-      :environment="state.environment"
-      :include-all="true"
-      @update:environment="state.environment = $event"
-    />
+    <div class="flex justify-between">
+      <EnvironmentTabFilter
+        :environment="state.environment"
+        :include-all="true"
+        @update:environment="state.environment = $event"
+      />
+      <NButton
+        type="primary"
+        :disabled="state.pendingGrantAccessColumnIndex.length === 0"
+        @click="state.showGrantAccessDrawer = true"
+      >
+        {{ $t("settings.sensitive-data.grant-access") }}
+      </NButton>
+    </div>
 
     <div class="textinfolabel">
       {{ $t("settings.sensitive-data.description") }}
@@ -16,7 +25,9 @@
       :row-selectable="true"
       :show-operation="true"
       :column-list="filteredColumnList"
+      :checked-column-index-list="state.pendingGrantAccessColumnIndex"
       @click="onRowClick"
+      @checked:update="state.pendingGrantAccessColumnIndex = $event"
     />
 
     <template v-else>
@@ -35,21 +46,27 @@
     @cancel="state.showFeatureModal = false"
   />
 
-  <Drawer
+  <GrantAccessDrawer
     :show="
-      state.showGrantAccessDrawer && state.pendingGrantAccessColumn.length > 0
+      state.showGrantAccessDrawer &&
+      state.pendingGrantAccessColumnIndex.length > 0
     "
-    @close="state.showGrantAccessDrawer = false"
-  >
-    <GrantAccessDrawer :column-list="state.pendingGrantAccessColumn" />
-  </Drawer>
+    :column-list="
+      state.pendingGrantAccessColumnIndex.map((i) => filteredColumnList[i])
+    "
+    @dismiss="
+      () => {
+        state.showGrantAccessDrawer = false;
+        state.pendingGrantAccessColumnIndex = [];
+      }
+    "
+  />
 </template>
 
 <script lang="ts" setup>
 import { uniq } from "lodash-es";
 import { computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Drawer } from "@/components/v2";
 import { featureToRef, useDatabaseV1Store } from "@/store";
 import {
   usePolicyListByResourceTypeAndPolicyType,
@@ -68,7 +85,7 @@ interface LocalState {
   showFeatureModal: boolean;
   isLoading: boolean;
   sensitiveColumnList: SensitiveColumn[];
-  pendingGrantAccessColumn: SensitiveColumn[];
+  pendingGrantAccessColumnIndex: number[];
   showGrantAccessDrawer: boolean;
 }
 
@@ -78,7 +95,7 @@ const state = reactive<LocalState>({
   isLoading: false,
   sensitiveColumnList: [],
   environment: UNKNOWN_ENVIRONMENT_NAME,
-  pendingGrantAccessColumn: [],
+  pendingGrantAccessColumnIndex: [],
   showGrantAccessDrawer: false,
 });
 const databaseStore = useDatabaseV1Store();
@@ -159,6 +176,7 @@ const removeSensitiveColumn = (sensitiveColumn: SensitiveColumn) => {
 
 const onRowClick = (
   item: SensitiveColumn,
+  row: number,
   action: "VIEW" | "DELETE" | "EDIT"
 ) => {
   switch (action) {
@@ -175,7 +193,7 @@ const onRowClick = (
       removeSensitiveColumn(item);
       break;
     case "EDIT":
-      state.pendingGrantAccessColumn = [item];
+      state.pendingGrantAccessColumnIndex = [row];
       state.showGrantAccessDrawer = true;
       break;
   }
