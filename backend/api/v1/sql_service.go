@@ -1475,9 +1475,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				}
 				schemaSchema.ViewList = append(schemaSchema.ViewList, viewSchema)
 			}
-			if instance.Engine == db.Snowflake || instance.Engine == db.MSSQL || instance.Engine == db.MySQL {
-				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
-			}
+			databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
 		}
 		result.DatabaseList = append(result.DatabaseList, databaseSchema)
 	}
