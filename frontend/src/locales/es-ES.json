@@ -1904,7 +1904,17 @@
       "connection": "Conexión"
     },
     "tab": {
-      "unsaved": "No guardado"
+      "unsaved": "No guardado",
+      "context-menu": {
+        "actions": {
+          "close": "Cerca",
+          "close-others": "cerrar otros",
+          "close-to-the-right": "Cerca de la derecha",
+          "close-saved": "Cerrar guardado",
+          "close-all": "Cierra todo",
+          "rename": "Rebautizar"
+        }
+      }
     }
   },
   "schema-editor": {

@@ -1908,7 +1908,17 @@
       "connection": "Connection"
     },
     "tab": {
-      "unsaved": "Unsaved"
+      "unsaved": "Unsaved",
+      "context-menu": {
+        "actions": {
+          "close": "Close",
+          "close-others": "Close others",
+          "close-to-the-right": "Close to the right",
+          "close-saved": "Close saved",
+          "close-all": "Close all",
+          "rename": "Rename"
+        }
+      }
     }
   },
   "schema-editor": {

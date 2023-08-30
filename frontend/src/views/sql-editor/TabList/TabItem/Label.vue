@@ -27,8 +27,10 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useSheetV1Store, useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
+import { useTabListContext } from "../context";
 
 type LocalState = {
   editing: boolean;
@@ -54,8 +56,16 @@ const state = reactive<LocalState>({
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
 const inputRef = ref<HTMLInputElement>();
+const { events } = useTabListContext();
 
 const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
+
+useEmitteryEventListener(events, "rename-tab", ({ tab }) => {
+  if (tab.id === props.tab.id) {
+    tabStore.setCurrentTabId(tab.id);
+    beginEdit();
+  }
+});
 
 const beginEdit = () => {
   state.editing = true;

@@ -9,7 +9,7 @@
       },
       [sheetTypeForTab(tab).toLowerCase()],
     ]"
-    @mousedown="$emit('select', tab, index)"
+    @mousedown.left="$emit('select', tab, index)"
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
   >
@@ -66,7 +66,7 @@ const isCurrentTab = computed(() => props.tab.id === currentTabId.value);
 
 <style scoped lang="postcss">
 .tab-item {
-  @apply cursor-pointer border-r bg-white gap-x-2;
+  @apply cursor-pointer border-r bg-white gap-x-2 relative;
 }
 .hovering {
   @apply bg-gray-50;
