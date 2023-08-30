@@ -83,9 +83,11 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
   };
 
   const mergeSchemaDesign = async (request: MergeSchemaDesignRequest) => {
-    await schemaDesignServiceClient.mergeSchemaDesign(request, {
-      silent: true,
-    });
+    const updatedSchemaDesign =
+      await schemaDesignServiceClient.mergeSchemaDesign(request, {
+        silent: true,
+      });
+    schemaDesignMapByName.set(updatedSchemaDesign.name, updatedSchemaDesign);
   };
 
   const fetchSchemaDesignByName = async (name: string, silent = false) => {

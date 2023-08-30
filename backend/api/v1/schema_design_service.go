@@ -404,14 +404,6 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, err
 	}
-
-	if request.DeleteSourceBranch {
-		// Delete the source branch if requested.
-		err = s.store.DeleteSheet(ctx, sheetUID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete personal draft schema design: %v", err))
-		}
-	}
 	return targetSchemaDesign, nil
 }
 
