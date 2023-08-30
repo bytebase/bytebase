@@ -278,7 +278,8 @@ func TestEvalMaskingLevelOfDatabaseColumn(t *testing.T) {
 								Name: "id",
 							},
 							{
-								Name: "name",
+								Name:           "name",
+								Classification: "1-1-1",
 							},
 							{
 								Name: "remote",
@@ -311,6 +312,36 @@ func TestEvalMaskingLevelOfDatabaseColumn(t *testing.T) {
 								Name: "city",
 							},
 						},
+					},
+				},
+			},
+		},
+	}
+
+	defaultProjectMessage := &store.ProjectMessage{
+		DataClassificationConfigID: "2b599739-41da-4c35-a9ff-4a73c6cfe32c",
+		ResourceID:                 "bytebase",
+	}
+	defaultClassificationSetting := &storepb.DataClassificationSetting{
+		Configs: []*storepb.DataClassificationSetting_DataClassificationConfig{
+			{
+				Id: "2b599739-41da-4c35-a9ff-4a73c6cfe32c",
+				Levels: []*storepb.DataClassificationSetting_DataClassificationConfig_Level{
+					{
+						Id: "S1",
+					},
+					{
+						Id: "S2",
+					},
+				},
+				Classification: map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification{
+					"1-1-1": {
+						Id:    "1-1-1",
+						Title: "personal",
+						LevelId: func() *string {
+							a := "S2"
+							return &a
+						}(),
 					},
 				},
 			},
@@ -736,12 +767,6 @@ func TestEvalMaskingLevelOfDatabaseColumn(t *testing.T) {
 					},
 					{
 						Schema:       "hiring",
-						Table:        "employees",
-						Column:       "name",
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-					{
-						Schema:       "hiring",
 						Table:        "salary",
 						Column:       "employee_id",
 						MaskingLevel: storepb.MaskingLevel_NONE,
@@ -762,6 +787,12 @@ func TestEvalMaskingLevelOfDatabaseColumn(t *testing.T) {
 			},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+					{
+						Condition: &expr.Expr{
+							Expression: `(column_classification_level == "S2")`,
+						},
+						MaskingLevel: storepb.MaskingLevel_PARTIAL,
+					},
 					{
 						Condition: &expr.Expr{
 							Expression: `(table_name == "employees")`,
@@ -796,10 +827,11 @@ func TestEvalMaskingLevelOfDatabaseColumn(t *testing.T) {
 										MaskingLevel: storepb.MaskingLevel_NONE,
 										Sensitive:    false,
 									},
+									// Inherited from masking rule.
 									{
 										Name:         "name",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
+										MaskingLevel: storepb.MaskingLevel_PARTIAL,
+										Sensitive:    true,
 									},
 									// Inherited from masking rule.
 									{
@@ -857,7 +889,7 @@ func TestEvalMaskingLevelOfDatabaseColumn(t *testing.T) {
 	a := require.New(t)
 
 	for _, tc := range testCases {
-		result, err := evalMaskingLevelOfDatabaseColumn(tc.database, tc.databaseSchemaMetadata, tc.maskingPolicy, tc.maskingRulePolicy, tc.maskingExceptionPolicy, tc.currentPrincipal, tc.requestTime)
+		result, err := evalMaskingLevelOfDatabaseColumn(defaultProjectMessage, tc.database, tc.databaseSchemaMetadata, tc.maskingPolicy, tc.maskingRulePolicy, tc.maskingExceptionPolicy, tc.currentPrincipal, tc.requestTime, defaultClassificationSetting)
 		a.NoError(err, tc.name)
 		a.Equal(tc.want, result, tc.name)
 	}
