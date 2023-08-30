@@ -38,6 +38,7 @@ export const mergeSchemaEditToMetadata = (
         (item) => item.name === schemaEdit.name
       );
       if (!schema) {
+        metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
         continue;
       }
       for (const tableEdit of schemaEdit.tableList) {
@@ -54,6 +55,7 @@ export const mergeSchemaEditToMetadata = (
             (item) => item.name === tableEdit.name
           );
           if (!table) {
+            schema.tables.push(transformTableEditToMetadata(tableEdit));
             continue;
           }
           for (const columnEdit of tableEdit.columnList) {
