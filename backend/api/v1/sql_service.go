@@ -1523,18 +1523,6 @@ func evalMaskingLevelOfDatabaseColumn(project *store.ProjectMessage, databaseMes
 		}
 	}
 
-	// Build the CEL env for maskingExceptionPolicy.
-	maskingExceptionPolicyCELEnv, err := cel.NewEnv(cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)))
-	if err != nil {
-		return db.DatabaseSchema{}, errors.Wrapf(err, "failed to create CEL environment for masking exception policy")
-	}
-
-	// Build the CEL env for maskingRulePolicy.
-	maskingRulePolicyEnv, err := cel.NewEnv(common.MaskingRulePolicyCELAttributes...)
-	if err != nil {
-		return db.DatabaseSchema{}, errors.Wrapf(err, "failed to create CEL environment for masking rule policy")
-	}
-
 	// Pre-find the data classification setting config.
 	var dataClassificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
 	if project.DataClassificationConfigID != "" {
@@ -1586,27 +1574,11 @@ func evalMaskingLevelOfDatabaseColumn(project *store.ProjectMessage, databaseMes
 								"table_name":                  table.Name,
 								"column_classification_level": columnClassificationLevel,
 							}
-							ast, issues := maskingRulePolicyEnv.Compile(maskingRule.Condition.Expression)
-							if issues != nil && issues.Err() != nil {
-								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking rule")
-							}
-							prg, err := maskingRulePolicyEnv.Program(ast)
+							pass, err := evaluateMaskingRulePolicyCondition(maskingRule.Condition.Expression, maskingRuleAttributes)
 							if err != nil {
-								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to create CEL program for masking rule")
+								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to evaluate masking rule policy condition")
 							}
-							out, _, err := prg.Eval(maskingRuleAttributes)
-							if err != nil {
-								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to eval CEL program for masking rule")
-							}
-							val, err := out.ConvertToNative(reflect.TypeOf(false))
-							if err != nil {
-								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrap(err, "expect bool result for masking rule")
-							}
-							boolVar, ok := val.(bool)
-							if !ok {
-								return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrap(err, "expect bool result for masking rule")
-							}
-							if boolVar {
+							if pass {
 								finalLevel = maskingRule.MaskingLevel
 								break
 							}
@@ -1635,27 +1607,11 @@ func evalMaskingLevelOfDatabaseColumn(project *store.ProjectMessage, databaseMes
 								"request.time":  requestTime,
 							},
 						}
-						ast, issues := maskingExceptionPolicyCELEnv.Compile(filteredMaskingException.Condition.Expression)
-						if issues != nil && issues.Err() != nil {
-							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking exception")
-						}
-						prg, err := maskingExceptionPolicyCELEnv.Program(ast)
+						hit, err := evaluateMaskingExceptionPolicyCondition(filteredMaskingException.Condition.Expression, maskingExceptionAttributes)
 						if err != nil {
-							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to create CEL program for masking exception")
+							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to evaluate masking exception policy condition")
 						}
-						out, _, err := prg.Eval(maskingExceptionAttributes)
-						if err != nil {
-							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to eval CEL program for masking exception")
-						}
-						val, err := out.ConvertToNative(reflect.TypeOf(false))
-						if err != nil {
-							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrap(err, "expect bool result for masking exception")
-						}
-						boolVar, ok := val.(bool)
-						if !ok {
-							return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrap(err, "expect bool result for masking exception")
-						}
-						if !boolVar {
+						if !hit {
 							continue
 						}
 
@@ -2407,7 +2363,7 @@ func (s *SQLService) checkWorkspaceIAMPolicy(
 			continue
 		}
 
-		ok, err := evaluateCondition(binding.Condition.Expression, attributes)
+		ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
 		if err != nil {
 			return false, errors.Wrap(err, "failed to evaluate condition")
 		}
@@ -2541,7 +2497,7 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 			if member.ID != principalID {
 				continue
 			}
-			ok, err := evaluateCondition(binding.Condition.Expression, attributes)
+			ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
 			if err != nil {
 				log.Error("failed to evaluate condition", zap.Error(err), zap.String("condition", binding.Condition.Expression))
 				break
@@ -2558,7 +2514,69 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 	return pass, nil
 }
 
-func evaluateCondition(expression string, attributes map[string]any) (bool, error) {
+func evaluateMaskingExceptionPolicyCondition(expression string, attributes map[string]any) (bool, error) {
+	if expression == "" {
+		return true, nil
+	}
+	maskingExceptionPolicyEnv, err := cel.NewEnv(common.MaskingExceptionPolicyCELAttributes...)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to create CEL environment for masking exception policy")
+	}
+	ast, issues := maskingExceptionPolicyEnv.Compile(expression)
+	if issues != nil && issues.Err() != nil {
+		return false, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking exception policy")
+	}
+	prg, err := maskingExceptionPolicyEnv.Program(ast)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to create CEL program for masking exception policy")
+	}
+	out, _, err := prg.Eval(attributes)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to eval CEL program for masking exception policy")
+	}
+	val, err := out.ConvertToNative(reflect.TypeOf(false))
+	if err != nil {
+		return false, errors.Wrap(err, "expect bool result for masking exception policy")
+	}
+	boolVar, ok := val.(bool)
+	if !ok {
+		return false, errors.Wrap(err, "expect bool result for masking exception policy")
+	}
+	return boolVar, nil
+}
+
+func evaluateMaskingRulePolicyCondition(expression string, attributes map[string]any) (bool, error) {
+	if expression == "" {
+		return true, nil
+	}
+	maskingRulePolicyEnv, err := cel.NewEnv(common.MaskingRulePolicyCELAttributes...)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to create CEL environment for masking rule policy")
+	}
+	ast, issues := maskingRulePolicyEnv.Compile(expression)
+	if issues != nil && issues.Err() != nil {
+		return false, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking rule")
+	}
+	prg, err := maskingRulePolicyEnv.Program(ast)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to create CEL program for masking rule")
+	}
+	out, _, err := prg.Eval(attributes)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to eval CEL program for masking rule")
+	}
+	val, err := out.ConvertToNative(reflect.TypeOf(false))
+	if err != nil {
+		return false, errors.Wrap(err, "expect bool result for masking rule")
+	}
+	boolVar, ok := val.(bool)
+	if !ok {
+		return false, errors.Wrap(err, "expect bool result for masking rule")
+	}
+	return boolVar, nil
+}
+
+func evaluateQueryExportPolicyCondition(expression string, attributes map[string]any) (bool, error) {
 	if expression == "" {
 		return true, nil
 	}
