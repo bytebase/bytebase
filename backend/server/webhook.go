@@ -1644,7 +1644,7 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 		api.ActivityProjectRepositoryPushPayload{
 			VCSPushEvent: pushEvent,
 			IssueID:      issueUID,
-			IssueName:    issue.Name,
+			IssueName:    issue.Title,
 		},
 	)
 	if err != nil {
