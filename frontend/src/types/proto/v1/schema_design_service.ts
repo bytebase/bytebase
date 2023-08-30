@@ -187,6 +187,8 @@ export interface MergeSchemaDesignRequest {
    * Format: projects/{project}/schemaDesigns/{schemaDesign}
    */
   targetName: string;
+  /** Whether to delete the source schema design after merge. */
+  deleteSourceBranch: boolean;
 }
 
 export interface ParseSchemaStringRequest {
@@ -870,7 +872,7 @@ export const UpdateSchemaDesignRequest = {
 };
 
 function createBaseMergeSchemaDesignRequest(): MergeSchemaDesignRequest {
-  return { name: "", targetName: "" };
+  return { name: "", targetName: "", deleteSourceBranch: false };
 }
 
 export const MergeSchemaDesignRequest = {
@@ -880,6 +882,9 @@ export const MergeSchemaDesignRequest = {
     }
     if (message.targetName !== "") {
       writer.uint32(18).string(message.targetName);
+    }
+    if (message.deleteSourceBranch === true) {
+      writer.uint32(24).bool(message.deleteSourceBranch);
     }
     return writer;
   },
@@ -905,6 +910,13 @@ export const MergeSchemaDesignRequest = {
 
           message.targetName = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.deleteSourceBranch = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -918,6 +930,7 @@ export const MergeSchemaDesignRequest = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       targetName: isSet(object.targetName) ? String(object.targetName) : "",
+      deleteSourceBranch: isSet(object.deleteSourceBranch) ? Boolean(object.deleteSourceBranch) : false,
     };
   },
 
@@ -925,6 +938,7 @@ export const MergeSchemaDesignRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.targetName !== undefined && (obj.targetName = message.targetName);
+    message.deleteSourceBranch !== undefined && (obj.deleteSourceBranch = message.deleteSourceBranch);
     return obj;
   },
 
@@ -936,6 +950,7 @@ export const MergeSchemaDesignRequest = {
     const message = createBaseMergeSchemaDesignRequest();
     message.name = object.name ?? "";
     message.targetName = object.targetName ?? "";
+    message.deleteSourceBranch = object.deleteSourceBranch ?? false;
     return message;
   },
 };
