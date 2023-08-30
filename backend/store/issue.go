@@ -1098,7 +1098,7 @@ func getTsQuery(text string) string {
 		parts = seg.CutTrim(text)
 	}
 	if len(parts) == 0 {
-		return text
+		return fmt.Sprintf("%s:*", text)
 	}
 	var tsQuery strings.Builder
 	for i, part := range parts {
