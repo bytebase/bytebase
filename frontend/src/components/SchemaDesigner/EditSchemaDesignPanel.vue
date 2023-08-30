@@ -29,7 +29,7 @@
               >
                 <NButton
                   v-if="parentBranch"
-                  @click="() => handleMergeSchemaDesign()"
+                  @click="() => (state.showDiffEditor = true)"
                   >{{ $t("schema-designer.merge-branch") }}</NButton
                 >
                 <NButton type="primary" @click="handleApplySchemaDesignClick">{{
@@ -179,7 +179,7 @@
 
   <MergeBranchPanel
     v-if="state.showDiffEditor"
-    :source-branch-name="parentBranch!.name"
+    :source-branch-name="schemaDesign.baselineSheetName"
     :target-branch-name="state.schemaDesignName"
     @dismiss="state.showDiffEditor = false"
     @try-merge="handleMergeAfterConflictResolved"
@@ -487,8 +487,11 @@ const handleSaveSchemaDesignDraft = async () => {
   }
 
   const updateMask = [];
-  if (schemaDesign.value.title !== state.schemaDesignTitle) {
-    updateMask.push("title");
+  // Don't update branch title for new created branch.
+  if (schemaDesign.value.name !== createdBranchName.value) {
+    if (schemaDesign.value.title !== state.schemaDesignTitle) {
+      updateMask.push("title");
+    }
   }
   const mergedMetadata = mergeSchemaEditToMetadata(
     designerState.editableSchemas,
@@ -521,11 +524,14 @@ const handleSaveSchemaDesignDraft = async () => {
       }),
       updateMask
     );
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("schema-designer.message.updated-succeed"),
-    });
+    // Only show the notification when the branch is not a new created one.
+    if (schemaDesign.value.name !== createdBranchName.value) {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("schema-designer.message.updated-succeed"),
+      });
+    }
   }
   state.isEditing = false;
 
@@ -541,7 +547,7 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
     await handleSaveSchemaDesignDraft();
   }
 
-  const parentBranchName = parentBranch.value!.name;
+  const parentBranchName = schemaDesign.value.baselineSheetName;
   try {
     await schemaDesignStore.mergeSchemaDesign({
       name: schemaDesign.value.name,

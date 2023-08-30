@@ -92,6 +92,16 @@ export const mergeSchemaEditToMetadata = (
           }
         }
       }
+      for (const table of schema.tables) {
+        const tableEdit = schemaEdit.tableList.find(
+          (item) => item.name === table.name
+        );
+        if (!tableEdit) {
+          schema.tables = schema.tables.filter(
+            (item) => item.name !== table.name
+          );
+        }
+      }
     }
 
     // Build foreign keys.
@@ -165,6 +175,14 @@ export const mergeSchemaEditToMetadata = (
         }
       }
       table.foreignKeys.push(fk);
+    }
+  }
+  for (const schema of metadata.schemas) {
+    const schemaEdit = schemaEdits.find((item) => item.name === schema.name);
+    if (!schemaEdit) {
+      metadata.schemas = metadata.schemas.filter(
+        (item) => item.name !== schema.name
+      );
     }
   }
 
