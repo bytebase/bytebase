@@ -230,7 +230,7 @@ const handleConfirm = async () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: "Branch name should valid characters: /^(a-zA-Z)[a-zA-Z0-9-_/]+$/",
+      title: "Branch name valid characters: /^[a-zA-Z][a-zA-Z0-9-_/]+$/",
     });
     return;
   }
