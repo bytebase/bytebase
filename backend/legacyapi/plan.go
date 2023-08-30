@@ -341,7 +341,6 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	// Change Workflow
 	FeatureIMApproval:       true,
 	FeatureSchemaDrift:      true,
-	FeatureSQLReview:        true,
 	FeatureEncryptedSecrets: true,
 	FeatureTaskScheduleTime: true,
 	FeatureOnlineMigration:  true,

@@ -94,7 +94,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, plan
 		return nil, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
 	}
 
-	if err := e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance); err != nil {
+	if err := e.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
@@ -315,7 +315,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			return nil, errors.Errorf("environment %q not found", db.EffectiveEnvironmentID)
 		}
 
-		if err := e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance); err != nil {
+		if err := e.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 			// nolint:nilerr
 			return []*storepb.PlanCheckRunResult_Result{
 				{
