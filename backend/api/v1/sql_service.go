@@ -1493,7 +1493,10 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 // evalMaskingLevelOfDatabaseColumn evaluates the masking level of each column in given database mesassge.
 // TODO(zp): split this function into smaller functions.
 // nolint
-func evalMaskingLevelOfDatabaseColumn(databaseMessage *store.DatabaseMessage, databaseSchemaMetadata *storepb.DatabaseSchemaMetadata, maskingPolicy *storepb.MaskingPolicy, maskingRulePolicy *storepb.MaskingRulePolicy, maskingExceptionPolicy *storepb.MaskingExceptionPolicy, currentPrincipal *store.UserMessage, requestTime time.Time) (db.DatabaseSchema, error) {
+func evalMaskingLevelOfDatabaseColumn(project *store.ProjectMessage, databaseMessage *store.DatabaseMessage, databaseSchemaMetadata *storepb.DatabaseSchemaMetadata, maskingPolicy *storepb.MaskingPolicy, maskingRulePolicy *storepb.MaskingRulePolicy, maskingExceptionPolicy *storepb.MaskingExceptionPolicy, currentPrincipal *store.UserMessage, requestTime time.Time, dataClassificationSetting *storepb.DataClassificationSetting) (db.DatabaseSchema, error) {
+	if databaseMessage.ProjectID != project.ResourceID {
+		return db.DatabaseSchema{}, errors.Errorf("project %q is not the parent of database %q", project.ResourceID, databaseMessage.DatabaseName)
+	}
 	// Convert the maskingPolicy to a map to reduce the time complexity of searching.
 	type maskingPolicyKey struct {
 		schema string
@@ -1532,6 +1535,17 @@ func evalMaskingLevelOfDatabaseColumn(databaseMessage *store.DatabaseMessage, da
 		return db.DatabaseSchema{}, errors.Wrapf(err, "failed to create CEL environment for masking rule policy")
 	}
 
+	// Pre-find the data classification setting config.
+	var dataClassificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
+	if project.DataClassificationConfigID != "" {
+		for _, dataClassificationSetting := range dataClassificationSetting.Configs {
+			if dataClassificationSetting.Id == project.DataClassificationConfigID {
+				dataClassificationConfig = dataClassificationSetting
+				break
+			}
+		}
+	}
+
 	ret := db.DatabaseSchema{
 		Name:       databaseMessage.DatabaseName,
 		SchemaList: []db.SchemaSchema{},
@@ -1561,16 +1575,16 @@ func evalMaskingLevelOfDatabaseColumn(databaseMessage *store.DatabaseMessage, da
 					if (!ok) || (maskingData.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED) {
 						// If the column has DEFAULT masking level in maskingPolicy or not set yet,
 						// we will eval the maskingRulePolicy to get the maskingLevel.
+						columnClassificationLevel := getClassificationLevelOfColumn(column.Classification, dataClassificationConfig)
 						for _, maskingRule := range maskingRulePolicy.Rules {
 							maskingRuleAttributes := map[string]any{
-								"environment_id": databaseMessage.EnvironmentID,
-								"project_id":     databaseMessage.ProjectID,
-								"instance_id":    databaseMessage.InstanceID,
-								"database_name":  databaseMessage.DatabaseName,
-								"schema_name":    schema.Name,
-								"table_name":     table.Name,
-								// TODO(zp): Fill the column classification.
-								"column_classification": "",
+								"environment_id":              databaseMessage.EnvironmentID,
+								"project_id":                  databaseMessage.ProjectID,
+								"instance_id":                 databaseMessage.InstanceID,
+								"database_name":               databaseMessage.DatabaseName,
+								"schema_name":                 schema.Name,
+								"table_name":                  table.Name,
+								"column_classification_level": columnClassificationLevel,
 							}
 							ast, issues := maskingRulePolicyEnv.Compile(maskingRule.Condition.Expression)
 							if issues != nil && issues.Err() != nil {
@@ -1672,6 +1686,22 @@ func evalMaskingLevelOfDatabaseColumn(databaseMessage *store.DatabaseMessage, da
 	return ret, nil
 }
 
+func getClassificationLevelOfColumn(columnClassificationID string, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) string {
+	if columnClassificationID == "" || classificationConfig == nil {
+		return ""
+	}
+
+	classification, ok := classificationConfig.Classification[columnClassificationID]
+	if !ok {
+		return ""
+	}
+	if classification.LevelId == nil {
+		return ""
+	}
+
+	return *classification.LevelId
+}
+
 func (s *SQLService) getSensitiveForClassification(ctx context.Context, classificationID string, projectID string, classificationSetting *storepb.DataClassificationSetting) (bool, error) {
 	if classificationID == "" || projectID == "" {
 		return false, nil
@@ -1687,11 +1717,11 @@ func (s *SQLService) getSensitiveForClassification(ctx context.Context, classifi
 		return false, nil
 	}
 
-	for _, setting := range classificationSetting.Configs {
-		if setting.Id != project.DataClassificationConfigID {
+	for _, config := range classificationSetting.Configs {
+		if config.Id != project.DataClassificationConfigID {
 			continue
 		}
-		classification, ok := setting.Classification[classificationID]
+		classification, ok := config.Classification[classificationID]
 		if !ok {
 			return false, nil
 		}
@@ -1699,7 +1729,7 @@ func (s *SQLService) getSensitiveForClassification(ctx context.Context, classifi
 			return false, nil
 		}
 
-		for _, level := range setting.Levels {
+		for _, level := range config.Levels {
 			if level.Id == *classification.LevelId {
 				return level.Sensitive, nil
 			}
