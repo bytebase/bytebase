@@ -186,6 +186,9 @@ message MergeSchemaDesignRequest {
   // The target schema design to merge into.
   // Format: projects/{project}/schemaDesigns/{schemaDesign}
   string target_name = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Whether to delete the source schema design after merge.
+  bool delete_source_branch = 3;
 }
 
 message ParseSchemaStringRequest {
