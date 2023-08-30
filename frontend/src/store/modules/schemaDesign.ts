@@ -86,8 +86,6 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     await schemaDesignServiceClient.mergeSchemaDesign(request, {
       silent: true,
     });
-    // Re-fetch schema design list to refresh the cache.
-    await fetchSchemaDesignList();
   };
 
   const fetchSchemaDesignByName = async (name: string, silent = false) => {
