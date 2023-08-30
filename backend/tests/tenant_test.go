@@ -1449,7 +1449,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabaseV2(ctx, project, testInstance, databaseName, "", nil /* labelMap */)
+				err := ctl.createDatabaseV2(ctx, project, testInstance, nil /* environment */, databaseName, "", nil /* labelMap */)
 				a.NoError(err)
 			}
 

@@ -79,12 +79,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, errors.Errorf("Creating database is not supported")
 	}
 
-	// TODO(d): support create database with environment override.
-	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
-	if err != nil {
-		return true, nil, err
-	}
-
 	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &payload.ProjectID})
 	if err != nil {
 		return true, nil, errors.Errorf("failed to find project with ID %d", payload.ProjectID)
@@ -116,6 +110,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		ProjectID:            project.ResourceID,
 		InstanceID:           instance.ResourceID,
 		DatabaseName:         payload.DatabaseName,
+		EnvironmentID:        payload.EnvironmentID,
 		SyncState:            api.NotFound,
 		SuccessfulSyncTimeTs: time.Now().Unix(),
 		Metadata: &storepb.DatabaseMetadata{
@@ -151,6 +146,14 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, err
 	}
 
+	environmentID := instance.EnvironmentID
+	if payload.EnvironmentID != "" {
+		environmentID = payload.EnvironmentID
+	}
+	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
+	if err != nil {
+		return true, nil, err
+	}
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 	peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, driverCtx, environment, instance, project, task, database)
 	if err != nil {

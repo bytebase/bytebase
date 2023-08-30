@@ -177,7 +177,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		default:
 			a.FailNow("unsupported db type")
 		}
-		err = ctl.createDatabaseV2(ctx, project, instance, tt.databaseName, databaseOwner, nil)
+		err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, tt.databaseName, databaseOwner, nil)
 		a.NoError(err)
 
 		database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{

@@ -95,7 +95,7 @@ DROP SCHEMA "schema_a";
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "bytebase", nil)
+	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "bytebase", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -128,7 +128,7 @@ DROP SCHEMA "schema_a";
 	a.Equal(1, len(histories))
 	latest := histories[0]
 
-	err = ctl.createDatabaseV2(ctx, project, instance, newDatabaseName, "bytebase", nil)
+	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, newDatabaseName, "bytebase", nil)
 	a.NoError(err)
 
 	newDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{

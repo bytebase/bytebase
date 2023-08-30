@@ -152,7 +152,7 @@ func TestSensitiveData(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
