@@ -548,12 +548,11 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
   }
 
   const parentBranchName = schemaDesign.value.baselineSheetName;
+  const branchName = schemaDesign.value.name;
   try {
     await schemaDesignStore.mergeSchemaDesign({
-      name: schemaDesign.value.name,
+      name: branchName,
       targetName: parentBranchName,
-      // Default to delete the source branch after merged.
-      deleteSourceBranch: true,
     });
   } catch (error: any) {
     // If there is conflict, we need to show the conflict and let user resolve it.
@@ -569,7 +568,7 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
         closeOnEsc: true,
         onNegativeClick: () => {
           // Clear the created branch state if save draft clicked.
-          if (state.schemaDesignName === createdBranchName.value) {
+          if (branchName === createdBranchName.value) {
             createdBranchName.value = "";
             state.schemaDesignTitle = schemaDesign.value.title;
           }
@@ -599,8 +598,8 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
   // Auto select the parent branch after merged.
   state.schemaDesignName = parentBranchName;
   createdBranchName.value = "";
-  // Re-fetch schema design list to refresh the cache.
-  await schemaDesignStore.fetchSchemaDesignList();
+  // Delete the draft after merged.
+  await schemaDesignStore.deleteSchemaDesign(branchName);
 };
 
 const handleMergeAfterConflictResolved = (branchName: string) => {

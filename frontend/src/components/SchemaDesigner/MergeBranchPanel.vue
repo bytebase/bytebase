@@ -180,7 +180,6 @@ const handleMergeBranch = async () => {
     await schemaDesignStore.mergeSchemaDesign({
       name: sourceBranch.value.name,
       targetName: targetBranch.value.name,
-      deleteSourceBranch: state.deleteBranchAfterMerged,
     });
   } catch (error: any) {
     // If there is conflict, we need to show the conflict and let user resolve it.
@@ -222,7 +221,8 @@ const handleMergeBranch = async () => {
   });
 
   emit("merged", props.targetBranchName);
-  // Re-fetch schema design list to refresh the cache.
-  await schemaDesignStore.fetchSchemaDesignList();
+  if (state.deleteBranchAfterMerged) {
+    await schemaDesignStore.deleteSchemaDesign(props.sourceBranchName);
+  }
 };
 </script>
