@@ -1481,17 +1481,17 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Add a sensitive data policy to pair it with the sample query below. So that user can
 	// experience the sensitive data masking feature from SQL Editor.
-	sensitiveDataPolicy := api.SensitiveDataPolicy{
-		SensitiveDataList: []api.SensitiveData{
+	maskingPolicy := &storepb.MaskingPolicy{
+		MaskData: []*storepb.MaskData{
 			{
-				Schema: "public",
-				Table:  "salary",
-				Column: "amount",
-				Type:   api.SensitiveDataMaskTypeDefault,
+				Schema:       "public",
+				Table:        "salary",
+				Column:       "amount",
+				MaskingLevel: storepb.MaskingLevel_FULL,
 			},
 		},
 	}
-	policyPayload, err = json.Marshal(sensitiveDataPolicy)
+	policyPayload, err = json.Marshal(maskingPolicy)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal onboarding sensitive data policy")
 	}
