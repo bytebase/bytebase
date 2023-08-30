@@ -1578,13 +1578,13 @@ func evalMaskingLevelOfDatabaseColumn(project *store.ProjectMessage, databaseMes
 						columnClassificationLevel := getClassificationLevelOfColumn(column.Classification, dataClassificationConfig)
 						for _, maskingRule := range maskingRulePolicy.Rules {
 							maskingRuleAttributes := map[string]any{
-								"environment_id":        databaseMessage.EnvironmentID,
-								"project_id":            databaseMessage.ProjectID,
-								"instance_id":           databaseMessage.InstanceID,
-								"database_name":         databaseMessage.DatabaseName,
-								"schema_name":           schema.Name,
-								"table_name":            table.Name,
-								"column_classification": columnClassificationLevel,
+								"environment_id":              databaseMessage.EnvironmentID,
+								"project_id":                  databaseMessage.ProjectID,
+								"instance_id":                 databaseMessage.InstanceID,
+								"database_name":               databaseMessage.DatabaseName,
+								"schema_name":                 schema.Name,
+								"table_name":                  table.Name,
+								"column_classification_level": columnClassificationLevel,
 							}
 							ast, issues := maskingRulePolicyEnv.Compile(maskingRule.Condition.Expression)
 							if issues != nil && issues.Err() != nil {

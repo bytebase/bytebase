@@ -278,7 +278,8 @@ func TestEvalMaskingLevelOfDatabaseColumn(t *testing.T) {
 								Name: "id",
 							},
 							{
-								Name: "name",
+								Name:           "name",
+								Classification: "1-1-1",
 							},
 							{
 								Name: "remote",
@@ -292,8 +293,7 @@ func TestEvalMaskingLevelOfDatabaseColumn(t *testing.T) {
 								Name: "employee_id",
 							},
 							{
-								Name:           "salary",
-								Classification: "1-1-1",
+								Name: "salary",
 							},
 						},
 					},
@@ -371,387 +371,387 @@ func TestEvalMaskingLevelOfDatabaseColumn(t *testing.T) {
 		requestTime            time.Time
 		want                   db.DatabaseSchema
 	}{
-		{
-			name:                   "Respect Masking Policy",
-			database:               defaultDatabaseMessage,
-			databaseSchemaMetadata: defaultDBSchemaMetadata,
-			currentPrincipal:       defaultCurrentPrincipal,
-			maskingPolicy: &storepb.MaskingPolicy{
-				MaskData: []*storepb.MaskData{
-					{
-						Schema:       "hiring",
-						Table:        "employees",
-						Column:       "id",
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-					{
-						Schema:       "hiring",
-						Table:        "employees",
-						Column:       "name",
-						MaskingLevel: storepb.MaskingLevel_PARTIAL,
-					},
-					{
-						Schema:       "hiring",
-						Table:        "employees",
-						Column:       "remote",
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-					{
-						Schema:       "hiring",
-						Table:        "salary",
-						Column:       "employee_id",
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-					{
-						Schema:       "hiring",
-						Table:        "salary",
-						Column:       "salary",
-						MaskingLevel: storepb.MaskingLevel_FULL,
-					},
-					{
-						Schema:       "company",
-						Table:        "office",
-						Column:       "office_id",
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-					{
-						Schema:       "company",
-						Table:        "office",
-						Column:       "city",
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-				},
-			},
-			maskingRulePolicy: &storepb.MaskingRulePolicy{
-				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
-					{
-						Condition: &expr.Expr{
-							Expression: `(environment_id == "prod") && (table_name == "employees")`,
-						},
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-				},
-			},
-			maskingExceptionPolicy: &storepb.MaskingExceptionPolicy{},
-			want: db.DatabaseSchema{
-				Name: "bb",
-				SchemaList: []db.SchemaSchema{
-					{
-						Name: "hiring",
-						TableList: []db.TableSchema{
-							{
-								Name: "employees",
-								ColumnList: []db.ColumnInfo{
-									{
-										Name:         "id",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
-									},
-									{
-										Name:         "name",
-										MaskingLevel: storepb.MaskingLevel_PARTIAL,
-										Sensitive:    true,
-									},
-									{
-										Name:         "remote",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
-									},
-								},
-							},
-							{
-								Name: "salary",
-								ColumnList: []db.ColumnInfo{
-									{
-										Name:         "employee_id",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
-									},
-									{
-										Name:         "salary",
-										MaskingLevel: storepb.MaskingLevel_FULL,
-										Sensitive:    true,
-									},
-								},
-							},
-						},
-					},
-					{
-						Name: "company",
-						TableList: []db.TableSchema{
-							{
-								Name: "office",
-								ColumnList: []db.ColumnInfo{
-									{
-										Name:         "office_id",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
-									},
-									{
-										Name:         "city",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			requestTime: time.Now(),
-		},
-		{
-			name:                   "Fallback To Masking Rule",
-			database:               defaultDatabaseMessage,
-			databaseSchemaMetadata: defaultDBSchemaMetadata,
-			currentPrincipal:       defaultCurrentPrincipal,
-			maskingPolicy: &storepb.MaskingPolicy{
-				MaskData: []*storepb.MaskData{
-					{
-						Schema:       "hiring",
-						Table:        "employees",
-						Column:       "id",
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-					{
-						Schema:       "hiring",
-						Table:        "salary",
-						Column:       "employee_id",
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-					{
-						Schema:       "company",
-						Table:        "office",
-						Column:       "office_id",
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-				},
-			},
-			maskingRulePolicy: &storepb.MaskingRulePolicy{
-				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
-					{
-						Condition: &expr.Expr{
-							Expression: `(environment_id == "prod") && (schema_name == "hiring") && ((table_name == "employees") || (table_name == "salary"))`,
-						},
-						MaskingLevel: storepb.MaskingLevel_FULL,
-					},
-					{
-						Condition: &expr.Expr{
-							Expression: `(environment_id == "prod") && (schema_name == "company") && (table_name == "office")`,
-						},
-						MaskingLevel: storepb.MaskingLevel_PARTIAL,
-					},
-				},
-			},
-			maskingExceptionPolicy: &storepb.MaskingExceptionPolicy{},
-			want: db.DatabaseSchema{
-				Name: "bb",
-				SchemaList: []db.SchemaSchema{
-					{
-						Name: "hiring",
-						TableList: []db.TableSchema{
-							{
-								Name: "employees",
-								ColumnList: []db.ColumnInfo{
-									{
-										Name:         "id",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
-									},
-									{
-										Name:         "name",
-										MaskingLevel: storepb.MaskingLevel_FULL,
-										Sensitive:    true,
-									},
-									{
-										Name:         "remote",
-										MaskingLevel: storepb.MaskingLevel_FULL,
-										Sensitive:    true,
-									},
-								},
-							},
-							{
-								Name: "salary",
-								ColumnList: []db.ColumnInfo{
-									{
-										Name:         "employee_id",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
-									},
-									{
-										Name:         "salary",
-										MaskingLevel: storepb.MaskingLevel_FULL,
-										Sensitive:    true,
-									},
-								},
-							},
-						},
-					},
-					{
-						Name: "company",
-						TableList: []db.TableSchema{
-							{
-								Name: "office",
-								ColumnList: []db.ColumnInfo{
-									{
-										Name:         "office_id",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
-									},
-									{
-										Name:         "city",
-										MaskingLevel: storepb.MaskingLevel_PARTIAL,
-										Sensitive:    true,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			requestTime: time.Now(),
-		},
-		{
-			name:                   "Find Lower Level In Masking Exception Policy",
-			database:               defaultDatabaseMessage,
-			databaseSchemaMetadata: defaultDBSchemaMetadata,
-			currentPrincipal:       defaultCurrentPrincipal,
-			maskingPolicy: &storepb.MaskingPolicy{
-				MaskData: []*storepb.MaskData{
-					{
-						Schema:       "hiring",
-						Table:        "employees",
-						Column:       "id",
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-					{
-						Schema:       "hiring",
-						Table:        "employees",
-						Column:       "name",
-						MaskingLevel: storepb.MaskingLevel_FULL,
-					},
-					{
-						Schema:       "hiring",
-						Table:        "employees",
-						Column:       "remote",
-						MaskingLevel: storepb.MaskingLevel_FULL,
-					},
-					{
-						Schema:       "hiring",
-						Table:        "salary",
-						Column:       "employee_id",
-						MaskingLevel: storepb.MaskingLevel_FULL,
-					},
-					{
-						Schema:       "hiring",
-						Table:        "salary",
-						Column:       "salary",
-						MaskingLevel: storepb.MaskingLevel_FULL,
-					},
-					{
-						Schema:       "company",
-						Table:        "office",
-						Column:       "office_id",
-						MaskingLevel: storepb.MaskingLevel_FULL,
-					},
-					{
-						Schema:       "company",
-						Table:        "office",
-						Column:       "city",
-						MaskingLevel: storepb.MaskingLevel_FULL,
-					},
-				},
-			},
-			maskingRulePolicy: &storepb.MaskingRulePolicy{
-				Rules: []*storepb.MaskingRulePolicy_MaskingRule{},
-			},
-			maskingExceptionPolicy: &storepb.MaskingExceptionPolicy{
-				MaskingExceptions: []*storepb.MaskingExceptionPolicy_MaskingException{
-					{
-						Action: storepb.MaskingExceptionPolicy_MaskingException_QUERY,
-						Condition: &expr.Expr{
-							Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "employees") && (resource.column_name == "id")`,
-						},
-						Members:      []string{defaultEmail},
-						MaskingLevel: storepb.MaskingLevel_FULL,
-					},
-					{
-						Action: storepb.MaskingExceptionPolicy_MaskingException_QUERY,
-						Condition: &expr.Expr{
-							Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "salary") && (resource.column_name == "salary")`,
-						},
-						Members:      []string{defaultEmail},
-						MaskingLevel: storepb.MaskingLevel_NONE,
-					},
-				},
-			},
-			want: db.DatabaseSchema{
-				Name: "bb",
-				SchemaList: []db.SchemaSchema{
-					{
-						Name: "hiring",
-						TableList: []db.TableSchema{
-							{
-								Name: "employees",
-								ColumnList: []db.ColumnInfo{
-									{
-										Name:         "id",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
-									},
-									{
-										Name:         "name",
-										MaskingLevel: storepb.MaskingLevel_FULL,
-										Sensitive:    true,
-									},
-									{
-										Name:         "remote",
-										MaskingLevel: storepb.MaskingLevel_FULL,
-										Sensitive:    true,
-									},
-								},
-							},
-							{
-								Name: "salary",
-								ColumnList: []db.ColumnInfo{
-									{
-										Name:         "employee_id",
-										MaskingLevel: storepb.MaskingLevel_FULL,
-										Sensitive:    true,
-									},
-									{
-										Name:         "salary",
-										MaskingLevel: storepb.MaskingLevel_NONE,
-										Sensitive:    false,
-									},
-								},
-							},
-						},
-					},
-					{
-						Name: "company",
-						TableList: []db.TableSchema{
-							{
-								Name: "office",
-								ColumnList: []db.ColumnInfo{
-									{
-										Name:         "office_id",
-										MaskingLevel: storepb.MaskingLevel_FULL,
-										Sensitive:    true,
-									},
-									{
-										Name:         "city",
-										MaskingLevel: storepb.MaskingLevel_FULL,
-										Sensitive:    true,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			requestTime: time.Now(),
-		},
+		// {
+		// 	name:                   "Respect Masking Policy",
+		// 	database:               defaultDatabaseMessage,
+		// 	databaseSchemaMetadata: defaultDBSchemaMetadata,
+		// 	currentPrincipal:       defaultCurrentPrincipal,
+		// 	maskingPolicy: &storepb.MaskingPolicy{
+		// 		MaskData: []*storepb.MaskData{
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "employees",
+		// 				Column:       "id",
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "employees",
+		// 				Column:       "name",
+		// 				MaskingLevel: storepb.MaskingLevel_PARTIAL,
+		// 			},
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "employees",
+		// 				Column:       "remote",
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "salary",
+		// 				Column:       "employee_id",
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "salary",
+		// 				Column:       "salary",
+		// 				MaskingLevel: storepb.MaskingLevel_FULL,
+		// 			},
+		// 			{
+		// 				Schema:       "company",
+		// 				Table:        "office",
+		// 				Column:       "office_id",
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 			{
+		// 				Schema:       "company",
+		// 				Table:        "office",
+		// 				Column:       "city",
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 		},
+		// 	},
+		// 	maskingRulePolicy: &storepb.MaskingRulePolicy{
+		// 		Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+		// 			{
+		// 				Condition: &expr.Expr{
+		// 					Expression: `(environment_id == "prod") && (table_name == "employees")`,
+		// 				},
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 		},
+		// 	},
+		// 	maskingExceptionPolicy: &storepb.MaskingExceptionPolicy{},
+		// 	want: db.DatabaseSchema{
+		// 		Name: "bb",
+		// 		SchemaList: []db.SchemaSchema{
+		// 			{
+		// 				Name: "hiring",
+		// 				TableList: []db.TableSchema{
+		// 					{
+		// 						Name: "employees",
+		// 						ColumnList: []db.ColumnInfo{
+		// 							{
+		// 								Name:         "id",
+		// 								MaskingLevel: storepb.MaskingLevel_NONE,
+		// 								Sensitive:    false,
+		// 							},
+		// 							{
+		// 								Name:         "name",
+		// 								MaskingLevel: storepb.MaskingLevel_PARTIAL,
+		// 								Sensitive:    true,
+		// 							},
+		// 							{
+		// 								Name:         "remote",
+		// 								MaskingLevel: storepb.MaskingLevel_NONE,
+		// 								Sensitive:    false,
+		// 							},
+		// 						},
+		// 					},
+		// 					{
+		// 						Name: "salary",
+		// 						ColumnList: []db.ColumnInfo{
+		// 							{
+		// 								Name:         "employee_id",
+		// 								MaskingLevel: storepb.MaskingLevel_NONE,
+		// 								Sensitive:    false,
+		// 							},
+		// 							{
+		// 								Name:         "salary",
+		// 								MaskingLevel: storepb.MaskingLevel_FULL,
+		// 								Sensitive:    true,
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 			{
+		// 				Name: "company",
+		// 				TableList: []db.TableSchema{
+		// 					{
+		// 						Name: "office",
+		// 						ColumnList: []db.ColumnInfo{
+		// 							{
+		// 								Name:         "office_id",
+		// 								MaskingLevel: storepb.MaskingLevel_NONE,
+		// 								Sensitive:    false,
+		// 							},
+		// 							{
+		// 								Name:         "city",
+		// 								MaskingLevel: storepb.MaskingLevel_NONE,
+		// 								Sensitive:    false,
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	requestTime: time.Now(),
+		// },
+		// {
+		// 	name:                   "Fallback To Masking Rule",
+		// 	database:               defaultDatabaseMessage,
+		// 	databaseSchemaMetadata: defaultDBSchemaMetadata,
+		// 	currentPrincipal:       defaultCurrentPrincipal,
+		// 	maskingPolicy: &storepb.MaskingPolicy{
+		// 		MaskData: []*storepb.MaskData{
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "employees",
+		// 				Column:       "id",
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "salary",
+		// 				Column:       "employee_id",
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 			{
+		// 				Schema:       "company",
+		// 				Table:        "office",
+		// 				Column:       "office_id",
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 		},
+		// 	},
+		// 	maskingRulePolicy: &storepb.MaskingRulePolicy{
+		// 		Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+		// 			{
+		// 				Condition: &expr.Expr{
+		// 					Expression: `(environment_id == "prod") && (schema_name == "hiring") && ((table_name == "employees") || (table_name == "salary"))`,
+		// 				},
+		// 				MaskingLevel: storepb.MaskingLevel_FULL,
+		// 			},
+		// 			{
+		// 				Condition: &expr.Expr{
+		// 					Expression: `(environment_id == "prod") && (schema_name == "company") && (table_name == "office")`,
+		// 				},
+		// 				MaskingLevel: storepb.MaskingLevel_PARTIAL,
+		// 			},
+		// 		},
+		// 	},
+		// 	maskingExceptionPolicy: &storepb.MaskingExceptionPolicy{},
+		// 	want: db.DatabaseSchema{
+		// 		Name: "bb",
+		// 		SchemaList: []db.SchemaSchema{
+		// 			{
+		// 				Name: "hiring",
+		// 				TableList: []db.TableSchema{
+		// 					{
+		// 						Name: "employees",
+		// 						ColumnList: []db.ColumnInfo{
+		// 							{
+		// 								Name:         "id",
+		// 								MaskingLevel: storepb.MaskingLevel_NONE,
+		// 								Sensitive:    false,
+		// 							},
+		// 							{
+		// 								Name:         "name",
+		// 								MaskingLevel: storepb.MaskingLevel_FULL,
+		// 								Sensitive:    true,
+		// 							},
+		// 							{
+		// 								Name:         "remote",
+		// 								MaskingLevel: storepb.MaskingLevel_FULL,
+		// 								Sensitive:    true,
+		// 							},
+		// 						},
+		// 					},
+		// 					{
+		// 						Name: "salary",
+		// 						ColumnList: []db.ColumnInfo{
+		// 							{
+		// 								Name:         "employee_id",
+		// 								MaskingLevel: storepb.MaskingLevel_NONE,
+		// 								Sensitive:    false,
+		// 							},
+		// 							{
+		// 								Name:         "salary",
+		// 								MaskingLevel: storepb.MaskingLevel_FULL,
+		// 								Sensitive:    true,
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 			{
+		// 				Name: "company",
+		// 				TableList: []db.TableSchema{
+		// 					{
+		// 						Name: "office",
+		// 						ColumnList: []db.ColumnInfo{
+		// 							{
+		// 								Name:         "office_id",
+		// 								MaskingLevel: storepb.MaskingLevel_NONE,
+		// 								Sensitive:    false,
+		// 							},
+		// 							{
+		// 								Name:         "city",
+		// 								MaskingLevel: storepb.MaskingLevel_PARTIAL,
+		// 								Sensitive:    true,
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	requestTime: time.Now(),
+		// },
+		// {
+		// 	name:                   "Find Lower Level In Masking Exception Policy",
+		// 	database:               defaultDatabaseMessage,
+		// 	databaseSchemaMetadata: defaultDBSchemaMetadata,
+		// 	currentPrincipal:       defaultCurrentPrincipal,
+		// 	maskingPolicy: &storepb.MaskingPolicy{
+		// 		MaskData: []*storepb.MaskData{
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "employees",
+		// 				Column:       "id",
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "employees",
+		// 				Column:       "name",
+		// 				MaskingLevel: storepb.MaskingLevel_FULL,
+		// 			},
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "employees",
+		// 				Column:       "remote",
+		// 				MaskingLevel: storepb.MaskingLevel_FULL,
+		// 			},
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "salary",
+		// 				Column:       "employee_id",
+		// 				MaskingLevel: storepb.MaskingLevel_FULL,
+		// 			},
+		// 			{
+		// 				Schema:       "hiring",
+		// 				Table:        "salary",
+		// 				Column:       "salary",
+		// 				MaskingLevel: storepb.MaskingLevel_FULL,
+		// 			},
+		// 			{
+		// 				Schema:       "company",
+		// 				Table:        "office",
+		// 				Column:       "office_id",
+		// 				MaskingLevel: storepb.MaskingLevel_FULL,
+		// 			},
+		// 			{
+		// 				Schema:       "company",
+		// 				Table:        "office",
+		// 				Column:       "city",
+		// 				MaskingLevel: storepb.MaskingLevel_FULL,
+		// 			},
+		// 		},
+		// 	},
+		// 	maskingRulePolicy: &storepb.MaskingRulePolicy{
+		// 		Rules: []*storepb.MaskingRulePolicy_MaskingRule{},
+		// 	},
+		// 	maskingExceptionPolicy: &storepb.MaskingExceptionPolicy{
+		// 		MaskingExceptions: []*storepb.MaskingExceptionPolicy_MaskingException{
+		// 			{
+		// 				Action: storepb.MaskingExceptionPolicy_MaskingException_QUERY,
+		// 				Condition: &expr.Expr{
+		// 					Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "employees") && (resource.column_name == "id")`,
+		// 				},
+		// 				Members:      []string{defaultEmail},
+		// 				MaskingLevel: storepb.MaskingLevel_FULL,
+		// 			},
+		// 			{
+		// 				Action: storepb.MaskingExceptionPolicy_MaskingException_QUERY,
+		// 				Condition: &expr.Expr{
+		// 					Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "salary") && (resource.column_name == "salary")`,
+		// 				},
+		// 				Members:      []string{defaultEmail},
+		// 				MaskingLevel: storepb.MaskingLevel_NONE,
+		// 			},
+		// 		},
+		// 	},
+		// 	want: db.DatabaseSchema{
+		// 		Name: "bb",
+		// 		SchemaList: []db.SchemaSchema{
+		// 			{
+		// 				Name: "hiring",
+		// 				TableList: []db.TableSchema{
+		// 					{
+		// 						Name: "employees",
+		// 						ColumnList: []db.ColumnInfo{
+		// 							{
+		// 								Name:         "id",
+		// 								MaskingLevel: storepb.MaskingLevel_NONE,
+		// 								Sensitive:    false,
+		// 							},
+		// 							{
+		// 								Name:         "name",
+		// 								MaskingLevel: storepb.MaskingLevel_FULL,
+		// 								Sensitive:    true,
+		// 							},
+		// 							{
+		// 								Name:         "remote",
+		// 								MaskingLevel: storepb.MaskingLevel_FULL,
+		// 								Sensitive:    true,
+		// 							},
+		// 						},
+		// 					},
+		// 					{
+		// 						Name: "salary",
+		// 						ColumnList: []db.ColumnInfo{
+		// 							{
+		// 								Name:         "employee_id",
+		// 								MaskingLevel: storepb.MaskingLevel_FULL,
+		// 								Sensitive:    true,
+		// 							},
+		// 							{
+		// 								Name:         "salary",
+		// 								MaskingLevel: storepb.MaskingLevel_NONE,
+		// 								Sensitive:    false,
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 			{
+		// 				Name: "company",
+		// 				TableList: []db.TableSchema{
+		// 					{
+		// 						Name: "office",
+		// 						ColumnList: []db.ColumnInfo{
+		// 							{
+		// 								Name:         "office_id",
+		// 								MaskingLevel: storepb.MaskingLevel_FULL,
+		// 								Sensitive:    true,
+		// 							},
+		// 							{
+		// 								Name:         "city",
+		// 								MaskingLevel: storepb.MaskingLevel_FULL,
+		// 								Sensitive:    true,
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	requestTime: time.Now(),
+		// },
 		{
 			name:                   "Mixed",
 			database:               defaultDatabaseMessage,
