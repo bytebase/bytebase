@@ -220,7 +220,7 @@ const NORMAL_COLUMN_LIST = computed(() => {
     });
   }
   if (showClassificationColumn.value) {
-    columnList.splice(1, 0, {
+    columnList.splice(showSensitiveColumn.value ? 2 : 1, 0, {
       title: t("database.classification.self"),
     });
   }
@@ -255,7 +255,7 @@ const POSTGRES_COLUMN_LIST = computed(() => {
     });
   }
   if (showClassificationColumn.value) {
-    columnList.splice(1, 0, {
+    columnList.splice(showSensitiveColumn.value ? 2 : 1, 0, {
       title: t("database.classification.self"),
     });
   }
