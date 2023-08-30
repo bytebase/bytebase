@@ -488,6 +488,8 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 
 	if v := find.Order; v != nil {
 		query += fmt.Sprintf(" ORDER BY id %s", *v)
+	} else {
+		query += " ORDER BY id ASC"
 	}
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
