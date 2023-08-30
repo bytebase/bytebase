@@ -12,11 +12,11 @@
       </div>
     </div>
 
-    <SchemaDesignTable
+    <BranchTable
       v-if="ready"
-      :schema-designs="sortedSchemaDesignList"
+      :branches="sortedBranches"
       :hide-project-column="hideProjectColumn"
-      @click="handleSchemaDesignItemClick"
+      @click="handleBranchClick"
     />
     <div v-else class="w-full h-[20rem] flex items-center justify-center">
       <BBSpin />
@@ -30,7 +30,7 @@
     @created="
       (schemaDesign: SchemaDesign) => {
         state.showCreatePanel = false;
-        handleSchemaDesignItemClick(schemaDesign);
+        handleBranchClick(schemaDesign);
       }
     "
   />
@@ -46,9 +46,9 @@
 import { orderBy } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
+import BranchTable from "@/components/SchemaDesigner/BranchTable.vue";
 import CreateSchemaDesignPanel from "@/components/SchemaDesigner/CreateSchemaDesignPanel.vue";
 import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
-import SchemaDesignTable from "@/components/SchemaDesigner/PrepForm/SchemaDesignTable.vue";
 import { useProjectV1Store } from "@/store";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
@@ -73,7 +73,7 @@ const project = computed(() =>
   projectV1Store.getProjectByUID(props.projectId || "")
 );
 
-const sortedSchemaDesignList = computed(() => {
+const sortedBranches = computed(() => {
   return orderBy(
     props.projectId
       ? schemaDesignList.value.filter((schemaDesign) =>
@@ -85,7 +85,7 @@ const sortedSchemaDesignList = computed(() => {
   );
 });
 
-const handleSchemaDesignItemClick = async (schemaDesign: SchemaDesign) => {
+const handleBranchClick = async (schemaDesign: SchemaDesign) => {
   state.selectedSchemaDesignName = schemaDesign.name;
 };
 </script>
