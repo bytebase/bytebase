@@ -1093,6 +1093,13 @@ func getTsVector(text string) string {
 func getTsQuery(text string) string {
 	seg := getSegmenter()
 	parts := seg.Trim(seg.CutSearch(text))
+	// CutSearch returns empty for a single word.
+	if len(parts) == 0 {
+		parts = seg.CutTrim(text)
+	}
+	if len(parts) == 0 {
+		return fmt.Sprintf("%s:*", text)
+	}
 	var tsQuery strings.Builder
 	for i, part := range parts {
 		if i != 0 {
