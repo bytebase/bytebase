@@ -179,10 +179,10 @@
 
   <MergeBranchPanel
     v-if="state.showDiffEditor"
-    :source-branch-name="schemaDesign.baselineSheetName"
-    :target-branch-name="state.schemaDesignName"
+    :source-branch-name="state.schemaDesignName"
+    :target-branch-name="schemaDesign.baselineSheetName"
     @dismiss="state.showDiffEditor = false"
-    @try-merge="handleMergeAfterConflictResolved"
+    @merged="handleMergeAfterConflictResolved"
   />
 </template>
 
@@ -552,6 +552,8 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
     await schemaDesignStore.mergeSchemaDesign({
       name: schemaDesign.value.name,
       targetName: parentBranchName,
+      // Default to delete the source branch after merged.
+      deleteSourceBranch: true,
     });
   } catch (error: any) {
     // If there is conflict, we need to show the conflict and let user resolve it.
@@ -597,11 +599,14 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
   // Auto select the parent branch after merged.
   state.schemaDesignName = parentBranchName;
   createdBranchName.value = "";
+  // Re-fetch schema design list to refresh the cache.
+  await schemaDesignStore.fetchSchemaDesignList();
 };
 
-const handleMergeAfterConflictResolved = () => {
+const handleMergeAfterConflictResolved = (branchName: string) => {
+  createdBranchName.value = "";
+  state.schemaDesignName = branchName;
   state.showDiffEditor = false;
-  handleMergeSchemaDesign();
 };
 
 const handleApplySchemaDesignClick = () => {
