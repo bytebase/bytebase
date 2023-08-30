@@ -49,7 +49,7 @@
               class="w-60 text-sm"
               :readonly="!state.isEditingTitle"
               :value="state.schemaDesignTitle"
-              :placeholder="$t('database.branch-name')"
+              :placeholder="'feature/add-billing'"
               @input="
                 state.schemaDesignTitle = (
                   $event.target as HTMLInputElement
@@ -63,8 +63,8 @@
               @click="state.isEditingTitle = true"
             >
               <template #icon>
-                <NIcon>
-                  <Pen class="w-4 h-auto" />
+                <NIcon size="16">
+                  <Pen />
                 </NIcon>
               </template>
             </NButton>
@@ -264,7 +264,11 @@ const schemaDesign = computed(() => {
 });
 
 const parentBranch = computed(() => {
-  if (schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+  // Show parent branch when the current branch is a personal draft and it's not the new created one.
+  if (
+    schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
+    state.schemaDesignName !== createdBranchName.value
+  ) {
     return schemaDesignStore.getSchemaDesignByName(
       schemaDesign.value.baselineSheetName || ""
     );
@@ -299,7 +303,10 @@ const prepareBaselineDatabase = async () => {
 watch(
   () => [state.schemaDesignName],
   async () => {
-    state.schemaDesignTitle = schemaDesign.value.title;
+    // Only change branch title when it's not a new created one.
+    if (state.schemaDesignName !== createdBranchName.value) {
+      state.schemaDesignTitle = schemaDesign.value.title;
+    }
     await prepareBaselineDatabase();
   },
   {
@@ -372,10 +379,10 @@ const handleEdit = async () => {
         positiveText: t("schema-designer.action.create-new-branch"),
         title: t("schema-designer.diff-editor.action-confirm"),
         content: t("schema-designer.diff-editor.duplicated-branch-name-found"),
-        autoFocus: false,
-        closable: false,
-        maskClosable: false,
-        closeOnEsc: false,
+        autoFocus: true,
+        closable: true,
+        maskClosable: true,
+        closeOnEsc: true,
         onNegativeClick: () => {
           // Use the existing branch.
           state.schemaDesignName = foundBranch.name;
@@ -420,12 +427,12 @@ const handleCancelEdit = async () => {
     )
   );
 
-  const parentBranchName = parentBranch.value?.name || "";
   // Only try to delete the branch if it's a new created personal draft.
   if (
     isSchemaDesignDraft.value &&
-    createdBranchName.value === state.schemaDesignName
+    state.schemaDesignName === createdBranchName.value
   ) {
+    const parentBranchName = schemaDesign.value.baselineSheetName;
     // If the metadata is changed, we need to confirm with user.
     if (!isEqual(metadata, schemaDesign.value.schemaMetadata)) {
       dialog.create({
@@ -434,10 +441,10 @@ const handleCancelEdit = async () => {
         positiveText: t("schema-designer.diff-editor.discard-changes"),
         title: t("schema-designer.diff-editor.action-confirm"),
         content: t("schema-designer.diff-editor.discard-changes-confirm"),
-        autoFocus: false,
-        closable: false,
-        maskClosable: false,
-        closeOnEsc: false,
+        autoFocus: true,
+        closable: true,
+        maskClosable: true,
+        closeOnEsc: true,
         onNegativeClick: () => {
           // nothing to do
         },
@@ -548,10 +555,10 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
         negativeText: t("common.cancel"),
         title: t("schema-designer.diff-editor.auto-merge-failed"),
         content: t("schema-designer.diff-editor.need-to-resolve-conflicts"),
-        autoFocus: false,
-        closable: false,
-        maskClosable: false,
-        closeOnEsc: false,
+        autoFocus: true,
+        closable: true,
+        maskClosable: true,
+        closeOnEsc: true,
         onNegativeClick: () => {
           // nothing to do
         },
