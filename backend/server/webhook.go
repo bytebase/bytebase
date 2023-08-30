@@ -1644,7 +1644,7 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 		api.ActivityProjectRepositoryPushPayload{
 			VCSPushEvent: pushEvent,
 			IssueID:      issueUID,
-			IssueName:    issue.Name,
+			IssueName:    issue.Title,
 		},
 	)
 	if err != nil {
@@ -1656,7 +1656,7 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 		ContainerUID: project.UID,
 		Type:         api.ActivityProjectRepositoryPush,
 		Level:        api.ActivityInfo,
-		Comment:      fmt.Sprintf("Created issue %q.", issue.Name),
+		Comment:      fmt.Sprintf("Created issue %q.", issue.Title),
 		Payload:      string(activityPayload),
 	}
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
