@@ -26,6 +26,10 @@ export const mergeSchemaEditToMetadata = (
 ): DatabaseMetadata => {
   for (const schemaEdit of schemaEdits) {
     if (schemaEdit.status === "created") {
+      // Remove schema if it exists.
+      metadata.schemas = metadata.schemas.filter(
+        (item) => item.name !== schemaEdit.name
+      );
       metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
       continue;
     } else if (schemaEdit.status === "dropped") {
@@ -43,6 +47,10 @@ export const mergeSchemaEditToMetadata = (
       }
       for (const tableEdit of schemaEdit.tableList) {
         if (tableEdit.status === "created") {
+          // Remove table if it exists.
+          schema.tables = schema.tables.filter(
+            (item) => item.name !== tableEdit.name
+          );
           schema.tables.push(transformTableEditToMetadata(tableEdit));
           continue;
         } else if (tableEdit.status === "dropped") {
@@ -60,6 +68,10 @@ export const mergeSchemaEditToMetadata = (
           }
           for (const columnEdit of tableEdit.columnList) {
             if (columnEdit.status === "created") {
+              // Remove column if it exists.
+              table.columns = table.columns.filter(
+                (item) => item.name !== columnEdit.name
+              );
               table.columns.push(transformColumnEditToMetadata(columnEdit));
               continue;
             } else if (columnEdit.status === "dropped") {

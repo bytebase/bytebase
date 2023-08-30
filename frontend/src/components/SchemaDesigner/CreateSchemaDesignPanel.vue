@@ -28,7 +28,7 @@
           <BBTextField
             class="w-60 text-sm"
             :value="state.schemaDesignTitle"
-            :placeholder="$t('database.branch-name')"
+            :placeholder="'feature/add-billing'"
             @input="
               state.schemaDesignTitle = (
                 $event.target as HTMLInputElement

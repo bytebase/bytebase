@@ -109,6 +109,8 @@ const targetBranch = computed(() => {
 });
 
 onMounted(async () => {
+  // Fetching the latest source branch.
+  await schemaDesignStore.fetchSchemaDesignByName(props.sourceBranchName);
   state.editingSchema = targetBranch.value.schema;
   state.initialized = true;
 });
