@@ -78,8 +78,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                   dataDir,
+		vcsProviderCreator:        fake.NewGitLab,
+		developmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -105,8 +106,6 @@ func TestGhostSchemaUpdate(t *testing.T) {
 
 	project, err := ctl.createProject(ctx)
 	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
-	a.NoError(err)
 
 	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
@@ -123,14 +122,12 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, project, instance, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
-	a.NoError(err)
-	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
 	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
@@ -144,32 +141,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	sheet1UID, err := strconv.Atoi(strings.TrimPrefix(sheet1.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-	a.NoError(err)
 
-	createContext, err := json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Migrate,
-				DatabaseID:    databaseUID,
-				SheetID:       sheet1UID,
-			},
-		},
-	})
+	err = ctl.changeDatabase(ctx, project, database, sheet1, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
-	// Create an issue updating database schema.
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("update schema for database %q", databaseName),
-		Type:          api.IssueDatabaseSchemaUpdate,
-		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	})
-	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 	a.NoError(err)
@@ -186,33 +160,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	sheet2UID, err := strconv.Atoi(strings.TrimPrefix(sheet2.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-	a.NoError(err)
 
-	createContext, err = json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Migrate,
-				DatabaseID:    databaseUID,
-				SheetID:       sheet2UID,
-			},
-		},
-	})
+	err = ctl.changeDatabase(ctx, project, database, sheet2, v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST)
 	a.NoError(err)
-	issue, err = ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("update schema for database %q", databaseName),
-		Type:          api.IssueDatabaseSchemaUpdateGhost,
-		Description:   fmt.Sprintf("This updates the schema of database %q using gh-ost", databaseName),
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	})
-	a.NoError(err)
-
-	status, err = ctl.waitIssuePipeline(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
-
 	dbMetadata, err = ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 	a.NoError(err)
 
