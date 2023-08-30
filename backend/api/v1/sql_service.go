@@ -1604,8 +1604,8 @@ func evalMaskingLevelOfDatabaseColumn(project *store.ProjectMessage, databaseMes
 								"schema_name":   schema.Name,
 								"table_name":    table.Name,
 								"column_name":   column.Name,
-								"request.time":  requestTime,
 							},
+							"request.time": requestTime,
 						}
 						hit, err := evaluateMaskingExceptionPolicyCondition(filteredMaskingException.Condition.Expression, maskingExceptionAttributes)
 						if err != nil {
