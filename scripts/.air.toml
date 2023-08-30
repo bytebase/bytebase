@@ -10,7 +10,7 @@ tmp_dir = ".air"
   --tags "" \
   -o ./.air/bytebase ./backend/bin/server/main.go"""
   delay = 500
-  exclude_dir = [".air", "vendor", "frontend", "docs"]
+  exclude_dir = [".air", "bytebase-build", "docs", "frontend", "helm-charts", "proto", "quickstart", "scripts",  "vendor"]
   exclude_file = []
   exclude_regex = []
   exclude_unchanged = false
