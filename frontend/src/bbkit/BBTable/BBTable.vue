@@ -61,7 +61,7 @@
                 }
               "
             >
-              <slot name="body" :row-data="item" />
+              <slot name="body" :row-data="item" :section="i" :row="j" />
             </tr>
           </template>
           <template v-else>

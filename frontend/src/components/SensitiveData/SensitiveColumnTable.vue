@@ -1,16 +1,48 @@
 <template>
-  <BBGrid
-    :column-list="COLUMN_LIST"
-    :data-source="columnList"
-    class="border"
+  <BBTable
+    ref="tableRef"
+    :column-list="tableHeaderList"
+    :section-data-source="datasource"
+    :show-header="true"
+    :custom-header="true"
+    :left-bordered="true"
+    :right-bordered="true"
+    :top-bordered="true"
+    :bottom-bordered="true"
+    :compact-section="true"
     :row-clickable="rowClickable"
-    @click-row="clickRow"
+    @click-row="clickTableRow"
   >
-    <template #item="{ item, row }: { item: SensitiveColumn, row: number }">
-      <div v-if="rowSelectable" class="bb-grid-cell">
+    <template #header>
+      <th
+        v-for="(column, index) in tableHeaderList"
+        :key="index"
+        scope="col"
+        class="pl-2 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
+        :class="[column.center && 'text-center pr-2']"
+      >
+        <template v-if="index === 0 && rowSelectable">
+          <input
+            v-if="columnList.length > 0"
+            type="checkbox"
+            class="ml-2 h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            :checked="allSelectionState.checked"
+            :indeterminate="allSelectionState.indeterminate"
+            :disabled="false"
+            @input="selectAll(($event.target as HTMLInputElement).checked)"
+          />
+        </template>
+        <template v-else>{{ $t(column.title) }}</template>
+      </th>
+    </template>
+    <template
+      #body="{ rowData: item, row }: { rowData: SensitiveColumn, row: number }"
+    >
+      <BBTableCell v-if="rowSelectable" class="w-[1%]">
+        <!-- width: 1% means as narrow as possible -->
         <input
           type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+          class="ml-2 h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
           :checked="checkedColumnIndex.has(row)"
           @click.stop=""
           @input="
@@ -21,41 +53,41 @@
             )
           "
         />
-      </div>
-      <div class="bb-grid-cell">
+      </BBTableCell>
+      <BBTableCell class="bb-grid-cell">
         {{ getMaskingLevelText(item.maskData.maskingLevel) }}
-      </div>
-      <div class="bb-grid-cell">
+      </BBTableCell>
+      <BBTableCell class="bb-grid-cell">
         {{ item.maskData.column }}
-      </div>
-      <div class="bb-grid-cell">
+      </BBTableCell>
+      <BBTableCell class="bb-grid-cell">
         {{
           item.maskData.schema
             ? `${item.maskData.schema}.${item.maskData.table}`
             : item.maskData.table
         }}
-      </div>
-      <div class="bb-grid-cell">
+      </BBTableCell>
+      <BBTableCell class="bb-grid-cell">
         <DatabaseV1Name :database="item.database" :link="false" />
-      </div>
-      <div class="bb-grid-cell gap-x-1">
+      </BBTableCell>
+      <BBTableCell class="bb-grid-cell">
         <InstanceV1Name
           :instance="item.database.instanceEntity"
           :link="false"
         />
-      </div>
-      <div class="bb-grid-cell">
+      </BBTableCell>
+      <BBTableCell class="bb-grid-cell">
         <EnvironmentV1Name
           :environment="item.database.effectiveEnvironmentEntity"
           :link="false"
         />
-      </div>
-      <div class="bb-grid-cell">
+      </BBTableCell>
+      <BBTableCell class="bb-grid-cell">
         <ProjectV1Name :project="item.database.projectEntity" :link="false" />
-      </div>
-      <div
+      </BBTableCell>
+      <BBTableCell
         v-if="showOperation"
-        class="bb-grid-cell justify-center !px-2 gap-x-1"
+        class="bb-grid-cell justify-center !px-2 space-x-2"
       >
         <button
           :disabled="!allowAdmin"
@@ -79,16 +111,16 @@
             {{ $t("settings.sensitive-data.remove-sensitive-column-tips") }}
           </div>
         </NPopconfirm>
-      </div>
+      </BBTableCell>
     </template>
-  </BBGrid>
+  </BBTable>
 </template>
 
 <script lang="ts" setup>
 import { NPopconfirm } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, type BBGridColumn } from "@/bbkit";
+import type { BBTableColumn, BBTableSectionDataSource } from "@/bbkit/types";
 import {
   DatabaseV1Name,
   EnvironmentV1Name,
@@ -142,62 +174,6 @@ const allowAdmin = computed(() => {
   );
 });
 
-const COLUMN_LIST = computed((): BBGridColumn[] => {
-  const list: BBGridColumn[] = [
-    {
-      title: t("settings.sensitive-data.masking-level.self"),
-      width: "minmax(auto, 1fr)",
-    },
-    {
-      title: t("database.column"),
-      width: "minmax(auto, 1fr)",
-    },
-    {
-      title: t("common.table"),
-      width: "minmax(auto, 1fr)",
-    },
-    {
-      title: t("common.database"),
-      width: "minmax(auto, 1fr)",
-    },
-    {
-      title: t("common.instance"),
-      width: "minmax(auto, 1fr)",
-    },
-    {
-      title: t("common.environment"),
-      width: "minmax(auto, 1fr)",
-    },
-    {
-      title: t("common.project"),
-      width: "minmax(auto, 1fr)",
-    },
-  ];
-  if (props.showOperation) {
-    list.push({
-      title: t("common.operation"),
-      width: "minmax(auto, 6rem)",
-      class: "justify-center !px-2",
-    });
-  }
-  if (props.rowSelectable) {
-    list.unshift({
-      title: "",
-      width: "minmax(auto, 3rem)",
-    });
-  }
-  return list;
-});
-
-const clickRow = (
-  item: SensitiveColumn,
-  section: number,
-  row: number,
-  e: MouseEvent
-) => {
-  emit("click", item, row, "VIEW");
-};
-
 const getMaskingLevelText = (maskingLevel: MaskingLevel) => {
   let level = maskingLevelToJSON(maskingLevel);
   if (maskingLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
@@ -217,5 +193,76 @@ const toggleColumnChecked = (index: number, on: boolean, e: Event) => {
   }
 
   emit("checked:update", [...checkedColumnIndex.value]);
+};
+
+const tableHeaderList = computed(() => {
+  const list: BBTableColumn[] = [
+    {
+      title: t("settings.sensitive-data.masking-level.self"),
+    },
+    {
+      title: t("database.column"),
+    },
+    {
+      title: t("common.table"),
+    },
+    {
+      title: t("common.database"),
+    },
+    {
+      title: t("common.instance"),
+    },
+    {
+      title: t("common.environment"),
+    },
+    {
+      title: t("common.project"),
+    },
+  ];
+  if (props.showOperation) {
+    list.push({
+      title: t("common.operation"),
+    });
+  }
+  if (props.rowSelectable) {
+    list.unshift({
+      title: "",
+    });
+  }
+  return list;
+});
+
+const datasource = computed((): BBTableSectionDataSource<SensitiveColumn>[] => {
+  return [
+    {
+      title: "",
+      list: props.columnList,
+    },
+  ];
+});
+
+const allSelectionState = computed(() => {
+  const checked = checkedColumnIndex.value.size === props.columnList.length;
+  const indeterminate =
+    !checked &&
+    props.columnList.some((_, i) => checkedColumnIndex.value.has(i));
+
+  return {
+    checked,
+    indeterminate,
+  };
+});
+
+const selectAll = (check: boolean): void => {
+  if (!check) {
+    checkedColumnIndex.value = new Set([]);
+  } else {
+    checkedColumnIndex.value = new Set(props.columnList.map((_, i) => i));
+  }
+  emit("checked:update", [...checkedColumnIndex.value]);
+};
+
+const clickTableRow = function (_: number, row: number) {
+  emit("click", props.columnList[row], row, "VIEW");
 };
 </script>
