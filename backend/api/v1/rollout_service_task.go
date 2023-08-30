@@ -152,15 +152,15 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 
 		payload := api.TaskDatabaseCreatePayload{
-			SpecID:       spec.Id,
-			ProjectID:    project.UID,
-			CharacterSet: c.CharacterSet,
-			TableName:    c.Table,
-			Collation:    c.Collation,
-			Environment:  c.Environment,
-			Labels:       labelsJSON,
-			DatabaseName: databaseName,
-			SheetID:      sheet.UID,
+			SpecID:        spec.Id,
+			ProjectID:     project.UID,
+			CharacterSet:  c.CharacterSet,
+			TableName:     c.Table,
+			Collation:     c.Collation,
+			EnvironmentID: strings.TrimPrefix(c.Environment, common.EnvironmentNamePrefix),
+			Labels:        labelsJSON,
+			DatabaseName:  databaseName,
+			SheetID:       sheet.UID,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {

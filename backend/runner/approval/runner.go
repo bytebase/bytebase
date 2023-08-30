@@ -425,7 +425,6 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 				continue
 			}
 
-			// TODO(d): support create database with environment override.
 			environmentID := instance.EnvironmentID
 			var databaseName string
 			if task.Type == api.TaskDatabaseCreate {
@@ -434,6 +433,9 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 					return 0, store.RiskSourceUnknown, false, err
 				}
 				databaseName = payload.DatabaseName
+				if payload.EnvironmentID != "" {
+					environmentID = payload.EnvironmentID
+				}
 			} else {
 				database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					UID: task.DatabaseID,
@@ -796,7 +798,6 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		return 0, false, errors.New("affected rows report result and statement type report result length mismatch")
 	}
 
-	// TODO(d): support create database with environment override.
 	environmentID := instance.EnvironmentID
 	var databaseName string
 	if task.Type == api.TaskDatabaseCreate {
@@ -805,6 +806,9 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 			return 0, false, err
 		}
 		databaseName = payload.DatabaseName
+		if payload.EnvironmentID != "" {
+			environmentID = payload.EnvironmentID
+		}
 	} else {
 		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			UID: task.DatabaseID,
