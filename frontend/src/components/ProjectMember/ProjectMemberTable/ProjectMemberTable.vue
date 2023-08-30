@@ -55,12 +55,11 @@
             class="w-auto leading-8 flex flex-row justify-start items-center flex-nowrap gap-x-2"
             :class="isExpired(binding) ? 'line-through' : ''"
           >
+            <span class="block truncate">{{
+              displayRoleTitle(binding.role)
+            }}</span>
             <span
               v-if="getBindingConditionTitle(binding)"
-              class="block truncate"
-              >{{ displayRoleTitle(binding.role) }}</span
-            >
-            <span
               class="block truncate text-blue-600 cursor-pointer hover:text-blue-800"
               @click="editingBinding = binding"
             >
