@@ -24,7 +24,7 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
-import { useTabStore } from "@/store";
+import { isTabClosable } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import { sheetTypeForTab } from "@/utils";
@@ -54,19 +54,8 @@ defineEmits<{
   (e: "close", tab: TabInfo, index: number): void;
 }>();
 
-const tabStore = useTabStore();
-
 const closable = computed(() => {
-  const { tabList } = tabStore;
-  if (tabList.length > 1) {
-    // Not the only one tab
-    return true;
-  }
-  if (tabList.length === 1) {
-    // It's the only one tab, and it's closable if it's a sheet tab
-    return !!props.tab.sheetName;
-  }
-  return false;
+  return isTabClosable(props.tab);
 });
 
 const icon = computed((): IconType | undefined => {
