@@ -1,6 +1,7 @@
 /* eslint-disable */
 import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
+import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
 
 export const protobufPackage = "bytebase.store";
@@ -8,6 +9,7 @@ export const protobufPackage = "bytebase.store";
 /** DatabaseMetadata is the metadata for databases. */
 export interface DatabaseMetadata {
   labels: { [key: string]: string };
+  lastSyncTime?: Date | undefined;
 }
 
 export interface DatabaseMetadata_LabelsEntry {
@@ -393,7 +395,7 @@ export interface SecretItem {
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { labels: {} };
+  return { labels: {}, lastSyncTime: undefined };
 }
 
 export const DatabaseMetadata = {
@@ -401,6 +403,9 @@ export const DatabaseMetadata = {
     Object.entries(message.labels).forEach(([key, value]) => {
       DatabaseMetadata_LabelsEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).ldelim();
     });
+    if (message.lastSyncTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSyncTime), writer.uint32(18).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -421,6 +426,13 @@ export const DatabaseMetadata = {
             message.labels[entry1.key] = entry1.value;
           }
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lastSyncTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -438,6 +450,7 @@ export const DatabaseMetadata = {
           return acc;
         }, {})
         : {},
+      lastSyncTime: isSet(object.lastSyncTime) ? fromJsonTimestamp(object.lastSyncTime) : undefined,
     };
   },
 
@@ -449,6 +462,7 @@ export const DatabaseMetadata = {
         obj.labels[k] = v;
       });
     }
+    message.lastSyncTime !== undefined && (obj.lastSyncTime = message.lastSyncTime.toISOString());
     return obj;
   },
 
@@ -464,6 +478,7 @@ export const DatabaseMetadata = {
       }
       return acc;
     }, {});
+    message.lastSyncTime = object.lastSyncTime ?? undefined;
     return message;
   },
 };
@@ -2509,6 +2524,28 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
 
 function longToNumber(long: Long): number {
   if (long.gt(Number.MAX_SAFE_INTEGER)) {
