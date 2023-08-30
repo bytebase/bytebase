@@ -1605,7 +1605,9 @@ func evalMaskingLevelOfDatabaseColumn(project *store.ProjectMessage, databaseMes
 								"table_name":    table.Name,
 								"column_name":   column.Name,
 							},
-							"request.time": requestTime,
+							"request": map[string]any{
+								"time": requestTime,
+							},
 						}
 						hit, err := evaluateMaskingExceptionPolicyCondition(filteredMaskingException.Condition.Expression, maskingExceptionAttributes)
 						if err != nil {
@@ -2518,7 +2520,10 @@ func evaluateMaskingExceptionPolicyCondition(expression string, attributes map[s
 	if expression == "" {
 		return true, nil
 	}
-	maskingExceptionPolicyEnv, err := cel.NewEnv(common.MaskingExceptionPolicyCELAttributes...)
+	maskingExceptionPolicyEnv, err := cel.NewEnv(
+		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+		cel.Variable("request", cel.MapType(cel.StringType, cel.AnyType)),
+	)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to create CEL environment for masking exception policy")
 	}
