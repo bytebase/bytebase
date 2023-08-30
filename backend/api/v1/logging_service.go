@@ -114,6 +114,9 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 			order = api.ASC
 		}
 		activityFind.Order = &order
+	} else {
+		order := api.ASC
+		activityFind.Order = &order
 	}
 
 	for _, spec := range filters {
