@@ -8089,7 +8089,6 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the schema design to merge. Format: projects/{project}/schemaDesigns/{schemaDesign} |
 | target_name | [string](#string) |  | The target schema design to merge into. Format: projects/{project}/schemaDesigns/{schemaDesign} |
-| delete_source_branch | [bool](#bool) |  | Whether to delete the source schema design after merge. |
 
 
 
