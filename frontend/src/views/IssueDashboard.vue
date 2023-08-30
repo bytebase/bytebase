@@ -1,7 +1,6 @@
 <template>
   <div class="flex flex-col">
     <AdvancedSearch
-      v-if="isDev()"
       custom-class="m-4"
       :params="initSearchParams"
       :autofocus="autofocus"
@@ -113,7 +112,6 @@ import { UNKNOWN_ID, IssueFilter, ComposedIssue } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
-  isDev,
   extractUserUID,
   hasWorkspacePermissionV1,
   isDatabaseRelatedIssue,
