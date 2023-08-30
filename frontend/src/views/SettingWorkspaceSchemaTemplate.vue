@@ -4,7 +4,7 @@
       name="FIELD_TEMPLATE"
       :tab="$t('schema-template.field-template.self')"
     >
-      <FieldTemplates />
+      <FieldTemplates :show-engine-filter="true" />
     </NTabPane>
     <NTabPane
       name="COLUMN_TYPE_RESTRICTION"

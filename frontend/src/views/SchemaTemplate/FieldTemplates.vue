@@ -21,25 +21,27 @@
       </div>
     </div>
     <div class="flex items-center gap-x-5 my-4 pb-5 border-b">
-      <label
-        v-for="item in engineList"
-        :key="item"
-        class="flex items-center gap-x-1 text-sm text-gray-600"
-      >
-        <input
-          type="checkbox"
-          :value="item"
-          :checked="state.selectedEngine.has(item)"
-          class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-          @input="toggleEngineCheck(item)"
-        />
-        <EngineIcon :engine="item" custom-class="ml-0 mr-1" />
-        <span
-          class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
+      <template v-if="showEngineFilter">
+        <label
+          v-for="item in engineList"
+          :key="item"
+          class="flex items-center gap-x-1 text-sm text-gray-600"
         >
-          {{ countTemplateByEngine(item) }}
-        </span>
-      </label>
+          <input
+            type="checkbox"
+            :value="item"
+            :checked="state.selectedEngine.has(item)"
+            class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+            @input="toggleEngineCheck(item)"
+          />
+          <EngineIcon :engine="item" custom-class="ml-0 mr-1" />
+          <span
+            class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
+          >
+            {{ countTemplateByEngine(item) }}
+          </span>
+        </label>
+      </template>
       <BBTableSearch
         ref="searchField"
         class="ml-auto"
@@ -91,6 +93,7 @@ interface LocalState {
 
 const props = defineProps<{
   engine?: Engine;
+  showEngineFilter?: boolean;
 }>();
 
 defineEmits<{
