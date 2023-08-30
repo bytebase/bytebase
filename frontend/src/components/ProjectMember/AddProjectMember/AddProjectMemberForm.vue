@@ -94,7 +94,6 @@ import { useUserStore } from "@/store";
 import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle } from "@/utils";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -222,9 +221,9 @@ watch(
       const now = dayjs();
       const expiresAt = now.add(state.expireDays, "days");
       expression.push(`request.time < timestamp("${expiresAt.toISOString()}")`);
-      conditionName = `${displayRoleTitle(props.binding.role)} ${now.format(
+      conditionName = `${now.format("YYYY-MM-DD")} to ${expiresAt.format(
         "YYYY-MM-DD"
-      )}~${expiresAt.format("YYYY-MM-DD")}`;
+      )}`;
     }
     if (state.role === PresetRoleType.QUERIER) {
       if (state.databaseResourceCondition) {
