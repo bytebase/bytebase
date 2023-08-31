@@ -142,8 +142,8 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceM
 			if len(databaseList) == 0 {
 				return
 			}
-			instanceID := databaseList[0].InstanceID
 			for _, database := range databaseList {
+				instanceID := database.InstanceID
 				log.Debug("Sync database schema",
 					zap.String("instance", instanceID),
 					zap.String("database", database.DatabaseName),
