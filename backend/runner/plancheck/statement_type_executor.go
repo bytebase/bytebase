@@ -533,25 +533,6 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 		}, nil
 	}
 
-	if err != nil {
-		// nolint: nilerr
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Syntax error",
-				Content: err.Error(),
-				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:   0,
-						Detail: "",
-						Code:   advisor.StatementSyntaxError.Int64(),
-					},
-				},
-			},
-		}, nil
-	}
-
 	var results []*storepb.PlanCheckRunResult_Result
 
 	// Disallow CREATE/DROP DATABASE statements.

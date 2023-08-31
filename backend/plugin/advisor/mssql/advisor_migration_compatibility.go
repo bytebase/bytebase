@@ -284,9 +284,6 @@ func (l *migrationCompatibilityChecker) EnterExecute_body(ctx *parser.Execute_bo
 	if firstArgument == nil {
 		return
 	}
-	if firstArgument == nil {
-		return
-	}
 	if firstArgument.Execute_parameter() == nil {
 		return
 	}

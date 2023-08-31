@@ -1225,9 +1225,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							tableToSchemaGroupName[tableName] = fmt.Sprintf("databaseGroups/%s/schemaGroups/%s", databaseGroup.ResourceID, schemaGroup.ResourceID)
 							tableToTaskStatement[tableName] = &strings.Builder{}
 						}
-						if err != nil {
-							return nil, err
-						}
 						// Placeholder is unique in the same database group parent, so we can use it as the key.
 						schemaGroupsToMatchedTableNames[schemaGroup.Placeholder] = matches
 					}

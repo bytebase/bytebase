@@ -159,9 +159,6 @@ func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *TaskCheckRun
 	); err != nil {
 		return err
 	}
-	if err != nil {
-		return err
-	}
 
 	return tx.Commit()
 }

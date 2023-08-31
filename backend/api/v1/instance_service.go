@@ -381,8 +381,8 @@ func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, project
 		}
 	}
 
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to sync slow queries for following instances: %s", err.Error())
+	if errs != nil {
+		return nil, status.Errorf(codes.Internal, "failed to sync slow queries for following instances: %s", errs.Error())
 	}
 
 	return &emptypb.Empty{}, nil
