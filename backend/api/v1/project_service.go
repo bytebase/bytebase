@@ -416,10 +416,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		ProjectResourceID: &project.ResourceID,
 	})
 	if err != nil {
-		return nil, err
-	}
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to get repository, error %v", err.Error())
 	}
 	if repo == nil {
 		if !request.AllowMissing {

@@ -47,9 +47,6 @@ func (s *Store) CreateTaskDAGV2(ctx context.Context, create *TaskDAGMessage) err
 	); err != nil {
 		return err
 	}
-	if err != nil {
-		return err
-	}
 
 	return tx.Commit()
 }
