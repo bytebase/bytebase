@@ -22,7 +22,7 @@
           v-for="(column, index) in columnList"
           :key="index"
           role="table-cell"
-          class="bb-grid-header-cell capitalize"
+          class="bb-grid-header-cell"
         >
           <template v-if="index === 0">
             <input
@@ -199,44 +199,55 @@ type Mode = "ALL" | "PROJECT";
 
 const { t } = useI18n();
 
-const columnList: BBGridColumn[] = [
-  {
-    title: "",
-    width: "minmax(auto, 2rem)",
-  },
-  {
-    title: "",
-    width: "minmax(auto, 2rem)",
-  },
-  {
-    title: t("issue.table.name"),
-    width: "minmax(auto, 2fr)",
-  },
-  {
-    title: t("issue.table.environment"),
-    width: "minmax(auto, 10rem)",
-  },
-  {
-    title: t("issue.table.progress"),
-    width: "minmax(auto, 10rem)",
-  },
-  {
-    title: t("issue.table.updated"),
-    width: "minmax(auto, 5rem)",
-  },
-  {
-    title: t("issue.table.approver"),
-    width: "minmax(auto, 2rem)",
-  },
-  {
-    title: t("issue.table.assignee"),
-    width: "minmax(auto, 2rem)",
-  },
-  {
-    title: t("issue.table.creator"),
-    width: "minmax(auto, 2rem)",
-  },
-];
+const columnList = computed((): BBGridColumn[] => {
+  const resp = [
+    {
+      title: "",
+      width: "2rem",
+    },
+    {
+      title: "",
+      width: "2rem",
+    },
+    {
+      title: t("issue.table.name"),
+      width: "minmax(auto, 1fr)",
+    },
+    {
+      title: t("issue.table.environment"),
+      width: "minmax(auto, 10rem)",
+    },
+    {
+      title: t("issue.table.progress"),
+      width: "minmax(auto, 10rem)",
+    },
+    {
+      title: t("issue.table.updated"),
+      width: "minmax(auto, 5rem)",
+    },
+    {
+      title: t("issue.table.approver"),
+      width: "minmax(auto, 2rem)",
+    },
+    {
+      title: t("issue.table.assignee"),
+      width: "minmax(auto, 2rem)",
+    },
+    {
+      title: t("issue.table.creator"),
+      width: "minmax(auto, 2rem)",
+    },
+  ];
+
+  if (props.issueList.length === 0) {
+    return resp.map((col) => ({
+      ...col,
+      width: "1fr",
+    }));
+  }
+
+  return resp;
+});
 
 interface LocalState {
   dataSource: any[];
