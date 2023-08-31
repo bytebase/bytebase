@@ -1,5 +1,6 @@
 import { computed } from "vue";
 import { Engine } from "@/types/proto/v1/common";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { instanceV1HasSSH, instanceV1HasSSL } from "@/utils";
 import { defaultPortForEngine } from "./constants";
 import { InstanceFormContext, useInstanceFormContext } from "./context";
@@ -16,8 +17,7 @@ export const useInstanceSpecs = (
     return (
       (basicInfo.value.engine === Engine.POSTGRES ||
         basicInfo.value.engine === Engine.REDSHIFT) &&
-      false
-      // TODO: state.currentDataSourceType === DataSourceType.ADMIN
+      context?.editingDataSource.value?.type === DataSourceType.ADMIN
     );
   });
   const showSSL = computed((): boolean => {
