@@ -540,7 +540,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 				})
 			}
 		default:
-			sensitive, err := extractor.pgExtractColumnRefFromExpressionNode(resTarget.ResTarget.Val)
+			maskingLevel, err := extractor.pgExtractColumnRefFromExpressionNode(resTarget.ResTarget.Val)
 			if err != nil {
 				return nil, err
 			}
@@ -552,7 +552,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 			}
 			result = append(result, fieldInfo{
 				name:         fieldName,
-				maskingLevel: sensitive,
+				maskingLevel: maskingLevel,
 			})
 		}
 	}
@@ -781,7 +781,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(i
 	case *pgquery.Node_ColumnRef:
 		columnNameDef, err := pg.ConvertNodeListToColumnNameDef(node.ColumnRef.Fields)
 		if err != nil {
-			return defaultMaskingLevel, err
+			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
 		return extractor.pgCheckFieldMaskingLevel(extractSchemaTableColumnName(columnNameDef)), nil
 	case *pgquery.Node_AExpr:
@@ -813,7 +813,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(i
 	case *pgquery.Node_SubLink:
 		maskingLevel, err := extractor.pgExtractColumnRefFromExpressionNode(node.SubLink.Testexpr)
 		if err != nil {
-			return defaultMaskingLevel, err
+			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
 		// Subquery in SELECT fields is special.
 		// It can be the non-associated or associated subquery.
@@ -826,7 +826,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(i
 		}
 		fieldList, err := subqueryExtractor.pgExtractNode(node.SubLink.Subselect)
 		if err != nil {
-			return defaultMaskingLevel, err
+			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
 		for _, field := range fieldList {
 			if cmp.Less[storepb.MaskingLevel](maskingLevel, field.maskingLevel) {
