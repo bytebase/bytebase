@@ -1,59 +1,66 @@
 <template>
-  <BBTable
-    ref="tableRef"
+  <div
+    class="text-left pl-4 pt-4 pb-2 py-text-base leading-6 font-medium text-gray-900"
+  >
+    {{ title }}
+  </div>
+  <BBGrid
     :column-list="columnList"
-    :section-data-source="issueSectionList"
-    :show-header="true"
+    :data-source="issueList"
+    :row-clickable="true"
+    :show-placeholder="showPlaceholder"
+    :is-row-expanded="isIssueExpanded"
+    :is-row-clickable="(_: ComposedIssue) => true"
     :custom-header="true"
-    :left-bordered="leftBordered"
-    :right-bordered="rightBordered"
-    :top-bordered="topBordered"
-    :bottom-bordered="bottomBordered"
-    v-bind="$attrs"
+    class="border w-auto overflow-x-auto"
+    header-class="capitalize"
     @click-row="clickIssue"
   >
     <template #header>
-      <th
-        v-for="(column, index) in columnList"
-        :key="index"
-        scope="col"
-        class="pl-2 first:pl-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
-        :class="[column.center && 'text-center pr-2']"
-      >
-        <template v-if="index === 0">
-          <input
-            v-if="issueList.length > 0"
-            type="checkbox"
-            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-            :checked="allSelectionState.checked"
-            :indeterminate="allSelectionState.indeterminate"
-            @input="
-              setAllIssuesSelection(($event.target as HTMLInputElement).checked)
-            "
-          />
-        </template>
-        <template v-else>{{ $t(column.title) }}</template>
-      </th>
+      <div role="table-row" class="bb-grid-row bb-grid-header-row group">
+        <div
+          v-for="(column, index) in columnList"
+          :key="index"
+          role="table-cell"
+          class="bb-grid-header-cell"
+        >
+          <template v-if="index === 0">
+            <input
+              v-if="issueList.length > 0"
+              type="checkbox"
+              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+              :checked="allSelectionState.checked"
+              :indeterminate="allSelectionState.indeterminate"
+              @input="
+                setAllIssuesSelection(
+                  ($event.target as HTMLInputElement).checked
+                )
+              "
+            />
+          </template>
+          <template v-else>{{ column.title }}</template>
+        </div>
+      </div>
     </template>
-    <template #body="{ rowData: issue }: { rowData: ComposedIssue }">
-      <BBTableCell
-        class="w-[1%]"
+    <template #item="{ item: issue }: { item: ComposedIssue }">
+      <div
+        class="bb-grid-cell"
         @click.stop="setIssueSelection(issue, !isIssueSelected(issue))"
       >
         <!-- width: 1% means as narrow as possible -->
         <input
           type="checkbox"
-          class="ml-2 h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
           :checked="isIssueSelected(issue)"
         />
-      </BBTableCell>
-      <BBTableCell class="table-cell w-12">
+      </div>
+      <div class="bb-grid-cell w-12">
         <IssueStatusIcon
           :issue-status="issue.status"
           :task-status="issueTaskStatus(issue)"
         />
-      </BBTableCell>
-      <BBTableCell class="table-cell">
+      </div>
+      <div class="bb-grid-cell">
         <div class="flex items-center">
           <div class="whitespace-nowrap mr-2 text-control">
             <template v-if="mode == 'ALL'">
@@ -68,7 +75,10 @@
             }"
           >
             <span
-              v-for="(item, index) in issueNameSections(issue.title)"
+              v-for="(item, index) in issueHighlightSections(
+                issue.title,
+                highlights
+              )"
               :key="index"
               :class="['whitespace-pre', item.highlight ? 'bg-yellow-100' : '']"
             >
@@ -88,8 +98,8 @@
             </span>
           </NTooltip>
         </div>
-      </BBTableCell>
-      <BBTableCell class="table-cell w-36">
+      </div>
+      <div class="bb-grid-cell">
         <div v-if="isDatabaseRelatedIssue(issue)" class="flex items-center">
           {{ activeEnvironmentForIssue(issue)?.title }}
           <ProductionEnvironmentV1Icon
@@ -98,8 +108,8 @@
           />
         </div>
         <div v-else>-</div>
-      </BBTableCell>
-      <BBTableCell class="hidden sm:table-cell w-36">
+      </div>
+      <div class="hidden sm:bb-grid-cell">
         <BBStepBar
           :step-list="taskStepList(issue)"
           @click-step="
@@ -108,14 +118,14 @@
             }
           "
         />
-      </BBTableCell>
-      <BBTableCell class="hidden md:table-cell w-36">
+      </div>
+      <div class="hidden md:bb-grid-cell w-36">
         {{ humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000) }}
-      </BBTableCell>
-      <BBTableCell class="hidden sm:table-cell w-36">
+      </div>
+      <div class="hidden sm:bb-grid-cell w-36">
         <CurrentApproverV1 :issue="issue" />
-      </BBTableCell>
-      <BBTableCell class="hidden sm:table-cell w-36">
+      </div>
+      <div class="hidden sm:bb-grid-cell w-36">
         <div class="flex flex-row items-center">
           <BBAvatar
             :size="'SMALL'"
@@ -125,17 +135,31 @@
             {{ issue.assigneeEntity?.title ?? $t("common.unassigned") }}
           </span>
         </div>
-      </BBTableCell>
-      <BBTableCell class="hidden sm:table-cell w-36">
+      </div>
+      <div class="hidden sm:bb-grid-cell w-36">
         <div class="flex flex-row items-center">
           <BBAvatar :size="'SMALL'" :username="issue.creatorEntity.title" />
           <span class="ml-2">
             {{ issue.creatorEntity.title }}
           </span>
         </div>
-      </BBTableCell>
+      </div>
     </template>
-  </BBTable>
+    <template #expanded-item="{ item: issue }: { item: ComposedIssue }">
+      <div class="w-full max-h-[20rem] overflow-auto pl-2">
+        <span
+          v-for="(item, index) in issueHighlightSections(
+            issue.description,
+            highlights
+          )"
+          :key="index"
+          :class="['whitespace-pre', item.highlight ? 'bg-yellow-100' : '']"
+        >
+          {{ item.text }}
+        </span>
+      </div>
+    </template>
+  </BBGrid>
 
   <div
     v-if="isTableInViewport && selectedIssueList.length > 0"
@@ -146,14 +170,11 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed, watch, ref } from "vue";
+import { reactive, computed, watch, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import type {
-  BBTableColumn,
-  BBStep,
-  BBStepStatus,
-  BBTableSectionDataSource,
-} from "@/bbkit/types";
+import { BBGridColumn } from "@/bbkit";
+import type { BBStep, BBStepStatus } from "@/bbkit/types";
 import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActionsV1.vue";
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import IssueStatusIcon from "@/components/IssueV1/components/IssueStatusIcon.vue";
@@ -176,76 +197,81 @@ import { isDatabaseRelatedIssue, activeTaskInRollout } from "@/utils";
 
 type Mode = "ALL" | "PROJECT";
 
-const columnList: BBTableColumn[] = [
-  {
-    title: "",
-  },
-  {
-    title: "",
-  },
-  {
-    title: "issue.table.name",
-  },
-  {
-    title: "issue.table.environment",
-  },
-  {
-    title: "issue.table.progress",
-  },
-  {
-    title: "issue.table.updated",
-  },
-  {
-    title: "issue.table.approver",
-  },
-  {
-    title: "issue.table.assignee",
-  },
-  {
-    title: "issue.table.creator",
-  },
-];
+const { t } = useI18n();
+
+const columnList = computed((): BBGridColumn[] => {
+  const resp = [
+    {
+      title: "",
+      width: "2rem",
+    },
+    {
+      title: "",
+      width: "2rem",
+    },
+    {
+      title: t("issue.table.name"),
+      width: "minmax(auto, 1fr)",
+    },
+    {
+      title: t("issue.table.environment"),
+      width: "minmax(auto, 10rem)",
+    },
+    {
+      title: t("issue.table.progress"),
+      width: "minmax(auto, 10rem)",
+    },
+    {
+      title: t("issue.table.updated"),
+      width: "minmax(auto, 5rem)",
+    },
+    {
+      title: t("issue.table.approver"),
+      width: "minmax(auto, 2rem)",
+    },
+    {
+      title: t("issue.table.assignee"),
+      width: "minmax(auto, 2rem)",
+    },
+    {
+      title: t("issue.table.creator"),
+      width: "minmax(auto, 2rem)",
+    },
+  ];
+
+  if (props.issueList.length === 0) {
+    return resp.map((col) => ({
+      ...col,
+      width: "1fr",
+    }));
+  }
+
+  return resp;
+});
 
 interface LocalState {
   dataSource: any[];
   selectedIssueIdList: Set<string>;
 }
 
-const props = defineProps({
-  title: {
-    type: String,
-    required: true,
-  },
-  issueList: {
-    type: Array as PropType<ComposedIssue[]>,
-    default: () => [],
-  },
-  mode: {
-    default: "ALL",
-    type: String as PropType<Mode>,
-  },
-  leftBordered: {
-    default: true,
-    type: Boolean,
-  },
-  rightBordered: {
-    default: true,
-    type: Boolean,
-  },
-  topBordered: {
-    default: true,
-    type: Boolean,
-  },
-  bottomBordered: {
-    default: true,
-    type: Boolean,
-  },
-  highlightText: {
-    default: "",
-    required: false,
-    type: String,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    title: string;
+    issueList: ComposedIssue[];
+    mode?: Mode;
+    leftBordered: boolean;
+    rightBordered: boolean;
+    topBordered: boolean;
+    bottomBordered: boolean;
+    highlightText: string;
+    showPlaceholder: boolean;
+  }>(),
+  {
+    mode: "ALL",
+    highlightText: "",
+  }
+);
+
 const router = useRouter();
 
 const state = reactive<LocalState>({
@@ -257,17 +283,6 @@ const environmentStore = useEnvironmentV1Store();
 
 const tableRef = ref<HTMLTableElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
-
-const issueSectionList = computed(
-  (): BBTableSectionDataSource<ComposedIssue>[] => {
-    return [
-      {
-        title: props.title,
-        list: props.issueList,
-      },
-    ];
-  }
-);
 
 const selectedIssueList = computed(() => {
   return props.issueList.filter((issue) =>
@@ -375,8 +390,12 @@ const isAssigneeAttentionOn = (issue: ComposedIssue) => {
   return false;
 };
 
-const clickIssue = (_: number, row: number, e: MouseEvent) => {
-  const issue = props.issueList[row];
+const clickIssue = (
+  issue: ComposedIssue,
+  _: number,
+  row: number,
+  e: MouseEvent
+) => {
   const url = `/issue/${issueSlug(issue.name, issue.uid)}`;
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");
@@ -430,38 +449,79 @@ interface IssueNameSection {
   highlight: boolean;
 }
 
-const issueNameSections = (issueName: string): IssueNameSection[] => {
+const highlights = computed(() => {
   if (!props.highlightText) {
+    return [];
+  }
+  return props.highlightText.toLowerCase().split(" ");
+});
+
+const issueHighlightSections = (
+  text: string,
+  highlights: string[]
+): IssueNameSection[] => {
+  if (!text) {
+    return [];
+  }
+  if (highlights.length === 0) {
     return [
       {
-        text: issueName,
+        text,
         highlight: false,
       },
     ];
   }
 
-  const resp = [];
-  const sections = issueName
-    .toLowerCase()
-    .split(props.highlightText.toLowerCase());
-  let pos = 0;
-  for (let i = 0; i < sections.length; i++) {
-    const section = sections[i];
-    if (section.length) {
-      resp.push({
-        text: issueName.slice(pos, pos + section.length),
-        highlight: false,
-      });
-      pos += section.length;
+  for (let i = 0; i < highlights.length; i++) {
+    const highlight = highlights[i];
+    const sections = text.toLowerCase().split(highlight);
+    if (sections.length === 0) {
+      continue;
     }
-    if (i < sections.length - 1) {
-      resp.push({
-        text: issueName.slice(pos, pos + props.highlightText.length),
-        highlight: true,
-      });
-      pos += props.highlightText.length;
+
+    const resp: IssueNameSection[] = [];
+    let pos = 0;
+    const nextHighlights = [
+      ...highlights.slice(0, i),
+      ...highlights.slice(i + 1),
+    ];
+    for (const section of sections) {
+      if (section.length) {
+        resp.push(
+          ...issueHighlightSections(
+            text.slice(pos, pos + section.length),
+            nextHighlights
+          )
+        );
+        pos += section.length;
+      }
+      if (i < sections.length - 1) {
+        const t = text.slice(pos, pos + highlight.length);
+        if (t) {
+          resp.push({
+            text: t,
+            highlight: true,
+          });
+        }
+        pos += highlight.length;
+      }
     }
+    return resp;
   }
-  return resp;
+
+  return [
+    {
+      text,
+      highlight: false,
+    },
+  ];
+};
+
+const isIssueExpanded = (issue: ComposedIssue): boolean => {
+  if (!props.highlightText || !issue.description) {
+    return false;
+  }
+  const sections = issueHighlightSections(issue.description, highlights.value);
+  return sections.some((item) => item.highlight);
 };
 </script>
