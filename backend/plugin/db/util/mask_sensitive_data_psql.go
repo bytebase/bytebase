@@ -1,6 +1,7 @@
 package util
 
 import (
+	"cmp"
 	"fmt"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
@@ -8,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pkg/errors"
 )
@@ -59,8 +61,9 @@ func (extractor *sensitiveFieldExtractor) extractPostgreSQLSensitiveField(statem
 	result := []db.SensitiveField{}
 	for _, field := range fieldList {
 		result = append(result, db.SensitiveField{
-			Name:      field.name,
-			Sensitive: field.sensitive,
+			Name:         field.name,
+			Sensitive:    field.sensitive,
+			MaskingLevel: field.maskingLevel,
 		})
 	}
 	return result, nil
@@ -110,8 +113,9 @@ func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []fieldInfo, rightF
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			// Merge the sensitive attribute for the same column name field.
-			if rField, exists := rightFieldMap[field.name]; exists && rField.sensitive {
+			if rField, exists := rightFieldMap[field.name]; exists && cmp.Less[storepb.MaskingLevel](field.maskingLevel, rField.maskingLevel) {
 				field.sensitive = true
+				field.maskingLevel = rField.maskingLevel
 			}
 			result = append(result, field)
 		}
@@ -141,8 +145,9 @@ func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []fieldInfo, rightF
 				_, existsInUsingMap := usingMap[field.name]
 				rField, existsInRightField := rightFieldMap[field.name]
 				// Merge the sensitive attribute for the column name field in USING.
-				if existsInUsingMap && existsInRightField && rField.sensitive {
+				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.maskingLevel, rField.maskingLevel) {
 					field.sensitive = true
+					field.maskingLevel = rField.maskingLevel
 				}
 				result = append(result, field)
 			}
@@ -184,10 +189,11 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.
 				columnName = columnNameList[i]
 			}
 			result = append(result, fieldInfo{
-				schema:    "public",
-				table:     aliasName,
-				name:      columnName,
-				sensitive: item.sensitive,
+				schema:       "public",
+				table:        aliasName,
+				name:         columnName,
+				maskingLevel: item.maskingLevel,
+				sensitive:    item.sensitive,
 			})
 		}
 		return result, nil
@@ -220,9 +226,10 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_R
 	if node.RangeVar.Alias == nil {
 		for _, column := range tableSchema.ColumnList {
 			res = append(res, fieldInfo{
-				name:      column.Name,
-				table:     tableSchema.Name,
-				sensitive: column.Sensitive,
+				name:         column.Name,
+				table:        tableSchema.Name,
+				maskingLevel: column.MaskingLevel,
+				sensitive:    column.Sensitive,
 			})
 		}
 	} else {
@@ -240,10 +247,11 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_R
 				columnName = columnNameList[i]
 			}
 			res = append(res, fieldInfo{
-				schema:    "public",
-				name:      columnName,
-				table:     aliasName,
-				sensitive: column.Sensitive,
+				schema:       "public",
+				name:         columnName,
+				table:        aliasName,
+				maskingLevel: column.MaskingLevel,
+				sensitive:    column.Sensitive,
 			})
 		}
 	}
@@ -310,8 +318,9 @@ func (extractor *sensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.No
 		cteInfo := db.TableSchema{Name: node.CommonTableExpr.Ctename}
 		for _, field := range initialField {
 			cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
-				Name:      field.name,
-				Sensitive: field.sensitive,
+				Name:         field.name,
+				MaskingLevel: field.maskingLevel,
+				Sensitive:    field.sensitive,
 			})
 		}
 
@@ -340,9 +349,10 @@ func (extractor *sensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.No
 
 			changed := false
 			for i, field := range fieldList {
-				if field.sensitive && !cteInfo.ColumnList[i].Sensitive {
+				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingLevel, field.maskingLevel) {
 					changed = true
 					cteInfo.ColumnList[i].Sensitive = true
+					cteInfo.ColumnList[i].MaskingLevel = field.maskingLevel
 				}
 			}
 
@@ -385,8 +395,9 @@ func (extractor *sensitiveFieldExtractor) pgExtractNonRecursiveCTE(node *pgquery
 
 	for _, field := range fieldList {
 		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
-			Name:      field.name,
-			Sensitive: field.sensitive,
+			Name:         field.name,
+			Sensitive:    field.sensitive,
+			MaskingLevel: field.maskingLevel,
 		})
 	}
 
@@ -428,6 +439,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 				return nil, errors.Errorf("expect Node_List but found %T", row.Node)
 			}
 			for _, item := range list.List.Items {
+				//TODO(zp): make pgExtractColumnRefFromExpressionNode returns masking level instead of sensitive.
 				sensitive, err := extractor.pgExtractColumnRefFromExpressionNode(item)
 				if err != nil {
 					return nil, err
@@ -461,10 +473,18 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 		}
 		var result []fieldInfo
 		for i, field := range leftField {
+			finalLevel := storepb.MaskingLevel_NONE
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
+				finalLevel = field.maskingLevel
+			}
+			if cmp.Less[storepb.MaskingLevel](finalLevel, rightField[i].maskingLevel) {
+				finalLevel = rightField[i].maskingLevel
+			}
 			result = append(result, fieldInfo{
-				name:      field.name,
-				table:     field.table,
-				sensitive: field.sensitive || rightField[i].sensitive,
+				name:         field.name,
+				table:        field.table,
+				sensitive:    field.sensitive || rightField[i].sensitive,
+				maskingLevel: finalLevel,
 			})
 		}
 		return result, nil
