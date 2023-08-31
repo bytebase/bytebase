@@ -107,19 +107,27 @@ message SchemaDesign {
   // The etag of the schema design.
   string etag = 12;
 
+  // The protection of the schema design branch.
+  Protection protection = 13;
+
   // The creator of the schema design.
   // Format: users/{email}
-  string creator = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The updater of the schema design.
   // Format: users/{email}
-  string updater = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string updater = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the schema design was created.
-  google.protobuf.Timestamp create_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the schema design was last updated.
-  google.protobuf.Timestamp update_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message Protection {
+  // Permits force pushes to the branch.
+  bool allow_force_pushes = 1;
 }
 
 message GetSchemaDesignRequest {
