@@ -89,6 +89,25 @@
             />
           </div>
 
+          <div v-if="classificationConfig" class="sm:col-span-2 sm:col-start-1">
+            <label for="column-name" class="textlabel">
+              {{ $t("schema-template.classification.self") }}
+            </label>
+            <div class="flex items-center gap-x-2">
+              {{ columnClassification?.title ?? "N/A" }}
+              <ClassificationLevelBadge
+                :level-id="columnClassification?.levelId"
+                :classification-config="classificationConfig"
+              />
+              <button
+                class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                @click.prevent="state.showClassificationDrawer = true"
+              >
+                <heroicons-outline:pencil class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
           <!-- type -->
           <div class="sm:col-span-2 sm:col-start-1">
             <label for="column-type" class="textlabel">
@@ -200,6 +219,14 @@
       </div>
     </template>
   </DrawerContent>
+
+  <SelectClassificationDrawer
+    v-if="classificationConfig"
+    :show="state.showClassificationDrawer"
+    :classification-config="classificationConfig"
+    @dismiss="state.showClassificationDrawer = false"
+    @select="onClassificationSelect"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -224,14 +251,16 @@ const props = defineProps<{
 
 const emit = defineEmits(["dismiss"]);
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState extends SchemaTemplateSetting_FieldTemplate {}
+interface LocalState extends SchemaTemplateSetting_FieldTemplate {
+  showClassificationDrawer: boolean;
+}
 
 const state = reactive<LocalState>({
   id: props.template.id,
   engine: props.template.engine,
   category: props.template.category,
   column: Object.assign({}, props.template.column),
+  showClassificationDrawer: false,
 });
 const settingStore = useSettingV1Store();
 const store = useSchemaEditorStore();
@@ -240,6 +269,19 @@ const allowEdit = computed(() => {
     useWorkspacePermissionV1("bb.permission.workspace.manage-general").value &&
     !props.readonly
   );
+});
+
+const classificationConfig = computed(() => {
+  return settingStore.classification[0];
+});
+
+const columnClassification = computed(() => {
+  if (!state.column?.classification || !classificationConfig.value) {
+    return;
+  }
+  return classificationConfig.value.classification[
+    state.column?.classification
+  ];
 });
 
 const dataTypeOptions = computed(() => {
@@ -300,5 +342,13 @@ const sumbitDisabled = computed(() => {
 const sumbit = async () => {
   await store.upsertSchemaTemplate(state);
   emit("dismiss");
+};
+
+const onClassificationSelect = (id: string) => {
+  if (!state.column) {
+    return;
+  }
+  state.column.classification = id;
+  state.showClassificationDrawer = false;
 };
 </script>

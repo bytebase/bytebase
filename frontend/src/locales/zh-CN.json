@@ -2756,6 +2756,11 @@
       "default-value": "默认值",
       "comment": "备注",
       "nullable": "可为空"
+    },
+    "classification": {
+      "self": "数据分类分级",
+      "select": "选择分类",
+      "search": "搜索分类"
     }
   },
   "principal": {

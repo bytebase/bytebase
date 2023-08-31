@@ -2763,6 +2763,11 @@
       "default-value": "Default value",
       "comment": "Comment",
       "nullable": "Nullable"
+    },
+    "classification": {
+      "self": "Data Classification",
+      "select": "Select classification",
+      "search": "Search classification"
     }
   },
   "principal": {

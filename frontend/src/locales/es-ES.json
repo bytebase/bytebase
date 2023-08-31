@@ -2760,6 +2760,11 @@
       "default-value": "Valor por defecto",
       "comment": "Comentario",
       "nullable": "Anulable"
+    },
+    "classification": {
+      "self": "Clasificación de datos",
+      "select": "Seleccionar clasificación",
+      "search": "Clasificación de búsqueda"
     }
   },
   "principal": {
