@@ -541,21 +541,13 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 							zap.Error(err))
 						return nil, err
 					}
-					if newAssignee == nil {
-						err := errors.Errorf("failed to post webhook event after changing the issue assignee, new assignee not found for ID %v", newID)
-						log.Warn(err.Error(),
-							zap.String("issue_name", meta.Issue.Title),
-							zap.String("new_assignee_id", update.NewValue),
-							zap.Error(err))
-						return nil, err
-					}
 
 					if oldAssignee != nil && newAssignee != nil {
 						title = fmt.Sprintf("Reassigned issue from %s to %s - %s", oldAssignee.Name, newAssignee.Name, meta.Issue.Title)
 					} else if newAssignee != nil {
 						title = fmt.Sprintf("Assigned issue to %s - %s", newAssignee.Name, meta.Issue.Title)
 					} else if oldAssignee != nil {
-						title = fmt.Sprintf("Unassigned issue from %s - %s", newAssignee.Name, meta.Issue.Title)
+						title = fmt.Sprintf("Unassigned issue from %s - %s", oldAssignee.Name, meta.Issue.Title)
 					}
 				}
 			}

@@ -132,9 +132,6 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	if targetDatabase == nil {
 		return nil, errors.Wrapf(err, "target database %q not found in instance %q", *payload.DatabaseName, instance.Title)
 	}
-	if err != nil {
-		return nil, err
-	}
 	log.Debug("Start database restore from backup...",
 		zap.String("source_instance", sourceDatabase.InstanceID),
 		zap.String("source_database", sourceDatabase.DatabaseName),
