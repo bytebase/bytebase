@@ -596,7 +596,7 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.waitRollout(ctx, rollout.Name)
+	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
 	a.Error(err)
 }
 
