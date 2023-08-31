@@ -659,6 +659,8 @@ type ColumnInfo struct {
 
 // SensitiveField is the struct about SELECT fields.
 type SensitiveField struct {
-	Name      string
-	Sensitive bool
+	Name string
+	// TODO(zp): retire Sensitive boolean flag.
+	Sensitive    bool
+	MaskingLevel storepb.MaskingLevel
 }
