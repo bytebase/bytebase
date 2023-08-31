@@ -280,19 +280,6 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 		}, nil
 	}
 
-	if err != nil {
-		// nolint: nilerr
-		return []api.TaskCheckResult{
-			{
-				Status:    api.TaskCheckStatusError,
-				Namespace: api.AdvisorNamespace,
-				Code:      advisor.StatementSyntaxError.Int(),
-				Title:     "Syntax error",
-				Content:   err.Error(),
-			},
-		}, nil
-	}
-
 	// Disallow CREATE/DROP DATABASE statements.
 	result = append(result, mysqlCreateAndDropDatabaseCheck(stmts)...)
 
