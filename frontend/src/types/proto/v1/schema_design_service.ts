@@ -51,6 +51,9 @@ export interface SchemaDesign {
   type: SchemaDesign_Type;
   /** The etag of the schema design. */
   etag: string;
+  protection?:
+    | Protection
+    | undefined;
   /**
    * The creator of the schema design.
    * Format: users/{email}
@@ -108,6 +111,11 @@ export function schemaDesign_TypeToJSON(object: SchemaDesign_Type): string {
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface Protection {
+  /** Permits force pushes to the branch. */
+  allowForcePushes: boolean;
 }
 
 export interface GetSchemaDesignRequest {
@@ -223,6 +231,7 @@ function createBaseSchemaDesign(): SchemaDesign {
     baselineChangeHistoryId: undefined,
     type: 0,
     etag: "",
+    protection: undefined,
     creator: "",
     updater: "",
     createTime: undefined,
@@ -268,17 +277,20 @@ export const SchemaDesign = {
     if (message.etag !== "") {
       writer.uint32(98).string(message.etag);
     }
+    if (message.protection !== undefined) {
+      Protection.encode(message.protection, writer.uint32(106).fork()).ldelim();
+    }
     if (message.creator !== "") {
-      writer.uint32(106).string(message.creator);
+      writer.uint32(114).string(message.creator);
     }
     if (message.updater !== "") {
-      writer.uint32(114).string(message.updater);
+      writer.uint32(122).string(message.updater);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(122).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(130).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(130).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(138).fork()).ldelim();
     }
     return writer;
   },
@@ -379,24 +391,31 @@ export const SchemaDesign = {
             break;
           }
 
-          message.creator = reader.string();
+          message.protection = Protection.decode(reader, reader.uint32());
           continue;
         case 14:
           if (tag !== 114) {
             break;
           }
 
-          message.updater = reader.string();
+          message.creator = reader.string();
           continue;
         case 15:
           if (tag !== 122) {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updater = reader.string();
           continue;
         case 16:
           if (tag !== 130) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 17:
+          if (tag !== 138) {
             break;
           }
 
@@ -429,6 +448,7 @@ export const SchemaDesign = {
         : undefined,
       type: isSet(object.type) ? schemaDesign_TypeFromJSON(object.type) : 0,
       etag: isSet(object.etag) ? String(object.etag) : "",
+      protection: isSet(object.protection) ? Protection.fromJSON(object.protection) : undefined,
       creator: isSet(object.creator) ? String(object.creator) : "",
       updater: isSet(object.updater) ? String(object.updater) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
@@ -453,6 +473,8 @@ export const SchemaDesign = {
     message.baselineChangeHistoryId !== undefined && (obj.baselineChangeHistoryId = message.baselineChangeHistoryId);
     message.type !== undefined && (obj.type = schemaDesign_TypeToJSON(message.type));
     message.etag !== undefined && (obj.etag = message.etag);
+    message.protection !== undefined &&
+      (obj.protection = message.protection ? Protection.toJSON(message.protection) : undefined);
     message.creator !== undefined && (obj.creator = message.creator);
     message.updater !== undefined && (obj.updater = message.updater);
     message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
@@ -483,10 +505,69 @@ export const SchemaDesign = {
     message.baselineChangeHistoryId = object.baselineChangeHistoryId ?? undefined;
     message.type = object.type ?? 0;
     message.etag = object.etag ?? "";
+    message.protection = (object.protection !== undefined && object.protection !== null)
+      ? Protection.fromPartial(object.protection)
+      : undefined;
     message.creator = object.creator ?? "";
     message.updater = object.updater ?? "";
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseProtection(): Protection {
+  return { allowForcePushes: false };
+}
+
+export const Protection = {
+  encode(message: Protection, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.allowForcePushes === true) {
+      writer.uint32(8).bool(message.allowForcePushes);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Protection {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProtection();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.allowForcePushes = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Protection {
+    return { allowForcePushes: isSet(object.allowForcePushes) ? Boolean(object.allowForcePushes) : false };
+  },
+
+  toJSON(message: Protection): unknown {
+    const obj: any = {};
+    message.allowForcePushes !== undefined && (obj.allowForcePushes = message.allowForcePushes);
+    return obj;
+  },
+
+  create(base?: DeepPartial<Protection>): Protection {
+    return Protection.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Protection>): Protection {
+    const message = createBaseProtection();
+    message.allowForcePushes = object.allowForcePushes ?? false;
     return message;
   },
 };

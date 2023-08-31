@@ -63,6 +63,9 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
           ...schemaDesign,
           type: SchemaDesign_Type.PERSONAL_DRAFT,
           baselineSheetName: baselineSheetName,
+          protection: {
+            allowForcePushes: true,
+          },
         },
       });
     schemaDesignMapByName.set(createdSchemaDesign.name, createdSchemaDesign);

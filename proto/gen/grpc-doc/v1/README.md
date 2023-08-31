@@ -503,6 +503,7 @@
     - [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest)
     - [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest)
     - [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse)
+    - [Protection](#bytebase-v1-Protection)
     - [SchemaDesign](#bytebase-v1-SchemaDesign)
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
   
@@ -8126,6 +8127,21 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 
 
 
+<a name="bytebase-v1-Protection"></a>
+
+### Protection
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| allow_force_pushes | [bool](#bool) |  | Permits force pushes to the branch. |
+
+
+
+
+
+
 <a name="bytebase-v1-SchemaDesign"></a>
 
 ### SchemaDesign
@@ -8146,6 +8162,7 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 | baseline_change_history_id | [string](#string) | optional | The baseline change history id. |
 | type | [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type) |  | The type of the schema design. |
 | etag | [string](#string) |  | The etag of the schema design. |
+| protection | [Protection](#bytebase-v1-Protection) |  |  |
 | creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |
 | updater | [string](#string) |  | The updater of the schema design. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was created. |

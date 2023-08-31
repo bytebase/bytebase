@@ -31,7 +31,7 @@
             <NInput
               class="!w-4/5 text-center"
               readonly
-              :value="sourceBranch.title"
+              :value="targetBranch.title"
               size="large"
             />
           </div>
@@ -42,7 +42,7 @@
             <NInput
               class="!w-4/5 text-center"
               readonly
-              :value="targetBranch.title"
+              :value="sourceBranch.title"
               size="large"
             />
           </div>
@@ -59,7 +59,7 @@
           <DiffEditor
             v-if="state.initialized"
             class="h-full"
-            :original="sourceBranch.schema"
+            :original="targetBranch.schema"
             :value="state.editingSchema"
             @change="state.editingSchema = $event"
           />
