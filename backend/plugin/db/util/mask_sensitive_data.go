@@ -9,6 +9,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+var (
+	defaultMaskingLevel storepb.MaskingLevel = storepb.MaskingLevel_NONE
+	maxMaskingLevel     storepb.MaskingLevel = storepb.MaskingLevel_FULL
+)
+
 type fieldInfo struct {
 	name     string
 	table    string
