@@ -26,6 +26,7 @@ import AsidePanel from "./AsidePanel.vue";
 import Designer from "./Designer.vue";
 import { provideSchemaDesignerContext } from "./common";
 import { SchemaDesignerTabState } from "./common/type";
+import { rebuildEditableSchemas } from "./common/util";
 
 const props = defineProps<{
   readonly: boolean;
@@ -52,8 +53,13 @@ onMounted(async () => {
 });
 
 const rebuildEditingState = () => {
-  editableSchemas.value = convertSchemaMetadataList(metadata.value.schemas);
-  originalSchemas.value = cloneDeep(editableSchemas.value);
+  originalSchemas.value = convertSchemaMetadataList(
+    baselineMetadata.value.schemas
+  );
+  editableSchemas.value = rebuildEditableSchemas(
+    originalSchemas.value,
+    metadata.value.schemas
+  );
   tabState.value = {
     tabMap: new Map(),
   };

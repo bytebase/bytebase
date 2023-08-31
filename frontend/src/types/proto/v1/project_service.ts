@@ -753,6 +753,8 @@ export enum Activity_Type {
   TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5,
   /** TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
   TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE = 6,
+  /** TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. */
+  TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22,
   /** TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT - TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. */
   TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT = 7,
   /** TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. */
@@ -783,8 +785,6 @@ export enum Activity_Type {
   TYPE_PROJECT_MEMBER_CREATE = 16,
   /** TYPE_PROJECT_MEMBER_DELETE - TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project. */
   TYPE_PROJECT_MEMBER_DELETE = 17,
-  /** TYPE_PROJECT_MEMBER_ROLE_UPDATE - TYPE_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. */
-  TYPE_PROJECT_MEMBER_ROLE_UPDATE = 18,
   /**
    * TYPE_SQL_EDITOR_QUERY - SQL Editor related activity types.
    * TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
@@ -824,6 +824,9 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 6:
     case "TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE":
       return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE;
+    case 22:
+    case "TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE":
+      return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE;
     case 7:
     case "TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT":
       return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT;
@@ -857,9 +860,6 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 17:
     case "TYPE_PROJECT_MEMBER_DELETE":
       return Activity_Type.TYPE_PROJECT_MEMBER_DELETE;
-    case 18:
-    case "TYPE_PROJECT_MEMBER_ROLE_UPDATE":
-      return Activity_Type.TYPE_PROJECT_MEMBER_ROLE_UPDATE;
     case 19:
     case "TYPE_SQL_EDITOR_QUERY":
       return Activity_Type.TYPE_SQL_EDITOR_QUERY;
@@ -891,6 +891,8 @@ export function activity_TypeToJSON(object: Activity_Type): string {
       return "TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE";
     case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE:
       return "TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE";
+    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
+      return "TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE";
     case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT:
       return "TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT";
     case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE:
@@ -913,8 +915,6 @@ export function activity_TypeToJSON(object: Activity_Type): string {
       return "TYPE_PROJECT_MEMBER_CREATE";
     case Activity_Type.TYPE_PROJECT_MEMBER_DELETE:
       return "TYPE_PROJECT_MEMBER_DELETE";
-    case Activity_Type.TYPE_PROJECT_MEMBER_ROLE_UPDATE:
-      return "TYPE_PROJECT_MEMBER_ROLE_UPDATE";
     case Activity_Type.TYPE_SQL_EDITOR_QUERY:
       return "TYPE_SQL_EDITOR_QUERY";
     case Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE:

@@ -24,6 +24,7 @@
       :selected-type="selectedType"
       :plan-check-run-list="planCheckRunList"
       :task="task"
+      @select-type="selectedType = $event"
       @close="selectedType = undefined"
     />
   </div>

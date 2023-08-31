@@ -32,6 +32,8 @@
     - [PageToken](#bytebase-store-PageToken)
   
     - [Engine](#bytebase-store-Engine)
+    - [MaskingLevel](#bytebase-store-MaskingLevel)
+    - [VcsType](#bytebase-store-VcsType)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
@@ -79,8 +81,6 @@
     - [FileCommit](#bytebase-store-FileCommit)
     - [PushEvent](#bytebase-store-PushEvent)
   
-    - [VcsType](#bytebase-store-VcsType)
-  
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
     - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
@@ -112,11 +112,20 @@
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
     - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
   
+    - [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType)
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [IamPolicy](#bytebase-store-IamPolicy)
+    - [MaskData](#bytebase-store-MaskData)
+    - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
+    - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
+    - [MaskingPolicy](#bytebase-store-MaskingPolicy)
+    - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
+    - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
+  
+    - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
@@ -132,6 +141,8 @@
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
+    - [SemanticCategorySetting](#bytebase-store-SemanticCategorySetting)
+    - [SemanticCategorySetting.SemanticCategory](#bytebase-store-SemanticCategorySetting-SemanticCategory)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
@@ -143,9 +154,9 @@
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
     - [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign)
-    - [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue)
     - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
   
+    - [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type)
     - [SheetPayload.Type](#bytebase-store-SheetPayload-Type)
   
 - [store/slow_query.proto](#store_slow_query-proto)
@@ -552,6 +563,34 @@ Used internally for obfuscating the page token.
 | DM | 15 |  |
 
 
+
+<a name="bytebase-store-MaskingLevel"></a>
+
+### MaskingLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASKING_LEVEL_UNSPECIFIED | 0 |  |
+| NONE | 1 |  |
+| PARTIAL | 2 |  |
+| FULL | 3 |  |
+
+
+
+<a name="bytebase-store-VcsType"></a>
+
+### VcsType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VCS_TYPE_UNSPECIFIED | 0 |  |
+| GITLAB | 1 |  |
+| GITHUB | 2 |  |
+| BITBUCKET | 3 |  |
+
+
  
 
  
@@ -639,6 +678,7 @@ DatabaseMetadata is the metadata for databases.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | labels | [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry) | repeated |  |
+| last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -1170,6 +1210,7 @@ InstanceMetadata is the metadata for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | mysql_lower_case_table_names | [int32](#int32) |  | The lower_case_table_names config for MySQL instances. It is used to determine whether the table names and database names are case sensitive. |
+| last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -1185,6 +1226,7 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | schema_tenant_mode | [bool](#bool) |  | The schema tenant mode is used to determine whether the instance is in schema tenant mode. For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. |
+| sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
 
 
 
@@ -1277,20 +1319,6 @@ InstanceOptions is the option for instances.
 
 
  
-
-
-<a name="bytebase-store-VcsType"></a>
-
-### VcsType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VCS_TYPE_UNSPECIFIED | 0 |  |
-| GITLAB | 1 |  |
-| GITHUB | 2 |  |
-| BITBUCKET | 3 |  |
-
 
  
 
@@ -1490,7 +1518,7 @@ InstanceOptions is the option for instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name}. Format: projects/{project}/deploymentConfig. |
+| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name}. Format: projects/{project}/databaseGroups/{databaseGroup} |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
@@ -1532,10 +1560,9 @@ InstanceOptions is the option for instances.
 | character_set | [string](#string) |  | character_set is the character set of the database. |
 | collation | [string](#string) |  | collation is the collation of the database. |
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
-| owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;.
-
-backup is the resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
-| backup | [string](#string) |  |  |
+| owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
+| backup | [string](#string) |  | backup is the resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
+| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | labels | [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
 
 
@@ -1652,8 +1679,11 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet_id | [int32](#int32) |  |  |
-| database_id | [int32](#int32) |  |  |
+| sheet_uid | [int32](#int32) |  |  |
+| change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
+| instance_uid | [int32](#int32) |  |  |
+| database_name | [string](#string) |  |  |
+| database_group_uid | [int64](#int64) | optional | database_group_uid is optional. If it&#39;s set, it means the database is part of a database group. |
 
 
 
@@ -1705,6 +1735,7 @@ Type is the database change type.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | line | [int64](#int64) |  |  |
+| column | [int64](#int64) |  |  |
 | detail | [string](#string) |  |  |
 | code | [int64](#int64) |  | Code from sql review. |
 
@@ -1721,14 +1752,30 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| statement_type | [string](#string) |  |  |
+| code | [int64](#int64) |  |  |
+| statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
 | affected_rows | [int64](#int64) |  |  |
+| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 
 
 
 
 
  
+
+
+<a name="bytebase-store-PlanCheckRunConfig-ChangeDatabaseType"></a>
+
+### PlanCheckRunConfig.ChangeDatabaseType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DML | 2 |  |
+| SDL | 3 |  |
+
 
 
 <a name="bytebase-store-PlanCheckRunResult-Result-Status"></a>
@@ -1792,7 +1839,121 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 
 
 
+
+<a name="bytebase-store-MaskData"></a>
+
+### MaskData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| semantic_category_id | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingExceptionPolicy"></a>
+
+### MaskingExceptionPolicy
+MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| masking_exceptions | [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingExceptionPolicy-MaskingException"></a>
+
+### MaskingExceptionPolicy.MaskingException
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
+| members | [string](#string) | repeated | Members is the list of principals who bind to this exception policy instance.
+
+* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingPolicy"></a>
+
+### MaskingPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mask_data | [MaskData](#bytebase-store-MaskData) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingRulePolicy"></a>
+
+### MaskingRulePolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingRulePolicy-MaskingRule"></a>
+
+### MaskingRulePolicy.MaskingRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
+
+
+
+
+
  
+
+
+<a name="bytebase-store-MaskingExceptionPolicy-MaskingException-Action"></a>
+
+### MaskingExceptionPolicy.MaskingException.Action
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 |  |
+| QUERY | 1 |  |
+| EXPORT | 2 |  |
+
 
  
 
@@ -2034,6 +2195,40 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 
 
 
+<a name="bytebase-store-SemanticCategorySetting"></a>
+
+### SemanticCategorySetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| categories | [SemanticCategorySetting.SemanticCategory](#bytebase-store-SemanticCategorySetting-SemanticCategory) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-SemanticCategorySetting-SemanticCategory"></a>
+
+### SemanticCategorySetting.SemanticCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for category item. |
+| title | [string](#string) |  | the title of the category item, it should not be empty. |
+| description | [string](#string) |  | the description of the category item, it can be empty.
+
+We do not support custom algorithm by now, we only support the default algorithm, so we do not add the algorithm field right now. |
+
+
+
+
+
+
 <a name="bytebase-store-WorkspaceApprovalSetting"></a>
 
 ### WorkspaceApprovalSetting
@@ -2157,7 +2352,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ----- | ---- | ----- | ----------- |
 | type | [SheetPayload.Type](#bytebase-store-SheetPayload-Type) |  |  |
 | vcs_payload | [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload) |  |  |
-| used_by_issues | [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue) | repeated | used_by_issues link to the issues where the sheet is used. |
 | schema_design | [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign) |  |  |
 
 
@@ -2173,24 +2367,11 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| baseline_change_history_id | [string](#string) |  | The baseline instance change history id of the schema design. |
-| engine | [Engine](#bytebase-store-Engine) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-SheetPayload-UsedByIssue"></a>
-
-### SheetPayload.UsedByIssue
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issue_id | [int64](#int64) |  |  |
-| issue_title | [string](#string) |  |  |
+| type | [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type) |  | The type of the schema design. |
+| engine | [Engine](#bytebase-store-Engine) |  | The database instance engine of the schema design. |
+| baseline_sheet_id | [string](#string) |  | The id of the baseline sheet including the baseline full schema. |
+| baseline_schema_design_id | [string](#string) |  | The sheet id of the baseline schema design. Only valid when the schema design is a personal draft. |
+| baseline_change_history_id | [string](#string) |  | The id of the baseline change history including the baseline change history.(optional) |
 
 
 
@@ -2211,12 +2392,26 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | author | [string](#string) |  |  |
 | last_commit_id | [string](#string) |  |  |
 | last_sync_ts | [int64](#int64) |  |  |
+| push_event | [PushEvent](#bytebase-store-PushEvent) |  |  |
 
 
 
 
 
  
+
+
+<a name="bytebase-store-SheetPayload-SchemaDesign-Type"></a>
+
+### SheetPayload.SchemaDesign.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| MAIN_BRANCH | 1 | Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. |
+| PERSONAL_DRAFT | 2 | Personal draft type is a copy of the main branch type schema designs. |
+
 
 
 <a name="bytebase-store-SheetPayload-Type"></a>

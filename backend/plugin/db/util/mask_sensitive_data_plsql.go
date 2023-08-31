@@ -1177,7 +1177,11 @@ func (extractor *sensitiveFieldExtractor) plsqlFindTableSchema(schemaName, table
 		if schema.Name != schemaName {
 			continue
 		}
-		for _, table := range schema.TableList {
+		if len(schema.SchemaList) == 0 {
+			continue
+		}
+		tableList := schema.SchemaList[0].TableList
+		for _, table := range tableList {
 			if table.Name == tableName {
 				return table, nil
 			}

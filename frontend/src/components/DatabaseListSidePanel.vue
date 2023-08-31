@@ -1,11 +1,22 @@
 <template>
-  <BBOutline
-    id="database"
-    :title="$t('common.databases')"
-    :item-list="mixedDatabaseList"
-    :allow-collapse="false"
-    :outline-item-class="'pt-0.5 pb-0.5'"
-  />
+  <template v-for="(env, index) in databaseListByEnvironment" :key="index">
+    <BBOutline
+      :id="env.id"
+      :title="env.name"
+      :item-list="env.childList"
+      :allow-collapse="false"
+      :outline-item-class="'pt-0.5 pb-0.5'"
+    />
+  </template>
+  <template v-for="(prj, index) in tenantDatabaseListByProject" :key="index">
+    <BBOutline
+      :id="prj.id"
+      :title="prj.name"
+      :item-list="prj.childList"
+      :allow-collapse="false"
+      :outline-item-class="'pt-0.5 pb-0.5'"
+    />
+  </template>
 </template>
 
 <script lang="ts" setup>
@@ -38,6 +49,7 @@ import {
   extractProjectResourceName,
 } from "@/utils";
 import DatabaseGroupIcon from "./DatabaseGroupIcon.vue";
+import EngineIcon from "./Icon/EngineIcon.vue";
 
 const { t } = useI18n();
 const databaseV1Store = useDatabaseV1Store();
@@ -99,17 +111,16 @@ const databaseListByEnvironment = computed(() => {
     return a.name.localeCompare(b.name);
   });
   for (const database of list) {
-    const dbList = envToDbMap.get(
-      String(
-        database.environment || database.instanceEntity.environmentEntity.name
-      )
-    )!;
+    const dbList = envToDbMap.get(String(database.effectiveEnvironment))!;
     // dbList may be undefined if the environment is archived
     if (dbList) {
       dbList.push({
         id: `bb.database.${database.uid}`,
         name: `${database.databaseName} (${database.instanceEntity.title})`,
         link: `/db/${databaseV1Slug(database)}`,
+        prefix: h(EngineIcon, {
+          engine: database.instanceEntity.engine,
+        }),
       });
     }
   }
@@ -170,6 +181,9 @@ const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
           id: `bb.project.${project.uid}.database.${db.databaseName}`,
           name: `${db.databaseName} (${db.instanceEntity.title})`,
           link: `/project/${projectV1Slug(project)}#databases`,
+          prefix: h(EngineIcon, {
+            engine: db.instanceEntity.engine,
+          }),
         })),
         ...databaseGroupList.map<BBOutlineItem>((dbGroup) => ({
           id: `bb.project.${project.uid}.databaseGroup.${dbGroup.name}`,

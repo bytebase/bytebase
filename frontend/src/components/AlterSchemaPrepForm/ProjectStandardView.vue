@@ -165,7 +165,7 @@ const emit = defineEmits<{
 const databaseListGroupByEnvironment = computed(() => {
   const listByEnv = props.environmentList.map((environment) => {
     const databaseList = props.databaseList.filter(
-      (db) => db.instanceEntity.environment === environment.name
+      (db) => db.effectiveEnvironment === environment.name
     );
     return {
       environment,

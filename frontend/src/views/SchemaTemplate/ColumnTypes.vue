@@ -35,23 +35,36 @@
           />
         </NRadioGroup>
       </div>
-      <NSelect
-        ref="typesSelectorRefForMySQL"
-        v-model:value="columnTypeTemplateForMySQL.types"
-        filterable
-        multiple
-        tag
-        :disabled="
-          !columnTypeTemplateForMySQL.enabled || !hasPermission || !hasFeature
+      <NInput
+        v-if="columnTypeTemplateForMySQL.enabled"
+        v-model:value="columnTypesForMySQL"
+        :disabled="!hasPermission || !hasFeature"
+        type="textarea"
+        :placeholder="
+          $t(
+            'schema-template.column-type-restriction.messages.one-allowed-type-per-line'
+          )
         "
-        placeholder="Input, press enter to create type"
-        :show-arrow="false"
-        :show="false"
-        @blur="handleMySQLTypesChange"
-        @update:value="handleMySQLTypesChange"
-        @input="handleSelectorInput"
+        :autosize="{
+          minRows: 5,
+          maxRows: 10,
+        }"
       />
+      <div class="w-full flex flex-row justify-end items-center">
+        <NButton
+          type="primary"
+          :disabled="
+            !hasPermission ||
+            !hasFeature ||
+            !allowToUpdateColumnTypeTemplateForMySQL
+          "
+          @click="handleMySQLTypesChange"
+        >
+          {{ $t("common.update") }}
+        </NButton>
+      </div>
     </div>
+    <NDivider class="w-full max-w-lg" />
     <div class="w-full max-w-lg flex flex-col justify-start items-start gap-2">
       <div class="w-full flex flex-row justify-between items-center">
         <div class="flex flex-row justify-start items-center">
@@ -76,24 +89,33 @@
           />
         </NRadioGroup>
       </div>
-      <NSelect
-        ref="typesSelectorRefForPostgreSQL"
-        v-model:value="columnTypeTemplateForPostgreSQL.types"
-        filterable
-        multiple
-        tag
-        :disabled="
-          !columnTypeTemplateForPostgreSQL.enabled ||
-          !hasPermission ||
-          !hasFeature
+      <NInput
+        v-if="hasFeature && columnTypeTemplateForPostgreSQL.enabled"
+        v-model:value="columnTypesForPostgreSQL"
+        :disabled="!hasPermission || !hasFeature"
+        type="textarea"
+        :placeholder="
+          $t(
+            'schema-template.column-type-restriction.messages.one-allowed-type-per-line'
+          )
         "
-        placeholder="Input, press enter to create type"
-        :show-arrow="false"
-        :show="false"
-        @blur="handlePostgreSQLTypesChange"
-        @update:value="handlePostgreSQLTypesChange"
-        @input="handleSelectorInput"
+        :autosize="{
+          minRows: 5,
+          maxRows: 10,
+        }"
       />
+      <div class="w-full flex flex-row justify-end items-center">
+        <NButton
+          type="primary"
+          :disabled="
+            !hasPermission ||
+            !hasFeature ||
+            !allowToUpdateColumnTypeTemplateForPostgreSQL
+          "
+          @click="handlePostgreSQLTypesChange"
+          >{{ $t("common.update") }}</NButton
+        >
+      </div>
     </div>
   </div>
 
@@ -112,10 +134,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useDebounceFn } from "@vueuse/core";
 import { cloneDeep, isEqual, uniq, uniqBy } from "lodash-es";
-import { NSelect, NRadioGroup, NRadio } from "naive-ui";
-import { onMounted, ref } from "vue";
+import { NButton, NDivider, NInput, NRadioGroup, NRadio } from "naive-ui";
+import { computed, onMounted, ref } from "vue";
 import EngineIcon from "@/components/Icon/EngineIcon.vue";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
@@ -124,7 +145,7 @@ import {
   SchemaTemplateSetting_ColumnType,
   SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto/v1/setting_service";
-import { useWorkspacePermissionV1 } from "@/utils";
+import { getDataTypeSuggestionList, useWorkspacePermissionV1 } from "@/utils";
 import ColumnTypesUpdateFailedModal from "./ColumnTypesUpdateFailedModal.vue";
 
 interface LocalState {
@@ -144,15 +165,74 @@ const columnTypeTemplateForMySQL = ref(
     engine: Engine.MYSQL,
   })
 );
+const columnTypesForMySQL = ref<string>("");
 const columnTypeTemplateForPostgreSQL = ref(
   SchemaTemplateSetting_ColumnType.fromPartial({
     engine: Engine.POSTGRES,
   })
 );
-// The ref of the naive-ui select component.
-const typesSelectorRefForMySQL = ref<InstanceType<typeof NSelect>>();
-const typesSelectorRefForPostgreSQL = ref<InstanceType<typeof NSelect>>();
+const columnTypesForPostgreSQL = ref<string>("");
 const unmatchedFieldTemplates = ref<SchemaTemplateSetting_FieldTemplate[]>([]);
+
+const allowToUpdateColumnTypeTemplateForMySQL = computed(() => {
+  if (!hasFeature.value || !hasPermission.value) {
+    return false;
+  }
+  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const columnTypes =
+    setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
+  const originTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
+    engine: Engine.MYSQL,
+    ...columnTypes.find((item) => item.engine === Engine.MYSQL),
+  });
+  const newTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
+    ...columnTypeTemplateForMySQL.value,
+    engine: Engine.MYSQL,
+    types: columnTypesForMySQL.value
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
+  if (isEqual(originTemplate.enabled, newTemplate.enabled)) {
+    if (!newTemplate.enabled) {
+      return false;
+    }
+    if (isEqual(originTemplate.types, newTemplate.types)) {
+      return false;
+    }
+  }
+  return true;
+});
+
+const allowToUpdateColumnTypeTemplateForPostgreSQL = computed(() => {
+  if (!hasFeature.value || !hasPermission.value) {
+    return false;
+  }
+  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const columnTypes =
+    setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
+  const originTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
+    engine: Engine.POSTGRES,
+    ...columnTypes.find((item) => item.engine === Engine.POSTGRES),
+  });
+  const newTemplate = SchemaTemplateSetting_ColumnType.fromPartial({
+    ...columnTypeTemplateForPostgreSQL.value,
+    engine: Engine.POSTGRES,
+    types: columnTypesForPostgreSQL.value
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
+  if (isEqual(originTemplate.enabled, newTemplate.enabled)) {
+    if (!newTemplate.enabled) {
+      return false;
+    }
+    if (isEqual(originTemplate.types, newTemplate.types)) {
+      return false;
+    }
+  }
+  return true;
+});
 
 const getOrFetchSchemaTemplate = async () => {
   const setting = await settingStore.getOrFetchSettingByName(
@@ -179,16 +259,15 @@ onMounted(async () => {
     await getOrFetchSchemaTemplate();
   if (mysqlColumnTypes) {
     columnTypeTemplateForMySQL.value = cloneDeep(mysqlColumnTypes);
+    columnTypesForMySQL.value =
+      columnTypeTemplateForMySQL.value.types.join("\n");
   }
   if (postgresqlColumnTypes) {
     columnTypeTemplateForPostgreSQL.value = cloneDeep(postgresqlColumnTypes);
+    columnTypesForPostgreSQL.value =
+      columnTypeTemplateForPostgreSQL.value.types.join("\n");
   }
 });
-
-const handleSelectorInput = (event: InputEvent) => {
-  const inputEl = event.target as HTMLInputElement;
-  inputEl.value = inputEl.value.toUpperCase();
-};
 
 const handleSaveAllUnmatchedFieldTemplates = (
   fieldTemplates: SchemaTemplateSetting_FieldTemplate[]
@@ -199,66 +278,44 @@ const handleSaveAllUnmatchedFieldTemplates = (
 
   const engine = fieldTemplates[0].engine;
   if (engine === Engine.MYSQL) {
-    columnTypeTemplateForMySQL.value.types = uniqBy(
-      [
-        ...columnTypeTemplateForMySQL.value.types,
-        ...fieldTemplates.map((item) => item.column?.type || ""),
-      ],
-      (item) => item
-    );
-    typesSelectorRefForMySQL.value?.focus();
+    columnTypesForMySQL.value =
+      columnTypesForMySQL.value +
+      "\n" +
+      fieldTemplates.map((item) => item.column?.type || "").join("\n");
+    handleMySQLTypesChange();
   } else if (engine === Engine.POSTGRES) {
-    columnTypeTemplateForPostgreSQL.value.types = uniqBy(
-      [
-        ...columnTypeTemplateForPostgreSQL.value.types,
-        ...fieldTemplates.map((item) => item.column?.type || ""),
-      ],
-      (item) => item
-    );
-    typesSelectorRefForPostgreSQL.value?.focus();
+    columnTypesForPostgreSQL.value =
+      columnTypesForPostgreSQL.value +
+      "\n" +
+      fieldTemplates.map((item) => item.column?.type || "").join("\n");
+    handlePostgreSQLTypesChange();
   }
   unmatchedFieldTemplates.value = [];
 };
 
 const handleMySQLEnabledChange = (event: InputEvent) => {
-  const value = (event.target as HTMLInputElement).value === "true";
-  columnTypeTemplateForMySQL.value.enabled = value;
-  if (value) {
-    typesSelectorRefForMySQL.value?.focus();
-    typesSelectorRefForMySQL.value?.triggerRef?.focusInput();
-  } else {
-    handleMySQLTypesChange();
+  const enabled = (event.target as HTMLInputElement).value === "true";
+  columnTypeTemplateForMySQL.value.enabled = enabled;
+  if (enabled) {
+    if (columnTypeTemplateForMySQL.value.types.filter(Boolean).length === 0) {
+      columnTypesForMySQL.value = getDataTypeSuggestionList(Engine.MYSQL).join(
+        "\n"
+      );
+    }
   }
 };
 
-// Update the column types for MySQL in the following cases:
-// 1. When the column types are deleted and the selector is not focused.
-// 2. When selector is blurred.
-const handleMySQLTypesChange = useDebounceFn(async () => {
+const handleMySQLTypesChange = async () => {
+  columnTypesForMySQL.value = columnTypesForMySQL.value
+    .toUpperCase()
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .join("\n");
   columnTypeTemplateForMySQL.value.types =
-    columnTypeTemplateForMySQL.value.types.map((item) => item.toUpperCase());
+    columnTypesForMySQL.value.split("\n");
 
-  if (typesSelectorRefForMySQL.value?.focused) {
-    return;
-  }
-
-  const { fieldTemplates, mysqlColumnTypes } = await getOrFetchSchemaTemplate();
-  if (isEqual(columnTypeTemplateForMySQL.value, mysqlColumnTypes)) {
-    return;
-  }
-
-  if (
-    columnTypeTemplateForMySQL.value.enabled &&
-    columnTypeTemplateForMySQL.value.types.length === 0
-  ) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Column types cannot be empty when enabled",
-    });
-    return;
-  }
-
+  const { fieldTemplates } = await getOrFetchSchemaTemplate();
   const mysqlFieldTemplates = uniq(
     fieldTemplates.filter(
       (item) => item.engine === Engine.MYSQL && item.column?.type
@@ -269,14 +326,27 @@ const handleMySQLTypesChange = useDebounceFn(async () => {
       .map((item) => (item.column?.type || "") as string)
       .filter(Boolean)
   );
-  const uncoveredTypes = fieldTemplateTypesOfMySQL.filter(
-    (item) => !columnTypeTemplateForMySQL.value.types.includes(item)
-  );
-  if (uncoveredTypes.length > 0) {
-    unmatchedFieldTemplates.value = mysqlFieldTemplates.filter((item) =>
-      uncoveredTypes.includes(item.column?.type || "")
+  if (columnTypeTemplateForMySQL.value.enabled) {
+    // Check if there is any field template that is not covered by the column types.
+    if (columnTypeTemplateForMySQL.value.types.length === 0) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Column types cannot be empty when enabled",
+      });
+      return;
+    }
+
+    // Check if there is any field template that is not covered by the column types.
+    const uncoveredTypes = fieldTemplateTypesOfMySQL.filter(
+      (item) => !columnTypeTemplateForMySQL.value.types.includes(item)
     );
-    return;
+    if (uncoveredTypes.length > 0) {
+      unmatchedFieldTemplates.value = mysqlFieldTemplates.filter((item) =>
+        uncoveredTypes.includes(item.column?.type || "")
+      );
+      return;
+    }
   }
 
   const setting = await settingStore.getOrFetchSettingByName(
@@ -305,7 +375,7 @@ const handleMySQLTypesChange = useDebounceFn(async () => {
     style: "SUCCESS",
     title: "Success to update column types",
   });
-}, 1000);
+};
 
 const handlePostgreSQLEnabledChange = (event: InputEvent) => {
   if (!hasFeature.value) {
@@ -313,41 +383,32 @@ const handlePostgreSQLEnabledChange = (event: InputEvent) => {
     return;
   }
 
-  const value = (event.target as HTMLInputElement).value === "true";
-  columnTypeTemplateForPostgreSQL.value.enabled = value;
-  if (value) {
-    typesSelectorRefForPostgreSQL.value?.focus();
-    typesSelectorRefForPostgreSQL.value?.triggerRef?.focusInput();
-  } else {
-    handlePostgreSQLTypesChange();
+  const enabled = (event.target as HTMLInputElement).value === "true";
+  columnTypeTemplateForPostgreSQL.value.enabled = enabled;
+  if (enabled) {
+    if (
+      columnTypeTemplateForPostgreSQL.value.types.filter(Boolean).length === 0
+    ) {
+      columnTypesForPostgreSQL.value = getDataTypeSuggestionList(
+        Engine.POSTGRES
+      ).join("\n");
+    }
   }
 };
 
-const handlePostgreSQLTypesChange = useDebounceFn(async () => {
+const handlePostgreSQLTypesChange = async () => {
+  columnTypesForPostgreSQL.value = columnTypesForPostgreSQL.value
+    .toUpperCase()
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .join("\n");
   columnTypeTemplateForPostgreSQL.value.types =
-    columnTypeTemplateForPostgreSQL.value.types.map((item) =>
-      item.toUpperCase()
-    );
-
-  if (typesSelectorRefForPostgreSQL.value?.focused) {
-    return;
-  }
+    columnTypesForPostgreSQL.value.split("\n");
 
   const { fieldTemplates, postgresqlColumnTypes } =
     await getOrFetchSchemaTemplate();
   if (isEqual(columnTypeTemplateForPostgreSQL.value, postgresqlColumnTypes)) {
-    return;
-  }
-
-  if (
-    columnTypeTemplateForPostgreSQL.value.enabled &&
-    columnTypeTemplateForPostgreSQL.value.types.length === 0
-  ) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Column types cannot be empty when enabled",
-    });
     return;
   }
 
@@ -361,14 +422,27 @@ const handlePostgreSQLTypesChange = useDebounceFn(async () => {
       .map((item) => (item.column?.type || "") as string)
       .filter(Boolean)
   );
-  const uncoveredTypes = fieldTemplateTypesOfPostgreSQL.filter(
-    (item) => !columnTypeTemplateForPostgreSQL.value.types.includes(item)
-  );
-  if (uncoveredTypes.length > 0) {
-    unmatchedFieldTemplates.value = postgresFieldTemplates.filter((item) =>
-      uncoveredTypes.includes(item.column?.type || "")
+  if (columnTypeTemplateForPostgreSQL.value.enabled) {
+    // Check if there is any field template that is not covered by the column types.
+    if (columnTypeTemplateForPostgreSQL.value.types.length === 0) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Column types cannot be empty when enabled",
+      });
+      return;
+    }
+
+    // Check if there is any field template that is not covered by the column types.
+    const uncoveredTypes = fieldTemplateTypesOfPostgreSQL.filter(
+      (item) => !columnTypeTemplateForPostgreSQL.value.types.includes(item)
     );
-    return;
+    if (uncoveredTypes.length > 0) {
+      unmatchedFieldTemplates.value = postgresFieldTemplates.filter((item) =>
+        uncoveredTypes.includes(item.column?.type || "")
+      );
+      return;
+    }
   }
 
   const setting = await settingStore.getOrFetchSettingByName(
@@ -397,5 +471,5 @@ const handlePostgreSQLTypesChange = useDebounceFn(async () => {
     style: "SUCCESS",
     title: "Success to update column types",
   });
-}, 1000);
+};
 </script>

@@ -95,7 +95,11 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 	if instance.Options != nil && instance.Options.SchemaTenantMode {
 		schemaTenantMode = true
 	}
-	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, database.DataShare, true /* readOnly */, schemaTenantMode)
+	dataShare := false
+	if database != nil {
+		dataShare = database.DataShare
+	}
+	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, dataShare, true /* readOnly */, schemaTenantMode)
 }
 
 // GetDataSourceDriver returns the database driver for a data source.

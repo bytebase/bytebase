@@ -23,7 +23,6 @@
         </button>
       </div>
     </div>
-    <hr />
     <div
       v-if="identityProviderList.length === 0"
       class="w-full flex flex-col justify-center items-center"

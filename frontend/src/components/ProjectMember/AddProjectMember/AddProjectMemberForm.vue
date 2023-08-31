@@ -22,14 +22,6 @@
       <span>{{ $t("project.members.assign-role") }}</span>
       <ProjectMemberRoleSelect v-model:role="state.role" class="mt-2" />
     </div>
-    <div class="w-full">
-      <span>{{ $t("project.members.role-name") }}</span>
-      <NInput
-        v-model:value="state.roleTitle"
-        class="mt-2"
-        :placeholder="$t('project.members.role-name')"
-      />
-    </div>
 
     <div v-if="state.role === 'roles/QUERIER'" class="w-full">
       <span class="block mb-2">{{ $t("common.databases") }}</span>
@@ -68,9 +60,9 @@
           {{ $t("issue.grant-request.export-rows") }}
         </span>
         <NInputNumber
-          v-model="state.maxRowCount"
+          v-model:value="state.maxRowCount"
           required
-          placeholder="Max row count"
+          :placeholder="$t('issue.grant-request.export-rows')"
         />
       </div>
     </template>
@@ -90,8 +82,8 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
-import { NInputNumber, NInput } from "naive-ui";
-import { computed, nextTick, reactive, watch } from "vue";
+import { NInputNumber } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import ExporterDatabaseResourceForm from "@/components/Issue/panel/RequestExportPanel/ExportResourceForm/index.vue";
@@ -99,7 +91,7 @@ import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPa
 import { DatabaseSelect } from "@/components/v2";
 import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
 import { useUserStore } from "@/store";
-import { ComposedProject, DatabaseResource } from "@/types";
+import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Binding } from "@/types/proto/v1/iam_policy";
 
@@ -116,7 +108,6 @@ defineEmits<{
 interface LocalState {
   userUidList: string[];
   role?: string;
-  roleTitle: string;
   expireDays: number;
   // Querier and exporter options.
   databaseResourceCondition?: string;
@@ -130,8 +121,8 @@ const { t } = useI18n();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   userUidList: [],
-  roleTitle: "",
-  expireDays: 7,
+  // Default is never expires.
+  expireDays: 0,
   // Exporter options.
   maxRowCount: 1000,
 });
@@ -154,6 +145,18 @@ const expireDaysOptions = computed(() => {
       {
         value: 15,
         label: t("common.date.days", { days: 15 }),
+      },
+      {
+        value: 30,
+        label: t("common.date.days", { days: 30 }),
+      },
+      {
+        value: 90,
+        label: t("common.date.days", { days: 90 }),
+      },
+      {
+        value: 0,
+        label: t("project.members.never-expires"),
       },
     ];
   }
@@ -194,9 +197,6 @@ watch(
   () => {
     state.databaseResourceCondition = undefined;
     state.databaseResources = undefined;
-    nextTick(() => {
-      state.expireDays = expireDaysOptions.value[0].value;
-    });
   },
   {
     immediate: true,
@@ -206,6 +206,7 @@ watch(
 watch(
   () => state,
   () => {
+    let conditionName = "";
     if (state.userUidList) {
       props.binding.members = state.userUidList.map((uid) => {
         const user = userStore.getUserById(uid);
@@ -217,29 +218,35 @@ watch(
     }
     const expression: string[] = [];
     if (state.expireDays > 0) {
-      expression.push(
-        `request.time < timestamp("${dayjs()
-          .add(state.expireDays, "days")
-          .toISOString()}")`
-      );
+      const now = dayjs();
+      const expiresAt = now.add(state.expireDays, "days");
+      expression.push(`request.time < timestamp("${expiresAt.toISOString()}")`);
+      conditionName = `${now.format("YYYY-MM-DD")} to ${expiresAt.format(
+        "YYYY-MM-DD"
+      )}`;
     }
-    if (state.role === "roles/QUERIER") {
+    if (state.role === PresetRoleType.QUERIER) {
       if (state.databaseResourceCondition) {
         expression.push(state.databaseResourceCondition);
       }
     }
-    if (state.role === "roles/EXPORTER") {
+    if (state.role === PresetRoleType.EXPORTER) {
       if (state.databaseResourceCondition) {
         expression.push(state.databaseResourceCondition);
       }
       if (state.maxRowCount) {
-        expression.push(`request.rows_limit <= ${state.maxRowCount}`);
+        expression.push(`request.row_limit <= ${state.maxRowCount}`);
       }
     }
     if (expression.length > 0) {
       props.binding.condition = Expr.create({
-        title: state.roleTitle,
+        title: conditionName,
         expression: expression.join(" && "),
+      });
+    } else {
+      props.binding.condition = Expr.create({
+        title: conditionName,
+        expression: undefined,
       });
     }
   },
@@ -247,4 +254,17 @@ watch(
     deep: true,
   }
 );
+
+defineExpose({
+  allowConfirm: computed(() => {
+    if (state.userUidList.length <= 0) {
+      return false;
+    }
+    if ((!state.expireDays && state.expireDays !== 0) || state.expireDays < 0) {
+      return false;
+    }
+    // TODO: use parsed expression to check if the expression is valid.
+    return true;
+  }),
+});
 </script>

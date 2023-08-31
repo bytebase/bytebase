@@ -25,6 +25,8 @@ const (
 	ActivityPipelineStageStatusUpdate ActivityType = "bb.pipeline.stage.status.update"
 	// ActivityPipelineTaskStatusUpdate is the type for updating pipeline task status.
 	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
+	// ActivityPipelineTaskRunStatusUpdate is the type for updating pipeline task run status.
+	ActivityPipelineTaskRunStatusUpdate ActivityType = "bb.pipeline.taskrun.status.update"
 	// ActivityPipelineTaskFileCommit is the type for committing pipeline task file.
 	ActivityPipelineTaskFileCommit ActivityType = "bb.pipeline.task.file.commit"
 	// ActivityPipelineTaskStatementUpdate is the type for updating pipeline task SQL statement.
@@ -53,8 +55,6 @@ const (
 	ActivityProjectMemberCreate ActivityType = "bb.project.member.create"
 	// ActivityProjectMemberDelete is the type for deleting project members.
 	ActivityProjectMemberDelete ActivityType = "bb.project.member.delete"
-	// ActivityProjectMemberRoleUpdate is the type for updating project member roles.
-	ActivityProjectMemberRoleUpdate ActivityType = "bb.project.member.role.update"
 
 	// SQL Editor related.
 
@@ -158,6 +158,14 @@ type ActivityPipelineTaskStatusUpdatePayload struct {
 	TaskID    int        `json:"taskId"`
 	OldStatus TaskStatus `json:"oldStatus,omitempty"`
 	NewStatus TaskStatus `json:"newStatus,omitempty"`
+	// Used by inbox to display info without paying the join cost
+	IssueName string `json:"issueName"`
+	TaskName  string `json:"taskName"`
+}
+
+type ActivityPipelineTaskRunStatusUpdatePayload struct {
+	TaskID    int           `json:"taskId"`
+	NewStatus TaskRunStatus `json:"newStatus,omitempty"`
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 	TaskName  string `json:"taskName"`

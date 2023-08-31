@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "google/type/expr.proto";
 import "v1/common.proto";
 import "v1/deployment.proto";
 import "v1/iam_policy.proto";
@@ -206,10 +207,12 @@ message Policy {
     IamPolicy workspace_iam_policy = 6;
     DeploymentApprovalPolicy deployment_approval_policy = 7;
     BackupPlanPolicy backup_plan_policy = 8;
-    SensitiveDataPolicy sensitive_data_policy = 9;
+    MaskingPolicy masking_policy = 9;
     SQLReviewPolicy sql_review_policy = 11;
     SlowQueryPolicy slow_query_policy = 12;
     DisableCopyDataPolicy disable_copy_data_policy = 16;
+    MaskingRulePolicy masking_rule_policy = 17;
+    MaskingExceptionPolicy masking_exception_policy = 18;
   }
 
   bool enforce = 13;
@@ -229,9 +232,11 @@ enum PolicyType {
   DEPLOYMENT_APPROVAL = 2;
   BACKUP_PLAN = 3;
   SQL_REVIEW = 4;
-  SENSITIVE_DATA = 5;
+  MASKING = 5;
   SLOW_QUERY = 7;
   DISABLE_COPY_DATA = 8;
+  MASKING_RULE = 9;
+  MASKING_EXCEPTION = 10;
 }
 
 enum PolicyResourceType {
@@ -286,20 +291,16 @@ enum BackupPlanSchedule {
   WEEKLY = 3;
 }
 
-message SensitiveDataPolicy {
-  repeated SensitiveData sensitive_data = 1;
+message MaskingPolicy {
+  repeated MaskData mask_data = 1;
 }
 
-message SensitiveData {
+message MaskData {
   string schema = 1;
   string table = 2;
   string column = 3;
-  SensitiveDataMaskType mask_type = 4;
-}
-
-enum SensitiveDataMaskType {
-  MASK_TYPE_UNSPECIFIED = 0;
-  DEFAULT = 1;
+  string semantic_category_id = 4;
+  MaskingLevel masking_level = 5;
 }
 
 message SQLReviewPolicy {
@@ -320,4 +321,42 @@ enum SQLReviewRuleLevel {
   ERROR = 1;
   WARNING = 2;
   DISABLED = 3;
+}
+
+// MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
+message MaskingExceptionPolicy {
+  message MaskingException {
+    enum Action {
+      ACTION_UNSPECIFIED = 0;
+      QUERY = 1;
+      EXPORT = 2;
+    }
+    // action is the action that the user can access sensitive data.
+    Action action = 1;
+
+    // Level is the masking level that the user can access sensitive data.
+    MaskingLevel masking_level = 2;
+
+    // Members is the list of principals who bind to this exception policy instance.
+    //
+    // * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+    repeated string members = 3;
+
+    // The condition that is associated with this exception policy instance.
+    google.type.Expr condition = 4;
+  }
+
+  repeated MaskingException masking_exceptions = 1;
+}
+
+message MaskingRulePolicy {
+  message MaskingRule {
+    // A unique identifier for a node in UUID format.
+    string id = 1;
+
+    google.type.Expr condition = 2;
+
+    MaskingLevel masking_level = 3;
+  }
+  repeated MaskingRule rules = 1;
 }

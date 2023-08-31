@@ -1,0 +1,1 @@
+DELETE FROM activity WHERE type='bb.project.member.role.update';

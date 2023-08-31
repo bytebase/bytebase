@@ -53,7 +53,7 @@ const emit = defineEmits<{
 
 const state = reactive<LocalState>({
   value: props.value,
-  customValue: props.value,
+  customValue: 7,
 });
 
 const useCustom = computed(() => state.value === -1);

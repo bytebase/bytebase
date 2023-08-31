@@ -5,10 +5,12 @@
 
 # $ docker run --init --rm --name sql-service --publish 8081:8081 bytebase/sql
 
-FROM golang:1.20.3 as sql
+FROM golang:1.21.0 as sql
+ADD go.mod go.sum /
+RUN go mod download
 
 ARG VERSION="development"
-ARG GO_VERSION="1.20.1"
+ARG GO_VERSION="1.21.0"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
@@ -33,7 +35,7 @@ RUN VERSION=`cat ./VERSION` && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
     ./backend/bin/sql-service/main.go
 
 # Use debian because mysql requires glibc.
-FROM debian:bullseye-slim as monolithic
+FROM debian:bookworm-slim as monolithic
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"

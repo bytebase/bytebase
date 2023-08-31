@@ -16,7 +16,6 @@
         </a>
       </div>
     </div>
-    <hr />
   </div>
 
   <IdentityProviderCreateForm

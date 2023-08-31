@@ -75,25 +75,6 @@ func (s *Store) GetSQLReviewPolicy(ctx context.Context, environmentID int) (*adv
 	return api.UnmarshalSQLReviewPolicy(policy.Payload)
 }
 
-// GetSensitiveDataPolicy will get the sensitive data policy for database ID.
-func (s *Store) GetSensitiveDataPolicy(ctx context.Context, databaseID int) (*api.SensitiveDataPolicy, error) {
-	resourceType := api.PolicyResourceTypeDatabase
-	pType := api.PolicyTypeSensitiveData
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
-		ResourceType: &resourceType,
-		ResourceUID:  &databaseID,
-		Type:         &pType,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if policy == nil {
-		return &api.SensitiveDataPolicy{}, nil
-	}
-
-	return api.UnmarshalSensitiveDataPolicy(policy.Payload)
-}
-
 // GetSlowQueryPolicy will get the slow query policy for instance ID.
 func (s *Store) GetSlowQueryPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*api.SlowQueryPolicy, error) {
 	pType := api.PolicyTypeSlowQuery

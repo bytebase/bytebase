@@ -69,7 +69,7 @@ export const isDatabaseAccessible = (
             querierBinding.parsedExpr?.expr || Expr.fromPartial({})
           );
           const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-          if (envNameList.includes(database.instanceEntity.environment)) {
+          if (envNameList.includes(database.effectiveEnvironment)) {
             return true;
           }
         }

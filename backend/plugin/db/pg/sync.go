@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -21,6 +22,108 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+// SystemSchemaList is the list of system schemas that we will exclude from the schema sync.
+var SystemSchemaList = []string{
+	"information_schema",
+	"pg_catalog",
+	"pg_toast",
+	"_timescaledb_cache",
+	"_timescaledb_catalog",
+	"_timescaledb_internal",
+	"_timescaledb_config",
+	"timescaledb_information",
+	"timescaledb_experimental",
+}
+
+// SystemTableList is the list of system tables that we will exclude from the schema sync.
+var SystemTableList = []string{
+	"pg_aggregate",
+	"pg_am",
+	"pg_amop",
+	"pg_amproc",
+	"pg_attrdef",
+	"pg_attribute",
+	"pg_authid",
+	"pg_auth_members",
+	"pg_cast",
+	"pg_class",
+	"pg_collation",
+	"pg_constraint",
+	"pg_conversion",
+	"pg_database",
+	"pg_db_role_setting",
+	"pg_default_acl",
+	"pg_depend",
+	"pg_description",
+	"pg_enum",
+	"pg_event_trigger",
+	"pg_extension",
+	"pg_foreign_data_wrapper",
+	"pg_foreign_server",
+	"pg_foreign_table",
+	"pg_index",
+	"pg_inherits",
+	"pg_init_privs",
+	"pg_language",
+	"pg_largeobject",
+	"pg_largeobject_metadata",
+	"pg_namespace",
+	"pg_opclass",
+	"pg_operator",
+	"pg_opfamily",
+	"pg_parameter_acl",
+	"pg_partitioned_table",
+	"pg_policy",
+	"pg_proc",
+	"pg_publication",
+	"pg_publication_namespace",
+	"pg_publication_rel",
+	"pg_range",
+	"pg_replication_origin",
+	"pg_rewrite",
+	"pg_seclabel",
+	"pg_sequence",
+	"pg_shdepend",
+	"pg_shdescription",
+	"pg_shseclabel",
+	"pg_statistic",
+	"pg_statistic_ext",
+	"pg_statistic_ext_data",
+	"pg_subscription",
+	"pg_subscription_rel",
+	"pg_tablespace",
+	"pg_transform",
+	"pg_trigger",
+	"pg_ts_config",
+	"pg_ts_config_map",
+	"pg_ts_dict",
+	"pg_ts_parser",
+	"pg_ts_template",
+	"pg_type",
+	"pg_user_mapping",
+	"pg_stat_activity",
+	"pg_stat_replication",
+	"pg_stat_replication_slots",
+	"pg_stat_wal_receiver",
+	"pg_stat_recovery_prefetch",
+	"pg_stat_subscription",
+	"pg_stat_subscription_stats",
+	"pg_stat_ssl",
+	"pg_stat_gssapi",
+	"pg_stat_archiver",
+	"pg_stat_bgwriter",
+	"pg_stat_wal",
+	"pg_stat_database",
+	"pg_stat_database_conflicts",
+	"pg_stat_all_tables",
+	"pg_stat_all_indexes",
+	"pg_statio_all_tables",
+	"pg_statio_all_indexes",
+	"pg_statio_all_sequences",
+	"pg_stat_user_functions",
+	"pg_stat_slru",
+}
 
 const systemSchemas = "'information_schema', 'pg_catalog', 'pg_toast', '_timescaledb_cache', '_timescaledb_catalog', '_timescaledb_internal', '_timescaledb_config', 'timescaledb_information', 'timescaledb_experimental'"
 
@@ -659,6 +762,8 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 	return functionMap, nil
 }
 
+var statPluginVersion = semver.MustParse("1.8.0")
+
 // SyncSlowQuery syncs the slow query.
 func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	var now time.Time
@@ -686,8 +791,11 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 	// pg_stat_statements version 1.8 changed the column names of pg_stat_statements.
 	// version is a string in the form of "major.minor".
 	// We need to check if the major version is greater than or equal to 1 and the minor version is greater than or equal to 8.
-	versions := strings.Split(version, ".")
-	if len(versions) == 2 && ((versions[0] == "1" && versions[1] >= "8") || versions[0] > "1") {
+	sv, err := semver.ParseTolerant(version)
+	if err != nil {
+		return nil, err
+	}
+	if sv.GTE(statPluginVersion) {
 		query = `
 		SELECT
 			pg_database.datname,

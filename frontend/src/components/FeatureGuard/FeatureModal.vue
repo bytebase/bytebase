@@ -16,7 +16,7 @@
           {{ $t(`subscription.features.${featureKey}.title`) }}
         </h3>
       </div>
-      <div class="mt-5">
+      <div class="mt-4">
         <p class="whitespace-pre-wrap">
           {{ $t(`subscription.features.${featureKey}.desc`) }}
         </p>
@@ -66,7 +66,10 @@
               </template>
             </i18n-t>
           </template>
-          <i18n-t v-else keypath="subscription.require-subscription">
+          <i18n-t
+            v-else-if="requiredPlan !== PlanType.FREE"
+            keypath="subscription.require-subscription"
+          >
             <template #requiredPlan>
               <span class="font-bold text-accent">
                 {{

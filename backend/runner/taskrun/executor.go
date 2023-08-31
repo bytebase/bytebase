@@ -26,13 +26,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Executor is the task executor.
@@ -72,16 +70,16 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	if err != nil {
 		return nil, err
 	}
-	environment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
-	if err != nil {
-		return nil, err
-	}
 	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, err
 	}
 	if database == nil {
 		return nil, errors.Errorf("database not found")
+	}
+	environment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+	if err != nil {
+		return nil, err
 	}
 
 	mi := &db.MigrationInfo{
@@ -99,29 +97,76 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 		Payload:     &storepb.InstanceChangeHistoryPayload{},
 	}
 
-	taskCheckType := api.TaskCheckDatabaseStatementTypeReport
-	typeReportTaskCheckRunFind := &store.TaskCheckRunFind{
-		TaskID:     &task.ID,
-		StageID:    &task.StageID,
-		PipelineID: &task.PipelineID,
-		Type:       &taskCheckType,
-		StatusList: &[]api.TaskCheckRunStatus{api.TaskCheckRunDone},
-	}
-	taskCheckRun, err := stores.ListTaskCheckRuns(ctx, typeReportTaskCheckRunFind)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list task check runs")
-	}
-	sort.Slice(taskCheckRun, func(i, j int) bool {
-		return taskCheckRun[i].ID > taskCheckRun[j].ID
-	})
-	if len(taskCheckRun) > 0 {
-		checkResult := &api.TaskCheckRunResultPayload{}
-		if err := json.Unmarshal([]byte(taskCheckRun[0].Result), checkResult); err != nil {
-			return nil, err
-		}
-		mi.Payload.ChangedResources, err = mergeChangedResources(checkResult.ResultList)
+	if profile.DevelopmentUseV2Scheduler {
+		plans, err := stores.ListPlans(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
 		if err != nil {
 			return nil, err
+		}
+		if len(plans) == 1 {
+			planTypes := []store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport}
+			status := []store.PlanCheckRunStatus{store.PlanCheckRunStatusDone}
+			runs, err := stores.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+				PlanUID: &plans[0].UID,
+				Type:    &planTypes,
+				Status:  &status,
+			})
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to list plan check runs")
+			}
+			sort.Slice(runs, func(i, j int) bool {
+				return runs[i].UID > runs[j].UID
+			})
+			foundChangedResources := false
+			for _, run := range runs {
+				if foundChangedResources {
+					break
+				}
+				if run.Config.InstanceUid != int32(task.InstanceID) {
+					continue
+				}
+				if run.Config.DatabaseName != database.DatabaseName {
+					continue
+				}
+				if run.Result == nil {
+					continue
+				}
+				for _, result := range run.Result.Results {
+					if result.Status != storepb.PlanCheckRunResult_Result_SUCCESS {
+						continue
+					}
+					if report := result.GetSqlSummaryReport(); report != nil {
+						mi.Payload.ChangedResources = report.ChangedResources
+						foundChangedResources = true
+						break
+					}
+				}
+			}
+		}
+	} else {
+		taskCheckType := api.TaskCheckDatabaseStatementTypeReport
+		typeReportTaskCheckRunFind := &store.TaskCheckRunFind{
+			TaskID:     &task.ID,
+			StageID:    &task.StageID,
+			PipelineID: &task.PipelineID,
+			Type:       &taskCheckType,
+			StatusList: &[]api.TaskCheckRunStatus{api.TaskCheckRunDone},
+		}
+		taskCheckRun, err := stores.ListTaskCheckRuns(ctx, typeReportTaskCheckRunFind)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to list task check runs")
+		}
+		sort.Slice(taskCheckRun, func(i, j int) bool {
+			return taskCheckRun[i].ID > taskCheckRun[j].ID
+		})
+		if len(taskCheckRun) > 0 {
+			checkResult := &api.TaskCheckRunResultPayload{}
+			if err := json.Unmarshal([]byte(taskCheckRun[0].Result), checkResult); err != nil {
+				return nil, err
+			}
+			mi.Payload.ChangedResources, err = mergeChangedResources(checkResult.ResultList)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -527,7 +572,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	return true, &api.TaskRunResultPayload{
 		Detail:        detail,
 		MigrationID:   migrationID,
-		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/migrations/%s", instance.ResourceID, database.DatabaseName, migrationID),
+		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/changeHistories/%s", instance.ResourceID, database.DatabaseName, migrationID),
 		Version:       mi.Version,
 	}, nil
 }

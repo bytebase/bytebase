@@ -70,7 +70,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", task.InstanceID)
 	}
-	if err := e.licenseService.IsFeatureEnabledForInstance(api.FeatureSQLReview, instance); err != nil {
+	if err := e.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 		// nolint:nilerr
 		return []api.TaskCheckResult{
 			{

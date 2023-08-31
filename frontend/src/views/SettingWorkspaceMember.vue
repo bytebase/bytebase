@@ -1,7 +1,7 @@
 <template>
   <FeatureAttention
     v-if="remainingUserCount <= 3"
-    custom-class="m-5"
+    custom-class="m-4"
     feature="bb.feature.user-count"
     :description="userCountAttention"
   />
@@ -11,7 +11,7 @@
       <MemberAddOrInvite />
     </div>
 
-    <FeatureAttention custom-class="my-5" feature="bb.feature.rbac" />
+    <FeatureAttention custom-class="my-4" feature="bb.feature.rbac" />
 
     <div class="flex justify-between items-center">
       <div class="flex-1 flex space-x-2">

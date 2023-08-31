@@ -28,6 +28,9 @@
             :data-tab-id="id"
             @select="(tab) => handleSelectTab(tab)"
             @close="(tab, index) => handleRemoveTab(tab, index)"
+            @contextmenu.stop.prevent="
+              contextMenuRef?.show(tabStore.getTabById(id), index, $event)
+            "
           />
         </template>
       </Draggable>
@@ -45,11 +48,7 @@
       </NButton>
     </div>
 
-    <Drawer v-model:show="showSheetPanel">
-      <DrawerContent :title="$t('sql-editor.sheet.self')">
-        <SheetPanel @close="showSheetPanel = false" />
-      </DrawerContent>
-    </Drawer>
+    <ContextMenu ref="contextMenuRef" />
   </div>
 </template>
 
@@ -60,13 +59,15 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
+import { defer, getSuggestedTabNameFromConnection } from "@/utils";
 import { useSheetContext } from "../Sheet";
-import SheetPanel from "../SheetPanel";
+import ContextMenu from "./ContextMenu.vue";
 import TabItem from "./TabItem";
+import { provideTabListContext } from "./context";
 
 type LocalState = {
   dragging: boolean;
@@ -82,9 +83,10 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-
-const { showPanel: showSheetPanel } = useSheetContext();
+const { showPanel: showSheetPanel, events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
+const context = provideTabListContext();
+const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
 const scrollState = reactive({
   moreLeft: false,
@@ -96,12 +98,28 @@ const handleSelectTab = async (tab: TabInfo) => {
 };
 
 const handleAddTab = () => {
-  tabStore.addTab();
+  const connection = { ...tabStore.currentTab.connection };
+  const name = getSuggestedTabNameFromConnection(connection);
+  tabStore.addTab({
+    name,
+    connection,
+    // The newly created tab is "clean" so its connection can be changed
+    isFreshNew: true,
+  });
   nextTick(recalculateScrollState);
+  sheetEvents.emit("add-sheet");
 };
 
-const handleRemoveTab = async (tab: TabInfo, index: number) => {
+const handleRemoveTab = async (
+  tab: TabInfo,
+  index: number,
+  focusWhenConfirm = false
+) => {
+  const _defer = defer<boolean>();
   if (tab.mode === TabMode.ReadOnly && !tab.isSaved) {
+    if (focusWhenConfirm) {
+      tabStore.setCurrentTabId(tab.id);
+    }
     const $dialog = dialog.create({
       title: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.title"),
       content: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.content"),
@@ -113,9 +131,11 @@ const handleRemoveTab = async (tab: TabInfo, index: number) => {
       onPositiveClick() {
         remove(index);
         $dialog.destroy();
+        _defer.resolve(true);
       },
       onNegativeClick() {
         $dialog.destroy();
+        _defer.resolve(false);
       },
       positiveText: t("sql-editor.close-sheet"),
       negativeText: t("common.cancel"),
@@ -123,10 +143,14 @@ const handleRemoveTab = async (tab: TabInfo, index: number) => {
     });
   } else {
     remove(index);
+    _defer.resolve(true);
   }
 
   function remove(index: number) {
-    if (tabStore.tabList.length <= 1) return;
+    if (tabStore.tabList.length === 1) {
+      // Ensure at least 1 tab
+      tabStore.addTab();
+    }
 
     tabStore.removeTab(tab);
 
@@ -137,6 +161,8 @@ const handleRemoveTab = async (tab: TabInfo, index: number) => {
 
     nextTick(recalculateScrollState);
   }
+
+  return _defer.promise;
 };
 
 const tabListElement = computed((): HTMLElement | undefined => {
@@ -151,6 +177,8 @@ useResizeObserver(tabListRef, () => {
 });
 
 const recalculateScrollState = () => {
+  contextMenuRef.value?.hide();
+
   const element = tabListElement.value;
   if (!element) {
     return;
@@ -197,6 +225,54 @@ watch(
 );
 
 onMounted(() => recalculateScrollState());
+
+useEmitteryEventListener(
+  context.events,
+  "close-tab",
+  async ({ tab, index, action }) => {
+    const tabList = tabStore.tabList;
+
+    const remove = async (tab: TabInfo, index: number) => {
+      await handleRemoveTab(tab, index, true);
+      await new Promise((r) => requestAnimationFrame(r));
+    };
+
+    if (action === "CLOSE") {
+      await remove(tab, index);
+      return;
+    }
+    const max = tabList.length - 1;
+    if (action === "CLOSE_OTHERS") {
+      for (let i = max; i > index; i--) {
+        await remove(tabList[i], i);
+      }
+      for (let i = index - 1; i >= 0; i--) {
+        await remove(tabList[i], i);
+      }
+      return;
+    }
+    if (action === "CLOSE_TO_THE_RIGHT") {
+      for (let i = max; i > index; i--) {
+        await remove(tabList[i], i);
+      }
+      return;
+    }
+    if (action === "CLOSE_SAVED") {
+      for (let i = max; i >= 0; i--) {
+        const tab = tabList[i];
+        if (tab.isSaved) {
+          await remove(tab, i);
+        }
+      }
+      return;
+    }
+    if (action === "CLOSE_ALL") {
+      for (let i = max; i >= 0; i--) {
+        await remove(tabList[i], i);
+      }
+    }
+  }
+);
 </script>
 
 <style scoped lang="postcss">

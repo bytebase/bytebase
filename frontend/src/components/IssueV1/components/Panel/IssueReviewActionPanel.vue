@@ -3,6 +3,7 @@
     :show="action !== undefined"
     :title="title"
     :loading="state.loading"
+    @show="comment = ''"
     @close="$emit('close')"
   >
     <template #default>

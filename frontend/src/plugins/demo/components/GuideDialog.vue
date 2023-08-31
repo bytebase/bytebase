@@ -200,7 +200,7 @@ const updateDialogPosition = async () => {
 
 <style scoped>
 .guide-wrapper {
-  @apply fixed -top-full -left-full bg-white w-64 m-1 my-2 p-3 px-5 text-base text-slate-900 rounded-lg text-left;
+  @apply fixed -top-full -left-full bg-white w-64 m-1 my-2 p-3 px-4 text-base text-slate-900 rounded-lg text-left;
   z-index: 10000;
   box-shadow: 0 4px 36px rgb(33 33 33 / 40%);
 }

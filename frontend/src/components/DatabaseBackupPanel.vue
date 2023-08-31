@@ -15,7 +15,7 @@
             <router-link
               v-if="hasBackupPolicyViolation"
               class="flex items-center normal-link text-sm"
-              :to="`/environment/${database.instanceEntity.environmentEntity.uid}`"
+              :to="`/environment/${database.effectiveEnvironmentEntity.uid}`"
             >
               <heroicons-outline:exclamation-circle class="w-4 h-4 mr-1" />
               <span>{{ $t("database.backup-policy-violation") }}</span>
@@ -269,7 +269,7 @@ watchEffect(prepareBackupList);
 
 const prepareBackupPolicy = () => {
   policyV1Store.getOrFetchPolicyByParentAndType({
-    parentPath: props.database.instanceEntity.environment,
+    parentPath: props.database.effectiveEnvironment,
     policyType: PolicyType.BACKUP_PLAN,
   });
 };
@@ -362,7 +362,7 @@ const autoBackupRetentionDays = computed(() => {
 
 const backupPolicy = computed((): BackupPlanSchedule => {
   const policy = policyV1Store.getPolicyByParentAndType({
-    parentPath: props.database.instanceEntity.environment,
+    parentPath: props.database.effectiveEnvironment,
     policyType: PolicyType.BACKUP_PLAN,
   });
   return policy?.backupPlanPolicy?.schedule ?? defaultBackupSchedule;

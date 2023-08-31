@@ -10,10 +10,10 @@
         <EnvironmentTabFilter
           v-if="filterTypes.includes('environment')"
           class="flex-1"
-          :environment="params.environment?.uid ?? String(UNKNOWN_ID)"
+          :environment="params.environment?.name"
           :include-all="true"
           :disabled="loading"
-          @update:environment="changeEnvironmentId"
+          @update:environment="changeEnvironment"
         />
       </div>
 
@@ -50,6 +50,7 @@
           :include-all="true"
           :filter="(db) => instanceFilter(db.instanceEntity)"
           :disabled="loading"
+          :consistent-menu-width="false"
           @update:database="changeDatabaseId"
         />
         <NDatePicker
@@ -133,8 +134,8 @@ const canVisitDefaultProject = computed(() => {
   );
 });
 
-const changeEnvironmentId = (id: string) => {
-  const environment = useEnvironmentV1Store().getEnvironmentByUID(id);
+const changeEnvironment = (name: string) => {
+  const environment = useEnvironmentV1Store().getEnvironmentByName(name);
   update({ environment });
 };
 const changeInstanceId = (uid: string | undefined) => {

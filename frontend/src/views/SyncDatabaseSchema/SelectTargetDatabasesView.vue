@@ -63,7 +63,7 @@
           >
         </div>
         <div>
-          <span>{{ $t("schema-designer.schema-design") }} - </span>
+          <span>{{ $t("database.branch") }} - </span>
           <span
             class="normal-link inline-flex items-center"
             @click="state.showViewSchemaDesignPanel = true"
@@ -89,7 +89,7 @@
             @click="state.showViewRawSQLPanel = true"
           >
             <EngineIcon class="mr-1" :engine="engine" />
-            <span>{{ "Raw SQL" }}</span>
+            <span>{{ $t("schema-editor.raw-sql") }}</span>
           </span>
         </div>
       </template>
@@ -163,7 +163,7 @@
               />
               <NEllipsis :tooltip="false">
                 <span class="mx-0.5 text-gray-400"
-                  >({{ database.instanceEntity.environmentEntity.title }})</span
+                  >({{ database.effectiveEnvironmentEntity.title }})</span
                 >
                 <span>{{ database.databaseName }}</span>
                 <span class="ml-0.5 text-gray-400"
@@ -265,6 +265,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
+import { sqlServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -331,6 +332,7 @@ const databaseDiffCache = reactive<
     }
   >
 >({});
+const schemaDesignPreviewCache = reactive<Record<string, string>>({});
 const project = computed(() => {
   return useProjectV1Store().getProjectByUID(props.projectId);
 });
@@ -345,7 +347,10 @@ const sourceDatabaseSchema = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return props.databaseSourceSchema?.changeHistory.schema || "";
   } else if (props.sourceSchemaType === "SCHEMA_DESIGN") {
-    return selectedSchemaDesign.value?.schema || "";
+    const databaseId = state.selectedDatabaseId || "";
+    return schemaDesignPreviewCache[
+      databaseId + "|" + selectedSchemaDesign.value?.name
+    ];
   } else if (props.sourceSchemaType === "RAW_SQL") {
     let statement = props.rawSqlState?.statement || "";
     if (props.rawSqlState?.sheetId) {
@@ -404,8 +409,11 @@ const previewSchemaChangeMessage = computed(() => {
   if (!database) {
     return "";
   }
+  const environment = environmentV1Store.getEnvironmentByName(
+    database.effectiveEnvironment
+  );
   return t("database.sync-schema.schema-change-preview", {
-    database: `${database.databaseName} (${database.instanceEntity.environmentEntity.title} - ${database.instanceEntity.title})`,
+    database: `${database.databaseName} (${environment?.title} - ${database.instanceEntity.title})`,
   });
 });
 const databaseListWithDiff = computed(() => {
@@ -489,6 +497,24 @@ watch(
   () => state.selectedDatabaseId,
   () => {
     diffViewerRef.value?.scrollTo(0, 0);
+  }
+);
+
+watch(
+  () => [state.selectedDatabaseId, selectedSchemaDesign.value],
+  async () => {
+    if (!state.selectedDatabaseId || !selectedSchemaDesign.value) {
+      return;
+    }
+    const schema = await sqlServiceClient.differPreview({
+      engine: engine.value,
+      oldSchema: targetDatabaseSchema.value,
+      newMetadata: selectedSchemaDesign.value?.schemaMetadata,
+    });
+    const databaseId = state.selectedDatabaseId || "";
+    schemaDesignPreviewCache[
+      databaseId + "|" + selectedSchemaDesign.value?.name
+    ] = schema.schema;
   }
 );
 

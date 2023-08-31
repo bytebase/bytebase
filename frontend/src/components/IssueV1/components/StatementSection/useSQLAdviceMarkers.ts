@@ -6,7 +6,7 @@ import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
 } from "@/types/proto/v1/rollout_service";
-import { useIssueContext } from "../../logic";
+import { planCheckRunListForTask, useIssueContext } from "../../logic";
 
 export const useSQLAdviceMarkers = () => {
   const { isCreating, issue, selectedTask } = useIssueContext();
@@ -14,14 +14,10 @@ export const useSQLAdviceMarkers = () => {
     if (isCreating.value) return [];
 
     const task = selectedTask.value;
-    const planCheckRunList = issue.value.planCheckRunList.filter((checkRun) => {
-      task; // TODO: match task and plan
-      return true;
-    });
+    const planCheckRunList = planCheckRunListForTask(issue.value, task);
 
     const types: PlanCheckRun_Type[] = [
       PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
-      PlanCheckRun_Type.DATABASE_STATEMENT_SYNTAX,
     ];
     return types.flatMap((type) => {
       return getLatestAdviceOptions(
@@ -46,21 +42,22 @@ const getLatestAdviceOptions = (planCheckRunList: PlanCheckRun[]) => {
         result.status === PlanCheckRun_Result_Status.ERROR ||
         result.status === PlanCheckRun_Result_Status.WARNING
     )
-    .filter((result) => result.line !== undefined)
+    .filter((result) => result.sqlReviewReport?.line !== undefined)
     .map<AdviceOption>((result) => {
+      const line = result.sqlReviewReport!.line;
+      const column = result.sqlReviewReport?.column ?? Number.MAX_SAFE_INTEGER;
+      const code = result.sqlReviewReport?.code ?? result.code;
       return {
         severity:
           result.status === PlanCheckRun_Result_Status.ERROR
             ? "ERROR"
             : "WARNING",
         message: result.content,
-        source: `${result.title} (${result.code})`,
-        startLineNumber: result.line!,
-        // We don't know the actual column yet, so we show the marker at then end of the line
-        startColumn: Number.MAX_SAFE_INTEGER,
-        endLineNumber: result.line!,
-        // We don't know the actual column yet, so we show the marker at then end of the line
-        endColumn: Number.MAX_SAFE_INTEGER,
+        source: `${result.title} (${code}) L${line}:C${column}`,
+        startLineNumber: line,
+        endLineNumber: line,
+        startColumn: column,
+        endColumn: column,
       };
     });
 };

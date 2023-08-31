@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -22,16 +21,15 @@ func TestDatabaseEnvironment(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                   dataDir,
+		vcsProviderCreator:        fake.NewGitLab,
+		developmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
 	// Create a project.
 	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	instanceRootDir := t.TempDir()
@@ -56,8 +54,17 @@ func TestDatabaseEnvironment(t *testing.T) {
 	})
 	a.NoError(err)
 
+	db0Name := "db0"
+	err = ctl.createDatabaseV2(ctx, project, instance, testEnvironment /* environment */, db0Name, "", nil /* labelMap */)
+	a.NoError(err)
+	db0, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, db0Name),
+	})
+	a.NoError(err)
+	a.Equal(testEnvironment.Name, db0.Environment)
+	a.Equal(testEnvironment.Name, db0.EffectiveEnvironment)
 	db1Name := "db1"
-	err = ctl.createDatabase(ctx, projectUID, instance, db1Name, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, db1Name, "", nil /* labelMap */)
 	a.NoError(err)
 	db1, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, db1Name),
@@ -67,7 +74,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.Equal(prodEnvironment.Name, db1.EffectiveEnvironment)
 
 	db2Name := "db2"
-	err = ctl.createDatabase(ctx, projectUID, instance, db2Name, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, db2Name, "", nil /* labelMap */)
 	a.NoError(err)
 	db2, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, db2Name),

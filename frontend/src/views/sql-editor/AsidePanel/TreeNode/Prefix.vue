@@ -4,7 +4,11 @@
   </template>
   <template v-else-if="atom.type === 'instance'">
     <span class="flex items-center gap-x-1">
-      <InstancePrefix :instance="instance" :disabled="atom.disabled" />
+      <InstancePrefix
+        :instance="instance"
+        :environment="environment"
+        :disabled="atom.disabled"
+      />
     </span>
   </template>
   <template v-else-if="atom.type === 'database'">
@@ -12,6 +16,7 @@
       <InstancePrefix
         v-if="connectionTreeStore.tree.mode === ConnectionTreeMode.PROJECT"
         :instance="database.instanceEntity"
+        :environment="environment"
         :disabled="atom.disabled"
       />
 
@@ -23,15 +28,17 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import {
-  useConnectionTreeStore,
   useDatabaseV1Store,
   useInstanceV1Store,
+  useEnvironmentV1Store,
+  useConnectionTreeStore,
 } from "@/store";
 import {
   ConnectionAtom,
-  ConnectionTreeMode,
   unknownInstance,
   unknownDatabase,
+  unknownEnvironment,
+  ConnectionTreeMode,
 } from "@/types";
 import InstancePrefix from "./InstancePrefix.vue";
 
@@ -41,6 +48,7 @@ const props = defineProps<{
 
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
+const environmentStore = useEnvironmentV1Store();
 const connectionTreeStore = useConnectionTreeStore();
 
 const instance = computed(() => {
@@ -58,5 +66,17 @@ const database = computed(() => {
     return databaseStore.getDatabaseByUID(atom.id);
   }
   return unknownDatabase();
+});
+
+const environment = computed(() => {
+  const { atom } = props;
+  if (atom.type === "instance") {
+    return instance.value.environmentEntity;
+  }
+  return (
+    environmentStore.getEnvironmentByName(
+      database.value.effectiveEnvironment
+    ) ?? unknownEnvironment()
+  );
 });
 </script>

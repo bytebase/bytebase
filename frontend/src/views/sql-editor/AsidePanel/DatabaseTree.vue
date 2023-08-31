@@ -1,11 +1,12 @@
 <template>
   <div
     v-if="connectionTreeStore.tree.state === ConnectionTreeState.LOADED"
-    class="databases-tree p-2 space-y-2 h-full flex flex-col"
+    class="databases-tree pt-2 px-0.5 gap-y-2 h-full flex flex-col"
     :class="connectionTreeStore.tree.mode"
   >
     <div class="databases-tree--input">
       <NInput
+        size="small"
         :value="searchPattern"
         :placeholder="$t('sql-editor.search-databases')"
         :clearable="true"
@@ -28,7 +29,6 @@
         :expanded-keys="expandedTreeNodeKeysForCurrentTreeMode"
         :render-label="renderLabel"
         :render-prefix="renderPrefix"
-        :render-suffix="renderSuffix"
         :node-props="nodeProps"
         :virtual-scroll="true"
         @update:expanded-keys="updateExpandedKeys"
@@ -61,6 +61,8 @@ import {
   useConnectionTreeStore,
   useCurrentUserV1,
   useDatabaseV1Store,
+  useInstanceV1Store,
+  useSQLEditorStore,
   useIsLoggedIn,
   useTabStore,
 } from "@/store";
@@ -73,15 +75,16 @@ import {
 } from "@/types";
 import {
   emptyConnection,
-  getDefaultTabNameFromConnection,
+  getSuggestedTabNameFromConnection,
   hasWorkspacePermissionV1,
   instanceV1HasReadonlyMode,
   instanceOfConnectionAtom,
   instanceV1HasAlterSchema,
   isDescendantOf,
   isSimilarTab,
+  instanceV1AllowsCrossDatabaseQuery,
 } from "@/utils";
-import { Prefix, Label, Suffix } from "./TreeNode";
+import { Prefix, Label } from "./TreeNode";
 
 type Position = {
   x: number;
@@ -106,11 +109,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const connectionTreeStore = useConnectionTreeStore();
 const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUserV1 = useCurrentUserV1();
+const sqlEditorStore = useSQLEditorStore();
 
 const mounted = useMounted();
 const treeRef = ref<InstanceType<typeof NTree>>();
@@ -121,6 +126,7 @@ const dropdownPosition = ref<Position>({
   y: 0,
 });
 const dropdownContext = ref<ConnectionAtom>();
+
 const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
   const atom = dropdownContext.value;
   if (!atom) {
@@ -153,7 +159,7 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
         });
       }
     }
-    if (atom.type === "database") {
+    if (atom.type === "database" && sqlEditorStore.mode === "BUNDLED") {
       const database = databaseStore.getDatabaseByUID(atom.id);
       if (instanceV1HasAlterSchema(database.instanceEntity)) {
         items.push({
@@ -201,6 +207,13 @@ const setConnection = (
       return;
     }
 
+    if (option.type === "instance") {
+      const instance = instanceStore.getInstanceByUID(option.id);
+      if (!instanceV1AllowsCrossDatabaseQuery(instance)) {
+        return;
+      }
+    }
+
     const target: CoreTabInfo = {
       connection: emptyConnection(),
       ...extra,
@@ -212,13 +225,19 @@ const setConnection = (
         // Don't go further if the connection doesn't change.
         return;
       }
-      const name = getDefaultTabNameFromConnection(target.connection);
-      tabStore.selectOrAddSimilarTab(
-        target,
-        /* beside */ false,
-        /* defaultTabName */ name
-      );
-      tabStore.updateCurrentTab(target);
+      if (tabStore.currentTab.isFreshNew) {
+        // If the current tab is "fresh new", update its connection directly.
+        tabStore.updateCurrentTab(target);
+      } else {
+        // Otherwise select or add a new tab and set its connection
+        const name = getSuggestedTabNameFromConnection(target.connection);
+        tabStore.selectOrAddSimilarTab(
+          target,
+          /* beside */ false,
+          /* defaultTabName */ name
+        );
+        tabStore.updateCurrentTab(target);
+      }
     };
 
     // If selected item is instance node
@@ -245,13 +264,6 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 const renderPrefix = ({ option }: { option: TreeOption }) => {
   const atom = option as any as ConnectionAtom;
   return h(Prefix, { atom });
-};
-
-// Render a 'connected' icon in the right of the node
-// if it matches the current tab's connection
-const renderSuffix = ({ option }: { option: TreeOption }) => {
-  const atom = option as any as ConnectionAtom;
-  return h(Suffix, { atom });
 };
 
 const handleSelect = (key: string) => {

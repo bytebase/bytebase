@@ -161,12 +161,14 @@ func (diff *diffNode) diffSupportedStatement(oldStatement, newStatement string) 
 		}
 	}
 
-	diff.diffView(oldSchemaInfo.viewMap, newSchemaInfo.viewMap, newViewList)
+	if err := diff.diffView(oldSchemaInfo.viewMap, newSchemaInfo.viewMap, newViewList); err != nil {
+		return errors.Wrapf(err, "failed to diff view")
+	}
 
 	return nil
 }
 
-func (diff *diffNode) diffView(oldViewMap viewMap, newViewMap viewMap, newViewList []*ast.CreateViewStmt) {
+func (diff *diffNode) diffView(oldViewMap viewMap, newViewMap viewMap, newViewList []*ast.CreateViewStmt) error {
 	var tempViewList []ast.Node
 	var viewList []ast.Node
 	for _, view := range newViewList {
@@ -192,7 +194,10 @@ func (diff *diffNode) diffView(oldViewMap viewMap, newViewMap viewMap, newViewLi
 		} else {
 			// We should create the view.
 			// We create the temporary view first and replace it to avoid break the dependency like mysqldump does.
-			tempViewStmt := getTempView(view)
+			tempViewStmt, err := getTempView(view)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get temporary view for view %s", view.ViewName.Name.O)
+			}
 			tempViewList = append(tempViewList, tempViewStmt)
 			createViewStmt := *view
 			createViewStmt.OrReplace = true
@@ -212,6 +217,7 @@ func (diff *diffNode) diffView(oldViewMap viewMap, newViewMap viewMap, newViewLi
 	if len(dropViewStmt.Tables) > 0 {
 		diff.dropViewList = append(diff.dropViewList, dropViewStmt)
 	}
+	return nil
 }
 
 func (diff *diffNode) diffTable(oldTable, newTable *tableInfo) {
@@ -793,7 +799,7 @@ func buildUnsupportObjectMap(stmts []string) (map[objectType]map[string]string, 
 }
 
 // getTempView returns the temporary view name and the create statement.
-func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
+func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 	// We create the temp view similar to what mysqldump does.
 	// Create a temporary view with the same name as the view. Its columns should
 	// have the same name in order to satisfy views that depend on this view.
@@ -814,19 +820,29 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 			})
 		}
 	} else {
-		for _, field := range stmt.Select.(*ast.SelectStmt).Fields.Fields {
-			var fieldName string
-			if field.AsName.O != "" {
-				fieldName = field.AsName.O
-			} else {
-				fieldName = field.Expr.(*ast.ColumnNameExpr).Name.Name.O
+		//nolint
+		switch stmt.Select.(type) {
+		case *ast.SelectStmt:
+			for _, field := range stmt.Select.(*ast.SelectStmt).Fields.Fields {
+				var fieldName string
+				if field.AsName.O != "" {
+					fieldName = field.AsName.O
+				} else {
+					fieldName = field.Expr.(*ast.ColumnNameExpr).Name.Name.O
+				}
+				selectFileds = append(selectFileds, &ast.SelectField{
+					Expr: &driver.ValueExpr{
+						Datum: types.NewDatum(1),
+					},
+					AsName: model.NewCIStr(fieldName),
+				})
 			}
-			selectFileds = append(selectFileds, &ast.SelectField{
-				Expr: &driver.ValueExpr{
-					Datum: types.NewDatum(1),
-				},
-				AsName: model.NewCIStr(fieldName),
-			})
+		default:
+			stmtStr, err := toString(stmt)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to convert create view statement to string")
+			}
+			return nil, errors.Errorf("unsupported create view statement %q which select is not select ast node", stmtStr)
 		}
 	}
 
@@ -848,7 +864,7 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 		Definer:     stmt.Definer,
 		Security:    stmt.Security,
 		CheckOption: model.CheckOptionCascaded,
-	}
+	}, nil
 }
 
 // buildColumnMap returns a map of column name to column definition on a given table.

@@ -170,7 +170,7 @@ const databaseListGroupByEnvironment = computed(() => {
       .filter((db) => db.instanceEntity.engine === props.engine) || [];
   const listByEnv = environmentV1Store.environmentList.map((environment) => {
     const list = databaseList.filter(
-      (db) => db.instanceEntity.environment === environment.name
+      (db) => db.effectiveEnvironment === environment.name
     );
     return {
       environment,
@@ -209,7 +209,7 @@ const toggleAllDatabasesSelectionForEnvironment = (
   on: boolean
 ) => {
   databaseList
-    .filter((db) => db.instanceEntity.environment === environment.name)
+    .filter((db) => db.effectiveEnvironment === environment.name)
     .forEach((db) => toggleDatabaseSelected(db.uid, on));
 };
 
@@ -219,7 +219,7 @@ const getAllSelectionStateForEnvironment = (
 ): { checked: boolean; indeterminate: boolean } => {
   const set = new Set(
     state.selectedDatabaseList
-      .filter((db) => db.instanceEntity.environment === environment.name)
+      .filter((db) => db.effectiveEnvironment === environment.name)
       .map((db) => db.uid)
   );
   const checked = databaseList.every((db) => set.has(db.uid));
@@ -237,7 +237,7 @@ const getSelectionStateSummaryForEnvironment = (
 ) => {
   const set = new Set(
     state.selectedDatabaseList
-      .filter((db) => db.instanceEntity.environment === environment.name)
+      .filter((db) => db.effectiveEnvironment === environment.name)
       .map((db) => db.uid)
   );
   const selected = databaseList.filter((db) => set.has(db.uid)).length;

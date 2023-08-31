@@ -48,12 +48,12 @@ var resourceActionTypeMap = map[string][]api.ActivityType{
 		api.ActivityProjectDatabaseTransfer,
 		api.ActivityProjectMemberCreate,
 		api.ActivityProjectMemberDelete,
-		api.ActivityProjectMemberRoleUpdate,
 		api.ActivityDatabaseRecoveryPITRDone,
 	},
 	"pipelines": {
 		api.ActivityPipelineStageStatusUpdate,
 		api.ActivityPipelineTaskStatusUpdate,
+		api.ActivityPipelineTaskRunStatusUpdate,
 		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
 		api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
@@ -113,6 +113,9 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 		if orderByKeys[0].isAscend {
 			order = api.ASC
 		}
+		activityFind.Order = &order
+	} else {
+		order := api.ASC
 		activityFind.Order = &order
 	}
 
@@ -315,6 +318,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 	case
 		api.ActivityPipelineStageStatusUpdate,
 		api.ActivityPipelineTaskStatusUpdate,
+		api.ActivityPipelineTaskRunStatusUpdate,
 		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
 		api.ActivityPipelineTaskEarliestAllowedTimeUpdate:
@@ -324,7 +328,6 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		api.ActivityProjectDatabaseTransfer,
 		api.ActivityProjectMemberCreate,
 		api.ActivityProjectMemberDelete,
-		api.ActivityProjectMemberRoleUpdate,
 		api.ActivityDatabaseRecoveryPITRDone:
 		project, err := db.GetProjectV2(ctx, &store.FindProjectMessage{
 			UID: &activity.ContainerUID,
@@ -398,6 +401,8 @@ func convertToActivityType(action v1pb.LogEntity_Action) (api.ActivityType, erro
 		return api.ActivityPipelineStageStatusUpdate, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_STATUS_UPDATE:
 		return api.ActivityPipelineTaskStatusUpdate, nil
+	case v1pb.LogEntity_ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
+		return api.ActivityPipelineTaskRunStatusUpdate, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_FILE_COMMIT:
 		return api.ActivityPipelineTaskFileCommit, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
@@ -413,8 +418,6 @@ func convertToActivityType(action v1pb.LogEntity_Action) (api.ActivityType, erro
 		return api.ActivityProjectMemberCreate, nil
 	case v1pb.LogEntity_ACTION_PROJECT_MEMBER_DELETE:
 		return api.ActivityProjectMemberDelete, nil
-	case v1pb.LogEntity_ACTION_PROJECT_MEMBER_ROLE_UPDATE:
-		return api.ActivityProjectMemberRoleUpdate, nil
 	case v1pb.LogEntity_ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
 		return api.ActivityDatabaseRecoveryPITRDone, nil
 
@@ -453,6 +456,8 @@ func convertToActionType(activityType api.ActivityType) v1pb.LogEntity_Action {
 		return v1pb.LogEntity_ACTION_PIPELINE_STAGE_STATUS_UPDATE
 	case api.ActivityPipelineTaskStatusUpdate:
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_STATUS_UPDATE
+	case api.ActivityPipelineTaskRunStatusUpdate:
+		return v1pb.LogEntity_ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE
 	case api.ActivityPipelineTaskFileCommit:
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_FILE_COMMIT
 	case api.ActivityPipelineTaskStatementUpdate:
@@ -468,8 +473,6 @@ func convertToActionType(activityType api.ActivityType) v1pb.LogEntity_Action {
 		return v1pb.LogEntity_ACTION_PROJECT_MEMBER_CREATE
 	case api.ActivityProjectMemberDelete:
 		return v1pb.LogEntity_ACTION_PROJECT_MEMBER_DELETE
-	case api.ActivityProjectMemberRoleUpdate:
-		return v1pb.LogEntity_ACTION_PROJECT_MEMBER_ROLE_UPDATE
 	case api.ActivityDatabaseRecoveryPITRDone:
 		return v1pb.LogEntity_ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE
 

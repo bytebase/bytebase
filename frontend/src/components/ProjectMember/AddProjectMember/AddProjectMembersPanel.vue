@@ -6,7 +6,7 @@
     @update:show="(show: boolean) => !show && $emit('close')"
   >
     <NDrawerContent
-      :title="$t('project.members.add-member')"
+      :title="$t('project.members.grant-access')"
       :closable="true"
       class="w-[50rem] max-w-[100vw] relative"
     >
@@ -17,6 +17,7 @@
       >
         <AddProjectMemberForm
           v-if="binding"
+          ref="formRefs"
           class="w-full border-b mb-4 pb-4"
           :project="project"
           :binding="binding"
@@ -26,9 +27,8 @@
       </div>
       <div>
         <NButton @click="handleAddMore">
-          <heroicons-solid:plus class="w-5 h-auto" />{{
-            $t("project.members.add-more")
-          }}
+          <heroicons-solid:plus class="w-5 h-auto text-gray-400" />
+          {{ $t("project.members.add-more") }}
         </NButton>
       </div>
       <template #footer>
@@ -46,14 +46,14 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { NDrawer, NDrawerContent, NButton } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
 } from "@/store";
-import { ComposedProject } from "@/types";
+import { ComposedProject, PresetRoleType } from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import AddProjectMemberForm from "./AddProjectMemberForm.vue";
 
@@ -73,6 +73,7 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   bindings: [Binding.fromPartial({})],
 });
+const formRefs = ref<InstanceType<typeof AddProjectMemberForm>[]>([]);
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
@@ -81,14 +82,34 @@ const filteredBindings = computed(() => {
 });
 
 const allowConfirm = computed(() => {
-  for (const binding of filteredBindings.value) {
-    // TODO: check the cel condition expression is valid for querier and exporter.
-    if (
-      binding.members.length === 0 ||
-      binding.role === "" ||
-      !binding.condition?.title
-    )
+  // Check if all forms are completed.
+  for (const form of formRefs.value) {
+    if (!form) {
+      continue;
+    }
+    if (!form.allowConfirm) {
       return false;
+    }
+  }
+
+  for (const binding of filteredBindings.value) {
+    if (binding.members.length === 0 || binding.role === "") {
+      return false;
+    }
+    // Filter uncompleted querier and exporter options.
+    // TODO: use parsed expression to check if the expression is valid.
+    if (binding.role === PresetRoleType.EXPORTER) {
+      if (binding.condition?.expression === "") {
+        return false;
+      }
+      if (
+        (!binding.condition?.expression.includes("request.statement") &&
+          !binding.condition?.expression.includes("resource.database")) ||
+        !binding.condition?.expression.includes("request.row_limit")
+      ) {
+        return false;
+      }
+    }
   }
   return true;
 });

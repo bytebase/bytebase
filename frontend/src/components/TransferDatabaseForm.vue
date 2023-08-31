@@ -212,7 +212,7 @@ const parseLabelsIfNeeded = (database: ComposedDatabase) => {
   if (!match) return undefined;
 
   const labels: Record<string, string> = {
-    "bb.environment": database.instanceEntity.environment,
+    "bb.environment": database.effectiveEnvironment,
   };
 
   PRESET_LABEL_KEY_PLACEHOLDERS.forEach(([placeholder, key]) => {

@@ -131,6 +131,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
         fetchActivityList({
           resource: `pipelines/${pipelineUID}`,
           order: "asc",
+          pageSize: 1000,
         }).then((resp) => resp.logEntities)
       );
     } else {

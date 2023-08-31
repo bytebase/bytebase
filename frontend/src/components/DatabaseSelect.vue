@@ -174,9 +174,11 @@ export default defineComponent({
       }
 
       if (props.environmentId !== String(UNKNOWN_ID)) {
+        const environment = useEnvironmentV1Store().getEnvironmentByUID(
+          props.environmentId
+        );
         list = list.filter(
-          (db) =>
-            db.instanceEntity.environmentEntity.uid === props.environmentId
+          (db) => db.effectiveEnvironment === environment.name
         );
       }
       if (props.instanceId !== String(UNKNOWN_ID)) {

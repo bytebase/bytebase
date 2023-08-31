@@ -37,7 +37,7 @@
 
             <router-link
               class="normal-link text-sm"
-              :to="`/environment/${database.instanceEntity.environmentEntity.uid}`"
+              :to="`/environment/${database.effectiveEnvironmentEntity.uid}`"
             >
               {{
                 $t(
@@ -131,7 +131,7 @@
       </div>
 
       <div
-        class="w-full mt-5 pt-4 flex justify-end border-t border-block-border"
+        class="w-full mt-4 pt-4 flex justify-end border-t border-block-border"
       >
         <button
           type="button"

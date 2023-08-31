@@ -11,15 +11,17 @@
         />
       </div>
       <div class="flex flex-row justify-end items-center grow space-x-2">
-        <div class="w-40">
+        <div class="w-44">
           <BBSelect
             :selected-item="state.selectedAffectedTable"
             :item-list="affectedTables"
-            :show-prefix-item="false"
             @select-item="(item: AffectedTable) => state.selectedAffectedTable = item"
           >
             <template #menuItem="{ item }">
-              <span :class="item.dropped && 'text-gray-400'">
+              <span
+                class="block w-full truncate"
+                :class="item.dropped && 'text-gray-400'"
+              >
                 {{ getAffectedTableDisplayName(item) }}
               </span>
             </template>
@@ -95,7 +97,7 @@
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
-import { isEqual, orderBy } from "lodash-es";
+import { isEqual, orderBy, uniqBy } from "lodash-es";
 import { computed, onBeforeMount, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -159,6 +161,7 @@ const prepareChangeHistoryList = async () => {
   state.loading = true;
   await changeHistoryStore.fetchChangeHistoryList({
     parent: props.database.name,
+    pageSize: 1000,
   });
   // prepare database metadata for getting affected tables.
   await useDBSchemaV1Store().getOrFetchDatabaseMetadata(props.database.name);
@@ -232,10 +235,15 @@ const affectedTables = computed(() => {
   return [
     EmptyAffectedTable,
     ...orderBy(
-      changeHistoryList.value
-        .map((changeHistory) => getAffectedTablesOfChangeHistory(changeHistory))
-        .flat(),
-      ["dropped"]
+      uniqBy(
+        changeHistoryList.value
+          .map((changeHistory) =>
+            getAffectedTablesOfChangeHistory(changeHistory)
+          )
+          .flat(),
+        (affectedTable) => `${affectedTable.schema}.${affectedTable.table}`
+      ),
+      ["dropped", "table", "schema"]
     ),
   ];
 });
@@ -244,6 +252,7 @@ const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
   if (isEqual(affectedTable, EmptyAffectedTable)) {
     return t("change-history.all-tables");
   }
+
   const { schema, table, dropped } = affectedTable;
   let name = table;
   if (schema !== "") {

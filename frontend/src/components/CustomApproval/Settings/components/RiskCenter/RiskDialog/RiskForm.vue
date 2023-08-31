@@ -53,8 +53,9 @@
           <ExprEditor
             :expr="state.expr"
             :allow-admin="allowAdmin"
-            :allow-high-level-factors="false"
-            :risk-source="state.risk.source"
+            :factor-list="getFactorList(state.risk.source)"
+            :factor-support-dropdown="factorSupportDropdown"
+            :factor-options-map="getFactorOptionsMap(state.risk.source)"
             @update="$emit('update')"
           />
         </div>
@@ -93,6 +94,7 @@
 import { cloneDeep } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, ref, watch } from "vue";
+import ExprEditor from "@/components/ExprEditor";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
@@ -111,7 +113,11 @@ import {
   convertCELStringToParsedExpr,
   convertParsedExprToCELString,
 } from "@/utils";
-import ExprEditor from "../../common/ExprEditor";
+import {
+  getFactorList,
+  getFactorOptionsMap,
+  factorSupportDropdown,
+} from "../../common/utils";
 import { useRiskCenterContext } from "../context";
 import RiskLevelSelect from "./RiskLevelSelect.vue";
 import RiskSourceSelect from "./RiskSourceSelect.vue";

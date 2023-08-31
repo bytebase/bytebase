@@ -52,6 +52,7 @@
   </BBTable>
   <BBModal
     v-if="schemaDriftDetail"
+    class="!max-w-[calc(100%-40px)] overflow-auto"
     :title="`'${schemaDriftDetail.database.databaseName}' schema drift - ${schemaDriftDetail.payload?.recordVersion} vs Actual`"
     @close="dismissModal"
   >
@@ -99,7 +100,6 @@ type Action = {
 };
 
 interface LocalState {
-  showModal: boolean;
   selectedAnomaly?: Anomaly;
 }
 
@@ -117,9 +117,7 @@ defineProps({
 const router = useRouter();
 const { t } = useI18n();
 
-const state = reactive<LocalState>({
-  showModal: false,
-});
+const state = reactive<LocalState>({});
 
 const columnList = computed(() => [
   {
@@ -278,7 +276,6 @@ const action = (anomaly: Anomaly): Action => {
       return {
         onClick: () => {
           state.selectedAnomaly = anomaly;
-          state.showModal = true;
           useDatabaseV1Store().getOrFetchDatabaseByName(anomaly.resource);
         },
         title: t("anomaly.action.view-diff"),
@@ -293,7 +290,7 @@ const action = (anomaly: Anomaly): Action => {
 };
 
 const schemaDriftDetail = computed(() => {
-  if (state.showModal && state.selectedAnomaly) {
+  if (state.selectedAnomaly) {
     const anomaly = state.selectedAnomaly;
     const database = useDatabaseV1Store().getDatabaseByName(anomaly.resource);
     return {
@@ -306,7 +303,6 @@ const schemaDriftDetail = computed(() => {
 });
 
 const dismissModal = () => {
-  state.showModal = false;
   state.selectedAnomaly = undefined;
 };
 </script>

@@ -39,9 +39,28 @@
     </div>
 
     <div class="space-y-2">
-      <p class="text-lg font-medium leading-7 text-main">
-        {{ $t("common.issue") }}
-      </p>
+      <div class="flex items-center gap-x-1">
+        <p class="text-lg font-medium leading-7 text-main">
+          {{ $t("common.issue") }}
+        </p>
+        <button
+          type="button"
+          class="p-1 rounded hover:bg-gray-200"
+          @click="
+            () => {
+              router.replace({
+                name: 'workspace.issue',
+                query: {
+                  project: project.uid,
+                  autofocus: 1,
+                },
+              });
+            }
+          "
+        >
+          <heroicons-outline:search class="h-4 w-4 text-control" />
+        </button>
+      </div>
 
       <div>
         <WaitingForMyApprovalIssueTable
@@ -119,6 +138,7 @@
 
 <script lang="ts" setup>
 import { reactive, PropType } from "vue";
+import { useRouter } from "vue-router";
 import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
 import { featureToRef } from "@/store";
 import { Project } from "@/types/proto/v1/project_service";
@@ -143,5 +163,7 @@ const state = reactive<LocalState>({
   progressIssueList: [],
   closedIssueList: [],
 });
+const router = useRouter();
+
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 </script>

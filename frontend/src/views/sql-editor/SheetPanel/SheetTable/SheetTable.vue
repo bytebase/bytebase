@@ -1,7 +1,7 @@
 <template>
   <BBGrid
     :column-list="columns"
-    :data-source="sheetList"
+    :data-source="sortedSheetList"
     :show-placeholder="true"
     :ready="!isLoading"
     row-key="name"
@@ -10,6 +10,9 @@
     <template #item="{ item: sheet }: BBGridRow<Sheet>">
       <div class="bb-grid-cell">
         {{ sheet.title }}
+      </div>
+      <div class="bb-grid-cell">
+        <SheetConnection :sheet="sheet" />
       </div>
       <div class="bb-grid-cell">
         <ProjectV1Name :project="projectForSheet(sheet)" :link="false" />
@@ -31,6 +34,7 @@
 </template>
 
 <script lang="ts" setup>
+import { orderBy } from "lodash-es";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridRow, BBGridColumn } from "@/bbkit";
@@ -41,6 +45,7 @@ import { Sheet } from "@/types/proto/v1/sheet_service";
 import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 import { extractProjectResourceName } from "@/utils";
 import { SheetViewMode, useSheetContextByView, Dropdown } from "../../Sheet";
+import SheetConnection from "./SheetConnection.vue";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -69,13 +74,17 @@ const columns = computed(() => {
     title: t("common.name"),
     width: "2fr",
   };
+  const CONNECTION: BBGridColumn = {
+    title: t("sql-editor.sheet.connection"),
+    width: "minmax(auto, 2fr)",
+  };
   const PROJECT: BBGridColumn = {
     title: t("common.project"),
     width: "minmax(auto, 1fr)",
   };
   const VISIBILITY: BBGridColumn = {
     title: t("common.visibility"),
-    width: "minmax(auto, 1fr)",
+    width: "minmax(auto, 8rem)",
   };
   const CREATOR: BBGridColumn = {
     title: t("common.creator"),
@@ -83,18 +92,22 @@ const columns = computed(() => {
   };
   const UPDATED: BBGridColumn = {
     title: t("common.updated-at"),
-    width: "minmax(auto, 1fr)",
+    width: "minmax(auto, 10rem)",
   };
   const OPERATION: BBGridColumn = {
     title: "",
     width: "auto",
   };
-  const columns = [NAME, PROJECT, VISIBILITY];
+  const columns = [NAME, CONNECTION, PROJECT, VISIBILITY];
   if (showCreator.value) {
     columns.push(CREATOR);
   }
   columns.push(UPDATED, OPERATION);
   return columns;
+});
+
+const sortedSheetList = computed(() => {
+  return orderBy<Sheet>(sheetList.value, [(sheet) => sheet.title], ["asc"]);
 });
 
 const projectForSheet = (sheet: Sheet) => {

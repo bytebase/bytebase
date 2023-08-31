@@ -2,11 +2,18 @@
   <div class="aside-panel h-full">
     <NTabs
       v-model:value="tabStore.asidePanelTab"
-      class="h-full"
+      class="h-full overflow-hidden"
+      pane-style="height: calc(100% - 33px); padding: 0 4px;"
       :tabs-padding="8"
     >
       <NTabPane name="databases" :tab="$t('common.databases')">
-        <NTabs v-model:value="databaseTab" type="segment" class="h-full">
+        <NTabs
+          v-model:value="databaseTab"
+          type="segment"
+          size="small"
+          class="h-full"
+          pane-style="height: calc(100% - 35px); padding: 0;"
+        >
           <NTabPane name="projects" :tab="$t('common.projects')">
             <Splitpanes
               horizontal
@@ -53,15 +60,21 @@
         </NTabs>
       </NTabPane>
       <NTabPane name="sheets" :tab="$t('sheet.sheets')">
-        <NTabs v-model:value="sheetTab" type="segment" class="h-full">
+        <NTabs
+          v-model:value="sheetTab"
+          size="small"
+          type="segment"
+          class="h-full"
+          pane-style="height: calc(100% - 35px); padding: 0;"
+        >
           <NTabPane name="my" :tab="$t('sheet.mine')">
             <SheetList view="my" />
           </NTabPane>
-          <NTabPane name="shared" :tab="$t('sheet.shared')">
-            <SheetList view="shared" @add-tab="sheetTab = 'my'" />
-          </NTabPane>
           <NTabPane name="starred" :tab="$t('sheet.starred')">
-            <SheetList view="starred" @add-tab="sheetTab = 'my'" />
+            <SheetList view="starred" />
+          </NTabPane>
+          <NTabPane name="shared" :tab="$t('sheet.shared-with-me')">
+            <SheetList view="shared" />
           </NTabPane>
         </NTabs>
       </NTabPane>
@@ -73,6 +86,7 @@
 import { NTabs, NTabPane } from "naive-ui";
 import { Splitpanes, Pane } from "splitpanes";
 import { computed, ref, watchEffect } from "vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionTreeStore,
   useCurrentUserV1,
@@ -82,6 +96,7 @@ import {
 import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import { useSheetContext } from "../Sheet";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SchemaPanel from "./SchemaPanel/";
@@ -98,6 +113,7 @@ const currentUserV1 = useCurrentUserV1();
 const tabStore = useTabStore();
 const connectionTreeStore = useConnectionTreeStore();
 const searchPattern = ref("");
+const { events: sheetEvents } = useSheetContext();
 
 const databaseTab = ref<"projects" | "instances" | "history">(
   connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE
@@ -133,11 +149,8 @@ watchEffect(() => {
     connectionTreeStore.tree.mode = ConnectionTreeMode.INSTANCE;
   }
 });
-</script>
 
-<style scoped>
-.aside-panel .n-tab-pane {
-  height: calc(100% - 40px);
-  @apply pt-0;
-}
-</style>
+useEmitteryEventListener(sheetEvents, "add-sheet", () => {
+  sheetTab.value = "my";
+});
+</script>

@@ -21,7 +21,6 @@ type MySQLParseResult struct {
 
 // ParseMySQL parses the given SQL statement and returns the AST.
 func ParseMySQL(statement string) ([]*MySQLParseResult, error) {
-	statement = strings.TrimRight(statement, " \r\n\t\f;") + "\n;"
 	var err error
 	statement, err = DealWithDelimiter(statement)
 	if err != nil {
@@ -341,6 +340,30 @@ func parseSingleStatement(statement string) (antlr.Tree, *antlr.CommonTokenStrea
 	return tree, stream, nil
 }
 
+func mysqlAddSemicolonIfNeeded(sql string) string {
+	lexer := parser.NewMySQLLexer(antlr.NewInputStream(sql))
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+	for i := len(tokens) - 1; i >= 0; i-- {
+		if tokens[i].GetChannel() != antlr.TokenDefaultChannel || tokens[i].GetTokenType() == parser.MySQLParserEOF {
+			continue
+		}
+
+		// The last default channel token is a semicolon.
+		if tokens[i].GetTokenType() == parser.MySQLParserSEMICOLON_SYMBOL {
+			return sql
+		}
+
+		var result []string
+		result = append(result, stream.GetTextFromInterval(antlr.NewInterval(0, tokens[i].GetTokenIndex())))
+		result = append(result, ";")
+		result = append(result, stream.GetTextFromInterval(antlr.NewInterval(tokens[i].GetTokenIndex()+1, tokens[len(tokens)-1].GetTokenIndex())))
+		return strings.Join(result, "")
+	}
+	return sql
+}
+
 func parseInputStream(input *antlr.InputStream) ([]*MySQLParseResult, error) {
 	var result []*MySQLParseResult
 	lexer := parser.NewMySQLLexer(input)
@@ -349,6 +372,10 @@ func parseInputStream(input *antlr.InputStream) ([]*MySQLParseResult, error) {
 	list, err := splitMySQLStatement(stream)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(list) > 0 {
+		list[len(list)-1].Text = mysqlAddSemicolonIfNeeded(list[len(list)-1].Text)
 	}
 
 	for _, s := range list {

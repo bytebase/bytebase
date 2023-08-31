@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <div class="textinfolabel">
+    <div class="textinfolabel py-4">
       {{ $t("gitops.setting.description") }}
       <a
         class="text-accent hover:opacity-80"
@@ -17,16 +17,15 @@
         {{ $t("gitops.setting.add-git-provider.self") }}
       </button>
     </div>
-    <div class="pt-4 border-t">
-      <div v-if="vcsList.length > 0" class="space-y-6">
-        <template v-for="(vcs, index) in vcsList" :key="index">
-          <VCSCard :vcs="vcs" />
-        </template>
-      </div>
-      <template v-else>
-        <VCSSetupWizard />
+
+    <div v-if="vcsList.length > 0" class="space-y-6">
+      <template v-for="(vcs, index) in vcsList" :key="index">
+        <VCSCard :vcs="vcs" />
       </template>
     </div>
+    <template v-else>
+      <VCSSetupWizard />
+    </template>
   </div>
 </template>
 

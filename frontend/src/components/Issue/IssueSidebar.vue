@@ -117,7 +117,7 @@
          -->
         <div>
           <h2 class="textlabel flex items-center">
-            <span class="mr-1">{{ $t("common.when") }}</span>
+            <span class="mr-1">{{ $t("task.rollout-time") }}</span>
             <NTooltip>
               <template #trigger>
                 <heroicons-outline:question-mark-circle class="h-4 w-4" />
@@ -209,10 +209,10 @@
           {{ instanceV1Name(instance) }}
         </span>
         <router-link
-          :to="`/environment/${environmentV1Slug(environment)}`"
+          :to="`/environment/${environmentV1Slug(instance.environmentEntity)}`"
           class="col-span-2 text-sm font-medium text-main hover:underline"
         >
-          ({{ environmentV1Name(environment) }})
+          ({{ environmentV1Name(instance.environmentEntity) }})
         </router-link>
       </div>
 

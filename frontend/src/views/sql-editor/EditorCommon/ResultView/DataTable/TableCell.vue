@@ -2,10 +2,10 @@
   <div class="relative px-2 py-1" :class="classes" @click="handleClick">
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div ref="wrapperRef" class="overflow-hidden" v-html="html"></div>
-    <div v-if="clickable" class="absolute right-0 top-1/2 translate-y-[-50%]">
+    <div v-if="clickable" class="absolute right-1 top-1/2 translate-y-[-45%]">
       <NButton size="tiny" circle class="dark:!bg-dark-bg" @click="showDetail">
         <template #icon>
-          <heroicons:arrows-pointing-out class="w-4 h-4" />
+          <heroicons:arrows-pointing-out class="w-3 h-3" />
         </template>
       </NButton>
     </div>
@@ -52,7 +52,10 @@ const clickable = computed(() => {
   if (conn.databaseId !== String(UNKNOWN_ID)) {
     const db = useDatabaseV1Store().getDatabaseByUID(conn.databaseId);
     if (db.instanceEntity.engine === Engine.MONGODB) {
-      return true;
+      // A cheap way to check JSON string without paying the parsing cost.
+      return (
+        String(props.value).startsWith("{") && String(props.value).endsWith("}")
+      );
     }
   }
   return false;

@@ -11,7 +11,7 @@
         :disabled="!allowQuery"
         @click="handleRunQuery"
       >
-        <mdi:play class="h-5 w-5 -ml-1.5" />
+        <mdi:play class="-ml-1.5" />
         <span>
           {{
             showRunSelected ? $t("sql-editor.run-selected") : $t("common.run")
@@ -23,7 +23,7 @@
         </span>
       </NButton>
       <NButton size="small" :disabled="!allowQuery" @click="handleExplainQuery">
-        <mdi:play class="h-5 w-5 -ml-1.5" />
+        <mdi:play class="-ml-1.5" />
         <span>Explain</span>
         <span class="hidden sm:inline ml-1">
           ({{ keyboardShortcutStr("cmd_or_ctrl+E") }})
@@ -61,7 +61,7 @@
           :disabled="!allowSave"
           @click="() => emit('save-sheet')"
         >
-          <carbon:save class="h-5 w-5 -ml-1" />
+          <carbon:save class="-ml-1" />
           <span class="ml-1">{{ $t("common.save") }}</span>
           <span class="hidden sm:inline ml-1">
             ({{ keyboardShortcutStr("cmd_or_ctrl+S") }})
@@ -83,7 +83,7 @@
               "
               @click="handleShareButtonClick"
             >
-              <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
+              <carbon:share class="" /> &nbsp; {{ $t("common.share") }}
               <FeatureBadge
                 :feature="'bb.feature.shared-sql-script'"
                 custom-class="ml-2"

@@ -141,6 +141,8 @@ export enum LogEntity_Action {
   ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34,
   /** ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE - ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. */
   ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 35,
+  /** ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE - ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
+  ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE = 36,
   /**
    * ACTION_PROJECT_REPOSITORY_PUSH - Project related activity types.
    * Enum value 41 - 60
@@ -152,12 +154,10 @@ export enum LogEntity_Action {
   ACTION_PROJECT_MEMBER_CREATE = 42,
   /** ACTION_PROJECT_MEMBER_DELETE - ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project. */
   ACTION_PROJECT_MEMBER_DELETE = 43,
-  /** ACTION_PROJECT_MEMBER_ROLE_UPDATE - ACTION_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. */
-  ACTION_PROJECT_MEMBER_ROLE_UPDATE = 44,
   /** ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE - ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. */
-  ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 45,
+  ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 44,
   /** ACTION_PROJECT_DATABASE_TRANSFER - ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another. */
-  ACTION_PROJECT_DATABASE_TRANSFER = 46,
+  ACTION_PROJECT_DATABASE_TRANSFER = 45,
   /**
    * ACTION_DATABASE_SQL_EDITOR_QUERY - Database related activity types.
    * Enum value 61 - 80
@@ -217,6 +217,9 @@ export function logEntity_ActionFromJSON(object: any): LogEntity_Action {
     case 35:
     case "ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE":
       return LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE;
+    case 36:
+    case "ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE":
+      return LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE;
     case 41:
     case "ACTION_PROJECT_REPOSITORY_PUSH":
       return LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH;
@@ -227,12 +230,9 @@ export function logEntity_ActionFromJSON(object: any): LogEntity_Action {
     case "ACTION_PROJECT_MEMBER_DELETE":
       return LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE;
     case 44:
-    case "ACTION_PROJECT_MEMBER_ROLE_UPDATE":
-      return LogEntity_Action.ACTION_PROJECT_MEMBER_ROLE_UPDATE;
-    case 45:
     case "ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE":
       return LogEntity_Action.ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE;
-    case 46:
+    case 45:
     case "ACTION_PROJECT_DATABASE_TRANSFER":
       return LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER;
     case 61:
@@ -280,14 +280,14 @@ export function logEntity_ActionToJSON(object: LogEntity_Action): string {
       return "ACTION_PIPELINE_TASK_STATEMENT_UPDATE";
     case LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
       return "ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE";
+    case LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
+      return "ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE";
     case LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH:
       return "ACTION_PROJECT_REPOSITORY_PUSH";
     case LogEntity_Action.ACTION_PROJECT_MEMBER_CREATE:
       return "ACTION_PROJECT_MEMBER_CREATE";
     case LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE:
       return "ACTION_PROJECT_MEMBER_DELETE";
-    case LogEntity_Action.ACTION_PROJECT_MEMBER_ROLE_UPDATE:
-      return "ACTION_PROJECT_MEMBER_ROLE_UPDATE";
     case LogEntity_Action.ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
       return "ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE";
     case LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER:

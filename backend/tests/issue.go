@@ -15,6 +15,17 @@ import (
 	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+func (ctl *controller) closeIssue(ctx context.Context, projectName, issueName string) error {
+	if _, err := ctl.issueServiceClient.BatchUpdateIssuesStatus(ctx, &v1.BatchUpdateIssuesStatusRequest{
+		Parent: projectName,
+		Issues: []string{issueName},
+		Status: v1.IssueStatus_DONE,
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
 // createIssue creates an issue.
 func (ctl *controller) createIssue(issueCreate api.IssueCreate) (*api.Issue, error) {
 	buf := new(bytes.Buffer)
@@ -92,24 +103,6 @@ func (ctl *controller) getOnePageIssuesWithToken(projectID *int, statusList []ap
 		return nil, "", errors.Wrap(err, "fail to unmarshal get issue response")
 	}
 	return issueResp.Issues, issueResp.NextToken, nil
-}
-
-func (ctl *controller) patchIssue(uid int, issuePatch api.IssuePatch) (*api.Issue, error) {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &issuePatch); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal issue patch")
-	}
-
-	body, err := ctl.patch(fmt.Sprintf("/issue/%d", uid), buf)
-	if err != nil {
-		return nil, err
-	}
-
-	issue := new(api.Issue)
-	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal patch issue patch response")
-	}
-	return issue, nil
 }
 
 // patchIssue patches the issue with given ID.

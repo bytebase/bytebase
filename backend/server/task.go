@@ -115,6 +115,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
 		}
+		if taskPatch.SheetID != nil {
+			schemaVersion := common.DefaultMigrationVersion()
+			taskPatch.SchemaVersion = &schemaVersion
+		}
 
 		task, err := s.store.GetTaskV2ByID(ctx, taskID)
 		if err != nil {

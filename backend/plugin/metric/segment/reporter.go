@@ -4,6 +4,9 @@ package segment
 import (
 	"time"
 
+	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 
 	"github.com/segmentio/analytics-go"
@@ -23,7 +26,13 @@ const (
 
 // NewReporter creates a new instance of segment.
 func NewReporter(key string) metric.Reporter {
-	client := analytics.New(key)
+	client, err := analytics.NewWithConfig(key, analytics.Config{
+		Logger: &sinkLogger{},
+	})
+	if err != nil {
+		log.Error("failed to create reporter", zap.Error(err))
+		client = analytics.New(key)
+	}
 
 	return &reporter{
 		client: client,
@@ -66,4 +75,13 @@ func (r *reporter) Identify(identifier *metric.Identifier) error {
 		Traits:    traits,
 		Timestamp: time.Now().UTC(),
 	})
+}
+
+type sinkLogger struct {
+}
+
+func (sinkLogger) Logf(string, ...any) {
+}
+
+func (sinkLogger) Errorf(string, ...any) {
 }

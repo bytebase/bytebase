@@ -118,7 +118,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import { NButton } from "naive-ui";
 import { Status } from "nice-grpc-common";
@@ -161,12 +160,6 @@ const state = reactive<LocalState>({
   isCreating: false,
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-
-useEventListener("keydown", (e) => {
-  if (e.code == "Escape") {
-    emit("dismiss");
-  }
-});
 
 const validateResourceId = async (
   resourceId: ResourceId

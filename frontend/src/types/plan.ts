@@ -17,6 +17,7 @@ export type FeatureType =
   | "bb.feature.disallow-signup"
   | "bb.feature.watermark"
   | "bb.feature.audit-log"
+  | "bb.feature.issue-advanced-search"
   // Branding
   | "bb.feature.branding"
   // Change Workflow
@@ -60,7 +61,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.im.approval",
   "bb.feature.schema-drift",
   "bb.feature.encrypted-secrets",
-  "bb.feature.sql-review",
   "bb.feature.task-schedule-time",
   "bb.feature.online-migration",
   // Database Management

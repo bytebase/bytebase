@@ -4,6 +4,7 @@
     :title="$t('common.projects')"
     :item-list="outlineItemList"
     :allow-collapse="false"
+    :outline-item-class="'pt-0.5 pb-0.5'"
   />
 </template>
 

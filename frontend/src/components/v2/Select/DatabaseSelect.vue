@@ -8,13 +8,14 @@
     :filterable="true"
     style="width: 12rem"
     v-bind="$attrs"
+    :render-label="renderLabel"
     @update:value="$emit('update:database', $event)"
   />
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption } from "naive-ui";
-import { computed, watch } from "vue";
+import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
+import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useCurrentUserV1,
@@ -23,7 +24,8 @@ import {
 } from "@/store";
 import { ComposedDatabase, UNKNOWN_ID, unknownDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { supportedEngineV1List } from "@/utils";
+import { instanceV1Name, supportedEngineV1List } from "@/utils";
+import { InstanceV1EngineIcon } from "../Model";
 
 interface DatabaseSelectOption extends SelectOption {
   value: string;
@@ -67,7 +69,7 @@ const rawDatabaseList = computed(() => {
 
   return list.filter((db) => {
     if (props.environment && props.environment !== String(UNKNOWN_ID)) {
-      if (db.instanceEntity.environmentEntity.uid !== props.environment) {
+      if (db.effectiveEnvironmentEntity.uid !== props.environment) {
         return false;
       }
     }
@@ -112,6 +114,37 @@ const options = computed(() => {
     };
   });
 });
+
+const renderLabel: SelectRenderLabel = (option) => {
+  const { database } = option as DatabaseSelectOption;
+  const children = [h("div", {}, [database.databaseName])];
+  if (database.uid !== String(UNKNOWN_ID)) {
+    // prefix engine icon
+    children.unshift(
+      h(InstanceV1EngineIcon, {
+        class: "mr-1",
+        instance: database.instanceEntity,
+      })
+    );
+    // suffix engine name
+    children.push(
+      h(
+        "div",
+        {
+          class: "text-xs opacity-60 ml-1",
+        },
+        [`(${instanceV1Name(database.instanceEntity)})`]
+      )
+    );
+  }
+  return h(
+    "div",
+    {
+      class: "w-full flex flex-row justify-start items-center truncate",
+    },
+    children
+  );
+};
 
 const filterByDatabaseName = (pattern: string, option: SelectOption) => {
   const { database } = option as DatabaseSelectOption;

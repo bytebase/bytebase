@@ -1,4 +1,14 @@
-import { Column, Schema, Table } from "@/types";
+import { cloneDeep, isEqual, uniq } from "lodash-es";
+import { useCurrentUserV1 } from "@/store";
+import {
+  Column,
+  ForeignKey,
+  Schema,
+  Table,
+  convertColumnMetadataToColumn,
+  convertSchemaMetadataToSchema,
+  convertTableMetadataToTable,
+} from "@/types";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -7,6 +17,7 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { randomString } from "@/utils";
 
 export const mergeSchemaEditToMetadata = (
@@ -15,6 +26,10 @@ export const mergeSchemaEditToMetadata = (
 ): DatabaseMetadata => {
   for (const schemaEdit of schemaEdits) {
     if (schemaEdit.status === "created") {
+      // Remove schema if it exists.
+      metadata.schemas = metadata.schemas.filter(
+        (item) => item.name !== schemaEdit.name
+      );
       metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
       continue;
     } else if (schemaEdit.status === "dropped") {
@@ -27,10 +42,15 @@ export const mergeSchemaEditToMetadata = (
         (item) => item.name === schemaEdit.name
       );
       if (!schema) {
+        metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
         continue;
       }
       for (const tableEdit of schemaEdit.tableList) {
         if (tableEdit.status === "created") {
+          // Remove table if it exists.
+          schema.tables = schema.tables.filter(
+            (item) => item.name !== tableEdit.name
+          );
           schema.tables.push(transformTableEditToMetadata(tableEdit));
           continue;
         } else if (tableEdit.status === "dropped") {
@@ -43,10 +63,15 @@ export const mergeSchemaEditToMetadata = (
             (item) => item.name === tableEdit.name
           );
           if (!table) {
+            schema.tables.push(transformTableEditToMetadata(tableEdit));
             continue;
           }
           for (const columnEdit of tableEdit.columnList) {
             if (columnEdit.status === "created") {
+              // Remove column if it exists.
+              table.columns = table.columns.filter(
+                (item) => item.name !== columnEdit.name
+              );
               table.columns.push(transformColumnEditToMetadata(columnEdit));
               continue;
             } else if (columnEdit.status === "dropped") {
@@ -59,6 +84,7 @@ export const mergeSchemaEditToMetadata = (
                 (item) => item.name === columnEdit.name
               );
               if (!column) {
+                table.columns.push(transformColumnEditToMetadata(columnEdit));
                 continue;
               }
               column.type = columnEdit.type;
@@ -68,10 +94,31 @@ export const mergeSchemaEditToMetadata = (
               column.default = columnEdit.default;
             }
           }
+          for (const column of table.columns) {
+            const columnEdit = tableEdit.columnList.find(
+              (item) => item.name === column.name
+            );
+            if (!columnEdit) {
+              table.columns = table.columns.filter(
+                (item) => item.name !== column.name
+              );
+            }
+          }
+        }
+      }
+      for (const table of schema.tables) {
+        const tableEdit = schemaEdit.tableList.find(
+          (item) => item.name === table.name
+        );
+        if (!tableEdit) {
+          schema.tables = schema.tables.filter(
+            (item) => item.name !== table.name
+          );
         }
       }
     }
 
+    // Build foreign keys.
     for (const foreignKey of schemaEdit.foreignKeyList) {
       const schema = metadata.schemas.find(
         (schema) => schema.name === schemaEdit.name
@@ -142,6 +189,14 @@ export const mergeSchemaEditToMetadata = (
         }
       }
       table.foreignKeys.push(fk);
+    }
+  }
+  for (const schema of metadata.schemas) {
+    const schemaEdit = schemaEdits.find((item) => item.name === schema.name);
+    if (!schemaEdit) {
+      metadata.schemas = metadata.schemas.filter(
+        (item) => item.name !== schema.name
+      );
     }
   }
 
@@ -252,4 +307,213 @@ const transformColumnEditToMetadata = (columnEdit: Column): ColumnMetadata => {
     comment: columnEdit.comment,
     userComment: columnEdit.userComment,
   });
+};
+
+export const rebuildEditableSchemas = (
+  originalSchemas: Schema[],
+  schemas: SchemaMetadata[]
+): Schema[] => {
+  const editableSchemas = cloneDeep(originalSchemas);
+
+  for (const editableSchema of editableSchemas) {
+    const schema = schemas.find(
+      (schema) => schema.name === editableSchema.name
+    );
+    if (!schema) {
+      editableSchema.status = "dropped";
+      continue;
+    }
+
+    for (const editableTable of editableSchema.tableList) {
+      const table = schema.tables.find(
+        (table) => table.name === editableTable.name
+      );
+      if (!table) {
+        editableTable.status = "dropped";
+        continue;
+      }
+
+      for (const editableColumn of editableTable.columnList) {
+        const column = table.columns.find(
+          (column) => column.name === editableColumn.name
+        );
+        if (!column) {
+          editableColumn.status = "dropped";
+          continue;
+        }
+        if (isEqual(transformColumnEditToMetadata(editableColumn), column)) {
+          continue;
+        }
+
+        editableColumn.type = column.type;
+        editableColumn.nullable = column.nullable;
+        editableColumn.comment = column.comment;
+        editableColumn.userComment = column.userComment;
+        editableColumn.default = column.default;
+      }
+
+      for (const column of table.columns) {
+        const editableColumn = editableTable.columnList.find(
+          (item) => item.name === column.name
+        );
+        if (!editableColumn) {
+          const newColumn = convertColumnMetadataToColumn(column);
+          newColumn.status = "created";
+          editableTable.columnList.push(newColumn);
+        }
+      }
+
+      // Rebuild primary key from primary index.
+      const primaryIndex = table.indexes.find(
+        (index) => index.primary === true
+      );
+      if (primaryIndex) {
+        editableTable.primaryKey.name = primaryIndex.name;
+        for (const columnName of primaryIndex.expressions) {
+          const column = editableTable.columnList.find(
+            (column) => column.name === columnName
+          );
+          if (column) {
+            editableTable.primaryKey.columnIdList.push(column.id);
+          }
+        }
+        editableTable.primaryKey.columnIdList = uniq(
+          editableTable.primaryKey.columnIdList
+        );
+      }
+    }
+
+    for (const table of schema.tables) {
+      const editableTable = editableSchema.tableList.find(
+        (item) => item.name === table.name
+      );
+      if (!editableTable) {
+        const newTable = convertTableMetadataToTable(table);
+        newTable.status = "created";
+        for (const column of newTable.columnList) {
+          column.status = "created";
+        }
+        editableSchema.tableList.push(newTable);
+      }
+    }
+  }
+
+  for (const schema of schemas) {
+    const editableSchema = editableSchemas.find(
+      (item) => item.name === schema.name
+    );
+    if (!editableSchema) {
+      const newSchema = convertSchemaMetadataToSchema(schema);
+      newSchema.status = "created";
+      for (const table of newSchema.tableList) {
+        table.status = "created";
+        for (const column of table.columnList) {
+          column.status = "created";
+        }
+      }
+      editableSchemas.push(newSchema);
+    }
+  }
+
+  // Build foreign keys for schema and referenced schema.
+  for (const schema of schemas) {
+    const editableSchema = editableSchemas.find(
+      (schema) => schema.name === schema.name
+    );
+    if (!editableSchema) {
+      continue;
+    }
+
+    const foreignKeyList: ForeignKey[] = [];
+    for (const table of schema.tables) {
+      const editableTable = editableSchema.tableList.find(
+        (item) => item.name === table.name
+      );
+      if (!editableTable) {
+        continue;
+      }
+
+      for (const foreignKeyMetadata of table.foreignKeys) {
+        const referencedSchema = editableSchemas.find(
+          (schema) => schema.name === foreignKeyMetadata.referencedSchema
+        );
+        const referencedTable = referencedSchema?.tableList.find(
+          (table) => table.name === foreignKeyMetadata.referencedTable
+        );
+        if (!referencedSchema || !referencedTable) {
+          continue;
+        }
+
+        const fk: ForeignKey = {
+          name: foreignKeyMetadata.name,
+          tableId: editableTable.id,
+          columnIdList: [],
+          referencedSchemaId: referencedSchema.id,
+          referencedTableId: referencedTable.id,
+          referencedColumnIdList: [],
+        };
+        for (const columnName of foreignKeyMetadata.columns) {
+          const column = editableTable.columnList.find(
+            (column) => column.name === columnName
+          );
+          if (column) {
+            fk.columnIdList.push(column.id);
+          }
+        }
+        for (const referencedColumnName of foreignKeyMetadata.referencedColumns) {
+          const referencedColumn = referencedTable.columnList.find(
+            (column) => column.name === referencedColumnName
+          );
+          if (referencedColumn) {
+            fk.referencedColumnIdList.push(referencedColumn.id);
+          }
+        }
+
+        foreignKeyList.push(fk);
+      }
+    }
+    editableSchema.foreignKeyList = foreignKeyList;
+  }
+
+  return editableSchemas;
+};
+
+export const validateDatabaseMetadata = (
+  databaseMetadata: DatabaseMetadata
+): string[] => {
+  const messages: string[] = [];
+
+  for (const schema of databaseMetadata.schemas) {
+    for (const table of schema.tables) {
+      if (!table.name) {
+        messages.push(`Table name is required.`);
+        continue;
+      }
+
+      for (const column of table.columns) {
+        if (!column.name) {
+          messages.push(`Column name is required.`);
+          continue;
+        }
+        if (!column.type) {
+          messages.push(`Column ${column.name} type is required.`);
+        }
+      }
+    }
+  }
+
+  return uniq(messages);
+};
+
+export const generateForkedBranchName = (branch: SchemaDesign): string => {
+  const currentUser = useCurrentUserV1();
+  const parentBranchName = branch.title;
+  const branchName =
+    `${currentUser.value.title}/${parentBranchName}-draft`.replaceAll(" ", "-");
+  return branchName;
+};
+
+export const validateBranchName = (branchName: string): boolean => {
+  const regex = /^[a-zA-Z][a-zA-Z0-9-_/]+$/;
+  return regex.test(branchName);
 };

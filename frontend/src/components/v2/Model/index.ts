@@ -1,6 +1,6 @@
 import DatabaseName from "./DatabaseName.vue";
 import DatabaseV1Name from "./DatabaseV1Name.vue";
-import DatabaseV1Table from "./DatabaseV1Table.vue";
+import DatabaseV1Table from "./DatabaseV1Table";
 import DatabaseView from "./DatabaseView.vue";
 import EnvironmentName from "./EnvironmentName.vue";
 import EnvironmentV1Name from "./EnvironmentV1Name.vue";

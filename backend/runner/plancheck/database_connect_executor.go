@@ -29,42 +29,49 @@ type DatabaseConnectExecutor struct {
 }
 
 // Run runs the executor.
-func (e *DatabaseConnectExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) (results []*storepb.PlanCheckRunResult_Result, err error) {
-	databaseID := int(planCheckRun.Config.DatabaseId)
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID})
+func (e *DatabaseConnectExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
+	config := planCheckRun.Config
+	instanceUID := int(config.InstanceUid)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database ID %v", databaseID)
+		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found UID %v", instanceUID)
+	}
+
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
 	}
 	if database == nil {
-		return nil, errors.Wrapf(err, "database ID not found %v", databaseID)
-	}
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v", database.InstanceID)
+		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
-	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
-	if err == nil {
-		err = driver.Ping(ctx)
-	}
-	if err != nil {
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Code:    common.DbConnectionFailure.Int64(),
-				Title:   fmt.Sprintf("Failed to connect %q", database.DatabaseName),
-				Content: err.Error(),
-			},
-		}, nil
-	}
-	defer driver.Close(ctx)
+	return []*storepb.PlanCheckRunResult_Result{e.checkDatabaseConnection(ctx, instance, database)}, nil
+}
 
-	return []*storepb.PlanCheckRunResult_Result{
-		{
-			Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-			Code:    common.Ok.Int64(),
-			Title:   "OK",
-			Content: fmt.Sprintf("Successfully connected %q", database.DatabaseName),
-		},
-	}, nil
+func (e *DatabaseConnectExecutor) checkDatabaseConnection(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) *storepb.PlanCheckRunResult_Result {
+	err := func() error {
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+		if err != nil {
+			return err
+		}
+		defer driver.Close(ctx)
+		return driver.Ping(ctx)
+	}()
+	if err != nil {
+		return &storepb.PlanCheckRunResult_Result{
+			Status:  storepb.PlanCheckRunResult_Result_ERROR,
+			Code:    common.DbConnectionFailure.Int64(),
+			Title:   fmt.Sprintf("Failed to connect %q", database.DatabaseName),
+			Content: err.Error(),
+		}
+	}
+	return &storepb.PlanCheckRunResult_Result{
+		Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+		Code:    common.Ok.Int64(),
+		Title:   "OK",
+		Content: fmt.Sprintf("Successfully connected %q", database.DatabaseName),
+	}
 }

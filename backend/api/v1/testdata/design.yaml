@@ -191,6 +191,7 @@
       PRIMARY KEY (`a`, `b`, `c`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
     );
+
     CREATE TABLE `t2` (
       `b` int NULL,
       `a` int NULL,

@@ -3,7 +3,7 @@
     <dl
       class="divide-y divide-block-border border border-block-border shadow rounded-lg"
     >
-      <div class="px-4 py-5 sm:px-6">
+      <div class="px-4 py-4 sm:px-6">
         <h3 class="text-lg leading-6 font-medium text-main">
           {{ $t("gitops.setting.add-git-provider.confirm.confirm-info") }}
         </h3>

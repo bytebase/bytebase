@@ -235,6 +235,13 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 
 // CreateDatabaseDefault creates a new database in the default project.
 func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) error {
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
+	if err != nil {
+		return err
+	}
+	if project == nil {
+		return errors.Errorf("project %q not found", create.ProjectID)
+	}
 	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &create.InstanceID})
 	if err != nil {
 		return err
@@ -249,7 +256,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	}
 	defer tx.Rollback()
 
-	databaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, instance.UID, create)
+	databaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, project.UID, instance.UID, create)
 	if err != nil {
 		return err
 	}
@@ -268,7 +275,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 }
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
-func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID int, create *DatabaseMessage) (int, error) {
+func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID, instanceUID int, create *DatabaseMessage) (int, error) {
 	secretsString, err := protojson.Marshal(&storepb.Secrets{})
 	if err != nil {
 		return 0, err
@@ -304,7 +311,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 		api.SystemBotID,
 		api.SystemBotID,
 		instanceUID,
-		api.DefaultProjectUID,
+		projectUID,
 		create.DatabaseName,
 		api.OK,
 		0,             /* last_successful_sync_ts */
@@ -528,6 +535,9 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 
 // BatchUpdateDatabaseProject updates the project for databases in batch.
 func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*DatabaseMessage, projectID string, updaterID int) ([]*DatabaseMessage, error) {
+	if len(databases) == 0 {
+		return nil, errors.Errorf("there is no database in the project")
+	}
 	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
 		return nil, err

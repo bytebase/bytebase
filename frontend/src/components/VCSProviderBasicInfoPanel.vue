@@ -173,6 +173,10 @@ export default defineComponent({
         }
       } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
         return "Bitbucket.org";
+      } else if (
+        props.config.type === ExternalVersionControl_Type.AZURE_DEVOPS
+      ) {
+        return "Azure DevOps";
       }
       return "";
     });

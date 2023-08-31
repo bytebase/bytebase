@@ -1,6 +1,5 @@
 {
   "common": {
-    "when": "When",
     "view": "View",
     "you": "you",
     "general": "General",
@@ -197,9 +196,6 @@
     },
     "no-data": "No data",
     "visibility": "Visibility",
-    "star": "Star",
-    "unstar": "Unstar",
-    "starred": "Starred",
     "duplicate": "Duplicate",
     "clear-search": "Clear search",
     "enable": "Enable",
@@ -262,7 +258,9 @@
     "schedule": "Schedule",
     "state": "State",
     "condition": "Condition",
-    "search-user": "Search user"
+    "search-user": "Search user",
+    "branches": "Branches",
+    "merge": "Merge"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -303,9 +301,11 @@
       "lgtm": "LGTM",
       "pitr": "PITR",
       "affected-rows": "Affected rows",
-      "sql-type": "SQL type"
+      "sql-type": "SQL type",
+      "summary-report": "Summary report"
     },
-    "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
+    "rollout-time": "Rollout time",
+    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",
     "comment": "Comment",
     "invoker": "Invoker",
@@ -397,6 +397,10 @@
     },
     "attention": {
       "default": "Attention needed"
+    },
+    "confirm-button": {
+      "sure-to-delete": "Are you sure to delete?",
+      "cannot-undo": "You cannot undo this action."
     }
   },
   "settings": {
@@ -471,7 +475,11 @@
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "create-as-service-account": "Create as service account",
-      "show-inactive": "Show inactive members"
+      "show-inactive": "Show inactive members",
+      "remove-self-owner": {
+        "title": "Are you sure to revoke OWNER from yourself?",
+        "description": "Please make sure the remaining OWNER(s) can sign in, otherwise, no one can manage users."
+      }
     },
     "im-integration": {
       "enable": "Enable",
@@ -607,7 +615,18 @@
     },
     "sensitive-data": {
       "description": "The query result of the following columns is displayed as \"******\". \nYou can mark more columns as sensitive data on the table details page.",
-      "remove-sensitive-column-tips": "Expose this column?"
+      "remove-sensitive-column-tips": "Expose this column?",
+      "sensitive-column-list": "Sensitive Column List",
+      "global-masking-rule": "Global Masking Rule",
+      "data-feature": "Data Feature",
+      "add-rule": "Add rule",
+      "masking-level": {
+        "self": "Masking Level",
+        "selet-level": "Select level",
+        "none": "None",
+        "partial": "Partial",
+        "full": "Full"
+      }
     },
     "access-control": {
       "description": "Configure approval flow to control data query and export. {link}",
@@ -755,6 +774,16 @@
     },
     "view-commit": "View commit",
     "search-issue-name": "Search issue name",
+    "advanced-search": {
+      "self": "Advanced search",
+      "scope": {
+        "project": {
+          "title": "Project",
+          "description": "Include only issues from this project"
+        }
+      }
+    },
+    "filter-issue-by-name": "Filter issue by name",
     "table": {
       "open": "Open",
       "closed": "Closed",
@@ -834,7 +863,7 @@
     "waiting-for-review": "Waiting for review",
     "issue-name": "Issue name",
     "grant-request": {
-      "export-rows": "Export rows",
+      "export-rows": "Max export rows",
       "export-format": "Export format",
       "expire-days": "Expire days",
       "expired-at": "Expired at",
@@ -1188,7 +1217,13 @@
     "alter-schema-in-vcs": "Alter Schema in VCS",
     "change-data": "Change Data",
     "change-data-in-vcs": "Change Data in VCS",
-    "design-schema": "Design Schema",
+    "branch": "Branch",
+    "branches": "Branches",
+    "branching": "Branching",
+    "new-branch": "New branch",
+    "branch-name": "Branch name",
+    "select-branch": "Select a branch",
+    "delete-this-branch": "Delete this branch",
     "table-detail": "Table detail",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "backup-name": "Backup name",
@@ -1288,7 +1323,7 @@
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
       "title": "Sync Schema",
-      "description": "Bytebase supports synchronizing a specified schema version of one database to others.",
+      "description": "Bytebase supports synchronizing a schema to one or multiple target databases.",
       "schema-history-version": "Schema History Version",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
@@ -1370,6 +1405,7 @@
     }
   },
   "repository": {
+    "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
     "base-directory": "Base directory",
     "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
@@ -1543,6 +1579,10 @@
         "issue-approval-notify": {
           "title": "Issue approval needed",
           "label": "When issue is pending approval"
+        },
+        "issue-task-run-status-change": {
+          "title": "Issue task run status change",
+          "label": "When issue task run status has changed"
         }
       }
     },
@@ -1567,13 +1607,15 @@
         "btn-text": "Restore this @.lower:{'common.project'}"
       },
       "schema-change-type": "Schema change type",
-      "select-schema-change-type-ddl": "Imperative - Migration-based migration. E.g., ALTER TABLE",
-      "select-schema-change-type-sdl": "Declarative - State-based migration. E.g., CREATE TABLE",
+      "select-schema-change-type-ddl": "Imperative - Specify the change with any DDL statements.",
+      "select-schema-change-type-sdl": "Declarative - Specify the desired schema. Only use CREATE TABLE/INDEX.",
       "schema-path-template-sdl-description": "The schema file describes the database's full schema."
     },
     "members": {
       "add-member": "Add member",
       "revoke-member": "Revoke member",
+      "revoke-access": "Revoke Access",
+      "grant-access": "Grant Access",
       "edit": "Edit member - {member}",
       "view-by-principals": "View by principals",
       "view-by-roles": "View by roles",
@@ -1584,9 +1626,12 @@
       "select-users": "Select users",
       "assign-role": "Assign role",
       "never-expires": "Never",
+      "expired": "Expired",
+      "role-description": "Role description",
       "role-never-expires": "This role never expires.",
       "add-more": "Add more",
       "role-name": "Role name",
+      "condition-name": "Condition name",
       "users": "Users",
       "roles": "Roles",
       "search-member": "Search member",
@@ -1684,9 +1729,12 @@
         "gitlab-self-host-application-id-label": "Application ID for the registered GitLab instance-wide OAuth application.",
         "gitlab-com-application-id-label": "Application ID for the registered GitLab OAuth application.",
         "view-in-gitlab": "View in GitLab",
+        "view-in-azure": "View in Azure",
         "gitlab-self-host-secret-label": "Secret for the registered GitLab instance-wide OAuth application.",
         "gitlab-com-secret-label": "Secret for the registered GitLab OAuth application.",
+        "azure-secret-label": "Client secret for the registered Azure OAuth application.",
         "github-application-id-label": "Client ID for the registered GitHub organization-wide OAuth application.",
+        "azure-application-id-label": "Client ID for the registered Azure organization-wide OAuth application.",
         "secret-label-github": "Client secret for the registered GitHub organization-wide OAuth application.",
         "delete-forbidden": "To delete this provider, unlink all repositories first.",
         "delete": "Delete this Git provider",
@@ -1807,7 +1855,9 @@
     "no-rows-found": "No rows found",
     "download-as-file": "Download as {file}",
     "only-select-allowed": "Only {select} statements are allowed to execute.",
-    "want-to-action": "If you want to {want}, click the {action} button and submit an issue.",
+    "want-to-action": "If you want to {want}, click the {action} button {reaction}.",
+    "and-submit-an-issue": "and submit an issue",
+    "to-enable-admin-mode": "to enable the admin mode",
     "table-schema-placeholder": "Select a table to see its schema",
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "notify-multiple-statements": "Multiple SQL statements detected. SQL Editor only executes the first statement. You can select another statement and execute it individually.",
@@ -1835,7 +1885,7 @@
     },
     "view-all-tabs": "View all Tabs",
     "sheets": "Sheets",
-    "connection-holder": "Click nodes on the left panel to get started",
+    "connection-holder": "Associate a database first from the Database Panel on the left",
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
@@ -1871,10 +1921,21 @@
     "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
     "sheet": {
       "choose-sheet": "Choose Sheet",
-      "self": "Sheet"
+      "self": "Sheet",
+      "connection": "Connection"
     },
     "tab": {
-      "unsaved": "Unsaved"
+      "unsaved": "Unsaved",
+      "context-menu": {
+        "actions": {
+          "close": "Close",
+          "close-others": "Close others",
+          "close-to-the-right": "Close to the right",
+          "close-saved": "Close saved",
+          "close-all": "Close all",
+          "rename": "Rename"
+        }
+      }
     }
   },
   "schema-editor": {
@@ -2125,7 +2186,7 @@
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
-        "desc": "@:{'subscription.upgrade'} to unlock schema drift auto-detection."
+        "desc": "Detect out-of-band schema changes and report schema drift."
       },
       "bb-feature-branding": {
         "title": "Branding",
@@ -2194,14 +2255,21 @@
       "bb-feature-secure-token": {
         "title": "Sign-in frequency",
         "desc": "Sign-in frequency is the period before a user must sign in again."
+      },
+      "bb-feature-issue-advanced-search": {
+        "title": "Advanced issue search",
+        "desc": "Access unlimited issue history with advanced issue search."
       }
     }
   },
   "sheet": {
     "self": "Sheets",
     "my-sheets": "My Sheets",
-    "shared-with-me": "Shared with me",
+    "mine": "Mine",
+    "star": "Star",
+    "unstar": "Unstar",
     "starred": "Starred",
+    "shared-with-me": "Shared with me",
     "actions": {
       "sync-from-vcs": "Sync SQL scripts from VCS"
     },
@@ -2217,8 +2285,6 @@
     "from-issue-warning": "The sheet comes from issue {issue} in read-only mode. {oversize}",
     "content-oversize-warning": "SQL is oversized and inline-editing is disallowed. ",
     "sheets": "Sheets",
-    "mine": "Mine",
-    "shared": "Shared",
     "search-sheets": "Search Sheets"
   },
   "engine": {
@@ -2281,7 +2347,8 @@
     },
     "enabled-rules": "Enabled rules",
     "rule-detail": "Rule detail",
-    "view-definition": "View definition"
+    "view-definition": "View definition",
+    "other-engines": "Other engines"
   },
   "debug-log": {
     "title": "Debug Log",
@@ -2480,7 +2547,8 @@
         "3": "What's the gender ratio in each department?"
       },
       "statement-copied": "Statement copied to clipboard",
-      "dont-show-again": "Don't show again"
+      "dont-show-again": "Don't show again",
+      "chat-sql": "ChatSQL"
     }
   },
   "custom-approval": {
@@ -2516,17 +2584,6 @@
           "create_database": "Create Database",
           "query": "Request Query",
           "export": "Request Export"
-        },
-        "factor": {
-          "affected_rows": "Affected rows",
-          "environment_id": "Environment ID",
-          "project_id": "Project ID",
-          "database_name": "Database name",
-          "db_engine": "DB engine",
-          "sql_type": "SQL type",
-          "expiration_days": "Expiration days",
-          "export_rows": "Export rows",
-          "table_name": "Table name"
         }
       },
       "condition": {
@@ -2652,14 +2709,14 @@
       "re-request-review-issue": "Re-request review issue?",
       "sent-back-issue": "Sent back issue",
       "re-requested-review": "re-requested issue review",
-      "no-one-matches-role": "No one matches the role, contact project owner to assign one."
+      "no-one-matches-role": "No one matches the role, contact project owner to assign one.",
+      "any-n-role-can-approve": "Any {role} can approve"
     },
     "send-back": "Send back"
   },
   "slow-query": {
     "self": "Slow query",
     "slow-queries": "Slow queries",
-    "report-slow-query": "Report slow query",
     "report": "Report",
     "last-query-time": "Last query time",
     "database-name": "Database name",
@@ -2679,7 +2736,7 @@
     "rows-sent": "Rows sent",
     "lock-time": "Lock time",
     "query-time": "Query time",
-    "attention-description": "Bytebase periodically syncs slow query logs from instances.\nFor MySQL instance, {slow_query} must be enabled first.\nFor PostgreSQL instance, {pg_stat_statements} must be enabled first in each database.",
+    "attention-description": "Bytebase periodically syncs slow query logs from instances. For MySQL instance, slow_query must be enabled first. For PostgreSQL instance, only databases with pg_stat_statements enabled will collect slow queries.",
     "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
     "detail": "Slow Query Detail",
     "filter": {
@@ -2708,10 +2765,12 @@
       "description": "You can restrict the allowed column types for each database engine.",
       "allow-all": "Allow all",
       "allow-limited-types": "Allow limited types",
-      "save-all": "Save all",
+      "back-to-edit": "Back to edit",
+      "add-and-save": "Add and save",
       "messages": {
         "unable-to-update": "Unable to update restriction",
-        "following-column-types-are-used": "Following column types are still used by field tempalte"
+        "following-column-types-are-used": "Following column types are still used by field template",
+        "one-allowed-type-per-line": "One allowed data type per line"
       }
     },
     "add-field": "Add field template",
@@ -2795,23 +2854,58 @@
   },
   "schema-designer": {
     "self": "Schema Designer",
-    "new-design": "New Design",
-    "select-design": "Select a schema design",
-    "quick-action": "Design Schema",
     "schema-design": "Schema Design",
     "schema-design-list": "Schema Design List",
     "new-schema-design": "New Schema Design",
     "baseline-database": "Baseline database",
     "schema-version": "Schema version",
+    "personal-draft": "Personal draft",
+    "baseline-version": "Baseline version",
+    "parent-branch": "Parent branch",
+    "save-draft": "Save draft",
+    "merge-branch": "Merge branch",
+    "delete-branch-after-merged": "Delete branch after merged",
+    "diff-editor": {
+      "self": "Diff editor",
+      "resolve": "Resolve",
+      "latest-schema": "Latest schema",
+      "editing-schema": "Editing schema",
+      "auto-merge-failed": "Auto merge failed",
+      "need-to-resolve-conflicts": "Branch has been updated by others. You need to resolve the conflicts before you can merge.",
+      "resolve-and-merge-again": "Resolve and merge again",
+      "discard-changes": "Discard changes",
+      "action-confirm": "Action confirm",
+      "duplicated-branch-name-found": "Duplicated branch name found.",
+      "discard-changes-confirm": "Are you sure you want to discard all modifications?"
+    },
     "tables": "Tables",
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
-    "apply-to-database": "Apply to database",
-    "delete-this-design": "Delete this design",
+    "apply-to-database": "Apply change to database",
     "select-database-placeholder": "Select a database (MySQL only)",
     "message": {
-      "created-succeed": "Schema design created successfully",
-      "updated-succeed": "Schema design updated successfully"
+      "created-succeed": "Branch created successfully",
+      "updated-succeed": "Branch updated successfully",
+      "merge-to-main-successfully": "Merge to main successfully",
+      "updated-time-by-user": "Updated {time} by {user}"
+    },
+    "action": {
+      "use-the-existing-branch": "Use the existing branch",
+      "create-new-branch": "Create new branch"
+    }
+  },
+  "cel": {
+    "factor": {
+      "affected_rows": "Affected rows",
+      "environment_id": "Environment ID",
+      "project_id": "Project ID",
+      "instance_id": "Instance ID",
+      "database_name": "Database name",
+      "db_engine": "DB engine",
+      "sql_type": "SQL type",
+      "expiration_days": "Expiration days",
+      "export_rows": "Export rows",
+      "table_name": "Table name"
     }
   }
 }

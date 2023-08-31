@@ -1,12 +1,62 @@
 /* eslint-disable */
 import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
+import { ChangedResources } from "./instance_change_history";
 
 export const protobufPackage = "bytebase.store";
 
 export interface PlanCheckRunConfig {
-  sheetId: number;
-  databaseId: number;
+  sheetUid: number;
+  changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType;
+  instanceUid: number;
+  databaseName: string;
+  /** database_group_uid is optional. If it's set, it means the database is part of a database group. */
+  databaseGroupUid?: number | undefined;
+}
+
+export enum PlanCheckRunConfig_ChangeDatabaseType {
+  CHANGE_DATABASE_TYPE_UNSPECIFIED = 0,
+  DDL = 1,
+  DML = 2,
+  SDL = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function planCheckRunConfig_ChangeDatabaseTypeFromJSON(object: any): PlanCheckRunConfig_ChangeDatabaseType {
+  switch (object) {
+    case 0:
+    case "CHANGE_DATABASE_TYPE_UNSPECIFIED":
+      return PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED;
+    case 1:
+    case "DDL":
+      return PlanCheckRunConfig_ChangeDatabaseType.DDL;
+    case 2:
+    case "DML":
+      return PlanCheckRunConfig_ChangeDatabaseType.DML;
+    case 3:
+    case "SDL":
+      return PlanCheckRunConfig_ChangeDatabaseType.SDL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PlanCheckRunConfig_ChangeDatabaseType.UNRECOGNIZED;
+  }
+}
+
+export function planCheckRunConfig_ChangeDatabaseTypeToJSON(object: PlanCheckRunConfig_ChangeDatabaseType): string {
+  switch (object) {
+    case PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED:
+      return "CHANGE_DATABASE_TYPE_UNSPECIFIED";
+    case PlanCheckRunConfig_ChangeDatabaseType.DDL:
+      return "DDL";
+    case PlanCheckRunConfig_ChangeDatabaseType.DML:
+      return "DML";
+    case PlanCheckRunConfig_ChangeDatabaseType.SDL:
+      return "SDL";
+    case PlanCheckRunConfig_ChangeDatabaseType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface PlanCheckRunResult {
@@ -69,28 +119,41 @@ export function planCheckRunResult_Result_StatusToJSON(object: PlanCheckRunResul
 }
 
 export interface PlanCheckRunResult_Result_SqlSummaryReport {
-  statementType: string;
+  code: number;
+  /** statement_types are the types of statements that are found in the sql. */
+  statementTypes: string[];
   affectedRows: number;
+  changedResources?: ChangedResources | undefined;
 }
 
 export interface PlanCheckRunResult_Result_SqlReviewReport {
   line: number;
+  column: number;
   detail: string;
   /** Code from sql review. */
   code: number;
 }
 
 function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
-  return { sheetId: 0, databaseId: 0 };
+  return { sheetUid: 0, changeDatabaseType: 0, instanceUid: 0, databaseName: "", databaseGroupUid: undefined };
 }
 
 export const PlanCheckRunConfig = {
   encode(message: PlanCheckRunConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.sheetId !== 0) {
-      writer.uint32(8).int32(message.sheetId);
+    if (message.sheetUid !== 0) {
+      writer.uint32(8).int32(message.sheetUid);
     }
-    if (message.databaseId !== 0) {
-      writer.uint32(16).int32(message.databaseId);
+    if (message.changeDatabaseType !== 0) {
+      writer.uint32(16).int32(message.changeDatabaseType);
+    }
+    if (message.instanceUid !== 0) {
+      writer.uint32(24).int32(message.instanceUid);
+    }
+    if (message.databaseName !== "") {
+      writer.uint32(34).string(message.databaseName);
+    }
+    if (message.databaseGroupUid !== undefined) {
+      writer.uint32(40).int64(message.databaseGroupUid);
     }
     return writer;
   },
@@ -107,14 +170,35 @@ export const PlanCheckRunConfig = {
             break;
           }
 
-          message.sheetId = reader.int32();
+          message.sheetUid = reader.int32();
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.databaseId = reader.int32();
+          message.changeDatabaseType = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.instanceUid = reader.int32();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.databaseName = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.databaseGroupUid = longToNumber(reader.int64() as Long);
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -127,15 +211,24 @@ export const PlanCheckRunConfig = {
 
   fromJSON(object: any): PlanCheckRunConfig {
     return {
-      sheetId: isSet(object.sheetId) ? Number(object.sheetId) : 0,
-      databaseId: isSet(object.databaseId) ? Number(object.databaseId) : 0,
+      sheetUid: isSet(object.sheetUid) ? Number(object.sheetUid) : 0,
+      changeDatabaseType: isSet(object.changeDatabaseType)
+        ? planCheckRunConfig_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
+        : 0,
+      instanceUid: isSet(object.instanceUid) ? Number(object.instanceUid) : 0,
+      databaseName: isSet(object.databaseName) ? String(object.databaseName) : "",
+      databaseGroupUid: isSet(object.databaseGroupUid) ? Number(object.databaseGroupUid) : undefined,
     };
   },
 
   toJSON(message: PlanCheckRunConfig): unknown {
     const obj: any = {};
-    message.sheetId !== undefined && (obj.sheetId = Math.round(message.sheetId));
-    message.databaseId !== undefined && (obj.databaseId = Math.round(message.databaseId));
+    message.sheetUid !== undefined && (obj.sheetUid = Math.round(message.sheetUid));
+    message.changeDatabaseType !== undefined &&
+      (obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
+    message.instanceUid !== undefined && (obj.instanceUid = Math.round(message.instanceUid));
+    message.databaseName !== undefined && (obj.databaseName = message.databaseName);
+    message.databaseGroupUid !== undefined && (obj.databaseGroupUid = Math.round(message.databaseGroupUid));
     return obj;
   },
 
@@ -145,8 +238,11 @@ export const PlanCheckRunConfig = {
 
   fromPartial(object: DeepPartial<PlanCheckRunConfig>): PlanCheckRunConfig {
     const message = createBasePlanCheckRunConfig();
-    message.sheetId = object.sheetId ?? 0;
-    message.databaseId = object.databaseId ?? 0;
+    message.sheetUid = object.sheetUid ?? 0;
+    message.changeDatabaseType = object.changeDatabaseType ?? 0;
+    message.instanceUid = object.instanceUid ?? 0;
+    message.databaseName = object.databaseName ?? "";
+    message.databaseGroupUid = object.databaseGroupUid ?? undefined;
     return message;
   },
 };
@@ -364,16 +460,22 @@ export const PlanCheckRunResult_Result = {
 };
 
 function createBasePlanCheckRunResult_Result_SqlSummaryReport(): PlanCheckRunResult_Result_SqlSummaryReport {
-  return { statementType: "", affectedRows: 0 };
+  return { code: 0, statementTypes: [], affectedRows: 0, changedResources: undefined };
 }
 
 export const PlanCheckRunResult_Result_SqlSummaryReport = {
   encode(message: PlanCheckRunResult_Result_SqlSummaryReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.statementType !== "") {
-      writer.uint32(10).string(message.statementType);
+    if (message.code !== 0) {
+      writer.uint32(8).int64(message.code);
+    }
+    for (const v of message.statementTypes) {
+      writer.uint32(18).string(v!);
     }
     if (message.affectedRows !== 0) {
-      writer.uint32(16).int64(message.affectedRows);
+      writer.uint32(24).int64(message.affectedRows);
+    }
+    if (message.changedResources !== undefined) {
+      ChangedResources.encode(message.changedResources, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -386,18 +488,32 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.statementType = reader.string();
+          message.code = longToNumber(reader.int64() as Long);
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.statementTypes.push(reader.string());
+          continue;
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
           message.affectedRows = longToNumber(reader.int64() as Long);
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.changedResources = ChangedResources.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -410,15 +526,24 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
 
   fromJSON(object: any): PlanCheckRunResult_Result_SqlSummaryReport {
     return {
-      statementType: isSet(object.statementType) ? String(object.statementType) : "",
+      code: isSet(object.code) ? Number(object.code) : 0,
+      statementTypes: Array.isArray(object?.statementTypes) ? object.statementTypes.map((e: any) => String(e)) : [],
       affectedRows: isSet(object.affectedRows) ? Number(object.affectedRows) : 0,
+      changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
     };
   },
 
   toJSON(message: PlanCheckRunResult_Result_SqlSummaryReport): unknown {
     const obj: any = {};
-    message.statementType !== undefined && (obj.statementType = message.statementType);
+    message.code !== undefined && (obj.code = Math.round(message.code));
+    if (message.statementTypes) {
+      obj.statementTypes = message.statementTypes.map((e) => e);
+    } else {
+      obj.statementTypes = [];
+    }
     message.affectedRows !== undefined && (obj.affectedRows = Math.round(message.affectedRows));
+    message.changedResources !== undefined &&
+      (obj.changedResources = message.changedResources ? ChangedResources.toJSON(message.changedResources) : undefined);
     return obj;
   },
 
@@ -430,14 +555,18 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
     object: DeepPartial<PlanCheckRunResult_Result_SqlSummaryReport>,
   ): PlanCheckRunResult_Result_SqlSummaryReport {
     const message = createBasePlanCheckRunResult_Result_SqlSummaryReport();
-    message.statementType = object.statementType ?? "";
+    message.code = object.code ?? 0;
+    message.statementTypes = object.statementTypes?.map((e) => e) || [];
     message.affectedRows = object.affectedRows ?? 0;
+    message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
+      ? ChangedResources.fromPartial(object.changedResources)
+      : undefined;
     return message;
   },
 };
 
 function createBasePlanCheckRunResult_Result_SqlReviewReport(): PlanCheckRunResult_Result_SqlReviewReport {
-  return { line: 0, detail: "", code: 0 };
+  return { line: 0, column: 0, detail: "", code: 0 };
 }
 
 export const PlanCheckRunResult_Result_SqlReviewReport = {
@@ -445,11 +574,14 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
     if (message.line !== 0) {
       writer.uint32(8).int64(message.line);
     }
+    if (message.column !== 0) {
+      writer.uint32(16).int64(message.column);
+    }
     if (message.detail !== "") {
-      writer.uint32(18).string(message.detail);
+      writer.uint32(26).string(message.detail);
     }
     if (message.code !== 0) {
-      writer.uint32(24).int64(message.code);
+      writer.uint32(32).int64(message.code);
     }
     return writer;
   },
@@ -469,14 +601,21 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
           message.line = longToNumber(reader.int64() as Long);
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.column = longToNumber(reader.int64() as Long);
+          continue;
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
           message.detail = reader.string();
           continue;
-        case 3:
-          if (tag !== 24) {
+        case 4:
+          if (tag !== 32) {
             break;
           }
 
@@ -494,6 +633,7 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
   fromJSON(object: any): PlanCheckRunResult_Result_SqlReviewReport {
     return {
       line: isSet(object.line) ? Number(object.line) : 0,
+      column: isSet(object.column) ? Number(object.column) : 0,
       detail: isSet(object.detail) ? String(object.detail) : "",
       code: isSet(object.code) ? Number(object.code) : 0,
     };
@@ -502,6 +642,7 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
   toJSON(message: PlanCheckRunResult_Result_SqlReviewReport): unknown {
     const obj: any = {};
     message.line !== undefined && (obj.line = Math.round(message.line));
+    message.column !== undefined && (obj.column = Math.round(message.column));
     message.detail !== undefined && (obj.detail = message.detail);
     message.code !== undefined && (obj.code = Math.round(message.code));
     return obj;
@@ -516,6 +657,7 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
   ): PlanCheckRunResult_Result_SqlReviewReport {
     const message = createBasePlanCheckRunResult_Result_SqlReviewReport();
     message.line = object.line ?? 0;
+    message.column = object.column ?? 0;
     message.detail = object.detail ?? "";
     message.code = object.code ?? 0;
     return message;

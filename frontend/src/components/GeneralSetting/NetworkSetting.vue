@@ -8,8 +8,8 @@
         {{ $t("settings.general.workspace.only-owner-can-edit") }}
       </span>
     </div>
-    <div class="flex-1 lg:px-5">
-      <div class="mb-7 mt-5 lg:mt-0">
+    <div class="flex-1 lg:px-4">
+      <div class="mb-7 mt-4 lg:mt-0">
         <label
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
@@ -38,7 +38,7 @@
           </i18n-t>
         </div>
         <BBTextField
-          class="mb-5 w-full"
+          class="mb-4 w-full"
           :disabled="!allowEdit"
           :value="state.externalUrl"
           @input="handleExternalUrlChange"
@@ -66,7 +66,7 @@
           </i18n-t>
         </div>
         <BBTextField
-          class="mb-5 w-full"
+          class="mb-4 w-full"
           :disabled="!allowEdit"
           :value="state.gitopsWebhookUrl"
           @input="handleGitOpsWebhookUrlChange"

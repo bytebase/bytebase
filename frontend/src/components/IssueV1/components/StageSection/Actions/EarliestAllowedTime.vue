@@ -4,7 +4,7 @@
       <NTooltip>
         <template #trigger>
           <div class="flex gap-x-1 items-center textlabel">
-            {{ $t("common.when") }}
+            {{ $t("task.rollout-time") }}
           </div>
         </template>
         <template #default>
@@ -117,7 +117,7 @@ const handleUpdateEarliestAllowedTime = async (timestampMS: number | null) => {
     }
   } else {
     const planPatch = cloneDeep(issue.value.planEntity);
-    const spec = specForTask(issue.value.planEntity, selectedTask.value);
+    const spec = specForTask(planPatch, selectedTask.value);
     if (!planPatch || !spec) {
       notifyNotEditableLegacyIssue();
       return;

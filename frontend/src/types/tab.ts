@@ -19,6 +19,11 @@ export enum TabMode {
   Admin = 2,
 }
 
+export type TabSheetType =
+  | "TEMP" // Unsaved local sheet
+  | "CLEAN" // Saved and untouched sheet
+  | "DIRTY"; // Saved remotely, touched and unsaved locally
+
 export type EditMode = "SQL-EDITOR" | "CHAT-TO-SQL";
 
 export interface TabInfo {
@@ -40,6 +45,7 @@ export interface TabInfo {
   queryResult?: SQLResultSet;
   sheetName?: string;
   sqlResultSet?: SQLResultSetV1;
+  isFreshNew?: boolean;
 }
 
 export type CoreTabInfo = Pick<TabInfo, "connection" | "sheetName" | "mode">;

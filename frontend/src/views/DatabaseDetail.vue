@@ -20,7 +20,7 @@
                   {{ database.databaseName }}
 
                   <ProductionEnvironmentV1Icon
-                    :environment="database.instanceEntity.environmentEntity"
+                    :environment="environment"
                     :tooltip="true"
                     class="w-5 h-5"
                   />
@@ -45,9 +45,7 @@
                 >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
               >
               <EnvironmentV1Name
-                :environment="
-                  environment || database.instanceEntity.environmentEntity
-                "
+                :environment="environment"
                 icon-class="textinfolabel"
               />
             </dd>
@@ -249,6 +247,7 @@ import { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { BBTabFilterItem } from "@/bbkit/types";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
@@ -277,7 +276,12 @@ import {
   useGracefulRequest,
   useEnvironmentV1Store,
 } from "@/store";
-import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME, ComposedDatabase } from "@/types";
+import {
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_V1_NAME,
+  ComposedDatabase,
+  unknownEnvironment,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import {
@@ -346,7 +350,7 @@ const state = reactive<LocalState>({
   syncingSchema: false,
   showSchemaDiagram: false,
 });
-
+const route = useRoute();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
@@ -612,6 +616,7 @@ const selectTab = (index: number) => {
   router.replace({
     name: "workspace.database.detail",
     hash: "#" + item.hash,
+    query: route.query,
   });
 };
 
@@ -682,8 +687,10 @@ const syncDatabaseSchema = async () => {
 };
 
 const environment = computed(() => {
-  return useEnvironmentV1Store().getEnvironmentByName(
-    database.value.environment
+  return (
+    useEnvironmentV1Store().getEnvironmentByName(
+      database.value.effectiveEnvironment
+    ) ?? unknownEnvironment()
   );
 });
 </script>

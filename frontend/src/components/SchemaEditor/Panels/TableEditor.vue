@@ -120,7 +120,10 @@
             >
               <input
                 v-model="column.type"
-                :disabled="disableAlterColumn(column)"
+                :disabled="
+                  disableAlterColumn(column) ||
+                  schemaTemplateColumnTypes.length > 0
+                "
                 placeholder="column type"
                 class="column-field-input column-type-input !pr-8"
                 type="text"
@@ -312,6 +315,7 @@ import {
   generateUniqueTabId,
   useNotificationStore,
   useSchemaEditorStore,
+  useSettingV1Store,
 } from "@/store/modules";
 import { TableTabContext } from "@/types";
 import { ColumnMetadata } from "@/types/proto/store/database";
@@ -344,6 +348,7 @@ interface LocalState {
 }
 
 const { t } = useI18n();
+const settingStore = useSettingV1Store();
 const editorStore = useSchemaEditorStore();
 const notificationStore = useNotificationStore();
 const currentTab = computed(() => editorStore.currentTab as TableTabContext);
@@ -440,7 +445,30 @@ const databaseEngine = computed(() => {
   return databaseSchema.database.instanceEntity.engine;
 });
 
+const schemaTemplateColumnTypes = computed(() => {
+  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  const columnTypes = setting?.value?.schemaTemplateSettingValue?.columnTypes;
+  if (columnTypes && columnTypes.length > 0) {
+    const columnType = columnTypes.find(
+      (columnType) => columnType.engine === databaseEngine.value
+    );
+    if (columnType && columnType.enabled) {
+      return columnType.types;
+    }
+  }
+  return [];
+});
+
 const dataTypeOptions = computed(() => {
+  if (schemaTemplateColumnTypes.value.length > 0) {
+    return schemaTemplateColumnTypes.value.map((columnType) => {
+      return {
+        label: columnType,
+        key: columnType,
+      };
+    });
+  }
+
   return getDataTypeSuggestionList(databaseEngine.value).map((dataType) => {
     return {
       label: dataType,

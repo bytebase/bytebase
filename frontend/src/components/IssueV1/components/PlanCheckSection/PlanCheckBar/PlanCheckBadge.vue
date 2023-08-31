@@ -8,7 +8,7 @@
   <button
     class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-control-border"
     :class="buttonClasses"
-    @click="$emit('click')"
+    @click="clickable && $emit('click')"
   >
     <template v-if="status === PlanCheckRun_Status.RUNNING">
       <TaskSpinner class="-ml-1 mr-1.5 h-4 w-4 text-info" />
@@ -56,6 +56,8 @@ import {
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   type: PlanCheckRun_Type;
+  clickable?: boolean;
+  selected?: boolean;
 }>();
 
 defineEmits<{
@@ -118,17 +120,17 @@ const buttonClasses = computed(() => {
   }
 
   const styleList: string[] = [textColor];
-  // if (props.allowSelection) {
-  //   styleList.push("cursor-pointer", `hover:${bgHoverColor}`);
-  //   if (props.stickySelection && checkRun.type == state.selectedTaskCheckType) {
-  //     styleList.push(bgHoverColor);
-  //   } else {
-  //     styleList.push(bgColor);
-  //   }
-  // } else {
-  //   styleList.push(bgColor);
-  //   styleList.push("cursor-default");
-  // }
+  if (props.clickable) {
+    styleList.push("cursor-pointer", `hover:${bgHoverColor}`);
+    if (props.selected) {
+      styleList.push(bgHoverColor);
+    } else {
+      styleList.push(bgColor);
+    }
+  } else {
+    styleList.push(bgColor);
+    styleList.push("cursor-default");
+  }
   styleList.push("cursor-pointer", `hover:${bgHoverColor}`);
   styleList.push(bgColor);
 

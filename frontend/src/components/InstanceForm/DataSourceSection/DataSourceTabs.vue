@@ -72,16 +72,18 @@ const {
 const handleDeleteDataSource = async (ds: EditDataSource) => {
   const removeLocalEditDataSource = (ds: EditDataSource) => {
     const { dataSources, editingDataSourceId } = dataSourceEditState.value;
-    if (ds.id !== editingDataSourceId) {
-      return;
-    }
     const index = dataSources.findIndex((d) => d.id === ds.id);
     if (index >= 0) {
       pullAt(dataSources, index);
     }
-    const siblingIndex = Math.min(index, dataSources.length - 1);
-    const siblingDataSource = dataSources[siblingIndex];
-    dataSourceEditState.value.editingDataSourceId = siblingDataSource?.id;
+
+    if (ds.id === editingDataSourceId) {
+      // When the current editing datasource is deleted
+      // Switch to its sibling
+      const siblingIndex = Math.min(index, dataSources.length - 1);
+      const siblingDataSource = dataSources[siblingIndex];
+      dataSourceEditState.value.editingDataSourceId = siblingDataSource?.id;
+    }
   };
 
   if (instance.value && !ds.pendingCreate) {

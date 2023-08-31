@@ -24,7 +24,7 @@
     </div>
     <div :class="responsive ? 'hidden sm:block' : 'block'">
       <div
-        class="flex space-x-4 w-full overflow-x-auto hide-scrollbar"
+        class="flex py-1 space-x-4 w-full overflow-x-auto hide-scrollbar"
         aria-label="Tabs"
       >
         <button

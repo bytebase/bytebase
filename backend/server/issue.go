@@ -139,6 +139,32 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			s.setTaskProgressForIssue(issue)
 		}
 
+		if s.profile.DevelopmentUseV2Scheduler {
+			for _, issue := range issueList {
+				if issue.Pipeline == nil {
+					continue
+				}
+				for _, stage := range issue.Pipeline.StageList {
+					for _, task := range stage.TaskList {
+						switch task.LatestTaskRunStatus {
+						case api.TaskRunNotStarted:
+							task.Status = api.TaskPendingApproval
+						case api.TaskRunPending:
+							task.Status = api.TaskPending
+						case api.TaskRunRunning:
+							task.Status = api.TaskRunning
+						case api.TaskRunDone:
+							task.Status = api.TaskDone
+						case api.TaskRunFailed:
+							task.Status = api.TaskFailed
+						case api.TaskRunCanceled:
+							task.Status = api.TaskCanceled
+						}
+					}
+				}
+			}
+		}
+
 		issueResponse := &api.IssueResponse{}
 		issueResponse.Issues = issueList
 
@@ -972,7 +998,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			return nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
 		}
 	}
-	maximumTaskLimit := s.licenseService.GetPlanLimitValue(enterpriseAPI.PlanLimitMaximumTask)
+	maximumTaskLimit := s.licenseService.GetPlanLimitValue(ctx, enterpriseAPI.PlanLimitMaximumTask)
 	if int64(databaseIDCount) > maximumTaskLimit {
 		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Current plan can update up to %d databases, got %d.", maximumTaskLimit, databaseIDCount))
 	}
@@ -1216,7 +1242,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					if originalStatement == "" {
 						return nil, echo.NewHTTPError(http.StatusBadRequest, "The statement of migration detail should not be empty")
 					}
-					parserEngineType, err := convertDatabaseToParserEngineType(instance.Engine)
+					parserEngineType, err := utils.ConvertDatabaseToParserEngineType(instance.Engine)
 					if err != nil {
 						return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to convert database engine type").SetInternal(err)
 					}
@@ -1410,28 +1436,6 @@ func flushGroupingDatabaseTaskToTaskCreate(statementPrefix *strings.Builder, tab
 		idx++
 	}
 	return taskCreateList, nil
-}
-
-func convertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error) {
-	switch engine {
-	case db.Oracle:
-		return parser.Oracle, nil
-	case db.MSSQL:
-		return parser.MSSQL, nil
-	case db.Postgres:
-		return parser.Postgres, nil
-	case db.Redshift:
-		return parser.Redshift, nil
-	case db.MySQL:
-		return parser.MySQL, nil
-	case db.TiDB:
-		return parser.TiDB, nil
-	case db.MariaDB:
-		return parser.MariaDB, nil
-	case db.OceanBase:
-		return parser.OceanBase, nil
-	}
-	return parser.EngineType("UNKNOWN"), errors.Errorf("unsupported engine type %q", engine)
 }
 
 func getOrDefaultSchemaVersion(detail *api.MigrationDetail) string {

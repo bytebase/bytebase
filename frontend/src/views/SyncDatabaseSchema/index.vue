@@ -25,11 +25,8 @@
               :value="'SCHEMA_HISTORY_VERSION'"
               :label="$t('database.sync-schema.schema-history-version')"
             />
-            <NRadio
-              :value="'SCHEMA_DESIGN'"
-              :label="$t('schema-designer.schema-design')"
-            />
-            <NRadio :value="'RAW_SQL'" :label="'Raw SQL'" />
+            <NRadio :value="'SCHEMA_DESIGN'" :label="$t('database.branch')" />
+            <NRadio :value="'RAW_SQL'" :label="$t('schema-editor.raw-sql')" />
           </NRadioGroup>
         </div>
         <DatabaseSchemaSelector

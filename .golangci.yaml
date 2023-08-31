@@ -20,16 +20,11 @@ linters:
 issues:
   include:
     # https://golangci-lint.run/usage/configuration/#command-line-options
-    - EXC0012
-    - EXC0013
-    - EXC0014
-    - EXC0015
   exclude:
     - Rollback
     - logger.Sync
     - pgInstance.Stop
     - fmt.Printf
-    - fmt.Print
     - Enter(.*)_(.*)
     - Exit(.*)_(.*)
 

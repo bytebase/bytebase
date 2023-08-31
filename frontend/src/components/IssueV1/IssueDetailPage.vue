@@ -1,22 +1,32 @@
 <template>
-  <div class="divide-y">
+  <div>
     <div class="issue-debug">phase: {{ phase }}</div>
 
     <BannerSection v-if="!isCreating" />
 
     <HeaderSection class="!border-t-0" />
 
+    <div class="w-full border-t mt-4" />
+
     <StageSection />
+
+    <div class="w-full mt-4" />
 
     <TaskListSection />
 
     <TaskRunSection v-if="!isCreating" />
 
+    <div class="w-full border-t my-4" />
+
     <PlanCheckSection v-if="!isCreating" />
 
     <StatementSection />
 
+    <div class="w-full border-t my-4" />
+
     <DescriptionSection />
+
+    <div class="w-full border-t my-4" />
 
     <ActivitySection v-if="!isCreating" />
 

@@ -96,7 +96,7 @@ var (
 		Run: func(_ *cobra.Command, _ []string) {
 			start()
 
-			fmt.Print(byeBanner)
+			fmt.Printf("%s", byeBanner)
 		},
 	}
 )
@@ -139,7 +139,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS/GCP credential files.")
 
 	// Development flags
-	rootCmd.PersistentFlags().BoolVar(&flags.developmentUseV2Scheduler, "development-use-v2-scheduler", false, "whether to use the v2 scheduler")
+	rootCmd.PersistentFlags().BoolVar(&flags.developmentUseV2Scheduler, "development-use-v2-scheduler", true, "whether to use the v2 scheduler")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------

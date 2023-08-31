@@ -459,10 +459,9 @@ type ConnectionContext struct {
 // QueryContext is the context to query.
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit                 int
-	ReadOnly              bool
-	SensitiveDataMaskType SensitiveDataMaskType
-	SensitiveSchemaInfo   *SensitiveSchemaInfo
+	Limit               int
+	ReadOnly            bool
+	SensitiveSchemaInfo *SensitiveSchemaInfo
 	// EnableSensitive will set to be true if the database instance has license.
 	EnableSensitive bool
 
@@ -617,15 +616,6 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
 
-// SensitiveDataMaskType is the mask type for sensitive data.
-type SensitiveDataMaskType string
-
-const (
-	// SensitiveDataMaskTypeDefault is the sensitive data type to hide data with a default method.
-	// The default method is subject to change.
-	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
-)
-
 // SensitiveSchemaInfo is the schema info using to extract sensitive fields.
 type SensitiveSchemaInfo struct {
 	// IgnoreCaseSensitive is the flag to ignore case sensitive.
@@ -638,16 +628,19 @@ type SensitiveSchemaInfo struct {
 type DatabaseSchema struct {
 	Name       string
 	SchemaList []SchemaSchema
-
-	// !!DEPRECATED!!, should use SchemaList instead.
-	// TODO(rebelice/zp): Migrate MySQL/PostgreSQL/Oracle to SchemaList.
-	TableList []TableSchema
 }
 
 // SchemaSchema is the schema of the schema using to extract sensitive fields.
 type SchemaSchema struct {
 	Name      string
 	TableList []TableSchema
+	ViewList  []ViewSchema
+}
+
+// ViewSchema is the view schema using to extract sensitive fields.
+type ViewSchema struct {
+	Name       string
+	Definition string
 }
 
 // TableSchema is the table schema using to extract sensitive fields.
@@ -658,8 +651,10 @@ type TableSchema struct {
 
 // ColumnInfo is the column info using to extract sensitive fields.
 type ColumnInfo struct {
-	Name      string
-	Sensitive bool
+	Name string
+	// TODO(zp): retire Sensitive boolean flag.
+	Sensitive    bool
+	MaskingLevel storepb.MaskingLevel
 }
 
 // SensitiveField is the struct about SELECT fields.

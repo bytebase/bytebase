@@ -95,7 +95,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
   const databaseListByEnvironment = (environment: string) => {
     return databaseList.value.filter(
-      (db) => db.instanceEntity.environment === environment
+      (db) => db.effectiveEnvironment === environment
     );
   };
   const getDatabaseByName = (name: string) => {
@@ -286,6 +286,9 @@ const batchComposeDatabase = async (databaseList: Database[]) => {
         unknownEnvironment(),
     };
     composed.projectEntity = projectV1Store.getProjectByName(db.project);
+    composed.effectiveEnvironmentEntity =
+      environmentV1Store.getEnvironmentByName(db.effectiveEnvironment) ??
+      unknownEnvironment();
     return composed;
   });
 };

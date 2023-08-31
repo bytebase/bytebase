@@ -14,6 +14,7 @@
             'instance.archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page'
           )
         "
+        class="!border-none"
         @confirm="archiveOrRestoreInstance(true)"
       >
         <div class="mt-3">
@@ -37,6 +38,7 @@
           ])
         "
         :confirm-description="''"
+        class="!border-none"
         @confirm="archiveOrRestoreInstance(false)"
       />
     </template>

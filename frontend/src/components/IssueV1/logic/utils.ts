@@ -60,6 +60,8 @@ const extractCoreDatabaseInfoFromDatabaseCreateTask = (
       instanceEntity,
       project: project.name,
       projectEntity: project,
+      effectiveEnvironment: instanceEntity.environment,
+      effectiveEnvironmentEntity: instanceEntity.environmentEntity,
     };
   };
 

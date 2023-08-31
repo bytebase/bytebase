@@ -1,7 +1,7 @@
 <template>
   <div class="w-full mt-4 space-y-4">
     <FeatureAttention feature="bb.feature.audit-log" />
-    <div class="flex justify-end items-center mt-1">
+    <div class="flex justify-end items-center mt-1 space-x-2">
       <MemberSelect
         class="w-52"
         :disabled="!hasAuditLogFeature"
@@ -10,14 +10,14 @@
         :selected-id="selectedUserUID"
         @select-user-id="selectUser"
       />
-      <div class="w-52 ml-2">
+      <div class="w-52">
         <TypeSelect
           :disabled="!hasAuditLogFeature"
           :selected-type-list="selectedAuditTypeList"
           @update-selected-type-list="selectAuditType"
         />
       </div>
-      <div class="w-112 ml-2">
+      <div class="w-112">
         <NDatePicker
           v-model:value="selectedTimeRange"
           type="datetimerange"
@@ -28,6 +28,12 @@
         >
         </NDatePicker>
       </div>
+      <DataExportButton
+        size="large"
+        :support-formats="['CSV', 'JSON']"
+        :disabled="auditLogList.length === 0"
+        @export="handleExport"
+      />
     </div>
     <PagedActivityTable
       v-if="hasAuditLogFeature"
@@ -43,6 +49,7 @@
       }"
       session-key="bb.page-audit-log-table.settings-audit-log-table"
       :page-size="10"
+      @list:update="(list: LogEntity[]) => auditLogList = list"
     >
       <template #table="{ list }">
         <AuditLogTable :audit-log-list="list" @view-detail="handleViewDetail" />
@@ -95,10 +102,12 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { NGrid, NGi, NDatePicker } from "naive-ui";
+import { BinaryLike } from "node:crypto";
 import { reactive, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBDialog } from "@/bbkit";
+import { ExportFormat } from "@/components/DataExportButton.vue";
 import { featureToRef, useUserStore } from "@/store";
 import {
   AuditActivityTypeList,
@@ -108,6 +117,8 @@ import {
 import {
   LogEntity,
   LogEntity_Action,
+  logEntity_ActionToJSON,
+  LogEntity_Level,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
 
@@ -116,6 +127,8 @@ const state = reactive({
   showModal: false,
   modalContent: {},
 });
+
+const auditLogList = ref<LogEntity[]>([]);
 
 const { t } = useI18n();
 const router = useRouter();
@@ -253,5 +266,81 @@ const clearDatePicker = () => {
       createdTsBefore: Date.now(),
     },
   });
+};
+
+const handleExport = (
+  format: ExportFormat,
+  callback: (content: BinaryLike | Blob, format: ExportFormat) => void
+) => {
+  const content = formatExport(format);
+  callback(content, format);
+};
+
+function escapeCSVString(s: string) {
+  // Escape double quotes
+  s = s.replace(/"/g, '""');
+  // Escape commas
+  s = s.replace(/,/g, "\\,");
+  // Escape new lines
+  s = s.replace(/\n/g, "\\n");
+  // Escape carriage returns
+  s = s.replace(/\r/g, "\\r");
+  return s;
+}
+
+function formatLevel(level: LogEntity_Level) {
+  switch (level) {
+    case LogEntity_Level.LEVEL_INFO:
+      return "INFO";
+    case LogEntity_Level.LEVEL_WARNING:
+      return "WARNING";
+    case LogEntity_Level.LEVEL_ERROR:
+      return "ERROR";
+  }
+  return "UNKNOWN_LEVEL";
+}
+
+const formatExport = (format: ExportFormat): BinaryLike => {
+  switch (format) {
+    case "CSV":
+      return auditLogList.value
+        .reduce(
+          (list, auditLog) => {
+            list.push(
+              [
+                dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
+                formatLevel(auditLog.level),
+                logEntity_ActionToJSON(auditLog.action),
+                auditLog.creator,
+                auditLog.resource,
+                auditLog.comment,
+                escapeCSVString(auditLog.payload),
+              ].join(",")
+            );
+            return list;
+          },
+          ["time,level,action,actor,resource,comment,payload"]
+        )
+        .join("\n");
+    case "JSON":
+      return JSON.stringify(
+        auditLogList.value.map((auditLog) => {
+          return {
+            time: dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
+            level: formatLevel(auditLog.level),
+            action: logEntity_ActionToJSON(auditLog.action),
+            actor: auditLog.creator,
+            resource: auditLog.resource,
+            comment: auditLog.comment,
+            payload: auditLog.payload,
+          };
+        }),
+        null,
+        2
+      );
+    default:
+      // Should never reach this line.
+      return "";
+  }
 };
 </script>

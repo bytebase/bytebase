@@ -73,6 +73,9 @@ const (
 	// FeatureCustomRole enables customizing roles.
 	FeatureCustomRole FeatureType = "bb.feature.custom-role"
 
+	// FeatureIssueAdvancedSearch supports search issue with advanced filter.
+	FeatureIssueAdvancedSearch FeatureType = "bb.feature.issue-advanced-search"
+
 	// Branding.
 
 	// FeatureBranding enables customized branding.
@@ -199,6 +202,8 @@ func (e FeatureType) Name() string {
 		return "Audit log"
 	case FeatureCustomRole:
 		return "Custom role"
+	case FeatureIssueAdvancedSearch:
+		return "Advanced search"
 	// Branding
 	case FeatureBranding:
 		return "Branding"
@@ -289,14 +294,15 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 // plan in [FREE, TEAM, Enterprise].
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
-	FeatureSSO:            {false, false, true},
-	Feature2FA:            {false, false, true},
-	FeatureDisallowSignup: {false, false, true},
-	FeatureSecureToken:    {false, false, true},
-	FeatureRBAC:           {true, true, true},
-	FeatureWatermark:      {false, false, true},
-	FeatureAuditLog:       {false, false, true},
-	FeatureCustomRole:     {false, false, true},
+	FeatureSSO:                 {false, false, true},
+	Feature2FA:                 {false, false, true},
+	FeatureDisallowSignup:      {false, false, true},
+	FeatureSecureToken:         {false, false, true},
+	FeatureRBAC:                {true, true, true},
+	FeatureWatermark:           {false, false, true},
+	FeatureAuditLog:            {false, false, true},
+	FeatureCustomRole:          {false, false, true},
+	FeatureIssueAdvancedSearch: {false, true, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
@@ -340,7 +346,6 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	// Change Workflow
 	FeatureIMApproval:       true,
 	FeatureSchemaDrift:      true,
-	FeatureSQLReview:        true,
 	FeatureEncryptedSecrets: true,
 	FeatureTaskScheduleTime: true,
 	FeatureOnlineMigration:  true,

@@ -62,6 +62,7 @@
         "instance-maximum-20": "Up to 20",
         "instance-maximum-20-tooltip": "Maximum 20. Talk to us for pricing if your instances go over the limit.",
         "instance-unlimited": "Unlimited",
+        "instance-unlimited-tooltip": "Allow unlimited instances. Purchase instance license to enable advanced instance features.",
         "environment-count": "Environment count",
         "environment-unlimited": "Unlimited",
         "state-based-change": "State-based change",
@@ -91,7 +92,11 @@
         "sync-schema-advanced": "Advanced",
         "sync-schema-advanced-tooltip": "Sync from arbitrary schema version",
         "terraform-provider": "Terraform Integration",
-        "custom-approval": "Custom approval"
+        "custom-approval": "Custom approval",
+        "issue-advanced-search": "Issue advanced search",
+        "issue-advanced-search-basic": "30-day limit",
+        "issue-advanced-search-basic-tooltip": "Issues older than 30 days are hidden",
+        "issue-advanced-search-advanced": "Unlimited"
       }
     },
     "sql-editor": {

@@ -46,7 +46,7 @@ import {
   connectionV1Slug as makeConnectionV1Slug,
   isSheetReadableV1,
   isDatabaseV1Queryable,
-  getDefaultTabNameFromConnection,
+  getSuggestedTabNameFromConnection,
   isSimilarTab,
   hasWorkspacePermissionV1,
 } from "@/utils";
@@ -219,7 +219,7 @@ const prepareSheet = async () => {
     tabStore.setCurrentTabId(openingSheetTab.id);
   } else {
     // Open the sheet in a "temp" tab otherwise.
-    tabStore.selectOrAddTempTab();
+    tabStore.addTab();
   }
 
   let insId = String(UNKNOWN_ID);
@@ -263,7 +263,7 @@ const prepareConnectionSlug = async () => {
     const tab = tabStore.currentTab;
     if (tab.sheetName) {
       // Don't touch a saved sheet.
-      tabStore.selectOrAddTempTab();
+      tabStore.addTab();
       return;
     }
     const target: CoreTabInfo = {
@@ -275,7 +275,7 @@ const prepareConnectionSlug = async () => {
       // Don't go further if the connection doesn't change.
       return;
     }
-    const name = getDefaultTabNameFromConnection(target.connection);
+    const name = getSuggestedTabNameFromConnection(target.connection);
     tabStore.selectOrAddSimilarTab(
       target,
       /* beside */ false,

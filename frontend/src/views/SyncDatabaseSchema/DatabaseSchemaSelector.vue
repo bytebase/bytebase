@@ -111,6 +111,7 @@ import {
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useSubscriptionV1Store,
+  useEnvironmentV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -144,6 +145,7 @@ const state = reactive<LocalState>({
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
+const environmentStore = useEnvironmentV1Store();
 const fullViewChangeHistoryCache = ref<Map<string, ChangeHistory>>(new Map());
 
 const database = computed(() => {
@@ -177,9 +179,12 @@ onMounted(async () => {
       const database = await databaseStore.getOrFetchDatabaseByUID(
         props.selectState.databaseId || ""
       );
+      const environment = await environmentStore.getOrFetchEnvironmentByName(
+        database.effectiveEnvironment
+      );
       state.projectId = props.selectState.projectId;
       state.databaseId = database.uid;
-      state.environmentId = database.instanceEntity.environmentEntity.uid;
+      state.environmentId = environment.uid;
       state.changeHistory = props.selectState.changeHistory;
     } catch (error) {
       // do nothing.
@@ -251,8 +256,11 @@ const handleDatabaseSelect = async (databaseId: string) => {
     if (!database) {
       return;
     }
+    const environment = environmentStore.getEnvironmentByName(
+      database.effectiveEnvironment
+    );
     state.projectId = database.projectEntity.uid;
-    state.environmentId = database.instanceEntity.environmentEntity.uid;
+    state.environmentId = environment?.uid;
     state.databaseId = databaseId;
     dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
   }

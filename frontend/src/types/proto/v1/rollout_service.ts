@@ -4,6 +4,7 @@ import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { ChangedResources } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -134,6 +135,11 @@ export interface Plan_CreateDatabaseConfig {
    * Format: instances/{instance}/databases/{database}/backups/{backup-name}
    */
   backup: string;
+  /**
+   * The environment resource.
+   * Format: environments/prod where prod is the environment resource ID.
+   */
+  environment: string;
   /** labels of the database. */
   labels: { [key: string]: string };
 }
@@ -323,6 +329,7 @@ export interface BatchRunTasksRequest {
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
    */
   tasks: string[];
+  reason: string;
 }
 
 export interface BatchRunTasksResponse {
@@ -339,6 +346,7 @@ export interface BatchSkipTasksRequest {
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
    */
   tasks: string[];
+  reason: string;
 }
 
 export interface BatchSkipTasksResponse {
@@ -356,6 +364,7 @@ export interface BatchCancelTaskRunsRequest {
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    */
   taskRuns: string[];
+  reason: string;
 }
 
 export interface BatchCancelTaskRunsResponse {
@@ -559,12 +568,16 @@ export function planCheckRun_Result_StatusToJSON(object: PlanCheckRun_Result_Sta
 }
 
 export interface PlanCheckRun_Result_SqlSummaryReport {
-  statementType: string;
+  code: number;
+  /** statement_types are the types of statements that are found in the sql. */
+  statementTypes: string[];
   affectedRows: number;
+  changedResources?: ChangedResources | undefined;
 }
 
 export interface PlanCheckRun_Result_SqlReviewReport {
   line: number;
+  column: number;
   detail: string;
   /** Code from sql review. */
   code: number;
@@ -877,6 +890,7 @@ export interface Task_DatabaseCreate {
   sheet: string;
   characterSet: string;
   collation: string;
+  environment: string;
   labels: { [key: string]: string };
 }
 
@@ -1772,6 +1786,7 @@ function createBasePlan_CreateDatabaseConfig(): Plan_CreateDatabaseConfig {
     cluster: "",
     owner: "",
     backup: "",
+    environment: "",
     labels: {},
   };
 }
@@ -1802,8 +1817,11 @@ export const Plan_CreateDatabaseConfig = {
     if (message.backup !== "") {
       writer.uint32(66).string(message.backup);
     }
+    if (message.environment !== "") {
+      writer.uint32(74).string(message.environment);
+    }
     Object.entries(message.labels).forEach(([key, value]) => {
-      Plan_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
+      Plan_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(82).fork()).ldelim();
     });
     return writer;
   },
@@ -1876,9 +1894,16 @@ export const Plan_CreateDatabaseConfig = {
             break;
           }
 
-          const entry9 = Plan_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
-          if (entry9.value !== undefined) {
-            message.labels[entry9.key] = entry9.value;
+          message.environment = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          const entry10 = Plan_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
+          if (entry10.value !== undefined) {
+            message.labels[entry10.key] = entry10.value;
           }
           continue;
       }
@@ -1900,6 +1925,7 @@ export const Plan_CreateDatabaseConfig = {
       cluster: isSet(object.cluster) ? String(object.cluster) : "",
       owner: isSet(object.owner) ? String(object.owner) : "",
       backup: isSet(object.backup) ? String(object.backup) : "",
+      environment: isSet(object.environment) ? String(object.environment) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -1919,6 +1945,7 @@ export const Plan_CreateDatabaseConfig = {
     message.cluster !== undefined && (obj.cluster = message.cluster);
     message.owner !== undefined && (obj.owner = message.owner);
     message.backup !== undefined && (obj.backup = message.backup);
+    message.environment !== undefined && (obj.environment = message.environment);
     obj.labels = {};
     if (message.labels) {
       Object.entries(message.labels).forEach(([k, v]) => {
@@ -1942,6 +1969,7 @@ export const Plan_CreateDatabaseConfig = {
     message.cluster = object.cluster ?? "";
     message.owner = object.owner ?? "";
     message.backup = object.backup ?? "";
+    message.environment = object.environment ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = String(value);
@@ -2585,7 +2613,7 @@ export const RunPlanChecksResponse = {
 };
 
 function createBaseBatchRunTasksRequest(): BatchRunTasksRequest {
-  return { parent: "", tasks: [] };
+  return { parent: "", tasks: [], reason: "" };
 }
 
 export const BatchRunTasksRequest = {
@@ -2595,6 +2623,9 @@ export const BatchRunTasksRequest = {
     }
     for (const v of message.tasks) {
       writer.uint32(18).string(v!);
+    }
+    if (message.reason !== "") {
+      writer.uint32(26).string(message.reason);
     }
     return writer;
   },
@@ -2620,6 +2651,13 @@ export const BatchRunTasksRequest = {
 
           message.tasks.push(reader.string());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2633,6 +2671,7 @@ export const BatchRunTasksRequest = {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => String(e)) : [],
+      reason: isSet(object.reason) ? String(object.reason) : "",
     };
   },
 
@@ -2644,6 +2683,7 @@ export const BatchRunTasksRequest = {
     } else {
       obj.tasks = [];
     }
+    message.reason !== undefined && (obj.reason = message.reason);
     return obj;
   },
 
@@ -2655,6 +2695,7 @@ export const BatchRunTasksRequest = {
     const message = createBaseBatchRunTasksRequest();
     message.parent = object.parent ?? "";
     message.tasks = object.tasks?.map((e) => e) || [];
+    message.reason = object.reason ?? "";
     return message;
   },
 };
@@ -2704,7 +2745,7 @@ export const BatchRunTasksResponse = {
 };
 
 function createBaseBatchSkipTasksRequest(): BatchSkipTasksRequest {
-  return { parent: "", tasks: [] };
+  return { parent: "", tasks: [], reason: "" };
 }
 
 export const BatchSkipTasksRequest = {
@@ -2714,6 +2755,9 @@ export const BatchSkipTasksRequest = {
     }
     for (const v of message.tasks) {
       writer.uint32(18).string(v!);
+    }
+    if (message.reason !== "") {
+      writer.uint32(26).string(message.reason);
     }
     return writer;
   },
@@ -2739,6 +2783,13 @@ export const BatchSkipTasksRequest = {
 
           message.tasks.push(reader.string());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2752,6 +2803,7 @@ export const BatchSkipTasksRequest = {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       tasks: Array.isArray(object?.tasks) ? object.tasks.map((e: any) => String(e)) : [],
+      reason: isSet(object.reason) ? String(object.reason) : "",
     };
   },
 
@@ -2763,6 +2815,7 @@ export const BatchSkipTasksRequest = {
     } else {
       obj.tasks = [];
     }
+    message.reason !== undefined && (obj.reason = message.reason);
     return obj;
   },
 
@@ -2774,6 +2827,7 @@ export const BatchSkipTasksRequest = {
     const message = createBaseBatchSkipTasksRequest();
     message.parent = object.parent ?? "";
     message.tasks = object.tasks?.map((e) => e) || [];
+    message.reason = object.reason ?? "";
     return message;
   },
 };
@@ -2823,7 +2877,7 @@ export const BatchSkipTasksResponse = {
 };
 
 function createBaseBatchCancelTaskRunsRequest(): BatchCancelTaskRunsRequest {
-  return { parent: "", taskRuns: [] };
+  return { parent: "", taskRuns: [], reason: "" };
 }
 
 export const BatchCancelTaskRunsRequest = {
@@ -2833,6 +2887,9 @@ export const BatchCancelTaskRunsRequest = {
     }
     for (const v of message.taskRuns) {
       writer.uint32(18).string(v!);
+    }
+    if (message.reason !== "") {
+      writer.uint32(26).string(message.reason);
     }
     return writer;
   },
@@ -2858,6 +2915,13 @@ export const BatchCancelTaskRunsRequest = {
 
           message.taskRuns.push(reader.string());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2871,6 +2935,7 @@ export const BatchCancelTaskRunsRequest = {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       taskRuns: Array.isArray(object?.taskRuns) ? object.taskRuns.map((e: any) => String(e)) : [],
+      reason: isSet(object.reason) ? String(object.reason) : "",
     };
   },
 
@@ -2882,6 +2947,7 @@ export const BatchCancelTaskRunsRequest = {
     } else {
       obj.taskRuns = [];
     }
+    message.reason !== undefined && (obj.reason = message.reason);
     return obj;
   },
 
@@ -2893,6 +2959,7 @@ export const BatchCancelTaskRunsRequest = {
     const message = createBaseBatchCancelTaskRunsRequest();
     message.parent = object.parent ?? "";
     message.taskRuns = object.taskRuns?.map((e) => e) || [];
+    message.reason = object.reason ?? "";
     return message;
   },
 };
@@ -3253,16 +3320,22 @@ export const PlanCheckRun_Result = {
 };
 
 function createBasePlanCheckRun_Result_SqlSummaryReport(): PlanCheckRun_Result_SqlSummaryReport {
-  return { statementType: "", affectedRows: 0 };
+  return { code: 0, statementTypes: [], affectedRows: 0, changedResources: undefined };
 }
 
 export const PlanCheckRun_Result_SqlSummaryReport = {
   encode(message: PlanCheckRun_Result_SqlSummaryReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.statementType !== "") {
-      writer.uint32(10).string(message.statementType);
+    if (message.code !== 0) {
+      writer.uint32(8).int64(message.code);
+    }
+    for (const v of message.statementTypes) {
+      writer.uint32(18).string(v!);
     }
     if (message.affectedRows !== 0) {
-      writer.uint32(16).int64(message.affectedRows);
+      writer.uint32(24).int64(message.affectedRows);
+    }
+    if (message.changedResources !== undefined) {
+      ChangedResources.encode(message.changedResources, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -3275,18 +3348,32 @@ export const PlanCheckRun_Result_SqlSummaryReport = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.statementType = reader.string();
+          message.code = longToNumber(reader.int64() as Long);
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.statementTypes.push(reader.string());
+          continue;
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
           message.affectedRows = longToNumber(reader.int64() as Long);
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.changedResources = ChangedResources.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3299,15 +3386,24 @@ export const PlanCheckRun_Result_SqlSummaryReport = {
 
   fromJSON(object: any): PlanCheckRun_Result_SqlSummaryReport {
     return {
-      statementType: isSet(object.statementType) ? String(object.statementType) : "",
+      code: isSet(object.code) ? Number(object.code) : 0,
+      statementTypes: Array.isArray(object?.statementTypes) ? object.statementTypes.map((e: any) => String(e)) : [],
       affectedRows: isSet(object.affectedRows) ? Number(object.affectedRows) : 0,
+      changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
     };
   },
 
   toJSON(message: PlanCheckRun_Result_SqlSummaryReport): unknown {
     const obj: any = {};
-    message.statementType !== undefined && (obj.statementType = message.statementType);
+    message.code !== undefined && (obj.code = Math.round(message.code));
+    if (message.statementTypes) {
+      obj.statementTypes = message.statementTypes.map((e) => e);
+    } else {
+      obj.statementTypes = [];
+    }
     message.affectedRows !== undefined && (obj.affectedRows = Math.round(message.affectedRows));
+    message.changedResources !== undefined &&
+      (obj.changedResources = message.changedResources ? ChangedResources.toJSON(message.changedResources) : undefined);
     return obj;
   },
 
@@ -3317,14 +3413,18 @@ export const PlanCheckRun_Result_SqlSummaryReport = {
 
   fromPartial(object: DeepPartial<PlanCheckRun_Result_SqlSummaryReport>): PlanCheckRun_Result_SqlSummaryReport {
     const message = createBasePlanCheckRun_Result_SqlSummaryReport();
-    message.statementType = object.statementType ?? "";
+    message.code = object.code ?? 0;
+    message.statementTypes = object.statementTypes?.map((e) => e) || [];
     message.affectedRows = object.affectedRows ?? 0;
+    message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
+      ? ChangedResources.fromPartial(object.changedResources)
+      : undefined;
     return message;
   },
 };
 
 function createBasePlanCheckRun_Result_SqlReviewReport(): PlanCheckRun_Result_SqlReviewReport {
-  return { line: 0, detail: "", code: 0 };
+  return { line: 0, column: 0, detail: "", code: 0 };
 }
 
 export const PlanCheckRun_Result_SqlReviewReport = {
@@ -3332,11 +3432,14 @@ export const PlanCheckRun_Result_SqlReviewReport = {
     if (message.line !== 0) {
       writer.uint32(8).int64(message.line);
     }
+    if (message.column !== 0) {
+      writer.uint32(16).int64(message.column);
+    }
     if (message.detail !== "") {
-      writer.uint32(18).string(message.detail);
+      writer.uint32(26).string(message.detail);
     }
     if (message.code !== 0) {
-      writer.uint32(24).int64(message.code);
+      writer.uint32(32).int64(message.code);
     }
     return writer;
   },
@@ -3356,14 +3459,21 @@ export const PlanCheckRun_Result_SqlReviewReport = {
           message.line = longToNumber(reader.int64() as Long);
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.column = longToNumber(reader.int64() as Long);
+          continue;
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
           message.detail = reader.string();
           continue;
-        case 3:
-          if (tag !== 24) {
+        case 4:
+          if (tag !== 32) {
             break;
           }
 
@@ -3381,6 +3491,7 @@ export const PlanCheckRun_Result_SqlReviewReport = {
   fromJSON(object: any): PlanCheckRun_Result_SqlReviewReport {
     return {
       line: isSet(object.line) ? Number(object.line) : 0,
+      column: isSet(object.column) ? Number(object.column) : 0,
       detail: isSet(object.detail) ? String(object.detail) : "",
       code: isSet(object.code) ? Number(object.code) : 0,
     };
@@ -3389,6 +3500,7 @@ export const PlanCheckRun_Result_SqlReviewReport = {
   toJSON(message: PlanCheckRun_Result_SqlReviewReport): unknown {
     const obj: any = {};
     message.line !== undefined && (obj.line = Math.round(message.line));
+    message.column !== undefined && (obj.column = Math.round(message.column));
     message.detail !== undefined && (obj.detail = message.detail);
     message.code !== undefined && (obj.code = Math.round(message.code));
     return obj;
@@ -3401,6 +3513,7 @@ export const PlanCheckRun_Result_SqlReviewReport = {
   fromPartial(object: DeepPartial<PlanCheckRun_Result_SqlReviewReport>): PlanCheckRun_Result_SqlReviewReport {
     const message = createBasePlanCheckRun_Result_SqlReviewReport();
     message.line = object.line ?? 0;
+    message.column = object.column ?? 0;
     message.detail = object.detail ?? "";
     message.code = object.code ?? 0;
     return message;
@@ -4285,7 +4398,16 @@ export const Task = {
 };
 
 function createBaseTask_DatabaseCreate(): Task_DatabaseCreate {
-  return { project: "", database: "", table: "", sheet: "", characterSet: "", collation: "", labels: {} };
+  return {
+    project: "",
+    database: "",
+    table: "",
+    sheet: "",
+    characterSet: "",
+    collation: "",
+    environment: "",
+    labels: {},
+  };
 }
 
 export const Task_DatabaseCreate = {
@@ -4308,8 +4430,11 @@ export const Task_DatabaseCreate = {
     if (message.collation !== "") {
       writer.uint32(50).string(message.collation);
     }
+    if (message.environment !== "") {
+      writer.uint32(58).string(message.environment);
+    }
     Object.entries(message.labels).forEach(([key, value]) => {
-      Task_DatabaseCreate_LabelsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
+      Task_DatabaseCreate_LabelsEntry.encode({ key: key as any, value }, writer.uint32(66).fork()).ldelim();
     });
     return writer;
   },
@@ -4368,9 +4493,16 @@ export const Task_DatabaseCreate = {
             break;
           }
 
-          const entry7 = Task_DatabaseCreate_LabelsEntry.decode(reader, reader.uint32());
-          if (entry7.value !== undefined) {
-            message.labels[entry7.key] = entry7.value;
+          message.environment = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          const entry8 = Task_DatabaseCreate_LabelsEntry.decode(reader, reader.uint32());
+          if (entry8.value !== undefined) {
+            message.labels[entry8.key] = entry8.value;
           }
           continue;
       }
@@ -4390,6 +4522,7 @@ export const Task_DatabaseCreate = {
       sheet: isSet(object.sheet) ? String(object.sheet) : "",
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
       collation: isSet(object.collation) ? String(object.collation) : "",
+      environment: isSet(object.environment) ? String(object.environment) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -4407,6 +4540,7 @@ export const Task_DatabaseCreate = {
     message.sheet !== undefined && (obj.sheet = message.sheet);
     message.characterSet !== undefined && (obj.characterSet = message.characterSet);
     message.collation !== undefined && (obj.collation = message.collation);
+    message.environment !== undefined && (obj.environment = message.environment);
     obj.labels = {};
     if (message.labels) {
       Object.entries(message.labels).forEach(([k, v]) => {
@@ -4428,6 +4562,7 @@ export const Task_DatabaseCreate = {
     message.sheet = object.sheet ?? "";
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
+    message.environment = object.environment ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = String(value);

@@ -10,7 +10,11 @@
       :instance="instance"
     />
 
-    <span class="line-clamp-1">{{ instanceV1Name(instance) }}</span>
+    <slot name="prefix" />
+
+    <span class="line-clamp-1" :class="textClass">{{
+      instanceV1Name(instance)
+    }}</span>
 
     <InstanceV1EngineIcon
       v-if="icon && iconPosition === 'suffix'"
@@ -33,6 +37,7 @@ const props = withDefaults(
     icon?: boolean;
     plain?: boolean;
     iconPosition?: "prefix" | "suffix";
+    textClass?: string;
   }>(),
   {
     tag: "span",
@@ -40,6 +45,7 @@ const props = withDefaults(
     icon: true,
     plain: false,
     iconPosition: "prefix",
+    textClass: "",
   }
 );
 

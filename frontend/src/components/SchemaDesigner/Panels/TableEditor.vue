@@ -3,7 +3,7 @@
     <div class="py-2 w-full flex flex-row justify-between items-center">
       <div>
         <div
-          v-if="state.selectedSubtab === 'column-list'"
+          v-if="!readonly"
           class="w-full flex justify-between items-center space-x-2"
         >
           <button
@@ -14,11 +14,19 @@
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
             {{ $t("schema-editor.actions.add-column") }}
           </button>
+          <button
+            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="disableChangeTable"
+            @click="state.showSchemaTemplateDrawer = true"
+          >
+            <FeatureBadge feature="bb.feature.schema-template" />
+            <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+            {{ $t("schema-editor.actions.add-from-template") }}
+          </button>
         </div>
       </div>
       <div class="flex justify-end items-center">
         <NInput
-          v-if="state.selectedSubtab === 'column-list'"
           v-model:value="searchPattern"
           class="!w-48"
           :placeholder="$t('schema-editor.search-column')"
@@ -27,179 +35,152 @@
             <heroicons-outline:search class="w-4 h-auto text-gray-300" />
           </template>
         </NInput>
-        <div
-          v-if="false"
-          class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded"
-        >
-          <button
-            class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
-            :class="
-              state.selectedSubtab === 'column-list' &&
-              'bg-gray-200 text-gray-800'
-            "
-            @click="handleChangeTab('column-list')"
-          >
-            <heroicons-outline:queue-list class="inline w-4 h-auto mr-1" />
-            {{ $t("schema-editor.columns") }}
-          </button>
-          <button
-            class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
-            :class="
-              state.selectedSubtab === 'raw-sql' && 'bg-gray-200 text-gray-800'
-            "
-            @click="handleChangeTab('raw-sql')"
-          >
-            <heroicons-outline:clipboard class="inline w-4 h-auto mr-1" />
-            {{ $t("schema-editor.raw-sql") }}
-          </button>
-        </div>
       </div>
     </div>
 
-    <template v-if="state.selectedSubtab === 'column-list'">
-      <!-- column table -->
+    <!-- column table -->
+    <div
+      id="table-editor-container"
+      ref="tableEditorContainerRef"
+      class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto"
+    >
+      <!-- column table header -->
       <div
-        id="table-editor-container"
-        ref="tableEditorContainerRef"
-        class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto"
+        class="sticky top-0 z-10 grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
+        :class="shownColumnList.length > 0 && 'border-b'"
       >
-        <!-- column table header -->
-        <div
-          class="sticky top-0 z-10 grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
-          :class="shownColumnList.length > 0 && 'border-b'"
+        <span
+          v-for="header in columnHeaderList"
+          :key="header.key"
+          class="table-header-item-container"
+          >{{ header.label }}</span
         >
-          <span
-            v-for="header in columnHeaderList"
-            :key="header.key"
-            class="table-header-item-container"
-            >{{ header.label }}</span
-          >
-          <span></span>
-        </div>
-        <!-- column table body -->
-        <div class="w-full">
+        <span></span>
+      </div>
+      <!-- column table body -->
+      <div class="w-full">
+        <div
+          v-for="(column, index) in shownColumnList"
+          :key="`${index}-${column.id}`"
+          class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] gr text-sm even:bg-gray-50"
+          :class="[
+            `column-${column.id}`,
+            getColumnItemComputedClassList(column),
+          ]"
+        >
+          <div class="table-body-item-container">
+            <input
+              v-model="column.name"
+              :disabled="disableAlterColumn(column)"
+              placeholder="column name"
+              class="column-field-input column-name-input"
+              type="text"
+            />
+          </div>
           <div
-            v-for="(column, index) in shownColumnList"
-            :key="`${index}-${column.id}`"
-            class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] gr text-sm even:bg-gray-50"
-            :class="[
-              `column-${column.id}`,
-              getColumnItemComputedClassList(column),
-            ]"
+            class="table-body-item-container flex flex-row justify-between items-center"
           >
-            <div class="table-body-item-container">
-              <input
-                v-model="column.name"
-                :disabled="disableAlterColumn(column)"
-                placeholder="column name"
-                class="column-field-input column-name-input"
-                type="text"
-              />
-            </div>
-            <div
-              class="table-body-item-container flex flex-row justify-between items-center"
+            <input
+              v-model="column.type"
+              :disabled="
+                disableAlterColumn(column) ||
+                schemaTemplateColumnTypes.length > 0
+              "
+              placeholder="column type"
+              class="column-field-input column-type-input !pr-8"
+              type="text"
+            />
+            <NDropdown
+              trigger="click"
+              :disabled="disableAlterColumn(column)"
+              :options="columnTypeOptions"
+              @select="(dataType: string) => (column.type = dataType)"
             >
-              <input
-                v-model="column.type"
-                :disabled="
-                  disableAlterColumn(column) ||
-                  schemaTemplateColumnTypes.length > 0
-                "
-                placeholder="column type"
-                class="column-field-input column-type-input !pr-8"
-                type="text"
-              />
-              <NDropdown
-                trigger="click"
-                :disabled="disableAlterColumn(column)"
-                :options="columnTypeOptions"
-                @select="(dataType: string) => (column.type = dataType)"
-              >
-                <button class="absolute right-5">
-                  <heroicons-solid:chevron-up-down
-                    class="w-4 h-auto text-gray-400"
-                  />
-                </button>
-              </NDropdown>
-            </div>
-            <div
-              class="table-body-item-container flex flex-row justify-between items-center"
-            >
-              <input
-                v-model="column.default"
-                :disabled="disableAlterColumn(column)"
-                :placeholder="column.default === undefined ? 'EMPTY' : 'NULL'"
-                class="column-field-input !pr-8"
-                type="text"
-              />
-              <NDropdown
-                trigger="click"
-                :disabled="disableAlterColumn(column)"
-                :options="dataDefaultOptions"
-                @select="(defaultString:string)=>handleColumnDefaultFieldChange(column, defaultString)"
-              >
-                <button class="absolute right-5">
-                  <heroicons-solid:chevron-up-down
-                    class="w-4 h-auto text-gray-400"
-                  />
-                </button>
-              </NDropdown>
-            </div>
-            <div class="table-body-item-container">
-              <input
-                v-model="column.userComment"
-                :disabled="disableAlterColumn(column)"
-                placeholder="comment"
-                class="column-field-input"
-                type="text"
-              />
-            </div>
-            <div
-              class="table-body-item-container flex justify-start items-center"
-            >
-              <BBCheckbox
-                class="ml-3"
-                :value="!column.nullable"
-                :disabled="
-                  disableAlterColumn(column) || isColumnPrimaryKey(column)
-                "
-                @toggle="(value) => (column.nullable = !value)"
-              />
-            </div>
-            <div
-              class="table-body-item-container flex justify-start items-center"
-            >
-              <BBCheckbox
-                class="ml-3"
-                :value="isColumnPrimaryKey(column)"
-                :disabled="disableAlterColumn(column)"
-                @toggle="(value) => setColumnPrimaryKey(column, value)"
-              />
-            </div>
-            <div
-              class="table-body-item-container foreign-key-field flex justify-start items-center"
-            >
-              <span
-                v-if="checkColumnHasForeignKey(column)"
-                class="column-field-text cursor-pointer !w-auto hover:opacity-80"
-                @click="gotoForeignKeyReferencedTable(column)"
-              >
-                {{ getReferencedForeignKeyName(column) }}
-              </span>
-              <span
-                v-else
-                class="column-field-text italic text-gray-400 !w-auto"
-                >EMPTY</span
-              >
-              <button
-                class="foreign-key-edit-button hidden cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-                :disabled="disableAlterColumn(column)"
-                @click="handleEditColumnForeignKey(column)"
-              >
-                <heroicons:pencil-square class="w-4 h-auto text-gray-400" />
+              <button class="absolute right-5">
+                <heroicons-solid:chevron-up-down
+                  class="w-4 h-auto text-gray-400"
+                />
               </button>
-            </div>
-            <div class="w-full flex justify-start items-center">
+            </NDropdown>
+          </div>
+          <div
+            class="table-body-item-container flex flex-row justify-between items-center"
+          >
+            <input
+              v-model="column.default"
+              :disabled="disableAlterColumn(column)"
+              :placeholder="column.default === undefined ? 'EMPTY' : 'NULL'"
+              class="column-field-input !pr-8"
+              type="text"
+            />
+            <NDropdown
+              trigger="click"
+              :disabled="disableAlterColumn(column)"
+              :options="dataDefaultOptions"
+              @select="(defaultString:string)=>handleColumnDefaultFieldChange(column, defaultString)"
+            >
+              <button class="absolute right-5">
+                <heroicons-solid:chevron-up-down
+                  class="w-4 h-auto text-gray-400"
+                />
+              </button>
+            </NDropdown>
+          </div>
+          <div class="table-body-item-container">
+            <input
+              v-model="column.userComment"
+              :disabled="disableAlterColumn(column)"
+              placeholder="comment"
+              class="column-field-input"
+              type="text"
+            />
+          </div>
+          <div
+            class="table-body-item-container flex justify-start items-center"
+          >
+            <BBCheckbox
+              class="ml-3"
+              :value="!column.nullable"
+              :disabled="
+                disableAlterColumn(column) || isColumnPrimaryKey(column)
+              "
+              @toggle="(value) => (column.nullable = !value)"
+            />
+          </div>
+          <div
+            class="table-body-item-container flex justify-start items-center"
+          >
+            <BBCheckbox
+              class="ml-3"
+              :value="isColumnPrimaryKey(column)"
+              :disabled="disableAlterColumn(column)"
+              @toggle="(value) => setColumnPrimaryKey(column, value)"
+            />
+          </div>
+          <div
+            class="table-body-item-container foreign-key-field flex justify-start items-center"
+          >
+            <span
+              v-if="checkColumnHasForeignKey(column)"
+              class="column-field-text cursor-pointer !w-auto hover:opacity-80"
+              @click="gotoForeignKeyReferencedTable(column)"
+            >
+              {{ getReferencedForeignKeyName(column) }}
+            </span>
+            <span v-else class="column-field-text italic text-gray-400 !w-auto"
+              >EMPTY</span
+            >
+            <button
+              v-if="!readonly"
+              class="foreign-key-edit-button hidden cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="disableAlterColumn(column)"
+              @click="handleEditColumnForeignKey(column)"
+            >
+              <heroicons:pencil-square class="w-4 h-auto text-gray-400" />
+            </button>
+          </div>
+          <div class="w-full flex justify-start items-center">
+            <template v-if="!readonly">
               <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
                 <template #trigger>
                   <button
@@ -224,32 +205,10 @@
                 </template>
                 <span>{{ $t("schema-editor.actions.restore") }}</span>
               </n-tooltip>
-            </div>
+            </template>
           </div>
         </div>
       </div>
-    </template>
-    <div
-      v-else-if="state.selectedSubtab === 'raw-sql'"
-      class="w-full h-full overflow-y-auto"
-    >
-      <div
-        v-if="state.isFetchingDDL"
-        class="w-full h-full min-h-[64px] flex justify-center items-center"
-      >
-        <BBSpin />
-      </div>
-      <template v-else>
-        <HighlightCodeBlock
-          v-if="state.statement !== ''"
-          class="text-sm px-3 py-2 whitespace-pre-wrap break-all"
-          language="sql"
-          :code="state.statement"
-        ></HighlightCodeBlock>
-        <div v-else class="flex px-3 py-2 italic text-sm text-gray-600">
-          {{ $t("schema-editor.nothing-changed") }}
-        </div>
-      </template>
     </div>
   </div>
 
@@ -260,6 +219,22 @@
     :column-id="editForeignKeyColumn.id"
     @close="state.showEditColumnForeignKeyModal = false"
   />
+
+  <Drawer
+    :show="state.showSchemaTemplateDrawer"
+    @close="state.showSchemaTemplateDrawer = false"
+  >
+    <DrawerContent :title="$t('schema-template.field-template.self')">
+      <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
+        <FieldTemplates :engine="engine" @apply="handleApplyColumnTemplate" />
+      </div>
+    </DrawerContent>
+  </Drawer>
+  <FeatureModal
+    feature="bb.feature.schema-template"
+    :open="state.showFeatureModal"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -268,11 +243,16 @@ import { NDropdown } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBCheckbox, BBSpin } from "@/bbkit";
-import HighlightCodeBlock from "@/components/HighlightCodeBlock";
-import { generateUniqueTabId, useSettingV1Store } from "@/store/modules";
+import { BBCheckbox } from "@/bbkit";
+import { Drawer, DrawerContent } from "@/components/v2";
+import {
+  hasFeature,
+  generateUniqueTabId,
+  useSettingV1Store,
+} from "@/store/modules";
 import { ColumnMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
+import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   Column,
   Table,
@@ -281,6 +261,7 @@ import {
   ForeignKey,
 } from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
+import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import {
   SchemaDesignerTabType,
@@ -289,13 +270,12 @@ import {
 } from "../common";
 import { isColumnChanged } from "../utils/column";
 
-type SubtabType = "column-list" | "raw-sql";
-
 interface LocalState {
-  selectedSubtab: SubtabType;
   isFetchingDDL: boolean;
   statement: string;
   showEditColumnForeignKeyModal: boolean;
+  showSchemaTemplateDrawer: boolean;
+  showFeatureModal: boolean;
 }
 
 const { t } = useI18n();
@@ -304,11 +284,11 @@ const { readonly, engine, editableSchemas, getCurrentTab, addTab } =
 const settingStore = useSettingV1Store();
 const currentTab = computed(() => getCurrentTab() as TableTabContext);
 const state = reactive<LocalState>({
-  selectedSubtab:
-    (currentTab.value.selectedSubtab as SubtabType) || "column-list",
   isFetchingDDL: false,
   statement: "",
   showEditColumnForeignKeyModal: false,
+  showSchemaTemplateDrawer: false,
+  showFeatureModal: false,
 });
 
 const schema = computed(() => {
@@ -512,10 +492,6 @@ const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
   }
 };
 
-const handleChangeTab = (tab: SubtabType) => {
-  state.selectedSubtab = tab;
-};
-
 const handleAddColumn = () => {
   const column = convertColumnMetadataToColumn(ColumnMetadata.fromPartial({}));
   column.status = "created";
@@ -527,6 +503,31 @@ const handleAddColumn = () => {
       ) as HTMLInputElement
     )?.focus();
   });
+};
+
+const handleApplyColumnTemplate = (
+  template: SchemaTemplateSetting_FieldTemplate
+) => {
+  if (!hasFeature("bb.feature.schema-template")) {
+    state.showFeatureModal = true;
+    return;
+  }
+  if (template.engine !== engine.value || !template.column) {
+    return;
+  }
+  const column = convertColumnMetadataToColumn(
+    ColumnMetadata.fromPartial({
+      name: template.column.name,
+      type: template.column.type,
+      nullable: template.column.nullable,
+      comment: template.column.comment,
+      userComment: template.column.userComment,
+      default: template.column.default,
+    })
+  );
+  column.status = "created";
+  table.value.columnList.push(column);
+  state.showSchemaTemplateDrawer = false;
 };
 
 const handleColumnDefaultFieldChange = (

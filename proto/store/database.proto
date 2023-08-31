@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
 option go_package = "generated-go/store";
@@ -9,6 +10,7 @@ option go_package = "generated-go/store";
 // DatabaseMetadata is the metadata for databases.
 message DatabaseMetadata {
   map<string, string> labels = 1;
+  google.protobuf.Timestamp last_sync_time = 2;
 }
 
 // DatabaseSchemaMetadata is the schema metadata for databases.

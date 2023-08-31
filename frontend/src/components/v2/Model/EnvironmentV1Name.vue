@@ -5,8 +5,12 @@
     class="inline-flex items-center gap-x-1"
     :class="link && !plain && 'normal-link'"
   >
-    <span class="line-clamp-1">{{ environmentV1Name(environment) }}</span>
+    <span class="line-clamp-1" :class="textClass">
+      {{ environmentV1Name(environment) }}
+      {{ suffix }}
+    </span>
     <ProductionEnvironmentV1Icon
+      v-if="showIcon"
       :environment="environment"
       :class="iconClass ?? '!text-current'"
       :tooltip="tooltip"
@@ -28,6 +32,9 @@ const props = withDefaults(
     plain?: boolean;
     iconClass?: VueClass;
     tooltip?: boolean;
+    suffix?: string;
+    showIcon?: boolean;
+    textClass?: string;
   }>(),
   {
     tag: "span",
@@ -35,6 +42,9 @@ const props = withDefaults(
     plain: false,
     iconClass: undefined,
     tooltip: false,
+    suffix: "",
+    showIcon: true,
+    textClass: "",
   }
 );
 

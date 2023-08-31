@@ -372,18 +372,19 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.FailedPrecondition, "project %q is deleted", projectID)
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if err := s.createTransferProjectActivity(ctx, project, principalID, databases...); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
 	response := &v1pb.BatchUpdateDatabasesResponse{}
-	for _, database := range updatedDatabases {
-		response.Databases = append(response.Databases, convertToDatabase(database))
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	if len(databases) > 0 {
+		updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if err := s.createTransferProjectActivity(ctx, project, principalID, databases...); err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		for _, database := range updatedDatabases {
+			response.Databases = append(response.Databases, convertToDatabase(database))
+		}
 	}
 	return response, nil
 }
@@ -686,6 +687,8 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		}
 		limit = int(pageToken.Limit)
 		offset = int(pageToken.Offset)
+	} else {
+		limit = int(request.PageSize)
 	}
 	if limit <= 0 {
 		limit = 10
@@ -851,6 +854,9 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 }
 
 func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResources {
+	if r == nil {
+		return nil
+	}
 	result := &v1pb.ChangedResources{}
 	for _, database := range r.Databases {
 		v1Database := &v1pb.ChangedResourceDatabase{
@@ -1954,6 +1960,9 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
 	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
 
 	switch instance.Engine {
 	case db.Postgres:
@@ -1996,6 +2005,9 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 			database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
+			}
+			if database == nil {
+				return nil, status.Errorf(codes.NotFound, "database %q not found", db)
 			}
 			schema, err := s.store.GetDBSchema(ctx, database.UID)
 			if err != nil {

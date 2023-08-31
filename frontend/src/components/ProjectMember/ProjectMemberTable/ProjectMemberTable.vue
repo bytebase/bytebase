@@ -43,7 +43,7 @@
               >{{ $t("common.you") }}</span
             >
           </div>
-          <span class="textlabel">{{ projectMember.user.email }}</span>
+          <span class="textinfolabel">{{ projectMember.user.email }}</span>
         </div>
       </div>
       <div v-if="hasRBACFeature" class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
@@ -52,18 +52,25 @@
           <p
             v-for="binding in getSortedBindingList(projectMember.bindingList)"
             :key="binding.role"
-            class="w-auto leading-8 flex flex-row justify-start items-center flex-nowrap"
+            class="w-auto leading-8 flex flex-row justify-start items-center flex-nowrap gap-x-2"
+            :class="isExpired(binding) ? 'line-through' : ''"
           >
-            <span class="max-w-[8rem] truncate">{{
+            <span class="block truncate">{{
               displayRoleTitle(binding.role)
             }}</span>
             <span
               v-if="getBindingConditionTitle(binding)"
-              class="ml-2 max-w-[8rem] truncate text-blue-600 cursor-pointer hover:text-blue-800"
+              class="block truncate text-blue-600 cursor-pointer hover:text-blue-800"
               @click="editingBinding = binding"
             >
-              {{ getBindingConditionTitle(binding) }}
+              {{
+                getBindingConditionTitle(binding) ||
+                displayRoleTitle(binding.role)
+              }}
             </span>
+            <span v-if="isExpired(binding)"
+              >({{ $t("project.members.expired") }})</span
+            >
           </p>
         </div>
       </div>
@@ -73,8 +80,9 @@
             v-for="binding in getSortedBindingList(projectMember.bindingList)"
             :key="binding.role"
             class="w-full leading-8 truncate"
+            :class="isExpired(binding) ? 'line-through' : ''"
           >
-            <span>{{ getExpiredTime(binding) || "*" }}</span>
+            <span>{{ getExpiredTimeString(binding) || "*" }}</span>
           </p>
         </div>
       </div>
@@ -135,7 +143,11 @@ import {
   hasPermissionInProjectV1,
   extractUserUID,
 } from "@/utils";
-import { convertFromExpr } from "@/utils/issue/cel";
+import {
+  getExpiredTimeString,
+  isExpired,
+  getExpiredDateTime,
+} from "../ProjectRoleTable/utils";
 import { getBindingConditionTitle } from "../common/util";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel.vue";
 import { ComposedProjectMember } from "./types";
@@ -174,7 +186,7 @@ const columnList = computed(() => {
   };
   const OPERATIONS: BBGridColumn = {
     title: "",
-    width: "10rem",
+    width: "4rem",
   };
   const list = hasRBACFeature.value
     ? [ACCOUNT, ROLE, EXPIRATION, OPERATIONS]
@@ -244,26 +256,13 @@ const getSortedBindingList = (bindingList: Binding[]) => {
     roleMap.set(
       role,
       roleMap.get(role)?.sort((a, b) => {
-        if (!getExpiredTime(a)) return -1;
-        if (!getExpiredTime(b)) return 1;
         return (
-          new Date(getExpiredTime(b)!).getTime() -
-          new Date(getExpiredTime(a)!).getTime()
+          (getExpiredDateTime(b)?.getTime() ?? -1) -
+          (getExpiredDateTime(a)?.getTime() ?? -1)
         );
       }) || []
     );
   }
   return Array.from(roleMap.values()).flat();
-};
-
-const getExpiredTime = (binding: Binding) => {
-  const parsedExpr = binding.parsedExpr;
-  if (parsedExpr?.expr) {
-    const expression = convertFromExpr(parsedExpr.expr);
-    if (expression.expiredTime) {
-      return new Date(expression.expiredTime).toLocaleString();
-    }
-  }
-  return null;
 };
 </script>

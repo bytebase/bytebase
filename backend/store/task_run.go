@@ -134,7 +134,8 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 		LEFT JOIN task ON task.id = task_run.task_id
 		LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
 		LEFT JOIN project ON project.id = pipeline.project_id
-		WHERE %s`, strings.Join(where, " AND ")),
+		WHERE %s
+		ORDER BY task_run.id ASC`, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -410,7 +411,8 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			task.stage_id
 		FROM task_run
 		JOIN task ON task.id = task_run.task_id
-		WHERE %s`, strings.Join(where, " AND ")),
+		WHERE %s
+		ORDER BY task_run.id ASC`, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {

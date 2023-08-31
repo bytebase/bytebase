@@ -1,10 +1,10 @@
 <template>
   <div class="flex flex-col relative">
-    <div class="px-5 py-2 flex justify-between items-center">
+    <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
-        :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
-        @update:environment="changeEnvironmentId"
+        :environment="selectedEnvironment?.name"
+        @update:environment="changeEnvironment"
       />
 
       <div class="flex items-center space-x-4">
@@ -96,6 +96,7 @@ import {
 } from "@/utils";
 import {
   UNKNOWN_ID,
+  UNKNOWN_ENVIRONMENT_NAME,
   DEFAULT_PROJECT_ID,
   UNKNOWN_USER_NAME,
   ComposedDatabase,
@@ -144,7 +145,7 @@ watchEffect(preparePolicyList);
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
   return environment
-    ? environmentV1Store.getEnvironmentByUID(environment as string)
+    ? environmentV1Store.getEnvironmentByName(environment as string)
     : undefined;
 });
 
@@ -197,8 +198,8 @@ watchEffect(async () => {
   state.loading = false;
 });
 
-const changeEnvironmentId = (environment: string | undefined) => {
-  if (environment && environment !== String(UNKNOWN_ID)) {
+const changeEnvironment = (environment: string | undefined) => {
+  if (environment && environment !== UNKNOWN_ENVIRONMENT_NAME) {
     router.replace({
       name: "workspace.database",
       query: { environment },
@@ -219,10 +220,8 @@ const filteredDatabaseList = computed(() => {
       isDatabaseV1Accessible(database, currentUserV1.value)
     );
   const environment = selectedEnvironment.value;
-  if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
-    list = list.filter(
-      (db) => db.instanceEntity.environment === environment.name
-    );
+  if (environment && environment.name !== UNKNOWN_ENVIRONMENT_NAME) {
+    list = list.filter((db) => db.effectiveEnvironment === environment.name);
   }
   if (state.instanceFilter !== String(UNKNOWN_ID)) {
     list = list.filter(
@@ -246,7 +245,7 @@ const filteredDatabaseList = computed(() => {
 const filteredDatabaseGroupList = computed(() => {
   let list = [...state.databaseGroupList];
   const environment = selectedEnvironment.value;
-  if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
+  if (environment && environment.name !== UNKNOWN_ENVIRONMENT_NAME) {
     list = list.filter(
       (dbGroup) => dbGroup.environmentName === environment.name
     );

@@ -19,9 +19,9 @@ import {
   Sheet,
 } from "@/types/proto/v1/sheet_service";
 import {
-  defaultTabName,
   extractSheetUID,
-  getDefaultTabNameFromConnection,
+  getSuggestedTabNameFromConnection,
+  isSimilarDefaultTabName,
 } from "@/utils";
 import { useSheetContext } from "../Sheet";
 import SaveSheetForm from "./SaveSheetForm.vue";
@@ -105,8 +105,8 @@ const needSheetName = (sheetName: string | undefined) => {
   if (!sheetName) {
     const name = tab.name;
     if (
-      name === getDefaultTabNameFromConnection(tab.connection) ||
-      name === defaultTabName.value
+      name === getSuggestedTabNameFromConnection(tab.connection) ||
+      isSimilarDefaultTabName(name)
     ) {
       // The tab is unsaved and its name is still the default one.
       return true;

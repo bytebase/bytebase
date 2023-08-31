@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,7 +12,6 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -36,9 +34,9 @@ func TestSQLExport(t *testing.T) {
 			databaseName:      "Test1",
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));",
-			query:             "INSERT INTO tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
+			query:             "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
 			reset:             "DELETE FROM tbl;",
-			export:            "SELECT * FROM tbl;",
+			export:            "SELECT * FROM Test1.tbl;",
 			affectedRows: []*v1pb.QueryResult{
 				{
 					ColumnNames:     []string{"Affected Rows"},
@@ -82,8 +80,9 @@ func TestSQLExport(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                   dataDir,
+		vcsProviderCreator:        fake.NewGitLab,
+		developmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -99,8 +98,6 @@ func TestSQLExport(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
@@ -142,14 +139,12 @@ func TestSQLExport(t *testing.T) {
 		default:
 			a.FailNow("unsupported db type")
 		}
-		err = ctl.createDatabase(ctx, projectUID, instance, tt.databaseName, databaseOwner, nil)
+		err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, tt.databaseName, databaseOwner, nil)
 		a.NoError(err)
 
 		database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 			Name: fmt.Sprintf("%s/databases/%s", instance.Name, tt.databaseName),
 		})
-		a.NoError(err)
-		databaseUID, err := strconv.Atoi(database.Uid)
 		a.NoError(err)
 
 		sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
@@ -163,57 +158,46 @@ func TestSQLExport(t *testing.T) {
 			},
 		})
 		a.NoError(err)
-		sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
+
+		err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 		a.NoError(err)
 
-		// Create an issue that updates database schema.
-		createContext, err := json.Marshal(&api.MigrationContext{
-			DetailList: []*api.MigrationDetail{
-				{
-					MigrationType: db.Migrate,
-					DatabaseID:    databaseUID,
-					SheetID:       sheetUID,
-				},
-			},
-		})
-		a.NoError(err)
-		issue, err := ctl.createIssue(api.IssueCreate{
-			ProjectID:     projectUID,
-			Name:          fmt.Sprintf("Prepare statements of database %q", tt.databaseName),
-			Type:          api.IssueDatabaseSchemaUpdate,
-			Description:   fmt.Sprintf("Prepare statements of database %q.", tt.databaseName),
-			AssigneeID:    api.SystemBotID,
-			CreateContext: string(createContext),
-		})
-		a.NoError(err)
-		status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-		a.NoError(err)
-		a.Equal(api.TaskDone, status)
+		for _, databaseNameQuery := range []string{tt.databaseName, ""} {
+			if databaseNameQuery == "" && tt.dbType != db.MySQL {
+				// not supporting to query SQL when databaseName of PostgreSQL is empty
+				continue
+			}
 
-		statement := tt.query
-		results, err := ctl.adminQuery(ctx, instance, tt.databaseName, statement)
-		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+			statement := tt.query
+			results, err := ctl.adminQuery(ctx, instance, databaseNameQuery, statement)
+			a.NoError(err)
+			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
 
-		export, err := ctl.sqlServiceClient.Export(ctx, &v1pb.ExportRequest{
-			Admin:              true,
-			ConnectionDatabase: tt.databaseName,
-			Format:             v1pb.ExportRequest_SQL,
-			Limit:              1,
-			Name:               instance.Name,
-			Statement:          tt.export,
-		})
-		a.NoError(err)
+			export, err := ctl.sqlServiceClient.Export(ctx, &v1pb.ExportRequest{
+				Admin:              true,
+				ConnectionDatabase: databaseNameQuery,
+				Format:             v1pb.ExportRequest_SQL,
+				Limit:              1,
+				Name:               instance.Name,
+				Statement:          tt.export,
+			})
+			a.NoError(err)
 
-		statement = tt.reset
-		results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
-		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+			statement = tt.reset
+			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
+			a.NoError(err)
+			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
 
-		statement = string(export.Content)
-		results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
-		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+			statement = string(export.Content)
+			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
+			a.NoError(err)
+			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+
+			statement = tt.reset
+			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
+			a.NoError(err)
+			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+		}
 	}
 }
 
