@@ -14,14 +14,17 @@
           <p class="mb-2">{{ $t("settings.sensitive-data.action.self") }}</p>
           <div class="flex space-x-5">
             <BBCheckbox
-              :title="$t('settings.sensitive-data.action.query')"
-              :value="state.supportQuery"
-              @toggle="state.supportQuery = $event"
-            />
-            <BBCheckbox
-              :title="$t('settings.sensitive-data.action.export')"
-              :value="state.supportExport"
-              @toggle="state.supportExport = $event"
+              v-for="action in ACTIONS"
+              :key="action"
+              :title="
+                $t(
+                  `settings.sensitive-data.action.${maskingExceptionPolicy_MaskingException_ActionToJSON(
+                    action
+                  ).toLowerCase()}`
+                )
+              "
+              :value="state.supportActions.has(action)"
+              @toggle="toggleAction(action, $event)"
             />
           </div>
         </div>
@@ -31,29 +34,27 @@
             {{ $t("settings.sensitive-data.masking-level.self") }}
           </p>
           <div class="flex space-x-5">
-            <label class="radio space-x-2">
+            <label
+              v-for="maskLevel in MASKING_LEVELS"
+              :key="maskLevel"
+              class="radio space-x-2"
+            >
               <input
                 v-model="state.maskingLevel"
-                :name="maskingLevelToJSON(MaskingLevel.PARTIAL)"
+                :name="maskingLevelToJSON(maskLevel)"
                 type="radio"
                 class="btn"
-                :value="MaskingLevel.PARTIAL"
+                :value="maskLevel"
               />
-              <span class="text-sm font-medium text-main whitespace-nowrap">{{
-                $t("settings.sensitive-data.masking-level.partial")
-              }}</span>
-            </label>
-            <label class="radio space-x-2">
-              <input
-                v-model="state.maskingLevel"
-                :name="maskingLevelToJSON(MaskingLevel.NONE)"
-                type="radio"
-                class="btn"
-                :value="MaskingLevel.NONE"
-              />
-              <span class="text-sm font-medium text-main whitespace-nowrap">{{
-                $t("settings.sensitive-data.masking-level.none")
-              }}</span>
+              <span class="text-sm font-medium text-main whitespace-nowrap">
+                {{
+                  $t(
+                    `settings.sensitive-data.masking-level.${maskingLevelToJSON(
+                      maskLevel
+                    ).toLowerCase()}`
+                  )
+                }}
+              </span>
             </label>
           </div>
         </div>
@@ -92,9 +93,9 @@
               {{ $t("common.cancel") }}
             </NButton>
             <NButton
-              :disabled="submitDisabled"
+              :disabled="submitDisabled || state.processing"
               type="primary"
-              @click.prevent=""
+              @click.prevent="onSubmit"
             >
               {{ $t("common.confirm") }}
             </NButton>
@@ -106,48 +107,164 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  NButton,
-  NDatePicker,
-  NDrawer,
-  NDrawerContent,
-  NInput,
-  NInputNumber,
-} from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { groupBy } from "lodash-es";
+import { NButton, NDatePicker } from "naive-ui";
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { usePolicyV1Store, useUserStore, pushNotification } from "@/store";
+import { ComposedDatabase } from "@/types";
+import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
+import {
+  Policy,
+  PolicyType,
+  PolicyResourceType,
+  MaskingExceptionPolicy_MaskingException,
+  MaskingExceptionPolicy_MaskingException_Action,
+  maskingExceptionPolicy_MaskingException_ActionToJSON,
+} from "@/types/proto/v1/org_policy_service";
+import { extractInstanceResourceName } from "@/utils";
 import { SensitiveColumn } from "./types";
 
-defineProps<{
+const props = defineProps<{
   show: boolean;
   columnList: SensitiveColumn[];
 }>();
 
-defineEmits(["dismiss"]);
+const emit = defineEmits(["dismiss"]);
 
 interface LocalState {
   userUidList: string[];
   expirationTimestamp?: number;
-  supportQuery: boolean;
-  supportExport: boolean;
   maskingLevel: MaskingLevel;
+  processing: boolean;
+  supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
 }
+
+const ACTIONS = [
+  MaskingExceptionPolicy_MaskingException_Action.EXPORT,
+  MaskingExceptionPolicy_MaskingException_Action.QUERY,
+];
+const MASKING_LEVELS = [MaskingLevel.PARTIAL, MaskingLevel.NONE];
 
 const state = reactive<LocalState>({
   userUidList: [],
-  supportQuery: true,
-  supportExport: true,
   maskingLevel: MaskingLevel.PARTIAL,
+  processing: false,
+  supportActions: new Set(ACTIONS),
 });
+
+const policyStore = usePolicyV1Store();
+const userStore = useUserStore();
+const { t } = useI18n();
 
 const submitDisabled = computed(() => {
   if (state.userUidList.length === 0) {
     return true;
   }
-  if (!state.supportQuery && !state.supportExport) {
+  if (state.supportActions.size === 0) {
     return true;
   }
   return false;
 });
+
+const onSubmit = async () => {
+  state.processing = true;
+
+  const groupByDatabase = groupBy(
+    props.columnList,
+    (item) => item.database.name
+  );
+  try {
+    for (const [database, columnList] of Object.entries(groupByDatabase)) {
+      if (columnList.length === 0) {
+        continue;
+      }
+      const pendingUpdate = await getPendingUpdatePolicy(
+        columnList[0].database,
+        columnList
+      );
+      await policyStore.upsertPolicy({
+        parentPath: database,
+        policy: pendingUpdate,
+      });
+    }
+    emit("dismiss");
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.created"),
+    });
+  } finally {
+    state.processing = false;
+  }
+};
+
+const getPendingUpdatePolicy = async (
+  database: ComposedDatabase,
+  columnList: SensitiveColumn[]
+): Promise<Partial<Policy>> => {
+  const maskingExceptions: MaskingExceptionPolicy_MaskingException[] = [];
+  const members = state.userUidList
+    .map((id) => userStore.getUserById(id))
+    .filter((u) => u)
+    .map((user) => `user:${user?.email}`);
+
+  for (const column of columnList) {
+    const expression: string[] = [
+      `resource.column_name == ${column.maskData.column}`,
+      `resource.table_name == ${column.maskData.table}`,
+      `resource.database_name == ${column.database.databaseName}`,
+      `resource.instance_id == ${extractInstanceResourceName(
+        column.database.instanceEntity.name
+      )}`,
+    ];
+    if (state.expirationTimestamp) {
+      expression.push(
+        `request.time < timestamp("${new Date(
+          state.expirationTimestamp
+        ).toISOString()}")`
+      );
+    }
+    if (column.maskData.schema) {
+      expression.push(`resource.schema_name == ${column.maskData.schema}`);
+    }
+    for (const action of state.supportActions.values()) {
+      maskingExceptions.push({
+        members,
+        action,
+        maskingLevel: state.maskingLevel,
+        condition: Expr.fromPartial({
+          expression: expression.join(" && "),
+        }),
+      });
+    }
+  }
+
+  const policy = await policyStore.getOrFetchPolicyByParentAndType({
+    parentPath: database.name,
+    policyType: PolicyType.MASKING_EXCEPTION,
+  });
+  const existed = policy?.maskingExceptionPolicy?.maskingExceptions ?? [];
+  return {
+    type: PolicyType.MASKING_EXCEPTION,
+    resourceType: PolicyResourceType.DATABASE,
+    resourceUid: database.uid,
+    maskingExceptionPolicy: {
+      maskingExceptions: [...existed, ...maskingExceptions],
+    },
+  };
+};
+
+const toggleAction = (
+  action: MaskingExceptionPolicy_MaskingException_Action,
+  check: boolean
+) => {
+  if (check) {
+    state.supportActions.add(action);
+  } else {
+    state.supportActions.delete(action);
+  }
+};
 </script>
