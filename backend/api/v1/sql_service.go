@@ -1651,7 +1651,7 @@ func evalMaskingLevelOfDatabaseColumn(project *store.ProjectMessage, databaseMes
 
 					if finalLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED || finalLevel == storepb.MaskingLevel_NONE {
 						// After looking up the maskingPolicy and maskingRulePolicy, if the maskingLevel is still MASKING_LEVEL_UNSPECIFIED or NONE,
-						// return the MASKING_LEVLE_NONE, which means no masking and do not need eval exceptions anymore.
+						// return the MASKING_LEVEL_NONE, which means no masking and do not need eval exceptions anymore.
 						return storepb.MaskingLevel_NONE, nil
 					}
 
@@ -1761,7 +1761,7 @@ func evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schema
 
 	if finalLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED || finalLevel == storepb.MaskingLevel_NONE {
 		// After looking up the maskingPolicy and maskingRulePolicy, if the maskingLevel is still MASKING_LEVEL_UNSPECIFIED or NONE,
-		// return the MASKING_LEVLE_NONE, which means no masking and do not need eval exceptions anymore.
+		// return the MASKING_LEVEL_NONE, which means no masking and do not need eval exceptions anymore.
 		return storepb.MaskingLevel_NONE, nil
 	}
 
