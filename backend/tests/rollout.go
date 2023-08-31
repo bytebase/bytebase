@@ -117,3 +117,71 @@ func (ctl *controller) waitRollout(ctx context.Context, rolloutName string) erro
 	}
 	return nil
 }
+
+// rolloutAndWaitTask rollouts one task in the rollout.
+func (ctl *controller) rolloutAndWaitTask(ctx context.Context, rolloutName string) error {
+	// Sleep for 1 second between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
+	time.Sleep(1 * time.Second)
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{
+		Name: rolloutName,
+	})
+	if err != nil {
+		return err
+	}
+	var foundTask string
+	for _, stage := range rollout.Stages {
+		for _, task := range stage.Tasks {
+			if task.Status == v1pb.Task_NOT_STARTED {
+				_, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, &v1pb.BatchRunTasksRequest{
+					Parent: fmt.Sprintf("%s/stages/-", rolloutName),
+					Tasks:  []string{task.Name},
+				})
+				if err != nil {
+					return err
+				}
+				foundTask = task.Name
+				break
+			}
+		}
+		if foundTask != "" {
+			break
+		}
+	}
+	if foundTask == "" {
+		return errors.Errorf("found no task to rollout")
+	}
+
+	for range ticker.C {
+		rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{
+			Name: rolloutName,
+		})
+		if err != nil {
+			return err
+		}
+
+		for _, stage := range rollout.Stages {
+			for _, task := range stage.Tasks {
+				if task.Name != foundTask {
+					continue
+				}
+				switch task.Status {
+				case v1pb.Task_DONE:
+					return nil
+				case v1pb.Task_FAILED:
+					resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, &v1pb.ListTaskRunsRequest{Parent: task.Name, PageSize: 1})
+					if err != nil {
+						return err
+					}
+					if len(resp.TaskRuns) > 0 {
+						return errors.Errorf(resp.TaskRuns[0].Detail)
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
