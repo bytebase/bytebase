@@ -16,8 +16,8 @@
   "billed-annually": "Facturado anualmente",
   "billed-monthly": "Facturado mensualmente",
   "per-instance": "Por instancia",
-  "free-price-intro": "Usuarios y entornos ilimitados",
-  "team-price-intro": "Hasta 20 instancias",
+  "free-price-intro": "Hasta 20 usuarios y 10 instancias",
+  "team-price-intro": "Compra hasta 20 instancias",
   "enterprise-price-intro": "Personalizado, facturado anualmente",
   "deploy": "Desplegar",
   "contact-us": "Contáctenos",
@@ -35,17 +35,17 @@
     "free": {
       "title": "Plan gratuito",
       "label": "",
-      "desc": "Elementos esenciales del equipo para centralizar la gestión del ciclo de vida de la base de datos"
+      "desc": "Elementos esenciales del equipo para centralizar la gestión del ciclo de vida de la base de datos."
     },
     "team": {
       "title": "Plan Pro",
       "label": "",
-      "desc": "Más políticas de colaboración y control para la gestión avanzada del ciclo de vida de la base de datos"
+      "desc": "Más políticas para estandarizar y facilitar la colaboración entre equipos."
     },
     "enterprise": {
       "title": "Plan Empresarial",
       "label": "",
-      "desc": "Gran organización, tiene un grupo de DBA dedicado para administrar la flota de bases de datos con requisitos personalizados"
+      "desc": "Funciones adicionales de seguridad, cumplimiento y permisos. Soporte dedicado con SLA."
     }
   },
   "feature-sections": {
@@ -63,8 +63,6 @@
         "instance-maximum-20-tooltip": "Permitir instancias ilimitadas. Adquiera una licencia de instancia para habilitar funciones de instancia avanzadas.",
         "instance-unlimited": "Ilimitado",
         "instance-unlimited-tooltip": "Al",
-        "environment-count": "Cantidad de entornos",
-        "environment-unlimited": "Ilimitado",
         "state-based-change": "Cambios basados en estado",
         "migration-based-change": "Cambios basados en migración",
         "batch-change": "Cambio por lotes",
