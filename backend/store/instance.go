@@ -334,10 +334,20 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
 	if v := patch.Options; v != nil {
-		set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, v)
+		options, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+
+		set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, options)
 	}
 	if v := patch.Metadata; v != nil {
-		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, v)
+		metadata, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+
+		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadata)
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
