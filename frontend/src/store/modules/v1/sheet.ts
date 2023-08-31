@@ -174,7 +174,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     const me = useCurrentUserV1();
     const { sheets } = await sheetServiceClient.searchSheets({
       parent: "projects/-",
-      filter: `creator = users/${me.value.email}`,
+      filter: `creator = users/${me.value.email} && source != BYTEBASE_ARTIFACT`,
     });
     setSheetList(sheets);
     return sheets;
@@ -183,7 +183,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     const me = useCurrentUserV1();
     const { sheets } = await sheetServiceClient.searchSheets({
       parent: "projects/-",
-      filter: `creator != users/${me.value.email}`,
+      filter: `creator != users/${me.value.email} && source != BYTEBASE_ARTIFACT`,
     });
     setSheetList(sheets);
     return sheets;
@@ -191,7 +191,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
   const fetchStarredSheetList = async () => {
     const { sheets } = await sheetServiceClient.searchSheets({
       parent: "projects/-",
-      filter: "starred = true",
+      filter: `starred = true && source != BYTEBASE_ARTIFACT`,
     });
     setSheetList(sheets);
     return sheets;
