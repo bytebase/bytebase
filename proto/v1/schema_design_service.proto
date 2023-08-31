@@ -107,6 +107,11 @@ message SchemaDesign {
   // The etag of the schema design.
   string etag = 12;
 
+  message Protection {
+    // Permits force pushes to the branch.
+    bool allow_force_pushes = 1;
+  }
+
   // The protection of the schema design branch.
   Protection protection = 13;
 
@@ -123,11 +128,6 @@ message SchemaDesign {
 
   // The timestamp when the schema design was last updated.
   google.protobuf.Timestamp update_time = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
-}
-
-message Protection {
-  // Permits force pushes to the branch.
-  bool allow_force_pushes = 1;
 }
 
 message GetSchemaDesignRequest {

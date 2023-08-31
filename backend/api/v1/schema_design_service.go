@@ -601,7 +601,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	return schemaDesign, nil
 }
 
-func convertProtectionToStore(protection *v1pb.Protection) *storepb.SheetPayload_SchemaDesign_Protection {
+func convertProtectionToStore(protection *v1pb.SchemaDesign_Protection) *storepb.SheetPayload_SchemaDesign_Protection {
 	if protection == nil {
 		return &storepb.SheetPayload_SchemaDesign_Protection{}
 	}
@@ -611,12 +611,12 @@ func convertProtectionToStore(protection *v1pb.Protection) *storepb.SheetPayload
 	}
 }
 
-func convertProtectionFromStore(protection *storepb.SheetPayload_SchemaDesign_Protection) *v1pb.Protection {
+func convertProtectionFromStore(protection *storepb.SheetPayload_SchemaDesign_Protection) *v1pb.SchemaDesign_Protection {
 	if protection == nil {
-		return &v1pb.Protection{}
+		return &v1pb.SchemaDesign_Protection{}
 	}
 
-	return &v1pb.Protection{
+	return &v1pb.SchemaDesign_Protection{
 		AllowForcePushes: protection.AllowForcePushes,
 	}
 }
