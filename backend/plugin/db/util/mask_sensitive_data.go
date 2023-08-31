@@ -6,14 +6,17 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type fieldInfo struct {
-	name      string
-	table     string
-	schema    string
-	database  string
-	sensitive bool
+	name     string
+	table    string
+	schema   string
+	database string
+	// TODO(zp): retire sensitive boolean flag.
+	sensitive    bool
+	maskingLevel storepb.MaskingLevel
 }
 
 type sensitiveFieldExtractor struct {
