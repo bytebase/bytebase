@@ -11,7 +11,7 @@
       <img
         v-if="customBrandingLogo"
         :src="customBrandingLogo"
-        class="w-full h-auto max-h-12"
+        class="w-auto max-w-full h-auto max-h-12"
       />
 
       <img
