@@ -212,15 +212,18 @@ const query = computed(() => {
 
 const getSearchParamsByText = (text: string): SearchParams => {
   const plainQuery = query.value;
-  const scopeText = text.split(` ${plainQuery}`)[0] || "";
+  const scopeText = plainQuery ? text.split(plainQuery)[0] || "" : text;
   return {
     query: plainQuery,
-    scopes: scopeText.split(" ").map((scope) => {
-      return {
-        id: scope.split(":")[0] as SearchScopeId,
-        value: scope.split(":")[1],
-      };
-    }),
+    scopes: scopeText
+      .split(" ")
+      .map((scope) => {
+        return {
+          id: scope.split(":")[0] as SearchScopeId,
+          value: scope.split(":")[1],
+        };
+      })
+      .filter((scope) => scope.id && scope.value),
   };
 };
 
@@ -235,6 +238,11 @@ const onKeydown = (e: KeyboardEvent) => {
     return;
   }
   if (!state.searchText) {
+    state.showSearchScopes = true;
+    return;
+  }
+  const params = getSearchParamsByText(state.searchText);
+  if (params.scopes.length === 0) {
     state.showSearchScopes = true;
     return;
   }
