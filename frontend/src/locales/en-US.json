@@ -2843,6 +2843,7 @@
     "parent-branch": "Parent branch",
     "save-draft": "Save draft",
     "merge-branch": "Merge branch",
+    "delete-branch-after-merged": "Delete branch after merged",
     "diff-editor": {
       "self": "Diff editor",
       "resolve": "Resolve",

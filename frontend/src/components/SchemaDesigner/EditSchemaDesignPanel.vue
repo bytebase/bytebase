@@ -179,10 +179,10 @@
 
   <MergeBranchPanel
     v-if="state.showDiffEditor"
-    :source-branch-name="schemaDesign.baselineSheetName"
-    :target-branch-name="state.schemaDesignName"
+    :source-branch-name="state.schemaDesignName"
+    :target-branch-name="schemaDesign.baselineSheetName"
     @dismiss="state.showDiffEditor = false"
-    @try-merge="handleMergeAfterConflictResolved"
+    @merged="handleMergeAfterConflictResolved"
   />
 </template>
 
@@ -488,7 +488,7 @@ const handleSaveSchemaDesignDraft = async () => {
 
   const updateMask = [];
   // Don't update branch title for new created branch.
-  if (schemaDesign.value.name !== createdBranchName.value) {
+  if (state.schemaDesignName !== createdBranchName.value) {
     if (schemaDesign.value.title !== state.schemaDesignTitle) {
       updateMask.push("title");
     }
@@ -548,17 +548,18 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
   }
 
   const parentBranchName = schemaDesign.value.baselineSheetName;
+  const branchName = schemaDesign.value.name;
   try {
     await schemaDesignStore.mergeSchemaDesign({
-      name: schemaDesign.value.name,
+      name: branchName,
       targetName: parentBranchName,
     });
   } catch (error: any) {
     // If there is conflict, we need to show the conflict and let user resolve it.
     if (error.code === Status.FAILED_PRECONDITION) {
       dialog.create({
+        negativeText: t("schema-designer.save-draft"),
         positiveText: t("schema-designer.diff-editor.resolve"),
-        negativeText: t("common.cancel"),
         title: t("schema-designer.diff-editor.auto-merge-failed"),
         content: t("schema-designer.diff-editor.need-to-resolve-conflicts"),
         autoFocus: true,
@@ -566,7 +567,11 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
         maskClosable: true,
         closeOnEsc: true,
         onNegativeClick: () => {
-          // nothing to do
+          // Clear the created branch state if save draft clicked.
+          if (branchName === createdBranchName.value) {
+            createdBranchName.value = "";
+            state.schemaDesignTitle = schemaDesign.value.title;
+          }
         },
         onPositiveClick: () => {
           state.showDiffEditor = true;
@@ -593,11 +598,14 @@ const handleMergeSchemaDesign = async (ignoreNotify = false) => {
   // Auto select the parent branch after merged.
   state.schemaDesignName = parentBranchName;
   createdBranchName.value = "";
+  // Delete the draft after merged.
+  await schemaDesignStore.deleteSchemaDesign(branchName);
 };
 
-const handleMergeAfterConflictResolved = () => {
+const handleMergeAfterConflictResolved = (branchName: string) => {
+  createdBranchName.value = "";
+  state.schemaDesignName = branchName;
   state.showDiffEditor = false;
-  handleMergeSchemaDesign();
 };
 
 const handleApplySchemaDesignClick = () => {

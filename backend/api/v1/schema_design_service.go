@@ -182,8 +182,9 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
-			Type:   schemaDesignType,
-			Engine: storepb.Engine(schemaDesign.Engine),
+			Type:       schemaDesignType,
+			Engine:     storepb.Engine(schemaDesign.Engine),
+			Protection: convertProtectionToStore(schemaDesign.Protection),
 		},
 	}
 	if schemaDesignType == storepb.SheetPayload_SchemaDesign_MAIN_BRANCH {
@@ -404,12 +405,6 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, err
 	}
-
-	// Delete personal draft schema design.
-	err = s.store.DeleteSheet(ctx, sheetUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete personal draft schema design: %v", err))
-	}
 	return targetSchemaDesign, nil
 }
 
@@ -591,6 +586,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Type:                   schemaDesignType,
 		Etag:                   GenerateEtag([]byte(schema)),
+		Protection:             convertProtectionFromStore(sheetPayload.SchemaDesign.Protection),
 		Creator:                fmt.Sprintf("users/%s", creator.Email),
 		Updater:                fmt.Sprintf("users/%s", updater.Email),
 		CreateTime:             timestamppb.New(sheet.CreatedTime),
@@ -603,6 +599,26 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}
 
 	return schemaDesign, nil
+}
+
+func convertProtectionToStore(protection *v1pb.SchemaDesign_Protection) *storepb.SheetPayload_SchemaDesign_Protection {
+	if protection == nil {
+		return &storepb.SheetPayload_SchemaDesign_Protection{}
+	}
+
+	return &storepb.SheetPayload_SchemaDesign_Protection{
+		AllowForcePushes: protection.AllowForcePushes,
+	}
+}
+
+func convertProtectionFromStore(protection *storepb.SheetPayload_SchemaDesign_Protection) *v1pb.SchemaDesign_Protection {
+	if protection == nil {
+		return &v1pb.SchemaDesign_Protection{}
+	}
+
+	return &v1pb.SchemaDesign_Protection{
+		AllowForcePushes: protection.AllowForcePushes,
+	}
 }
 
 // GenerateEtag generates etag for the given body.

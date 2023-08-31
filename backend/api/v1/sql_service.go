@@ -1540,7 +1540,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				schemaSchema.ViewList = append(schemaSchema.ViewList, viewSchema)
 			}
 			databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
-
 		}
 		result.DatabaseList = append(result.DatabaseList, databaseSchema)
 	}

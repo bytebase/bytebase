@@ -101,7 +101,7 @@ const initEditorInstance = () => {
     },
     wordWrap: "on",
     fixedOverflowWidgets: true,
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 24,
     scrollBeyondLastLine: false,
     padding: {
@@ -426,5 +426,8 @@ defineExpose({
 }
 .monaco-editor .scroll-decoration {
   display: none !important;
+}
+.monaco-editor .line-numbers {
+  @apply pr-2;
 }
 </style>
