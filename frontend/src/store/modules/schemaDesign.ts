@@ -64,6 +64,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
           type: SchemaDesign_Type.PERSONAL_DRAFT,
           baselineSheetName: baselineSheetName,
           protection: {
+            // For personal draft, allow force pushes by default.
             allowForcePushes: true,
           },
         },
