@@ -16,8 +16,8 @@
   "billed-annually": "按年付费",
   "billed-monthly": "按月付费",
   "per-instance": "每个实例",
-  "free-price-intro": "无限用户数和环境数",
-  "team-price-intro": "最多 20 个实例",
+  "free-price-intro": "最多 20 个用户，10 个实例",
+  "team-price-intro": "最多购买 20 个实例",
   "enterprise-price-intro": "自定义，按年付费",
   "deploy": "部署",
   "contact-us": "联系我们",
@@ -35,17 +35,17 @@
     "free": {
       "title": "免费版",
       "label": "",
-      "desc": "包含团队中心化管理数据库生命周期的核心能力"
+      "desc": "团队中心化管理数据库生命周期的核心能力。"
     },
     "team": {
       "title": "专业版",
       "label": "",
-      "desc": "更多协同和管控能力，进阶的数据库生命周期管理"
+      "desc": "更多协同和管控能力，进阶的数据库生命周期管理。"
     },
     "enterprise": {
       "title": "企业版",
       "label": "",
-      "desc": "大型组织，有专属 DBA 团队来管理数据库"
+      "desc": "额外的安全，合规，权限功能，SLA 支持。"
     }
   },
   "feature-sections": {
@@ -58,13 +58,11 @@
         "instance-count": "实例数",
         "instance-customized": "自定义",
         "instance-maximum-10": "不超过 10 个",
-        "instance-maximum-10-tooltip": "最多 10 个实例。请与我们联系以获取超过数量的价格。",
+        "instance-maximum-10-tooltip": "最多 10 个实例。如果超过数量请与我们联系。",
         "instance-maximum-20": "不超过 20 个",
-        "instance-maximum-20-tooltip": "最多 20 个实例。请与我们联系以获取超过数量的价格。",
+        "instance-maximum-20-tooltip": "最多 20 个实例。如果超过数量请与我们联系。",
         "instance-unlimited": "无限制",
         "instance-unlimited-tooltip": "可添加无限实例，另可购买实例证书，开启高级实例功能。",
-        "environment-count": "环境数",
-        "environment-unlimited": "无限制",
         "state-based-change": "基于终态的变更",
         "migration-based-change": "基于过程的变更",
         "batch-change": "批量变更",
