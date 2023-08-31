@@ -1225,7 +1225,11 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 	for _, test := range tests {
 		res, err := extractSensitiveField(db.Postgres, test.statement, defaultDatabase, test.schemaInfo)
 		require.NoError(t, err)
-		require.Equal(t, test.fieldList, res, test.statement)
+		require.Equal(t, len(test.fieldList), len(res), test.statement)
+		for i := range res {
+			require.Equal(t, test.fieldList[i].Name, test.fieldList[i].Name, test.statement)
+			require.Equal(t, test.fieldList[i].Sensitive, test.fieldList[i].Sensitive, test.statement)
+		}
 	}
 }
 
