@@ -431,7 +431,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 				return nil, errors.Errorf("expect Node_List but found %T", row.Node)
 			}
 			for _, item := range list.List.Items {
-				//TODO(zp): make pgExtractColumnRefFromExpressionNode returns masking level instead of maskingLevel.
+				// TODO(zp): make pgExtractColumnRefFromExpressionNode returns masking level instead of maskingLevel.
 				maskingLevel, err := extractor.pgExtractColumnRefFromExpressionNode(item)
 				if err != nil {
 					return nil, err
