@@ -5,7 +5,7 @@ SET metadata = (metadata || jsonb_build_object('mysqlLowerCaseTableNames', (meta
 WHERE metadata ? 'mysql_lower_case_table_names';
 
 UPDATE instance
-SET options = (options || jsonb_build_object('schemaTenantMode', (metadata->>'schema_tenant_mode')::boolean)) - 'schema_tenant_mode'
+SET options = (options || jsonb_build_object('schemaTenantMode', (options->>'schema_tenant_mode')::boolean)) - 'schema_tenant_mode'
 WHERE options ? 'schema_tenant_mode';
 
 ALTER TABLE instance ENABLE TRIGGER update_instance_updated_ts;
