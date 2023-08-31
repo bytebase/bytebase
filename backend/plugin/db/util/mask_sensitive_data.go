@@ -57,7 +57,18 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		return extractor.extractMySQLSensitiveField(statement)
+		result, err := extractor.extractMySQLSensitiveField(statement)
+		if err != nil {
+			return nil, err
+		}
+		// TODO(zp): remove it
+		// Backfill sensitive.
+		for i := range result {
+			if result[i].MaskingLevel == storepb.MaskingLevel_PARTIAL || result[i].MaskingLevel == storepb.MaskingLevel_FULL {
+				result[i].Sensitive = true
+			}
+		}
+		return result, nil
 	case db.Postgres, db.Redshift, db.RisingWave:
 		extractor := &sensitiveFieldExtractor{
 			schemaInfo: schemaInfo,

@@ -696,7 +696,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 										},
 										{
 											Name:         "d",
-											MaskingLevel: storepb.MaskingLevel_FULL,
+											MaskingLevel: storepb.MaskingLevel_PARTIAL,
 										},
 									},
 								},
@@ -734,7 +734,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "c3",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
 					Name:         "n",
@@ -794,7 +794,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "c3",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
 					Name:         "n",
@@ -821,7 +821,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "a",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -844,7 +844,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -867,7 +867,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -901,7 +901,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -924,7 +924,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "?column?",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -947,7 +947,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -996,7 +996,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
 					Name:         "a",
@@ -1012,7 +1012,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1035,7 +1035,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1058,7 +1058,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
 					Name:         "b",
@@ -1070,7 +1070,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1135,7 +1135,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1158,7 +1158,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d1",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1181,7 +1181,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d1",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1204,7 +1204,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 				},
 				{
 					Name:         "d",
-					MaskingLevel: storepb.MaskingLevel_FULL,
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
