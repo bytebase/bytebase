@@ -460,7 +460,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	ctx, project, sourceMySQLDB, _, _, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, sourceMySQLDB, _, sourceDB, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	dstPort := getTestPort()
@@ -504,6 +504,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 						{
 							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
 								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
+									Target: sourceDB.Name,
 									CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
 										Target:       dstInstance.Name,
 										Database:     targetDatabaseName,
