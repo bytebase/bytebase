@@ -4,14 +4,14 @@
   >
     <router-link
       to="/"
-      class="select-none"
+      class="w-full select-none flex flex-row justify-center items-center"
       active-class=""
       exact-active-class=""
     >
       <img
         v-if="customBrandingLogo"
         :src="customBrandingLogo"
-        class="w-full max-h-full"
+        class="w-auto max-w-full h-auto max-h-12"
       />
 
       <img
