@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -86,7 +85,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 
 	now := time.Now()
 	for _, instance := range instances {
-		interval := getOrDefaultSyncInterval(instance.Options.SyncInterval)
+		interval := getOrDefaultSyncInterval(instance)
 		lastSyncTime := getOrDefaultLastSyncTime(instance.Metadata.LastSyncTime)
 		// lastSyncTime + syncInterval > now
 		// Next round not started yet.
@@ -119,7 +118,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			continue
 		}
 		// The database inherits the sync interval from the instance.
-		interval := getOrDefaultSyncInterval(instance.Options.SyncInterval)
+		interval := getOrDefaultSyncInterval(instance)
 		lastSyncTime := getOrDefaultLastSyncTime(database.Metadata.LastSyncTime)
 		// lastSyncTime + syncInterval > now
 		// Next round not started yet.
@@ -394,9 +393,9 @@ func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchema
 	}
 }
 
-func getOrDefaultSyncInterval(syncInterval *durationpb.Duration) time.Duration {
-	if syncInterval.IsValid() {
-		return syncInterval.AsDuration()
+func getOrDefaultSyncInterval(instance *store.InstanceMessage) time.Duration {
+	if instance.Activation && instance.Options.SyncInterval.IsValid() {
+		return instance.Options.SyncInterval.AsDuration()
 	}
 	return defaultSyncInterval
 }
