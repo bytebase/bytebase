@@ -91,7 +91,7 @@
             }
           "
         >
-          <slot name="body" :row-data="item" />
+          <slot name="body" :row-data="item" :row="index" />
         </tr></tbody
     ></template>
     <slot name="footer" />

@@ -2,7 +2,7 @@
   <BBTable
     ref="tableRef"
     :column-list="tableHeaderList"
-    :section-data-source="datasource"
+    :data-source="columnList"
     :show-header="true"
     :custom-header="true"
     :left-bordered="true"
@@ -120,7 +120,7 @@
 import { NPopconfirm } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBTableColumn, BBTableSectionDataSource } from "@/bbkit/types";
+import type { BBTableColumn } from "@/bbkit/types";
 import {
   DatabaseV1Name,
   EnvironmentV1Name,
@@ -230,15 +230,6 @@ const tableHeaderList = computed(() => {
     });
   }
   return list;
-});
-
-const datasource = computed((): BBTableSectionDataSource<SensitiveColumn>[] => {
-  return [
-    {
-      title: "",
-      list: props.columnList,
-    },
-  ];
 });
 
 const allSelectionState = computed(() => {

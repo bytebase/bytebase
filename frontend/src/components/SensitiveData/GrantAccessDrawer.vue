@@ -1,7 +1,7 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent :title="$t('settings.sensitive-data.grant-access')">
-      <div class="divide-block-border space-y-8 w-[50rem] h-full">
+      <div class="divide-block-border space-y-8 w-[60rem] h-full">
         <SensitiveColumnTable
           :row-clickable="false"
           :show-operation="false"
@@ -33,30 +33,11 @@
           <p class="mb-2">
             {{ $t("settings.sensitive-data.masking-level.self") }}
           </p>
-          <div class="flex space-x-5">
-            <label
-              v-for="maskLevel in MASKING_LEVELS"
-              :key="maskLevel"
-              class="radio space-x-2"
-            >
-              <input
-                v-model="state.maskingLevel"
-                :name="maskingLevelToJSON(maskLevel)"
-                type="radio"
-                class="btn"
-                :value="maskLevel"
-              />
-              <span class="text-sm font-medium text-main whitespace-nowrap">
-                {{
-                  $t(
-                    `settings.sensitive-data.masking-level.${maskingLevelToJSON(
-                      maskLevel
-                    ).toLowerCase()}`
-                  )
-                }}
-              </span>
-            </label>
-          </div>
+          <MaskingLevelSelect
+            :level-list="MASKING_LEVELS"
+            :selected="state.maskingLevel"
+            @update="state.maskingLevel = $event"
+          />
         </div>
 
         <div class="w-full">
@@ -115,7 +96,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { usePolicyV1Store, useUserStore, pushNotification } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
+import { MaskingLevel } from "@/types/proto/v1/common";
 import {
   Policy,
   PolicyType,

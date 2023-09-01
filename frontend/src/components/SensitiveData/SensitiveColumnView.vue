@@ -61,6 +61,24 @@
       }
     "
   />
+
+  <SensitiveColumnDrawer
+    v-if="filteredColumnList.length > 0"
+    :show="
+      state.showSensitiveColumnDrawer &&
+      state.pendingGrantAccessColumnIndex.length === 1
+    "
+    :column="
+      filteredColumnList[state.pendingGrantAccessColumnIndex[0]] ??
+      filteredColumnList[0]
+    "
+    @dismiss="
+      () => {
+        state.showSensitiveColumnDrawer = false;
+        state.pendingGrantAccessColumnIndex = [];
+      }
+    "
+  />
 </template>
 
 <script lang="ts" setup>
@@ -87,6 +105,7 @@ interface LocalState {
   sensitiveColumnList: SensitiveColumn[];
   pendingGrantAccessColumnIndex: number[];
   showGrantAccessDrawer: boolean;
+  showSensitiveColumnDrawer: boolean;
 }
 
 const router = useRouter();
@@ -97,6 +116,7 @@ const state = reactive<LocalState>({
   environment: UNKNOWN_ENVIRONMENT_NAME,
   pendingGrantAccessColumnIndex: [],
   showGrantAccessDrawer: false,
+  showSensitiveColumnDrawer: false,
 });
 const databaseStore = useDatabaseV1Store();
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
@@ -194,7 +214,7 @@ const onRowClick = (
       break;
     case "EDIT":
       state.pendingGrantAccessColumnIndex = [row];
-      state.showGrantAccessDrawer = true;
+      state.showSensitiveColumnDrawer = true;
       break;
   }
 };
