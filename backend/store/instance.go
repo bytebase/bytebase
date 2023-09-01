@@ -114,7 +114,8 @@ type UpdateInstanceMessage struct {
 	DataSources   *[]*DataSourceMessage
 	EngineVersion *string
 	Activation    *bool
-	Options       *storepb.InstanceOptions
+	// OptionsUpsert upserts the top-level messages of the instance options.
+	OptionsUpsert *storepb.InstanceOptions
 	Metadata      *storepb.InstanceMetadata
 
 	// Output only.
@@ -333,13 +334,13 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
-	if v := patch.Options; v != nil {
+	if v := patch.OptionsUpsert; v != nil {
 		options, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
 
-		set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, options)
+		set, args = append(set, fmt.Sprintf("options = options || $%d", len(args)+1)), append(args, options)
 	}
 	if v := patch.Metadata; v != nil {
 		metadata, err := protojson.Marshal(v)

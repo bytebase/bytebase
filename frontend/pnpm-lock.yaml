@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: true
@@ -218,8 +218,8 @@ dependencies:
 
 devDependencies:
   '@iconify/json':
-    specifier: 2.2.46
-    version: 2.2.46
+    specifier: 2.2.109
+    version: 2.2.109
   '@intlify/vite-plugin-vue-i18n':
     specifier: 6.0.3
     version: 6.0.3(vite@3.2.7)(vue-i18n@9.2.2)
@@ -727,8 +727,8 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
-  /@iconify/json@2.2.46:
-    resolution: {integrity: sha512-pWXAKAlvIIKHv/pO79GzKZup4CYBFSdN+F0ERv6lEP2977MJaAVazf1qThPfpnMDqX6mFPZFBPWl+aiqfGVxpQ==}
+  /@iconify/json@2.2.109:
+    resolution: {integrity: sha512-Hi5InevdpLbDOjaJ1a0e5wQq8x8lDcNh3xyCq7yMyH/N/wniKa2vGUzzLQWLwENYcMm81b50jCAt7R4cOkx1BQ==}
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 1.1.0

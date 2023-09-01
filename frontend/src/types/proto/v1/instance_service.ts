@@ -1,6 +1,7 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Engine, engineFromJSON, engineToJSON, State, stateFromJSON, stateToJSON } from "./common";
@@ -208,6 +209,8 @@ export interface InstanceOptions {
    * For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
    */
   schemaTenantMode: boolean;
+  /** How often the instance is synced. */
+  syncInterval?: Duration | undefined;
 }
 
 export interface Instance {
@@ -1191,13 +1194,16 @@ export const SyncSlowQueriesRequest = {
 };
 
 function createBaseInstanceOptions(): InstanceOptions {
-  return { schemaTenantMode: false };
+  return { schemaTenantMode: false, syncInterval: undefined };
 }
 
 export const InstanceOptions = {
   encode(message: InstanceOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.schemaTenantMode === true) {
       writer.uint32(8).bool(message.schemaTenantMode);
+    }
+    if (message.syncInterval !== undefined) {
+      Duration.encode(message.syncInterval, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -1216,6 +1222,13 @@ export const InstanceOptions = {
 
           message.schemaTenantMode = reader.bool();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.syncInterval = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1226,12 +1239,17 @@ export const InstanceOptions = {
   },
 
   fromJSON(object: any): InstanceOptions {
-    return { schemaTenantMode: isSet(object.schemaTenantMode) ? Boolean(object.schemaTenantMode) : false };
+    return {
+      schemaTenantMode: isSet(object.schemaTenantMode) ? Boolean(object.schemaTenantMode) : false,
+      syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
+    };
   },
 
   toJSON(message: InstanceOptions): unknown {
     const obj: any = {};
     message.schemaTenantMode !== undefined && (obj.schemaTenantMode = message.schemaTenantMode);
+    message.syncInterval !== undefined &&
+      (obj.syncInterval = message.syncInterval ? Duration.toJSON(message.syncInterval) : undefined);
     return obj;
   },
 
@@ -1242,6 +1260,9 @@ export const InstanceOptions = {
   fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
     const message = createBaseInstanceOptions();
     message.schemaTenantMode = object.schemaTenantMode ?? false;
+    message.syncInterval = (object.syncInterval !== undefined && object.syncInterval !== null)
+      ? Duration.fromPartial(object.syncInterval)
+      : undefined;
     return message;
   },
 };

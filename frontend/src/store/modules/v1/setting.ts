@@ -31,6 +31,14 @@ export const useSettingV1Store = defineStore("setting_v1", {
       );
       return setting?.value?.stringValue;
     },
+    classification(
+      state
+    ): DataClassificationSetting_DataClassificationConfig[] {
+      const setting = this.settingMapByName.get(
+        `${settingNamePrefix}bb.workspace.data-classification`
+      );
+      return setting?.value?.dataClassificationSettingValue?.configs ?? [];
+    },
   },
   actions: {
     getProjectClassification(

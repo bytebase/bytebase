@@ -18,6 +18,7 @@ export type FeatureType =
   | "bb.feature.watermark"
   | "bb.feature.audit-log"
   | "bb.feature.issue-advanced-search"
+  | "bb.feature.announcement"
   // Branding
   | "bb.feature.branding"
   // Change Workflow

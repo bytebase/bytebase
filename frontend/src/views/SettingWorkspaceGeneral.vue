@@ -4,6 +4,7 @@
     <BrandingSetting />
     <SecuritySetting />
     <AIAugmentationSetting />
+    <AnnouncementSetting />
   </div>
 </template>
 
@@ -15,6 +16,7 @@ import {
   SecuritySetting,
   NetworkSetting,
   AIAugmentationSetting,
+  AnnouncementSetting,
 } from "@/components/GeneralSetting";
 import { useActuatorV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
