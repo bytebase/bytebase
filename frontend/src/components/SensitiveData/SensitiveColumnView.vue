@@ -25,7 +25,7 @@
       v-if="hasSensitiveDataFeature"
       :row-clickable="true"
       :row-selectable="true"
-      :show-operation="hasPermission"
+      :show-operation="hasPermission && hasSensitiveDataFeature"
       :column-list="filteredColumnList"
       :checked-column-index-list="state.pendingGrantAccessColumnIndex"
       @click="onRowClick"
@@ -65,12 +65,15 @@
   />
 
   <SensitiveColumnDrawer
-    v-if="state.showSensitiveColumnDrawer"
+    v-if="filteredColumnList.length > 0"
     :show="
       state.showSensitiveColumnDrawer &&
       state.pendingGrantAccessColumnIndex.length === 1
     "
-    :column="filteredColumnList[state.pendingGrantAccessColumnIndex[0]]"
+    :column="
+      filteredColumnList[state.pendingGrantAccessColumnIndex[0]] ??
+      filteredColumnList[0]
+    "
     @dismiss="
       () => {
         state.showSensitiveColumnDrawer = false;
@@ -98,6 +101,7 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { databaseV1Slug, hasWorkspacePermissionV1 } from "@/utils";
 import { SensitiveColumn } from "./types";
+import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface LocalState {
   environment: string;
@@ -120,6 +124,7 @@ const state = reactive<LocalState>({
   showSensitiveColumnDrawer: false,
 });
 const databaseStore = useDatabaseV1Store();
+const policyStore = usePolicyV1Store();
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
 const policyList = usePolicyListByResourceTypeAndPolicyType({
@@ -168,13 +173,7 @@ const updateList = async () => {
 
 watch(policyList, updateList, { immediate: true });
 
-const removeSensitiveColumn = (sensitiveColumn: SensitiveColumn) => {
-  if (!hasSensitiveDataFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
-
-  const { table, column } = sensitiveColumn.maskData;
+const removeSensitiveColumn = async (sensitiveColumn: SensitiveColumn) => {
   const policy = policyList.value.find(
     (policy) => policy.resourceUid == sensitiveColumn.database.uid
   );
@@ -184,14 +183,15 @@ const removeSensitiveColumn = (sensitiveColumn: SensitiveColumn) => {
 
   const index = maskData.findIndex(
     (sensitiveData) =>
-      sensitiveData.table === table && sensitiveData.column === column
+      getMaskDataIdentifier(sensitiveData) ===
+      getMaskDataIdentifier(sensitiveColumn.maskData)
   );
   if (index >= 0) {
     // mutate the list and the item directly
     // so we don't need to re-fetch the whole list.
     maskData.splice(index, 1);
 
-    usePolicyV1Store().updatePolicy(["payload"], {
+    await policyStore.updatePolicy(["payload"], {
       name: policy.name,
       type: PolicyType.MASKING,
       resourceType: PolicyResourceType.DATABASE,
@@ -199,17 +199,41 @@ const removeSensitiveColumn = (sensitiveColumn: SensitiveColumn) => {
         maskData,
       },
     });
+    await removeMaskingExceptions(sensitiveColumn);
   }
   updateList();
 };
 
-const onRowClick = (
+const removeMaskingExceptions = async (sensitiveColumn: SensitiveColumn) => {
+  const policy = await policyStore.getOrFetchPolicyByParentAndType({
+    parentPath: sensitiveColumn.database.name,
+    policyType: PolicyType.MASKING_EXCEPTION,
+  });
+  if (!policy) {
+    return;
+  }
+
+  const exceptions = (
+    policy.maskingExceptionPolicy?.maskingExceptions ?? []
+  ).filter(
+    (exception) =>
+      !isCurrentColumnException(exception, sensitiveColumn.maskData)
+  );
+
+  policy.maskingExceptionPolicy = {
+    ...(policy.maskingExceptionPolicy ?? {}),
+    maskingExceptions: exceptions,
+  };
+  await policyStore.updatePolicy(["payload"], policy);
+};
+
+const onRowClick = async (
   item: SensitiveColumn,
   row: number,
   action: "VIEW" | "DELETE" | "EDIT"
 ) => {
   switch (action) {
-    case "VIEW":
+    case "VIEW": {
       let url = `/db/${databaseV1Slug(item.database)}?table=${
         item.maskData.table
       }`;
@@ -218,8 +242,9 @@ const onRowClick = (
       }
       router.push(url);
       break;
+    }
     case "DELETE":
-      removeSensitiveColumn(item);
+      await removeSensitiveColumn(item);
       break;
     case "EDIT":
       state.pendingGrantAccessColumnIndex = [row];

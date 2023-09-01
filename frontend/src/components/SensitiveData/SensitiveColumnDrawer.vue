@@ -35,7 +35,12 @@
                 )
               }}</span>
             </div>
-            <NButton type="primary" :disabled="!hasPermission" @click="">
+            <!-- TODO(ed): grant access -->
+            <NButton
+              type="primary"
+              :disabled="!hasPermission"
+              @click="state.showGrantAccessDrawer = true"
+            >
               {{ $t("settings.sensitive-data.grant-access") }}
             </NButton>
           </div>
@@ -161,6 +166,12 @@
       </template>
     </DrawerContent>
   </Drawer>
+
+  <GrantAccessDrawer
+    :show="state.showGrantAccessDrawer"
+    :column-list="[props.column]"
+    @dismiss="state.showGrantAccessDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -182,8 +193,8 @@ import { Expr } from "@/types/proto/google/type/expr";
 import { User } from "@/types/proto/v1/auth_service";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import {
+  Policy,
   PolicyType,
-  MaskData,
   MaskingExceptionPolicy_MaskingException,
   MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
@@ -191,6 +202,9 @@ import { hasWorkspacePermissionV1, extractUserUID } from "@/utils";
 import { convertCELStringToParsedExpr } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { SensitiveColumn } from "./types";
+import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
+
+// TODO(ed): remove masking column, also remove related exception
 
 interface AccessUser {
   user: User;
@@ -204,6 +218,7 @@ interface LocalState {
   dirty: boolean;
   processing: boolean;
   maskingLevel: MaskingLevel;
+  showGrantAccessDrawer: boolean;
 }
 
 const props = defineProps<{
@@ -217,6 +232,7 @@ const state = reactive<LocalState>({
   dirty: false,
   processing: false,
   maskingLevel: props.column.maskData.maskingLevel,
+  showGrantAccessDrawer: false,
 });
 
 const MASKING_LEVELS = [
@@ -231,10 +247,12 @@ const currentUserV1 = useCurrentUserV1();
 const accessUserList = ref<AccessUser[]>([]);
 const policyStore = usePolicyV1Store();
 
-const policy = usePolicyByParentAndType({
-  parentPath: props.column.database.name,
-  policyType: PolicyType.MASKING_EXCEPTION,
-});
+const policy = usePolicyByParentAndType(
+  computed(() => ({
+    parentPath: props.column.database.name,
+    policyType: PolicyType.MASKING_EXCEPTION,
+  }))
+);
 
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV1(
@@ -267,26 +285,6 @@ const getAccessUsers = async (
   };
 };
 
-const isCurrentColumnException = (
-  exception: MaskingExceptionPolicy_MaskingException
-): boolean => {
-  const expression = exception.condition?.expression ?? "";
-  const matches = [
-    `resource.table_name == "${props.column.maskData.table}"`,
-    `resource.column_name == "${props.column.maskData.column}"`,
-  ];
-  if (props.column.maskData.schema) {
-    matches.push(`resource.schema_name == "${props.column.maskData.schema}"`);
-  }
-
-  for (const match of matches) {
-    if (!expression.includes(match)) {
-      return false;
-    }
-  }
-  return true;
-};
-
 const getExceptionIdentifier = (
   exception: MaskingExceptionPolicy_MaskingException
 ): string => {
@@ -301,35 +299,45 @@ const getExceptionIdentifier = (
   return res.join(" && ");
 };
 
+const updateAccessUserList = async (policy: Policy | undefined) => {
+  if (!policy || !policy.maskingExceptionPolicy) {
+    return [];
+  }
+
+  const userMap = new Map<string, AccessUser>();
+  for (const exception of policy.maskingExceptionPolicy.maskingExceptions) {
+    if (!isCurrentColumnException(exception, props.column.maskData)) {
+      continue;
+    }
+    const identifier = getExceptionIdentifier(exception);
+    const item = await getAccessUsers(exception);
+    const id = `${item.user.name}:${identifier}`;
+    const target = userMap.get(id) ?? item;
+    if (userMap.has(id)) {
+      for (const action of item.supportActions) {
+        target.supportActions.add(action);
+      }
+    }
+    userMap.set(id, target);
+  }
+
+  accessUserList.value = [...userMap.values()].sort(
+    (u1, u2) => getUserId(u1.user.name) - getUserId(u2.user.name)
+  );
+};
+
+watch(() => policy.value, updateAccessUserList, {
+  immediate: true,
+  deep: true,
+});
+
 watch(
-  () => policy.value,
-  async (policy) => {
-    if (!policy || !policy.maskingExceptionPolicy) {
-      return [];
+  () => props.show,
+  (show) => {
+    if (show && policy.value) {
+      updateAccessUserList(policy.value);
     }
-
-    const userMap = new Map<string, AccessUser>();
-    for (const exception of policy.maskingExceptionPolicy.maskingExceptions) {
-      if (!isCurrentColumnException(exception)) {
-        continue;
-      }
-      const identifier = getExceptionIdentifier(exception);
-      const item = await getAccessUsers(exception);
-      const id = `${item.user.name}:${identifier}`;
-      const target = userMap.get(id) ?? item;
-      if (userMap.has(id)) {
-        for (const action of item.supportActions) {
-          target.supportActions.add(action);
-        }
-      }
-      userMap.set(id, target);
-    }
-
-    accessUserList.value = [...userMap.values()].sort(
-      (u1, u2) => getUserId(u1.user.name) - getUserId(u2.user.name)
-    );
-  },
-  { immediate: true, deep: true }
+  }
 );
 
 const tableHeaderList = computed(() => {
@@ -410,10 +418,6 @@ const onSubmit = async () => {
   }
 };
 
-const getMaskDataIdentifier = (maskData: MaskData): string => {
-  return `${maskData.schema}.${maskData.table}.${maskData.column}`;
-};
-
 const updateMaskingPolicy = async () => {
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
     parentPath: props.column.database.name,
@@ -459,7 +463,9 @@ const updateExceptionPolicy = async () => {
 
   const exceptions = (
     policy.maskingExceptionPolicy?.maskingExceptions ?? []
-  ).filter((exception) => !isCurrentColumnException(exception));
+  ).filter(
+    (exception) => !isCurrentColumnException(exception, props.column.maskData)
+  );
 
   for (const accessUser of accessUserList.value) {
     const expressions = accessUser.rawExpression.split(" && ");
