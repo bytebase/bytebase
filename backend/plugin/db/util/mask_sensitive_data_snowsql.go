@@ -251,7 +251,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 			}
 		} else if expressionElem := iSelectListElem.Expression_elem(); expressionElem != nil {
 			if v := expressionElem.Expr(); v != nil {
-				columnName, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+				columnName, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 				}
@@ -260,7 +260,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 					sensitive: isSensitive,
 				})
 			} else if v := expressionElem.Predicate(); v != nil {
-				columnName, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+				columnName, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 				}
@@ -280,18 +280,18 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 }
 
 // The closure of the IExprContext.
-func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleContext) (string, bool, error) {
+func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.RuleContext) (string, bool, error) {
 	switch ctx := ctx.(type) {
 	case *snowparser.ExprContext:
 		if v := ctx.Primitive_expression(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Function_call(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 
 		for _, expr := range ctx.AllExpr() {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(expr)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
@@ -300,7 +300,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			}
 		}
 		if v := ctx.Subquery(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -310,35 +310,35 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		}
 
 		if v := ctx.Case_expression(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Iff_expr(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Full_column_name(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Bracket_expression(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Arr_literal(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Json_literal(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 
 		if v := ctx.Try_cast_expr(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Object_name(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Trim_expression(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Expr_list(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -358,7 +358,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		return ctx.GetText(), false, nil
 	case *snowparser.Trim_expressionContext:
 		if v := ctx.Expr(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -367,7 +367,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		panic("never reach here")
 	case *snowparser.Try_cast_exprContext:
 		if v := ctx.Expr(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -377,7 +377,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 	case *snowparser.Json_literalContext:
 		if v := ctx.AllKv_pair(); len(v) > 0 {
 			for _, kvPair := range v {
-				_, isSensitive, err := extractor.isSnowSQLExprSensitive(kvPair)
+				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(kvPair)
 				if err != nil {
 					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", kvPair.GetText(), kvPair.GetStart().GetLine())
 				}
@@ -389,7 +389,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		return ctx.GetText(), false, nil
 	case *snowparser.Kv_pairContext:
 		if v := ctx.Value(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -399,7 +399,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 	case *snowparser.Arr_literalContext:
 		if v := ctx.AllValue(); len(v) > 0 {
 			for _, value := range v {
-				_, isSensitive, err := extractor.isSnowSQLExprSensitive(value)
+				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(value)
 				if err != nil {
 					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", value.GetText(), value.GetStart().GetLine())
 				}
@@ -410,10 +410,10 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		}
 		return ctx.GetText(), false, nil
 	case *snowparser.ValueContext:
-		return extractor.isSnowSQLExprSensitive(ctx.Expr())
+		return extractor.evalSnowSQLExprMaskingLevel(ctx.Expr())
 	case *snowparser.Bracket_expressionContext:
 		if v := ctx.Expr(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -422,7 +422,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			}
 		}
 		if v := ctx.Subquery(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -433,7 +433,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		panic("never reach here")
 	case *snowparser.Iff_exprContext:
 		if v := ctx.Search_condition(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(ctx.Search_condition())
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Search_condition())
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -441,7 +441,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 				return ctx.GetText(), true, nil
 			}
 			for _, expr := range ctx.AllExpr() {
-				_, isSensitive, err := extractor.isSnowSQLExprSensitive(expr)
+				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 				if err != nil {
 					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
@@ -454,7 +454,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		panic("never reach here")
 	case *snowparser.Case_expressionContext:
 		for _, expr := range ctx.AllExpr() {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(expr)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
@@ -464,7 +464,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		}
 		if v := ctx.AllSwitch_section(); len(v) > 0 {
 			for _, switchSection := range v {
-				_, isSensitive, err := extractor.isSnowSQLExprSensitive(switchSection)
+				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(switchSection)
 				if err != nil {
 					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSection.GetText(), switchSection.GetStart().GetLine())
 				}
@@ -476,7 +476,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		}
 		if v := ctx.AllSwitch_search_condition_section(); len(v) > 0 {
 			for _, switchSearchConditionSection := range v {
-				_, isSensitive, err := extractor.isSnowSQLExprSensitive(switchSearchConditionSection)
+				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(switchSearchConditionSection)
 				if err != nil {
 					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSearchConditionSection.GetText(), switchSearchConditionSection.GetStart().GetLine())
 				}
@@ -490,7 +490,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 	case *snowparser.Switch_sectionContext:
 		if v := ctx.AllExpr(); len(v) > 0 {
 			for _, expr := range v {
-				_, isSensitive, err := extractor.isSnowSQLExprSensitive(expr)
+				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 				if err != nil {
 					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
@@ -503,14 +503,14 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		panic("never reach here")
 	case *snowparser.Switch_search_condition_sectionContext:
 		if v := ctx.Search_condition(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			if isSensitive {
 				return ctx.GetText(), true, nil
 			}
-			_, isSensitive, err = extractor.isSnowSQLExprSensitive(ctx.Expr())
+			_, isSensitive, err = extractor.evalSnowSQLExprMaskingLevel(ctx.Expr())
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr().GetText(), ctx.Expr().GetStart().GetLine())
 			}
@@ -519,7 +519,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		panic("never reach here")
 	case *snowparser.Search_conditionContext:
 		if v := ctx.Predicate(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -529,7 +529,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		}
 		if v := ctx.AllSearch_condition(); len(v) > 0 {
 			for _, searchCondition := range v {
-				_, isSensitive, err := extractor.isSnowSQLExprSensitive(searchCondition)
+				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(searchCondition)
 				if err != nil {
 					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", searchCondition.GetText(), searchCondition.GetStart().GetLine())
 				}
@@ -543,7 +543,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 	case *snowparser.PredicateContext:
 		if v := ctx.AllExpr(); len(v) > 0 {
 			for _, expr := range v {
-				_, isSensitive, err := extractor.isSnowSQLExprSensitive(expr)
+				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 				if err != nil {
 					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
@@ -553,7 +553,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			}
 		}
 		if v := ctx.Subquery(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -562,7 +562,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			}
 		}
 		if v := ctx.Expr_list(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -586,28 +586,28 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		return ctx.GetText(), sensitive, nil
 	case *snowparser.Primitive_expressionContext:
 		if v := ctx.Id_(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		return ctx.GetText(), false, nil
 	case *snowparser.Function_callContext:
 		if v := ctx.Ranking_windowed_function(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Aggregate_function(); v != nil {
-			return extractor.isSnowSQLExprSensitive(v)
+			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Object_name(); v != nil {
 			return v.GetText(), false, nil
 		}
 		if v := ctx.Expr_list(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), isSensitive, nil
 		}
 		if v := ctx.Expr(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -616,7 +616,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		panic("never reach here")
 	case *snowparser.Aggregate_functionContext:
 		if v := ctx.Expr_list(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -626,14 +626,14 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			return ctx.GetText(), false, nil
 		}
 		if v := ctx.Expr(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			if isSensitive {
 				return ctx.GetText(), true, nil
 			}
-			_, isSensitive, err = extractor.isSnowSQLExprSensitive(ctx.Order_by_clause())
+			_, isSensitive, err = extractor.evalSnowSQLExprMaskingLevel(ctx.Order_by_clause())
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Order_by_clause().GetText(), ctx.Order_by_clause().GetStart().GetLine())
 			}
@@ -642,7 +642,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		panic("never reach here")
 	case *snowparser.Ranking_windowed_functionContext:
 		if v := ctx.Expr(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -651,7 +651,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			}
 		}
 		if v := ctx.Over_clause(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -660,7 +660,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		panic("never reach here")
 	case *snowparser.Over_clauseContext:
 		if v := ctx.Partition_by(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -669,7 +669,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 			}
 		}
 		if v := ctx.Order_by_expr(); v != nil {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(v)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
@@ -677,13 +677,13 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		}
 		panic("never reach here")
 	case *snowparser.Partition_byContext:
-		_, isSensitive, err := extractor.isSnowSQLExprSensitive(ctx.Expr_list())
+		_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Expr_list())
 		if err != nil {
 			return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list().GetText(), ctx.Expr_list().GetStart().GetLine())
 		}
 		return ctx.GetText(), isSensitive, nil
 	case *snowparser.Order_by_exprContext:
-		_, isSensitive, err := extractor.isSnowSQLExprSensitive(ctx.Expr_list_sorted())
+		_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Expr_list_sorted())
 		if err != nil {
 			return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list_sorted().GetText(), ctx.Expr_list_sorted().GetStart().GetLine())
 		}
@@ -691,7 +691,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 	case *snowparser.Expr_listContext:
 		allExpr := ctx.AllExpr()
 		for _, expr := range allExpr {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(expr)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
@@ -703,7 +703,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 	case *snowparser.Expr_list_sortedContext:
 		allExpr := ctx.AllExpr()
 		for _, expr := range allExpr {
-			_, isSensitive, err := extractor.isSnowSQLExprSensitive(expr)
+			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
