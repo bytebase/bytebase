@@ -2,12 +2,15 @@
 package util
 
 import (
+	"cmp"
+
 	"github.com/antlr4-go/antlr/v4"
 	plsql "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (extractor *sensitiveFieldExtractor) extractOracleSensitiveField(statement string) ([]db.SensitiveField, error) {
@@ -51,8 +54,9 @@ func (l *selectStatementListener) EnterSelect_statement(ctx *plsql.Select_statem
 
 			for _, field := range fieldList {
 				l.result = append(l.result, db.SensitiveField{
-					Name:      field.name,
-					Sensitive: field.sensitive,
+					Name:         field.name,
+					Sensitive:    field.sensitive,
+					MaskingLevel: field.maskingLevel,
 				})
 			}
 		}
@@ -106,8 +110,9 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractFactoringElement(ctx plsql
 		}
 		for _, field := range initialField {
 			cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
-				Name:      field.name,
-				Sensitive: field.sensitive,
+				Name:         field.name,
+				Sensitive:    field.sensitive,
+				MaskingLevel: field.maskingLevel,
 			})
 		}
 
@@ -136,6 +141,10 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractFactoringElement(ctx plsql
 
 			changed := false
 			for i, field := range fieldList {
+				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingLevel, field.maskingLevel) {
+					changed = true
+					cteInfo.ColumnList[i].MaskingLevel = field.maskingLevel
+				}
 				if field.sensitive != cteInfo.ColumnList[i].Sensitive {
 					changed = true
 					cteInfo.ColumnList[i].Sensitive = true
@@ -216,8 +225,9 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.
 	}
 	for _, field := range fieldList {
 		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
-			Name:      field.name,
-			Sensitive: field.sensitive,
+			Name:         field.name,
+			Sensitive:    field.sensitive,
+			MaskingLevel: field.maskingLevel,
 		})
 	}
 	return result, nil
@@ -278,11 +288,16 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryOperationPart(ctx 
 
 	var result []fieldInfo
 	for i, field := range rightField {
+		finalLevel := leftField[i].maskingLevel
+		if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
+			finalLevel = field.maskingLevel
+		}
 		result = append(result, fieldInfo{
-			name:      leftField[i].name,
-			table:     leftField[i].table,
-			database:  leftField[i].database,
-			sensitive: leftField[i].sensitive || field.sensitive,
+			name:         leftField[i].name,
+			table:        leftField[i].table,
+			database:     leftField[i].database,
+			sensitive:    leftField[i].sensitive || field.sensitive,
+			maskingLevel: finalLevel,
 		})
 	}
 
@@ -1015,11 +1030,16 @@ func (extractor *sensitiveFieldExtractor) plsqlMergeJoin(leftField []fieldInfo, 
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			if rField, exists := rightFieldMap[field.name]; exists {
+				finalLevel := field.maskingLevel
+				if cmp.Less[storepb.MaskingLevel](finalLevel, rField.maskingLevel) {
+					finalLevel = rField.maskingLevel
+				}
 				result = append(result, fieldInfo{
-					database:  field.database,
-					table:     field.table,
-					name:      field.name,
-					sensitive: field.sensitive || rField.sensitive,
+					database:     field.database,
+					table:        field.table,
+					name:         field.name,
+					sensitive:    field.sensitive || rField.sensitive,
+					maskingLevel: finalLevel,
 				})
 			} else {
 				result = append(result, field)
@@ -1096,10 +1116,11 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractTableRefAux(ctx plsql.ITab
 	var result []fieldInfo
 	for _, field := range list {
 		result = append(result, fieldInfo{
-			database:  field.database,
-			table:     alias,
-			name:      field.name,
-			sensitive: field.sensitive,
+			database:     field.database,
+			table:        alias,
+			name:         field.name,
+			sensitive:    field.sensitive,
+			maskingLevel: field.maskingLevel,
 		})
 	}
 
@@ -1132,10 +1153,11 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractDmlTableExpressionClause(c
 		var result []fieldInfo
 		for _, column := range tableSchema.ColumnList {
 			result = append(result, fieldInfo{
-				database:  schema,
-				table:     table,
-				name:      column.Name,
-				sensitive: column.Sensitive,
+				database:     schema,
+				table:        table,
+				name:         column.Name,
+				sensitive:    column.Sensitive,
+				maskingLevel: column.MaskingLevel,
 			})
 		}
 		return result, nil
