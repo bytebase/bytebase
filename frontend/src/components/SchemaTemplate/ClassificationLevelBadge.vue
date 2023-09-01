@@ -28,7 +28,7 @@ const bgColorList = [
 ];
 
 const level = computed(() => {
-  return (props.classificationConfig.levels ?? []).find(
+  return (props.classificationConfig?.levels ?? []).find(
     (level) => level.id === props.levelId
   );
 });
