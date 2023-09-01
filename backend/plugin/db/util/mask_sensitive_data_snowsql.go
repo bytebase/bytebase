@@ -100,6 +100,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 						if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].maskingLevel) {
 							change = true
 							tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].maskingLevel
+							result[i].maskingLevel = fieldsInRecursiveClause[i].maskingLevel
 						}
 					}
 					if !change {
@@ -240,22 +241,22 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 			}
 		} else if expressionElem := iSelectListElem.Expression_elem(); expressionElem != nil {
 			if v := expressionElem.Expr(); v != nil {
-				columnName, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+				columnName, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 				}
 				result = append(result, fieldInfo{
-					name:      columnName,
-					sensitive: isSensitive,
+					name:         columnName,
+					maskingLevel: maskingLevel,
 				})
 			} else if v := expressionElem.Predicate(); v != nil {
-				columnName, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+				columnName, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 				}
 				result = append(result, fieldInfo{
-					name:      columnName,
-					sensitive: isSensitive,
+					name:         columnName,
+					maskingLevel: maskingLevel,
 				})
 			}
 
@@ -269,7 +270,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 }
 
 // The closure of the IExprContext.
-func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.RuleContext) (string, bool, error) {
+func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.RuleContext) (string, storepb.MaskingLevel, error) {
 	switch ctx := ctx.(type) {
 	case *snowparser.ExprContext:
 		if v := ctx.Primitive_expression(); v != nil {
@@ -279,22 +280,29 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 
+		finalLevel := defaultMaskingLevel
 		for _, expr := range ctx.AllExpr() {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		if v := ctx.Subquery(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 		}
 
@@ -327,29 +335,37 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Expr_list(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 		}
-		return ctx.GetText(), false, nil
+		return ctx.GetText(), finalLevel, nil
 	case *snowparser.Full_column_nameContext:
 		normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName := normalizedFullColumnName(ctx)
 		fieldInfo, err := extractor.snowflakeGetFieldMaskingLevel(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 		if err != nil {
-			return "", false, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
-		return fieldInfo.name, fieldInfo.sensitive, nil
+		return fieldInfo.name, fieldInfo.maskingLevel, nil
 	case *snowparser.Object_nameContext:
-		return ctx.GetText(), false, nil
+		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, extractor.currentDatabase, "PUBLIC")
+		fieldInfo, err := extractor.snowflakeGetFieldMaskingLevel(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
+		if err != nil {
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
+		}
+		return fieldInfo.name, fieldInfo.maskingLevel, nil
 	case *snowparser.Trim_expressionContext:
 		if v := ctx.Expr(); v != nil {
 			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), isSensitive, nil
 		}
@@ -358,226 +374,271 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 		if v := ctx.Expr(); v != nil {
 			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), isSensitive, nil
 		}
 		panic("never reach here")
 	case *snowparser.Json_literalContext:
+		finalLevel := defaultMaskingLevel
 		if v := ctx.AllKv_pair(); len(v) > 0 {
 			for _, kvPair := range v {
-				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(kvPair)
+				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(kvPair)
 				if err != nil {
-					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", kvPair.GetText(), kvPair.GetStart().GetLine())
+					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", kvPair.GetText(), kvPair.GetStart().GetLine())
 				}
-				if isSensitive {
-					return ctx.GetText(), true, nil
+				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+					finalLevel = maskingLevel
+				}
+				if finalLevel == maxMaskingLevel {
+					return ctx.GetText(), finalLevel, nil
 				}
 			}
 		}
-		return ctx.GetText(), false, nil
+		return ctx.GetText(), defaultMaskingLevel, nil
 	case *snowparser.Kv_pairContext:
 		if v := ctx.Value(); v != nil {
 			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), isSensitive, nil
 		}
 		panic("never reach here")
 	case *snowparser.Arr_literalContext:
+		finalLevel := defaultMaskingLevel
 		if v := ctx.AllValue(); len(v) > 0 {
 			for _, value := range v {
-				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(value)
+				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(value)
 				if err != nil {
-					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", value.GetText(), value.GetStart().GetLine())
+					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", value.GetText(), value.GetStart().GetLine())
 				}
-				if isSensitive {
-					return ctx.GetText(), true, nil
+				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+					finalLevel = maskingLevel
+				}
+				if finalLevel == maxMaskingLevel {
+					return ctx.GetText(), finalLevel, nil
 				}
 			}
 		}
-		return ctx.GetText(), false, nil
+		return ctx.GetText(), defaultMaskingLevel, nil
 	case *snowparser.ValueContext:
 		return extractor.evalSnowSQLExprMaskingLevel(ctx.Expr())
 	case *snowparser.Bracket_expressionContext:
+		finalLevel := defaultMaskingLevel
 		if v := ctx.Expr(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		if v := ctx.Subquery(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
 			}
+			return ctx.GetText(), maskingLevel, nil
 		}
 		panic("never reach here")
 	case *snowparser.Iff_exprContext:
+		finalLevel := defaultMaskingLevel
 		if v := ctx.Search_condition(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Search_condition())
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Search_condition())
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 			for _, expr := range ctx.AllExpr() {
-				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
+				_, finalLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 				if err != nil {
-					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
-				if isSensitive {
-					return ctx.GetText(), true, nil
+				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+					finalLevel = maskingLevel
+				}
+				if finalLevel == maxMaskingLevel {
+					return ctx.GetText(), finalLevel, nil
 				}
 			}
-			return ctx.GetText(), false, nil
+			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
 	case *snowparser.Case_expressionContext:
+		finalLevel := defaultMaskingLevel
 		for _, expr := range ctx.AllExpr() {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			if !isSensitive {
-				return ctx.GetText(), false, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		if v := ctx.AllSwitch_section(); len(v) > 0 {
 			for _, switchSection := range v {
-				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(switchSection)
+				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(switchSection)
 				if err != nil {
-					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSection.GetText(), switchSection.GetStart().GetLine())
+					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSection.GetText(), switchSection.GetStart().GetLine())
 				}
-				if isSensitive {
-					return ctx.GetText(), true, nil
+				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+					finalLevel = maskingLevel
+				}
+				if finalLevel == maxMaskingLevel {
+					return ctx.GetText(), finalLevel, nil
 				}
 			}
-			return ctx.GetText(), false, nil
+			return ctx.GetText(), finalLevel, nil
 		}
 		if v := ctx.AllSwitch_search_condition_section(); len(v) > 0 {
 			for _, switchSearchConditionSection := range v {
-				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(switchSearchConditionSection)
+				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(switchSearchConditionSection)
 				if err != nil {
-					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSearchConditionSection.GetText(), switchSearchConditionSection.GetStart().GetLine())
+					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSearchConditionSection.GetText(), switchSearchConditionSection.GetStart().GetLine())
 				}
-				if isSensitive {
-					return ctx.GetText(), true, nil
+				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+					finalLevel = maskingLevel
+				}
+				if finalLevel == maxMaskingLevel {
+					return ctx.GetText(), finalLevel, nil
 				}
 			}
-			return ctx.GetText(), false, nil
+			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
 	case *snowparser.Switch_sectionContext:
+		finalLevel := defaultMaskingLevel
 		if v := ctx.AllExpr(); len(v) > 0 {
 			for _, expr := range v {
-				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
+				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 				if err != nil {
-					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
-				if isSensitive {
-					return ctx.GetText(), true, nil
+				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+					finalLevel = maskingLevel
+				}
+				if finalLevel == maxMaskingLevel {
+					return ctx.GetText(), finalLevel, nil
 				}
 			}
-			return ctx.GetText(), false, nil
+			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
 	case *snowparser.Switch_search_condition_sectionContext:
+		finalLevel := defaultMaskingLevel
 		if v := ctx.Search_condition(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
 			}
-			_, isSensitive, err = extractor.evalSnowSQLExprMaskingLevel(ctx.Expr())
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
+			}
+			_, maskingLevel, err = extractor.evalSnowSQLExprMaskingLevel(ctx.Expr())
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr().GetText(), ctx.Expr().GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr().GetText(), ctx.Expr().GetStart().GetLine())
 			}
-			return ctx.GetText(), isSensitive, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
 	case *snowparser.Search_conditionContext:
+		finalLevel := defaultMaskingLevel
 		if v := ctx.Predicate(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Predicate().GetText(), ctx.Predicate().GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
 			}
 		}
 		if v := ctx.AllSearch_condition(); len(v) > 0 {
 			for _, searchCondition := range v {
-				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(searchCondition)
+				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(searchCondition)
 				if err != nil {
-					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", searchCondition.GetText(), searchCondition.GetStart().GetLine())
+					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", searchCondition.GetText(), searchCondition.GetStart().GetLine())
 				}
-				if isSensitive {
-					return ctx.GetText(), true, nil
+				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+					finalLevel = maskingLevel
 				}
 			}
-			return ctx.GetText(), false, nil
+			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
 	case *snowparser.PredicateContext:
+		finalLevel := defaultMaskingLevel
 		if v := ctx.AllExpr(); len(v) > 0 {
 			for _, expr := range v {
-				_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
+				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 				if err != nil {
-					return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
-				if isSensitive {
-					return ctx.GetText(), true, nil
+				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+					finalLevel = maskingLevel
 				}
 			}
 		}
 		if v := ctx.Subquery(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
 			}
 		}
 		if v := ctx.Expr_list(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 		}
-		return ctx.GetText(), false, nil
+		return ctx.GetText(), finalLevel, nil
 	case *snowparser.SubqueryContext:
 		fields, err := extractor.extractSnowsqlSensitiveFieldsQueryStatement(ctx.Query_statement())
 		if err != nil {
-			return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.GetText(), ctx.GetStart().GetLine())
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.GetText(), ctx.GetStart().GetLine())
 		}
-		var sensitive bool
+		finalLevel := defaultMaskingLevel
 		for _, field := range fields {
-			if field.sensitive {
-				sensitive = true
-				break
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
+				finalLevel = field.maskingLevel
 			}
 		}
-		return ctx.GetText(), sensitive, nil
+		return ctx.GetText(), finalLevel, nil
 	case *snowparser.Primitive_expressionContext:
 		if v := ctx.Id_(); v != nil {
 			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
-		return ctx.GetText(), false, nil
+		return ctx.GetText(), defaultMaskingLevel, nil
 	case *snowparser.Function_callContext:
 		if v := ctx.Ranking_windowed_function(); v != nil {
 			return extractor.evalSnowSQLExprMaskingLevel(v)
@@ -586,19 +647,19 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Object_name(); v != nil {
-			return v.GetText(), false, nil
+			return v.GetText(), defaultMaskingLevel, nil
 		}
 		if v := ctx.Expr_list(); v != nil {
 			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), isSensitive, nil
 		}
 		if v := ctx.Expr(); v != nil {
 			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), isSensitive, nil
 		}
@@ -607,107 +668,136 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 		if v := ctx.Expr_list(); v != nil {
 			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), isSensitive, nil
 		}
 		if ctx.STAR() != nil {
-			return ctx.GetText(), false, nil
+			return ctx.GetText(), defaultMaskingLevel, nil
 		}
 		if v := ctx.Expr(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			finalLevel := defaultMaskingLevel
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
 			}
-			_, isSensitive, err = extractor.evalSnowSQLExprMaskingLevel(ctx.Order_by_clause())
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
+			}
+			_, maskingLevel, err = extractor.evalSnowSQLExprMaskingLevel(ctx.Order_by_clause())
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Order_by_clause().GetText(), ctx.Order_by_clause().GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Order_by_clause().GetText(), ctx.Order_by_clause().GetStart().GetLine())
 			}
-			return ctx.GetText(), isSensitive, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
 	case *snowparser.Ranking_windowed_functionContext:
+		finalLevel := defaultMaskingLevel
 		if v := ctx.Expr(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		if v := ctx.Over_clause(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			return ctx.GetText(), isSensitive, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
 	case *snowparser.Over_clauseContext:
+		finalLevel := defaultMaskingLevel
 		if v := ctx.Partition_by(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		if v := ctx.Order_by_expr(); v != nil {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(v)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			return ctx.GetText(), isSensitive, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
 	case *snowparser.Partition_byContext:
 		_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Expr_list())
 		if err != nil {
-			return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list().GetText(), ctx.Expr_list().GetStart().GetLine())
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list().GetText(), ctx.Expr_list().GetStart().GetLine())
 		}
 		return ctx.GetText(), isSensitive, nil
 	case *snowparser.Order_by_exprContext:
 		_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Expr_list_sorted())
 		if err != nil {
-			return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list_sorted().GetText(), ctx.Expr_list_sorted().GetStart().GetLine())
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list_sorted().GetText(), ctx.Expr_list_sorted().GetStart().GetLine())
 		}
 		return ctx.GetText(), isSensitive, nil
 	case *snowparser.Expr_listContext:
+		finalLevel := defaultMaskingLevel
 		allExpr := ctx.AllExpr()
 		for _, expr := range allExpr {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 		}
-		return ctx.GetText(), false, nil
+		return ctx.GetText(), finalLevel, nil
 	case *snowparser.Expr_list_sortedContext:
+		finalLevel := defaultMaskingLevel
 		allExpr := ctx.AllExpr()
 		for _, expr := range allExpr {
-			_, isSensitive, err := extractor.evalSnowSQLExprMaskingLevel(expr)
+			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 			if err != nil {
-				return "", false, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			if isSensitive {
-				return ctx.GetText(), true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
+				finalLevel = maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return ctx.GetText(), finalLevel, nil
 			}
 		}
-		return ctx.GetText(), false, nil
+		return ctx.GetText(), finalLevel, nil
 	case *snowparser.Id_Context:
 		normalizedColumnName := parser.NormalizeSnowSQLObjectNamePart(ctx)
 		fieldInfo, err := extractor.snowflakeGetFieldMaskingLevel("", "", "", normalizedColumnName)
 		if err != nil {
-			return "", false, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
-		return fieldInfo.name, fieldInfo.sensitive, nil
+		return fieldInfo.name, fieldInfo.maskingLevel, nil
 	}
 	panic("never reach here")
 }
