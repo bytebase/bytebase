@@ -386,12 +386,14 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 			if hookURL == "" {
 				return
 			}
-			if _, err := http.PostForm(hookURL, nil); err != nil {
+			resp, err := http.PostForm(hookURL, nil)
+			if err != nil {
 				log.Warn("Failed to POST hook URL",
 					zap.String("hookURL", hookURL),
 					zap.Int("databaseID", database.UID),
 					zap.Error(err))
 			}
+			defer resp.Body.Close()
 		}(database, backupName, backupSetting.HookURL)
 		r.backupWg.Add(1)
 	}

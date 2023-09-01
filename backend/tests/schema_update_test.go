@@ -1887,7 +1887,7 @@ func postVCSSQLReview(ctl *controller, gitOpsInfo *v1pb.ProjectGitOpsInfo, reque
 	if err != nil {
 		return nil, err
 	}
-
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read response body")
