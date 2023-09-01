@@ -41,7 +41,7 @@
       </div>
       <div v-if="subscriptionStore.currentPlan === PlanType.FREE" class="my-3">
         <dt class="text-gray-400">
-          {{ $t("subscription.instance-count") }}
+          {{ $t("subscription.max-instance-count") }}
         </dt>
         <dd
           class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"

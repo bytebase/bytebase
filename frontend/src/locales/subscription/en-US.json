@@ -1,7 +1,7 @@
 {
   "current": "Current plan",
   "unlimited": "Unlimited",
-  "instance-count": "Instance count",
+  "max-instance-count": "Max instance count",
   "user-count": "User count",
   "expires-at": "Expires at",
   "start-free-trial": "Start free trial",
