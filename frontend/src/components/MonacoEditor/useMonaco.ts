@@ -6,27 +6,27 @@ import { getBBTheme } from "./themes/bb";
 import { getBBDarkTheme } from "./themes/bb-dark";
 
 export const useMonaco = async () => {
-  const [monaco, { default: EditorWorker }, { default: TSWorker }] =
-    await Promise.all([
-      import("monaco-editor"),
-      import("monaco-editor/esm/vs/editor/editor.worker?worker"),
-      import("monaco-editor/esm/vs/language/typescript/ts.worker?worker"),
-    ]);
+  const [monaco, { buildWorkerDefinition }] = await Promise.all([
+    import("monaco-editor"),
+    import("monaco-editor-workers"),
+    import("monaco-languageclient"),
+    import("monaco-editor/esm/vs/basic-languages/sql/sql.contribution.js"),
+    import(
+      "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution.js"
+    ),
+    import("monaco-editor/esm/vs/language/typescript/monaco.contribution.js"),
+  ]);
 
   const bbTheme = getBBTheme();
   const bbDarkTheme = getBBDarkTheme();
   monaco.editor.defineTheme("bb", bbTheme);
   monaco.editor.defineTheme("bb-dark", bbDarkTheme);
 
-  self.MonacoEnvironment = {
-    getWorker: (workerId, label) => {
-      console.debug("MonacoEnvironment.getWorker", workerId, label);
-      if (label === "javascript") {
-        return new TSWorker();
-      }
-      return new EditorWorker();
-    },
-  };
+  buildWorkerDefinition(
+    new URL("@public/monaco-editor-workers", import.meta.url).href,
+    import.meta.url,
+    true
+  );
 
   const dispose = () => {
     // Nothing todo

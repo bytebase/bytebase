@@ -10,6 +10,8 @@
 
     <StageSection />
 
+    <div class="w-full mt-4" />
+
     <TaskListSection />
 
     <TaskRunSection v-if="!isCreating" />
@@ -19,6 +21,8 @@
     <PlanCheckSection v-if="!isCreating" />
 
     <StatementSection />
+
+    <div class="w-full border-t my-4" />
 
     <DescriptionSection />
 

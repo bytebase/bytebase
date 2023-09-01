@@ -2848,6 +2848,7 @@
     "parent-branch": "Rama principal",
     "save-draft": "Guardar borrador",
     "merge-branch": "Fusionar rama",
+    "delete-branch-after-merged": "Eliminar rama después de la fusión",
     "diff-editor": {
       "self": "Editor de diferencias",
       "resolve": "Resolver",

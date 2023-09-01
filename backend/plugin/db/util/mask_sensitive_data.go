@@ -6,14 +6,22 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+)
+
+var (
+	defaultMaskingLevel storepb.MaskingLevel = storepb.MaskingLevel_NONE
+	maxMaskingLevel     storepb.MaskingLevel = storepb.MaskingLevel_FULL
 )
 
 type fieldInfo struct {
-	name      string
-	table     string
-	schema    string
-	database  string
-	sensitive bool
+	name     string
+	table    string
+	schema   string
+	database string
+	// TODO(zp): retire sensitive boolean flag.
+	sensitive    bool
+	maskingLevel storepb.MaskingLevel
 }
 
 type sensitiveFieldExtractor struct {
@@ -49,7 +57,18 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		return extractor.extractMySQLSensitiveField(statement)
+		result, err := extractor.extractMySQLSensitiveField(statement)
+		if err != nil {
+			return nil, err
+		}
+		// TODO(zp): remove it
+		// Backfill sensitive.
+		for i := range result {
+			if result[i].MaskingLevel == storepb.MaskingLevel_PARTIAL || result[i].MaskingLevel == storepb.MaskingLevel_FULL {
+				result[i].Sensitive = true
+			}
+		}
+		return result, nil
 	case db.Postgres, db.Redshift, db.RisingWave:
 		extractor := &sensitiveFieldExtractor{
 			schemaInfo: schemaInfo,
@@ -63,6 +82,13 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 				return nil, nil
 			}
 			return nil, err
+		}
+		// TODO(zp): remove it
+		// Backfill sensitive.
+		for i := range result {
+			if result[i].MaskingLevel == storepb.MaskingLevel_PARTIAL || result[i].MaskingLevel == storepb.MaskingLevel_FULL {
+				result[i].Sensitive = true
+			}
 		}
 		return result, nil
 	case db.Oracle, db.DM:

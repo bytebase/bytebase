@@ -152,6 +152,7 @@
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
     - [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign)
+    - [SheetPayload.SchemaDesign.Protection](#bytebase-store-SheetPayload-SchemaDesign-Protection)
     - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
   
     - [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type)
@@ -676,6 +677,7 @@ DatabaseMetadata is the metadata for databases.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | labels | [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry) | repeated |  |
+| last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -1207,6 +1209,7 @@ InstanceMetadata is the metadata for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | mysql_lower_case_table_names | [int32](#int32) |  | The lower_case_table_names config for MySQL instances. It is used to determine whether the table names and database names are case sensitive. |
+| last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -1222,6 +1225,7 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | schema_tenant_mode | [bool](#bool) |  | The schema tenant mode is used to determine whether the instance is in schema tenant mode. For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. |
+| sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
 
 
 
@@ -2336,6 +2340,22 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | baseline_sheet_id | [string](#string) |  | The id of the baseline sheet including the baseline full schema. |
 | baseline_schema_design_id | [string](#string) |  | The sheet id of the baseline schema design. Only valid when the schema design is a personal draft. |
 | baseline_change_history_id | [string](#string) |  | The id of the baseline change history including the baseline change history.(optional) |
+| protection | [SheetPayload.SchemaDesign.Protection](#bytebase-store-SheetPayload-SchemaDesign-Protection) |  | The protection of the schema design. |
+
+
+
+
+
+
+<a name="bytebase-store-SheetPayload-SchemaDesign-Protection"></a>
+
+### SheetPayload.SchemaDesign.Protection
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| allow_force_pushes | [bool](#bool) |  | Permits force pushes to the branch. |
 
 
 

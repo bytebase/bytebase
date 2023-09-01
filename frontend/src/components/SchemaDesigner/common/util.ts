@@ -514,6 +514,6 @@ export const generateForkedBranchName = (branch: SchemaDesign): string => {
 };
 
 export const validateBranchName = (branchName: string): boolean => {
-  const regex = /^(a-zA-Z)[a-zA-Z0-9-_/]+$/;
+  const regex = /^[a-zA-Z][a-zA-Z0-9-_/]+$/;
   return regex.test(branchName);
 };

@@ -67,6 +67,8 @@ export interface SheetPayload_SchemaDesign {
   baselineSchemaDesignId: string;
   /** The id of the baseline change history including the baseline change history.(optional) */
   baselineChangeHistoryId: string;
+  /** The protection of the schema design. */
+  protection?: SheetPayload_SchemaDesign_Protection | undefined;
 }
 
 export enum SheetPayload_SchemaDesign_Type {
@@ -108,6 +110,11 @@ export function sheetPayload_SchemaDesign_TypeToJSON(object: SheetPayload_Schema
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface SheetPayload_SchemaDesign_Protection {
+  /** Permits force pushes to the branch. */
+  allowForcePushes: boolean;
 }
 
 function createBaseSheetPayload(): SheetPayload {
@@ -340,7 +347,14 @@ export const SheetPayload_VCSPayload = {
 };
 
 function createBaseSheetPayload_SchemaDesign(): SheetPayload_SchemaDesign {
-  return { type: 0, engine: 0, baselineSheetId: "", baselineSchemaDesignId: "", baselineChangeHistoryId: "" };
+  return {
+    type: 0,
+    engine: 0,
+    baselineSheetId: "",
+    baselineSchemaDesignId: "",
+    baselineChangeHistoryId: "",
+    protection: undefined,
+  };
 }
 
 export const SheetPayload_SchemaDesign = {
@@ -359,6 +373,9 @@ export const SheetPayload_SchemaDesign = {
     }
     if (message.baselineChangeHistoryId !== "") {
       writer.uint32(42).string(message.baselineChangeHistoryId);
+    }
+    if (message.protection !== undefined) {
+      SheetPayload_SchemaDesign_Protection.encode(message.protection, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -405,6 +422,13 @@ export const SheetPayload_SchemaDesign = {
 
           message.baselineChangeHistoryId = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.protection = SheetPayload_SchemaDesign_Protection.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -421,6 +445,9 @@ export const SheetPayload_SchemaDesign = {
       baselineSheetId: isSet(object.baselineSheetId) ? String(object.baselineSheetId) : "",
       baselineSchemaDesignId: isSet(object.baselineSchemaDesignId) ? String(object.baselineSchemaDesignId) : "",
       baselineChangeHistoryId: isSet(object.baselineChangeHistoryId) ? String(object.baselineChangeHistoryId) : "",
+      protection: isSet(object.protection)
+        ? SheetPayload_SchemaDesign_Protection.fromJSON(object.protection)
+        : undefined,
     };
   },
 
@@ -431,6 +458,10 @@ export const SheetPayload_SchemaDesign = {
     message.baselineSheetId !== undefined && (obj.baselineSheetId = message.baselineSheetId);
     message.baselineSchemaDesignId !== undefined && (obj.baselineSchemaDesignId = message.baselineSchemaDesignId);
     message.baselineChangeHistoryId !== undefined && (obj.baselineChangeHistoryId = message.baselineChangeHistoryId);
+    message.protection !== undefined &&
+      (obj.protection = message.protection
+        ? SheetPayload_SchemaDesign_Protection.toJSON(message.protection)
+        : undefined);
     return obj;
   },
 
@@ -445,6 +476,65 @@ export const SheetPayload_SchemaDesign = {
     message.baselineSheetId = object.baselineSheetId ?? "";
     message.baselineSchemaDesignId = object.baselineSchemaDesignId ?? "";
     message.baselineChangeHistoryId = object.baselineChangeHistoryId ?? "";
+    message.protection = (object.protection !== undefined && object.protection !== null)
+      ? SheetPayload_SchemaDesign_Protection.fromPartial(object.protection)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSheetPayload_SchemaDesign_Protection(): SheetPayload_SchemaDesign_Protection {
+  return { allowForcePushes: false };
+}
+
+export const SheetPayload_SchemaDesign_Protection = {
+  encode(message: SheetPayload_SchemaDesign_Protection, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.allowForcePushes === true) {
+      writer.uint32(8).bool(message.allowForcePushes);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SheetPayload_SchemaDesign_Protection {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSheetPayload_SchemaDesign_Protection();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.allowForcePushes = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SheetPayload_SchemaDesign_Protection {
+    return { allowForcePushes: isSet(object.allowForcePushes) ? Boolean(object.allowForcePushes) : false };
+  },
+
+  toJSON(message: SheetPayload_SchemaDesign_Protection): unknown {
+    const obj: any = {};
+    message.allowForcePushes !== undefined && (obj.allowForcePushes = message.allowForcePushes);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SheetPayload_SchemaDesign_Protection>): SheetPayload_SchemaDesign_Protection {
+    return SheetPayload_SchemaDesign_Protection.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SheetPayload_SchemaDesign_Protection>): SheetPayload_SchemaDesign_Protection {
+    const message = createBaseSheetPayload_SchemaDesign_Protection();
+    message.allowForcePushes = object.allowForcePushes ?? false;
     return message;
   },
 };

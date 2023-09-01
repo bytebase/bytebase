@@ -37,26 +37,16 @@
               <p
                 class="mt-4 flex items-baseline text-gray-900 text-xl space-x-2"
               >
-                <span v-if="plan.pricePrefix" class="text-3xl">
-                  {{ plan.pricePrefix }}
-                </span>
-                <span
-                  :class="[
-                    'font-bold',
-                    plan.type == PlanType.ENTERPRISE ? 'text-3xl' : 'text-4xl',
-                  ]"
-                >
-                  {{ plan.pricing }}
+                <span :class="'font-bold text-3xl'">
+                  <template v-if="plan.type === PlanType.ENTERPRISE">
+                    {{ plan.pricing }}
+                  </template>
+                  <template v-else> ${{ plan.pricing }} </template>
                 </span>
                 {{ plan.priceSuffix }}
               </p>
 
-              <div
-                :class="[
-                  'mt-2 text-gray-600 h-12',
-                  plan.type == PlanType.TEAM ? 'font-bold' : '',
-                ]"
-              >
+              <div class="mt-2 text-gray-600 h-12">
                 {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
 
@@ -174,9 +164,6 @@
         </p>
 
         <p class="mt-4 flex items-baseline text-gray-900 text-xl space-x-2">
-          <span v-if="plan.pricePrefix" class="text-3xl">
-            {{ plan.pricePrefix }}
-          </span>
           <span
             :class="[
               'font-bold',
@@ -322,14 +309,13 @@ const plans = computed((): LocalPlan[] => {
       import.meta.url
     ).href,
     buttonText: getButtonText(plan),
-    highlight: plan.type === PlanType.TEAM,
+    highlight: plan.type === PlanType.ENTERPRISE,
     isAvailable: plan.type === PlanType.TEAM,
     label: t(`subscription.plan.${plan.title}.label`),
     pricing:
       plan.type === PlanType.ENTERPRISE
         ? t("subscription.contact-us")
         : `${plan.pricePerInstancePerMonth}`,
-    pricePrefix: "",
     priceSuffix:
       plan.type === PlanType.TEAM
         ? t("subscription.price-unit-for-team")

@@ -6,7 +6,6 @@ package tests
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -38,7 +39,7 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	ctx, project, mysqlDB, instanceUID, database, databaseUID, databaseName, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, mysqlDB, instance, database, databaseName, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
@@ -46,30 +47,45 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	})
 	a.NoError(err)
 
-	backupUID, err := strconv.Atoi(backup.Uid)
-	a.NoError(err)
-	issue, err := createPITRIssue(ctl, project, api.PITRContext{
-		DatabaseID: databaseUID,
-		BackupID:   &backupUID,
-		CreateDatabaseCtx: &api.CreateDatabaseContext{
-			InstanceID:   instanceUID,
-			DatabaseName: databaseName + "_new",
-			CharacterSet: latestSchemaMetadata.CharacterSet,
-			Collation:    latestSchemaMetadata.Collation,
-			BackupID:     backupUID,
+	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
+								CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
+									Target:       instance.Name,
+									Database:     databaseName + "_new",
+									CharacterSet: latestSchemaMetadata.CharacterSet,
+									Collation:    latestSchemaMetadata.Collation,
+									Backup:       backup.Name,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	})
 	a.NoError(err)
-
-	// Restore stage.
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
-	a.Equal(api.TaskDone, status)
-
-	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Title:       fmt.Sprintf("restore database %s", database.Name),
+			Description: fmt.Sprintf("restore database %s", database.Name),
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+		},
+	})
 	a.NoError(err)
-	a.Equal(api.TaskDone, status)
+	err = ctl.waitRollout(ctx, rollout.Name)
+	a.NoError(err)
 
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime0)
 	validateTbl1(t, mysqlDB, databaseName, numRowsTime0)
@@ -81,7 +97,7 @@ func TestRetentionPolicy(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	ctx, _, _, _, database, databaseUID, _, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, _, _, _, database, _, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	metaDB, err := sql.Open("pgx", ctl.profile.PgURL)
@@ -90,13 +106,13 @@ func TestRetentionPolicy(t *testing.T) {
 
 	// Check that the backup file exist
 	backupResourceName := strings.TrimPrefix(backup.Name, fmt.Sprintf("%s/backups/", database.Name))
-	backupFilePath := filepath.Join(ctl.profile.DataDir, "backup", "db", fmt.Sprintf("%d", databaseUID), fmt.Sprintf("%s.sql", backupResourceName))
+	backupFilePath := filepath.Join(ctl.profile.DataDir, "backup", "db", database.Uid, fmt.Sprintf("%s.sql", backupResourceName))
 	_, err = os.Stat(backupFilePath)
 	a.NoError(err)
 
 	// Change retention period to 1s, and the backup should be quickly removed.
 	// TODO(d): clean-up the hack.
-	_, err = metaDB.ExecContext(ctx, fmt.Sprintf("UPDATE backup_setting SET enabled=true, retention_period_ts=1 WHERE database_id=%d;", databaseUID))
+	_, err = metaDB.ExecContext(ctx, fmt.Sprintf("UPDATE backup_setting SET enabled=true, retention_period_ts=1 WHERE database_id=%s;", database.Uid))
 	a.NoError(err)
 	err = ctl.waitBackupArchived(ctx, database.Name, backup.Name)
 	a.NoError(err)
@@ -114,7 +130,7 @@ func TestPITRGeneral(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	ctx, project, mysqlDB, _, _, databaseUID, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, mysqlDB, _, database, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 	_, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
 		Parent: "environments/prod",
@@ -132,32 +148,61 @@ func TestPITRGeneral(t *testing.T) {
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
 	ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-	targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort) + 1
+	targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort).Add(time.Second)
 
 	dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
 	log.Debug("mimics schema migration", zap.String("statement", dropColumnStmt))
 	_, err = mysqlDB.ExecContext(ctx, dropColumnStmt)
 	a.NoError(err)
 
-	issue, err := createPITRIssue(ctl, project, api.PITRContext{
-		DatabaseID:    databaseUID,
-		PointInTimeTs: &targetTs,
+	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
+								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
+									Target: database.Name,
+									Source: &v1pb.Plan_RestoreDatabaseConfig_PointInTime{
+										PointInTime: timestamppb.New(targetTs),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	a.NoError(err)
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Title:       "restore database",
+			Description: "restore database",
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+		},
 	})
 	a.NoError(err)
 
 	// Restore stage.
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
+	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
 	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	cancelUpdateRow()
 	// We mimics the situation where the user waits for the target database idle before doing the cutover.
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
+	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
 	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
 	validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
@@ -169,16 +214,28 @@ func TestPITRDropDatabase(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	ctx, project, mysqlDB, _, _, databaseUID, databaseName, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, mysqlDB, _, database, databaseName, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
+	_, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+		Parent: "environments/prod",
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
+			Policy: &v1pb.Policy_DeploymentApprovalPolicy{
+				DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
+					DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
+				},
+			},
+		},
+	})
+	a.NoError(err)
 
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
 	time.Sleep(1 * time.Second)
-	targetTs := time.Now().Unix()
+	targetTs := time.Now()
 
 	dropStmt := fmt.Sprintf(`DROP DATABASE %s;`, databaseName)
-	_, err := mysqlDB.ExecContext(ctx, dropStmt)
+	_, err = mysqlDB.ExecContext(ctx, dropStmt)
 	a.NoError(err)
 
 	dbRows, err := mysqlDB.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, databaseName))
@@ -192,24 +249,53 @@ func TestPITRDropDatabase(t *testing.T) {
 	}
 	a.NoError(dbRows.Err())
 
-	issue, err := createPITRIssue(ctl, project, api.PITRContext{
-		DatabaseID:    databaseUID,
-		PointInTimeTs: &targetTs,
+	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
+								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
+									Target: database.Name,
+									Source: &v1pb.Plan_RestoreDatabaseConfig_PointInTime{
+										PointInTime: timestamppb.New(targetTs),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	a.NoError(err)
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Title:       "restore database",
+			Description: "restore database",
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+		},
 	})
 	a.NoError(err)
 
 	// Restore stage.
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
+	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
 	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	// We mimics the situation where the user waits for the target database idle before doing the cutover.
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
+	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
 	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
 	validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
@@ -221,9 +307,8 @@ func TestPITRTwice(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	ctx, project, mysqlDB, _, database, databaseUID, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, mysqlDB, _, database, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
-
 	_, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
 		Parent: "environments/prod",
 		Policy: &v1pb.Policy{
@@ -240,27 +325,56 @@ func TestPITRTwice(t *testing.T) {
 	log.Debug("Creating issue for the first PITR.")
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 	ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-	targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort) + 1
+	targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort).Add(time.Second)
 
-	issue, err := createPITRIssue(ctl, project, api.PITRContext{
-		DatabaseID:    databaseUID,
-		PointInTimeTs: &targetTs,
+	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
+								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
+									Target: database.Name,
+									Source: &v1pb.Plan_RestoreDatabaseConfig_PointInTime{
+										PointInTime: timestamppb.New(targetTs),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	a.NoError(err)
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Title:       "restore database",
+			Description: "restore database",
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+		},
 	})
 	a.NoError(err)
 
 	// Restore stage.
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
+	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
 	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	cancelUpdateRow()
 	// We mimics the situation where the user waits for the target database idle before doing the cutover.
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
+	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
 	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
 	validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
@@ -282,28 +396,57 @@ func TestPITRTwice(t *testing.T) {
 
 	log.Debug("Creating issue for the second PITR.")
 	ctxUpdateRow, cancelUpdateRow = context.WithCancel(ctx)
-	targetTs = startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort) + 1
+	targetTs = startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort).Add(time.Second)
 	insertRangeData(t, mysqlDB, numRowsTime1, numRowsTime2)
 
-	issue2, err := createPITRIssue(ctl, project, api.PITRContext{
-		DatabaseID:    databaseUID,
-		PointInTimeTs: &targetTs,
+	plan, err = ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
+								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
+									Target: database.Name,
+									Source: &v1pb.Plan_RestoreDatabaseConfig_PointInTime{
+										PointInTime: timestamppb.New(targetTs),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	a.NoError(err)
+	rollout, err = ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	a.NoError(err)
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Title:       "restore database",
+			Description: "restore database",
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+		},
 	})
 	a.NoError(err)
 
 	// Restore stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue2.ID)
+	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
 	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	cancelUpdateRow()
 	// We mimics the situation where the user waits for the target database idle before doing the cutover.
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue2.ID)
+	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
 	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	// Second PITR
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
@@ -317,10 +460,8 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	ctx, project, sourceMySQLDB, _, _, databaseUID, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, sourceMySQLDB, _, sourceDB, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
-	projectUID, err := strconv.Atoi(project.Uid)
-	a.NoError(err)
 
 	dstPort := getTestPort()
 	dstStopFn := resourcemysql.SetupTestInstance(t, dstPort, mysqlBinDir)
@@ -340,58 +481,65 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	dstInstanceUID, err := strconv.Atoi(dstInstance.Uid)
-	a.NoError(err)
-	prodEnvironmentResourceID := strings.TrimPrefix(prodEnvironment.Name, "environments/")
-	a.NoError(err)
 
 	insertRangeData(t, sourceMySQLDB, numRowsTime0, numRowsTime1)
 
 	ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
 	cancelUpdateRow()
 
-	targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort) + 1
+	targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort).Add(time.Second)
 
 	dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
 	log.Debug("mimics schema migration", zap.String("statement", dropColumnStmt))
 	_, err = sourceMySQLDB.ExecContext(ctx, dropColumnStmt)
 	a.NoError(err)
 
-	labels, err := marshalLabels(nil, prodEnvironmentResourceID)
-	a.NoError(err)
-
 	targetDatabaseName := "new_database"
-	pitrIssueCtx, err := json.Marshal(&api.PITRContext{
-		DatabaseID:    databaseUID,
-		PointInTimeTs: &targetTs,
-		CreateDatabaseCtx: &api.CreateDatabaseContext{
-			InstanceID:   dstInstanceUID,
-			DatabaseName: targetDatabaseName,
-			Labels:       labels,
-			CharacterSet: "utf8mb4",
-			Collation:    "utf8mb4_general_ci",
+	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
+								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
+									Target: sourceDB.Name,
+									CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
+										Target:       dstInstance.Name,
+										Database:     targetDatabaseName,
+										CharacterSet: "utf8mb4",
+										Collation:    "utf8mb4_general_ci",
+									},
+									Source: &v1pb.Plan_RestoreDatabaseConfig_PointInTime{
+										PointInTime: timestamppb.New(targetTs),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	a.NoError(err)
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Title:       "restore database",
+			Description: "restore database",
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
 	a.NoError(err)
 
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("Restore database %s to the time %d", databaseName, targetTs),
-		Type:          api.IssueDatabaseRestorePITR,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(pitrIssueCtx),
-	})
+	err = ctl.waitRollout(ctx, rollout.Name)
 	a.NoError(err)
-
-	// Create database task
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
-
-	// Restore task
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	cancelUpdateRow()
 
@@ -408,54 +556,65 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	targetTs := time.Now().Unix()
-	ctx, project, _, _, _, databaseUID, _, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	targetTs := time.Now()
+	ctx, project, _, _, database, _, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
-	issue, err := createPITRIssue(ctl, project, api.PITRContext{
-		DatabaseID:    databaseUID,
-		PointInTimeTs: &targetTs,
+	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
+								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
+									Target: database.Name,
+									Source: &v1pb.Plan_RestoreDatabaseConfig_PointInTime{
+										PointInTime: timestamppb.New(targetTs),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	a.NoError(err)
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Title:       "restore database",
+			Description: "restore database",
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+		},
 	})
 	a.NoError(err)
 
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
+	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
 	a.Error(err)
-	a.Equal(api.TaskFailed, status)
 }
 
-func createPITRIssue(ctl *controller, project *v1pb.Project, pitrContext api.PITRContext) (*api.Issue, error) {
-	projectUID, err := strconv.Atoi(project.Uid)
-	if err != nil {
-		return nil, err
-	}
-	pitrIssueCtx, err := json.Marshal(&pitrContext)
-	if err != nil {
-		return nil, err
-	}
-	return ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("Restore database %d", pitrContext.DatabaseID),
-		Type:          api.IssueDatabaseRestorePITR,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(pitrIssueCtx),
-	})
-}
-
-func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (context.Context, *v1pb.Project, *sql.DB, int, *v1pb.Database, int, string, *v1pb.Backup, int, func()) {
+func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (context.Context, *v1pb.Project, *sql.DB, *v1pb.Instance, *v1pb.Database, string, *v1pb.Backup, int, func()) {
 	a := require.New(t)
 
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                   dataDir,
+		vcsProviderCreator:        fake.NewGitLab,
+		developmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	err = ctl.setLicense()
 	a.NoError(err)
 
 	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
@@ -492,17 +651,13 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
 
-	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, project, instance, nil, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
-	a.NoError(err)
-	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
 	err = ctl.disableAutomaticBackup(ctx, database.Name)
@@ -524,7 +679,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	err = ctl.waitBackup(ctx, database.Name, backup.Name)
 	a.NoError(err)
 
-	return ctx, project, mysqlDB, instanceUID, database, databaseUID, databaseName, backup, mysqlPort, func() {
+	return ctx, project, mysqlDB, instance, database, databaseName, backup, mysqlPort, func() {
 		a.NoError(ctl.Close(ctx))
 		stopInstance()
 		a.NoError(mysqlDB.Close())
@@ -631,13 +786,13 @@ func validateTableUpdateRow(t *testing.T, db *sql.DB, databaseName string) {
 
 // Concurrently update a single row to mimic the ongoing business workload.
 // Returns the timestamp after inserting the initial value so we could check the PITR is done right.
-func startUpdateRow(ctx context.Context, t *testing.T, database string, port int) int64 {
+func startUpdateRow(ctx context.Context, t *testing.T, database string, port int) time.Time {
 	a := require.New(t)
 	db, err := connectTestMySQL(port, database)
 	a.NoError(err)
 
 	log.Debug("Start updating data concurrently")
-	initTimestamp := time.Now().Unix()
+	initTimestamp := time.Now()
 
 	// Sleep for one second so that the concurrent update will start no earlier than initTimestamp+1.
 	// This will make a clear boundary for the binlog recovery --stop-datetime.

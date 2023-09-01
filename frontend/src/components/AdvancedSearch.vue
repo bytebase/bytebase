@@ -22,7 +22,7 @@
       <div
         v-for="item in searchScopes"
         :key="item.id"
-        class="flex gap-x-3 p-3 items-center cursor-pointer hover:bg-gray-100"
+        class="flex gap-x-3 p-2 items-center cursor-pointer hover:bg-gray-100"
         @mousedown.prevent.stop="
           () => {
             state.showSearchScopes = false;
@@ -31,28 +31,30 @@
         "
       >
         <heroicons-outline:filter class="h-4 w-4 text-control" />
-        <span class="text-accent">{{ item.title }}</span>
-        <span class="text-control-light">{{ item.description }}</span>
+        <div class="space-x-1">
+          <span class="text-accent">{{ item.id }}:</span>
+          <span class="text-control-light">{{ item.description }}</span>
+        </div>
       </div>
     </div>
     <div
       v-if="state.currentScope && searchOptions.length > 0"
-      class="absolute z-50 top-full w-full divide-y divide-block-border bg-white shadow-md"
+      class="absolute z-50 top-full w-full bg-white shadow-md"
     >
-      <div class="p-3 text-lg text-control-light">
+      <div class="px-3 pt-2 pb-1 text-sm text-control font-semibold">
         {{ searchKeyword }}
       </div>
-      <div class="max-h-60 overflow-y-auto divide-y divide-block-border">
+      <div class="max-h-60 overflow-y-auto divide-block-border">
         <div
           v-for="option in searchOptions"
           :key="option.id"
-          class="flex gap-x-3 p-3 items-baseline cursor-pointer hover:bg-gray-100"
+          class="flex gap-x-2 px-3 py-1 items-baseline cursor-pointer hover:bg-gray-100"
           @mousedown.prevent.stop="
             onOptionSelect(state.currentScope, option.id)
           "
         >
           <component :is="option.label" class="text-control text-sm" />
-          <span class="text-control-light text-xs">{{ option.id }}</span>
+          <span class="text-control-light text-sm">{{ option.id }}</span>
         </div>
       </div>
     </div>
@@ -210,15 +212,18 @@ const query = computed(() => {
 
 const getSearchParamsByText = (text: string): SearchParams => {
   const plainQuery = query.value;
-  const scopeText = text.split(` ${plainQuery}`)[0] || "";
+  const scopeText = plainQuery ? text.split(plainQuery)[0] || "" : text;
   return {
     query: plainQuery,
-    scopes: scopeText.split(" ").map((scope) => {
-      return {
-        id: scope.split(":")[0] as SearchScopeId,
-        value: scope.split(":")[1],
-      };
-    }),
+    scopes: scopeText
+      .split(" ")
+      .map((scope) => {
+        return {
+          id: scope.split(":")[0] as SearchScopeId,
+          value: scope.split(":")[1],
+        };
+      })
+      .filter((scope) => scope.id && scope.value),
   };
 };
 
@@ -233,6 +238,11 @@ const onKeydown = (e: KeyboardEvent) => {
     return;
   }
   if (!state.searchText) {
+    state.showSearchScopes = true;
+    return;
+  }
+  const params = getSearchParamsByText(state.searchText);
+  if (params.scopes.length === 0) {
     state.showSearchScopes = true;
     return;
   }

@@ -2843,6 +2843,7 @@
     "parent-branch": "父分支",
     "save-draft": "保存草稿",
     "merge-branch": "合并分支",
+    "delete-branch-after-merged": "合并后删除分支",
     "diff-editor": {
       "self": "Diff 编辑器",
       "resolve": "解决",

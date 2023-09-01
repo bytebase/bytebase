@@ -230,7 +230,7 @@ const handleConfirm = async () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: "Branch name should valid characters: /^(a-zA-Z)[a-zA-Z0-9-_/]+$/",
+      title: "Branch name valid characters: /^[a-zA-Z][a-zA-Z0-9-_/]+$/",
     });
     return;
   }
@@ -272,6 +272,10 @@ const handleConfirm = async () => {
       baselineDatabase: baselineDatabase,
       baselineSheetName: baselineSheet.name,
       baselineChangeHistoryId: state.baselineSchema.changeHistory?.uid,
+      protection: {
+        // For main branches, we don't allow force pushes by default.
+        allowForcePushes: false,
+      },
     })
   );
   pushNotification({

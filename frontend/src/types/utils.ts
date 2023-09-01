@@ -9,3 +9,5 @@ export type ValidatedMessage = {
 };
 
 export type ArgumentsType<T> = T extends (...args: infer U) => any ? U : never;
+
+export type ExtractPromiseType<T> = T extends Promise<infer U> ? U : never;

@@ -16,8 +16,8 @@
   "billed-annually": "Billed annually",
   "billed-monthly": "Billed monthly",
   "per-instance": "Per instance",
-  "free-price-intro": "Unlimited users and environments",
-  "team-price-intro": "Up to 20 instances",
+  "free-price-intro": "Up to 20 users and 10 instances",
+  "team-price-intro": "Purchase up to 20 instances",
   "enterprise-price-intro": "Customized, billed annually",
   "deploy": "Deploy",
   "contact-us": "Contact us",
@@ -35,17 +35,17 @@
     "free": {
       "title": "Free Plan",
       "label": "",
-      "desc": "Team essentials to centralize database lifecycle management"
+      "desc": "Team essentials to manage database development lifecycle."
     },
     "team": {
       "title": "Pro Plan",
       "label": "",
-      "desc": "More collaboration and control policies for advanced database lifecycle management"
+      "desc": "More policies to standardize and facilitate collaboration across teams."
     },
     "enterprise": {
       "title": "Enterprise Plan",
       "label": "",
-      "desc": "Large organization, has dedicated DBA group to manage database fleet with custom requirements"
+      "desc": "Extra security, compliance, and permission features. Dedicated support with SLA."
     }
   },
   "feature-sections": {
@@ -63,8 +63,6 @@
         "instance-maximum-20-tooltip": "Maximum 20. Talk to us for pricing if your instances go over the limit.",
         "instance-unlimited": "Unlimited",
         "instance-unlimited-tooltip": "Allow unlimited instances. Purchase instance license to enable advanced instance features.",
-        "environment-count": "Environment count",
-        "environment-unlimited": "Unlimited",
         "state-based-change": "State-based change",
         "migration-based-change": "Migration-based change",
         "batch-change": "Batch change",
