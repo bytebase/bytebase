@@ -54,6 +54,7 @@
           :readonly="true"
           :engine="state.schemaDesign.engine"
           :schema-design="state.schemaDesign"
+          :project="project"
         />
       </div>
 
@@ -216,6 +217,11 @@ const cancel = () => {
   emit("dismiss");
 };
 
+const project = computed(() => {
+  const { project } = useProjectV1ByUID(state.projectId || "");
+  return project.value;
+});
+
 const handleConfirm = async () => {
   if (!state.schemaDesign) {
     return;
@@ -235,7 +241,6 @@ const handleConfirm = async () => {
     return;
   }
 
-  const { project } = useProjectV1ByUID(state.projectId || "");
   const database = useDatabaseV1Store().getDatabaseByUID(
     state.baselineSchema.databaseId || ""
   );

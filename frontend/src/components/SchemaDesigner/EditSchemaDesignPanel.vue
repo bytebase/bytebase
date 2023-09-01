@@ -151,6 +151,7 @@
           :readonly="!state.isEditing"
           :engine="schemaDesign.engine"
           :schema-design="schemaDesign"
+          :project="project"
         />
         <!-- Don't show delete button in view mode. -->
         <div v-if="!viewMode">

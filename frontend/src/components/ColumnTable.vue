@@ -35,25 +35,23 @@
           />
         </div>
       </BBTableCell>
-      <BBTableCell class="w-14" :left-padding="showSensitiveColumn ? 2 : 4">
+      <BBTableCell class="w-10" :left-padding="showSensitiveColumn ? 2 : 4">
         {{ column.name }}
       </BBTableCell>
-      <BBTableCell v-if="showClassificationColumn" class="w-10">
+      <BBTableCell v-if="showClassificationColumn" class="w-14">
         {{ getColumnClassification(column.classification)?.title }}
-        <span
-          v-if="getColumnSensitiveLevel(column.classification)?.sensitive"
-          class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-red-100 text-red-800"
-        >
-          {{ $t("database.sensitive") }}
-        </span>
+        <ClassificationLevelBadge
+          :level-id="getColumnClassification(column.classification)?.levelId"
+          :classification-config="classificationConfig"
+        />
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-5">
         {{ column.type }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-6">
         {{ column.default }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-4">
         {{ column.nullable }}
       </BBTableCell>
       <BBTableCell
@@ -62,7 +60,7 @@
           engine !== Engine.CLICKHOUSE &&
           engine !== Engine.SNOWFLAKE
         "
-        class="w-8"
+        class="w-6"
       >
         {{ column.characterSet }}
       </BBTableCell>
@@ -73,7 +71,7 @@
         {{ column.collation }}
       </BBTableCell>
       <BBTableCell class="w-16">
-        {{ column.comment }}
+        {{ column.userComment }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -354,15 +352,5 @@ const getColumnClassification = (classificationId: string) => {
     return;
   }
   return props.classificationConfig.classification[classificationId];
-};
-
-const getColumnSensitiveLevel = (classificationId: string) => {
-  const classification = getColumnClassification(classificationId);
-  if (!classification) {
-    return;
-  }
-  return (props.classificationConfig?.levels ?? []).find(
-    (level) => level.id === classification.levelId
-  );
 };
 </script>

@@ -17,6 +17,7 @@ export interface Column {
   userComment: string;
   default?: string;
   status: AtomResourceStatus;
+  classification?: string;
 }
 
 export interface PrimaryKey {
@@ -68,6 +69,7 @@ export const convertColumnMetadataToColumn = (
     comment: columnMetadata.comment,
     userComment: columnMetadata.userComment,
     default: columnMetadata.default,
+    classification: columnMetadata.classification,
     status: "normal",
   };
 };

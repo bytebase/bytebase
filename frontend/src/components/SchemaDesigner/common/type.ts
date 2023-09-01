@@ -1,5 +1,5 @@
 import { Ref } from "vue";
-import { Schema, Table } from "@/types";
+import { Schema, Table, ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 
@@ -31,6 +31,7 @@ export interface SchemaDesignerContext {
   tabState: Ref<SchemaDesignerTabState>;
   originalSchemas: Ref<Schema[]>;
   editableSchemas: Ref<Schema[]>;
+  project: Ref<ComposedProject>;
 
   // Tab related functions.
   getCurrentTab: () => TabContext | undefined;
