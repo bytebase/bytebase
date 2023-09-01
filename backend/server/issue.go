@@ -1259,7 +1259,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						// We don't want empty statements(likes comments) to be involved in the match/replace SchemaGroup operation. We will
 						// put them in the next valid statement.
 						if singleStatement.Empty {
-							if _, err := emptyStatementsBuffer.Write([]byte(singleStatement.Text)); err != nil {
+							if _, err := emptyStatementsBuffer.WriteString(singleStatement.Text); err != nil {
 								return nil, echo.NewHTTPError(http.StatusInternalServerError, "Cannot write to string builder")
 							}
 							continue
