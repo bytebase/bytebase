@@ -8914,9 +8914,10 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| ALERTLEVEL_INFO | 0 |  |
-| ALERTLEVEL_WARNING | 1 |  |
-| ALERTLEVEL_ERROR | 2 |  |
+| ALERTLEVEL_UNSPECIFIED | 0 |  |
+| ALERTLEVEL_INFO | 1 |  |
+| ALERTLEVEL_WARNING | 2 |  |
+| ALERTLEVEL_ERROR | 3 |  |
 
 
 

@@ -308,21 +308,25 @@ export interface Announcement {
 
 /** We support three levels of AlertLevel: INFO, WARNING, and ERROR. */
 export enum Announcement_AlertLevel {
-  ALERTLEVEL_INFO = 0,
-  ALERTLEVEL_WARNING = 1,
-  ALERTLEVEL_ERROR = 2,
+  ALERTLEVEL_UNSPECIFIED = 0,
+  ALERTLEVEL_INFO = 1,
+  ALERTLEVEL_WARNING = 2,
+  ALERTLEVEL_ERROR = 3,
   UNRECOGNIZED = -1,
 }
 
 export function announcement_AlertLevelFromJSON(object: any): Announcement_AlertLevel {
   switch (object) {
     case 0:
+    case "ALERTLEVEL_UNSPECIFIED":
+      return Announcement_AlertLevel.ALERTLEVEL_UNSPECIFIED;
+    case 1:
     case "ALERTLEVEL_INFO":
       return Announcement_AlertLevel.ALERTLEVEL_INFO;
-    case 1:
+    case 2:
     case "ALERTLEVEL_WARNING":
       return Announcement_AlertLevel.ALERTLEVEL_WARNING;
-    case 2:
+    case 3:
     case "ALERTLEVEL_ERROR":
       return Announcement_AlertLevel.ALERTLEVEL_ERROR;
     case -1:
@@ -334,6 +338,8 @@ export function announcement_AlertLevelFromJSON(object: any): Announcement_Alert
 
 export function announcement_AlertLevelToJSON(object: Announcement_AlertLevel): string {
   switch (object) {
+    case Announcement_AlertLevel.ALERTLEVEL_UNSPECIFIED:
+      return "ALERTLEVEL_UNSPECIFIED";
     case Announcement_AlertLevel.ALERTLEVEL_INFO:
       return "ALERTLEVEL_INFO";
     case Announcement_AlertLevel.ALERTLEVEL_WARNING:
