@@ -272,6 +272,7 @@ const allowEdit = computed(() => {
 });
 
 const classificationConfig = computed(() => {
+  // TODO: it's a temporary solution
   return settingStore.classification[0];
 });
 

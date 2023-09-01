@@ -1966,7 +1966,8 @@
       "comment": "注释",
       "not-null": "不可为空",
       "primary": "主键",
-      "foreign-key": "外键"
+      "foreign-key": "外键",
+      "classification": "分类分级"
     },
     "nothing-changed": "无任何改动",
     "message": {

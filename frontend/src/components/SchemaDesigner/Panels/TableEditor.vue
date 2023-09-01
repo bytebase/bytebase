@@ -46,7 +46,7 @@
     >
       <!-- column table header -->
       <div
-        class="sticky top-0 z-10 grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
+        class="sticky top-0 z-10 grid grid-cols-[6rem_minmax(0,_1.5fr)_repeat(3,_minmax(0,_0.8fr))_repeat(2,_80px)_minmax(0,_7rem)_20px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
         :class="shownColumnList.length > 0 && 'border-b'"
       >
         <span
@@ -62,7 +62,7 @@
         <div
           v-for="(column, index) in shownColumnList"
           :key="`${index}-${column.id}`"
-          class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] gr text-sm even:bg-gray-50"
+          class="grid grid-cols-[6rem_minmax(0,_1.5fr)_repeat(3,_minmax(0,_0.8fr))_repeat(2,_80px)_minmax(0,_7rem)_20px] gr text-sm even:bg-gray-50"
           :class="[
             `column-${column.id}`,
             getColumnItemComputedClassList(column),
@@ -76,6 +76,22 @@
               class="column-field-input column-name-input"
               type="text"
             />
+          </div>
+          <div
+            class="table-body-item-container flex items-center gap-x-2 ml-3 text-sm"
+          >
+            {{ getColumnClassification(column)?.title ?? "N/A" }}
+            <ClassificationLevelBadge
+              :level-id="getColumnClassification(column)?.levelId"
+              :classification-config="classificationConfig"
+            />
+            <button
+              v-if="classificationConfig && !disableChangeTable"
+              class="w-5 h-5 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+              @click.prevent="state.pendingUpdateColumnIndex = index"
+            >
+              <heroicons-outline:pencil class="w-3 h-3" />
+            </button>
           </div>
           <div
             class="table-body-item-container flex flex-row justify-between items-center"
@@ -235,6 +251,14 @@
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
+
+  <SelectClassificationDrawer
+    v-if="classificationConfig"
+    :show="state.pendingUpdateColumnIndex >= 0"
+    :classification-config="classificationConfig"
+    @dismiss="state.pendingUpdateColumnIndex = -1"
+    @select="onClassificationSelect"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -276,11 +300,13 @@ interface LocalState {
   showEditColumnForeignKeyModal: boolean;
   showSchemaTemplateDrawer: boolean;
   showFeatureModal: boolean;
+  pendingUpdateColumnIndex: number;
 }
 
 const { t } = useI18n();
-const { readonly, engine, editableSchemas, getCurrentTab, addTab } =
+const { readonly, engine, project, editableSchemas, getCurrentTab, addTab } =
   useSchemaDesignerContext();
+useSchemaDesignerContext();
 const settingStore = useSettingV1Store();
 const currentTab = computed(() => getCurrentTab() as TableTabContext);
 const state = reactive<LocalState>({
@@ -289,6 +315,7 @@ const state = reactive<LocalState>({
   showEditColumnForeignKeyModal: false,
   showSchemaTemplateDrawer: false,
   showFeatureModal: false,
+  pendingUpdateColumnIndex: -1,
 });
 
 const schema = computed(() => {
@@ -330,6 +357,10 @@ const columnHeaderList = computed(() => {
     {
       key: "name",
       label: t("schema-editor.column.name"),
+    },
+    {
+      key: "classification",
+      label: t("schema-editor.column.classification"),
     },
     {
       key: "type",
@@ -515,16 +546,7 @@ const handleApplyColumnTemplate = (
   if (template.engine !== engine.value || !template.column) {
     return;
   }
-  const column = convertColumnMetadataToColumn(
-    ColumnMetadata.fromPartial({
-      name: template.column.name,
-      type: template.column.type,
-      nullable: template.column.nullable,
-      comment: template.column.comment,
-      userComment: template.column.userComment,
-      default: template.column.default,
-    })
-  );
+  const column = convertColumnMetadataToColumn(template.column);
   column.status = "created";
   table.value.columnList.push(column);
   state.showSchemaTemplateDrawer = false;
@@ -629,6 +651,35 @@ const handleRestoreColumn = (column: Column) => {
   }
 
   column.status = "normal";
+};
+
+const classificationConfig = computed(() => {
+  if (!project.value || !project.value.dataClassificationConfigId) {
+    return;
+  }
+  return settingStore.getProjectClassification(
+    project.value.dataClassificationConfigId
+  );
+});
+
+const getColumnClassification = (column: Column) => {
+  if (!classificationConfig.value) {
+    return;
+  }
+  const { classification } = column;
+  if (!classification) {
+    return;
+  }
+  return classificationConfig.value.classification[classification];
+};
+
+const onClassificationSelect = (classificationId: string) => {
+  if (!table.value.columnList[state.pendingUpdateColumnIndex]) {
+    return;
+  }
+  table.value.columnList[state.pendingUpdateColumnIndex].classification =
+    classificationId;
+  state.pendingUpdateColumnIndex = -1;
 };
 </script>
 

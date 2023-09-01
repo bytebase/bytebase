@@ -30,13 +30,6 @@
             <NButton @click.prevent="$emit('dismiss')">
               {{ $t("common.cancel") }}
             </NButton>
-            <NButton
-              :disabled="!state.classificationId"
-              type="primary"
-              @click.prevent="$emit('select', state.classificationId)"
-            >
-              {{ $t("common.confirm") }}
-            </NButton>
           </div>
         </div>
       </template>
@@ -56,14 +49,13 @@ const props = defineProps<{
   classificationConfig: DataClassificationSetting_DataClassificationConfig;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "dismiss"): void;
   (event: "select", classificationId: string): void;
 }>();
 
 interface LocalState {
   searchText: string;
-  classificationId?: string;
 }
 
 interface TreeNode extends TreeOption {
@@ -92,8 +84,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       if (!option.isLeaf || !option.key) {
         return;
       }
-      state.classificationId =
-        props.classificationConfig.classification[option.key]?.id;
+      emit("select", option.key as string);
     },
   };
 };

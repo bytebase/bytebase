@@ -1970,7 +1970,8 @@
       "comment": "Comment",
       "not-null": "Not Null",
       "primary": "Primary",
-      "foreign-key": "Foreign Key"
+      "foreign-key": "Foreign Key",
+      "classification": "Classification"
     },
     "nothing-changed": "Nothing changed",
     "message": {

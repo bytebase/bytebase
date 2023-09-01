@@ -18,7 +18,12 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
 import { onMounted, ref, watch } from "vue";
 import { useSettingV1Store } from "@/store";
-import { Schema, convertSchemaMetadataList } from "@/types";
+import {
+  Schema,
+  convertSchemaMetadataList,
+  ComposedProject,
+  unknownProject,
+} from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
@@ -32,6 +37,7 @@ const props = defineProps<{
   readonly: boolean;
   engine: Engine;
   schemaDesign: SchemaDesign;
+  project: ComposedProject;
 }>();
 
 const settingStore = useSettingV1Store();
@@ -40,6 +46,7 @@ const engine = ref(props.engine);
 const metadata = ref<DatabaseMetadata>(DatabaseMetadata.fromPartial({}));
 const originalSchemas = ref<Schema[]>([]);
 const editableSchemas = ref<Schema[]>([]);
+const project = ref<ComposedProject>(unknownProject());
 const baselineMetadata = ref<DatabaseMetadata>(
   DatabaseMetadata.fromPartial({})
 );
@@ -73,6 +80,7 @@ provideSchemaDesignerContext({
   tabState: tabState,
   originalSchemas: originalSchemas,
   editableSchemas: editableSchemas,
+  project,
 });
 
 watch(
@@ -86,6 +94,7 @@ watch(
       DatabaseMetadata.fromPartial({});
     readonly.value = props.readonly;
     engine.value = props.engine;
+    project.value = props.project;
   },
   {
     immediate: true,

@@ -2,8 +2,8 @@
   <span
     v-if="level"
     :class="[
-      'px-2 py-1 rounded text-xs',
-      bgColorList[Number(level.id)] ?? 'bg-gray-200',
+      'px-1 py-0.5 rounded text-xs',
+      bgColorList[Number(level.id) - 1] ?? 'bg-gray-200',
     ]"
   >
     {{ level.title }}
