@@ -45,27 +45,27 @@ export interface Announcement {
 
 /** We support three levels of AlertLevel: INFO, WARNING, and ERROR. */
 export enum Announcement_AlertLevel {
-  ALERTLEVEL_UNSPECIFIED = 0,
-  ALERTLEVEL_INFO = 1,
-  ALERTLEVEL_WARNING = 2,
-  ALERTLEVEL_CRITICAL = 3,
+  ALERT_LEVEL_UNSPECIFIED = 0,
+  ALERT_LEVEL_INFO = 1,
+  ALERT_LEVEL_WARNING = 2,
+  ALERT_LEVEL_CRITICAL = 3,
   UNRECOGNIZED = -1,
 }
 
 export function announcement_AlertLevelFromJSON(object: any): Announcement_AlertLevel {
   switch (object) {
     case 0:
-    case "ALERTLEVEL_UNSPECIFIED":
-      return Announcement_AlertLevel.ALERTLEVEL_UNSPECIFIED;
+    case "ALERT_LEVEL_UNSPECIFIED":
+      return Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED;
     case 1:
-    case "ALERTLEVEL_INFO":
-      return Announcement_AlertLevel.ALERTLEVEL_INFO;
+    case "ALERT_LEVEL_INFO":
+      return Announcement_AlertLevel.ALERT_LEVEL_INFO;
     case 2:
-    case "ALERTLEVEL_WARNING":
-      return Announcement_AlertLevel.ALERTLEVEL_WARNING;
+    case "ALERT_LEVEL_WARNING":
+      return Announcement_AlertLevel.ALERT_LEVEL_WARNING;
     case 3:
-    case "ALERTLEVEL_CRITICAL":
-      return Announcement_AlertLevel.ALERTLEVEL_CRITICAL;
+    case "ALERT_LEVEL_CRITICAL":
+      return Announcement_AlertLevel.ALERT_LEVEL_CRITICAL;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -75,14 +75,14 @@ export function announcement_AlertLevelFromJSON(object: any): Announcement_Alert
 
 export function announcement_AlertLevelToJSON(object: Announcement_AlertLevel): string {
   switch (object) {
-    case Announcement_AlertLevel.ALERTLEVEL_UNSPECIFIED:
-      return "ALERTLEVEL_UNSPECIFIED";
-    case Announcement_AlertLevel.ALERTLEVEL_INFO:
-      return "ALERTLEVEL_INFO";
-    case Announcement_AlertLevel.ALERTLEVEL_WARNING:
-      return "ALERTLEVEL_WARNING";
-    case Announcement_AlertLevel.ALERTLEVEL_CRITICAL:
-      return "ALERTLEVEL_CRITICAL";
+    case Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED:
+      return "ALERT_LEVEL_UNSPECIFIED";
+    case Announcement_AlertLevel.ALERT_LEVEL_INFO:
+      return "ALERT_LEVEL_INFO";
+    case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
+      return "ALERT_LEVEL_WARNING";
+    case Announcement_AlertLevel.ALERT_LEVEL_CRITICAL:
+      return "ALERT_LEVEL_CRITICAL";
     case Announcement_AlertLevel.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

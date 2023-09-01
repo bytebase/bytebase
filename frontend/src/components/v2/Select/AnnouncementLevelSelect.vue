@@ -2,9 +2,9 @@
   <NRadioGroup :value="level" @update:value="$emit('update:level', $event)">
     <NRadio
       v-for="item in [
-        Announcement_AlertLevel.ALERTLEVEL_INFO,
-        Announcement_AlertLevel.ALERTLEVEL_WARNING,
-        Announcement_AlertLevel.ALERTLEVEL_CRITICAL,
+        Announcement_AlertLevel.ALERT_LEVEL_INFO,
+        Announcement_AlertLevel.ALERT_LEVEL_WARNING,
+        Announcement_AlertLevel.ALERT_LEVEL_CRITICAL,
       ]"
       :key="item"
       :value="item"
@@ -34,11 +34,11 @@ defineEmits<{
 
 const AlertLevelToString = (level: Announcement_AlertLevel): string => {
   switch (level) {
-    case Announcement_AlertLevel.ALERTLEVEL_INFO:
+    case Announcement_AlertLevel.ALERT_LEVEL_INFO:
       return "INFO";
-    case Announcement_AlertLevel.ALERTLEVEL_WARNING:
+    case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
       return "WARNING";
-    case Announcement_AlertLevel.ALERTLEVEL_CRITICAL:
+    case Announcement_AlertLevel.ALERT_LEVEL_CRITICAL:
       return "CRITICAL";
     default:
       return "INFO";

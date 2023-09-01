@@ -36,11 +36,11 @@ const showBanner = computed(() => {
 
 const bgColor = computed(() => {
   switch (settingV1Store.workspaceProfileSetting?.announcement?.level) {
-    case Announcement_AlertLevel.ALERTLEVEL_INFO:
+    case Announcement_AlertLevel.ALERT_LEVEL_INFO:
       return "bg-info";
-    case Announcement_AlertLevel.ALERTLEVEL_WARNING:
+    case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
       return "bg-warning";
-    case Announcement_AlertLevel.ALERTLEVEL_CRITICAL:
+    case Announcement_AlertLevel.ALERT_LEVEL_CRITICAL:
       return "bg-error";
     default:
       return "bg-info";

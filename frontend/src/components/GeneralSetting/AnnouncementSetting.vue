@@ -125,7 +125,7 @@ const hasAnnouncementSetting = featureToRef("bb.feature.announcement");
 
 const defaultAnnouncement = function (): Announcement {
   return {
-    level: Announcement_AlertLevel.ALERTLEVEL_INFO,
+    level: Announcement_AlertLevel.ALERT_LEVEL_INFO,
     text: "",
     link: "",
   };
