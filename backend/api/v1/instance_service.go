@@ -200,18 +200,18 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		case "options.schema_tenant_mode":
 			if patch.OptionsUpsert == nil {
 				patch.OptionsUpsert = &storepb.InstanceOptions{
-					SchemaTenantMode: request.Instance.Options.SchemaTenantMode,
+					SchemaTenantMode: request.Instance.Options.GetSchemaTenantMode(),
 				}
 			} else {
-				patch.OptionsUpsert.SchemaTenantMode = request.Instance.Options.SchemaTenantMode
+				patch.OptionsUpsert.SchemaTenantMode = request.Instance.Options.GetSchemaTenantMode()
 			}
 		case "options.sync_interval":
 			if patch.OptionsUpsert == nil {
 				patch.OptionsUpsert = &storepb.InstanceOptions{
-					SyncInterval: request.Instance.Options.SyncInterval,
+					SyncInterval: request.Instance.Options.GetSyncInterval(),
 				}
 			} else {
-				patch.OptionsUpsert.SyncInterval = request.Instance.Options.SyncInterval
+				patch.OptionsUpsert.SyncInterval = request.Instance.Options.GetSyncInterval()
 			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
