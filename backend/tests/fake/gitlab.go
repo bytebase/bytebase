@@ -517,25 +517,31 @@ func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
 
 	// Trigger webhooks.
 	for _, webhook := range pd.webhooks {
-		// Send post request.
-		req, err := http.NewRequest("POST", webhook.URL, bytes.NewReader(payload))
-		if err != nil {
-			return errors.Wrapf(err, "fail to create a new POST request(%q)", webhook.URL)
-		}
-		req.Header.Set("X-Gitlab-Token", webhook.SecretToken)
-		resp, err := gl.client.Do(req)
-		if err != nil {
-			return errors.Wrapf(err, "fail to send a POST request(%q)", webhook.URL)
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return errors.Wrap(err, "failed to read http response body")
-		}
+		if err := func() error {
+			// Send post request.
+			req, err := http.NewRequest("POST", webhook.URL, bytes.NewReader(payload))
+			if err != nil {
+				return errors.Wrapf(err, "fail to create a new POST request(%q)", webhook.URL)
+			}
+			req.Header.Set("X-Gitlab-Token", webhook.SecretToken)
+			resp, err := gl.client.Do(req)
+			if err != nil {
+				return errors.Wrapf(err, "fail to send a POST request(%q)", webhook.URL)
+			}
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return errors.Wrap(err, "failed to read http response body")
+			}
 
-		if resp.StatusCode != http.StatusOK {
-			return errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+			if resp.StatusCode != http.StatusOK {
+				return errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+			}
+			gl.echo.Logger.Infof("SendWebhookPush response body %s\n", body)
+			return nil
+		}(); err != nil {
+			return err
 		}
-		gl.echo.Logger.Infof("SendWebhookPush response body %s\n", body)
 	}
 
 	return nil
