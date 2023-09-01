@@ -40,7 +40,7 @@ const bgColor = computed(() => {
       return "bg-info";
     case Announcement_AlertLevel.ALERTLEVEL_WARNING:
       return "bg-warning";
-    case Announcement_AlertLevel.ALERTLEVEL_ERROR:
+    case Announcement_AlertLevel.ALERTLEVEL_CRITICAL:
       return "bg-error";
     default:
       return "bg-info";

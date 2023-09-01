@@ -598,7 +598,7 @@
           "field": {
             "info": "普通",
             "warning": "警告",
-            "error": "重要",
+            "critical": "重要",
           },
         },
         "announcement-text": {

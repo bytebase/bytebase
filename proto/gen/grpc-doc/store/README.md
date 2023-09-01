@@ -2296,7 +2296,7 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ALERTLEVEL_UNSPECIFIED | 0 |  |
 | ALERTLEVEL_INFO | 1 |  |
 | ALERTLEVEL_WARNING | 2 |  |
-| ALERTLEVEL_ERROR | 3 |  |
+| ALERTLEVEL_CRITICAL | 3 |  |
 
 
 

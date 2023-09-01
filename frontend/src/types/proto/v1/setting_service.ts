@@ -311,7 +311,7 @@ export enum Announcement_AlertLevel {
   ALERTLEVEL_UNSPECIFIED = 0,
   ALERTLEVEL_INFO = 1,
   ALERTLEVEL_WARNING = 2,
-  ALERTLEVEL_ERROR = 3,
+  ALERTLEVEL_CRITICAL = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -327,8 +327,8 @@ export function announcement_AlertLevelFromJSON(object: any): Announcement_Alert
     case "ALERTLEVEL_WARNING":
       return Announcement_AlertLevel.ALERTLEVEL_WARNING;
     case 3:
-    case "ALERTLEVEL_ERROR":
-      return Announcement_AlertLevel.ALERTLEVEL_ERROR;
+    case "ALERTLEVEL_CRITICAL":
+      return Announcement_AlertLevel.ALERTLEVEL_CRITICAL;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -344,8 +344,8 @@ export function announcement_AlertLevelToJSON(object: Announcement_AlertLevel): 
       return "ALERTLEVEL_INFO";
     case Announcement_AlertLevel.ALERTLEVEL_WARNING:
       return "ALERTLEVEL_WARNING";
-    case Announcement_AlertLevel.ALERTLEVEL_ERROR:
-      return "ALERTLEVEL_ERROR";
+    case Announcement_AlertLevel.ALERTLEVEL_CRITICAL:
+      return "ALERTLEVEL_CRITICAL";
     case Announcement_AlertLevel.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

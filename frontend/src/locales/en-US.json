@@ -600,7 +600,7 @@
           "field": {
             "info": "Normal",
             "warning": "Warning",
-            "error": "Critical",
+            "critical": "Critical",
           },
         },
         "announcement-text": {

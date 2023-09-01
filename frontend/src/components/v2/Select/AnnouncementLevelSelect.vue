@@ -4,7 +4,7 @@
       v-for="item in [
         Announcement_AlertLevel.ALERTLEVEL_INFO,
         Announcement_AlertLevel.ALERTLEVEL_WARNING,
-        Announcement_AlertLevel.ALERTLEVEL_ERROR,
+        Announcement_AlertLevel.ALERTLEVEL_CRITICAL,
       ]"
       :key="item"
       :value="item"
@@ -38,8 +38,8 @@ const AlertLevelToString = (level: Announcement_AlertLevel): string => {
       return "INFO";
     case Announcement_AlertLevel.ALERTLEVEL_WARNING:
       return "WARNING";
-    case Announcement_AlertLevel.ALERTLEVEL_ERROR:
-      return "ERROR";
+    case Announcement_AlertLevel.ALERTLEVEL_CRITICAL:
+      return "CRITICAL";
     default:
       return "INFO";
   }

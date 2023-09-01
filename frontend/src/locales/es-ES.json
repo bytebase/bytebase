@@ -589,7 +589,7 @@
           "field": {
             "info": "Común",
             "warning": "Advertencia",
-            "error": "Importante",
+            "critical": "Importante",
           },
         },
         "announcement-text": "Texto de anuncio",
