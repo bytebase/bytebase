@@ -169,8 +169,11 @@ const onSubmit = async () => {
       await policyStore.upsertPolicy({
         parentPath: database,
         policy: pendingUpdate,
+        updateMask: ["payload"],
       });
     }
+    state.userUidList = [];
+    state.expirationTimestamp = undefined;
     emit("dismiss");
     pushNotification({
       module: "bytebase",
@@ -194,12 +197,12 @@ const getPendingUpdatePolicy = async (
 
   for (const column of columnList) {
     const expression: string[] = [
-      `resource.column_name == ${column.maskData.column}`,
-      `resource.table_name == ${column.maskData.table}`,
-      `resource.database_name == ${column.database.databaseName}`,
-      `resource.instance_id == ${extractInstanceResourceName(
+      `resource.column_name == "${column.maskData.column}"`,
+      `resource.table_name == "${column.maskData.table}"`,
+      `resource.database_name == "${column.database.databaseName}"`,
+      `resource.instance_id == "${extractInstanceResourceName(
         column.database.instanceEntity.name
-      )}`,
+      )}"`,
     ];
     if (state.expirationTimestamp) {
       expression.push(
@@ -209,7 +212,7 @@ const getPendingUpdatePolicy = async (
       );
     }
     if (column.maskData.schema) {
-      expression.push(`resource.schema_name == ${column.maskData.schema}`);
+      expression.push(`resource.schema_name == "${column.maskData.schema}"`);
     }
     for (const action of state.supportActions.values()) {
       maskingExceptions.push({
