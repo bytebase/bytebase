@@ -24,8 +24,8 @@ export const useSecondarySidebarContext = () => {
 
 export const provideSecondarySidebarContext = () => {
   const context: SecondarySidebarContext = {
-    show: ref(false),
-    tab: ref("SHEET"),
+    show: ref(true),
+    tab: ref("INFO"),
     events: new Emittery(),
   };
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full px-0.5 pt-2 gap-y-2">
+  <div class="flex flex-col h-full p-0.5 pt-1 gap-y-2">
     <div class="flex items-center gap-x-1">
       <NInput
         v-model:value="keyword"
@@ -15,10 +15,10 @@
       <NButton
         quaternary
         style="--n-padding: 0 5px; --n-height: 28px"
-        @click="handleAddSheet"
+        @click="showPanel = true"
       >
         <template #icon>
-          <heroicons:plus />
+          <heroicons:arrow-left-on-rectangle />
         </template>
       </NButton>
     </div>
@@ -86,7 +86,6 @@ import {
   openSheet,
   useSheetContextByView,
   Dropdown,
-  addNewSheet,
   useSheetContext,
 } from "@/views/sql-editor/Sheet";
 import SheetItem from "./SheetItem.vue";
@@ -104,7 +103,7 @@ const props = defineProps<{
 }>();
 
 const tabStore = useTabStore();
-const { events } = useSheetContext();
+const { showPanel } = useSheetContext();
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
 const keyword = ref("");
@@ -180,11 +179,6 @@ const handleItemClick = (item: MergedItem, e: MouseEvent) => {
   } else {
     openSheet(item.target, e.metaKey || e.ctrlKey);
   }
-};
-
-const handleAddSheet = () => {
-  addNewSheet();
-  events.emit("add-sheet");
 };
 
 const handleRightClick = (item: MergedItem, e: MouseEvent) => {
