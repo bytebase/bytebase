@@ -598,17 +598,17 @@
           "field": {
             "info": "普通",
             "warning": "警告",
-            "critical": "重要",
-          },
+            "critical": "重要"
+          }
         },
         "announcement-text": {
           "self": "标题",
-          "placeholder": "输入公告标题",
+          "placeholder": "输入公告标题"
         },
         "extra-link": {
           "self": "链接",
-          "placeholder": "输入公告链接",
-        },
+          "placeholder": "输入公告链接"
+        }
       }
     },
     "sensitive-data": {
