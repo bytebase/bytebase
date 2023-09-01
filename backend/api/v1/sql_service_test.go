@@ -356,7 +356,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					Condition: &expr.Expr{
 						Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "employees") && (resource.column_name == "salary")`,
 					},
-					Members:      []string{"zp@bytebase.com"},
+					Member:       "zp@bytebase.com",
 					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
@@ -390,7 +390,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					Condition: &expr.Expr{
 						Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "employees") && (resource.column_name == "salary")`,
 					},
-					Members:      []string{"zp@bytebase.com"},
+					Member:       "zp@bytebase.com",
 					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
@@ -427,7 +427,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					Condition: &expr.Expr{
 						Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "employees") && (resource.column_name == "salary")`,
 					},
-					Members:      []string{"zp@bytebase.com"},
+					Member:       "zp@bytebase.com",
 					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
