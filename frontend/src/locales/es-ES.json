@@ -589,17 +589,16 @@
           "field": {
             "info": "Común",
             "warning": "Advertencia",
-            "critical": "Importante",
-          },
+            "critical": "Importante"
+          }
         },
-        "announcement-text": "Texto de anuncio",
         "announcement-text": {
           "self": "Título",
-          "placeholder": "Título del anuncio de entrada",
+          "placeholder": "Título del anuncio de entrada"
         },
         "extra-link": {
           "self": "Enlace",
-          "placeholder": "Enlace de anuncio de entrada",
+          "placeholder": "Enlace de anuncio de entrada"
         },
         "gitops-webhook-url": {
           "self": "URL del webhook GitOps",
