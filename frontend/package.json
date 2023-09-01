@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@bytebase/vue-kbar": "0.1.8",
-    "@codingame/monaco-vscode-api": "1.81.5",
+    "@codingame/monaco-vscode-api": "1.81.6",
     "@joe-re/sql-parser": "^1.2.1",
     "@markdoc/markdoc": "0.2.2",
     "@soerenmartius/vue3-clipboard": "0.1.2",
@@ -150,7 +150,7 @@
     "ws": "^8.13.0"
   },
   "peerDependencies": {
-    "@codingame/monaco-vscode-api": "1.81.5",
+    "@codingame/monaco-vscode-api": "1.81.6",
     "@popperjs/core": "^2.11.6",
     "events": "^3.3.0",
     "jquery": "1.9.1 - 3",
