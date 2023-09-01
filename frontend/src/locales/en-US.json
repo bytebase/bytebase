@@ -622,6 +622,12 @@
       "add-rule": "Add rule",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
+      "column-detail": {
+        "masking-setting-for-column": "Masking Setting for \"{column}\"",
+        "access-user-list": "Access User List",
+        "access-user-list-desc": "Users granted to access de-masked data.",
+        "remove-user-permission": "Remove user permission?"
+      },
       "masking-level": {
         "self": "Masking Level",
         "selet-level": "Select level",

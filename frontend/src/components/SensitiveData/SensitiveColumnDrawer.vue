@@ -265,7 +265,7 @@ const hasPermission = computed(() => {
 
 const getAccessUsers = async (
   exception: MaskingExceptionPolicy_MaskingException
-): Promise<AccessUser[]> => {
+): Promise<AccessUser> => {
   const parsedExpr = await convertCELStringToParsedExpr(
     exception.condition?.expression ?? ""
   );
@@ -277,15 +277,13 @@ const getAccessUsers = async (
     }
   }
 
-  return exception.members.map((member) => {
-    const user = userStore.getUserByIdentifier(member) ?? unknownUser();
-    return {
-      user,
-      maskingLevel: exception.maskingLevel,
-      expirationTimestamp,
-      supportActions: new Set([exception.action]),
-    };
-  });
+  const user = userStore.getUserByIdentifier(exception.member) ?? unknownUser();
+  return {
+    user,
+    maskingLevel: exception.maskingLevel,
+    expirationTimestamp,
+    supportActions: new Set([exception.action]),
+  };
 };
 
 const isCurrentColumnException = (
@@ -335,17 +333,15 @@ watch(
         continue;
       }
       const identifier = getExceptionIdentifier(exception);
-      const users = await getAccessUsers(exception);
-      for (const item of users) {
-        const id = `${item.user.name}:${identifier}`;
-        const target = userMap.get(id) ?? item;
-        if (userMap.has(id)) {
-          for (const action of item.supportActions) {
-            target.supportActions.add(action);
-          }
+      const item = await getAccessUsers(exception);
+      const id = `${item.user.name}:${identifier}`;
+      const target = userMap.get(id) ?? item;
+      if (userMap.has(id)) {
+        for (const action of item.supportActions) {
+          target.supportActions.add(action);
         }
-        userMap.set(id, target);
       }
+      userMap.set(id, target);
     }
 
     accessUserList.value = [...userMap.values()].sort(

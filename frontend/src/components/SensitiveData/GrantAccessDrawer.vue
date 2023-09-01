@@ -218,14 +218,16 @@ const getPendingUpdatePolicy = async (
       expression.push(`resource.schema_name == "${column.maskData.schema}"`);
     }
     for (const action of state.supportActions.values()) {
-      maskingExceptions.push({
-        members,
-        action,
-        maskingLevel: state.maskingLevel,
-        condition: Expr.fromPartial({
-          expression: expression.join(" && "),
-        }),
-      });
+      for (const member of members) {
+        maskingExceptions.push({
+          member,
+          action,
+          maskingLevel: state.maskingLevel,
+          condition: Expr.fromPartial({
+            expression: expression.join(" && "),
+          }),
+        });
+      }
     }
   }
 

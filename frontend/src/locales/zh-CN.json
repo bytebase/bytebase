@@ -620,6 +620,12 @@
       "add-rule": "添加规则",
       "grant-access": "授权访问",
       "never-expires": "无过期时间",
+      "column-detail": {
+        "masking-setting-for-column": "\"{column}\" 脱敏设置",
+        "access-user-list": "用户访问列表",
+        "access-user-list-desc": "被授权的用户可以访问非脱敏的原始数据。",
+        "remove-user-permission": "删除该用户权限？"
+      },
       "masking-level": {
         "self": "脱敏程度",
         "none": "明文",

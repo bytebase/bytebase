@@ -621,6 +621,12 @@
       "add-rule": "Agregar regla",
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
+      "column-detail": {
+        "masking-setting-for-column": "Configuración de enmascaramiento para \"{columna}\"",
+        "access-user-list": "Acceder a la lista de usuarios",
+        "access-user-list-desc": "Usuarios autorizados a acceder a datos desenmascarados.",
+        "remove-user-permission": "¿Quitar el permiso del usuario?"
+      },
       "masking-level": {
         "self": "Nivel de enmascaramiento",
         "selet-level": "Selecciona el nivel",
