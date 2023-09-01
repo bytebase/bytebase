@@ -170,8 +170,8 @@ const (
 	FeatureCustomApproval FeatureType = "bb.feature.custom-approval"
 
 	// Collaboration.
-	// FeatureCustomAnnouncement enable custom announcement banner setting.
-	FeatureCustomAnnouncement FeatureType = "bb.feature.custom-announcement"
+	// FeatureAnnouncement enable custom announcement banner setting.
+	FeatureAnnouncement FeatureType = "bb.feature.announcement"
 
 	// FeatureSharedSQLScript enables sharing sql script.
 	FeatureSharedSQLScript FeatureType = "bb.feature.shared-sql-script"
@@ -262,8 +262,8 @@ func (e FeatureType) Name() string {
 	case FeatureCustomApproval:
 		return "Custom Approval"
 	// Collaboration
-	case FeatureCustomAnnouncement:
-		return "Custom Announcement"
+	case FeatureAnnouncement:
+		return "Announcement"
 	case FeatureSharedSQLScript:
 		return "Shared SQL script"
 	// Plugins
@@ -335,8 +335,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureAccessControl:         {false, false, true},
 	FeatureCustomApproval:        {false, false, true},
 	// Collaboration
-	FeatureCustomAnnouncement: {false, false, true},
-	FeatureSharedSQLScript:    {false, true, true},
+	FeatureAnnouncement:    {false, false, true},
+	FeatureSharedSQLScript: {false, true, true},
 	// Plugins
 	FeaturePluginOpenAI: {false, false, true},
 }

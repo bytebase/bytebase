@@ -2225,7 +2225,7 @@
         "title": "Script SQL compartido",
         "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
       },
-      "bb-feature-custom-announcement": {
+      "bb-feature-announcement": {
         "title": "Anuncio personalizado",
         "desc": "Configurar un banner de anuncio."
       },

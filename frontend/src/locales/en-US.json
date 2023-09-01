@@ -2232,8 +2232,8 @@
         "title": "Shared SQL script",
         "desc": "Share your SQL scripts with project teammates or make them public to all."
       },
-      "bb-feature-custom-announcement": {
-        "title": "Custom Announcement",
+      "bb-feature-announcement": {
+        "title": "Announcement",
         "desc": "Configure an Announcement Banner."
       },
       "bb-feature-encrypted-secrets": {

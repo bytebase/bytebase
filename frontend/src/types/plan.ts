@@ -52,7 +52,7 @@ export type FeatureType =
   | "bb.feature.custom-approval"
   // Collaboration
   | "bb.feature.shared-sql-script"
-  | "bb.feature.custom-announcement"
+  | "bb.feature.announcement"
   // Plugins
   | "bb.feature.plugin.openai";
 

@@ -163,7 +163,7 @@ watch(
       set.add("bb.feature.secure-token");
     }
     if (settingV1Store.workspaceProfileSetting?.announcement?.text ?? false) {
-      set.add("bb.feature.custom-announcement");
+      set.add("bb.feature.nnouncement");
     }
     const openAIKeySetting = settingV1Store.getSettingByName(
       "bb.plugin.openai.key"

@@ -19,7 +19,7 @@
               "settings.general.workspace.announcement-alert-level.description"
             )
           }}</span>
-          <FeatureBadge feature="bb.feature.custom-announcement" />
+          <FeatureBadge feature="bb.feature.announcement" />
         </label>
         <div class="flex flex-wrap py-2 radio-set-row gap-4">
           <AnnouncementLevelSelect v-model:level="state.announcement.level" />
@@ -34,7 +34,7 @@
           }}</span>
           <span class="text-red-600">*</span>
 
-          <FeatureBadge feature="bb.feature.custom-announcement" />
+          <FeatureBadge feature="bb.feature.announcement" />
 
           <span
             v-if="!allowEdit"
@@ -61,7 +61,7 @@
             $t("settings.general.workspace.extra-link.self")
           }}</span>
 
-          <FeatureBadge feature="bb.feature.custom-announcement" />
+          <FeatureBadge feature="bb.feature.announcement" />
 
           <span
             v-if="!allowEdit"
@@ -92,7 +92,7 @@
     </div>
 
     <FeatureModal
-      feature="bb.feature.custom-announcement"
+      feature="bb.feature.announcement"
       :open="state.showFeatureModal"
       @cancel="state.showFeatureModal = false"
     />
@@ -121,9 +121,7 @@ interface LocalState {
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
-const hasCustomAnnouncementSetting = featureToRef(
-  "bb.feature.custom-announcement"
-);
+const hasAnnouncementSetting = featureToRef("bb.feature.announcement");
 
 const defaultAnnouncement = function (): Announcement {
   return {
@@ -175,7 +173,7 @@ const handleExtraDetailsChange = (event: InputEvent) => {
 };
 
 const updateAnnouncementSetting = async () => {
-  if (!hasCustomAnnouncementSetting.value) {
+  if (!hasAnnouncementSetting.value) {
     state.showFeatureModal = true;
     return;
   }
