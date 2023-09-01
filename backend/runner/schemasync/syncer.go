@@ -334,6 +334,9 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		SyncState:            &syncStatus,
 		SuccessfulSyncTimeTs: &ts,
 		SchemaVersion:        patchSchemaVersion,
+		MetadataUpsert: &storepb.DatabaseMetadata{
+			LastSyncTime: timestamppb.New(time.Unix(ts, 0)),
+		},
 	}, api.SystemBotID); err != nil {
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
