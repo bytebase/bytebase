@@ -2,6 +2,7 @@
 package util
 
 import (
+	"cmp"
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFields(sql string) ([]db.SensitiveField, error) {
@@ -50,8 +52,9 @@ func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *snowparse
 	}
 	for _, field := range result {
 		l.result = append(l.result, db.SensitiveField{
-			Name:      field.name,
-			Sensitive: field.sensitive,
+			Name:         field.name,
+			Sensitive:    field.sensitive,
+			MaskingLevel: field.maskingLevel,
 		})
 	}
 }
@@ -77,8 +80,9 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 				}
 				for i := 0; i < len(fieldsInAnchorClause); i++ {
 					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, db.ColumnInfo{
-						Name:      fieldsInAnchorClause[i].name,
-						Sensitive: fieldsInAnchorClause[i].sensitive,
+						Name:         fieldsInAnchorClause[i].name,
+						Sensitive:    fieldsInAnchorClause[i].sensitive,
+						MaskingLevel: fieldsInAnchorClause[i].maskingLevel,
 					})
 					result = append(result, fieldsInAnchorClause[i])
 				}
@@ -95,6 +99,10 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 					}
 					extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:originalSize]
 					for i := 0; i < len(fieldsInRecursiveClause); i++ {
+						if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].maskingLevel) {
+							change = true
+							tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].maskingLevel
+						}
 						if (!tempCTEOuterSchemaInfo.ColumnList[i].Sensitive) && fieldsInRecursiveClause[i].sensitive {
 							change = true
 							tempCTEOuterSchemaInfo.ColumnList[i].Sensitive = true
@@ -128,8 +136,9 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 			columnList := make([]db.ColumnInfo, 0, len(result))
 			for _, field := range result {
 				columnList = append(columnList, db.ColumnInfo{
-					Name:      field.name,
-					Sensitive: field.sensitive,
+					Name:         field.name,
+					Sensitive:    field.sensitive,
+					MaskingLevel: field.maskingLevel,
 				})
 			}
 			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, db.TableSchema{
@@ -157,6 +166,11 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 			return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", selectStatement.GetStart().GetLine(), len(result), i+1, setOperator.GetStart().GetLine(), len(right))
 		}
 		for i := range right {
+			finalLevel := result[i].maskingLevel
+			if cmp.Less[storepb.MaskingLevel](finalLevel, right[i].maskingLevel) {
+				finalLevel = right[i].maskingLevel
+			}
+			result[i].maskingLevel = finalLevel
 			if !result[i].sensitive {
 				result[i].sensitive = right[i].sensitive
 			}
@@ -796,12 +810,13 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoinClaus
 		var result []fieldInfo
 		result = append(result, left...)
 		for _, field := range right {
-			if _, ok := leftMap[field.name]; !ok {
+			if idx, ok := leftMap[field.name]; !ok {
 				result = append(result, field)
-			} else if field.sensitive {
+			} else if field.sensitive && cmp.Less[storepb.MaskingLevel](left[idx].maskingLevel, field.maskingLevel) {
 				// If the field is in the left part and the right part, we should keep the field in the left part,
 				// and set the sensitive flag to true if the field in the right part is sensitive.
 				result[leftMap[field.name]].sensitive = true
+				result[idx].maskingLevel = field.maskingLevel
 			}
 		}
 		return result, nil
@@ -828,10 +843,11 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 		}
 		for _, column := range tableSchema.ColumnList {
 			result = append(result, fieldInfo{
-				database:  normalizedDatabaseName,
-				table:     tableSchema.Name,
-				name:      column.Name,
-				sensitive: column.Sensitive,
+				database:     normalizedDatabaseName,
+				table:        tableSchema.Name,
+				name:         column.Name,
+				sensitive:    column.Sensitive,
+				maskingLevel: column.MaskingLevel,
 			})
 		}
 	}
@@ -894,8 +910,9 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 
 			for _, literal := range v.AllLiteral() {
 				result = append(result, fieldInfo{
-					name:      literal.GetText(),
-					sensitive: pivotColumnInOriginalResult.sensitive,
+					name:         literal.GetText(),
+					sensitive:    pivotColumnInOriginalResult.sensitive,
+					maskingLevel: pivotColumnInOriginalResult.maskingLevel,
 				})
 			}
 		} else if v := ctx.Pivot_unpivot(); v.UNPIVOT() != nil {
@@ -917,7 +934,14 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 			}
 
 			shouldBeSensitive := false
+			finalLevel := defaultMaskingLevel
 			for _, field := range strippedColumnInOriginalResult {
+				if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
+					finalLevel = field.maskingLevel
+				}
+				if finalLevel == maxMaskingLevel {
+					break
+				}
 				if field.sensitive {
 					shouldBeSensitive = true
 					break
@@ -931,11 +955,13 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 			normalizedNameColumnName := parser.NormalizeSnowSQLObjectNamePart(nameColumnName)
 
 			result = append(result, fieldInfo{
-				name:      normalizedNameColumnName,
-				sensitive: false,
+				name:         normalizedNameColumnName,
+				sensitive:    false,
+				maskingLevel: defaultMaskingLevel,
 			}, fieldInfo{
-				name:      normalizedValueColumnName,
-				sensitive: shouldBeSensitive,
+				name:         normalizedValueColumnName,
+				sensitive:    shouldBeSensitive,
+				maskingLevel: finalLevel,
 			})
 		}
 	}
