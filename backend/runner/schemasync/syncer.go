@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	schemaSyncInterval  = 30 * time.Minute
+	schemaSyncInterval  = 1 * time.Minute
 	defaultSyncInterval = 24 * time.Hour
 )
 
@@ -213,31 +213,22 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		return nil, err
 	}
 
-	updateInstance := (*store.UpdateInstanceMessage)(nil)
+	updateInstance := &store.UpdateInstanceMessage{
+		UpdaterID:     api.SystemBotID,
+		EnvironmentID: instance.EnvironmentID,
+		ResourceID:    instance.ResourceID,
+		Metadata: &storepb.InstanceMetadata{
+			LastSyncTime: timestamppb.Now(),
+		},
+	}
 	if instanceMeta.Version != instance.EngineVersion {
-		updateInstance = &store.UpdateInstanceMessage{
-			UpdaterID:     api.SystemBotID,
-			EnvironmentID: instance.EnvironmentID,
-			ResourceID:    instance.ResourceID,
-			EngineVersion: &instanceMeta.Version,
-		}
+		updateInstance.EngineVersion = &instanceMeta.Version
 	}
-	if !cmp.Equal(instanceMeta.Metadata, instance.Metadata, protocmp.Transform()) {
-		if updateInstance == nil {
-			updateInstance = &store.UpdateInstanceMessage{
-				UpdaterID:     api.SystemBotID,
-				EnvironmentID: instance.EnvironmentID,
-				ResourceID:    instance.ResourceID,
-				Metadata:      instanceMeta.Metadata,
-			}
-		} else {
-			updateInstance.Metadata = instanceMeta.Metadata
-		}
+	if !equalInstanceMetadata(instanceMeta.Metadata, instance.Metadata) {
+		updateInstance.Metadata.MysqlLowerCaseTableNames = instanceMeta.Metadata.GetMysqlLowerCaseTableNames()
 	}
-	if updateInstance != nil {
-		if _, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1); err != nil {
-			return nil, err
-		}
+	if _, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1); err != nil {
+		return nil, err
 	}
 
 	var instanceUsers []*store.InstanceUserMessage
@@ -386,6 +377,10 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *store.Data
 		}
 	}
 	return nil
+}
+
+func equalInstanceMetadata(x, y *storepb.InstanceMetadata) bool {
+	return cmp.Equal(x, y, protocmp.Transform(), protocmp.IgnoreFields(&storepb.InstanceMetadata{}, "last_sync_time"))
 }
 
 func equalDatabaseMetadata(x, y *storepb.DatabaseSchemaMetadata) bool {
