@@ -18,6 +18,7 @@ export type FeatureType =
   | "bb.feature.watermark"
   | "bb.feature.audit-log"
   | "bb.feature.issue-advanced-search"
+  | "bb.feature.announcement"
   // Branding
   | "bb.feature.branding"
   // Change Workflow
@@ -52,7 +53,6 @@ export type FeatureType =
   | "bb.feature.custom-approval"
   // Collaboration
   | "bb.feature.shared-sql-script"
-  | "bb.feature.announcement"
   // Plugins
   | "bb.feature.plugin.openai";
 

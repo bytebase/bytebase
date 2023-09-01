@@ -76,6 +76,9 @@ const (
 	// FeatureIssueAdvancedSearch supports search issue with advanced filter.
 	FeatureIssueAdvancedSearch FeatureType = "bb.feature.issue-advanced-search"
 
+	// FeatureAnnouncement enable announcement banner setting.
+	FeatureAnnouncement FeatureType = "bb.feature.announcement"
+
 	// Branding.
 
 	// FeatureBranding enables customized branding.
@@ -170,8 +173,6 @@ const (
 	FeatureCustomApproval FeatureType = "bb.feature.custom-approval"
 
 	// Collaboration.
-	// FeatureAnnouncement enable custom announcement banner setting.
-	FeatureAnnouncement FeatureType = "bb.feature.announcement"
 
 	// FeatureSharedSQLScript enables sharing sql script.
 	FeatureSharedSQLScript FeatureType = "bb.feature.shared-sql-script"
@@ -204,6 +205,8 @@ func (e FeatureType) Name() string {
 		return "Custom role"
 	case FeatureIssueAdvancedSearch:
 		return "Advanced search"
+	case FeatureAnnouncement:
+		return "Announcement"
 	// Branding
 	case FeatureBranding:
 		return "Branding"
@@ -262,8 +265,6 @@ func (e FeatureType) Name() string {
 	case FeatureCustomApproval:
 		return "Custom Approval"
 	// Collaboration
-	case FeatureAnnouncement:
-		return "Announcement"
 	case FeatureSharedSQLScript:
 		return "Shared SQL script"
 	// Plugins
@@ -303,6 +304,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureAuditLog:            {false, false, true},
 	FeatureCustomRole:          {false, false, true},
 	FeatureIssueAdvancedSearch: {false, true, true},
+	FeatureAnnouncement:        {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
@@ -335,7 +337,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureAccessControl:         {false, false, true},
 	FeatureCustomApproval:        {false, false, true},
 	// Collaboration
-	FeatureAnnouncement:    {false, false, true},
 	FeatureSharedSQLScript: {false, true, true},
 	// Plugins
 	FeaturePluginOpenAI: {false, false, true},
