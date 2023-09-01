@@ -1,5 +1,5 @@
 <template>
-  <Drawer :show="show" @close="$emit('dismiss')">
+  <Drawer :show="show" @close="onDismiss">
     <DrawerContent :title="$t('settings.sensitive-data.grant-access')">
       <div class="divide-block-border space-y-8 w-[60rem] h-full">
         <SensitiveColumnTable
@@ -71,7 +71,7 @@
       <template #footer>
         <div class="w-full flex justify-between items-center">
           <div class="w-full flex justify-end items-center gap-x-3">
-            <NButton @click.prevent="$emit('dismiss')">
+            <NButton @click.prevent="onDismiss">
               {{ $t("common.cancel") }}
             </NButton>
             <NButton
@@ -141,6 +141,18 @@ const policyStore = usePolicyV1Store();
 const userStore = useUserStore();
 const { t } = useI18n();
 
+const resetState = () => {
+  state.expirationTimestamp = undefined;
+  state.maskingLevel = MaskingLevel.PARTIAL;
+  state.supportActions = new Set(ACTIONS);
+  state.userUidList = [];
+};
+
+const onDismiss = () => {
+  resetState();
+  emit("dismiss");
+};
+
 const submitDisabled = computed(() => {
   if (state.userUidList.length === 0) {
     return true;
@@ -173,14 +185,12 @@ const onSubmit = async () => {
         updateMask: ["payload"],
       });
     }
-    state.userUidList = [];
-    state.expirationTimestamp = undefined;
-    emit("dismiss");
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.created"),
     });
+    onDismiss();
   } finally {
     state.processing = false;
   }

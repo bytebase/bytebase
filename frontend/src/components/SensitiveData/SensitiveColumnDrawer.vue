@@ -14,10 +14,13 @@
               {{ $t("settings.sensitive-data.masking-level.self") }}
             </p>
             <MaskingLevelRadioGroup
-              :disabled="hasPermission"
+              :disabled="!hasPermission"
               :level-list="MASKING_LEVELS"
-              :selected="column.maskData.maskingLevel"
-              @update="column.maskData.maskingLevel = $event"
+              :selected="state.maskingLevel"
+              @update="(level: MaskingLevel) => {
+                state.maskingLevel = level
+                state.dirty = true
+              }"
             />
           </div>
         </div>
@@ -225,6 +228,7 @@ interface AccessUser {
 interface LocalState {
   dirty: boolean;
   processing: boolean;
+  maskingLevel: MaskingLevel;
 }
 
 const props = defineProps<{
@@ -237,6 +241,7 @@ const emit = defineEmits(["dismiss"]);
 const state = reactive<LocalState>({
   dirty: false,
   processing: false,
+  maskingLevel: props.column.maskData.maskingLevel,
 });
 
 const MASKING_LEVELS = [

@@ -4,6 +4,7 @@
       v-for="maskLevel in levelList"
       :key="maskLevel"
       class="radio space-x-2"
+      :class="disabled && 'cursor-not-allowed'"
     >
       <input
         :disabled="disabled"
