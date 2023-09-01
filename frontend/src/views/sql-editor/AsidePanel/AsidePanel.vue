@@ -1,59 +1,51 @@
 <template>
   <div class="aside-panel h-full">
     <NTabs
-      v-model:value="tabStore.asidePanelTab"
-      class="h-full overflow-hidden"
-      pane-style="height: calc(100% - 33px); padding: 0"
-      :tabs-padding="8"
+      v-model:value="databaseTab"
+      type="segment"
+      size="small"
+      class="h-full"
+      pane-style="height: calc(100% - 35px); padding: 0;"
     >
-      <NTabPane name="databases" :tab="$t('common.databases')">
-        <NTabs
-          v-model:value="databaseTab"
-          type="segment"
-          size="small"
-          class="h-full"
-          pane-style="height: calc(100% - 35px); padding: 0;"
-        >
-          <NTabPane name="projects" :tab="$t('common.projects')">
-            <DatabaseTree
-              key="sql-editor-database-tree"
-              v-model:search-pattern="searchPattern"
-              @alter-schema="$emit('alter-schema', $event)"
-            />
-          </NTabPane>
-          <NTabPane
-            v-if="hasInstanceView"
-            name="instances"
-            :tab="$t('common.instances')"
-          >
-            <DatabaseTree
-              key="sql-editor-database-tree"
-              v-model:search-pattern="searchPattern"
-              @alter-schema="$emit('alter-schema', $event)"
-            />
-          </NTabPane>
-        </NTabs>
+      <NTabPane name="projects" :tab="$t('common.projects')">
+        <DatabaseTree
+          key="sql-editor-database-tree"
+          v-model:search-pattern="searchPattern"
+          @alter-schema="$emit('alter-schema', $event)"
+        />
       </NTabPane>
-      <NTabPane name="sheets" :tab="$t('sheet.sheets')">
-        <NTabs
-          v-model:value="sheetTab"
-          size="small"
-          type="segment"
-          class="h-full"
-          pane-style="height: calc(100% - 35px); padding: 0;"
-        >
-          <NTabPane name="my" :tab="$t('sheet.mine')">
-            <SheetList view="my" />
-          </NTabPane>
-          <NTabPane name="starred" :tab="$t('sheet.starred')">
-            <SheetList view="starred" />
-          </NTabPane>
-          <NTabPane name="shared" :tab="$t('sheet.shared-with-me')">
-            <SheetList view="shared" />
-          </NTabPane>
-        </NTabs>
+      <NTabPane
+        v-if="hasInstanceView"
+        name="instances"
+        :tab="$t('common.instances')"
+      >
+        <DatabaseTree
+          key="sql-editor-database-tree"
+          v-model:search-pattern="searchPattern"
+          @alter-schema="$emit('alter-schema', $event)"
+        />
       </NTabPane>
     </NTabs>
+
+    <NTabPane v-if="false" name="sheets" :tab="$t('sheet.sheets')">
+      <NTabs
+        v-model:value="sheetTab"
+        size="small"
+        type="segment"
+        class="h-full"
+        pane-style="height: calc(100% - 35px); padding: 0;"
+      >
+        <NTabPane name="my" :tab="$t('sheet.mine')">
+          <SheetList view="my" />
+        </NTabPane>
+        <NTabPane name="starred" :tab="$t('sheet.starred')">
+          <SheetList view="starred" />
+        </NTabPane>
+        <NTabPane name="shared" :tab="$t('sheet.shared-with-me')">
+          <SheetList view="shared" />
+        </NTabPane>
+      </NTabs>
+    </NTabPane>
   </div>
 </template>
 
@@ -61,7 +53,7 @@
 import { NTabs, NTabPane } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useConnectionTreeStore, useCurrentUserV1, useTabStore } from "@/store";
+import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
 import { ConnectionTreeMode } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { useSheetContext } from "../Sheet";
@@ -76,7 +68,6 @@ defineEmits<{
 }>();
 
 const currentUserV1 = useCurrentUserV1();
-const tabStore = useTabStore();
 const connectionTreeStore = useConnectionTreeStore();
 const searchPattern = ref("");
 const { events: sheetEvents } = useSheetContext();
