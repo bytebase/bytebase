@@ -2228,7 +2228,7 @@
         "desc": "将 SQL 脚本分享给项目成员，或者公开给所有人。"
       },
       "bb-feature-announcement": {
-        "title": "自定义公告",
+        "title": "公告",
         "desc": "配置公告横幅。"
       },
       "bb-feature-encrypted-secrets": {
