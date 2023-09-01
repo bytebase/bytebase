@@ -593,7 +593,24 @@
               "description": "Supply private deployment of OpenAI API Endpoint."
             }
           }
-        }
+        },
+        "announcement": "Announcement",
+        "announcement-alert-level": {
+          "description": "Level",
+          "field": {
+            "info": "Normal",
+            "warning": "Warning",
+            "critical": "Critical",
+          },
+        },
+        "announcement-text": {
+          "self": "Title",
+          "placeholder": "Input announcement title",
+        },
+        "extra-link": {
+          "self": "Link",
+          "placeholder": "Input announcement link",
+        },
       }
     },
     "sensitive-data": {
@@ -2215,6 +2232,10 @@
       "bb-feature-shared-sql-script": {
         "title": "Shared SQL script",
         "desc": "Share your SQL scripts with project teammates or make them public to all."
+      },
+      "bb-feature-announcement": {
+        "title": "Announcement",
+        "desc": "Configure an Announcement Banner."
       },
       "bb-feature-encrypted-secrets": {
         "title": "Encrypted Secrets",
