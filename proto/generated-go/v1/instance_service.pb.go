@@ -10,6 +10,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	reflect "reflect"
@@ -839,6 +840,8 @@ type InstanceOptions struct {
 	// The schema tenant mode is used to determine whether the instance is in schema tenant mode.
 	// For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
 	SchemaTenantMode bool `protobuf:"varint,1,opt,name=schema_tenant_mode,json=schemaTenantMode,proto3" json:"schema_tenant_mode,omitempty"`
+	// How often the instance is synced.
+	SyncInterval *durationpb.Duration `protobuf:"bytes,2,opt,name=sync_interval,json=syncInterval,proto3" json:"sync_interval,omitempty"`
 }
 
 func (x *InstanceOptions) Reset() {
@@ -878,6 +881,13 @@ func (x *InstanceOptions) GetSchemaTenantMode() bool {
 		return x.SchemaTenantMode
 	}
 	return false
+}
+
+func (x *InstanceOptions) GetSyncInterval() *durationpb.Duration {
+	if x != nil {
+		return x.SyncInterval
+	}
+	return nil
 }
 
 type Instance struct {
@@ -1225,6 +1235,8 @@ var file_v1_instance_service_proto_rawDesc = []byte{
 	0x70, 0x69, 0x2f, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a,
 	0x1f, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x66, 0x69, 0x65, 0x6c,
 	0x64, 0x5f, 0x62, 0x65, 0x68, 0x61, 0x76, 0x69, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x1a, 0x1e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
+	0x66, 0x2f, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x1a, 0x1b, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
 	0x66, 0x2f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x20, 0x67,
 	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x66,
@@ -1313,11 +1325,15 @@ var file_v1_instance_service_proto_rawDesc = []byte{
 	0x0a, 0x16, 0x53, 0x79, 0x6e, 0x63, 0x53, 0x6c, 0x6f, 0x77, 0x51, 0x75, 0x65, 0x72, 0x69, 0x65,
 	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1b, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x65,
 	0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x02, 0x52, 0x06, 0x70,
-	0x61, 0x72, 0x65, 0x6e, 0x74, 0x22, 0x3f, 0x0a, 0x0f, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
+	0x61, 0x72, 0x65, 0x6e, 0x74, 0x22, 0x7f, 0x0a, 0x0f, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
 	0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x2c, 0x0a, 0x12, 0x73, 0x63, 0x68, 0x65,
 	0x6d, 0x61, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x5f, 0x6d, 0x6f, 0x64, 0x65, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x08, 0x52, 0x10, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x54, 0x65, 0x6e, 0x61,
-	0x6e, 0x74, 0x4d, 0x6f, 0x64, 0x65, 0x22, 0xae, 0x03, 0x0a, 0x08, 0x49, 0x6e, 0x73, 0x74, 0x61,
+	0x6e, 0x74, 0x4d, 0x6f, 0x64, 0x65, 0x12, 0x3e, 0x0a, 0x0d, 0x73, 0x79, 0x6e, 0x63, 0x5f, 0x69,
+	0x6e, 0x74, 0x65, 0x72, 0x76, 0x61, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e,
+	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e,
+	0x44, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0c, 0x73, 0x79, 0x6e, 0x63, 0x49, 0x6e,
+	0x74, 0x65, 0x72, 0x76, 0x61, 0x6c, 0x22, 0xae, 0x03, 0x0a, 0x08, 0x49, 0x6e, 0x73, 0x74, 0x61,
 	0x6e, 0x63, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x15, 0x0a, 0x03, 0x75, 0x69, 0x64, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x03, 0x52, 0x03, 0x75, 0x69, 0x64, 0x12, 0x28,
@@ -1515,9 +1531,10 @@ var file_v1_instance_service_proto_goTypes = []interface{}{
 	(*Instance)(nil),                // 15: bytebase.v1.Instance
 	(*DataSource)(nil),              // 16: bytebase.v1.DataSource
 	(*fieldmaskpb.FieldMask)(nil),   // 17: google.protobuf.FieldMask
-	(State)(0),                      // 18: bytebase.v1.State
-	(Engine)(0),                     // 19: bytebase.v1.Engine
-	(*emptypb.Empty)(nil),           // 20: google.protobuf.Empty
+	(*durationpb.Duration)(nil),     // 18: google.protobuf.Duration
+	(State)(0),                      // 19: bytebase.v1.State
+	(Engine)(0),                     // 20: bytebase.v1.Engine
+	(*emptypb.Empty)(nil),           // 21: google.protobuf.Empty
 }
 var file_v1_instance_service_proto_depIdxs = []int32{
 	15, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
@@ -1528,38 +1545,39 @@ var file_v1_instance_service_proto_depIdxs = []int32{
 	16, // 5: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
 	16, // 6: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
 	17, // 7: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	18, // 8: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
-	19, // 9: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
-	16, // 10: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
-	14, // 11: bytebase.v1.Instance.options:type_name -> bytebase.v1.InstanceOptions
-	0,  // 12: bytebase.v1.DataSource.type:type_name -> bytebase.v1.DataSourceType
-	1,  // 13: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
-	2,  // 14: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
-	4,  // 15: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
-	5,  // 16: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
-	6,  // 17: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
-	7,  // 18: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
-	8,  // 19: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
-	10, // 20: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
-	11, // 21: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
-	12, // 22: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
-	13, // 23: bytebase.v1.InstanceService.SyncSlowQueries:input_type -> bytebase.v1.SyncSlowQueriesRequest
-	15, // 24: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
-	3,  // 25: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
-	15, // 26: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
-	15, // 27: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
-	20, // 28: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
-	15, // 29: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
-	9,  // 30: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
-	15, // 31: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
-	15, // 32: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
-	15, // 33: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
-	20, // 34: bytebase.v1.InstanceService.SyncSlowQueries:output_type -> google.protobuf.Empty
-	24, // [24:35] is the sub-list for method output_type
-	13, // [13:24] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	18, // 8: bytebase.v1.InstanceOptions.sync_interval:type_name -> google.protobuf.Duration
+	19, // 9: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
+	20, // 10: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
+	16, // 11: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
+	14, // 12: bytebase.v1.Instance.options:type_name -> bytebase.v1.InstanceOptions
+	0,  // 13: bytebase.v1.DataSource.type:type_name -> bytebase.v1.DataSourceType
+	1,  // 14: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
+	2,  // 15: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
+	4,  // 16: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
+	5,  // 17: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
+	6,  // 18: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
+	7,  // 19: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
+	8,  // 20: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
+	10, // 21: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
+	11, // 22: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
+	12, // 23: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
+	13, // 24: bytebase.v1.InstanceService.SyncSlowQueries:input_type -> bytebase.v1.SyncSlowQueriesRequest
+	15, // 25: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
+	3,  // 26: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
+	15, // 27: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
+	15, // 28: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
+	21, // 29: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
+	15, // 30: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
+	9,  // 31: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
+	15, // 32: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
+	15, // 33: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
+	15, // 34: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
+	21, // 35: bytebase.v1.InstanceService.SyncSlowQueries:output_type -> google.protobuf.Empty
+	25, // [25:36] is the sub-list for method output_type
+	14, // [14:25] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_v1_instance_service_proto_init() }
