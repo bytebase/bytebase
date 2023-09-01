@@ -461,7 +461,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, &s.profile, false)
 	if !profile.Readonly {
-		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
+		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 		s.SlowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)

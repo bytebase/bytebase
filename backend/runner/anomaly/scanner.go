@@ -2,7 +2,6 @@
 package anomaly
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -234,88 +233,6 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *store.Inst
 			zap.String("type", string(api.AnomalyDatabaseConnection)),
 			zap.Error(err))
 	}
-
-	// Check schema drift
-	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSchemaDrift, instance) == nil {
-		// Redis and MongoDB are schemaless.
-		if disableSchemaDriftAnomalyCheck(instance.Engine) {
-			return
-		}
-		var schemaBuf bytes.Buffer
-		if _, err := driver.Dump(ctx, &schemaBuf, true /* schemaOnly */); err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				log.Debug("Failed to check anomaly",
-					zap.String("instance", instance.ResourceID),
-					zap.String("database", database.DatabaseName),
-					zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-					zap.Error(err))
-			} else {
-				log.Error("Failed to check anomaly",
-					zap.String("instance", instance.ResourceID),
-					zap.String("database", database.DatabaseName),
-					zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-					zap.Error(err))
-			}
-			return
-		}
-		limit := 1
-		list, err := s.store.FindInstanceChangeHistoryList(ctx, &db.MigrationHistoryFind{
-			InstanceID: &instance.UID,
-			DatabaseID: &database.UID,
-			Database:   &database.DatabaseName,
-			Limit:      &limit,
-		})
-		if err != nil {
-			log.Error("Failed to check anomaly",
-				zap.String("instance", instance.ResourceID),
-				zap.String("database", database.DatabaseName),
-				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-				zap.Error(err))
-			return
-		}
-		if len(list) > 0 {
-			if list[0].Schema != schemaBuf.String() {
-				anomalyPayload := api.AnomalyDatabaseSchemaDriftPayload{
-					Version: list[0].Version,
-					Expect:  list[0].Schema,
-					Actual:  schemaBuf.String(),
-				}
-				payload, err := json.Marshal(anomalyPayload)
-				if err != nil {
-					log.Error("Failed to marshal anomaly payload",
-						zap.String("instance", instance.ResourceID),
-						zap.String("database", database.DatabaseName),
-						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-						zap.Error(err))
-				} else {
-					if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
-						InstanceID:  instance.ResourceID,
-						DatabaseUID: &database.UID,
-						Type:        api.AnomalyDatabaseSchemaDrift,
-						Payload:     string(payload),
-					}); err != nil {
-						log.Error("Failed to create anomaly",
-							zap.String("instance", instance.ResourceID),
-							zap.String("database", database.DatabaseName),
-							zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-							zap.Error(err))
-					}
-				}
-			} else {
-				err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
-					DatabaseUID: &database.UID,
-					Type:        api.AnomalyDatabaseSchemaDrift,
-				})
-				if err != nil && common.ErrorCode(err) != common.NotFound {
-					log.Error("Failed to close anomaly",
-						zap.String("instance", instance.ResourceID),
-						zap.String("database", database.DatabaseName),
-						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-						zap.Error(err))
-				}
-			}
-		}
-	}
 }
 
 func (s *Scanner) checkBackupAnomaly(ctx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, policyMap map[int]*api.BackupPlanPolicy) {
@@ -491,18 +408,6 @@ func disableBackupAnomalyCheck(dbTp db.Type) bool {
 		db.Oracle:   {},
 		db.MSSQL:    {},
 		db.MariaDB:  {},
-		db.Redshift: {},
-	}
-	_, ok := m[dbTp]
-	return ok
-}
-
-func disableSchemaDriftAnomalyCheck(dbTp db.Type) bool {
-	m := map[db.Type]struct{}{
-		db.MongoDB:  {},
-		db.Redis:    {},
-		db.Oracle:   {},
-		db.MSSQL:    {},
 		db.Redshift: {},
 	}
 	_, ok := m[dbTp]

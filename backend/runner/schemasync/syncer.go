@@ -4,6 +4,7 @@ package schemasync
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -19,7 +20,9 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -31,21 +34,23 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile) *Syncer {
+func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, licenseService enterpriseAPI.LicenseService) *Syncer {
 	return &Syncer{
-		store:     store,
-		dbFactory: dbFactory,
-		stateCfg:  stateCfg,
-		profile:   profile,
+		store:          store,
+		dbFactory:      dbFactory,
+		stateCfg:       stateCfg,
+		profile:        profile,
+		licenseService: licenseService,
 	}
 }
 
 // Syncer is the schema syncer.
 type Syncer struct {
-	store     *store.Store
-	dbFactory *dbfactory.DBFactory
-	stateCfg  *state.State
-	profile   config.Profile
+	store          *store.Store
+	dbFactory      *dbfactory.DBFactory
+	stateCfg       *state.State
+	profile        config.Profile
+	licenseService enterpriseAPI.LicenseService
 }
 
 // Run will run the schema syncer once.
@@ -339,15 +344,13 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		return err
 	}
 	var oldDatabaseMetadata *storepb.DatabaseSchemaMetadata
+	var rawDump []byte
 	if dbSchema != nil {
 		oldDatabaseMetadata = dbSchema.Metadata
+		rawDump = dbSchema.Schema
 	}
 
 	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
-		var rawDump []byte
-		if dbSchema != nil {
-			rawDump = dbSchema.Schema
-		}
 		// Avoid updating dump everytime by dumping the schema only when the database metadata is changed.
 		// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
 		if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
@@ -363,6 +366,72 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			Schema:   rawDump,
 		}, api.SystemBotID); err != nil {
 			return err
+		}
+	}
+
+	// Check schema drift
+	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSchemaDrift, instance) == nil {
+		// Redis and MongoDB are schemaless.
+		if disableSchemaDriftAnomalyCheck(instance.Engine) {
+			return nil
+		}
+		limit := 1
+		list, err := s.store.FindInstanceChangeHistoryList(ctx, &db.MigrationHistoryFind{
+			InstanceID: &instance.UID,
+			DatabaseID: &database.UID,
+			Database:   &database.DatabaseName,
+			Limit:      &limit,
+		})
+		if err != nil {
+			log.Error("Failed to check anomaly",
+				zap.String("instance", instance.ResourceID),
+				zap.String("database", database.DatabaseName),
+				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+				zap.Error(err))
+			return nil
+		}
+		latestSchema := string(rawDump)
+		if len(list) > 0 {
+			if list[0].Schema != latestSchema {
+				anomalyPayload := api.AnomalyDatabaseSchemaDriftPayload{
+					Version: list[0].Version,
+					Expect:  list[0].Schema,
+					Actual:  latestSchema,
+				}
+				payload, err := json.Marshal(anomalyPayload)
+				if err != nil {
+					log.Error("Failed to marshal anomaly payload",
+						zap.String("instance", instance.ResourceID),
+						zap.String("database", database.DatabaseName),
+						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+						zap.Error(err))
+				} else {
+					if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+						InstanceID:  instance.ResourceID,
+						DatabaseUID: &database.UID,
+						Type:        api.AnomalyDatabaseSchemaDrift,
+						Payload:     string(payload),
+					}); err != nil {
+						log.Error("Failed to create anomaly",
+							zap.String("instance", instance.ResourceID),
+							zap.String("database", database.DatabaseName),
+							zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+							zap.Error(err))
+					}
+				}
+			} else {
+				err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+					DatabaseUID: &database.UID,
+					Type:        api.AnomalyDatabaseSchemaDrift,
+				})
+				if err != nil && common.ErrorCode(err) != common.NotFound {
+					log.Error("Failed to close anomaly",
+						zap.String("instance", instance.ResourceID),
+						zap.String("database", database.DatabaseName),
+						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+						zap.Error(err))
+				}
+			}
 		}
 	}
 	return nil
@@ -401,4 +470,16 @@ func getOrDefaultLastSyncTime(t *timestamppb.Timestamp) time.Time {
 		return t.AsTime()
 	}
 	return time.Unix(0, 0)
+}
+
+func disableSchemaDriftAnomalyCheck(dbTp db.Type) bool {
+	m := map[db.Type]struct{}{
+		db.MongoDB:  {},
+		db.Redis:    {},
+		db.Oracle:   {},
+		db.MSSQL:    {},
+		db.Redshift: {},
+	}
+	_, ok := m[dbTp]
+	return ok
 }
