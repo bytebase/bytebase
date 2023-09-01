@@ -1254,22 +1254,18 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 									ColumnList: []db.ColumnInfo{
 										{
 											Name:         "A",
-											Sensitive:    true,
 											MaskingLevel: storepb.MaskingLevel_FULL,
 										},
 										{
 											Name:         "B",
-											Sensitive:    false,
 											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 										{
 											Name:         "C",
-											Sensitive:    false,
 											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 										{
 											Name:         "D",
-											Sensitive:    true,
 											MaskingLevel: storepb.MaskingLevel_PARTIAL,
 										},
 									},
