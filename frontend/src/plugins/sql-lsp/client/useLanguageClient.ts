@@ -1,9 +1,7 @@
-import getMessageServiceOverride from "@codingame/monaco-vscode-api/service-override/messages";
-import { StandaloneServices } from "@codingame/monaco-vscode-api/services";
 import { createLanguageServerWorker } from "@sql-lsp/server";
 import { ConnectionScope, Schema, SQLDialect } from "@sql-lsp/types";
-import type { ExecuteCommandParams } from "monaco-languageclient";
-import { MonacoLanguageClient, MonacoServices } from "monaco-languageclient";
+import { initServices, MonacoLanguageClient } from "monaco-languageclient";
+import { ExecuteCommandParams } from "vscode-languageserver-protocol";
 import { createLanguageClient } from "./createLanguageClient";
 
 type LocalStage = {
@@ -38,11 +36,17 @@ const getWorker = (): Promise<Worker> => {
 const initializeLanguageClient = async () => {
   const worker = await getWorker();
 
-  StandaloneServices.initialize({
-    ...getMessageServiceOverride(document.body),
+  await initServices({
+    enableKeybindingsService: true,
+    enableThemeService: false,
+    enableTextmateService: false,
+    enableModelService: true,
+    configureEditorOrViewsService: {
+      enableViewsService: false,
+    },
+    enableLanguagesService: true,
+    debugLogging: true,
   });
-  // install Monaco language client services
-  MonacoServices.install();
 
   const { client } = createLanguageClient(worker);
 
@@ -139,9 +143,9 @@ const stop = () => {
   });
 };
 
-export const useLanguageClient = () => {
+export const useLanguageClient = async () => {
   // Initialize if needed
-  getLanguageClient();
+  await getLanguageClient();
 
   return { start, stop, changeSchema, changeDialect, changeConnectionScope };
 };
