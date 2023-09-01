@@ -53,7 +53,6 @@ func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *snowparse
 	for _, field := range result {
 		l.result = append(l.result, db.SensitiveField{
 			Name:         field.name,
-			Sensitive:    field.sensitive,
 			MaskingLevel: field.maskingLevel,
 		})
 	}
@@ -81,7 +80,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 				for i := 0; i < len(fieldsInAnchorClause); i++ {
 					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, db.ColumnInfo{
 						Name:         fieldsInAnchorClause[i].name,
-						Sensitive:    fieldsInAnchorClause[i].sensitive,
 						MaskingLevel: fieldsInAnchorClause[i].maskingLevel,
 					})
 					result = append(result, fieldsInAnchorClause[i])
@@ -102,11 +100,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 						if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].maskingLevel) {
 							change = true
 							tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].maskingLevel
-						}
-						if (!tempCTEOuterSchemaInfo.ColumnList[i].Sensitive) && fieldsInRecursiveClause[i].sensitive {
-							change = true
-							tempCTEOuterSchemaInfo.ColumnList[i].Sensitive = true
-							result[i].sensitive = true
 						}
 					}
 					if !change {
@@ -137,7 +130,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 			for _, field := range result {
 				columnList = append(columnList, db.ColumnInfo{
 					Name:         field.name,
-					Sensitive:    field.sensitive,
 					MaskingLevel: field.maskingLevel,
 				})
 			}
@@ -171,9 +163,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 				finalLevel = right[i].maskingLevel
 			}
 			result[i].maskingLevel = finalLevel
-			if !result[i].sensitive {
-				result[i].sensitive = right[i].sensitive
-			}
 		}
 	}
 	return result, nil
@@ -812,10 +801,9 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoinClaus
 		for _, field := range right {
 			if idx, ok := leftMap[field.name]; !ok {
 				result = append(result, field)
-			} else if field.sensitive && cmp.Less[storepb.MaskingLevel](left[idx].maskingLevel, field.maskingLevel) {
+			} else if cmp.Less[storepb.MaskingLevel](left[idx].maskingLevel, field.maskingLevel) {
 				// If the field is in the left part and the right part, we should keep the field in the left part,
 				// and set the sensitive flag to true if the field in the right part is sensitive.
-				result[leftMap[field.name]].sensitive = true
 				result[idx].maskingLevel = field.maskingLevel
 			}
 		}
@@ -846,7 +834,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 				database:     normalizedDatabaseName,
 				table:        tableSchema.Name,
 				name:         column.Name,
-				sensitive:    column.Sensitive,
 				maskingLevel: column.MaskingLevel,
 			})
 		}
@@ -911,7 +898,6 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 			for _, literal := range v.AllLiteral() {
 				result = append(result, fieldInfo{
 					name:         literal.GetText(),
-					sensitive:    pivotColumnInOriginalResult.sensitive,
 					maskingLevel: pivotColumnInOriginalResult.maskingLevel,
 				})
 			}
@@ -933,17 +919,12 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 				result = append(result[:strippedColumnIndices[idx]], result[strippedColumnIndices[idx]+1:]...)
 			}
 
-			shouldBeSensitive := false
 			finalLevel := defaultMaskingLevel
 			for _, field := range strippedColumnInOriginalResult {
 				if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
 					finalLevel = field.maskingLevel
 				}
 				if finalLevel == maxMaskingLevel {
-					break
-				}
-				if field.sensitive {
-					shouldBeSensitive = true
 					break
 				}
 			}
@@ -956,11 +937,9 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 
 			result = append(result, fieldInfo{
 				name:         normalizedNameColumnName,
-				sensitive:    false,
 				maskingLevel: defaultMaskingLevel,
 			}, fieldInfo{
 				name:         normalizedValueColumnName,
-				sensitive:    shouldBeSensitive,
 				maskingLevel: finalLevel,
 			})
 		}
