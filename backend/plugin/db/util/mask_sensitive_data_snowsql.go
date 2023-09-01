@@ -224,7 +224,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 				result = append(result, left...)
 			} else if columnElem.Column_name() != nil {
 				normalizedColumnName = parser.NormalizeSnowSQLObjectNamePart(columnElem.Column_name().Id_())
-				left, err := extractor.snowflakeIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+				left, err := extractor.snowflakeGetFieldMaskingLevel(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, columnElem.Column_name().GetStart().GetLine())
 				}
@@ -349,7 +349,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		return ctx.GetText(), false, nil
 	case *snowparser.Full_column_nameContext:
 		normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName := normalizedFullColumnName(ctx)
-		fieldInfo, err := extractor.snowflakeIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+		fieldInfo, err := extractor.snowflakeGetFieldMaskingLevel(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 		if err != nil {
 			return "", false, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
@@ -714,7 +714,7 @@ func (extractor *sensitiveFieldExtractor) isSnowSQLExprSensitive(ctx antlr.RuleC
 		return ctx.GetText(), false, nil
 	case *snowparser.Id_Context:
 		normalizedColumnName := parser.NormalizeSnowSQLObjectNamePart(ctx)
-		fieldInfo, err := extractor.snowflakeIsFieldSensitive("", "", "", normalizedColumnName)
+		fieldInfo, err := extractor.snowflakeGetFieldMaskingLevel("", "", "", normalizedColumnName)
 		if err != nil {
 			return "", false, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
@@ -1055,8 +1055,8 @@ func (extractor *sensitiveFieldExtractor) getAllFieldsOfTableInFromOrOuterCTE(no
 	return result, nil
 }
 
-// snowflakeIsFieldSensitive iterates through the fromFieldList sequentially until we find the first matching object and return the column name, and whether the column is sensitive.
-func (extractor *sensitiveFieldExtractor) snowflakeIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) (fieldInfo, error) {
+// snowflakeGetFieldMaskingLevel iterates through the fromFieldList sequentially until we find the first matching object and return the column name, and whether the column is sensitive.
+func (extractor *sensitiveFieldExtractor) snowflakeGetFieldMaskingLevel(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) (fieldInfo, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
