@@ -353,14 +353,4 @@ const getColumnClassification = (classificationId: string) => {
   }
   return props.classificationConfig.classification[classificationId];
 };
-
-const getColumnSensitiveLevel = (classificationId: string) => {
-  const classification = getColumnClassification(classificationId);
-  if (!classification) {
-    return;
-  }
-  return (props.classificationConfig?.levels ?? []).find(
-    (level) => level.id === classification.levelId
-  );
-};
 </script>
