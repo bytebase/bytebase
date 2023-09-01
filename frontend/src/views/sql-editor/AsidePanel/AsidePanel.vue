@@ -32,9 +32,6 @@
               @alter-schema="$emit('alter-schema', $event)"
             />
           </NTabPane>
-          <NTabPane name="history" :tab="$t('common.history')">
-            <QueryHistoryContainer />
-          </NTabPane>
         </NTabs>
       </NTabPane>
       <NTabPane name="sheets" :tab="$t('sheet.sheets')">
@@ -69,7 +66,6 @@ import { ConnectionTreeMode } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { useSheetContext } from "../Sheet";
 import DatabaseTree from "./DatabaseTree.vue";
-import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SheetList from "./SheetList";
 
 defineEmits<{
@@ -85,7 +81,7 @@ const connectionTreeStore = useConnectionTreeStore();
 const searchPattern = ref("");
 const { events: sheetEvents } = useSheetContext();
 
-const databaseTab = ref<"projects" | "instances" | "history">(
+const databaseTab = ref<"projects" | "instances">(
   connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE
     ? "instances"
     : "projects"

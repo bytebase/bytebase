@@ -10,7 +10,9 @@
       <InfoPanel />
     </NTabPane>
     <NTabPane name="SHEET" :tab="$t('sheet.sheet')"> Sheet </NTabPane>
-    <NTabPane name="HISTORY" :tab="$t('common.history')"> info </NTabPane>
+    <NTabPane name="HISTORY" :tab="$t('common.history')">
+      <HistoryPanel />
+    </NTabPane>
     <!-- <NTabPane name="projects" :tab="$t('common.projects')">
       <Splitpanes horizontal class="default-theme" :dbl-click-splitter="false">
         <Pane>
@@ -51,6 +53,7 @@
 
 <script setup lang="ts">
 import { NTabs, NTabPane } from "naive-ui";
+import HistoryPanel from "./HistoryPanel";
 import InfoPanel from "./InfoPanel";
 import { useSecondarySidebarContext } from "./context";
 
