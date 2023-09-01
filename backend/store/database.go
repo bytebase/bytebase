@@ -151,7 +151,9 @@ type UpdateDatabaseMessage struct {
 	DataShare            *bool
 	ServiceName          *string
 	EnvironmentID        *string
-	Metadata             *storepb.DatabaseMetadata
+
+	// MetadataUpsert upserts the top-level messages.
+	MetadataUpsert *storepb.DatabaseMetadata
 }
 
 // FindDatabaseMessage is the message for finding databases.
@@ -476,14 +478,14 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	if v := patch.ServiceName; v != nil {
 		set, args = append(set, fmt.Sprintf("service_name = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Metadata; v != nil {
+	if v := patch.MetadataUpsert; v != nil {
 		// We will skip writing the system label, environment.
 		delete(v.Labels, api.EnvironmentLabelKey)
 		metadataString, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadataString)
+		set, args = append(set, fmt.Sprintf("metadata = metadata || $%d", len(args)+1)), append(args, metadataString)
 	}
 	args = append(args, instance.UID, patch.DatabaseName)
 

@@ -238,9 +238,9 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			}
 			patch.ProjectID = &project.ResourceID
 		case "labels":
-			metadata := database.Metadata
-			metadata.Labels = request.Database.Labels
-			patch.Metadata = metadata
+			patch.MetadataUpsert = &storepb.DatabaseMetadata{
+				Labels: request.Database.Labels,
+			}
 		case "environment":
 			if request.Database.Environment == "" {
 				unsetEnvironment := ""
