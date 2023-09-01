@@ -126,7 +126,7 @@ import {
   ProjectV1Name,
 } from "@/components/v2";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
-import { SensitiveColumn } from "./types";
+import { SensitiveColumn } from "../types";
 
 const props = defineProps<{
   showOperation: boolean;

@@ -17,10 +17,7 @@
               :disabled="!hasPermission"
               :level-list="MASKING_LEVELS"
               :selected="state.maskingLevel"
-              @update="(level: MaskingLevel) => {
-                state.maskingLevel = level
-                state.dirty = true
-              }"
+              @update="state.maskingLevel = $event"
             />
           </div>
         </div>
@@ -53,7 +50,6 @@
             :bottom-bordered="true"
             :compact-section="true"
             :row-clickable="false"
-            @click-row=""
           >
             <template
               #body="{
@@ -150,7 +146,11 @@
               {{ $t("common.cancel") }}
             </NButton>
             <NButton
-              :disabled="!hasPermission || !state.dirty || state.processing"
+              :disabled="
+                !hasPermission ||
+                (!state.dirty && !maskingPolicyChanged) ||
+                state.processing
+              "
               type="primary"
               @click.prevent="onSubmit"
             >
@@ -164,18 +164,11 @@
 </template>
 
 <script lang="ts" setup>
-import { groupBy } from "lodash-es";
 import { NButton, NDatePicker, NPopconfirm } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBTableColumn, BBTableSectionDataSource } from "@/bbkit/types";
+import type { BBTableColumn } from "@/bbkit/types";
 import { Drawer, DrawerContent } from "@/components/v2";
-import {
-  resolveCELExpr,
-  wrapAsGroup,
-  buildCELExpr,
-  validateSimpleExpr,
-} from "@/plugins/cel";
 import {
   usePolicyV1Store,
   usePolicyByParentAndType,
@@ -185,37 +178,18 @@ import {
 } from "@/store";
 import { getUserId } from "@/store/modules/v1/common";
 import { unknownUser } from "@/types";
-import {
-  Expr as CELExpr,
-  ParsedExpr,
-} from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
-import {
-  LoginRequest,
-  LoginResponse,
-  User,
-  UserType,
-} from "@/types/proto/v1/auth_service";
+import { User } from "@/types/proto/v1/auth_service";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import {
-  Policy,
   PolicyType,
-  PolicyResourceType,
+  MaskData,
   MaskingExceptionPolicy_MaskingException,
   MaskingExceptionPolicy_MaskingException_Action,
-  maskingExceptionPolicy_MaskingException_ActionToJSON,
 } from "@/types/proto/v1/org_policy_service";
-import { extractInstanceResourceName } from "@/utils";
 import { hasWorkspacePermissionV1, extractUserUID } from "@/utils";
-import {
-  convertCELStringToParsedExpr,
-  convertParsedExprToCELString,
-} from "@/utils";
-import {
-  convertFromCELString,
-  convertFromExpr,
-  stringifyDatabaseResources,
-} from "@/utils/issue/cel";
+import { convertCELStringToParsedExpr } from "@/utils";
+import { convertFromExpr } from "@/utils/issue/cel";
 import { SensitiveColumn } from "./types";
 
 interface AccessUser {
@@ -223,6 +197,7 @@ interface AccessUser {
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
   maskingLevel: MaskingLevel;
   expirationTimestamp?: number;
+  rawExpression: string;
 }
 
 interface LocalState {
@@ -288,6 +263,7 @@ const getAccessUsers = async (
     maskingLevel: exception.maskingLevel,
     expirationTimestamp,
     supportActions: new Set([exception.action]),
+    rawExpression: exception.condition?.expression ?? "",
   };
 };
 
@@ -400,6 +376,10 @@ const toggleAction = (
   }
 };
 
+const maskingPolicyChanged = computed(() => {
+  return state.maskingLevel !== props.column.maskData.maskingLevel;
+});
+
 const onUpdate = (index: number, callback: (item: AccessUser) => void) => {
   const item = accessUserList.value[index];
   if (!item) {
@@ -413,9 +393,104 @@ const onSubmit = async () => {
   state.processing = true;
 
   try {
+    if (maskingPolicyChanged.value) {
+      await updateMaskingPolicy();
+    }
+    if (state.dirty) {
+      await updateExceptionPolicy();
+    }
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
     emit("dismiss");
   } finally {
     state.processing = false;
   }
+};
+
+const getMaskDataIdentifier = (maskData: MaskData): string => {
+  return `${maskData.schema}.${maskData.table}.${maskData.column}`;
+};
+
+const updateMaskingPolicy = async () => {
+  const policy = await policyStore.getOrFetchPolicyByParentAndType({
+    parentPath: props.column.database.name,
+    policyType: PolicyType.MASKING,
+  });
+  if (!policy) {
+    return;
+  }
+
+  const maskData = policy.maskingPolicy?.maskData ?? [];
+  const existedIndex = maskData.findIndex(
+    (data) =>
+      getMaskDataIdentifier(data) ===
+      getMaskDataIdentifier(props.column.maskData)
+  );
+  if (existedIndex < 0) {
+    maskData.push({
+      ...props.column.maskData,
+      maskingLevel: state.maskingLevel,
+    });
+  } else {
+    maskData[existedIndex] = {
+      ...props.column.maskData,
+      maskingLevel: state.maskingLevel,
+    };
+  }
+  policy.maskingPolicy = {
+    ...(policy.maskingPolicy ?? {}),
+    maskData,
+  };
+
+  await policyStore.updatePolicy(["payload"], policy);
+};
+
+const updateExceptionPolicy = async () => {
+  const policy = await policyStore.getOrFetchPolicyByParentAndType({
+    parentPath: props.column.database.name,
+    policyType: PolicyType.MASKING_EXCEPTION,
+  });
+  if (!policy) {
+    return;
+  }
+
+  const exceptions = (
+    policy.maskingExceptionPolicy?.maskingExceptions ?? []
+  ).filter((exception) => !isCurrentColumnException(exception));
+
+  for (const accessUser of accessUserList.value) {
+    const expressions = accessUser.rawExpression.split(" && ");
+    const index = expressions.findIndex((exp) =>
+      exp.startsWith("request.time")
+    );
+    if (index >= 0) {
+      if (!accessUser.expirationTimestamp) {
+        expressions.splice(index, 1);
+      } else {
+        expressions[index] = `request.time < timestamp("${new Date(
+          accessUser.expirationTimestamp
+        ).toISOString()}")`;
+      }
+    }
+    for (const action of accessUser.supportActions) {
+      exceptions.push({
+        maskingLevel: accessUser.maskingLevel,
+        action,
+        member: `user:${accessUser.user.email}`,
+        condition: Expr.fromPartial({
+          expression: expressions.join(" && "),
+        }),
+      });
+    }
+  }
+
+  policy.maskingExceptionPolicy = {
+    ...(policy.maskingExceptionPolicy ?? {}),
+    maskingExceptions: exceptions,
+  };
+  await policyStore.updatePolicy(["payload"], policy);
 };
 </script>

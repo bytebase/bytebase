@@ -79,21 +79,31 @@
     </template>
     <template v-else>
       <tbody class="bg-normal divide-y divide-block-border">
-        <tr
-          v-for="(item, index) in dataSource"
-          :key="index"
-          :class="rowClickable ? 'cursor-pointer hover:bg-gray-200' : ''"
-          @click.stop="
-            (e) => {
-              if (rowClickable) {
-                $emit('click-row', 0, index, e);
+        <template v-if="dataSource.length > 0">
+          <tr
+            v-for="(item, index) in dataSource"
+            :key="index"
+            :class="rowClickable ? 'cursor-pointer hover:bg-gray-200' : ''"
+            @click.stop="
+              (e) => {
+                if (rowClickable) {
+                  $emit('click-row', 0, index, e);
+                }
               }
-            }
-          "
-        >
-          <slot name="body" :row-data="item" :row="index" />
-        </tr></tbody
-    ></template>
+            "
+          >
+            <slot name="body" :row-data="item" :row="index" />
+          </tr>
+        </template>
+        <template v-else>
+          <tr v-if="showPlaceholder">
+            <td :colspan="columnList.length" class="text-center text-gray-400">
+              <slot name="placeholder">-</slot>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </template>
     <slot name="footer" />
   </table>
 </template>
