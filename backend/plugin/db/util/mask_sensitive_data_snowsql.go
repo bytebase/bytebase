@@ -214,7 +214,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 				result = append(result, left...)
 			} else if columnElem.Column_name() != nil {
 				normalizedColumnName = parser.NormalizeSnowSQLObjectNamePart(columnElem.Column_name().Id_())
-				left, err := extractor.snowflakeGetFieldMaskingLevel(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+				left, err := extractor.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, columnElem.Column_name().GetStart().GetLine())
 				}
@@ -349,14 +349,14 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 		return ctx.GetText(), finalLevel, nil
 	case *snowparser.Full_column_nameContext:
 		normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName := normalizedFullColumnName(ctx)
-		fieldInfo, err := extractor.snowflakeGetFieldMaskingLevel(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+		fieldInfo, err := extractor.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
 		return fieldInfo.name, fieldInfo.maskingLevel, nil
 	case *snowparser.Object_nameContext:
 		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, extractor.currentDatabase, "PUBLIC")
-		fieldInfo, err := extractor.snowflakeGetFieldMaskingLevel(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
+		fieldInfo, err := extractor.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
 		}
@@ -802,7 +802,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 		return ctx.GetText(), finalLevel, nil
 	case *snowparser.Id_Context:
 		normalizedColumnName := parser.NormalizeSnowSQLObjectNamePart(ctx)
-		fieldInfo, err := extractor.snowflakeGetFieldMaskingLevel("", "", "", normalizedColumnName)
+		fieldInfo, err := extractor.snowflakeGetField("", "", "", normalizedColumnName)
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
@@ -1133,8 +1133,8 @@ func (extractor *sensitiveFieldExtractor) getAllFieldsOfTableInFromOrOuterCTE(no
 	return result, nil
 }
 
-// snowflakeGetFieldMaskingLevel iterates through the fromFieldList sequentially until we find the first matching object and return the column name, and whether the column is sensitive.
-func (extractor *sensitiveFieldExtractor) snowflakeGetFieldMaskingLevel(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) (fieldInfo, error) {
+// snowflakeGetField iterates through the fromFieldList sequentially until we find the first matching object and return the column name, and returns the fieldInfo.
+func (extractor *sensitiveFieldExtractor) snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) (fieldInfo, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
