@@ -43,9 +43,7 @@
     </div>
 
     <div class="pb-1">
-      <NButton size="small" @click="showSheetPanel = true">
-        {{ $t("sql-editor.sheet.choose-sheet") }}
-      </NButton>
+      <ToggleSecondarySidebarButton />
     </div>
 
     <ContextMenu ref="contextMenuRef" />
@@ -54,7 +52,7 @@
 
 <script lang="ts" setup>
 import { useResizeObserver } from "@vueuse/core";
-import { useDialog, NButton } from "naive-ui";
+import { useDialog } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -64,6 +62,7 @@ import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import { defer, getSuggestedTabNameFromConnection } from "@/utils";
+import { ToggleSecondarySidebarButton } from "../SecondarySidebar";
 import { useSheetContext } from "../Sheet";
 import ContextMenu from "./ContextMenu.vue";
 import TabItem from "./TabItem";
@@ -83,7 +82,7 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-const { showPanel: showSheetPanel, events: sheetEvents } = useSheetContext();
+const { events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const context = provideTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();

@@ -260,7 +260,8 @@
     "condition": "Condición",
     "search-user": "Buscar usuario",
     "branches": "Ramas",
-    "merge": "Combinar"
+    "merge": "Combinar",
+    "info": "Información"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2282,7 +2283,8 @@
       "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
     },
     "sheets": "Hojas",
-    "search-sheets": "Hojas de búsqueda"
+    "search-sheets": "Hojas de búsqueda",
+    "sheet": "Hoja"
   },
   "engine": {
     "mysql": "MySQL",

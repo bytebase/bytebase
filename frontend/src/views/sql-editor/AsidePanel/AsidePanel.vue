@@ -3,7 +3,7 @@
     <NTabs
       v-model:value="tabStore.asidePanelTab"
       class="h-full overflow-hidden"
-      pane-style="height: calc(100% - 33px); padding: 0 4px;"
+      pane-style="height: calc(100% - 33px); padding: 0"
       :tabs-padding="8"
     >
       <NTabPane name="databases" :tab="$t('common.databases')">
@@ -15,44 +15,22 @@
           pane-style="height: calc(100% - 35px); padding: 0;"
         >
           <NTabPane name="projects" :tab="$t('common.projects')">
-            <Splitpanes
-              horizontal
-              class="default-theme"
-              :dbl-click-splitter="false"
-            >
-              <Pane>
-                <DatabaseTree
-                  key="sql-editor-database-tree"
-                  v-model:search-pattern="searchPattern"
-                  @alter-schema="$emit('alter-schema', $event)"
-                />
-              </Pane>
-              <Pane v-if="showSchemaPanel" :size="40">
-                <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
-              </Pane>
-            </Splitpanes>
+            <DatabaseTree
+              key="sql-editor-database-tree"
+              v-model:search-pattern="searchPattern"
+              @alter-schema="$emit('alter-schema', $event)"
+            />
           </NTabPane>
           <NTabPane
             v-if="hasInstanceView"
             name="instances"
             :tab="$t('common.instances')"
           >
-            <Splitpanes
-              horizontal
-              class="default-theme"
-              :dbl-click-splitter="false"
-            >
-              <Pane>
-                <DatabaseTree
-                  key="sql-editor-database-tree"
-                  v-model:search-pattern="searchPattern"
-                  @alter-schema="$emit('alter-schema', $event)"
-                />
-              </Pane>
-              <Pane v-if="showSchemaPanel" :size="40">
-                <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
-              </Pane>
-            </Splitpanes>
+            <DatabaseTree
+              key="sql-editor-database-tree"
+              v-model:search-pattern="searchPattern"
+              @alter-schema="$emit('alter-schema', $event)"
+            />
           </NTabPane>
           <NTabPane name="history" :tab="$t('common.history')">
             <QueryHistoryContainer />
@@ -84,22 +62,14 @@
 
 <script lang="ts" setup>
 import { NTabs, NTabPane } from "naive-ui";
-import { Splitpanes, Pane } from "splitpanes";
 import { computed, ref, watchEffect } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import {
-  useConnectionTreeStore,
-  useCurrentUserV1,
-  useInstanceV1Store,
-  useTabStore,
-} from "@/store";
-import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { useConnectionTreeStore, useCurrentUserV1, useTabStore } from "@/store";
+import { ConnectionTreeMode } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { useSheetContext } from "../Sheet";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
-import SchemaPanel from "./SchemaPanel/";
 import SheetList from "./SheetList";
 
 defineEmits<{
@@ -127,18 +97,6 @@ const hasInstanceView = computed((): boolean => {
     "bb.permission.workspace.manage-database",
     currentUserV1.value.userRole
   );
-});
-
-const showSchemaPanel = computed(() => {
-  const conn = tabStore.currentTab.connection;
-  if (conn.databaseId === String(UNKNOWN_ID)) {
-    return false;
-  }
-  const instance = useInstanceV1Store().getInstanceByUID(conn.instanceId);
-  if (instance.engine === Engine.REDIS) {
-    return false;
-  }
-  return true;
 });
 
 watchEffect(() => {

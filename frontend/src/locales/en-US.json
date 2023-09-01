@@ -260,7 +260,8 @@
     "condition": "Condition",
     "search-user": "Search user",
     "branches": "Branches",
-    "merge": "Merge"
+    "merge": "Merge",
+    "info": "Info"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2286,7 +2287,8 @@
     "from-issue-warning": "The sheet comes from issue {issue} in read-only mode. {oversize}",
     "content-oversize-warning": "SQL is oversized and inline-editing is disallowed. ",
     "sheets": "Sheets",
-    "search-sheets": "Search Sheets"
+    "search-sheets": "Search Sheets",
+    "sheet": "Sheet"
   },
   "engine": {
     "mysql": "MySQL",
