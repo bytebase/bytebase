@@ -11,6 +11,15 @@
         <EngineIcon :engine="item.engine" custom-class="ml-0 mr-1" />
         {{ item.column?.name }}
       </div>
+      <div class="bb-grid-cell flex gap-x-1">
+        {{ getColumnClassification(item.column?.classification)?.title }}
+        <ClassificationLevelBadge
+          :level-id="
+            getColumnClassification(item.column?.classification)?.levelId
+          "
+          :classification-config="classificationConfig"
+        />
+      </div>
       <div class="bb-grid-cell">
         {{ item.column?.type }}
       </div>
@@ -45,7 +54,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn } from "@/bbkit";
-import { useSchemaEditorStore } from "@/store";
+import { useSchemaEditorStore, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import { getDefaultValue } from "./utils";
@@ -63,11 +72,17 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const store = useSchemaEditorStore();
+const settingStore = useSettingV1Store();
 
 const columnList = computed((): BBGridColumn[] => {
   return [
     {
       title: t("schema-template.form.column-name"),
+      width: "auto",
+      class: "capitalize",
+    },
+    {
+      title: t("schema-template.classification.self"),
       width: "auto",
       class: "capitalize",
     },
@@ -104,5 +119,16 @@ const isRowClickable = (template: SchemaTemplateSetting_FieldTemplate) => {
 
 const deleteTemplate = async (id: string) => {
   await store.deleteSchemaTemplate(id);
+};
+
+const classificationConfig = computed(() => {
+  return settingStore.classification[0];
+});
+
+const getColumnClassification = (classificationId: string | undefined) => {
+  if (!classificationId || !classificationConfig.value) {
+    return;
+  }
+  return classificationConfig.value.classification[classificationId];
 };
 </script>

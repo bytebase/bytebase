@@ -24,6 +24,7 @@ export const provideSchemaDesignerContext = (
     | "tabState"
     | "originalSchemas"
     | "editableSchemas"
+    | "project"
   >
 ) => {
   const { editableSchemas, tabState } = context;

@@ -91,6 +91,7 @@ export const mergeSchemaEditToMetadata = (
               column.nullable = columnEdit.nullable;
               column.comment = columnEdit.comment;
               column.userComment = columnEdit.userComment;
+              column.classification = columnEdit.classification ?? "";
               column.default = columnEdit.default;
             }
           }
@@ -226,6 +227,7 @@ const transformSchemaEditToMetadata = (schemaEdit: Schema): SchemaMetadata => {
           default: column.default,
           comment: column.comment,
           userComment: column.userComment,
+          classification: column.classification,
         })
       );
     }
@@ -272,6 +274,7 @@ const transformTableEditToMetadata = (tableEdit: Table): TableMetadata => {
         default: column.default,
         comment: column.comment,
         userComment: column.userComment,
+        classification: column.classification,
       })
     );
   }
@@ -306,6 +309,7 @@ const transformColumnEditToMetadata = (columnEdit: Column): ColumnMetadata => {
     default: columnEdit.default,
     comment: columnEdit.comment,
     userComment: columnEdit.userComment,
+    classification: columnEdit.classification,
   });
 };
 
@@ -349,6 +353,7 @@ export const rebuildEditableSchemas = (
         editableColumn.nullable = column.nullable;
         editableColumn.comment = column.comment;
         editableColumn.userComment = column.userComment;
+        editableColumn.classification = column.classification;
         editableColumn.default = column.default;
       }
 
