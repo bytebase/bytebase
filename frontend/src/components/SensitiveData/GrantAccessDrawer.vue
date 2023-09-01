@@ -33,7 +33,8 @@
           <p class="mb-2">
             {{ $t("settings.sensitive-data.masking-level.self") }}
           </p>
-          <MaskingLevelSelect
+          <MaskingLevelRadioGroup
+            :disabled="false"
             :level-list="MASKING_LEVELS"
             :selected="state.maskingLevel"
             @update="state.maskingLevel = $event"
@@ -88,7 +89,7 @@
 </template>
 
 <script lang="ts" setup>
-import { groupBy } from "lodash-es";
+import { groupBy, uniq } from "lodash-es";
 import { NButton, NDatePicker } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -190,10 +191,12 @@ const getPendingUpdatePolicy = async (
   columnList: SensitiveColumn[]
 ): Promise<Partial<Policy>> => {
   const maskingExceptions: MaskingExceptionPolicy_MaskingException[] = [];
-  const members = state.userUidList
-    .map((id) => userStore.getUserById(id))
-    .filter((u) => u)
-    .map((user) => `user:${user?.email}`);
+  const members = uniq(
+    state.userUidList
+      .map((id) => userStore.getUserById(id))
+      .filter((u) => u)
+      .map((user) => `user:${user?.email}`)
+  );
 
   for (const column of columnList) {
     const expression: string[] = [

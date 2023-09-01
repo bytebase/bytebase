@@ -6,6 +6,7 @@
       class="radio space-x-2"
     >
       <input
+        :disabled="disabled"
         :checked="selected === maskLevel"
         :name="maskingLevelToJSON(maskLevel)"
         type="radio"
@@ -34,6 +35,7 @@
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 
 defineProps<{
+  disabled: boolean;
   selected: MaskingLevel;
   levelList: MaskingLevel[];
 }>();

@@ -90,7 +90,6 @@
         class="bb-grid-cell justify-center !px-2 space-x-2"
       >
         <button
-          :disabled="!allowAdmin"
           class="w-5 h-5 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
           @click.stop="$emit('click', item, row, 'EDIT')"
         >
@@ -99,7 +98,6 @@
         <NPopconfirm @positive-click="$emit('click', item, row, 'DELETE')">
           <template #trigger>
             <button
-              :disabled="!allowAdmin"
               class="w-5 h-5 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
               @click.stop=""
             >
@@ -127,9 +125,7 @@ import {
   InstanceV1Name,
   ProjectV1Name,
 } from "@/components/v2";
-import { useCurrentUserV1 } from "@/store";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
-import { hasWorkspacePermissionV1 } from "@/utils";
 import { SensitiveColumn } from "./types";
 
 const props = defineProps<{
@@ -165,14 +161,6 @@ watch(
   (val) => (checkedColumnIndex.value = new Set(val)),
   { deep: true }
 );
-
-const currentUserV1 = useCurrentUserV1();
-const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sensitive-data",
-    currentUserV1.value.userRole
-  );
-});
 
 const getMaskingLevelText = (maskingLevel: MaskingLevel) => {
   let level = maskingLevelToJSON(maskingLevel);

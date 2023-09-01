@@ -8,7 +8,9 @@
       />
       <NButton
         type="primary"
-        :disabled="state.pendingGrantAccessColumnIndex.length === 0"
+        :disabled="
+          state.pendingGrantAccessColumnIndex.length === 0 || !hasPermission
+        "
         @click="state.showGrantAccessDrawer = true"
       >
         {{ $t("settings.sensitive-data.grant-access") }}
@@ -23,7 +25,7 @@
       v-if="hasSensitiveDataFeature"
       :row-clickable="true"
       :row-selectable="true"
-      :show-operation="true"
+      :show-operation="hasPermission"
       :column-list="filteredColumnList"
       :checked-column-index-list="state.pendingGrantAccessColumnIndex"
       @click="onRowClick"
@@ -63,15 +65,12 @@
   />
 
   <SensitiveColumnDrawer
-    v-if="filteredColumnList.length > 0"
+    v-if="state.showSensitiveColumnDrawer"
     :show="
       state.showSensitiveColumnDrawer &&
       state.pendingGrantAccessColumnIndex.length === 1
     "
-    :column="
-      filteredColumnList[state.pendingGrantAccessColumnIndex[0]] ??
-      filteredColumnList[0]
-    "
+    :column="filteredColumnList[state.pendingGrantAccessColumnIndex[0]]"
     @dismiss="
       () => {
         state.showSensitiveColumnDrawer = false;
@@ -85,17 +84,19 @@
 import { uniq } from "lodash-es";
 import { computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
-import { featureToRef, useDatabaseV1Store } from "@/store";
 import {
   usePolicyListByResourceTypeAndPolicyType,
   usePolicyV1Store,
-} from "@/store/modules/v1/policy";
+  featureToRef,
+  useDatabaseV1Store,
+  useCurrentUserV1,
+} from "@/store";
 import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { databaseV1Slug } from "@/utils";
+import { databaseV1Slug, hasWorkspacePermissionV1 } from "@/utils";
 import { SensitiveColumn } from "./types";
 
 interface LocalState {
@@ -125,6 +126,14 @@ const policyList = usePolicyListByResourceTypeAndPolicyType({
   resourceType: PolicyResourceType.DATABASE,
   policyType: PolicyType.MASKING,
   showDeleted: false,
+});
+
+const currentUserV1 = useCurrentUserV1();
+const hasPermission = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-sensitive-data",
+    currentUserV1.value.userRole
+  );
 });
 
 const updateList = async () => {
