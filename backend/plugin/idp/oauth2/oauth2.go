@@ -98,6 +98,7 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 		log.Error("Failed to get user information", zap.String("token", token), zap.Error(err))
 		return nil, errors.Wrap(err, "failed to get user information")
 	}
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error("Failed to read response body", zap.String("token", token), zap.Error(err))

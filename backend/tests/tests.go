@@ -675,6 +675,7 @@ func (ctl *controller) Signup() error {
 	if err != nil {
 		return errors.Wrap(err, "fail to post login request")
 	}
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read body")
@@ -694,7 +695,7 @@ func (ctl *controller) Login() error {
 	if err != nil {
 		return errors.Wrap(err, "fail to post login request")
 	}
-
+	defer resp.Body.Close()
 	cookie := ""
 	h := resp.Header.Get("Set-Cookie")
 	parts := strings.Split(h, "; ")

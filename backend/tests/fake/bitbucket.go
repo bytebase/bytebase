@@ -314,26 +314,29 @@ func (bb *Bitbucket) SendWebhookPush(repositoryID string, payload []byte) error 
 
 	// Trigger all webhooks
 	for _, webhook := range r.webhooks {
-		req, err := http.NewRequest("POST", webhook.URL, bytes.NewReader(payload))
-		if err != nil {
-			return errors.Wrapf(err, "failed to create a new POST request to %q", webhook.URL)
+		if err := func() error {
+			req, err := http.NewRequest("POST", webhook.URL, bytes.NewReader(payload))
+			if err != nil {
+				return errors.Wrapf(err, "failed to create a new POST request to %q", webhook.URL)
+			}
+			req.Header.Set("X-Event-Key", "repo:push")
+			resp, err := bb.client.Do(req)
+			if err != nil {
+				return errors.Wrapf(err, "failed to send POST request to %q", webhook.URL)
+			}
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return errors.Wrap(err, "failed to read response body")
+			}
+			if resp.StatusCode != http.StatusOK {
+				return errors.Errorf("unexpected response status code %d, body: %s", resp.StatusCode, body)
+			}
+			bb.echo.Logger.Infof("SendWebhookPush response body %s\n", body)
+			return nil
+		}(); err != nil {
+			return err
 		}
-
-		req.Header.Set("X-Event-Key", "repo:push")
-
-		resp, err := bb.client.Do(req)
-		if err != nil {
-			return errors.Wrapf(err, "failed to send POST request to %q", webhook.URL)
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return errors.Wrap(err, "failed to read response body")
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.Errorf("unexpected response status code %d, body: %s", resp.StatusCode, body)
-		}
-		bb.echo.Logger.Infof("SendWebhookPush response body %s\n", body)
 	}
 	return nil
 }

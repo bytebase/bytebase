@@ -1414,11 +1414,9 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
 		if maskingExceptionPolicy != nil {
 			for _, maskingExceptionPolicy := range maskingExceptionPolicy.MaskingExceptions {
-				for _, member := range maskingExceptionPolicy.Members {
-					if member == currentPrincipal.Email {
-						maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingExceptionPolicy)
-						break
-					}
+				if maskingExceptionPolicy.Member == currentPrincipal.Email {
+					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingExceptionPolicy)
+					break
 				}
 			}
 		}

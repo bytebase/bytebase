@@ -600,17 +600,17 @@
           "field": {
             "info": "Normal",
             "warning": "Warning",
-            "critical": "Critical",
-          },
+            "critical": "Critical"
+          }
         },
         "announcement-text": {
           "self": "Title",
-          "placeholder": "Input announcement title",
+          "placeholder": "Input announcement title"
         },
         "extra-link": {
           "self": "Link",
-          "placeholder": "Input announcement link",
-        },
+          "placeholder": "Input announcement link"
+        }
       }
     },
     "sensitive-data": {
