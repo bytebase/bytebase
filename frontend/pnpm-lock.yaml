@@ -9,8 +9,8 @@ dependencies:
     specifier: 0.1.8
     version: 0.1.8(vue@3.2.47)
   '@codingame/monaco-vscode-api':
-    specifier: 1.81.5
-    version: 1.81.5(@vscode/vscode-languagedetection@1.0.22)(monaco-editor@0.41.0)(vscode-oniguruma@1.7.0)(vscode-textmate@9.0.0)(xterm-addon-canvas@0.4.0)(xterm-addon-image@0.4.1)(xterm-addon-search@0.12.0)(xterm-addon-serialize@0.10.0)(xterm-addon-unicode11@0.5.0)(xterm-addon-webgl@0.15.0)(xterm@5.2.1)(yauzl@2.10.0)
+    specifier: 1.81.6
+    version: 1.81.6(@vscode/vscode-languagedetection@1.0.22)(monaco-editor@0.41.0)(vscode-oniguruma@1.7.0)(vscode-textmate@9.0.0)(xterm-addon-canvas@0.4.0)(xterm-addon-image@0.4.1)(xterm-addon-search@0.12.0)(xterm-addon-serialize@0.10.0)(xterm-addon-unicode11@0.5.0)(xterm-addon-webgl@0.15.0)(xterm@5.2.1)(yauzl@2.10.0)
   '@joe-re/sql-parser':
     specifier: ^1.2.1
     version: 1.4.0
@@ -575,6 +575,37 @@ packages:
 
   /@codingame/monaco-vscode-api@1.81.5(@vscode/vscode-languagedetection@1.0.22)(monaco-editor@0.41.0)(vscode-oniguruma@1.7.0)(vscode-textmate@9.0.0)(xterm-addon-canvas@0.4.0)(xterm-addon-image@0.4.1)(xterm-addon-search@0.12.0)(xterm-addon-serialize@0.10.0)(xterm-addon-unicode11@0.5.0)(xterm-addon-webgl@0.15.0)(xterm@5.2.1)(yauzl@2.10.0):
     resolution: {integrity: sha512-JVL82xTOg0IZETqjRG9t0yslxs4qTpQ7op5a0pj4imZSgqp1MgihivctxsOXSFiQxHF1hALKoqWBKaVTkvMr+g==}
+    hasBin: true
+    peerDependencies:
+      '@vscode/vscode-languagedetection': ^1.0.22
+      monaco-editor: 0.41.0
+      vscode-oniguruma: ^1.7.0
+      vscode-textmate: ^9.0.0
+      xterm: 5.2.1
+      xterm-addon-canvas: 0.4.0
+      xterm-addon-image: 0.4.1
+      xterm-addon-search: 0.12.0
+      xterm-addon-serialize: 0.10.0
+      xterm-addon-unicode11: 0.5.0
+      xterm-addon-webgl: 0.15.0
+      yauzl: ^2.10.0
+    dependencies:
+      '@vscode/vscode-languagedetection': 1.0.22
+      monaco-editor: 0.41.0
+      vscode-oniguruma: 1.7.0
+      vscode-textmate: 9.0.0
+      xterm: 5.2.1
+      xterm-addon-canvas: 0.4.0(xterm@5.2.1)
+      xterm-addon-image: 0.4.1(xterm@5.2.1)
+      xterm-addon-search: 0.12.0(xterm@5.2.1)
+      xterm-addon-serialize: 0.10.0(xterm@5.2.1)
+      xterm-addon-unicode11: 0.5.0(xterm@5.2.1)
+      xterm-addon-webgl: 0.15.0(xterm@5.2.1)
+      yauzl: 2.10.0
+    dev: false
+
+  /@codingame/monaco-vscode-api@1.81.6(@vscode/vscode-languagedetection@1.0.22)(monaco-editor@0.41.0)(vscode-oniguruma@1.7.0)(vscode-textmate@9.0.0)(xterm-addon-canvas@0.4.0)(xterm-addon-image@0.4.1)(xterm-addon-search@0.12.0)(xterm-addon-serialize@0.10.0)(xterm-addon-unicode11@0.5.0)(xterm-addon-webgl@0.15.0)(xterm@5.2.1)(yauzl@2.10.0):
+    resolution: {integrity: sha512-l9NdGs27Xou1oBvjvHNiUrvTEuTpMS6V6DGSEOo2+HuJRN0N5r87aYUT6TiFdu2pDxHxiRmRpxbG/bBDwZAp3w==}
     hasBin: true
     peerDependencies:
       '@vscode/vscode-languagedetection': ^1.0.22
