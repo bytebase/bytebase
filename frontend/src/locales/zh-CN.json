@@ -592,7 +592,10 @@
             }
           }
         },
-        "announcement": "公告",
+        "announcement": {
+          "self": "公告",
+          "update-success": "公告配置已更新。"
+        },
         "announcement-alert-level": {
           "description": "等级",
           "field": {

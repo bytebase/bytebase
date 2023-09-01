@@ -594,7 +594,10 @@
             }
           }
         },
-        "announcement": "Announcement",
+        "announcement": {
+          "self": "Announcement",
+          "update-success": "Announcement setting updated.",
+        },
         "announcement-alert-level": {
           "description": "Level",
           "field": {

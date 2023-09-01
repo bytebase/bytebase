@@ -583,7 +583,10 @@
             }
           }
         },
-        "announcement": "Anuncio",
+        "announcement": {
+          "self": "Anuncio",
+          "update-success": "Configuración de anuncios actualizada."
+        },
         "announcement-alert-level": {
           "description": "Level",
           "field": {
