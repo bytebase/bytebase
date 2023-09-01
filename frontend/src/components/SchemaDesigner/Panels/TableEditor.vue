@@ -85,13 +85,23 @@
               :level-id="getColumnClassification(column)?.levelId"
               :classification-config="classificationConfig"
             />
-            <button
+            <div
               v-if="classificationConfig && !disableChangeTable"
-              class="w-5 h-5 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-              @click.prevent="state.pendingUpdateColumnIndex = index"
+              class="flex"
             >
-              <heroicons-outline:pencil class="w-3 h-3" />
-            </button>
+              <button
+                class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+                @click.prevent="column.classification = ''"
+              >
+                <heroicons-outline:x class="w-3 h-3" />
+              </button>
+              <button
+                class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+                @click.prevent="state.pendingUpdateColumnIndex = index"
+              >
+                <heroicons-outline:pencil class="w-3 h-3" />
+              </button>
+            </div>
           </div>
           <div
             class="table-body-item-container flex flex-row justify-between items-center"

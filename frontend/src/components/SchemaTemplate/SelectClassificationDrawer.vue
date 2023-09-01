@@ -11,7 +11,7 @@
         <NTree
           ref="treeRef"
           block-line
-          style="height: 100%"
+          style="height: 100%; user-select: none"
           :data="treeData"
           :multiple="false"
           :selectable="true"
