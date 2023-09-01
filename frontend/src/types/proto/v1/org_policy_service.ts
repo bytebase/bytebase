@@ -504,11 +504,11 @@ export interface MaskingExceptionPolicy_MaskingException {
   /** Level is the masking level that the user can access sensitive data. */
   maskingLevel: MaskingLevel;
   /**
-   * Members is the list of principals who bind to this exception policy instance.
+   * Member is the principal who bind to this exception policy instance.
    *
    * * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
    */
-  members: string[];
+  member: string;
   /** The condition that is associated with this exception policy instance. */
   condition?: Expr | undefined;
 }
@@ -2122,7 +2122,7 @@ export const MaskingExceptionPolicy = {
 };
 
 function createBaseMaskingExceptionPolicy_MaskingException(): MaskingExceptionPolicy_MaskingException {
-  return { action: 0, maskingLevel: 0, members: [], condition: undefined };
+  return { action: 0, maskingLevel: 0, member: "", condition: undefined };
 }
 
 export const MaskingExceptionPolicy_MaskingException = {
@@ -2133,8 +2133,8 @@ export const MaskingExceptionPolicy_MaskingException = {
     if (message.maskingLevel !== 0) {
       writer.uint32(16).int32(message.maskingLevel);
     }
-    for (const v of message.members) {
-      writer.uint32(26).string(v!);
+    if (message.member !== "") {
+      writer.uint32(26).string(message.member);
     }
     if (message.condition !== undefined) {
       Expr.encode(message.condition, writer.uint32(34).fork()).ldelim();
@@ -2168,7 +2168,7 @@ export const MaskingExceptionPolicy_MaskingException = {
             break;
           }
 
-          message.members.push(reader.string());
+          message.member = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -2190,7 +2190,7 @@ export const MaskingExceptionPolicy_MaskingException = {
     return {
       action: isSet(object.action) ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action) : 0,
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
-      members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
+      member: isSet(object.member) ? String(object.member) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
   },
@@ -2199,11 +2199,7 @@ export const MaskingExceptionPolicy_MaskingException = {
     const obj: any = {};
     message.action !== undefined && (obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action));
     message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
-    if (message.members) {
-      obj.members = message.members.map((e) => e);
-    } else {
-      obj.members = [];
-    }
+    message.member !== undefined && (obj.member = message.member);
     message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
     return obj;
   },
@@ -2216,7 +2212,7 @@ export const MaskingExceptionPolicy_MaskingException = {
     const message = createBaseMaskingExceptionPolicy_MaskingException();
     message.action = object.action ?? 0;
     message.maskingLevel = object.maskingLevel ?? 0;
-    message.members = object.members?.map((e) => e) || [];
+    message.member = object.member ?? "";
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
       : undefined;
