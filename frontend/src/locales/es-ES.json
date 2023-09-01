@@ -583,6 +583,24 @@
             }
           }
         },
+        "announcement": "Anuncio",
+        "announcement-alert-level": {
+          "description": "Level",
+          "field": {
+            "info": "Común",
+            "warning": "Advertencia",
+            "critical": "Importante",
+          },
+        },
+        "announcement-text": "Texto de anuncio",
+        "announcement-text": {
+          "self": "Título",
+          "placeholder": "Título del anuncio de entrada",
+        },
+        "extra-link": {
+          "self": "Enlace",
+          "placeholder": "Enlace de anuncio de entrada",
+        },
         "gitops-webhook-url": {
           "self": "URL del webhook GitOps",
           "description": "La URL utilizada para enviar webhooks de GitOps a la instancia de Bytebase."
@@ -2207,6 +2225,10 @@
       "bb-feature-shared-sql-script": {
         "title": "Script SQL compartido",
         "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
+      },
+      "bb-feature-announcement": {
+        "title": "Anuncio personalizado",
+        "desc": "Configurar un banner de anuncio."
       },
       "bb-feature-encrypted-secrets": {
         "title": "Secretos Encriptados",

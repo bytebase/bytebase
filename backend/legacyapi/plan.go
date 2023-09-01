@@ -76,6 +76,9 @@ const (
 	// FeatureIssueAdvancedSearch supports search issue with advanced filter.
 	FeatureIssueAdvancedSearch FeatureType = "bb.feature.issue-advanced-search"
 
+	// FeatureAnnouncement enable announcement banner setting.
+	FeatureAnnouncement FeatureType = "bb.feature.announcement"
+
 	// Branding.
 
 	// FeatureBranding enables customized branding.
@@ -202,6 +205,8 @@ func (e FeatureType) Name() string {
 		return "Custom role"
 	case FeatureIssueAdvancedSearch:
 		return "Advanced search"
+	case FeatureAnnouncement:
+		return "Announcement"
 	// Branding
 	case FeatureBranding:
 		return "Branding"
@@ -299,6 +304,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureAuditLog:            {false, false, true},
 	FeatureCustomRole:          {false, false, true},
 	FeatureIssueAdvancedSearch: {false, true, true},
+	FeatureAnnouncement:        {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
