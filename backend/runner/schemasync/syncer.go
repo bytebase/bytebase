@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -19,14 +20,14 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
-	schemaSyncInterval = 30 * time.Minute
+	schemaSyncInterval  = 1 * time.Minute
+	defaultSyncInterval = 24 * time.Hour
 )
 
 // NewSyncer creates a schema syncer.
@@ -56,9 +57,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			s.syncAllInstances(ctx)
-			// Sync all databases for all instances.
-			s.syncAllDatabases(ctx, nil /* instanceID */)
+			s.trySyncAll(ctx)
 		case instance := <-s.stateCfg.InstanceDatabaseSyncChan:
 			// Sync all databases for instance.
 			s.syncAllDatabases(ctx, instance)
@@ -68,7 +67,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (s *Syncer) syncAllInstances(ctx context.Context) {
+func (s *Syncer) trySyncAll(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -78,28 +77,62 @@ func (s *Syncer) syncAllInstances(ctx context.Context) {
 			log.Error("Instance syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
 		}
 	}()
-
 	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
 	if err != nil {
 		log.Error("Failed to retrieve instances", zap.Error(err))
 		return
 	}
 
-	var instanceWG sync.WaitGroup
+	now := time.Now()
 	for _, instance := range instances {
-		instanceWG.Add(1)
-		go func(instance *store.InstanceMessage) {
-			defer instanceWG.Done()
-			log.Debug("Sync instance schema", zap.String("instance", instance.ResourceID))
-			if _, err := s.SyncInstance(ctx, instance); err != nil {
-				log.Debug("Failed to sync instance",
-					zap.String("instance", instance.ResourceID),
-					zap.String("error", err.Error()))
-				return
-			}
-		}(instance)
+		interval := getOrDefaultSyncInterval(instance)
+		lastSyncTime := getOrDefaultLastSyncTime(instance.Metadata.LastSyncTime)
+		// lastSyncTime + syncInterval > now
+		// Next round not started yet.
+		nextSyncTime := lastSyncTime.Add(interval)
+		if now.Before(nextSyncTime) {
+			continue
+		}
+
+		log.Debug("Sync instance schema", zap.String("instance", instance.ResourceID))
+		if _, err := s.SyncInstance(ctx, instance); err != nil {
+			log.Debug("Failed to sync instance",
+				zap.String("instance", instance.ResourceID),
+				zap.String("error", err.Error()))
+		}
 	}
-	instanceWG.Wait()
+
+	instancesMap := map[string]*store.InstanceMessage{}
+	for _, instance := range instances {
+		instancesMap[instance.ResourceID] = instance
+	}
+
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{})
+	if err != nil {
+		log.Error("Failed to retrieve databases", zap.Error(err))
+		return
+	}
+	for _, database := range databases {
+		instance, ok := instancesMap[database.InstanceID]
+		if !ok {
+			continue
+		}
+		// The database inherits the sync interval from the instance.
+		interval := getOrDefaultSyncInterval(instance)
+		lastSyncTime := getOrDefaultLastSyncTime(database.Metadata.LastSyncTime)
+		// lastSyncTime + syncInterval > now
+		// Next round not started yet.
+		nextSyncTime := lastSyncTime.Add(interval)
+		if now.Before(nextSyncTime) {
+			continue
+		}
+		if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
+			log.Debug("Failed to sync database schema",
+				zap.String("instance", instance.ResourceID),
+				zap.String("databaseName", database.DatabaseName),
+				zap.Error(err))
+		}
+	}
 }
 
 func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceMessage) {
@@ -142,8 +175,8 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceM
 			if len(databaseList) == 0 {
 				return
 			}
-			instanceID := databaseList[0].InstanceID
 			for _, database := range databaseList {
+				instanceID := database.InstanceID
 				log.Debug("Sync database schema",
 					zap.String("instance", instanceID),
 					zap.String("database", database.DatabaseName),
@@ -176,31 +209,22 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		return nil, err
 	}
 
-	updateInstance := (*store.UpdateInstanceMessage)(nil)
+	updateInstance := &store.UpdateInstanceMessage{
+		UpdaterID:     api.SystemBotID,
+		EnvironmentID: instance.EnvironmentID,
+		ResourceID:    instance.ResourceID,
+		Metadata: &storepb.InstanceMetadata{
+			LastSyncTime: timestamppb.Now(),
+		},
+	}
 	if instanceMeta.Version != instance.EngineVersion {
-		updateInstance = &store.UpdateInstanceMessage{
-			UpdaterID:     api.SystemBotID,
-			EnvironmentID: instance.EnvironmentID,
-			ResourceID:    instance.ResourceID,
-			EngineVersion: &instanceMeta.Version,
-		}
+		updateInstance.EngineVersion = &instanceMeta.Version
 	}
-	if !cmp.Equal(instanceMeta.Metadata, instance.Metadata, protocmp.Transform()) {
-		if updateInstance == nil {
-			updateInstance = &store.UpdateInstanceMessage{
-				UpdaterID:     api.SystemBotID,
-				EnvironmentID: instance.EnvironmentID,
-				ResourceID:    instance.ResourceID,
-				Metadata:      instanceMeta.Metadata,
-			}
-		} else {
-			updateInstance.Metadata = instanceMeta.Metadata
-		}
+	if !equalInstanceMetadata(instanceMeta.Metadata, instance.Metadata) {
+		updateInstance.Metadata.MysqlLowerCaseTableNames = instanceMeta.Metadata.GetMysqlLowerCaseTableNames()
 	}
-	if updateInstance != nil {
-		if _, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1); err != nil {
-			return nil, err
-		}
+	if _, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1); err != nil {
+		return nil, err
 	}
 
 	var instanceUsers []*store.InstanceUserMessage
@@ -306,18 +330,15 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		DatabaseName:         database.DatabaseName,
 		SyncState:            &syncStatus,
 		SuccessfulSyncTimeTs: &ts,
-		DataShare:            &database.DataShare,
 		SchemaVersion:        patchSchemaVersion,
-		ServiceName:          &database.ServiceName,
+		MetadataUpsert: &storepb.DatabaseMetadata{
+			LastSyncTime: timestamppb.New(time.Unix(ts, 0)),
+		},
 	}, api.SystemBotID); err != nil {
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
-	return syncDBSchema(ctx, s.store, database, databaseMetadata, driver, force)
-}
-
-func syncDBSchema(ctx context.Context, stores *store.Store, database *store.DatabaseMessage, databaseMetadata *storepb.DatabaseSchemaMetadata, driver db.Driver, force bool) error {
-	dbSchema, err := stores.GetDBSchema(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return err
 	}
@@ -341,7 +362,7 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *store.Data
 			rawDump = schemaBuf.Bytes()
 		}
 
-		if err := stores.UpsertDBSchema(ctx, database.UID, &store.DBSchema{
+		if err := s.store.UpsertDBSchema(ctx, database.UID, &store.DBSchema{
 			Metadata: databaseMetadata,
 			Schema:   rawDump,
 		}, api.SystemBotID); err != nil {
@@ -349,6 +370,10 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *store.Data
 		}
 	}
 	return nil
+}
+
+func equalInstanceMetadata(x, y *storepb.InstanceMetadata) bool {
+	return cmp.Equal(x, y, protocmp.Transform(), protocmp.IgnoreFields(&storepb.InstanceMetadata{}, "last_sync_time"))
 }
 
 func equalDatabaseMetadata(x, y *storepb.DatabaseSchemaMetadata) bool {
@@ -366,4 +391,18 @@ func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchema
 			}
 		}
 	}
+}
+
+func getOrDefaultSyncInterval(instance *store.InstanceMessage) time.Duration {
+	if instance.Activation && instance.Options.SyncInterval.IsValid() {
+		return instance.Options.SyncInterval.AsDuration()
+	}
+	return defaultSyncInterval
+}
+
+func getOrDefaultLastSyncTime(t *timestamppb.Timestamp) time.Time {
+	if t.IsValid() {
+		return t.AsTime()
+	}
+	return time.Unix(0, 0)
 }
