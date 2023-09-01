@@ -170,7 +170,7 @@ const (
 	FeatureCustomApproval FeatureType = "bb.feature.custom-approval"
 
 	// Collaboration.
-	// FeatureCustomAnnouncement enable custom announcement banner setting
+	// FeatureCustomAnnouncement enable custom announcement banner setting.
 	FeatureCustomAnnouncement FeatureType = "bb.feature.custom-announcement"
 
 	// FeatureSharedSQLScript enables sharing sql script.
