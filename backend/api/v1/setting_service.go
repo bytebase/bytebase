@@ -952,11 +952,12 @@ func convertToSchemaTemplateSetting(s *storepb.SchemaTemplateSetting) *v1pb.Sche
 			Engine:   v1pb.Engine(template.Engine),
 			Category: template.Category,
 			Column: &v1pb.ColumnMetadata{
-				Name:     template.Column.Name,
-				Type:     template.Column.Type,
-				Default:  template.Column.Default,
-				Nullable: template.Column.Nullable,
-				Comment:  template.Column.Comment,
+				Name:           template.Column.Name,
+				Type:           template.Column.Type,
+				Default:        template.Column.Default,
+				Nullable:       template.Column.Nullable,
+				Comment:        template.Column.Comment,
+				Classification: template.Column.Classification,
 			},
 		})
 	}

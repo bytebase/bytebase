@@ -1966,7 +1966,8 @@
       "comment": "Comentario",
       "not-null": "No nulo",
       "primary": "Primaria",
-      "foreign-key": "Clave foránea"
+      "foreign-key": "Clave foránea",
+      "classification": "Clasificación"
     },
     "nothing-changed": "Nada ha cambiado",
     "message": {
@@ -2760,6 +2761,11 @@
       "default-value": "Valor por defecto",
       "comment": "Comentario",
       "nullable": "Anulable"
+    },
+    "classification": {
+      "self": "Clasificación de datos",
+      "select": "Seleccionar clasificación",
+      "search": "Clasificación de búsqueda"
     }
   },
   "principal": {
