@@ -21,7 +21,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -339,11 +338,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
-	return syncDBSchema(ctx, s.store, database, databaseMetadata, driver, force)
-}
-
-func syncDBSchema(ctx context.Context, stores *store.Store, database *store.DatabaseMessage, databaseMetadata *storepb.DatabaseSchemaMetadata, driver db.Driver, force bool) error {
-	dbSchema, err := stores.GetDBSchema(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return err
 	}
@@ -367,7 +362,7 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *store.Data
 			rawDump = schemaBuf.Bytes()
 		}
 
-		if err := stores.UpsertDBSchema(ctx, database.UID, &store.DBSchema{
+		if err := s.store.UpsertDBSchema(ctx, database.UID, &store.DBSchema{
 			Metadata: databaseMetadata,
 			Schema:   rawDump,
 		}, api.SystemBotID); err != nil {
