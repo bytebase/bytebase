@@ -58,9 +58,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			if err := s.trySyncAll(ctx); err != nil {
-				log.Debug("failed to run periodic sync", zap.Error(err))
-			}
+			s.trySyncAll(ctx)
 		case instance := <-s.stateCfg.InstanceDatabaseSyncChan:
 			// Sync all databases for instance.
 			s.syncAllDatabases(ctx, instance)
@@ -70,7 +68,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (s *Syncer) trySyncAll(ctx context.Context) error {
+func (s *Syncer) trySyncAll(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -82,7 +80,8 @@ func (s *Syncer) trySyncAll(ctx context.Context) error {
 	}()
 	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
 	if err != nil {
-		return errors.Wrapf(err, "failed to list instances")
+		log.Error("Failed to retrieve instances", zap.Error(err))
+		return
 	}
 
 	now := time.Now()
@@ -111,7 +110,8 @@ func (s *Syncer) trySyncAll(ctx context.Context) error {
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{})
 	if err != nil {
-		return errors.Wrapf(err, "failed to list databases")
+		log.Error("Failed to retrieve databases", zap.Error(err))
+		return
 	}
 	for _, database := range databases {
 		instance, ok := instancesMap[database.InstanceID]
@@ -134,8 +134,6 @@ func (s *Syncer) trySyncAll(ctx context.Context) error {
 				zap.Error(err))
 		}
 	}
-
-	return nil
 }
 
 func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceMessage) {
