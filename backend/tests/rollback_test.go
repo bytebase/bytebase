@@ -110,8 +110,9 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                          dataDir,
+		vcsProviderCreator:               fake.NewGitLab,
+		disableDevelopmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer func() {
@@ -325,8 +326,9 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                          dataDir,
+		vcsProviderCreator:               fake.NewGitLab,
+		disableDevelopmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer func() {
@@ -548,8 +550,9 @@ func TestRollbackCanceled(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                          dataDir,
+		vcsProviderCreator:               fake.NewGitLab,
+		disableDevelopmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer func() {
