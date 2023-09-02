@@ -250,14 +250,6 @@ func (ctl *controller) waitIssuePipelineWithStageApproval(ctx context.Context, i
 	return ctl.waitIssuePipelineTaskImpl(ctx, id, ctl.approveIssueTasksWithStageApproval, false)
 }
 
-// waitIssuePipelineWithNoApproval waits for pipeline to finish and do nothing when approvals are needed.
-func (ctl *controller) waitIssuePipelineWithNoApproval(ctx context.Context, id int) (api.TaskStatus, error) {
-	noop := func(*api.Issue) error {
-		return nil
-	}
-	return ctl.waitIssuePipelineTaskImpl(ctx, id, noop, false)
-}
-
 // waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipelineTaskImpl(ctx context.Context, id int, approveFunc func(legacyIssue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
 	// Sleep for 1 second between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
