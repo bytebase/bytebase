@@ -35,7 +35,6 @@
                 )
               }}</span>
             </div>
-            <!-- TODO(ed): grant access -->
             <NButton
               type="primary"
               :disabled="!hasPermission"
@@ -165,13 +164,13 @@
         </div>
       </template>
     </DrawerContent>
-  </Drawer>
 
-  <GrantAccessDrawer
-    :show="state.showGrantAccessDrawer"
-    :column-list="[props.column]"
-    @dismiss="state.showGrantAccessDrawer = false"
-  />
+    <GrantAccessDrawer
+      :show="state.showGrantAccessDrawer"
+      :column-list="[props.column]"
+      @dismiss="state.showGrantAccessDrawer = false"
+    />
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -199,8 +198,6 @@ import {
   MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV1, extractUserUID } from "@/utils";
-import { convertCELStringToParsedExpr } from "@/utils";
-import { convertFromExpr } from "@/utils/issue/cel";
 import { SensitiveColumn } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
@@ -261,18 +258,16 @@ const hasPermission = computed(() => {
   );
 });
 
-const getAccessUsers = async (
+const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
+
+const getAccessUsers = (
   exception: MaskingExceptionPolicy_MaskingException
-): Promise<AccessUser> => {
-  const parsedExpr = await convertCELStringToParsedExpr(
-    exception.condition?.expression ?? ""
-  );
+): AccessUser => {
   let expirationTimestamp: number | undefined;
-  if (parsedExpr.expr) {
-    const conditionExpr = convertFromExpr(parsedExpr.expr);
-    if (conditionExpr.expiredTime) {
-      expirationTimestamp = new Date(conditionExpr.expiredTime).getTime();
-    }
+  const expression = exception.condition?.expression ?? "";
+  const matches = expirationTimeRegex.exec(expression);
+  if (matches) {
+    expirationTimestamp = new Date(matches[1]).getTime();
   }
 
   const user = userStore.getUserByIdentifier(exception.member) ?? unknownUser();
@@ -292,14 +287,14 @@ const getExceptionIdentifier = (
     `level == "${maskingLevelToJSON(exception.maskingLevel)}"`,
   ];
   const expression = exception.condition?.expression ?? "";
-  const matches = /request.time < timestamp\(".+?"\)/.exec(expression);
+  const matches = expirationTimeRegex.exec(expression);
   if (matches) {
     res.push(matches[0]);
   }
   return res.join(" && ");
 };
 
-const updateAccessUserList = async (policy: Policy | undefined) => {
+const updateAccessUserList = (policy: Policy | undefined) => {
   if (!policy || !policy.maskingExceptionPolicy) {
     return [];
   }
@@ -310,7 +305,7 @@ const updateAccessUserList = async (policy: Policy | undefined) => {
       continue;
     }
     const identifier = getExceptionIdentifier(exception);
-    const item = await getAccessUsers(exception);
+    const item = getAccessUsers(exception);
     const id = `${item.user.name}:${identifier}`;
     const target = userMap.get(id) ?? item;
     if (userMap.has(id)) {
@@ -326,17 +321,16 @@ const updateAccessUserList = async (policy: Policy | undefined) => {
   );
 };
 
-watch(() => policy.value, updateAccessUserList, {
-  immediate: true,
-  deep: true,
-});
-
 watch(
-  () => props.show,
-  (show) => {
-    if (show && policy.value) {
+  () => [props.show, policy.value],
+  () => {
+    if (props.show && policy.value) {
       updateAccessUserList(policy.value);
     }
+  },
+  {
+    immediate: true,
+    deep: true,
   }
 );
 
