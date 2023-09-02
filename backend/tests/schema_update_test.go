@@ -2016,8 +2016,9 @@ CREATE TABLE public.book (
 	ctx := context.Background()
 	ctl := &controller{}
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            t.TempDir(),
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                          t.TempDir(),
+		vcsProviderCreator:               fake.NewGitLab,
+		disableDevelopmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer func() {
