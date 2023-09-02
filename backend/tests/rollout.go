@@ -68,6 +68,30 @@ func (ctl *controller) waitRollout(ctx context.Context, rolloutName string) erro
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
+	rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{
+		Name: rolloutName,
+	})
+	if err != nil {
+		return err
+	}
+	for _, stage := range rollout.Stages {
+		var runTasks []string
+		for _, task := range stage.Tasks {
+			if task.Status == v1pb.Task_NOT_STARTED {
+				runTasks = append(runTasks, task.Name)
+			}
+		}
+		if len(runTasks) > 0 {
+			_, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, &v1pb.BatchRunTasksRequest{
+				Parent: fmt.Sprintf("%s/stages/-", rolloutName),
+				Tasks:  runTasks,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	for range ticker.C {
 		rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{
 			Name: rolloutName,
@@ -85,6 +109,8 @@ func (ctl *controller) waitRollout(ctx context.Context, rolloutName string) erro
 					runTasks = append(runTasks, task.Name)
 					completed = false
 				case v1pb.Task_DONE:
+					continue
+				case v1pb.Task_SKIPPED:
 					continue
 				case v1pb.Task_FAILED:
 					resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, &v1pb.ListTaskRunsRequest{Parent: task.Name, PageSize: 1})
@@ -170,6 +196,8 @@ func (ctl *controller) rolloutAndWaitTask(ctx context.Context, rolloutName strin
 				}
 				switch task.Status {
 				case v1pb.Task_DONE:
+					return nil
+				case v1pb.Task_SKIPPED:
 					return nil
 				case v1pb.Task_FAILED:
 					resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, &v1pb.ListTaskRunsRequest{Parent: task.Name, PageSize: 1})
