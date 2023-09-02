@@ -46,9 +46,8 @@ func TestSheetVCS(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:                          t.TempDir(),
-				vcsProviderCreator:               test.vcsProviderCreator,
-				disableDevelopmentUseV2Scheduler: false,
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
 			defer func() {

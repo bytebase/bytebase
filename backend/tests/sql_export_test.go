@@ -80,9 +80,8 @@ func TestSQLExport(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:                          dataDir,
-		vcsProviderCreator:               fake.NewGitLab,
-		disableDevelopmentUseV2Scheduler: false,
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
