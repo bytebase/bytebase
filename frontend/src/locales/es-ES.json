@@ -628,9 +628,15 @@
         "remove-user-permission": "¿Quitar el permiso del usuario?",
         "remove-sensitive-warning": "Expondrá la columna."
       },
+      "algorithms": {
+        "self": "Algoritmo de enmascaramiento",
+        "default": "Por defecto",
+        "default-desc": "Utilice *** como máscara de datos"
+      },
       "masking-level": {
         "self": "Nivel de enmascaramiento",
         "selet-level": "Selecciona el nivel",
+        "masking_level_unspecified": "Siga las reglas globales de enmascaramiento",
         "none": "Ninguna",
         "partial": "Parcial",
         "full": "Llena"

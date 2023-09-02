@@ -94,6 +94,7 @@ import {
   useDatabaseV1Store,
   useCurrentUserV1,
   pushNotification,
+  usePolicyV1Store,
 } from "@/store";
 import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import {
@@ -102,7 +103,7 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { databaseV1Slug, hasWorkspacePermissionV1 } from "@/utils";
 import { SensitiveColumn } from "./types";
-import { removeSensitiveColumn } from "./utils";
+import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface LocalState {
   environment: string;
@@ -127,6 +128,7 @@ const state = reactive<LocalState>({
 });
 const databaseStore = useDatabaseV1Store();
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+const policyStore = usePolicyV1Store();
 
 const policyList = usePolicyListByResourceTypeAndPolicyType({
   resourceType: PolicyResourceType.DATABASE,
@@ -173,6 +175,61 @@ const updateList = async () => {
 };
 
 watch(policyList, updateList, { immediate: true, deep: true });
+
+const removeSensitiveColumn = async (sensitiveColumn: SensitiveColumn) => {
+  const policy = await policyStore.getOrFetchPolicyByParentAndType({
+    parentPath: sensitiveColumn.database.name,
+    policyType: PolicyType.MASKING,
+  });
+  if (!policy) return;
+
+  const maskData = policy.maskingPolicy?.maskData;
+  if (!maskData) return;
+
+  const index = maskData.findIndex(
+    (sensitiveData) =>
+      getMaskDataIdentifier(sensitiveData) ===
+      getMaskDataIdentifier(sensitiveColumn.maskData)
+  );
+  if (index >= 0) {
+    // mutate the list and the item directly
+    // so we don't need to re-fetch the whole list.
+    maskData.splice(index, 1);
+
+    await policyStore.updatePolicy(["payload"], {
+      name: policy.name,
+      type: PolicyType.MASKING,
+      resourceType: PolicyResourceType.DATABASE,
+      maskingPolicy: {
+        maskData,
+      },
+    });
+    await removeMaskingExceptions(sensitiveColumn);
+  }
+};
+
+const removeMaskingExceptions = async (sensitiveColumn: SensitiveColumn) => {
+  const policy = await policyStore.getOrFetchPolicyByParentAndType({
+    parentPath: sensitiveColumn.database.name,
+    policyType: PolicyType.MASKING_EXCEPTION,
+  });
+  if (!policy) {
+    return;
+  }
+
+  const exceptions = (
+    policy.maskingExceptionPolicy?.maskingExceptions ?? []
+  ).filter(
+    (exception) =>
+      !isCurrentColumnException(exception, sensitiveColumn.maskData)
+  );
+
+  policy.maskingExceptionPolicy = {
+    ...(policy.maskingExceptionPolicy ?? {}),
+    maskingExceptions: exceptions,
+  };
+  await policyStore.updatePolicy(["payload"], policy);
+};
 
 const onColumnRemove = async (column: SensitiveColumn) => {
   await removeSensitiveColumn(column);

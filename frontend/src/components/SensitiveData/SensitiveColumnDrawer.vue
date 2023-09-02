@@ -8,23 +8,36 @@
       "
     >
       <div class="divide-block-border divide-y space-y-8 w-[50rem] h-full">
-        <div>
+        <div class="space-y-6">
           <div class="w-full">
-            <p class="mb-2">
+            <h1 class="mb-2 font-semibold">
               {{ $t("settings.sensitive-data.masking-level.self") }}
-            </p>
+            </h1>
             <MaskingLevelRadioGroup
               :disabled="!hasPermission"
               :level-list="MASKING_LEVELS"
               :selected="state.maskingLevel"
-              @update="onLevelUpdate"
+              @update="state.maskingLevel = $event"
             />
+          </div>
+          <div class="w-full">
+            <h1 class="mb-2 font-semibold">
+              {{ $t("settings.sensitive-data.algorithms.self") }}
+            </h1>
+            <div class="flex flex-col">
+              <span class="textlabel">
+                {{ $t("settings.sensitive-data.algorithms.default") }}
+              </span>
+              <span class="textinfolabel">
+                {{ $t("settings.sensitive-data.algorithms.default-desc") }}
+              </span>
+            </div>
           </div>
         </div>
         <div class="pt-8 space-y-5">
           <div class="flex justify-between">
             <div>
-              <h1>
+              <h1 class="font-semibold">
                 {{
                   $t("settings.sensitive-data.column-detail.access-user-list")
                 }}
@@ -171,23 +184,6 @@
       @dismiss="state.showGrantAccessDrawer = false"
     />
   </Drawer>
-
-  <BBAlert
-    v-if="state.showAlert"
-    :style="'WARN'"
-    :ok-text="$t('common.ok')"
-    :title="
-      $t('settings.sensitive-data.column-detail.remove-sensitive-warning')
-    "
-    @ok="state.showAlert = false"
-    @cancel="
-      () => {
-        state.showAlert = false;
-        state.maskingLevel = props.column.maskData.maskingLevel;
-      }
-    "
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts" setup>
@@ -216,11 +212,7 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV1, extractUserUID } from "@/utils";
 import { SensitiveColumn } from "./types";
-import {
-  getMaskDataIdentifier,
-  isCurrentColumnException,
-  removeSensitiveColumn,
-} from "./utils";
+import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface AccessUser {
   user: User;
@@ -235,7 +227,6 @@ interface LocalState {
   processing: boolean;
   maskingLevel: MaskingLevel;
   showGrantAccessDrawer: boolean;
-  showAlert: boolean;
 }
 
 const props = defineProps<{
@@ -250,10 +241,10 @@ const state = reactive<LocalState>({
   processing: false,
   maskingLevel: props.column.maskData.maskingLevel,
   showGrantAccessDrawer: false,
-  showAlert: false,
 });
 
 const MASKING_LEVELS = [
+  MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
   MaskingLevel.FULL,
   MaskingLevel.PARTIAL,
   MaskingLevel.NONE,
@@ -385,13 +376,6 @@ const tableHeaderList = computed(() => {
   return list;
 });
 
-const onLevelUpdate = (level: MaskingLevel) => {
-  state.maskingLevel = level;
-  if (level === MaskingLevel.NONE) {
-    state.showAlert = true;
-  }
-};
-
 const onRemove = (index: number) => {
   accessUserList.value.splice(index, 1);
   state.dirty = true;
@@ -427,13 +411,7 @@ const onSubmit = async () => {
 
   try {
     if (maskingPolicyChanged.value) {
-      if (state.maskingLevel === MaskingLevel.NONE) {
-        // remove masking level and exceptions
-        await removeSensitiveColumn(props.column);
-        state.dirty = false;
-      } else {
-        await updateMaskingPolicy();
-      }
+      await updateMaskingPolicy();
     }
     if (state.dirty) {
       await updateExceptionPolicy();
