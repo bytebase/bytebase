@@ -134,8 +134,9 @@ func TestCreateDatabaseGroup(t *testing.T) {
 			ctl := &controller{}
 			ctx := context.Background()
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: fake.NewGitLab,
+				dataDir:                          t.TempDir(),
+				vcsProviderCreator:               fake.NewGitLab,
+				disableDevelopmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -386,8 +387,9 @@ func TestCreateTableGroup(t *testing.T) {
 			ctl := &controller{}
 			ctx := context.Background()
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: fake.NewGitLab,
+				dataDir:                          t.TempDir(),
+				vcsProviderCreator:               fake.NewGitLab,
+				disableDevelopmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -699,8 +701,9 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			ctl := &controller{}
 			ctx := context.Background()
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: fake.NewGitLab,
+				dataDir:                          t.TempDir(),
+				vcsProviderCreator:               fake.NewGitLab,
+				disableDevelopmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
