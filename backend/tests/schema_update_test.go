@@ -1493,8 +1493,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 				vcsProviderCreator: test.vcsProviderCreator,
 				// We check against empty SQL Review policy, while our onboarding data generation
 				// will create a SQL Review policy. Thus we need to skip onboarding data generation.
-				skipOnboardingData:               true,
-				disableDevelopmentUseV2Scheduler: true,
+				skipOnboardingData: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -1542,8 +1541,6 @@ func TestVCS_SQL_Review(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(ctx)
 			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
 
 			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
@@ -1561,7 +1558,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database.
-			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil)
+			err = ctl.createDatabaseV2(ctx, project, instance, nil, databaseName, "bytebase", nil)
 			a.NoError(err)
 
 			// Create a repository.
@@ -1772,9 +1769,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 
 			// Create a server.
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:                          t.TempDir(),
-				vcsProviderCreator:               vcsTest.vcsProviderCreator,
-				disableDevelopmentUseV2Scheduler: true,
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: vcsTest.vcsProviderCreator,
 			})
 			a.NoError(err)
 
@@ -2017,9 +2013,8 @@ CREATE TABLE public.book (
 	ctx := context.Background()
 	ctl := &controller{}
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:                          t.TempDir(),
-		vcsProviderCreator:               fake.NewGitLab,
-		disableDevelopmentUseV2Scheduler: true,
+		dataDir:            t.TempDir(),
+		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
 	defer func() {
@@ -2049,8 +2044,6 @@ CREATE TABLE public.book (
 				a.FailNow("unsupported db type")
 			}
 			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			// Add an instance.
@@ -2083,14 +2076,12 @@ CREATE TABLE public.book (
 			}
 			a.NoError(err)
 
-			err = ctl.createDatabase(ctx, projectUID, instance, test.databaseName, "root", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, project, instance, nil, test.databaseName, "root", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 				Name: fmt.Sprintf("%s/databases/%s", instance.Name, test.databaseName),
 			})
-			a.NoError(err)
-			databaseUID, err := strconv.Atoi(database.Uid)
 			a.NoError(err)
 
 			ddlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
@@ -2104,32 +2095,11 @@ CREATE TABLE public.book (
 				},
 			})
 			a.NoError(err)
-			ddlSheetUID, err := strconv.Atoi(strings.TrimPrefix(ddlSheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-			a.NoError(err)
 
 			// Create an issue that updates database schema.
-			createContext, err := json.Marshal(&api.MigrationContext{
-				DetailList: []*api.MigrationDetail{
-					{
-						MigrationType: db.Migrate,
-						DatabaseID:    databaseUID,
-						SheetID:       ddlSheetUID,
-					},
-				},
-			})
+			err = ctl.changeDatabase(ctx, project, database, ddlSheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 			a.NoError(err)
-			issue, err := ctl.createIssue(api.IssueCreate{
-				ProjectID:     projectUID,
-				Name:          fmt.Sprintf("update schema for database %q", test.databaseName),
-				Type:          api.IssueDatabaseSchemaUpdate,
-				Description:   fmt.Sprintf("This updates the schema of database %q.", test.databaseName),
-				AssigneeID:    api.SystemBotID,
-				CreateContext: string(createContext),
-			})
-			a.NoError(err)
-			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-			a.NoError(err)
-			a.Equal(api.TaskDone, status)
+
 			latestSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
 				Name: fmt.Sprintf("%s/schema", database.Name),
 			})
@@ -2160,17 +2130,14 @@ func TestMarkTaskAsDone(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:                          dataDir,
-		vcsProviderCreator:               fake.NewGitLab,
-		disableDevelopmentUseV2Scheduler: true,
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
 	// Create a project.
 	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	// Provision an instance.
@@ -2197,14 +2164,12 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, project, instance, nil, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
-	a.NoError(err)
-	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
@@ -2218,51 +2183,58 @@ func TestMarkTaskAsDone(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	createContext, err := json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Migrate,
-				DatabaseID:    databaseUID,
-				SheetID:       sheetUID,
+	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+									Target: database.Name,
+									Sheet:  sheet.Name,
+									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	})
 	a.NoError(err)
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("update schema for database %q", databaseName),
-		Type:          api.IssueDatabaseSchemaUpdate,
-		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	a.NoError(err)
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Title:       fmt.Sprintf("change database %s", database.Name),
+			Description: fmt.Sprintf("change database %s", database.Name),
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+		},
 	})
 	a.NoError(err)
 
 	// Skip the task.
-	a.Equal(1, len(issue.Pipeline.StageList))
-	a.Equal(1, len(issue.Pipeline.StageList[0].TaskList))
-	task := issue.Pipeline.StageList[0].TaskList[0]
-	skippedReason := "skip it!"
-	task, err = ctl.patchTaskStatus(api.TaskStatusPatch{
-		Status:  api.TaskDone,
-		Comment: &skippedReason,
-	}, issue.Pipeline.ID, task.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, task.Status)
+	for _, stage := range rollout.Stages {
+		for _, task := range stage.Tasks {
+			_, err := ctl.rolloutServiceClient.BatchSkipTasks(ctx, &v1pb.BatchSkipTasksRequest{
+				Parent: stage.Name,
+				Tasks:  []string{task.Name},
+				Reason: "skip it!",
+			})
+			a.NoError(err)
+		}
+	}
 
-	var payload api.TaskDatabaseSchemaUpdatePayload
-	err = json.Unmarshal([]byte(task.Payload), &payload)
+	err = ctl.waitRollout(ctx, rollout.Name)
 	a.NoError(err)
-	a.Equal(true, payload.Skipped)
-	a.Equal(skippedReason, payload.SkippedReason)
-
-	status, err := ctl.waitIssuePipelineWithNoApproval(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	// Query schema.
 	dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
