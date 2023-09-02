@@ -1493,7 +1493,8 @@ func TestVCS_SQL_Review(t *testing.T) {
 				vcsProviderCreator: test.vcsProviderCreator,
 				// We check against empty SQL Review policy, while our onboarding data generation
 				// will create a SQL Review policy. Thus we need to skip onboarding data generation.
-				skipOnboardingData: true,
+				skipOnboardingData:               true,
+				disableDevelopmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
