@@ -163,10 +163,7 @@ watch(
 );
 
 const getMaskingLevelText = (maskingLevel: MaskingLevel) => {
-  let level = maskingLevelToJSON(maskingLevel);
-  if (maskingLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-    level = maskingLevelToJSON(MaskingLevel.FULL);
-  }
+  const level = maskingLevelToJSON(maskingLevel);
   return t(`settings.sensitive-data.masking-level.${level.toLowerCase()}`);
 };
 
