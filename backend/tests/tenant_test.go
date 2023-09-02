@@ -36,8 +36,9 @@ func TestTenant(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                          dataDir,
+		vcsProviderCreator:               fake.NewGitLab,
+		disableDevelopmentUseV2Scheduler: true,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -292,8 +293,9 @@ func TestTenantVCS(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: test.vcsProviderCreator,
+				dataDir:                          t.TempDir(),
+				vcsProviderCreator:               test.vcsProviderCreator,
+				disableDevelopmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -505,8 +507,9 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                          dataDir,
+		vcsProviderCreator:               fake.NewGitLab,
+		disableDevelopmentUseV2Scheduler: true,
 	})
 
 	a.NoError(err)
@@ -752,8 +755,9 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: test.vcsProviderCreator,
+				dataDir:                          t.TempDir(),
+				vcsProviderCreator:               test.vcsProviderCreator,
+				disableDevelopmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -1055,8 +1059,9 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: test.vcsProviderCreator,
+				dataDir:                          t.TempDir(),
+				vcsProviderCreator:               test.vcsProviderCreator,
+				disableDevelopmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {
@@ -1321,9 +1326,9 @@ func TestTenantVCS_YAML(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:                   t.TempDir(),
-				vcsProviderCreator:        test.vcsProviderCreator,
-				developmentUseV2Scheduler: true,
+				dataDir:                          t.TempDir(),
+				vcsProviderCreator:               test.vcsProviderCreator,
+				disableDevelopmentUseV2Scheduler: true,
 			})
 			a.NoError(err)
 			defer func() {

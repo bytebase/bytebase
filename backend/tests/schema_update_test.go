@@ -68,9 +68,8 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:                   dataDir,
-		vcsProviderCreator:        fake.NewGitLab,
-		developmentUseV2Scheduler: true,
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -395,9 +394,8 @@ func TestVCS(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:                   t.TempDir(),
-				vcsProviderCreator:        test.vcsProviderCreator,
-				developmentUseV2Scheduler: true,
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
 			defer func() {
@@ -785,9 +783,8 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:                   t.TempDir(),
-				vcsProviderCreator:        test.vcsProviderCreator,
-				developmentUseV2Scheduler: true,
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
 			defer func() {
@@ -1273,9 +1270,8 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:                   t.TempDir(),
-				vcsProviderCreator:        test.vcsProviderCreator,
-				developmentUseV2Scheduler: true,
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
 			defer func() {
@@ -2352,9 +2348,8 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:                   t.TempDir(),
-				vcsProviderCreator:        test.vcsProviderCreator,
-				developmentUseV2Scheduler: true,
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
 			defer func() {
