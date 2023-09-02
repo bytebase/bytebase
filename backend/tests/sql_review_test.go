@@ -84,8 +84,9 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	tests, err := readTestData(filepath)
 	a.NoError(err)
 	ctx, err = ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                          dataDir,
+		vcsProviderCreator:               fake.NewGitLab,
+		disableDevelopmentUseV2Scheduler: false,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -282,8 +283,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	dataDir := t.TempDir()
 	ctx, err = ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                          dataDir,
+		vcsProviderCreator:               fake.NewGitLab,
+		disableDevelopmentUseV2Scheduler: false,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)

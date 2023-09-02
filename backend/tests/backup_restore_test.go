@@ -606,8 +606,9 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                          dataDir,
+		vcsProviderCreator:               fake.NewGitLab,
+		disableDevelopmentUseV2Scheduler: false,
 	})
 	a.NoError(err)
 	err = ctl.setLicense()

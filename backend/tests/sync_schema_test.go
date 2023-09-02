@@ -48,8 +48,9 @@ DROP SCHEMA "schema_a";
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir:                          dataDir,
+		vcsProviderCreator:               fake.NewGitLab,
+		disableDevelopmentUseV2Scheduler: false,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)

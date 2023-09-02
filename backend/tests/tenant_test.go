@@ -1328,7 +1328,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:                          t.TempDir(),
 				vcsProviderCreator:               test.vcsProviderCreator,
-				disableDevelopmentUseV2Scheduler: true,
+				disableDevelopmentUseV2Scheduler: false,
 			})
 			a.NoError(err)
 			defer func() {
