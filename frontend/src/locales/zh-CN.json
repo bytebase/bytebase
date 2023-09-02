@@ -624,7 +624,8 @@
         "masking-setting-for-column": "\"{column}\" 脱敏设置",
         "access-user-list": "用户访问列表",
         "access-user-list-desc": "被授权的用户可以访问非脱敏的原始数据。",
-        "remove-user-permission": "删除该用户权限？"
+        "remove-user-permission": "删除该用户权限？",
+        "remove-sensitive-warning": "该数据会被设置为明文，不再脱敏。"
       },
       "masking-level": {
         "self": "脱敏程度",

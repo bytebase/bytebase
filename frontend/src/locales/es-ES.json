@@ -625,7 +625,8 @@
         "masking-setting-for-column": "Configuración de enmascaramiento para \"{columna}\"",
         "access-user-list": "Acceder a la lista de usuarios",
         "access-user-list-desc": "Usuarios autorizados a acceder a datos desenmascarados.",
-        "remove-user-permission": "¿Quitar el permiso del usuario?"
+        "remove-user-permission": "¿Quitar el permiso del usuario?",
+        "remove-sensitive-warning": "Expondrá la columna."
       },
       "masking-level": {
         "self": "Nivel de enmascaramiento",

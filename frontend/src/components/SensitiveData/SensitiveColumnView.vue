@@ -86,13 +86,14 @@
 <script lang="ts" setup>
 import { uniq } from "lodash-es";
 import { computed, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
   usePolicyListByResourceTypeAndPolicyType,
-  usePolicyV1Store,
   featureToRef,
   useDatabaseV1Store,
   useCurrentUserV1,
+  pushNotification,
 } from "@/store";
 import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import {
@@ -101,7 +102,7 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { databaseV1Slug, hasWorkspacePermissionV1 } from "@/utils";
 import { SensitiveColumn } from "./types";
-import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
+import { removeSensitiveColumn } from "./utils";
 
 interface LocalState {
   environment: string;
@@ -113,6 +114,7 @@ interface LocalState {
   showSensitiveColumnDrawer: boolean;
 }
 
+const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
   showFeatureModal: false,
@@ -124,7 +126,6 @@ const state = reactive<LocalState>({
   showSensitiveColumnDrawer: false,
 });
 const databaseStore = useDatabaseV1Store();
-const policyStore = usePolicyV1Store();
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
 const policyList = usePolicyListByResourceTypeAndPolicyType({
@@ -171,60 +172,15 @@ const updateList = async () => {
   state.isLoading = false;
 };
 
-watch(policyList, updateList, { immediate: true });
+watch(policyList, updateList, { immediate: true, deep: true });
 
-const removeSensitiveColumn = async (sensitiveColumn: SensitiveColumn) => {
-  const policy = policyList.value.find(
-    (policy) => policy.resourceUid == sensitiveColumn.database.uid
-  );
-  if (!policy) return;
-  const maskData = policy.maskingPolicy?.maskData;
-  if (!maskData) return;
-
-  const index = maskData.findIndex(
-    (sensitiveData) =>
-      getMaskDataIdentifier(sensitiveData) ===
-      getMaskDataIdentifier(sensitiveColumn.maskData)
-  );
-  if (index >= 0) {
-    // mutate the list and the item directly
-    // so we don't need to re-fetch the whole list.
-    maskData.splice(index, 1);
-
-    await policyStore.updatePolicy(["payload"], {
-      name: policy.name,
-      type: PolicyType.MASKING,
-      resourceType: PolicyResourceType.DATABASE,
-      maskingPolicy: {
-        maskData,
-      },
-    });
-    await removeMaskingExceptions(sensitiveColumn);
-  }
-  updateList();
-};
-
-const removeMaskingExceptions = async (sensitiveColumn: SensitiveColumn) => {
-  const policy = await policyStore.getOrFetchPolicyByParentAndType({
-    parentPath: sensitiveColumn.database.name,
-    policyType: PolicyType.MASKING_EXCEPTION,
+const onColumnRemove = async (column: SensitiveColumn) => {
+  await removeSensitiveColumn(column);
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
   });
-  if (!policy) {
-    return;
-  }
-
-  const exceptions = (
-    policy.maskingExceptionPolicy?.maskingExceptions ?? []
-  ).filter(
-    (exception) =>
-      !isCurrentColumnException(exception, sensitiveColumn.maskData)
-  );
-
-  policy.maskingExceptionPolicy = {
-    ...(policy.maskingExceptionPolicy ?? {}),
-    maskingExceptions: exceptions,
-  };
-  await policyStore.updatePolicy(["payload"], policy);
 };
 
 const onRowClick = async (
@@ -244,7 +200,7 @@ const onRowClick = async (
       break;
     }
     case "DELETE":
-      await removeSensitiveColumn(item);
+      await onColumnRemove(item);
       break;
     case "EDIT":
       state.pendingGrantAccessColumnIndex = [row];

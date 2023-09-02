@@ -17,7 +17,7 @@
               :disabled="!hasPermission"
               :level-list="MASKING_LEVELS"
               :selected="state.maskingLevel"
-              @update="state.maskingLevel = $event"
+              @update="onLevelUpdate"
             />
           </div>
         </div>
@@ -171,6 +171,23 @@
       @dismiss="state.showGrantAccessDrawer = false"
     />
   </Drawer>
+
+  <BBAlert
+    v-if="state.showAlert"
+    :style="'WARN'"
+    :ok-text="$t('common.ok')"
+    :title="
+      $t('settings.sensitive-data.column-detail.remove-sensitive-warning')
+    "
+    @ok="state.showAlert = false"
+    @cancel="
+      () => {
+        state.showAlert = false;
+        state.maskingLevel = props.column.maskData.maskingLevel;
+      }
+    "
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts" setup>
@@ -199,9 +216,11 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV1, extractUserUID } from "@/utils";
 import { SensitiveColumn } from "./types";
-import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
-
-// TODO(ed): remove masking column, also remove related exception
+import {
+  getMaskDataIdentifier,
+  isCurrentColumnException,
+  removeSensitiveColumn,
+} from "./utils";
 
 interface AccessUser {
   user: User;
@@ -216,6 +235,7 @@ interface LocalState {
   processing: boolean;
   maskingLevel: MaskingLevel;
   showGrantAccessDrawer: boolean;
+  showAlert: boolean;
 }
 
 const props = defineProps<{
@@ -230,6 +250,7 @@ const state = reactive<LocalState>({
   processing: false,
   maskingLevel: props.column.maskData.maskingLevel,
   showGrantAccessDrawer: false,
+  showAlert: false,
 });
 
 const MASKING_LEVELS = [
@@ -324,6 +345,9 @@ const updateAccessUserList = (policy: Policy | undefined) => {
 watch(
   () => [props.show, policy.value],
   () => {
+    if (props.show) {
+      state.maskingLevel = props.column.maskData.maskingLevel;
+    }
     if (props.show && policy.value) {
       updateAccessUserList(policy.value);
     }
@@ -361,6 +385,13 @@ const tableHeaderList = computed(() => {
   return list;
 });
 
+const onLevelUpdate = (level: MaskingLevel) => {
+  state.maskingLevel = level;
+  if (level === MaskingLevel.NONE) {
+    state.showAlert = true;
+  }
+};
+
 const onRemove = (index: number) => {
   accessUserList.value.splice(index, 1);
   state.dirty = true;
@@ -396,7 +427,13 @@ const onSubmit = async () => {
 
   try {
     if (maskingPolicyChanged.value) {
-      await updateMaskingPolicy();
+      if (state.maskingLevel === MaskingLevel.NONE) {
+        // remove masking level and exceptions
+        await removeSensitiveColumn(props.column);
+        state.dirty = false;
+      } else {
+        await updateMaskingPolicy();
+      }
     }
     if (state.dirty) {
       await updateExceptionPolicy();
