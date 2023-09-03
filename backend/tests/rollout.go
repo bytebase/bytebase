@@ -12,6 +12,17 @@ import (
 )
 
 func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project, database *v1pb.Database, sheet *v1pb.Sheet, changeType v1pb.Plan_ChangeDatabaseConfig_Type) error {
+	_, _, _, err := ctl.changeDatabaseWithConfig(ctx, project, database, &v1pb.Plan_Spec_ChangeDatabaseConfig{
+		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+			Target: database.Name,
+			Sheet:  sheet.Name,
+			Type:   changeType,
+		},
+	})
+	return err
+}
+
+func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1pb.Project, database *v1pb.Database, config *v1pb.Plan_Spec_ChangeDatabaseConfig) (*v1pb.Plan, *v1pb.Rollout, *v1pb.Issue, error) {
 	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
@@ -19,13 +30,7 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
-							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-									Target: database.Name,
-									Sheet:  sheet.Name,
-									Type:   changeType,
-								},
-							},
+							Config: config,
 						},
 					},
 				},
@@ -33,13 +38,13 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 		},
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create plan")
+		return nil, nil, nil, errors.Wrapf(err, "failed to create plan")
 	}
 	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create rollout")
+		return nil, nil, nil, errors.Wrapf(err, "failed to create rollout")
 	}
-	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -51,13 +56,13 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 		},
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create issue")
+		return nil, nil, nil, errors.Wrapf(err, "failed to create issue")
 	}
 	err = ctl.waitRollout(ctx, rollout.Name)
 	if err != nil {
-		return err
+		return nil, nil, nil, err
 	}
-	return nil
+	return plan, rollout, issue, nil
 }
 
 // waitRollout waits for pipeline to finish and approves tasks when necessary.
