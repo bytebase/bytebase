@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // SheetVisibility is the visibility of a sheet.
@@ -64,7 +66,7 @@ type SheetMessage struct {
 	Visibility SheetVisibility
 	Source     SheetSource
 	Type       SheetType
-	Payload    string
+	Payload    *storepb.SheetPayload
 
 	// Output only fields
 	UID         int
@@ -126,8 +128,7 @@ type PatchSheetMessage struct {
 	Visibility  *string
 	ProjectUID  *int
 	DatabaseUID *int
-	// TODO(zp): update the payload.
-	Payload *string
+	Payload     *storepb.SheetPayload
 }
 
 // GetSheetStatementByID gets the statement of a sheet by ID.
@@ -268,6 +269,7 @@ func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentP
 	var sheets []*SheetMessage
 	for rows.Next() {
 		var sheet SheetMessage
+		var payload []byte
 		if err := rows.Scan(
 			&sheet.UID,
 			&sheet.rowStatus,
@@ -282,13 +284,18 @@ func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentP
 			&sheet.Visibility,
 			&sheet.Source,
 			&sheet.Type,
-			&sheet.Payload,
+			&payload,
 			&sheet.Size,
 			&sheet.Starred,
 			&sheet.Pinned,
 		); err != nil {
 			return nil, err
 		}
+		sheetPayload := &storepb.SheetPayload{}
+		if err := protojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
+			return nil, err
+		}
+		sheet.Payload = sheetPayload
 
 		sheets = append(sheets, &sheet)
 	}
@@ -309,11 +316,15 @@ func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentP
 
 // CreateSheet creates a new sheet.
 func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMessage, error) {
-	if create.Payload == "" {
-		create.Payload = "{}"
+	if create.Payload == nil {
+		create.Payload = &storepb.SheetPayload{}
+	}
+	payload, err := protojson.Marshal(create.Payload)
+	if err != nil {
+		return nil, err
 	}
 
-	query := fmt.Sprintf(`
+	query := `
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
@@ -327,17 +338,15 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement), payload
-	`, common.MaxSheetSize)
+		RETURNING id, row_status, created_ts, updated_ts, LENGTH(statement)
+	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-	databaseID := sql.NullInt32{}
-	var sheet SheetMessage
-
+	create.UpdaterID = create.CreatorID
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
@@ -348,23 +357,13 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		create.Visibility,
 		create.Source,
 		create.Type,
-		create.Payload,
+		payload,
 	).Scan(
-		&sheet.UID,
-		&sheet.rowStatus,
-		&sheet.CreatorID,
-		&sheet.createdTs,
-		&sheet.UpdaterID,
-		&sheet.updatedTs,
-		&sheet.ProjectUID,
-		&databaseID,
-		&sheet.Name,
-		&sheet.Statement,
-		&sheet.Visibility,
-		&sheet.Source,
-		&sheet.Type,
-		&sheet.Size,
-		&sheet.Payload,
+		&create.UID,
+		&create.rowStatus,
+		&create.createdTs,
+		&create.updatedTs,
+		&create.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -375,14 +374,10 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	if databaseID.Valid {
-		value := int(databaseID.Int32)
-		sheet.DatabaseUID = &value
-	}
-	sheet.CreatedTime = time.Unix(sheet.createdTs, 0)
-	sheet.UpdatedTime = time.Unix(sheet.updatedTs, 0)
+	create.CreatedTime = time.Unix(create.createdTs, 0)
+	create.UpdatedTime = time.Unix(create.updatedTs, 0)
 
-	return &sheet, nil
+	return create, nil
 }
 
 // PatchSheet updates a sheet.
@@ -439,7 +434,11 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*She
 		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+		payload, err := protojson.Marshal(patch.Payload)
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
 	}
 	if v := patch.DatabaseUID; v != nil {
 		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
@@ -451,6 +450,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*She
 	args = append(args, patch.UID)
 
 	var sheet SheetMessage
+	var payload []byte
 	databaseID := sql.NullInt32{}
 
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
@@ -474,7 +474,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*She
 		&sheet.Visibility,
 		&sheet.Source,
 		&sheet.Type,
-		&sheet.Payload,
+		&payload,
 		&sheet.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -482,6 +482,11 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*She
 		}
 		return nil, err
 	}
+	sheetPayload := &storepb.SheetPayload{}
+	if err := protojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
+		return nil, err
+	}
+	sheet.Payload = sheetPayload
 
 	if databaseID.Valid {
 		value := int(databaseID.Int32)

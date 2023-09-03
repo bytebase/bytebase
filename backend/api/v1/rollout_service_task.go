@@ -145,7 +145,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			Visibility: store.ProjectSheet,
 			Source:     store.SheetFromBytebaseArtifact,
 			Type:       store.SheetForSQL,
-			Payload:    "{}",
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create database creation sheet")

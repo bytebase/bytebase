@@ -8,8 +8,15 @@ import (
 	"sync"
 
 	"github.com/dgraph-io/ristretto"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+)
+
+var (
+	protojsonUnmarshaler = protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}
 )
 
 // Store provides database access to all raw objects.
