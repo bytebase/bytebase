@@ -265,7 +265,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SpecID:        spec.Id,
 			SheetID:       sheetID,
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
-			VCSPushEvent:  nil,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -296,7 +295,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SpecID:        spec.Id,
 			SheetID:       sheetID,
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
-			VCSPushEvent:  nil,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -329,7 +327,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SpecID:        spec.Id,
 			SheetID:       sheetID,
 			SchemaVersion: c.SchemaVersion,
-			VCSPushEvent:  nil,
 		}
 		bytesSync, err := json.Marshal(payloadSync)
 		if err != nil {
@@ -383,7 +380,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SpecID:            spec.Id,
 			SheetID:           sheetID,
 			SchemaVersion:     getOrDefaultSchemaVersion(c.SchemaVersion),
-			VCSPushEvent:      nil,
 			RollbackEnabled:   c.RollbackEnabled,
 			RollbackSQLStatus: api.RollbackSQLStatusPending,
 		}
@@ -553,7 +549,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 				SpecID:          spec.Id,
 				SheetID:         0,
 				SchemaVersion:   getOrDefaultSchemaVersionWithSuffix(c.SchemaVersion, schemaVersionSuffix),
-				VCSPushEvent:    nil,
 				SchemaGroupName: schemaGroupName,
 			}
 			bytes, err := json.Marshal(payload)
@@ -578,7 +573,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 				SpecID:            spec.Id,
 				SheetID:           0,
 				SchemaVersion:     getOrDefaultSchemaVersionWithSuffix(c.SchemaVersion, schemaVersionSuffix),
-				VCSPushEvent:      nil,
 				RollbackEnabled:   c.RollbackEnabled,
 				RollbackSQLStatus: api.RollbackSQLStatusPending,
 				SchemaGroupName:   schemaGroupName,
