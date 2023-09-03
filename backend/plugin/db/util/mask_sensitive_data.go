@@ -15,12 +15,10 @@ var (
 )
 
 type fieldInfo struct {
-	name     string
-	table    string
-	schema   string
-	database string
-	// TODO(zp): retire sensitive boolean flag.
-	sensitive    bool
+	name         string
+	table        string
+	schema       string
+	database     string
 	maskingLevel storepb.MaskingLevel
 }
 
