@@ -157,7 +157,6 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    "{}",
 	})
 	if err != nil {
 		log.Error("failed to create database creation sheet", zap.Error(err))
@@ -245,7 +244,6 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    "{}",
 	})
 	if err != nil {
 		log.Error("failed to create database creation sheet", zap.Error(err))

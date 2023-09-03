@@ -1097,7 +1097,6 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 					Visibility: store.ProjectSheet,
 					Source:     store.SheetFromBytebaseArtifact,
 					Type:       store.SheetForSQL,
-					Payload:    "{}",
 				})
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to create sheet for task %v", c.Name)
