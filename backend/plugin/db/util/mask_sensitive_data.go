@@ -15,12 +15,10 @@ var (
 )
 
 type fieldInfo struct {
-	name     string
-	table    string
-	schema   string
-	database string
-	// TODO(zp): retire sensitive boolean flag.
-	sensitive    bool
+	name         string
+	table        string
+	schema       string
+	database     string
 	maskingLevel storepb.MaskingLevel
 }
 
@@ -141,7 +139,18 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		return extractor.extractTSqlSensitiveFields(statement)
+		result, err := extractor.extractTSqlSensitiveFields(statement)
+		if err != nil {
+			return nil, err
+		}
+		// TODO(zp): remove it
+		// Backfill sensitive.
+		for i := range result {
+			if result[i].MaskingLevel == storepb.MaskingLevel_PARTIAL || result[i].MaskingLevel == storepb.MaskingLevel_FULL {
+				result[i].Sensitive = true
+			}
+		}
+		return result, nil
 	default:
 		return nil, nil
 	}
