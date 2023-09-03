@@ -97,7 +97,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 
 	// Run a DML issue.
-	_, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, database, &v1pb.Plan_Spec_ChangeDatabaseConfig{
+	_, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Target:          database.Name,
 			Sheet:           dmlSheet.Name,
@@ -131,7 +131,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 
 	// Run a rollback issue.
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, database, &v1pb.Plan_Spec_ChangeDatabaseConfig{
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Target: database.Name,
 			Sheet:  rollbackSheet,
@@ -240,7 +240,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 
 	// Run a DML issue with rollbackEnabled set to false.
-	plan, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, database, &v1pb.Plan_Spec_ChangeDatabaseConfig{
+	plan, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Target: database.Name,
 			Sheet:  dmlSheet.Name,
@@ -285,7 +285,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 
 	// Run a rollback issue.
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, database, &v1pb.Plan_Spec_ChangeDatabaseConfig{
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Target: database.Name,
 			Sheet:  rollbackSheet,
@@ -394,7 +394,7 @@ func TestRollbackCanceled(t *testing.T) {
 	a.NoError(err)
 
 	// Run a DML issue.
-	plan, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, project, database, &v1pb.Plan_Spec_ChangeDatabaseConfig{
+	plan, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Target:          database.Name,
 			Sheet:           sheet.Name,
