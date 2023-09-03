@@ -1372,7 +1372,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							Visibility:  store.ProjectSheet,
 							Source:      store.SheetFromBytebaseArtifact,
 							Type:        store.SheetForSQL,
-							Payload:     "",
 						})
 						if err != nil {
 							return nil, err
@@ -1600,7 +1599,6 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    "{}",
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create database creation sheet")
