@@ -64,7 +64,7 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, driverCtx context
 		return true, nil, err
 	}
 
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Migrate, statement, payload.SchemaVersion, &payload.SheetID, payload.VCSPushEvent)
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Migrate, statement, payload.SchemaVersion, &payload.SheetID)
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", instance.ResourceID),
