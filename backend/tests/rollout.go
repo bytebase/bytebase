@@ -12,7 +12,7 @@ import (
 )
 
 func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project, database *v1pb.Database, sheet *v1pb.Sheet, changeType v1pb.Plan_ChangeDatabaseConfig_Type) error {
-	_, _, _, err := ctl.changeDatabaseWithConfig(ctx, project, database, &v1pb.Plan_Spec_ChangeDatabaseConfig{
+	_, _, _, err := ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Target: database.Name,
 			Sheet:  sheet.Name,
@@ -22,7 +22,7 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 	return err
 }
 
-func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1pb.Project, database *v1pb.Database, config *v1pb.Plan_Spec_ChangeDatabaseConfig) (*v1pb.Plan, *v1pb.Rollout, *v1pb.Issue, error) {
+func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1pb.Project, config *v1pb.Plan_Spec_ChangeDatabaseConfig) (*v1pb.Plan, *v1pb.Rollout, *v1pb.Issue, error) {
 	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
@@ -48,8 +48,8 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
-			Title:       fmt.Sprintf("change database %s", database.Name),
-			Description: fmt.Sprintf("change database %s", database.Name),
+			Title:       "change database",
+			Description: "change database",
 			Plan:        plan.Name,
 			Rollout:     rollout.Name,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
