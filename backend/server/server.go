@@ -1339,7 +1339,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    "{}",
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create test sheet for sample project")
@@ -1356,7 +1355,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    "{}",
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create prod sheet for sample project")
