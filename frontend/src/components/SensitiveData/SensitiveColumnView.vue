@@ -210,7 +210,7 @@ const removeSensitiveColumn = async (sensitiveColumn: SensitiveColumn) => {
 
 const removeMaskingExceptions = async (sensitiveColumn: SensitiveColumn) => {
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
-    parentPath: sensitiveColumn.database.name,
+    parentPath: sensitiveColumn.database.project,
     policyType: PolicyType.MASKING_EXCEPTION,
   });
   if (!policy) {
@@ -220,8 +220,7 @@ const removeMaskingExceptions = async (sensitiveColumn: SensitiveColumn) => {
   const exceptions = (
     policy.maskingExceptionPolicy?.maskingExceptions ?? []
   ).filter(
-    (exception) =>
-      !isCurrentColumnException(exception, sensitiveColumn.maskData)
+    (exception) => !isCurrentColumnException(exception, sensitiveColumn)
   );
 
   policy.maskingExceptionPolicy = {

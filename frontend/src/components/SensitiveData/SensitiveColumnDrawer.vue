@@ -259,7 +259,7 @@ const policyStore = usePolicyV1Store();
 
 const policy = usePolicyByParentAndType(
   computed(() => ({
-    parentPath: props.column.database.name,
+    parentPath: props.column.database.project,
     policyType: PolicyType.MASKING_EXCEPTION,
   }))
 );
@@ -325,7 +325,7 @@ const updateAccessUserList = (policy: Policy | undefined) => {
   // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
   const userMap = new Map<string, AccessUser>();
   for (const exception of policy.maskingExceptionPolicy.maskingExceptions) {
-    if (!isCurrentColumnException(exception, props.column.maskData)) {
+    if (!isCurrentColumnException(exception, props.column)) {
       continue;
     }
     const identifier = getExceptionIdentifier(exception);
@@ -480,9 +480,8 @@ const upsertMaskingPolicy = async () => {
 };
 
 const updateExceptionPolicy = async () => {
-  // TODO(ed): the exception policy parent might be project
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
-    parentPath: props.column.database.name,
+    parentPath: props.column.database.project,
     policyType: PolicyType.MASKING_EXCEPTION,
   });
   if (!policy) {
@@ -491,9 +490,7 @@ const updateExceptionPolicy = async () => {
 
   const exceptions = (
     policy.maskingExceptionPolicy?.maskingExceptions ?? []
-  ).filter(
-    (exception) => !isCurrentColumnException(exception, props.column.maskData)
-  );
+  ).filter((exception) => !isCurrentColumnException(exception, props.column));
 
   for (const accessUser of accessUserList.value) {
     const expressions = accessUser.rawExpression.split(" && ");

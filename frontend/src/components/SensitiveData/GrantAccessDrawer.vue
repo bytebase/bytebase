@@ -95,7 +95,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { usePolicyV1Store, useUserStore, pushNotification } from "@/store";
-import { ComposedDatabase } from "@/types";
+import { ComposedProject } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import {
@@ -106,8 +106,8 @@ import {
   MaskingExceptionPolicy_MaskingException_Action,
   maskingExceptionPolicy_MaskingException_ActionToJSON,
 } from "@/types/proto/v1/org_policy_service";
-import { extractInstanceResourceName } from "@/utils";
 import { SensitiveColumn } from "./types";
+import { getExpressionsForSensitiveColumn } from "./utils";
 
 const props = defineProps<{
   show: boolean;
@@ -166,22 +166,21 @@ const submitDisabled = computed(() => {
 const onSubmit = async () => {
   state.processing = true;
 
-  const groupByDatabase = groupBy(
+  const groupByProject = groupBy(
     props.columnList,
-    (item) => item.database.name
+    (item) => item.database.project
   );
   try {
-    for (const [database, columnList] of Object.entries(groupByDatabase)) {
+    for (const [project, columnList] of Object.entries(groupByProject)) {
       if (columnList.length === 0) {
         continue;
       }
       const pendingUpdate = await getPendingUpdatePolicy(
-        columnList[0].database,
+        columnList[0].database.projectEntity,
         columnList
       );
-      // TODO(ed): the exception policy parent might be project
       await policyStore.upsertPolicy({
-        parentPath: database,
+        parentPath: project,
         policy: pendingUpdate,
         updateMask: ["payload"],
       });
@@ -198,7 +197,7 @@ const onSubmit = async () => {
 };
 
 const getPendingUpdatePolicy = async (
-  database: ComposedDatabase,
+  project: ComposedProject,
   columnList: SensitiveColumn[]
 ): Promise<Partial<Policy>> => {
   const maskingExceptions: MaskingExceptionPolicy_MaskingException[] = [];
@@ -210,24 +209,15 @@ const getPendingUpdatePolicy = async (
   );
 
   for (const column of columnList) {
-    const expression: string[] = [
-      `resource.column_name == "${column.maskData.column}"`,
-      `resource.table_name == "${column.maskData.table}"`,
-      `resource.database_name == "${column.database.databaseName}"`,
-      `resource.instance_id == "${extractInstanceResourceName(
-        column.database.instanceEntity.name
-      )}"`,
-    ];
+    const expressions = getExpressionsForSensitiveColumn(column);
     if (state.expirationTimestamp) {
-      expression.push(
+      expressions.push(
         `request.time < timestamp("${new Date(
           state.expirationTimestamp
         ).toISOString()}")`
       );
     }
-    if (column.maskData.schema) {
-      expression.push(`resource.schema_name == "${column.maskData.schema}"`);
-    }
+
     for (const action of state.supportActions.values()) {
       for (const member of members) {
         maskingExceptions.push({
@@ -235,7 +225,7 @@ const getPendingUpdatePolicy = async (
           action,
           maskingLevel: state.maskingLevel,
           condition: Expr.fromPartial({
-            expression: expression.join(" && "),
+            expression: expressions.join(" && "),
           }),
         });
       }
@@ -243,14 +233,14 @@ const getPendingUpdatePolicy = async (
   }
 
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
-    parentPath: database.name,
+    parentPath: project.name,
     policyType: PolicyType.MASKING_EXCEPTION,
   });
   const existed = policy?.maskingExceptionPolicy?.maskingExceptions ?? [];
   return {
     type: PolicyType.MASKING_EXCEPTION,
-    resourceType: PolicyResourceType.DATABASE,
-    resourceUid: database.uid,
+    resourceType: PolicyResourceType.PROJECT,
+    resourceUid: project.uid,
     maskingExceptionPolicy: {
       maskingExceptions: [...existed, ...maskingExceptions],
     },
