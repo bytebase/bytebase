@@ -2422,7 +2422,8 @@
         "member-role-update": "Actualizar rol del miembro del proyecto",
         "database-transfer": "Transferir base de datos"
       },
-      "sql-editor-query": "Consulta del editor de SQL"
+      "sql-editor-query": "Consulta del editor de SQL",
+      "sql-export": "Exportar SQL"
     }
   },
   "onboarding-guide": {
