@@ -473,6 +473,7 @@ const updateMaskingPolicy = async () => {
 };
 
 const updateExceptionPolicy = async () => {
+  // TODO(ed): the exception policy parent might be project
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
     parentPath: props.column.database.name,
     policyType: PolicyType.MASKING_EXCEPTION,

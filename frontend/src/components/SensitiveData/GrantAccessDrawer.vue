@@ -179,6 +179,7 @@ const onSubmit = async () => {
         columnList[0].database,
         columnList
       );
+      // TODO(ed): the exception policy parent might be project
       await policyStore.upsertPolicy({
         parentPath: database,
         policy: pendingUpdate,
