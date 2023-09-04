@@ -1386,39 +1386,39 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			return nil, errors.Errorf("database %q not found", databaseName)
 		}
 
-		var project *store.ProjectMessage
-		if database.ProjectID != "" {
-			project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-				ResourceID: &database.ProjectID,
-			})
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find project %q", database.ProjectID)
-			}
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &database.ProjectID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find project %q", database.ProjectID)
+		}
+		if project == nil {
+			return nil, status.Errorf(codes.Internal, "project of database %q should not be nil", database.DatabaseName)
 		}
 
 		var maskingExceptionPolicy *storepb.MaskingExceptionPolicy
 		// If we cannot find the maskingExceptionPolicy before, we need to find it from the database and record it in cache.
 		if _, ok := maskingExceptionPolicyMap[database.ProjectID]; !ok {
-			if project != nil {
-				policy, err := s.store.GetMaskingExceptionPolicyByProjectUID(ctx, project.UID)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to find masking exception policy for project %q", project.ResourceID)
-				}
-				// It is safe if policy is nil.
-				maskingExceptionPolicyMap[database.ProjectID] = policy
+			policy, err := s.store.GetMaskingExceptionPolicyByProjectUID(ctx, project.UID)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find masking exception policy for project %q", project.ResourceID)
 			}
+			// It is safe if policy is nil.
+			maskingExceptionPolicyMap[database.ProjectID] = policy
 		}
 		maskingExceptionPolicy = maskingExceptionPolicyMap[database.ProjectID]
 
 		// Build the filtered maskingExceptionPolicy for current principal.
 		var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
 		if maskingExceptionPolicy != nil {
-			for _, maskingExceptionPolicy := range maskingExceptionPolicy.MaskingExceptions {
-				if maskingExceptionPolicy.Action != action {
+			log.Debug("found masking exception policy for project", zap.String("database", databaseName), zap.String("project", database.ProjectID), zap.Any("masking exception policy", maskingExceptionPolicy))
+			for _, maskingException := range maskingExceptionPolicy.MaskingExceptions {
+				if maskingException.Action != action {
 					continue
 				}
-				if maskingExceptionPolicy.Member == currentPrincipal.Email {
-					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingExceptionPolicy)
+				if maskingException.Member == currentPrincipal.Email {
+					log.Debug("hit masking exception for current principal", zap.String("database", databaseName), zap.String("project", database.ProjectID), zap.Any("masking exception", maskingException))
+					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
 					break
 				}
 			}
@@ -1430,6 +1430,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			for _, dataClassificationSetting := range classificationSetting.Configs {
 				if dataClassificationSetting.Id == project.DataClassificationConfigID {
 					dataClassificationConfig = dataClassificationSetting
+					log.Debug("found data classification config for project", zap.String("project", project.ResourceID), zap.Any("data classification config id", dataClassificationConfig.Id))
 					break
 				}
 			}
@@ -1450,6 +1451,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				}] = maskData
 			}
 		}
+		log.Debug("found masking policy for database", zap.String("database", databaseName), zap.Any("masking policy", maskingPolicy))
 
 		columnMap := make(sensitiveDataMap)
 		for _, data := range maskingPolicy.MaskData {
@@ -1480,6 +1482,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						ColumnList: []db.ColumnInfo{},
 					}
 					for _, column := range table.Columns {
+						log.Debug("processing sensitive schema info", zap.String("schema", schema.Name), zap.String("table", table.Name))
 						maskingLevel, err := evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column, maskingPolicyMap, maskingRulePolicy, maskingExceptionContainsCurrentPrincipal, dataClassificationConfig)
 						if err != nil {
 							return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
@@ -1516,6 +1519,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					ColumnList: []db.ColumnInfo{},
 				}
 				for _, column := range table.Columns {
+					log.Debug("processing sensitive schema info", zap.String("database", database.DatabaseName), zap.String("schema", schema.Name), zap.String("table", table.Name), zap.String("column", column.Name))
 					maskingLevel, err := evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column, maskingPolicyMap, maskingRulePolicy, maskingExceptionContainsCurrentPrincipal, dataClassificationConfig)
 					if err != nil {
 						return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
@@ -1578,6 +1582,7 @@ func evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schema
 	}
 	maskingData, ok := maskingPolicyMap[key]
 	if (!ok) || (maskingData.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED) {
+		log.Debug("column set DEFAULT masking level in masking policy or masking policy not set yet", zap.String("column", column.Name), zap.Any("masking policy", maskingData))
 		// If the column has DEFAULT masking level in maskingPolicy or not set yet,
 		// we will eval the maskingRulePolicy to get the maskingLevel.
 		columnClassificationLevel := getClassificationLevelOfColumn(column.Classification, dataClassificationConfig)
@@ -1597,16 +1602,19 @@ func evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schema
 			}
 			if pass {
 				finalLevel = maskingRule.MaskingLevel
+				log.Debug("hit masking rule", zap.String("column", column.Name), zap.Any("masking rule", maskingRule), zap.Any("masking level", maskingRule.MaskingLevel.String()))
 				break
 			}
 		}
 	} else {
+		log.Debug("column set specific masking level in masking policy", zap.String("column", column.Name), zap.Any("masking level", maskingData.MaskingLevel.String()))
 		finalLevel = maskingData.MaskingLevel
 	}
 
 	if finalLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED || finalLevel == storepb.MaskingLevel_NONE {
 		// After looking up the maskingPolicy and maskingRulePolicy, if the maskingLevel is still MASKING_LEVEL_UNSPECIFIED or NONE,
 		// return the MASKING_LEVEL_NONE, which means no masking and do not need eval exceptions anymore.
+		log.Debug("After looking up maskingPolicy and maskingRulePolicy, the masking level is UNSPECIFIED or NONE", zap.Any("masking level", finalLevel.String()))
 		return storepb.MaskingLevel_NONE, nil
 	}
 
@@ -1633,13 +1641,14 @@ func evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schema
 		if !hit {
 			continue
 		}
-
+		log.Debug("hit masking exception", zap.String("column", column.Name), zap.Any("masking exception", filteredMaskingException), zap.Any("masking level", filteredMaskingException.MaskingLevel.String()))
 		// TODO(zp): Expectedly, a column should hit only one exception,
 		// but we can take the strictest level here to make the whole program more robust.
 		if cmp.Less[storepb.MaskingLevel](filteredMaskingException.MaskingLevel, finalLevel) {
 			finalLevel = filteredMaskingException.MaskingLevel
 		}
 	}
+	log.Debug("final level of column", zap.String("column", column.Name), zap.Any("final level", finalLevel.String()))
 	return finalLevel, nil
 }
 func getClassificationLevelOfColumn(columnClassificationID string, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) string {
