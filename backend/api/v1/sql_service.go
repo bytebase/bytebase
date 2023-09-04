@@ -1490,7 +1490,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						}
 						tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
 							Name:         column.Name,
-							Sensitive:    sensitive,
 							MaskingLevel: maskingLevel,
 						})
 					}
@@ -1527,7 +1526,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					}
 					tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
 						Name:         column.Name,
-						Sensitive:    sensitive,
 						MaskingLevel: maskingLevel,
 					})
 				}
