@@ -661,11 +661,8 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 
 	for _, test := range tests {
 		res, err := extractSensitiveField(db.MySQL, test.statement, defaultDatabase, test.schemaInfo)
-		require.NoError(t, err)
-		for i := range res {
-			require.Equal(t, test.fieldList[i].Name, res[i].Name, test.statement)
-			require.Equal(t, test.fieldList[i].MaskingLevel, res[i].MaskingLevel, test.statement)
-		}
+		require.NoError(t, err, test.statement)
+		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
 
@@ -1228,11 +1225,8 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 	for _, test := range tests {
 		res, err := extractSensitiveField(db.Postgres, test.statement, defaultDatabase, test.schemaInfo)
 		require.NoError(t, err)
-		require.Equal(t, len(test.fieldList), len(res), test.statement)
-		for i := range res {
-			require.Equal(t, test.fieldList[i].Name, res[i].Name, test.statement)
-			require.Equal(t, test.fieldList[i].MaskingLevel, res[i].MaskingLevel, test.statement)
-		}
+		require.NoError(t, err, test.statement)
+		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
 
@@ -1766,12 +1760,8 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 
 	for _, test := range tests {
 		res, err := extractSensitiveField(db.Oracle, test.statement, defaultSchema, test.schemaInfo)
-		require.NoError(t, err)
-		require.Equal(t, len(test.fieldList), len(res), test.statement)
-		for i := range res {
-			require.Equal(t, test.fieldList[i].Name, res[i].Name, test.statement)
-			require.Equal(t, test.fieldList[i].MaskingLevel, res[i].MaskingLevel, test.statement)
-		}
+		require.NoError(t, err, test.statement)
+		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
 
@@ -2177,11 +2167,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 	for _, test := range tests {
 		res, err := extractSensitiveField(db.Snowflake, test.statement, defaultDatabase, test.schemaInfo)
 		require.NoError(t, err, test.statement)
-		require.Equal(t, len(test.fieldList), len(res), test.statement)
-		for i := range res {
-			require.Equal(t, test.fieldList[i].Name, res[i].Name, test.statement)
-			require.Equal(t, test.fieldList[i].MaskingLevel, res[i].MaskingLevel, test.statement)
-		}
+		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
 
@@ -2455,10 +2441,6 @@ SELECT tt1.aa, bb FROM tt1;`,
 	for _, test := range tests {
 		res, err := extractSensitiveField(db.MSSQL, test.statement, defaultDatabase, test.schemaInfo)
 		require.NoError(t, err, test.statement)
-		require.Equal(t, len(test.fieldList), len(res), test.statement)
-		for i := range res {
-			require.Equal(t, test.fieldList[i].Name, res[i].Name, test.statement)
-			require.Equal(t, test.fieldList[i].MaskingLevel, res[i].MaskingLevel, test.statement)
-		}
+		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }

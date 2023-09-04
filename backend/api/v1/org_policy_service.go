@@ -558,7 +558,8 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		for _, group := range payload.AssigneeGroupList {
 			if group.IssueType != api.IssueDatabaseSchemaUpdate &&
 				group.IssueType != api.IssueDatabaseSchemaUpdateGhost &&
-				group.IssueType != api.IssueDatabaseDataUpdate {
+				group.IssueType != api.IssueDatabaseDataUpdate &&
+				group.IssueType != api.IssueDatabaseGeneral {
 				return "", status.Errorf(codes.InvalidArgument, "invalid assignee group issue type %q", group.IssueType)
 			}
 			if issueTypeSeen[group.IssueType] {
@@ -1040,6 +1041,11 @@ func convertToV1PBDeploymentApprovalPolicy(payloadStr string) (*v1pb.Policy_Depl
 
 	approvalStrategies := make([]*v1pb.DeploymentApprovalStrategy, 0)
 	for _, group := range payload.AssigneeGroupList {
+		// HACK(p0ny): skip if type is IssueDatabaseGeneral
+		if group.IssueType == api.IssueDatabaseGeneral {
+			continue
+		}
+
 		assigneeGroupValue := v1pb.ApprovalGroup_ASSIGNEE_GROUP_UNSPECIFIED
 		switch group.Value {
 		case api.AssigneeGroupValueProjectOwner:
@@ -1075,12 +1081,16 @@ func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolic
 		return nil, errors.Errorf("invalid default strategy %v", policy.DefaultStrategy)
 	}
 
+	// HACK(p0ny): always append issue type database general, the group value is set according to seenProjectOwnerGroupValue.
+	seenProjectOwnerGroupValue := false
+
 	var assigneeGroupList []api.AssigneeGroup
 	for _, group := range policy.DeploymentApprovalStrategies {
 		var assigneeGroup api.AssigneeGroupValue
 		switch group.ApprovalGroup {
 		case v1pb.ApprovalGroup_APPROVAL_GROUP_PROJECT_OWNER:
 			assigneeGroup = api.AssigneeGroupValueProjectOwner
+			seenProjectOwnerGroupValue = true
 		case v1pb.ApprovalGroup_APPROVAL_GROUP_DBA:
 			assigneeGroup = api.AssigneeGroupValueWorkspaceOwnerOrDBA
 		default:
@@ -1106,6 +1116,19 @@ func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolic
 		assigneeGroupList = append(assigneeGroupList, api.AssigneeGroup{
 			Value:     assigneeGroup,
 			IssueType: issueType,
+		})
+	}
+
+	// HACK(p0ny): always append issue type database general.
+	if seenProjectOwnerGroupValue {
+		assigneeGroupList = append(assigneeGroupList, api.AssigneeGroup{
+			Value:     api.AssigneeGroupValueProjectOwner,
+			IssueType: api.IssueDatabaseGeneral,
+		})
+	} else {
+		assigneeGroupList = append(assigneeGroupList, api.AssigneeGroup{
+			Value:     api.AssigneeGroupValueWorkspaceOwnerOrDBA,
+			IssueType: api.IssueDatabaseGeneral,
 		})
 	}
 
@@ -1233,6 +1256,7 @@ func convertToV1PBMaskingExceptionPolicyPayload(policy *storepb.MaskingException
 	}, nil
 }
 
+// TODO(p0ny): fix bb.issue.database.general
 func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentType {
 	res := v1pb.DeploymentType_DEPLOYMENT_TYPE_UNSPECIFIED
 	switch issueType {
