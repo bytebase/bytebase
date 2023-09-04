@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div
-    class="relative py-2 px-0.5 w-full h-full flex flex-col justify-start items-start"
+    class="relative p-0.5 w-full h-full flex flex-col justify-start items-start"
   >
     <div class="w-full">
       <NInput

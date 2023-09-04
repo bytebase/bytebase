@@ -1,7 +1,7 @@
 import { watchThrottled } from "@vueuse/core";
 import { pick } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, nextTick, reactive, ref, toRef, watch } from "vue";
+import { computed, reactive, ref, toRef, watch } from "vue";
 import { TabInfo, CoreTabInfo, AnyTabInfo, TabMode } from "@/types";
 import {
   getDefaultTab,
@@ -45,7 +45,6 @@ export const useTabStore = defineStore("tab", () => {
   const tabs = ref(new Map<string, TabInfo>());
   const tabIdList = ref<string[]>([]);
   const currentTabId = ref<string>();
-  const asidePanelTab = ref<"databases" | "sheets">("databases");
 
   // getters
   const getTabById = (id: string) => {
@@ -76,14 +75,6 @@ export const useTabStore = defineStore("tab", () => {
     }
     currentTabId.value = id;
     tabs.value.set(id, newTab);
-
-    nextTick(() => {
-      if (!currentTab.value.sheetName && isDisconnectedTab(currentTab.value)) {
-        // Switch the tab to "database" after adding a new sheet
-        // because users need to select a database to continue editing
-        asidePanelTab.value = "databases";
-      }
-    });
 
     watchTab(newTab, false);
   };
@@ -261,7 +252,6 @@ export const useTabStore = defineStore("tab", () => {
     selectOrAddTempTab,
     selectOrAddSimilarTab,
     reset,
-    asidePanelTab,
   };
 });
 
