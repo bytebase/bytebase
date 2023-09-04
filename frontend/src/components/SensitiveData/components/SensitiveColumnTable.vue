@@ -90,7 +90,7 @@
         class="bb-grid-cell justify-center !px-2 space-x-2"
       >
         <button
-          class="w-5 h-5 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+          class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
           @click.stop="$emit('click', item, row, 'EDIT')"
         >
           <heroicons-outline:pencil class="w-4 h-4" />
@@ -98,10 +98,10 @@
         <NPopconfirm @positive-click="$emit('click', item, row, 'DELETE')">
           <template #trigger>
             <button
-              class="w-5 h-5 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+              class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
               @click.stop=""
             >
-              <heroicons-outline:trash />
+              <heroicons-outline:trash class="w-4 h-4" />
             </button>
           </template>
 

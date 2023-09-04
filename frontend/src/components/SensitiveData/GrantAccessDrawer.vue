@@ -149,8 +149,8 @@ const resetState = () => {
 };
 
 const onDismiss = () => {
-  resetState();
   emit("dismiss");
+  resetState();
 };
 
 const submitDisabled = computed(() => {

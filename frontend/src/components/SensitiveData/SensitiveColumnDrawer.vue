@@ -138,7 +138,7 @@
                       class="w-5 h-5 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
                       @click.stop=""
                     >
-                      <heroicons-outline:trash />
+                      <heroicons-outline:trash class="w-4 h-4" />
                     </button>
                   </template>
 
@@ -296,7 +296,7 @@ const getExceptionIdentifier = (
   exception: MaskingExceptionPolicy_MaskingException
 ): string => {
   const res: string[] = [
-    `level == "${maskingLevelToJSON(exception.maskingLevel)}"`,
+    `level:"${maskingLevelToJSON(exception.maskingLevel)}"`,
   ];
   const expression = exception.condition?.expression ?? "";
   const matches = expirationTimeRegex.exec(expression);
@@ -311,6 +311,17 @@ const updateAccessUserList = (policy: Policy | undefined) => {
     return [];
   }
 
+  // Exec data merge, we will merge data with same expiration time and level.
+  // For example, the exception list and merge exec should be:
+  // - 1. user1, action:export, level:FULL, expires at 2023-09-03
+  // - 2. user1, action:export, level:FULL, expires at 2023-09-04
+  // - 3. user1, action:export, level:PARTIAL, expires at 2023-09-04
+  // - 4. user1, action:query, level:PARTIAL, expires at 2023-09-04
+  // - 5. user1, action:query, level:FULL, expires at 2023-09-03
+  // After the merge we should get:
+  // - 1 & 5 is merged: user1, action:export+action, level:FULL, expires at 2023-09-03
+  // - 2 cannot merge: user1, action:export, level:FULL, expires at 2023-09-04
+  // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
   const userMap = new Map<string, AccessUser>();
   for (const exception of policy.maskingExceptionPolicy.maskingExceptions) {
     if (!isCurrentColumnException(exception, props.column.maskData)) {
