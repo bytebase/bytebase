@@ -5,7 +5,9 @@
         {{ $t("settings.general.workspace.announcement.self") }}
       </h1>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
-        {{ $t("settings.general.workspace.only-owner-can-edit") }}
+        {{
+          $t("settings.general.workspace.announcement.owner-or-dba-can-edit")
+        }}
       </span>
     </div>
     <div class="flex-1 lg:px-5">
@@ -20,9 +22,22 @@
             )
           }}</span>
           <FeatureBadge feature="bb.feature.announcement" />
+          <span
+            v-if="!allowEdit"
+            class="text-sm text-gray-400 -translate-y-2 tooltip"
+          >
+            {{
+              $t(
+                "settings.general.workspace.announcement.owner-or-dba-can-edit"
+              )
+            }}
+          </span>
         </label>
         <div class="flex flex-wrap py-2 radio-set-row gap-4">
-          <AnnouncementLevelSelect v-model:level="state.announcement.level" />
+          <AnnouncementLevelSelect
+            v-model:level="state.announcement.level"
+            :allow-edit="allowEdit"
+          />
         </div>
 
         <label
@@ -40,7 +55,11 @@
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
           >
-            {{ $t("settings.general.workspace.only-owner-can-edit") }}
+            {{
+              $t(
+                "settings.general.workspace.announcement.owner-or-dba-can-edit"
+              )
+            }}
           </span>
         </label>
         <BBTextField
@@ -67,7 +86,7 @@
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
           >
-            {{ $t("settings.general.workspace.only-owner-can-edit") }}
+            {{ $t("settings.general.workspace.owner-or-dba-can-edit") }}
           </span>
         </label>
         <BBTextField
@@ -147,7 +166,7 @@ watchEffect(() => {
 
 const allowEdit = computed((): boolean => {
   return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-general",
+    "bb.permission.workspace.manage-announcement",
     currentUserV1.value.userRole
   );
 });
