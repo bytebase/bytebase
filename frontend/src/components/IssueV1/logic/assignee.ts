@@ -128,9 +128,15 @@ export const extractRollOutPolicyValueByDeploymentType = (
     return { policy: ApprovalStrategy.AUTOMATIC };
   }
 
+  const strategies =
+    policy.deploymentApprovalPolicy.deploymentApprovalStrategies;
   const assigneeGroup =
-    policy.deploymentApprovalPolicy.deploymentApprovalStrategies.find(
-      (group) => group.deploymentType === deploymentType
+    strategies.find((group) => group.deploymentType === deploymentType) ??
+    strategies.find(
+      (group) =>
+        // fallback to DEPLOYMENT_TYPE_UNSPECIFIED
+        // if certain DeploymentType is not found
+        group.deploymentType === DeploymentType.DEPLOYMENT_TYPE_UNSPECIFIED
     );
 
   if (
@@ -224,9 +230,16 @@ export const allowProjectOwnerToApprove = (
   }
 
   const deploymentType = taskTypeToDeploymentType(taskType);
-  const assigneeGroup = (
-    policy.deploymentApprovalPolicy?.deploymentApprovalStrategies ?? []
-  ).find((group) => group.deploymentType === deploymentType);
+  const strategies =
+    policy.deploymentApprovalPolicy?.deploymentApprovalStrategies ?? [];
+  const assigneeGroup =
+    strategies.find((group) => group.deploymentType === deploymentType) ??
+    strategies.find(
+      (group) =>
+        // fallback to DEPLOYMENT_TYPE_UNSPECIFIED
+        // if certain DeploymentType is not found
+        group.deploymentType === DeploymentType.DEPLOYMENT_TYPE_UNSPECIFIED
+    );
 
   if (!assigneeGroup) {
     return false;

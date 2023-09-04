@@ -94,6 +94,8 @@ const getAssigneeGroupListByValue = (
     DeploymentType.DATABASE_DDL,
     DeploymentType.DATABASE_DML,
     DeploymentType.DATABASE_DDL_GHOST,
+    DeploymentType.DATABASE_CREATE,
+    DeploymentType.DATABASE_RESTORE_PITR,
   ];
   return issueTypeList.map((deploymentType) => ({
     deploymentType,
