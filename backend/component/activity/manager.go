@@ -132,10 +132,9 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []
 func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks []*store.TaskMessage, issue *store.IssueMessage, comment string, updaterID int) error {
 	var creates []*store.ActivityMessage
 	for _, task := range tasks {
-		payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
+		payload, err := json.Marshal(api.ActivityPipelineTaskRunStatusUpdatePayload{
 			TaskID:    task.ID,
-			OldStatus: api.TaskPendingApproval,
-			NewStatus: api.TaskSkipped,
+			NewStatus: api.TaskRunSkipped,
 			IssueName: issue.Title,
 			TaskName:  task.Name,
 		})
@@ -146,7 +145,7 @@ func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks [
 		activityCreate := &store.ActivityMessage{
 			CreatorUID:   updaterID,
 			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskStatusUpdate,
+			Type:         api.ActivityPipelineTaskRunStatusUpdate,
 			Level:        api.ActivityInfo,
 			Comment:      comment,
 			Payload:      string(payload),
@@ -163,7 +162,7 @@ func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks [
 	}
 	anyActivity := activityList[0]
 
-	activityType := api.ActivityPipelineTaskStatusUpdate
+	activityType := api.ActivityPipelineTaskRunStatusUpdate
 	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
 		ProjectID:    &issue.Project.UID,
 		ActivityType: &activityType,
@@ -668,6 +667,29 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 				zap.Error(err))
 			return nil, err
 		}
+
+		task, err := m.store.GetTaskByID(ctx, payload.TaskID)
+		if err != nil {
+			log.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
+				zap.String("issue_name", meta.Issue.Title),
+				zap.Int("task_id", payload.TaskID),
+				zap.Error(err))
+			return nil, err
+		}
+		if task == nil {
+			err := errors.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", payload.TaskID)
+			log.Warn(err.Error(),
+				zap.String("issue_name", meta.Issue.Title),
+				zap.Int("task_id", payload.TaskID),
+				zap.Error(err))
+			return nil, err
+		}
+
+		webhookTaskResult = &webhook.TaskResult{
+			Name:   payload.TaskName,
+			Status: string(payload.NewStatus),
+		}
+
 		switch payload.NewStatus {
 		case api.TaskRunPending:
 			title = "Task run started - " + payload.TaskName
@@ -679,8 +701,41 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 		case api.TaskRunFailed:
 			level = webhook.WebhookError
 			title = "Task run failed - " + payload.TaskName
+
+			if len(task.TaskRunList) == 0 {
+				err := errors.Errorf("expect at least 1 TaskRun, get 0")
+				log.Warn(err.Error(),
+					zap.Any("task", task),
+					zap.Error(err))
+				return nil, err
+			}
+
+			// sort TaskRunList to get the most recent task run result.
+			sort.Slice(task.TaskRunList, func(i int, j int) bool {
+				return task.TaskRunList[i].UpdatedTs > task.TaskRunList[j].UpdatedTs || (task.TaskRunList[i].UpdatedTs == task.TaskRunList[j].UpdatedTs && task.TaskRunList[i].ID > task.TaskRunList[j].ID)
+			})
+
+			var result api.TaskRunResultPayload
+			if err := json.Unmarshal([]byte(task.TaskRunList[0].Result), &result); err != nil {
+				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
+				log.Warn(err.Error(),
+					zap.Any("TaskRun", task.TaskRunList[0]),
+					zap.Error(err))
+				return nil, err
+			}
+			webhookTaskResult.Detail = result.Detail
+
 		case api.TaskRunCanceled:
 			title = "Task run canceled - " + payload.TaskName
+		case api.TaskRunSkipped:
+			title = "Task skipped - " + payload.TaskName
+			_, skippedReason, err := utils.GetTaskSkippedAndReason(task)
+			if err != nil {
+				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
+				log.Warn(err.Error(), zap.String("task.Payload", task.Payload), zap.Error(err))
+				return nil, err
+			}
+			webhookTaskResult.SkippedReason = skippedReason
 		default:
 			title = "Task run changed - " + payload.TaskName
 		}
