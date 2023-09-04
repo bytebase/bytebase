@@ -498,9 +498,6 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 			if rule.Id == "" {
 				return status.Errorf(codes.InvalidArgument, "masking rule must have ID set")
 			}
-			if rule.MaskingLevel == v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
-				return status.Errorf(codes.InvalidArgument, "masking rule must have masking level set")
-			}
 			if _, err := common.ValidateMaskingRuleCELExpr(rule.Condition.Expression); err != nil {
 				return status.Errorf(codes.InvalidArgument, "invalid masking rule expression: %v", err)
 			}

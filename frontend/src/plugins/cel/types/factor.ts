@@ -36,6 +36,9 @@ export const StringFactorList = [
   "resource.instance_id", // using `instance.resourceId`
   "resource.database_name",
   "resource.table_name",
+  // Masking
+  "resource.column_name",
+  "resource.schema_name",
 ] as const;
 export type StringFactor = typeof StringFactorList[number];
 
