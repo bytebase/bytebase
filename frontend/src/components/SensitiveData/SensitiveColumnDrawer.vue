@@ -207,6 +207,7 @@ import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import {
   Policy,
   PolicyType,
+  PolicyResourceType,
   MaskingExceptionPolicy_MaskingException,
   MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
@@ -422,7 +423,7 @@ const onSubmit = async () => {
 
   try {
     if (maskingPolicyChanged.value) {
-      await updateMaskingPolicy();
+      await upsertMaskingPolicy();
     }
     if (state.dirty) {
       await updateExceptionPolicy();
@@ -438,16 +439,13 @@ const onSubmit = async () => {
   }
 };
 
-const updateMaskingPolicy = async () => {
+const upsertMaskingPolicy = async () => {
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
     parentPath: props.column.database.name,
     policyType: PolicyType.MASKING,
   });
-  if (!policy) {
-    return;
-  }
 
-  const maskData = policy.maskingPolicy?.maskData ?? [];
+  const maskData = policy?.maskingPolicy?.maskData ?? [];
   const existedIndex = maskData.findIndex(
     (data) =>
       getMaskDataIdentifier(data) ===
@@ -464,12 +462,21 @@ const updateMaskingPolicy = async () => {
       maskingLevel: state.maskingLevel,
     };
   }
-  policy.maskingPolicy = {
-    ...(policy.maskingPolicy ?? {}),
-    maskData,
+
+  const upsert: Partial<Policy> = {
+    type: PolicyType.MASKING,
+    resourceType: PolicyResourceType.DATABASE,
+    resourceUid: props.column.database.uid,
+    maskingPolicy: {
+      maskData,
+    },
   };
 
-  await policyStore.updatePolicy(["payload"], policy);
+  await policyStore.upsertPolicy({
+    parentPath: props.column.database.name,
+    policy: upsert,
+    updateMask: ["payload"],
+  });
 };
 
 const updateExceptionPolicy = async () => {
