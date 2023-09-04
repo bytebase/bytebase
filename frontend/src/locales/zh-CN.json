@@ -258,7 +258,8 @@
     "condition": "条件",
     "search-user": "搜索用户",
     "branches": "分支",
-    "merge": "合并"
+    "merge": "合并",
+    "info": "信息"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2305,7 +2306,8 @@
     "from-issue-warning": "这个工作表来自工单 {issue}，处于只读模式。{oversize}",
     "content-oversize-warning": "SQL 过大所以无法直接编辑。",
     "sheets": "工作表",
-    "search-sheets": "搜索工作表"
+    "search-sheets": "搜索工作表",
+    "sheet": "工作表"
   },
   "engine": {
     "mysql": "MySQL",

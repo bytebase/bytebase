@@ -1,7 +1,7 @@
 <template>
   <div
     :id="domIDForItem(item)"
-    class="flex items-start justify-between hover:bg-gray-100 px-2 gap-x-1"
+    class="flex items-start justify-between hover:bg-gray-100 px-1 gap-x-1"
     :class="[isCurrentItem && 'bg-indigo-600/10']"
     @click="$emit('click', item, $event)"
   >
@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { NTooltip } from "naive-ui";
-import { SheetConnectionIcon } from "../../EditorCommon";
+import { SheetConnectionIcon } from "@/views/sql-editor/EditorCommon";
 import { MergedItem, TabItem, domIDForItem, titleHTML } from "./common";
 
 defineProps<{
