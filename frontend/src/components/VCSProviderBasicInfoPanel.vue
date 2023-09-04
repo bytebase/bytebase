@@ -17,7 +17,7 @@
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       <span class="whitespace-nowrap">
-        {{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
+        {{ $t("gitops.setting.add-git-provider.gitlab-self-host") }}
       </span>
     </label>
     <label class="radio space-x-2">
@@ -57,7 +57,9 @@
         @change="changeUIType()"
       />
       <img class="h-6 w-auto" src="../assets/github-logo.svg" />
-      <span class="whitespace-nowrap">GitHub Enterprise</span>
+      <span class="whitespace-nowrap">{{
+        $t("gitops.setting.add-git-provider.github-self-host-ee")
+      }}</span>
     </label>
     <label class="radio space-x-2">
       <input
