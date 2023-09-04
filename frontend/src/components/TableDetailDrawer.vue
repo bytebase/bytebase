@@ -1,19 +1,9 @@
 <template>
-  <NDrawer
-    :show="true"
-    width="auto"
-    :auto-focus="false"
-    :close-on-esc="true"
-    @update:show="(show: boolean) => !show && emit('dismiss')"
-  >
-    <NDrawerContent
-      class="w-[calc(100vw-256px)]"
-      :title="$t('database.table-detail')"
-      :closable="true"
-    >
+  <Drawer :show="show" @close="$emit('dismiss')">
+    <DrawerContent :title="$t('database.table-detail')">
       <div
         v-if="table"
-        class="flex-1 overflow-auto focus:outline-none"
+        class="flex-1 overflow-auto focus:outline-none w-[calc(100vw-256px)]"
         tabindex="0"
       >
         <main class="flex-1 relative pb-8 overflow-y-auto">
@@ -191,15 +181,19 @@
           </div>
         </main>
       </div>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
-import { NDrawer, NDrawerContent } from "naive-ui";
-import { computed, onMounted, ref } from "vue";
+import { computed, watch, ref } from "vue";
 import { useRouter } from "vue-router";
-import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
+import {
+  DatabaseV1Name,
+  InstanceV1Name,
+  Drawer,
+  DrawerContent,
+} from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -222,13 +216,14 @@ import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";
 
 const props = defineProps<{
+  show: boolean;
   // Format: /databases/:databaseName
   databaseName: string;
   schemaName: string;
   tableName: string;
 }>();
 
-const emit = defineEmits(["dismiss"]);
+defineEmits(["dismiss"]);
 
 const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
@@ -284,18 +279,26 @@ const getTableName = (tableName: string) => {
   return tableName;
 };
 
-onMounted(() => {
-  const schemaList = dbSchemaStore.getSchemaList(database.value.name);
-  const schema = schemaList.find((schema) => schema.name === props.schemaName);
-  if (schema) {
-    table.value = schema.tables.find((table) => table.name === props.tableName);
+watch(
+  () => props.tableName,
+  (tableName) => {
+    if (!tableName) {
+      return;
+    }
+    const schemaList = dbSchemaStore.getSchemaList(database.value.name);
+    const schema = schemaList.find(
+      (schema) => schema.name === props.schemaName
+    );
+    if (schema) {
+      table.value = schema.tables.find((table) => table.name === tableName);
+    }
+    if (!table.value) {
+      router.replace({
+        name: "error.404",
+      });
+    }
   }
-  if (!table.value) {
-    router.replace({
-      name: "error.404",
-    });
-  }
-});
+);
 
 const sensitiveDataPolicy = usePolicyByParentAndType(
   computed(() => ({

@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -119,7 +120,6 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 }
 
 // Query will execute a readonly / SELECT query.
-// TODO(rebelice): remove Query function and rename Query to Query after frontend is ready to use the new API.
 func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
 	if err != nil {
@@ -153,7 +153,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 	var fieldMaskInfo []bool
 	var fieldSensitiveInfo []bool
 	for i := range columnNames {
-		sensitive := len(fieldList) > 0 && fieldList[i].Sensitive
+		sensitive := len(fieldList) > i && (fieldList[i].MaskingLevel == storepb.MaskingLevel_FULL || fieldList[i].MaskingLevel == storepb.MaskingLevel_PARTIAL)
 		fieldSensitiveInfo = append(fieldSensitiveInfo, sensitive)
 		fieldMaskInfo = append(fieldMaskInfo, sensitive && queryContext.EnableSensitive)
 	}
