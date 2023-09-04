@@ -30,6 +30,42 @@ WHERE
             AND issue.type = 'bb.issue.general'
     );
 
+-- issue subscriber
+DELETE FROM issue_subscriber
+WHERE
+    issue_subscriber.issue_id IN (
+        SELECT
+            DISTINCT(issue.id)
+        FROM
+            issue
+        WHERE
+            issue.type = 'bb.issue.general'
+    );
+
+-- instance change history
+DELETE FROM instance_change_history
+WHERE
+    instance_change_history.issue_id IN (
+        SELECT
+            DISTINCT(issue.id)
+        FROM
+            issue
+        WHERE
+            issue.type = 'bb.issue.general'
+    );
+
+-- external approval
+DELETE FROM external_approval
+WHERE
+    external_approval.issue_id IN (
+        SELECT
+            DISTINCT(issue.id)
+        FROM
+            issue
+        WHERE
+            issue.type = 'bb.issue.general'
+    );
+
 -- issue
 DELETE FROM
     issue
