@@ -2,7 +2,7 @@
   <NTabs
     v-model:value="sheetTab"
     size="small"
-    class="h-full pt-1"
+    class="h-full pt-1 px-1"
     pane-style="height: calc(100% - 29px); padding: 0;"
     :tabs-padding="4"
   >

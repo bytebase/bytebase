@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full p-0.5 pt-1 gap-y-2">
+  <div class="flex flex-col h-full py-1 gap-y-2">
     <div class="flex items-center gap-x-1">
       <NInput
         v-model:value="keyword"
