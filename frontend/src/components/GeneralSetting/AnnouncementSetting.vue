@@ -44,10 +44,10 @@
           class="flex items-center py-2 gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
-          <span class="font-medium">{{
-            $t("settings.general.workspace.announcement-text.self")
-          }}</span>
-          <span class="text-red-600">*</span>
+          <span class="font-medium"
+            >{{ $t("settings.general.workspace.announcement-text.self") }}
+            <span class="text-red-600">*</span>
+          </span>
 
           <FeatureBadge feature="bb.feature.announcement" />
 
