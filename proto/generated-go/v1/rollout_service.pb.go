@@ -2687,7 +2687,9 @@ type Plan_ChangeDatabaseConfig struct {
 
 	// The resource name of the target.
 	// Format: instances/{instance-id}/databases/{database-name}.
-	// Format: projects/{project}/databaseGroups/{databaseGroup}
+	// Format: projects/{project}/databaseGroups/{databaseGroup}.
+	// Format: projects/{project}/deploymentConfigs/default. The plan should
+	// have a single step and single spec for the deployment configuration type.
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
