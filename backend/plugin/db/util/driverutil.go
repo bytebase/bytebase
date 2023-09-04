@@ -154,8 +154,8 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 	var fieldMaskInfo []bool
 	var fieldSensitiveInfo []bool
 	for i := range columnNames {
-		maskingLevel := storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
-		if len(fieldList) > i {
+		maskingLevel := storepb.MaskingLevel_NONE
+		if len(fieldList) > i && queryContext.EnableSensitive {
 			maskingLevel = fieldList[i].MaskingLevel
 		}
 		fieldMaskingLevels = append(fieldMaskingLevels, maskingLevel)
