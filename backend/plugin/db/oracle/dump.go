@@ -5,8 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"sort"
 
-	_ "github.com/sijms/go-ora/v2"
+	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 // Dump dumps the database.
@@ -61,14 +64,262 @@ func dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Write
 	if err := dumpFunctionTxn(ctx, txn, schema, out); err != nil {
 		return err
 	}
+	if err := dumpIndexTxn(ctx, txn, schema, out); err != nil {
+		return err
+	}
+	if err := dumpSequenceTxn(ctx, txn, schema, out); err != nil {
+		return err
+	}
+	if err := dumpTriggerOrderingTxn(ctx, txn, schema, out); err != nil {
+		return err
+	}
 
+	return nil
+}
+
+func assembleTableStatement(tableMap map[string]*tableSchema, out io.Writer) error {
+	var tableList []*tableSchema
+	for _, table := range tableMap {
+		switch {
+		case !table.meta.TableName.Valid,
+			!table.meta.Owner.Valid:
+			continue
+		}
+		tableList = append(tableList, table)
+	}
+	sort.Slice(tableList, func(i, j int) bool {
+		return tableList[i].meta.TableName.String < tableList[j].meta.TableName.String
+	})
+
+	for _, table := range tableList {
+		if err := table.assembleStatement(out); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 type tableSchema struct {
 	meta        *tableMeta
 	fields      []*fieldMeta
-	constraints []*constraintMeta
+	constraints []*mergedConstraintMeta
+}
+
+func (t *tableSchema) assembleStatement(out io.Writer) error {
+	if _, err := out.Write([]byte(`CREATE TABLE "`)); err != nil {
+		return err
+	}
+	if _, err := out.Write([]byte(t.meta.Owner.String)); err != nil {
+		return err
+	}
+	if _, err := out.Write([]byte(`"."`)); err != nil {
+		return err
+	}
+	if _, err := out.Write([]byte(t.meta.TableName.String)); err != nil {
+		return err
+	}
+	if _, err := out.Write([]byte("\" (\n")); err != nil {
+		return err
+	}
+	for i, field := range t.fields {
+		if i > 0 {
+			if _, err := out.Write([]byte(",\n")); err != nil {
+				return err
+			}
+		}
+		if _, err := out.Write([]byte(`  `)); err != nil {
+			return err
+		}
+		if err := field.assembleStatement(out); err != nil {
+			return err
+		}
+	}
+	for i, constraint := range t.constraints {
+		if i+len(t.fields) > 0 {
+			if _, err := out.Write([]byte(",\n")); err != nil {
+				return err
+			}
+		}
+		if _, err := out.Write([]byte(`  `)); err != nil {
+			return err
+		}
+		if err := constraint.assembleStatement(out); err != nil {
+			return err
+		}
+	}
+	if _, err := out.Write([]byte("\n)")); err != nil {
+		return err
+	}
+
+	if t.meta.Logging.Valid && t.meta.Logging.String == "YES" {
+		if _, err := out.Write([]byte("\nLOGGING")); err != nil {
+			return err
+		}
+	} else if t.meta.Logging.Valid && t.meta.Logging.String == "NO" {
+		if _, err := out.Write([]byte("\nNOLOGGING")); err != nil {
+			return err
+		}
+	}
+
+	if err := t.assembleCompression(out); err != nil {
+		return err
+	}
+
+	if t.meta.PctFree.Valid {
+		if _, err := out.Write([]byte(fmt.Sprintf("\nPCTFREE %d", t.meta.PctFree.Int64))); err != nil {
+			return err
+		}
+	}
+
+	if t.meta.IniTrans.Valid {
+		if _, err := out.Write([]byte(fmt.Sprintf("\nINITRANS %d", t.meta.IniTrans.Int64))); err != nil {
+			return err
+		}
+	}
+
+	if err := t.assembleStorage(out); err != nil {
+		return err
+	}
+
+	if t.meta.Degree.Valid {
+		if t.meta.Degree.String == "DEFAULT" {
+			if _, err := out.Write([]byte("\nPARALLEL")); err != nil {
+				return err
+			}
+		} else {
+			if _, err := out.Write([]byte(fmt.Sprintf("\nPARALLEL %s", t.meta.Degree.String))); err != nil {
+				return err
+			}
+		}
+	}
+
+	if t.meta.Cache.Valid {
+		if t.meta.Cache.String == "Y" {
+			if _, err := out.Write([]byte("\nCACHE")); err != nil {
+				return err
+			}
+		} else {
+			if _, err := out.Write([]byte("\nNOCACHE")); err != nil {
+				return err
+			}
+		}
+	}
+
+	if t.meta.RowMovement.Valid {
+		if _, err := out.Write([]byte("\n")); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte(t.meta.RowMovement.String)); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte(" ROW MOVEMENT")); err != nil {
+			return err
+		}
+	}
+
+	if _, err := out.Write([]byte("\n;\n")); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *tableSchema) assembleStorage(out io.Writer) error {
+	switch {
+	case t.meta.InitialExtent.Valid,
+		t.meta.NextExtent.Valid,
+		t.meta.MinExtents.Valid,
+		t.meta.MaxExtents.Valid,
+		t.meta.PctIncrease.Valid,
+		t.meta.FreeLists.Valid,
+		t.meta.FreeListGroups.Valid,
+		t.meta.BufferPool.Valid && t.meta.BufferPool.String != "NULL":
+	default:
+		// No need storage.
+		return nil
+	}
+	if _, err := out.Write([]byte("\nSTORAGE (")); err != nil {
+		return err
+	}
+
+	switch {
+	case t.meta.InitialExtent.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  INITIAL %d", t.meta.InitialExtent.Int64))); err != nil {
+			return err
+		}
+	case t.meta.NextExtent.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  NEXT %d", t.meta.NextExtent.Int64))); err != nil {
+			return err
+		}
+	case t.meta.MinExtents.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  MINEXTENTS %d", t.meta.MinExtents.Int64))); err != nil {
+			return err
+		}
+	case t.meta.MaxExtents.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  MAXEXTENTS %d", t.meta.MaxExtents.Int64))); err != nil {
+			return err
+		}
+	case t.meta.PctIncrease.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  PCTINCREASE %d", t.meta.PctIncrease.Int64))); err != nil {
+			return err
+		}
+	case t.meta.FreeLists.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  FREELISTS %d", t.meta.FreeLists.Int64))); err != nil {
+			return err
+		}
+	case t.meta.FreeListGroups.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  FREELIST GROUPS %d", t.meta.FreeListGroups.Int64))); err != nil {
+			return err
+		}
+	case t.meta.BufferPool.Valid && t.meta.BufferPool.String != "NULL":
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  BUFFER_POOL %s", t.meta.BufferPool.String))); err != nil {
+			return err
+		}
+	}
+
+	if _, err := out.Write([]byte("\n)")); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *tableSchema) assembleCompression(out io.Writer) error {
+	if t.meta.Compression.Valid && t.meta.Compression.String == "DISABLED" {
+		if _, err := out.Write([]byte("\nNOCOMPRESS")); err != nil {
+			return err
+		}
+	} else if t.meta.Compression.Valid && t.meta.Compression.String == "ENABLED" {
+		switch {
+		case !t.meta.CompressFor.Valid || t.meta.CompressFor.String == "NULL":
+			if _, err := out.Write([]byte("\nCOMPRESS")); err != nil {
+				return err
+			}
+		case t.meta.CompressFor.Valid && t.meta.CompressFor.String == "BASIC":
+			if _, err := out.Write([]byte("\nROW STORE COMPRESS BASIC")); err != nil {
+				return err
+			}
+		case t.meta.CompressFor.Valid && t.meta.CompressFor.String == "ADVANCED":
+			if _, err := out.Write([]byte("\nROW STORE COMPRESS ADVANCED")); err != nil {
+				return err
+			}
+		case t.meta.CompressFor.Valid && t.meta.CompressFor.String == "QUERY LOW":
+			if _, err := out.Write([]byte("\nCOLUMN STORE COMPRESS FOR QUERY LOW")); err != nil {
+				return err
+			}
+		case t.meta.CompressFor.Valid && t.meta.CompressFor.String == "QUERY HIGH":
+			if _, err := out.Write([]byte("\nCOLUMN STORE COMPRESS FOR QUERY HIGH")); err != nil {
+				return err
+			}
+		case t.meta.CompressFor.Valid && t.meta.CompressFor.String == "ARCHIVE LOW":
+			if _, err := out.Write([]byte("\nCOLUMN STORE COMPRESS FOR ARCHIVE LOW")); err != nil {
+				return err
+			}
+		case t.meta.CompressFor.Valid && t.meta.CompressFor.String == "ARCHIVE HIGH":
+			if _, err := out.Write([]byte("\nCOLUMN STORE COMPRESS FOR ARCHIVE HIGH")); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 type tableMeta struct {
@@ -146,8 +397,110 @@ type fieldMeta struct {
 	DataDefault   sql.NullString
 	CharLength    sql.NullInt64
 	CharUsed      sql.NullString
+	Collation     sql.NullString
+	DefaultOnNull sql.NullString
 	IsInvisible   sql.NullString
 	Comments      sql.NullString
+}
+
+func (f *fieldMeta) assembleStatement(out io.Writer) error {
+	if _, err := out.Write([]byte(`"`)); err != nil {
+		return err
+	}
+	if _, err := out.Write([]byte(f.ColumnName.String)); err != nil {
+		return err
+	}
+	if _, err := out.Write([]byte(`" `)); err != nil {
+		return err
+	}
+	if err := f.assembleType(out); err != nil {
+		return err
+	}
+	if f.Collation.Valid {
+		if _, err := out.Write([]byte(` COLLATE `)); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte(f.Collation.String)); err != nil {
+			return err
+		}
+	}
+	if f.IsInvisible.Valid {
+		if _, err := out.Write([]byte(` VISIBLE`)); err != nil {
+			return err
+		}
+	} else {
+		if _, err := out.Write([]byte(` INVISIBLE`)); err != nil {
+			return err
+		}
+	}
+	if err := f.assembleDefault(out); err != nil {
+		return err
+	}
+	if f.Nullable.Valid && f.Nullable.String == "N" {
+		if _, err := out.Write([]byte(` NOT NULL`)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *fieldMeta) assembleDefault(out io.Writer) error {
+	if !f.DataDefault.Valid {
+		return nil
+	}
+
+	if _, err := out.Write([]byte(` DEFAULT `)); err != nil {
+		return err
+	}
+	if f.DefaultOnNull.Valid && f.DefaultOnNull.String == "YES" {
+		if _, err := out.Write([]byte(`ON NULL `)); err != nil {
+			return err
+		}
+		return nil
+	}
+	if _, err := out.Write([]byte(f.DataDefault.String)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (f *fieldMeta) assembleType(out io.Writer) error {
+	if _, err := out.Write([]byte(f.DataType.String)); err != nil {
+		return err
+	}
+	switch f.DataType.String {
+	case "VARCHAR2", "CHAR":
+		if _, err := out.Write([]byte(fmt.Sprintf("(%d BYTE)", f.DataLength.Int64))); err != nil {
+			return err
+		}
+	case "NVARCHAR2", "RAW", "UROWID", "NCHAR":
+		if _, err := out.Write([]byte(fmt.Sprintf("(%d)", f.DataLength.Int64))); err != nil {
+			return err
+		}
+	case "NUMBER":
+		switch {
+		case !f.DataPrecision.Valid || f.DataPrecision.Int64 == 0:
+		// do nothing
+		case f.DataPrecision.Valid && f.DataPrecision.Int64 > 0 && (!f.DataScale.Valid || f.DataScale.Int64 == 0):
+			if _, err := out.Write([]byte(fmt.Sprintf("(%d)", f.DataPrecision.Int64))); err != nil {
+				return err
+			}
+		case f.DataPrecision.Valid && f.DataPrecision.Int64 > 0 && f.DataScale.Valid && f.DataScale.Int64 > 0:
+			if _, err := out.Write([]byte(fmt.Sprintf("(%d,%d)", f.DataPrecision.Int64, f.DataScale.Int64))); err != nil {
+				return err
+			}
+		}
+	case "FLOAT":
+		switch {
+		case !f.DataPrecision.Valid || f.DataPrecision.Int64 == 0:
+		// do nothing
+		case f.DataPrecision.Valid && f.DataPrecision.Int64 > 0:
+			if _, err := out.Write([]byte(fmt.Sprintf("(%d)", f.DataPrecision.Int64))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 type constraintMeta struct {
@@ -168,6 +521,207 @@ type constraintMeta struct {
 	RTableName      sql.NullString
 	RConstraintName sql.NullString
 	RColumnName     sql.NullString
+}
+
+type mergedConstraintMeta struct {
+	IotType         sql.NullString
+	ExtTableName    sql.NullString
+	TableName       sql.NullString
+	ConstraintName  sql.NullString
+	ConstraintType  sql.NullString
+	DeleteRule      sql.NullString
+	Deferrable      sql.NullString
+	Deferred        sql.NullString
+	Validated       sql.NullString
+	Rely            sql.NullString
+	SearchCondition sql.NullString
+	Status          sql.NullString
+	ColumnName      []sql.NullString
+	ROwner          sql.NullString
+	RTableName      sql.NullString
+	RConstraintName sql.NullString
+	RColumnName     []sql.NullString
+}
+
+func (c *mergedConstraintMeta) assembleStatement(out io.Writer) error {
+	if _, err := out.Write([]byte(`CONSTRAINT "`)); err != nil {
+		return err
+	}
+	if _, err := out.Write([]byte(c.ConstraintName.String)); err != nil {
+		return err
+	}
+	if _, err := out.Write([]byte(`"`)); err != nil {
+		return err
+	}
+
+	switch c.ConstraintType.String {
+	case "P":
+		if _, err := out.Write([]byte(` PRIMARY KEY (`)); err != nil {
+			return err
+		}
+		for i, column := range c.ColumnName {
+			if i != 0 {
+				if _, err := out.Write([]byte(", ")); err != nil {
+					return err
+				}
+			}
+			if _, err := out.Write([]byte(`"`)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(column.String)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(`"`)); err != nil {
+				return err
+			}
+		}
+		if _, err := out.Write([]byte(`)`)); err != nil {
+			return err
+		}
+	case "U":
+		if _, err := out.Write([]byte(` UNIQUE ("`)); err != nil {
+			return err
+		}
+		for i, column := range c.ColumnName {
+			if i != 0 {
+				if _, err := out.Write([]byte(", ")); err != nil {
+					return err
+				}
+			}
+			if _, err := out.Write([]byte(`"`)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(column.String)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(`"`)); err != nil {
+				return err
+			}
+		}
+		if _, err := out.Write([]byte(`)`)); err != nil {
+			return err
+		}
+
+		if err := c.assembleConstraintState(out); err != nil {
+			return err
+		}
+	case "C":
+		if _, err := out.Write([]byte(` CHECK (`)); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte(c.SearchCondition.String)); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte(`)`)); err != nil {
+			return err
+		}
+		if err := c.assembleConstraintState(out); err != nil {
+			return err
+		}
+	case "R":
+		if _, err := out.Write([]byte(` FOREIGN KEY ("`)); err != nil {
+			return err
+		}
+		for i, column := range c.ColumnName {
+			if i != 0 {
+				if _, err := out.Write([]byte(", ")); err != nil {
+					return err
+				}
+			}
+			if _, err := out.Write([]byte(`"`)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(column.String)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(`"`)); err != nil {
+				return err
+			}
+		}
+		if _, err := out.Write([]byte(`) REFERENCES "`)); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte(c.ROwner.String)); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte(`"."`)); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte(c.RTableName.String)); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte(`" ("`)); err != nil {
+			return err
+		}
+		for i, column := range c.RColumnName {
+			if i != 0 {
+				if _, err := out.Write([]byte(", ")); err != nil {
+					return err
+				}
+			}
+			if _, err := out.Write([]byte(`"`)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(column.String)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(`"`)); err != nil {
+				return err
+			}
+		}
+		if _, err := out.Write([]byte(`)`)); err != nil {
+			return err
+		}
+		if err := c.assembleConstraintState(out); err != nil {
+			return err
+		}
+	default:
+		log.Warn("Unsupported constraint type", zap.String("type", c.ConstraintType.String))
+	}
+	return nil
+}
+
+func (c *mergedConstraintMeta) assembleConstraintState(out io.Writer) error {
+	if c.Deferrable.Valid && c.Deferrable.String == "DEFERRABLE" {
+		if _, err := out.Write([]byte(` DEFERRABLE`)); err != nil {
+			return err
+		}
+	} else if c.Deferrable.Valid && c.Deferrable.String == "NOT DEFERRABLE" {
+		if _, err := out.Write([]byte(` NOT DEFERRABLE`)); err != nil {
+			return err
+		}
+	}
+
+	if c.Deferred.Valid && c.Deferred.String == "DEFERRED" {
+		if _, err := out.Write([]byte(` INITIALLY DEFERRED`)); err != nil {
+			return err
+		}
+	} else if c.Deferred.Valid && c.Deferred.String == "IMMEDIATE" {
+		if _, err := out.Write([]byte(` INITIALLY IMMEDIATE`)); err != nil {
+			return err
+		}
+	}
+
+	if c.Validated.Valid && c.Validated.String == "NOT VALIDATED" {
+		if !c.Rely.Valid {
+			if _, err := out.Write([]byte(` NORELY`)); err != nil {
+				return err
+			}
+		} else if c.Rely.String == "RELY" {
+			if _, err := out.Write([]byte(` RELY`)); err != nil {
+				return err
+			}
+		}
+
+		if _, err := out.Write([]byte(` NOVALIDATE`)); err != nil {
+			return err
+		}
+	} else {
+		if _, err := out.Write([]byte(` VALIDATE`)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type viewMeta struct {
@@ -426,6 +980,8 @@ SELECT
 	C.DATA_DEFAULT,
 	C.CHAR_LENGTH,
 	C.CHAR_USED,
+	C.COLLATION,
+	C.DEFAULT_ON_NULL,
 	COM.COLUMN_NAME IS_INVISIBLE,
 	COM.COMMENTS
 FROM
@@ -760,6 +1316,7 @@ ORDER BY AT.TABLE_OWNER, AT.TABLE_NAME, AT.TRIGGER_NAME, ATC.COLUMN_NAME ASC
 func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
 	tableMap := make(map[string]*tableSchema)
 	tableRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTableSQL, schema))
+	var constraintList []*constraintMeta
 	if err != nil {
 		return err
 	}
@@ -863,6 +1420,8 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 			&fields.DataDefault,
 			&fields.CharLength,
 			&fields.CharUsed,
+			&fields.Collation,
+			&fields.DefaultOnNull,
 			&fields.IsInvisible,
 			&fields.Comments,
 		); err != nil {
@@ -909,14 +1468,45 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 		if !constraint.TableName.Valid {
 			continue
 		}
-		tableMap[constraint.TableName.String].constraints = append(tableMap[constraint.TableName.String].constraints, &constraint)
+		constraintList = append(constraintList, &constraint)
 	}
 	if err := constraintRows.Err(); err != nil {
 		return err
 	}
 
-	// TODO: assemble CREATE TABLE
-	return nil
+	var mergedConstraintList []*mergedConstraintMeta
+	for _, constraint := range constraintList {
+		if len(mergedConstraintList) == 0 || mergedConstraintList[len(mergedConstraintList)-1].ConstraintName != constraint.ConstraintName {
+			mergedConstraintList = append(mergedConstraintList, &mergedConstraintMeta{
+				IotType:         constraint.IotType,
+				ExtTableName:    constraint.ExtTableName,
+				TableName:       constraint.TableName,
+				ConstraintName:  constraint.ConstraintName,
+				ConstraintType:  constraint.ConstraintType,
+				DeleteRule:      constraint.DeleteRule,
+				Deferrable:      constraint.Deferrable,
+				Deferred:        constraint.Deferred,
+				Validated:       constraint.Validated,
+				Rely:            constraint.Rely,
+				SearchCondition: constraint.SearchCondition,
+				Status:          constraint.Status,
+				ColumnName:      []sql.NullString{constraint.ColumnName},
+				ROwner:          constraint.ROwner,
+				RTableName:      constraint.RTableName,
+				RConstraintName: constraint.RConstraintName,
+				RColumnName:     []sql.NullString{constraint.RColumnName},
+			})
+		} else {
+			mergedConstraintList[len(mergedConstraintList)-1].ColumnName = append(mergedConstraintList[len(mergedConstraintList)-1].ColumnName, constraint.ColumnName)
+			mergedConstraintList[len(mergedConstraintList)-1].RColumnName = append(mergedConstraintList[len(mergedConstraintList)-1].RColumnName, constraint.RColumnName)
+		}
+	}
+
+	for _, constraint := range mergedConstraintList {
+		tableMap[constraint.TableName.String].constraints = append(tableMap[constraint.TableName.String].constraints, constraint)
+	}
+
+	return assembleTableStatement(tableMap, out)
 }
 
 func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
