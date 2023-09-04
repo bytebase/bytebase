@@ -124,25 +124,6 @@ func (ctl *controller) patchIssueStatus(issueStatusPatch api.IssueStatusPatch) (
 	return issue, nil
 }
 
-// patchTask patches a task.
-func (ctl *controller) patchTask(taskPatch api.TaskPatch, pipelineID int, taskID int) (*api.Task, error) {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &taskPatch); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal taskPatch")
-	}
-
-	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/task/%d", pipelineID, taskID), buf)
-	if err != nil {
-		return nil, err
-	}
-
-	task := new(api.Task)
-	if err = jsonapi.UnmarshalPayload(body, task); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal patchTask response")
-	}
-	return task, nil
-}
-
 // patchTaskStatus patches the status of a task in the pipeline stage.
 func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int, taskID int) (*api.Task, error) {
 	buf := new(bytes.Buffer)
@@ -248,14 +229,6 @@ func (ctl *controller) waitIssuePipeline(ctx context.Context, id int) (api.TaskS
 // waitIssuePipelineWithStageApproval waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipelineWithStageApproval(ctx context.Context, id int) (api.TaskStatus, error) {
 	return ctl.waitIssuePipelineTaskImpl(ctx, id, ctl.approveIssueTasksWithStageApproval, false)
-}
-
-// waitIssuePipelineWithNoApproval waits for pipeline to finish and do nothing when approvals are needed.
-func (ctl *controller) waitIssuePipelineWithNoApproval(ctx context.Context, id int) (api.TaskStatus, error) {
-	noop := func(*api.Issue) error {
-		return nil
-	}
-	return ctl.waitIssuePipelineTaskImpl(ctx, id, noop, false)
 }
 
 // waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
