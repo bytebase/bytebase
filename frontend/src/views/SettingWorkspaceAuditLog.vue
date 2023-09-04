@@ -14,6 +14,7 @@
         <TypeSelect
           :disabled="!hasAuditLogFeature"
           :selected-type-list="selectedAuditTypeList"
+          :item-list="AuditActivityTypeList"
           @update-selected-type-list="selectAuditType"
         />
       </div>
