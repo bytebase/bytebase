@@ -24,7 +24,7 @@
           >
             <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
             <div class="whitespace-nowrap">
-              {{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
+              {{ $t("gitops.setting.add-git-provider.gitlab-self-host") }}
             </div>
           </div>
           <div
