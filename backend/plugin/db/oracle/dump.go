@@ -70,11 +70,7 @@ func dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Write
 	if err := dumpSequenceTxn(ctx, txn, schema, out); err != nil {
 		return err
 	}
-	if err := dumpTriggerOrderingTxn(ctx, txn, schema, out); err != nil {
-		return err
-	}
-
-	return nil
+	return dumpTriggerOrderingTxn(ctx, txn, schema, out)
 }
 
 func assembleTableStatement(tableMap map[string]*tableSchema, out io.Writer) error {
@@ -93,6 +89,9 @@ func assembleTableStatement(tableMap map[string]*tableSchema, out io.Writer) err
 
 	for _, table := range tableList {
 		if err := table.assembleStatement(out); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte("\n")); err != nil {
 			return err
 		}
 	}
@@ -181,18 +180,6 @@ func (t *tableSchema) assembleStatement(out io.Writer) error {
 		return err
 	}
 
-	if t.meta.Degree.Valid {
-		if t.meta.Degree.String == "DEFAULT" {
-			if _, err := out.Write([]byte("\nPARALLEL")); err != nil {
-				return err
-			}
-		} else {
-			if _, err := out.Write([]byte(fmt.Sprintf("\nPARALLEL %s", t.meta.Degree.String))); err != nil {
-				return err
-			}
-		}
-	}
-
 	if t.meta.Cache.Valid {
 		if t.meta.Cache.String == "Y" {
 			if _, err := out.Write([]byte("\nCACHE")); err != nil {
@@ -205,12 +192,30 @@ func (t *tableSchema) assembleStatement(out io.Writer) error {
 		}
 	}
 
+	if t.meta.Degree.Valid {
+		if t.meta.Degree.String == "DEFAULT" {
+			if _, err := out.Write([]byte("\nPARALLEL")); err != nil {
+				return err
+			}
+		} else {
+			if _, err := out.Write([]byte(fmt.Sprintf("\nPARALLEL %s", t.meta.Degree.String))); err != nil {
+				return err
+			}
+		}
+	}
+
 	if t.meta.RowMovement.Valid {
 		if _, err := out.Write([]byte("\n")); err != nil {
 			return err
 		}
-		if _, err := out.Write([]byte(t.meta.RowMovement.String)); err != nil {
-			return err
+		if t.meta.RowMovement.String == "ENABLED" {
+			if _, err := out.Write([]byte("ENABLE")); err != nil {
+				return err
+			}
+		} else {
+			if _, err := out.Write([]byte("DISABLE")); err != nil {
+				return err
+			}
 		}
 		if _, err := out.Write([]byte(" ROW MOVEMENT")); err != nil {
 			return err
@@ -364,7 +369,7 @@ type tableMeta struct {
 	Monitoring             sql.NullString
 	ClusterOwner           sql.NullString
 	Comments               sql.NullString
-	ObjectIdType           sql.NullString
+	ObjectIDType           sql.NullString
 	TableTypeOwner         sql.NullString
 	TableType              sql.NullString
 	GlobalStats            sql.NullString
@@ -393,7 +398,7 @@ type fieldMeta struct {
 	DataPrecision sql.NullInt64
 	DataScale     sql.NullInt64
 	Nullable      sql.NullString
-	ColumnId      sql.NullInt64
+	ColumnID      sql.NullInt64
 	DataDefault   sql.NullString
 	CharLength    sql.NullInt64
 	CharUsed      sql.NullString
@@ -579,7 +584,7 @@ func (c *mergedConstraintMeta) assembleStatement(out io.Writer) error {
 			return err
 		}
 	case "U":
-		if _, err := out.Write([]byte(` UNIQUE ("`)); err != nil {
+		if _, err := out.Write([]byte(` UNIQUE (`)); err != nil {
 			return err
 		}
 		for i, column := range c.ColumnName {
@@ -619,7 +624,7 @@ func (c *mergedConstraintMeta) assembleStatement(out io.Writer) error {
 			return err
 		}
 	case "R":
-		if _, err := out.Write([]byte(` FOREIGN KEY ("`)); err != nil {
+		if _, err := out.Write([]byte(` FOREIGN KEY (`)); err != nil {
 			return err
 		}
 		for i, column := range c.ColumnName {
@@ -650,7 +655,7 @@ func (c *mergedConstraintMeta) assembleStatement(out io.Writer) error {
 		if _, err := out.Write([]byte(c.RTableName.String)); err != nil {
 			return err
 		}
-		if _, err := out.Write([]byte(`" ("`)); err != nil {
+		if _, err := out.Write([]byte(`" (`)); err != nil {
 			return err
 		}
 		for i, column := range c.RColumnName {
@@ -746,7 +751,7 @@ type viewMeta struct {
 type functionMeta struct {
 	ObjectName    sql.NullString
 	Owner         sql.NullString
-	DataObjectId  sql.NullInt64
+	DataObjectID  sql.NullInt64
 	ObjectType    sql.NullString
 	Status        sql.NullString
 	Created       sql.NullTime
@@ -758,10 +763,10 @@ type functionMeta struct {
 	Parallel      sql.NullString
 	Interface     sql.NullString
 	Deterministic sql.NullString
-	AuthId        sql.NullString
+	AuthID        sql.NullString
 	ParamValue    sql.NullString
-	ObjectId      sql.NullInt64
-	SubProgramId  sql.NullInt64
+	ObjectID      sql.NullInt64
+	SubProgramID  sql.NullInt64
 	Overload      sql.NullInt64
 	Timestamp     sql.NullString
 	Line          sql.NullInt64
@@ -1367,7 +1372,7 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 			&meta.Monitoring,
 			&meta.ClusterOwner,
 			&meta.Comments,
-			&meta.ObjectIdType,
+			&meta.ObjectIDType,
 			&meta.TableTypeOwner,
 			&meta.TableType,
 			&meta.GlobalStats,
@@ -1416,7 +1421,7 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 			&fields.DataPrecision,
 			&fields.DataScale,
 			&fields.Nullable,
-			&fields.ColumnId,
+			&fields.ColumnID,
 			&fields.DataDefault,
 			&fields.CharLength,
 			&fields.CharUsed,
@@ -1509,7 +1514,7 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 	return assembleTableStatement(tableMap, out)
 }
 
-func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	viewList := []*viewMeta{}
 	viewRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpViewSQL, schema))
 	if err != nil {
@@ -1549,10 +1554,11 @@ func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer)
 	}
 
 	// TODO: assemble CREATE VIEW
+	_ = viewList
 	return nil
 }
 
-func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	functionList := []*functionMeta{}
 	functionRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpFunctionSQL, schema))
 	if err != nil {
@@ -1565,7 +1571,7 @@ func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Wri
 		if err := functionRows.Scan(
 			&function.ObjectName,
 			&function.Owner,
-			&function.DataObjectId,
+			&function.DataObjectID,
 			&function.ObjectType,
 			&function.Status,
 			&function.Created,
@@ -1577,10 +1583,10 @@ func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Wri
 			&function.Parallel,
 			&function.Interface,
 			&function.Deterministic,
-			&function.AuthId,
+			&function.AuthID,
 			&function.ParamValue,
-			&function.ObjectId,
-			&function.SubProgramId,
+			&function.ObjectID,
+			&function.SubProgramID,
 			&function.Overload,
 			&function.Timestamp,
 			&function.Line,
@@ -1598,10 +1604,11 @@ func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Wri
 	}
 
 	// TODO: assemble CREATE FUNCTION
+	_ = functionList
 	return nil
 }
 
-func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	indexes := []*indexMeta{}
 	indexRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpIndexSQL, schema))
 	if err != nil {
@@ -1688,10 +1695,11 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 	}
 
 	// TODO: assemble CREATE INDEX
+	_ = indexes
 	return nil
 }
 
-func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	sequences := []*sequenceMeta{}
 	sequenceRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
 	if err != nil {
@@ -1795,6 +1803,7 @@ func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, out
 	}
 
 	// TODO: assemble CREATE TRIGGER
+	_ = triggerOrderingMap
 	return nil
 }
 
