@@ -86,7 +86,11 @@
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
           >
-            {{ $t("settings.general.workspace.owner-or-dba-can-edit") }}
+            {{
+              $t(
+                "settings.general.workspace.announcement.owner-or-dba-can-edit"
+              )
+            }}
           </span>
         </label>
         <BBTextField
