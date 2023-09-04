@@ -618,11 +618,31 @@
       "global-masking-rule": "全局脱敏规则",
       "data-feature": "数据特征",
       "add-rule": "添加规则",
+      "grant-access": "授权访问",
+      "never-expires": "无过期时间",
+      "column-detail": {
+        "masking-setting-for-column": "\"{column}\" 脱敏设置",
+        "access-user-list": "用户访问列表",
+        "access-user-list-desc": "被授权的用户可以访问非脱敏的原始数据。",
+        "remove-user-permission": "删除该用户权限？",
+        "remove-sensitive-warning": "该数据会被设置为明文，不再脱敏。"
+      },
+      "algorithms": {
+        "self": "脱敏算法",
+        "default": "默认",
+        "default-desc": "使用 *** 为数据遮挡"
+      },
       "masking-level": {
         "self": "脱敏程度",
+        "masking_level_unspecified": "遵循全局配置",
         "none": "明文",
         "partial": "半脱敏",
         "full": "全脱敏"
+      },
+      "action": {
+        "self": "操作类型",
+        "query": "查询",
+        "export": "导出"
       }
     },
     "access-control": {
