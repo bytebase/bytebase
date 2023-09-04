@@ -339,7 +339,7 @@ func readRows(rows *sql.Rows, columnTypeNames []string, fieldMaskingLevels []sto
 
 		var rowData v1pb.QueryRow
 		for i := range columnTypeNames {
-			if fieldMaskingLevels[i] == storepb.MaskingLevel_FULL {
+			if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_FULL {
 				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}})
 				continue
 			}
