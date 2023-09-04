@@ -69,8 +69,8 @@ export interface PlanConfig_ChangeDatabaseConfig {
    * The resource name of the target.
    * Format: instances/{instance-id}/databases/{database-name}.
    * Format: projects/{project}/databaseGroups/{databaseGroup}.
-   * Format: projects/{project}/deploymentConfigs/default. The plan should have single step and single
-   * spec for deployment configuration type of deployment.
+   * Format: projects/{project}/deploymentConfigs/default. The plan should
+   * have a single step and single spec for the deployment configuration type.
    */
   target: string;
   /**
