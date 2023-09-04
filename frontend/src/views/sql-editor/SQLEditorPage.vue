@@ -60,7 +60,7 @@
                     v-if="showSecondarySidebar && windowWidth >= 1024"
                     :size="25"
                   >
-                    <SecondarySidebar />
+                    <SecondarySidebar @alter-schema="handleAlterSchema" />
                   </Pane>
                 </Splitpanes>
               </Pane>

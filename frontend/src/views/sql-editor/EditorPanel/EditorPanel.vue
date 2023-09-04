@@ -7,11 +7,7 @@
 
       <SheetForIssueTipsBar />
 
-      <SQLEditor
-        v-if="false"
-        @execute="handleExecute"
-        @save-sheet="trySaveSheet"
-      />
+      <SQLEditor @execute="handleExecute" @save-sheet="trySaveSheet" />
     </template>
 
     <AIChatToSQL

@@ -1,7 +1,14 @@
 <template>
-  <DatabaseSchema />
+  <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
 </template>
 
 <script setup lang="ts">
-import DatabaseSchema from "./SchemaPanel";
+import SchemaPanel from "./SchemaPanel";
+
+defineEmits<{
+  (
+    event: "alter-schema",
+    params: { databaseId: string; schema: string; table: string }
+  ): void;
+}>();
 </script>

@@ -8,7 +8,7 @@
     pane-style="height: calc(100% - 35px); padding: 0;"
   >
     <NTabPane v-if="showInfoPane" name="INFO" :tab="$t('common.info')">
-      <InfoTabPane />
+      <InfoTabPane @alter-schema="$emit('alter-schema', $event)" />
     </NTabPane>
     <NTabPane name="SHEET" :tab="$t('sheet.sheet')">
       <SheetTabPane />
@@ -29,6 +29,13 @@ import HistoryTabPane from "./HistoryTabPane";
 import InfoTabPane from "./InfoTabPane";
 import SheetTabPane from "./SheetTabPane";
 import { useSecondarySidebarContext } from "./context";
+
+defineEmits<{
+  (
+    event: "alter-schema",
+    params: { databaseId: string; schema: string; table: string }
+  ): void;
+}>();
 
 const tabsRef = ref<InstanceType<typeof NTabs>>();
 const { tab } = useSecondarySidebarContext();
