@@ -1,5 +1,9 @@
 <template>
-  <NRadioGroup :value="level" @update:value="$emit('update:level', $event)">
+  <NRadioGroup
+    :value="level"
+    :disabled="!allowEdit"
+    @update:value="$emit('update:level', $event)"
+  >
     <NRadio
       v-for="item in [
         Announcement_AlertLevel.ALERT_LEVEL_INFO,
@@ -26,6 +30,7 @@ import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
 
 defineProps<{
   level?: Announcement_AlertLevel;
+  allowEdit: boolean;
 }>();
 
 defineEmits<{
