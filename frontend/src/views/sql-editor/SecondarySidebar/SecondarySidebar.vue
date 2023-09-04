@@ -1,12 +1,13 @@
 <template>
   <NTabs
-    :v-model:value="tab"
+    ref="tabsRef"
+    v-model:value="tab"
     type="segment"
     size="small"
     class="h-full"
     pane-style="height: calc(100% - 35px); padding: 0;"
   >
-    <NTabPane name="INFO" :tab="$t('common.info')" :disabled="!showInfoPane">
+    <NTabPane v-if="showInfoPane" name="INFO" :tab="$t('common.info')">
       <InfoTabPane />
     </NTabPane>
     <NTabPane name="SHEET" :tab="$t('sheet.sheet')">
@@ -20,7 +21,7 @@
 
 <script setup lang="ts">
 import { NTabs, NTabPane } from "naive-ui";
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useInstanceV1Store, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { instanceV1HasAlterSchema, isDisconnectedTab } from "@/utils";
@@ -29,6 +30,7 @@ import InfoTabPane from "./InfoTabPane";
 import SheetTabPane from "./SheetTabPane";
 import { useSecondarySidebarContext } from "./context";
 
+const tabsRef = ref<InstanceType<typeof NTabs>>();
 const { tab } = useSecondarySidebarContext();
 
 const tabStore = useTabStore();
@@ -68,10 +70,8 @@ const showInfoPane = computed(() => {
 watch(
   showInfoPane,
   (show) => {
-    if (!show) {
-      if (tab.value === "INFO") {
-        tab.value = "SHEET";
-      }
+    if (!show && tab.value === "INFO") {
+      tab.value = "SHEET";
     }
   },
   { immediate: true }

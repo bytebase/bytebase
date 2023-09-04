@@ -1,19 +1,19 @@
 <template>
   <NButton
     size="small"
-    quaternary
     style="--n-padding: 0 6px"
+    :type="showSecondarySidebar ? 'info' : 'default'"
+    ghost
     @click="showSecondarySidebar = !showSecondarySidebar"
   >
     <template #icon>
-      <heroicons:view-columns
-        :class="[showSecondarySidebar ? 'text-accent' : 'text-control']"
-      />
+      <heroicons:view-columns />
     </template>
   </NButton>
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import { useSecondarySidebarContext } from "./context";
 
 const { show: showSecondarySidebar } = useSecondarySidebarContext();
