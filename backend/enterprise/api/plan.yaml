@@ -49,6 +49,7 @@ categoryList:
       - audit-log
       - disallow-signup
       - anomaly-detection
+      - announcement-banner
   - type: bespoke
     featureList:
       - support
@@ -284,6 +285,7 @@ planList:
       - type: watermark
       - type: audit-log
       - type: disallow-signup
+      - type: announcement-banner
       # Bespoke
       - type: support
         content: support-sla
