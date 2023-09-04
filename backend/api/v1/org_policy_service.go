@@ -498,9 +498,6 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 			if rule.Id == "" {
 				return status.Errorf(codes.InvalidArgument, "masking rule must have ID set")
 			}
-			if rule.MaskingLevel == v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
-				return status.Errorf(codes.InvalidArgument, "masking rule must have masking level set")
-			}
 			if _, err := common.ValidateMaskingRuleCELExpr(rule.Condition.Expression); err != nil {
 				return status.Errorf(codes.InvalidArgument, "invalid masking rule expression: %v", err)
 			}
@@ -526,10 +523,8 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 			if _, err := common.ValidateMaskingExceptionCELExpr(exception.Condition.Expression); err != nil {
 				return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid masking exception expression: %v", err))
 			}
-			for _, member := range exception.Members {
-				if !strings.HasPrefix(member, "user:") {
-					return status.Errorf(codes.InvalidArgument, "masking exception member must start with user:")
-				}
+			if !strings.HasPrefix(exception.Member, "user:") {
+				return status.Errorf(codes.InvalidArgument, "masking exception member must start with user:")
 			}
 		}
 	default:
@@ -563,7 +558,8 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		for _, group := range payload.AssigneeGroupList {
 			if group.IssueType != api.IssueDatabaseSchemaUpdate &&
 				group.IssueType != api.IssueDatabaseSchemaUpdateGhost &&
-				group.IssueType != api.IssueDatabaseDataUpdate {
+				group.IssueType != api.IssueDatabaseDataUpdate &&
+				group.IssueType != api.IssueDatabaseGeneral {
 				return "", status.Errorf(codes.InvalidArgument, "invalid assignee group issue type %q", group.IssueType)
 			}
 			if issueTypeSeen[group.IssueType] {
@@ -1045,6 +1041,11 @@ func convertToV1PBDeploymentApprovalPolicy(payloadStr string) (*v1pb.Policy_Depl
 
 	approvalStrategies := make([]*v1pb.DeploymentApprovalStrategy, 0)
 	for _, group := range payload.AssigneeGroupList {
+		// HACK(p0ny): skip if type is IssueDatabaseGeneral
+		if group.IssueType == api.IssueDatabaseGeneral {
+			continue
+		}
+
 		assigneeGroupValue := v1pb.ApprovalGroup_ASSIGNEE_GROUP_UNSPECIFIED
 		switch group.Value {
 		case api.AssigneeGroupValueProjectOwner:
@@ -1080,12 +1081,16 @@ func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolic
 		return nil, errors.Errorf("invalid default strategy %v", policy.DefaultStrategy)
 	}
 
+	// HACK(p0ny): always append issue type database general, the group value is set according to seenProjectOwnerGroupValue.
+	seenProjectOwnerGroupValue := false
+
 	var assigneeGroupList []api.AssigneeGroup
 	for _, group := range policy.DeploymentApprovalStrategies {
 		var assigneeGroup api.AssigneeGroupValue
 		switch group.ApprovalGroup {
 		case v1pb.ApprovalGroup_APPROVAL_GROUP_PROJECT_OWNER:
 			assigneeGroup = api.AssigneeGroupValueProjectOwner
+			seenProjectOwnerGroupValue = true
 		case v1pb.ApprovalGroup_APPROVAL_GROUP_DBA:
 			assigneeGroup = api.AssigneeGroupValueWorkspaceOwnerOrDBA
 		default:
@@ -1111,6 +1116,19 @@ func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolic
 		assigneeGroupList = append(assigneeGroupList, api.AssigneeGroup{
 			Value:     assigneeGroup,
 			IssueType: issueType,
+		})
+	}
+
+	// HACK(p0ny): always append issue type database general.
+	if seenProjectOwnerGroupValue {
+		assigneeGroupList = append(assigneeGroupList, api.AssigneeGroup{
+			Value:     api.AssigneeGroupValueProjectOwner,
+			IssueType: api.IssueDatabaseGeneral,
+		})
+	} else {
+		assigneeGroupList = append(assigneeGroupList, api.AssigneeGroup{
+			Value:     api.AssigneeGroupValueWorkspaceOwnerOrDBA,
+			IssueType: api.IssueDatabaseGeneral,
 		})
 	}
 
@@ -1199,15 +1217,10 @@ func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) (*v1pb.Ma
 func convertToStorePBMaskingExceptionPolicyPayload(policy *v1pb.MaskingExceptionPolicy) (*storepb.MaskingExceptionPolicy, error) {
 	var exceptions []*storepb.MaskingExceptionPolicy_MaskingException
 	for _, exception := range policy.MaskingExceptions {
-		var members []string
-		for _, member := range exception.Members {
-			member = strings.TrimPrefix(member, "user:")
-			members = append(members, member)
-		}
 		exceptions = append(exceptions, &storepb.MaskingExceptionPolicy_MaskingException{
 			Action:       convertToStorePBAction(exception.Action),
 			MaskingLevel: convertToStorePBMaskingLevel(exception.MaskingLevel),
-			Members:      members,
+			Member:       strings.TrimPrefix(exception.Member, "user:"),
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,
@@ -1225,15 +1238,10 @@ func convertToStorePBMaskingExceptionPolicyPayload(policy *v1pb.MaskingException
 func convertToV1PBMaskingExceptionPolicyPayload(policy *storepb.MaskingExceptionPolicy) (*v1pb.MaskingExceptionPolicy, error) {
 	var exceptions []*v1pb.MaskingExceptionPolicy_MaskingException
 	for _, exception := range policy.MaskingExceptions {
-		var members []string
-		for _, member := range exception.Members {
-			member = fmt.Sprintf("user:%s", member)
-			members = append(members, member)
-		}
 		exceptions = append(exceptions, &v1pb.MaskingExceptionPolicy_MaskingException{
 			Action:       convertToV1PBAction(exception.Action),
 			MaskingLevel: convertToV1PBMaskingLevel(exception.MaskingLevel),
-			Members:      members,
+			Member:       fmt.Sprintf("user:%s", exception.Member),
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,
@@ -1248,6 +1256,7 @@ func convertToV1PBMaskingExceptionPolicyPayload(policy *storepb.MaskingException
 	}, nil
 }
 
+// TODO(p0ny): fix bb.issue.database.general
 func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentType {
 	res := v1pb.DeploymentType_DEPLOYMENT_TYPE_UNSPECIFIED
 	switch issueType {

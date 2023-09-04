@@ -141,7 +141,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err == nil {
 		defer driver.Close(ctx)
-		if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+		if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.String("instance", instance.ResourceID),
 				zap.Error(err))
@@ -233,7 +233,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+	if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
 		log.Warn("Failed to sync instance",
 			zap.String("instance", instance.ResourceID),
 			zap.Error(err))
@@ -485,7 +485,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
-	if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+	if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
 		return nil, err
 	}
 	// Sync all databases in the instance asynchronously.

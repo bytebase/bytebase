@@ -672,8 +672,8 @@ func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
 			unsupportStmts = append(unsupportStmts, content)
 			continue
 		}
-		_, _ = supportedStmts.Write([]byte(content))
-		_, _ = supportedStmts.Write([]byte("\n"))
+		_, _ = supportedStmts.WriteString(content)
+		_, _ = supportedStmts.WriteString("\n")
 	}
 	return unsupportStmts, supportedStmts.String(), nil
 }

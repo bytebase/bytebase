@@ -661,11 +661,8 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 
 	for _, test := range tests {
 		res, err := extractSensitiveField(db.MySQL, test.statement, defaultDatabase, test.schemaInfo)
-		require.NoError(t, err)
-		for i := range res {
-			require.Equal(t, test.fieldList[i].Name, res[i].Name, test.statement)
-			require.Equal(t, test.fieldList[i].MaskingLevel, res[i].MaskingLevel, test.statement)
-		}
+		require.NoError(t, err, test.statement)
+		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
 
@@ -1228,11 +1225,8 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 	for _, test := range tests {
 		res, err := extractSensitiveField(db.Postgres, test.statement, defaultDatabase, test.schemaInfo)
 		require.NoError(t, err)
-		require.Equal(t, len(test.fieldList), len(res), test.statement)
-		for i := range res {
-			require.Equal(t, test.fieldList[i].Name, res[i].Name, test.statement)
-			require.Equal(t, test.fieldList[i].MaskingLevel, res[i].MaskingLevel, test.statement)
-		}
+		require.NoError(t, err, test.statement)
+		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
 
@@ -1253,20 +1247,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 									Name: "T",
 									ColumnList: []db.ColumnInfo{
 										{
-											Name:      "A",
-											Sensitive: true,
+											Name:         "A",
+											MaskingLevel: storepb.MaskingLevel_FULL,
 										},
 										{
-											Name:      "B",
-											Sensitive: false,
+											Name:         "B",
+											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 										{
-											Name:      "C",
-											Sensitive: false,
+											Name:         "C",
+											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 										{
-											Name:      "D",
-											Sensitive: true,
+											Name:         "D",
+											MaskingLevel: storepb.MaskingLevel_PARTIAL,
 										},
 									},
 								},
@@ -1295,20 +1289,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "CC1",
-					Sensitive: true,
+					Name:         "CC1",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "CC2",
-					Sensitive: true,
+					Name:         "CC2",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "CC3",
-					Sensitive: true,
+					Name:         "CC3",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "N",
-					Sensitive: false,
+					Name:         "N",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -1325,20 +1319,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "C1",
-					Sensitive: true,
+					Name:         "C1",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "C2",
-					Sensitive: false,
+					Name:         "C2",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C3",
-					Sensitive: true,
+					Name:         "C3",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
-					Name:      "N",
-					Sensitive: false,
+					Name:         "N",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -1348,20 +1342,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1371,20 +1365,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1394,20 +1388,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1417,8 +1411,8 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "MAX(A)",
-					Sensitive: true,
+					Name:         "MAX(A)",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -1428,20 +1422,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1451,20 +1445,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "C1",
-					Sensitive: true,
+					Name:         "C1",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "C2",
-					Sensitive: false,
+					Name:         "C2",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C3",
-					Sensitive: false,
+					Name:         "C3",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "4",
-					Sensitive: true,
+					Name:         "4",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1474,20 +1468,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1497,8 +1491,8 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "CONCAT(ROOT.T.A,ROOT.T.B)",
-					Sensitive: true,
+					Name:         "CONCAT(ROOT.T.A,ROOT.T.B)",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -1508,12 +1502,12 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "(SELECTMAX(B)>Y.AFROMTX)",
-					Sensitive: true,
+					Name:         "(SELECTMAX(B)>Y.AFROMTX)",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -1523,36 +1517,36 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1562,20 +1556,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1585,32 +1579,32 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1620,12 +1614,12 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "(SELECTMAX(A)FROMT)",
-					Sensitive: true,
+					Name:         "(SELECTMAX(A)FROMT)",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -1635,12 +1629,12 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A-B",
-					Sensitive: true,
+					Name:         "A-B",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "C1",
-					Sensitive: false,
+					Name:         "C1",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -1650,12 +1644,12 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "MAX(A)",
-					Sensitive: true,
+					Name:         "MAX(A)",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "C1",
-					Sensitive: false,
+					Name:         "C1",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -1665,20 +1659,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1688,20 +1682,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D1",
-					Sensitive: true,
+					Name:         "D1",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1711,20 +1705,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D1",
-					Sensitive: true,
+					Name:         "D1",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1733,20 +1727,20 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1760,13 +1754,13 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for no FROM DUAL.
 			statement:  "select 1 from dual;",
 			schemaInfo: &db.SensitiveSchemaInfo{},
-			fieldList:  []db.SensitiveField{{Name: "1", Sensitive: false}},
+			fieldList:  []db.SensitiveField{{Name: "1", MaskingLevel: storepb.MaskingLevel_NONE}},
 		},
 	}
 
 	for _, test := range tests {
 		res, err := extractSensitiveField(db.Oracle, test.statement, defaultSchema, test.schemaInfo)
-		require.NoError(t, err)
+		require.NoError(t, err, test.statement)
 		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
@@ -1786,20 +1780,20 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 									Name: "T1",
 									ColumnList: []db.ColumnInfo{
 										{
-											Name:      "A",
-											Sensitive: true,
+											Name:         "A",
+											MaskingLevel: storepb.MaskingLevel_FULL,
 										},
 										{
-											Name:      "B",
-											Sensitive: false,
+											Name:         "B",
+											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 										{
-											Name:      "C",
-											Sensitive: false,
+											Name:         "C",
+											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 										{
-											Name:      "D",
-											Sensitive: true,
+											Name:         "D",
+											MaskingLevel: storepb.MaskingLevel_PARTIAL,
 										},
 									},
 								},
@@ -1807,12 +1801,12 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 									Name: "T2",
 									ColumnList: []db.ColumnInfo{
 										{
-											Name:      "A",
-											Sensitive: false,
+											Name:         "A",
+											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 										{
-											Name:      "E",
-											Sensitive: false,
+											Name:         "E",
+											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 									},
 								},
@@ -1820,12 +1814,12 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 									Name: "T3",
 									ColumnList: []db.ColumnInfo{
 										{
-											Name:      "E",
-											Sensitive: true,
+											Name:         "E",
+											MaskingLevel: storepb.MaskingLevel_FULL,
 										},
 										{
-											Name:      "F",
-											Sensitive: false,
+											Name:         "F",
+											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 									},
 								},
@@ -1854,20 +1848,20 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "C1",
-					Sensitive: true,
+					Name:         "C1",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "C2",
-					Sensitive: true,
+					Name:         "C2",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "C3",
-					Sensitive: true,
+					Name:         "C3",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "N",
-					Sensitive: false,
+					Name:         "N",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -1877,16 +1871,16 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "F",
-					Sensitive: false,
+					Name:         "F",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "E",
-					Sensitive: true,
+					Name:         "E",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1896,24 +1890,24 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
-					Name:      `'a'`,
-					Sensitive: true,
+					Name:         `'a'`,
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      `'b'`,
-					Sensitive: true,
+					Name:         `'b'`,
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      `'c'`,
-					Sensitive: true,
+					Name:         `'c'`,
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -1923,12 +1917,12 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "(SELECTMAX(B)>Y.AFROMT1X)",
-					Sensitive: true,
+					Name:         "(SELECTMAX(B)>Y.AFROMT1X)",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -1944,12 +1938,12 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "T1_COL1",
-					Sensitive: true,
+					Name:         "T1_COL1",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "T1_COL2",
-					Sensitive: false,
+					Name:         "T1_COL2",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -1959,20 +1953,20 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "(SELECTAFROMT1LIMIT1)",
-					Sensitive: true,
+					Name:         "(SELECTAFROMT1LIMIT1)",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "A+1",
-					Sensitive: true,
+					Name:         "A+1",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "1",
-					Sensitive: false,
+					Name:         "1",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "FUNCTIONCALL(D)",
-					Sensitive: true,
+					Name:         "FUNCTIONCALL(D)",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -1990,28 +1984,28 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "T1_COL1",
-					Sensitive: true,
+					Name:         "T1_COL1",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "T1_COL2",
-					Sensitive: false,
+					Name:         "T1_COL2",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "T1_COL3",
-					Sensitive: false,
+					Name:         "T1_COL3",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "T1_COL4",
-					Sensitive: true,
+					Name:         "T1_COL4",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
-					Name:      "T2_COL1",
-					Sensitive: false,
+					Name:         "T2_COL1",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "T2_COL2",
-					Sensitive: false,
+					Name:         "T2_COL2",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -2021,12 +2015,12 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -2036,16 +2030,16 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -2055,20 +2049,20 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "N",
-					Sensitive: false,
+					Name:         "N",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -2077,36 +2071,36 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
-					Name:      "A",
-					Sensitive: false,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "E",
-					Sensitive: false,
+					Name:         "E",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "E",
-					Sensitive: true,
+					Name:         "E",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "F",
-					Sensitive: false,
+					Name:         "F",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -2115,16 +2109,16 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "E",
-					Sensitive: true,
+					Name:         "E",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "F",
-					Sensitive: false,
+					Name:         "F",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -2133,16 +2127,16 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -2151,20 +2145,20 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "A",
-					Sensitive: true,
+					Name:         "A",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "B",
-					Sensitive: false,
+					Name:         "B",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "C",
-					Sensitive: false,
+					Name:         "C",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "D",
-					Sensitive: true,
+					Name:         "D",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},
@@ -2193,20 +2187,20 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 									Name: "MyTable1",
 									ColumnList: []db.ColumnInfo{
 										{
-											Name:      "a",
-											Sensitive: true,
+											Name:         "a",
+											MaskingLevel: storepb.MaskingLevel_FULL,
 										},
 										{
-											Name:      "b",
-											Sensitive: false,
+											Name:         "b",
+											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 										{
-											Name:      "c",
-											Sensitive: false,
+											Name:         "c",
+											MaskingLevel: storepb.MaskingLevel_NONE,
 										},
 										{
-											Name:      "d",
-											Sensitive: true,
+											Name:         "d",
+											MaskingLevel: storepb.MaskingLevel_PARTIAL,
 										},
 									},
 								},
@@ -2214,8 +2208,8 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 									Name: "MyTable2",
 									ColumnList: []db.ColumnInfo{
 										{
-											Name:      "e",
-											Sensitive: true,
+											Name:         "e",
+											MaskingLevel: storepb.MaskingLevel_FULL,
 										},
 									},
 								},
@@ -2244,20 +2238,20 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "c1",
-					Sensitive: true,
+					Name:         "c1",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "c2",
-					Sensitive: true,
+					Name:         "c2",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "c3",
-					Sensitive: true,
+					Name:         "c3",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "n",
-					Sensitive: false,
+					Name:         "n",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -2277,24 +2271,24 @@ SELECT * FROM tt1 JOIN tt2 ON tt1.aa = tt2.cc JOIN tt3 ON tt2.dd = tt3.ee;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "aa",
-					Sensitive: true,
+					Name:         "aa",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "bb",
-					Sensitive: false,
+					Name:         "bb",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "cc",
-					Sensitive: false,
+					Name:         "cc",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "dd",
-					Sensitive: true,
+					Name:         "dd",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
-					Name:      "ee",
-					Sensitive: true,
+					Name:         "ee",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -2308,12 +2302,12 @@ SELECT tt1.aa, bb FROM tt1;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "aa",
-					Sensitive: true,
+					Name:         "aa",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "bb",
-					Sensitive: false,
+					Name:         "bb",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -2323,12 +2317,12 @@ SELECT tt1.aa, bb FROM tt1;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "a",
-					Sensitive: true,
+					Name:         "a",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "b",
-					Sensitive: false,
+					Name:         "b",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 			},
 		},
@@ -2338,24 +2332,24 @@ SELECT tt1.aa, bb FROM tt1;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "a",
-					Sensitive: true,
+					Name:         "a",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "b",
-					Sensitive: false,
+					Name:         "b",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "c",
-					Sensitive: false,
+					Name:         "c",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "d",
-					Sensitive: true,
+					Name:         "d",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
-					Name:      "e",
-					Sensitive: true,
+					Name:         "e",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -2365,24 +2359,24 @@ SELECT tt1.aa, bb FROM tt1;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "a",
-					Sensitive: true,
+					Name:         "a",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "b",
-					Sensitive: false,
+					Name:         "b",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "c",
-					Sensitive: false,
+					Name:         "c",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "d",
-					Sensitive: true,
+					Name:         "d",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 				{
-					Name:      "e",
-					Sensitive: true,
+					Name:         "e",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -2392,8 +2386,8 @@ SELECT tt1.aa, bb FROM tt1;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "b",
-					Sensitive: true,
+					Name:         "b",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -2403,8 +2397,8 @@ SELECT tt1.aa, bb FROM tt1;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "MAX(e)",
-					Sensitive: true,
+					Name:         "SELECTMAX(e)FROMMyTable2",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -2414,8 +2408,8 @@ SELECT tt1.aa, bb FROM tt1;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "a",
-					Sensitive: true,
+					Name:         "a",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
 		},
@@ -2425,20 +2419,20 @@ SELECT tt1.aa, bb FROM tt1;`,
 			schemaInfo: defaultDatabaseSchema,
 			fieldList: []db.SensitiveField{
 				{
-					Name:      "a",
-					Sensitive: true,
+					Name:         "a",
+					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 				{
-					Name:      "b",
-					Sensitive: false,
+					Name:         "b",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "c",
-					Sensitive: false,
+					Name:         "c",
+					MaskingLevel: storepb.MaskingLevel_NONE,
 				},
 				{
-					Name:      "d",
-					Sensitive: true,
+					Name:         "d",
+					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
 		},

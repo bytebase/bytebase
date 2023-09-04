@@ -841,7 +841,6 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		Schema:            h.Schema,
 		PrevSchema:        h.SchemaPrev,
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
-		PushEvent:         convertToPushEvent(h.Payload.GetPushEvent()),
 		Issue:             "",
 	}
 	if h.IssueUID != nil {

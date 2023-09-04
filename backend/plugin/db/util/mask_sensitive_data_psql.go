@@ -344,7 +344,6 @@ func (extractor *sensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.No
 			for i, field := range fieldList {
 				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingLevel, field.maskingLevel) {
 					changed = true
-					cteInfo.ColumnList[i].Sensitive = true
 					cteInfo.ColumnList[i].MaskingLevel = field.maskingLevel
 				}
 			}

@@ -8,50 +8,37 @@
     v-bind="$attrs"
   >
     <template #body="{ rowData: column }: { rowData: ColumnMetadata }">
-      <BBTableCell
-        v-if="showSensitiveColumn"
-        :left-padding="4"
-        class="w-[1%] text-center"
-      >
-        <!-- width: 1% means as narrow as possible -->
-        <div class="flex items-center justify-center">
-          <FeatureBadge
-            feature="bb.feature.sensitive-data"
-            custom-class="mr-2"
-            :instance="database.instanceEntity"
-          />
-          <input
-            type="checkbox"
-            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-            :disabled="!allowAdmin"
-            :checked="isSensitiveColumn(column)"
-            @input="
-              toggleSensitiveColumn(
-                column,
-                ($event.target as HTMLInputElement).checked,
-                $event
-              )
-            "
+      <BBTableCell class="bb-grid-cell">
+        {{ column.name }}
+      </BBTableCell>
+      <BBTableCell v-if="showSensitiveColumn" class="bb-grid-cell">
+        <div class="flex items-center">
+          {{ getMaskingLevelText(column) }}
+          <button
+            v-if="allowAdmin"
+            class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+            @click.prevent="openSensitiveDrawer(column)"
+          >
+            <heroicons-outline:pencil class="w-4 h-4" />
+          </button>
+        </div>
+      </BBTableCell>
+      <BBTableCell v-if="showClassificationColumn" class="bb-grid-cell">
+        <div class="flex items-center">
+          {{ getColumnClassification(column.classification)?.title ?? "N/A" }}
+          <ClassificationLevelBadge
+            :level-id="getColumnClassification(column.classification)?.levelId"
+            :classification-config="classificationConfig"
           />
         </div>
       </BBTableCell>
-      <BBTableCell class="w-10" :left-padding="showSensitiveColumn ? 2 : 4">
-        {{ column.name }}
-      </BBTableCell>
-      <BBTableCell v-if="showClassificationColumn" class="w-14">
-        {{ getColumnClassification(column.classification)?.title }}
-        <ClassificationLevelBadge
-          :level-id="getColumnClassification(column.classification)?.levelId"
-          :classification-config="classificationConfig"
-        />
-      </BBTableCell>
-      <BBTableCell class="w-5">
+      <BBTableCell class="bb-grid-cell">
         {{ column.type }}
       </BBTableCell>
-      <BBTableCell class="w-6">
+      <BBTableCell class="bb-grid-cell">
         {{ column.default }}
       </BBTableCell>
-      <BBTableCell class="w-4">
+      <BBTableCell class="bb-grid-cell">
         {{ column.nullable }}
       </BBTableCell>
       <BBTableCell
@@ -60,17 +47,17 @@
           engine !== Engine.CLICKHOUSE &&
           engine !== Engine.SNOWFLAKE
         "
-        class="w-6"
+        class="bb-grid-cell"
       >
         {{ column.characterSet }}
       </BBTableCell>
       <BBTableCell
         v-if="engine !== Engine.CLICKHOUSE && engine !== Engine.SNOWFLAKE"
-        class="w-8"
+        class="bb-grid-cell"
       >
         {{ column.collation }}
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell class="bb-grid-cell">
         {{ column.userComment }}
       </BBTableCell>
     </template>
@@ -82,24 +69,36 @@
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
+
+  <SensitiveColumnDrawer
+    :show="!!state.activeColumn"
+    :column="{
+      maskData: getColumnMasking(state.activeColumn ?? {} as ColumnMetadata),
+      database: props.database,
+    }"
+    @dismiss="state.activeColumn = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTableColumn } from "@/bbkit/types";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { ComposedDatabase } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
-import { Engine, MaskingLevel } from "@/types/proto/v1/common";
-import { PolicyType, MaskData } from "@/types/proto/v1/org_policy_service";
+import {
+  Engine,
+  MaskingLevel,
+  maskingLevelToJSON,
+} from "@/types/proto/v1/common";
+import { MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 type LocalState = {
   showFeatureModal: boolean;
+  activeColumn?: ColumnMetadata;
 };
 
 const props = defineProps({
@@ -211,10 +210,8 @@ const NORMAL_COLUMN_LIST = computed(() => {
     },
   ];
   if (showSensitiveColumn.value) {
-    columnList.unshift({
-      title: t("database.sensitive"),
-      center: true,
-      nowrap: true,
+    columnList.splice(1, 0, {
+      title: t("settings.sensitive-data.masking-level.self"),
     });
   }
   if (showClassificationColumn.value) {
@@ -246,10 +243,8 @@ const POSTGRES_COLUMN_LIST = computed(() => {
     },
   ];
   if (showSensitiveColumn.value) {
-    columnList.unshift({
-      title: t("database.sensitive"),
-      center: true,
-      nowrap: true,
+    columnList.splice(1, 0, {
+      title: t("settings.sensitive-data.masking-level.self"),
     });
   }
   if (showClassificationColumn.value) {
@@ -289,62 +284,31 @@ const columnNameList = computed(() => {
   }
 });
 
-const isSensitiveColumn = (column: ColumnMetadata) => {
+const getColumnMasking = (column: ColumnMetadata): MaskData => {
   return (
-    props.maskDataList.findIndex((sensitiveData) => {
+    props.maskDataList.find((sensitiveData) => {
       return (
         sensitiveData.table === props.table.name &&
-        sensitiveData.column === column.name
+        sensitiveData.column === column.name &&
+        sensitiveData.schema === props.schema
       );
-    }) >= 0
-  );
-};
-
-const toggleSensitiveColumn = (
-  column: ColumnMetadata,
-  on: boolean,
-  e: Event
-) => {
-  if (!hasSensitiveDataFeature.value || instanceMissingLicense.value) {
-    state.showFeatureModal = true;
-
-    // Revert UI states
-    e.preventDefault();
-    e.stopPropagation();
-    (e.target as HTMLInputElement).checked = !on;
-    return;
-  }
-
-  const index = props.maskDataList.findIndex((sensitiveData) => {
-    return (
-      sensitiveData.table === props.table.name &&
-      sensitiveData.column === column.name
-    );
-  });
-  const maskDataList = cloneDeep(props.maskDataList);
-  if (on && index < 0) {
-    // Turn on sensitive
-    maskDataList.push({
+    }) ?? {
       schema: props.schema,
       table: props.table.name,
       column: column.name,
       semanticCategoryId: "",
-      maskingLevel: MaskingLevel.FULL,
-    });
-  } else if (!on && index >= 0) {
-    maskDataList.splice(index, 1);
+      maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+    }
+  );
+};
+
+const openSensitiveDrawer = (column: ColumnMetadata) => {
+  if (!hasSensitiveDataFeature.value || instanceMissingLicense.value) {
+    state.showFeatureModal = true;
+    return;
   }
 
-  usePolicyV1Store().upsertPolicy({
-    parentPath: props.database.name,
-    policy: {
-      type: PolicyType.MASKING,
-      maskingPolicy: {
-        maskData: maskDataList,
-      },
-    },
-    updateMask: ["payload"],
-  });
+  state.activeColumn = column;
 };
 
 const getColumnClassification = (classificationId: string) => {
@@ -352,5 +316,11 @@ const getColumnClassification = (classificationId: string) => {
     return;
   }
   return props.classificationConfig.classification[classificationId];
+};
+
+const getMaskingLevelText = (column: ColumnMetadata) => {
+  const masking = getColumnMasking(column);
+  const level = maskingLevelToJSON(masking.maskingLevel);
+  return t(`settings.sensitive-data.masking-level.${level.toLowerCase()}`);
 };
 </script>
