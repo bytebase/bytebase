@@ -1934,10 +1934,6 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 			PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
 		},
 	}
-	payload, err := protojson.Marshal(sheetPayload)
-	if err != nil {
-		return nil, nil
-	}
 	sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: repoInfo.project.UID,
@@ -1946,7 +1942,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    string(payload),
+		Payload:    sheetPayload,
 	})
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
@@ -2007,10 +2003,6 @@ func (s *Server) prepareIssueFromFile(
 			PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
 		},
 	}
-	payload, err := protojson.Marshal(sheetPayload)
-	if err != nil {
-		return nil, nil
-	}
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
 		// A non-YAML file means the whole file content is the SQL statement
 		if !fileInfo.item.IsYAML {
@@ -2022,7 +2014,7 @@ func (s *Server) prepareIssueFromFile(
 				Visibility: store.ProjectSheet,
 				Source:     store.SheetFromBytebaseArtifact,
 				Type:       store.SheetForSQL,
-				Payload:    string(payload),
+				Payload:    sheetPayload,
 			})
 			if err != nil {
 				activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -2059,7 +2051,7 @@ func (s *Server) prepareIssueFromFile(
 			Visibility: store.ProjectSheet,
 			Source:     store.SheetFromBytebaseArtifact,
 			Type:       store.SheetForSQL,
-			Payload:    string(payload),
+			Payload:    sheetPayload,
 		})
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -2110,7 +2102,7 @@ func (s *Server) prepareIssueFromFile(
 			Visibility: store.ProjectSheet,
 			Source:     store.SheetFromBytebaseArtifact,
 			Type:       store.SheetForSQL,
-			Payload:    string(payload),
+			Payload:    sheetPayload,
 		})
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -2191,10 +2183,6 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 				PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
 			},
 		}
-		payload, err := protojson.Marshal(sheetPayload)
-		if err != nil {
-			return err
-		}
 		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: issue.Project.UID,
@@ -2203,7 +2191,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			Visibility: store.ProjectSheet,
 			Source:     store.SheetFromBytebaseArtifact,
 			Type:       store.SheetForSQL,
-			Payload:    string(payload),
+			Payload:    sheetPayload,
 		})
 		if err != nil {
 			return err

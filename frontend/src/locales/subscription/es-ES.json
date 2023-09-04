@@ -1,7 +1,7 @@
 {
   "current": "Plan actual",
   "unlimited": "Ilimitado",
-  "instance-count": "Cantidad de instancias",
+  "max-instance-count": "Recuento máximo de instancias",
   "user-count": "Conteo de usuarios",
   "expires-at": "Expira el",
   "start-free-trial": "Comience la prueba gratuita",
