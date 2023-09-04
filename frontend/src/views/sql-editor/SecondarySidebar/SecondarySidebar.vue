@@ -1,6 +1,5 @@
 <template>
   <NTabs
-    ref="tabsRef"
     v-model:value="tab"
     type="segment"
     size="small"
@@ -21,7 +20,7 @@
 
 <script setup lang="ts">
 import { NTabs, NTabPane } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, watch } from "vue";
 import { useInstanceV1Store, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { instanceV1HasAlterSchema, isDisconnectedTab } from "@/utils";
@@ -37,7 +36,6 @@ defineEmits<{
   ): void;
 }>();
 
-const tabsRef = ref<InstanceType<typeof NTabs>>();
 const { tab } = useSecondarySidebarContext();
 
 const tabStore = useTabStore();
