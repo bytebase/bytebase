@@ -1,5 +1,7 @@
 <template>
-  <div class="w-full block lg:flex justify-between items-start bg-white">
+  <div
+    class="w-full flex flex-col sm:flex-row sm:flex-wrap xl:flex-nowrap lg:justify-between items-start bg-white"
+  >
     <div
       v-if="!tabStore.isDisconnected"
       class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
@@ -61,7 +63,7 @@
 
     <div
       v-if="isProductionEnvironment"
-      class="flex justify-start items-center py-1 sm:py-0 sm:h-8 px-4 text-white bg-error"
+      class="w-full xl:w-auto flex justify-start items-center py-1 sm:py-0 sm:h-8 px-4 text-white bg-error truncate"
     >
       {{ $t("sql-editor.sql-execute-in-production-environment") }}
     </div>

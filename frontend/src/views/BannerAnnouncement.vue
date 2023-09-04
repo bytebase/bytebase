@@ -3,12 +3,12 @@
     <div
       class="mx-auto py-1 px-3 w-full flex flex-row items-center justify-center flex-wrap"
     >
-      <div class="py-1 px-3 font-medium text-white flex flex-row items-center">
+      <div class="py-1 px-1 font-medium text-white flex flex-row items-center">
         <p>{{ announcementText }}</p>
       </div>
       <div
         v-if="announcementLink.length > 0"
-        class="item-center py-1 px-3 font-medium text-white truncate"
+        class="item-center py-1 px-1 font-medium text-white truncate"
       >
         <a
           :href="announcementLink"

@@ -1,7 +1,7 @@
 <template>
   <div
     :id="domIDForItem(item)"
-    class="flex items-start justify-between hover:bg-gray-100 px-2 gap-x-1"
+    class="flex items-start justify-between hover:bg-gray-100 px-1 gap-x-1"
     :class="[isCurrentItem && 'bg-indigo-600/10']"
     @click="$emit('click', item, $event)"
     @contextmenu="$emit('contextmenu', item, $event)"
@@ -38,9 +38,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useTabStore } from "@/store";
+import { SheetConnectionIcon } from "@/views/sql-editor/EditorCommon";
 import { Dropdown } from "@/views/sql-editor/Sheet";
 import { SheetViewMode } from "@/views/sql-editor/Sheet";
-import { SheetConnectionIcon } from "../../EditorCommon";
 import { MergedItem, SheetItem, domIDForItem, titleHTML } from "./common";
 
 const props = defineProps<{

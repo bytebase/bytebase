@@ -1256,7 +1256,7 @@ func convertToV1PBMaskingExceptionPolicyPayload(policy *storepb.MaskingException
 	}, nil
 }
 
-// TODO(p0ny): fix bb.issue.database.general
+// TODO(p0ny): fix bb.issue.database.general.
 func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentType {
 	res := v1pb.DeploymentType_DEPLOYMENT_TYPE_UNSPECIFIED
 	switch issueType {

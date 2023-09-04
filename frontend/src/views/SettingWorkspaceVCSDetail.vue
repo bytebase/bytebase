@@ -6,7 +6,7 @@
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">
-          {{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
+          {{ $t("gitops.setting.add-git-provider.gitlab-self-host") }}
         </div>
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
