@@ -461,7 +461,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, &s.profile, false)
 	if !profile.Readonly {
-		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
+		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 		s.SlowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
@@ -1196,7 +1196,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 
 	// Sync the instance schema so we can transfer the sample database later.
-	if _, err := s.SchemaSyncer.SyncInstance(ctx, testInstance); err != nil {
+	if err := s.SchemaSyncer.SyncInstance(ctx, testInstance); err != nil {
 		return errors.Wrapf(err, "failed to sync test onboarding instance")
 	}
 
@@ -1255,7 +1255,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 
 	// Sync the instance schema so we can transfer the sample database later.
-	if _, err := s.SchemaSyncer.SyncInstance(ctx, prodInstance); err != nil {
+	if err := s.SchemaSyncer.SyncInstance(ctx, prodInstance); err != nil {
 		return errors.Wrapf(err, "failed to sync prod onboarding instance")
 	}
 
@@ -1339,7 +1339,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    "{}",
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create test sheet for sample project")
@@ -1356,7 +1355,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    "{}",
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create prod sheet for sample project")
@@ -1481,17 +1479,17 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Add a sensitive data policy to pair it with the sample query below. So that user can
 	// experience the sensitive data masking feature from SQL Editor.
-	sensitiveDataPolicy := api.SensitiveDataPolicy{
-		SensitiveDataList: []api.SensitiveData{
+	maskingPolicy := &storepb.MaskingPolicy{
+		MaskData: []*storepb.MaskData{
 			{
-				Schema: "public",
-				Table:  "salary",
-				Column: "amount",
-				Type:   api.SensitiveDataMaskTypeDefault,
+				Schema:       "public",
+				Table:        "salary",
+				Column:       "amount",
+				MaskingLevel: storepb.MaskingLevel_FULL,
 			},
 		},
 	}
-	policyPayload, err = json.Marshal(sensitiveDataPolicy)
+	policyPayload, err = json.Marshal(maskingPolicy)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal onboarding sensitive data policy")
 	}

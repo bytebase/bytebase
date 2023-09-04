@@ -306,9 +306,6 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 		index.Unique = unique == "UNIQUE"
 		indexKey := db.IndexKey{Schema: schemaName, Table: tableName, Index: index.Name}
 		index.Expressions = expressionsMap[indexKey]
-		if err != nil {
-			return nil, err
-		}
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		indexMap[key] = append(indexMap[key], index)

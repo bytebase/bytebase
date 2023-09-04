@@ -238,9 +238,9 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			}
 			patch.ProjectID = &project.ResourceID
 		case "labels":
-			metadata := database.Metadata
-			metadata.Labels = request.Database.Labels
-			patch.Metadata = metadata
+			patch.MetadataUpsert = &storepb.DatabaseMetadata{
+				Labels: request.Database.Labels,
+			}
 		case "environment":
 			if request.Database.Environment == "" {
 				unsetEnvironment := ""
@@ -841,7 +841,6 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		Schema:            h.Schema,
 		PrevSchema:        h.SchemaPrev,
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
-		PushEvent:         convertToPushEvent(h.Payload.GetPushEvent()),
 		Issue:             "",
 	}
 	if h.IssueUID != nil {

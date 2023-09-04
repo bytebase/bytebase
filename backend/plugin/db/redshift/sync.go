@@ -152,9 +152,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 	}
 
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database connection for %q", driver.databaseName)
-	}
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -697,9 +694,6 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		index.Type = getIndexMethodType(statement)
 		index.Unique = node.Index.Unique
 		index.Expressions = node.Index.GetKeyNameList()
-		if err != nil {
-			return nil, err
-		}
 		if primary.Valid && primary.Int32 == 1 {
 			index.Primary = true
 		}

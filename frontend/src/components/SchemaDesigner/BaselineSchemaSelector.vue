@@ -9,6 +9,7 @@
       <EnvironmentSelect
         class="!w-60 mr-4 shrink-0"
         name="environment"
+        :disabled="props.readonly"
         :selected-id="state.environmentId"
         :select-default="false"
         @select-environment-id="handleEnvironmentSelect"
@@ -17,6 +18,7 @@
         class="!w-128"
         :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
         :mode="'USER'"
+        :disabled="props.readonly"
         :environment-id="state.environmentId"
         :project-id="props.projectId"
         :engine-type-list="allowedEngineTypeList"
@@ -46,6 +48,7 @@
       >
         <BBSelect
           class="w-full"
+          :disabled="props.readonly"
           :selected-item="state.changeHistory"
           :item-list="
                   databaseChangeHistoryList(state.databaseId as string)
@@ -113,6 +116,7 @@ interface BaselineSchema {
 const props = defineProps<{
   projectId?: string;
   baselineSchema?: BaselineSchema;
+  readonly?: boolean;
 }>();
 
 const emit = defineEmits<{

@@ -1,5 +1,5 @@
 <template>
-  <BranchTablePanel :project-id="projectId" />
+  <BranchTablePanel :project-id="projectId" :hide-project-column="true" />
 </template>
 
 <script lang="ts" setup>

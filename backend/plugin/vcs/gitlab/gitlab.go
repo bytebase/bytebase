@@ -1216,6 +1216,7 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 		if err != nil {
 			return errors.Wrapf(err, "POST %s", url)
 		}
+		defer resp.Body.Close()
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {

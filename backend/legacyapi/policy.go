@@ -189,12 +189,6 @@ func (p *EnvironmentTierPolicy) String() (string, error) {
 	return string(s), nil
 }
 
-// SensitiveDataPolicy is the policy configuration for sensitive data.
-// It is only applicable to database resource type.
-type SensitiveDataPolicy struct {
-	SensitiveDataList []SensitiveData `json:"sensitiveDataList"`
-}
-
 // SensitiveData is the value for sensitive data.
 type SensitiveData struct {
 	Schema string                `json:"schema"`
@@ -211,23 +205,6 @@ const (
 	// The default method is subject to change.
 	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
 )
-
-// UnmarshalSensitiveDataPolicy will unmarshal payload to sensitive data policy.
-func UnmarshalSensitiveDataPolicy(payload string) (*SensitiveDataPolicy, error) {
-	var p SensitiveDataPolicy
-	if err := json.Unmarshal([]byte(payload), &p); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal sensitive data policy %q", payload)
-	}
-	return &p, nil
-}
-
-func (p *SensitiveDataPolicy) String() (string, error) {
-	s, err := json.Marshal(p)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
 
 // SlowQueryPolicy is the policy configuration for slow query.
 type SlowQueryPolicy struct {

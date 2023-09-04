@@ -258,7 +258,8 @@
     "condition": "条件",
     "search-user": "搜索用户",
     "branches": "分支",
-    "merge": "合并"
+    "merge": "合并",
+    "info": "信息"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -591,6 +592,27 @@
               "description": "提供私有化部署的 OpenAI API Endpoint。"
             }
           }
+        },
+        "announcement": {
+          "self": "公告",
+          "update-success": "公告设置已更新。",
+          "owner-or-dba-can-edit": "只有工作区所有者或 DBA 可以更新公告设置。"
+        },
+        "announcement-alert-level": {
+          "description": "等级",
+          "field": {
+            "info": "普通",
+            "warning": "警告",
+            "critical": "重要"
+          }
+        },
+        "announcement-text": {
+          "self": "标题",
+          "placeholder": "输入公告标题"
+        },
+        "extra-link": {
+          "self": "链接",
+          "placeholder": "输入公告链接"
         }
       }
     },
@@ -601,11 +623,31 @@
       "global-masking-rule": "全局脱敏规则",
       "data-feature": "数据特征",
       "add-rule": "添加规则",
+      "grant-access": "授权访问",
+      "never-expires": "无过期时间",
+      "column-detail": {
+        "masking-setting-for-column": "\"{column}\" 脱敏设置",
+        "access-user-list": "用户访问列表",
+        "access-user-list-desc": "被授权的用户可以访问非脱敏的原始数据。",
+        "remove-user-permission": "删除该用户权限？",
+        "remove-sensitive-warning": "该数据会被设置为明文，不再脱敏。"
+      },
+      "algorithms": {
+        "self": "脱敏算法",
+        "default": "默认",
+        "default-desc": "使用 *** 为数据遮挡"
+      },
       "masking-level": {
         "self": "脱敏程度",
+        "masking_level_unspecified": "遵循全局配置",
         "none": "明文",
         "partial": "半脱敏",
         "full": "全脱敏"
+      },
+      "action": {
+        "self": "操作类型",
+        "query": "查询",
+        "export": "导出"
       }
     },
     "access-control": {
@@ -1644,14 +1686,15 @@
         "gitlab-self-host": "自托管 GitLab",
         "gitlab-self-host-admin-requirement": "您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab 整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "gitlab-com-admin-requirement": "您的账号必须对您打算关联的代码仓库拥有管理员权限。通常这个账号对应的是一个专门的服务账号而非个人账号。",
+        "github-self-host-ee": "自托管 GitHub 企业版 (EE)",
         "github-com-admin-requirement": "您必须是 GitHub 组织的管理员才能进行该配置。否则您需要让您的 GitHub 组织管理员把 Bytebase 先注册为组织级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "bitbucket-admin-requirement": "您必须是 Bitbucket 工作空间的管理员才能进行该配置。否则您需要让您的 Bitbucket 工作空间管理员把 Bytebase 先注册为工作空间级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
+        "azure-devops-service": "Azure DevOps 服务",
         "azure-admin-requirement": "您必须是 Azure DevOps 组织的管理员才能进行该配置。否则您需要让您的 Azure DevOps 组织管理员把 Bytebase 先注册为组织级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 客户端 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "oauth-info-correct": "OAuth 信息验证成功",
         "check-oauth-info-match": "请确认 Secret 和注册在 GitLab 实例上的应用信息匹配。",
         "add-success": "成功添加了 Git 提供方「{vcs}」",
         "choose": "选择 Git 提供方",
-        "gitlab-self-host-ce-ee": "自托管 GitLab 企业版 (EE) 或者 社区版 (CE)",
         "basic-info": {
           "self": "基本信息",
           "gitlab-instance-url": "GitLab 实例 URL",
@@ -1699,9 +1742,7 @@
         "confirm": {
           "confirm-info": "确认信息",
           "confirm-description": "创建完成后，这个 Git 供应方将出现在项目面板「GitOps」Tab 下，可以被项目所有者选中。"
-        },
-        "github-self-host-ee": "自托管 GitHub 企业版 (EE)",
-        "azure-devops-service": "Azure DevOps 服务"
+        }
       },
       "git-provider": {
         "gitlab-self-host-application-id-label": "注册为 GitLab 实例级 OAuth 应用的应用 ID。",
@@ -1966,7 +2007,8 @@
       "comment": "注释",
       "not-null": "不可为空",
       "primary": "主键",
-      "foreign-key": "外键"
+      "foreign-key": "外键",
+      "classification": "分类分级"
     },
     "nothing-changed": "无任何改动",
     "message": {
@@ -2210,6 +2252,10 @@
         "title": "共享 SQL 脚本",
         "desc": "将 SQL 脚本分享给项目成员，或者公开给所有人。"
       },
+      "bb-feature-announcement": {
+        "title": "公告",
+        "desc": "配置公告横幅。"
+      },
       "bb-feature-encrypted-secrets": {
         "title": "保密变量",
         "desc": "存储数据库的保密变量，并在工单的 SQL 中使用它们。"
@@ -2260,7 +2306,8 @@
     "from-issue-warning": "这个工作表来自工单 {issue}，处于只读模式。{oversize}",
     "content-oversize-warning": "SQL 过大所以无法直接编辑。",
     "sheets": "工作表",
-    "search-sheets": "搜索工作表"
+    "search-sheets": "搜索工作表",
+    "sheet": "工作表"
   },
   "engine": {
     "mysql": "MySQL",
@@ -2375,7 +2422,8 @@
         "member-role-update": "更新项目成员角色",
         "database-transfer": "转移数据库"
       },
-      "sql-editor-query": "SQL 编辑器查询"
+      "sql-editor-query": "SQL 编辑器查询",
+      "sql-export": "SQL 导出"
     }
   },
   "onboarding-guide": {
@@ -2756,6 +2804,11 @@
       "default-value": "默认值",
       "comment": "备注",
       "nullable": "可为空"
+    },
+    "classification": {
+      "self": "数据分类分级",
+      "select": "选择分类",
+      "search": "搜索分类"
     }
   },
   "principal": {
@@ -2836,6 +2889,7 @@
     "parent-branch": "父分支",
     "save-draft": "保存草稿",
     "merge-branch": "合并分支",
+    "delete-branch-after-merged": "合并后删除分支",
     "diff-editor": {
       "self": "Diff 编辑器",
       "resolve": "解决",
@@ -2846,6 +2900,7 @@
       "resolve-and-merge-again": "解决冲突并再次合并",
       "discard-changes": "丢弃修改",
       "action-confirm": "确认操作",
+      "duplicated-branch-name-found": "发现重复的分支名称。",
       "discard-changes-confirm": "您确定要丢弃所有修改吗？"
     },
     "tables": "表",
@@ -2858,6 +2913,10 @@
       "updated-succeed": "分支更新成功",
       "merge-to-main-successfully": "成功合并到主版本",
       "updated-time-by-user": "由 {user} 于 {time} 更新"
+    },
+    "action": {
+      "use-the-existing-branch": "使用已有分支",
+      "create-new-branch": "创建新分支"
     }
   },
   "cel": {

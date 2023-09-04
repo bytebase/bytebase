@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/plugin/vcs"
 )
 
 // TaskStatus is the status of a task.
@@ -131,10 +130,9 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 	SpecID        string `json:"specId,omitempty"`
 
-	SheetID         int            `json:"sheetId,omitempty"`
-	SchemaVersion   string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent    *vcs.PushEvent `json:"pushEvent,omitempty"`
-	SchemaGroupName string         `json:"schemaGroupName,omitempty"`
+	SheetID         int    `json:"sheetId,omitempty"`
+	SchemaVersion   string `json:"schemaVersion,omitempty"`
+	SchemaGroupName string `json:"schemaGroupName,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update (SDL).
@@ -144,9 +142,8 @@ type TaskDatabaseSchemaUpdateSDLPayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 	SpecID        string `json:"specId,omitempty"`
 
-	SheetID       int            `json:"sheetId,omitempty"`
-	SchemaVersion string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+	SheetID       int    `json:"sheetId,omitempty"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
@@ -156,9 +153,8 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 	SpecID        string `json:"specId,omitempty"`
 
-	SheetID       int            `json:"sheetId,omitempty"`
-	SchemaVersion string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+	SheetID       int    `json:"sheetId,omitempty"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
 	// SocketFileName is the socket file that gh-ost listens on.
 	// The name follows this template,
 	// `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.sock`
@@ -192,9 +188,8 @@ type TaskDatabaseDataUpdatePayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 	SpecID        string `json:"specId,omitempty"`
 
-	SheetID       int            `json:"sheetId,omitempty"`
-	SchemaVersion string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+	SheetID       int    `json:"sheetId,omitempty"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
 
 	// MySQL rollback SQL related.
 

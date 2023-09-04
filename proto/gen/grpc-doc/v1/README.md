@@ -504,6 +504,7 @@
     - [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest)
     - [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse)
     - [SchemaDesign](#bytebase-v1-SchemaDesign)
+    - [SchemaDesign.Protection](#bytebase-v1-SchemaDesign-Protection)
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
   
     - [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type)
@@ -528,6 +529,7 @@
   
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
+    - [Announcement](#bytebase-v1-Announcement)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
     - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
@@ -555,6 +557,7 @@
     - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
     - [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting)
   
+    - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
     - [AppIMSetting.IMType](#bytebase-v1-AppIMSetting-IMType)
     - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
     - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
@@ -1103,7 +1106,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | ----- | ---- | ----- | ----------- |
 | action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
 | masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
-| members | [string](#string) | repeated | Members is the list of principals who bind to this exception policy instance.
+| member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
 
 * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
@@ -5049,6 +5052,7 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | schema_tenant_mode | [bool](#bool) |  | The schema tenant mode is used to determine whether the instance is in schema tenant mode. For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. |
+| sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
 
 
 
@@ -8146,10 +8150,26 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 | baseline_change_history_id | [string](#string) | optional | The baseline change history id. |
 | type | [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type) |  | The type of the schema design. |
 | etag | [string](#string) |  | The etag of the schema design. |
+| protection | [SchemaDesign.Protection](#bytebase-v1-SchemaDesign-Protection) |  | The protection of the schema design branch. |
 | creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |
 | updater | [string](#string) |  | The updater of the schema design. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was created. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was last updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaDesign-Protection"></a>
+
+### SchemaDesign.Protection
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| allow_force_pushes | [bool](#bool) |  | Permits force pushes to the branch. |
 
 
 
@@ -8422,6 +8442,23 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | ----- | ---- | ----- | ----------- |
 | url | [string](#string) |  | The URL for the agent API. |
 | token | [string](#string) |  | The token for the agent. |
+
+
+
+
+
+
+<a name="bytebase-v1-Announcement"></a>
+
+### Announcement
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel) |  | The alert level of announcemnt |
+| text | [string](#string) |  | The text of announcemnt |
+| link | [string](#string) |  | The optional link, user can follow the link to check extra details |
 
 
 
@@ -8859,6 +8896,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | outbound_ip_list | [string](#string) | repeated | outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. |
 | gitops_webhook_url | [string](#string) |  | The webhook URL for the GitOps workflow. |
 | refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. |
+| announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
 
 
 
@@ -8885,6 +8923,20 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 
 
  
+
+
+<a name="bytebase-v1-Announcement-AlertLevel"></a>
+
+### Announcement.AlertLevel
+We support three levels of AlertLevel: INFO, WARNING, and ERROR.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ALERT_LEVEL_UNSPECIFIED | 0 |  |
+| ALERT_LEVEL_INFO | 1 |  |
+| ALERT_LEVEL_WARNING | 2 |  |
+| ALERT_LEVEL_CRITICAL | 3 |  |
+
 
 
 <a name="bytebase-v1-AppIMSetting-IMType"></a>

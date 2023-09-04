@@ -14,7 +14,6 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -25,13 +24,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-)
-
-var (
-	protojsonUnmarshaler = protojson.UnmarshalOptions{
-		AllowPartial:   true,
-		DiscardUnknown: true,
-	}
 )
 
 // SchemaDesignService implements SchemaDesignServiceServer interface.
@@ -182,8 +174,9 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
-			Type:   schemaDesignType,
-			Engine: storepb.Engine(schemaDesign.Engine),
+			Type:       schemaDesignType,
+			Engine:     storepb.Engine(schemaDesign.Engine),
+			Protection: convertProtectionToStore(schemaDesign.Protection),
 		},
 	}
 	if schemaDesignType == storepb.SheetPayload_SchemaDesign_MAIN_BRANCH {
@@ -223,11 +216,6 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		schemaDesignSheetPayload.SchemaDesign.BaselineChangeHistoryId = *schemaDesign.BaselineChangeHistoryId
 	}
 
-	payloadBytes, err := protojson.Marshal(schemaDesignSheetPayload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to marshal schema design sheet payload: %v", err))
-	}
-
 	sheetCreate := &store.SheetMessage{
 		Name:        schemaDesign.Title,
 		ProjectUID:  project.UID,
@@ -238,7 +226,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		Type:        store.SheetForSQL,
 		CreatorID:   currentPrincipalID,
 		UpdaterID:   currentPrincipalID,
-		Payload:     string(payloadBytes),
+		Payload:     schemaDesignSheetPayload,
 	}
 	sheet, err := s.store.CreateSheet(ctx, sheetCreate)
 	if err != nil {
@@ -299,17 +287,8 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		sheetPayload := &storepb.SheetPayload{}
-		if err := protojsonUnmarshaler.Unmarshal([]byte(sheet.Payload), sheetPayload); err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to unmarshal sheet payload: %v", err))
-		}
-		sheetPayload.SchemaDesign.BaselineSheetId = sheetID
-		payloadBytes, err := protojson.Marshal(sheetPayload)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to marshal schema design sheet payload: %v", err))
-		}
-		payload := string(payloadBytes)
-		sheetUpdate.Payload = &payload
+		sheet.Payload.SchemaDesign.BaselineSheetId = sheetID
+		sheetUpdate.Payload = sheet.Payload
 	}
 
 	// If the schema is updated, we need to make sure the schema string is valid.
@@ -404,12 +383,6 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, err
 	}
-
-	// Delete personal draft schema design.
-	err = s.store.DeleteSheet(ctx, sheetUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete personal draft schema design: %v", err))
-	}
 	return targetSchemaDesign, nil
 }
 
@@ -443,13 +416,9 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
-	sheetPayload := &storepb.SheetPayload{}
-	if err := protojsonUnmarshaler.Unmarshal([]byte(sheet.Payload), sheetPayload); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to unmarshal sheet payload: %v", err))
-	}
 	// Find and delete the baseline sheet if it exists.
-	if sheetPayload.SchemaDesign != nil && sheetPayload.SchemaDesign.BaselineSheetId != "" {
-		baselineSheetUID, err := strconv.Atoi(sheetPayload.SchemaDesign.BaselineSheetId)
+	if sheet.Payload.SchemaDesign != nil && sheet.Payload.SchemaDesign.BaselineSheetId != "" {
+		baselineSheetUID, err := strconv.Atoi(sheet.Payload.SchemaDesign.BaselineSheetId)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
 		}
@@ -488,13 +457,8 @@ func (s *SchemaDesignService) getSheet(ctx context.Context, find *store.FindShee
 }
 
 func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sheet *store.SheetMessage) (*v1pb.SchemaDesign, error) {
-	sheetPayload := &storepb.SheetPayload{}
-	err := protojsonUnmarshaler.Unmarshal([]byte(sheet.Payload), sheetPayload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to unmarshal sheet payload: %v", err))
-	}
-	if sheetPayload.Type != storepb.SheetPayload_SCHEMA_DESIGN || sheetPayload.SchemaDesign == nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unwanted sheet type: %v", sheetPayload.Type))
+	if sheet.Payload.Type != storepb.SheetPayload_SCHEMA_DESIGN || sheet.Payload.SchemaDesign == nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unwanted sheet type: %v", sheet.Payload.Type))
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -532,7 +496,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the updater: %d", sheet.UpdaterID))
 	}
 
-	engine := v1pb.Engine(sheetPayload.SchemaDesign.Engine)
+	engine := v1pb.Engine(sheet.Payload.SchemaDesign.Engine)
 	schema := sheet.Statement
 	schemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, schema)
 	if err != nil {
@@ -540,15 +504,15 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}
 
 	baselineSchema, baselineSheetName := "", ""
-	schemaDesignType := v1pb.SchemaDesign_Type(sheetPayload.SchemaDesign.Type)
+	schemaDesignType := v1pb.SchemaDesign_Type(sheet.Payload.SchemaDesign.Type)
 	// For backward compatibility, we default to MAIN_BRANCH if the type is not specified.
 	if schemaDesignType == v1pb.SchemaDesign_TYPE_UNSPECIFIED {
 		schemaDesignType = v1pb.SchemaDesign_MAIN_BRANCH
 	}
-	if sheetPayload.SchemaDesign.BaselineSheetId != "" {
-		sheetUID, err := strconv.Atoi(sheetPayload.SchemaDesign.BaselineSheetId)
+	if sheet.Payload.SchemaDesign.BaselineSheetId != "" {
+		sheetUID, err := strconv.Atoi(sheet.Payload.SchemaDesign.BaselineSheetId)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetPayload.SchemaDesign.BaselineSheetId))
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheet.Payload.SchemaDesign.BaselineSheetId))
 		}
 		baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
 			UID: &sheetUID,
@@ -560,12 +524,12 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}
 
 	if schemaDesignType == v1pb.SchemaDesign_MAIN_BRANCH {
-		if sheetPayload.SchemaDesign.BaselineSheetId != "" {
-			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheetPayload.SchemaDesign.BaselineSheetId)
+		if sheet.Payload.SchemaDesign.BaselineSheetId != "" {
+			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheet.Payload.SchemaDesign.BaselineSheetId)
 		}
 	} else {
-		if sheetPayload.SchemaDesign.BaselineSchemaDesignId != "" {
-			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheetPayload.SchemaDesign.BaselineSchemaDesignId)
+		if sheet.Payload.SchemaDesign.BaselineSchemaDesignId != "" {
+			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.Payload.SchemaDesign.BaselineSchemaDesignId)
 		}
 	}
 
@@ -591,18 +555,39 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Type:                   schemaDesignType,
 		Etag:                   GenerateEtag([]byte(schema)),
+		Protection:             convertProtectionFromStore(sheet.Payload.SchemaDesign.Protection),
 		Creator:                fmt.Sprintf("users/%s", creator.Email),
 		Updater:                fmt.Sprintf("users/%s", updater.Email),
 		CreateTime:             timestamppb.New(sheet.CreatedTime),
 		UpdateTime:             timestamppb.New(sheet.UpdatedTime),
 	}
 
-	baselineChangeHistoryID := sheetPayload.SchemaDesign.BaselineChangeHistoryId
+	baselineChangeHistoryID := sheet.Payload.SchemaDesign.BaselineChangeHistoryId
 	if baselineChangeHistoryID != "" {
 		schemaDesign.BaselineChangeHistoryId = &baselineChangeHistoryID
 	}
 
 	return schemaDesign, nil
+}
+
+func convertProtectionToStore(protection *v1pb.SchemaDesign_Protection) *storepb.SheetPayload_SchemaDesign_Protection {
+	if protection == nil {
+		return &storepb.SheetPayload_SchemaDesign_Protection{}
+	}
+
+	return &storepb.SheetPayload_SchemaDesign_Protection{
+		AllowForcePushes: protection.AllowForcePushes,
+	}
+}
+
+func convertProtectionFromStore(protection *storepb.SheetPayload_SchemaDesign_Protection) *v1pb.SchemaDesign_Protection {
+	if protection == nil {
+		return &v1pb.SchemaDesign_Protection{}
+	}
+
+	return &v1pb.SchemaDesign_Protection{
+		AllowForcePushes: protection.AllowForcePushes,
+	}
 }
 
 // GenerateEtag generates etag for the given body.

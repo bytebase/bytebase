@@ -2,7 +2,6 @@ categoryList:
   - type: change-management
     featureList:
       - user-count
-      - environment-count
       - instance-count
       - state-based-change
       - migration-based-change
@@ -50,6 +49,7 @@ categoryList:
       - audit-log
       - disallow-signup
       - anomaly-detection
+      - announcement-banner
   - type: bespoke
     featureList:
       - support
@@ -76,8 +76,6 @@ planList:
         content: user-maximum-20
       - type: instance-count
         content: instance-maximum-10
-      - type: environment-count
-        content: environment-unlimited
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
@@ -153,8 +151,6 @@ planList:
       - type: instance-count
         content: instance-maximum-20
         tooltip: instance-maximum-20-tooltip
-      - type: environment-count
-        content: environment-unlimited
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
@@ -230,8 +226,6 @@ planList:
       - type: instance-count
         content: instance-unlimited
         tooltip: instance-unlimited-tooltip
-      - type: environment-count
-        content: environment-unlimited
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
@@ -291,6 +285,7 @@ planList:
       - type: watermark
       - type: audit-log
       - type: disallow-signup
+      - type: announcement-banner
       # Bespoke
       - type: support
         content: support-sla

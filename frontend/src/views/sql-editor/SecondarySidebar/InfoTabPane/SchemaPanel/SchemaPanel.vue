@@ -36,7 +36,6 @@
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
 import { useDatabaseV1ByUID, useDBSchemaV1Store, useTabStore } from "@/store";
-import { DatabaseId } from "@/types";
 import {
   DatabaseMetadata,
   SchemaMetadata,
@@ -52,7 +51,7 @@ type LocalState = {
 const emit = defineEmits<{
   (
     event: "alter-schema",
-    params: { databaseId: DatabaseId; schema: string; table: string }
+    params: { databaseId: string; schema: string; table: string }
   ): void;
 }>();
 

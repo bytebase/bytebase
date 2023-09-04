@@ -203,7 +203,7 @@ const onConfirm = (rule: MaskingRulePolicy_MaskingRule) => {
     mode: "EDIT",
     rule,
   };
-  // TODO: call backend api
+  // TODO(ed): call backend api
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

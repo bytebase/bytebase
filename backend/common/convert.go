@@ -9,6 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const celLimit = 1024 * 1024
+
 // RiskFactors are the variables when evaluating the risk level.
 var RiskFactors = []cel.EnvOption{
 	// string factors
@@ -30,6 +32,7 @@ var RiskFactors = []cel.EnvOption{
 var ApprovalFactors = []cel.EnvOption{
 	cel.Variable("level", cel.IntType),
 	cel.Variable("source", cel.IntType),
+	cel.ParserExpressionSizeLimit(celLimit),
 }
 
 // QueryExportPolicyCELAttributes are the variables when evaluating query and export permissions.
@@ -41,6 +44,7 @@ var QueryExportPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("resource.database", cel.StringType),
 	cel.Variable("resource.schema", cel.StringType),
 	cel.Variable("resource.table", cel.StringType),
+	cel.ParserExpressionSizeLimit(celLimit),
 }
 
 // MaskingRulePolicyCELAttributes are the variables when evaluating masking rule.
@@ -51,7 +55,8 @@ var MaskingRulePolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("database_name", cel.StringType),
 	cel.Variable("schema_name", cel.StringType),
 	cel.Variable("table_name", cel.StringType),
-	cel.Variable("column_classification", cel.StringType),
+	cel.Variable("column_classification_level", cel.StringType),
+	cel.ParserExpressionSizeLimit(celLimit),
 }
 
 // MaskingExceptionPolicyCELAttributes are the variables when evaluating masking exception.
@@ -62,6 +67,7 @@ var MaskingExceptionPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("resource.schema_name", cel.StringType),
 	cel.Variable("resource.column_name", cel.StringType),
 	cel.Variable("request.time", cel.TimestampType),
+	cel.ParserExpressionSizeLimit(celLimit),
 }
 
 // ConvertParsedRisk converts parsed risk to unparsed format.

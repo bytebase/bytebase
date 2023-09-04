@@ -178,7 +178,7 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 		if err == nil {
 			break
 		}
-		if err != nil && !os.IsNotExist(err) {
+		if !os.IsNotExist(err) {
 			return errors.Wrapf(err, "failed to check data directory path existence %q", path)
 		}
 		dirListToChown = append(dirListToChown, path)

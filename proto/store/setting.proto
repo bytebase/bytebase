@@ -33,6 +33,28 @@ message WorkspaceProfileSetting {
 
   // The duration for refresh token.
   google.protobuf.Duration refresh_token_duration = 6;
+
+  // The setting of custom announcement
+  Announcement announcement = 7;
+}
+
+message Announcement {
+  // We support three levels of AlertLevel: INFO, WARNING, and ERROR.
+  enum AlertLevel {
+    ALERT_LEVEL_UNSPECIFIED = 0;
+    ALERT_LEVEL_INFO = 1;
+    ALERT_LEVEL_WARNING = 2;
+    ALERT_LEVEL_CRITICAL = 3;
+  }
+
+  // The alert level of announcemnt
+  AlertLevel level = 1;
+
+  // The text of announcemnt
+  string text = 2;
+
+  // The optional link, user can follow the link to check extra details
+  string link = 3;
 }
 
 message AgentPluginSetting {

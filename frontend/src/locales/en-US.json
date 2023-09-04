@@ -260,7 +260,8 @@
     "condition": "Condition",
     "search-user": "Search user",
     "branches": "Branches",
-    "merge": "Merge"
+    "merge": "Merge",
+    "info": "Info"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -593,6 +594,27 @@
               "description": "Supply private deployment of OpenAI API Endpoint."
             }
           }
+        },
+        "announcement": {
+          "self": "Announcement",
+          "update-success": "Announcement setting updated.",
+          "owner-or-dba-can-edit": "Only workspace owner or DBA can update announcement setting."
+        },
+        "announcement-alert-level": {
+          "description": "Level",
+          "field": {
+            "info": "Normal",
+            "warning": "Warning",
+            "critical": "Critical"
+          }
+        },
+        "announcement-text": {
+          "self": "Title",
+          "placeholder": "Input announcement title"
+        },
+        "extra-link": {
+          "self": "Link",
+          "placeholder": "Input announcement link"
         }
       }
     },
@@ -603,12 +625,32 @@
       "global-masking-rule": "Global Masking Rule",
       "data-feature": "Data Feature",
       "add-rule": "Add rule",
+      "grant-access": "Grant Access",
+      "never-expires": "Never expires",
+      "column-detail": {
+        "masking-setting-for-column": "Masking Setting for \"{column}\"",
+        "access-user-list": "Access User List",
+        "access-user-list-desc": "Users granted to access de-masked data.",
+        "remove-user-permission": "Remove user permission?",
+        "remove-sensitive-warning": "The will expose the column."
+      },
+      "algorithms": {
+        "self": "Masking Algorithm",
+        "default": "Default",
+        "default-desc": "Use *** as data mask"
+      },
       "masking-level": {
         "self": "Masking Level",
         "selet-level": "Select level",
+        "masking_level_unspecified": "Follow global masking rules",
         "none": "None",
         "partial": "Partial",
         "full": "Full"
+      },
+      "action": {
+        "self": "Action",
+        "query": "Query",
+        "export": "Export"
       }
     },
     "access-control": {
@@ -1646,19 +1688,18 @@
       "add-git-provider": {
         "self": "Add a Git provider",
         "description": "Before any project can enable GitOps workflow, Bytebase first needs to integrate with the corresponding version control system (VCS) by registering as an OAuth application in that VCS. Below are the steps to configure this, you can also follow our {guide}.",
-        "gitlab-self-host": "GitLab self-host",
+        "gitlab-self-host": "GitLab Self-Hosted",
         "gitlab-self-host-admin-requirement": "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
         "gitlab-com-admin-requirement": "Your account needs to have Admin access to any of the repositories to be linked. Usually this account corresponds to a dedicated service user instead of a human user.",
+        "github-self-host-ee": "GitHub Self-Hosted Enterprise Edition (EE)",
         "github-com-admin-requirement": "You need to be an admin of your chosen GitHub organization to configure this. Otherwise, you need to ask your GitHub organization admin to register Bytebase as a GitHub organization-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
         "bitbucket-admin-requirement": "You need to be an admin of your chosen Bitbucket workspace to configure this. Otherwise, you need to ask your Bitbucket workspace admin to register Bytebase as a Bitbucket workspace-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
+        "azure-devops-service": "Azure DevOps Service",
         "azure-admin-requirement": "You need to be an admin of your chosen Azure DevOps organization to configure this. Otherwise, you need to ask your Bitbucket workspace admin to register Bytebase as a Azure DevOps organization-wide OAuth application, then provide you that Application ID and Client Secret to fill at the 'OAuth application info' step.",
         "oauth-info-correct": "Verified OAuth info is correct",
         "check-oauth-info-match": "Please make sure Secret matches the one from your GitLab instance Application.",
         "add-success": "Successfully added Git provider {vcs}",
         "choose": "Choose Git provider",
-        "gitlab-self-host-ce-ee": "Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)",
-        "github-self-host-ee": "Self-host GitHub Enterprise Edition (EE)",
-        "azure-devops-service": "Azure DevOps Service",
         "basic-info": {
           "self": "Basic info",
           "gitlab-instance-url": "GitLab instance URL",
@@ -1970,7 +2011,8 @@
       "comment": "Comment",
       "not-null": "Not Null",
       "primary": "Primary",
-      "foreign-key": "Foreign Key"
+      "foreign-key": "Foreign Key",
+      "classification": "Classification"
     },
     "nothing-changed": "Nothing changed",
     "message": {
@@ -2215,6 +2257,10 @@
         "title": "Shared SQL script",
         "desc": "Share your SQL scripts with project teammates or make them public to all."
       },
+      "bb-feature-announcement": {
+        "title": "Announcement",
+        "desc": "Configure an Announcement Banner."
+      },
       "bb-feature-encrypted-secrets": {
         "title": "Encrypted Secrets",
         "desc": "Store your secrets of database and use them in your issue SQL scripts."
@@ -2264,7 +2310,8 @@
     "from-issue-warning": "The sheet comes from issue {issue} in read-only mode. {oversize}",
     "content-oversize-warning": "SQL is oversized and inline-editing is disallowed. ",
     "sheets": "Sheets",
-    "search-sheets": "Search Sheets"
+    "search-sheets": "Search Sheets",
+    "sheet": "Sheet"
   },
   "engine": {
     "mysql": "MySQL",
@@ -2379,7 +2426,8 @@
         "member-role-update": "Update Project Member Role",
         "database-transfer": "Transfer Database"
       },
-      "sql-editor-query": "SQL Editor Query"
+      "sql-editor-query": "SQL Editor Query",
+      "sql-export": "SQL Export"
     }
   },
   "onboarding-guide": {
@@ -2763,6 +2811,11 @@
       "default-value": "Default value",
       "comment": "Comment",
       "nullable": "Nullable"
+    },
+    "classification": {
+      "self": "Data Classification",
+      "select": "Select classification",
+      "search": "Search classification"
     }
   },
   "principal": {
@@ -2843,6 +2896,7 @@
     "parent-branch": "Parent branch",
     "save-draft": "Save draft",
     "merge-branch": "Merge branch",
+    "delete-branch-after-merged": "Delete branch after merged",
     "diff-editor": {
       "self": "Diff editor",
       "resolve": "Resolve",
@@ -2853,6 +2907,7 @@
       "resolve-and-merge-again": "Resolve and merge again",
       "discard-changes": "Discard changes",
       "action-confirm": "Action confirm",
+      "duplicated-branch-name-found": "Duplicated branch name found.",
       "discard-changes-confirm": "Are you sure you want to discard all modifications?"
     },
     "tables": "Tables",
@@ -2865,6 +2920,10 @@
       "updated-succeed": "Branch updated successfully",
       "merge-to-main-successfully": "Merge to main successfully",
       "updated-time-by-user": "Updated {time} by {user}"
+    },
+    "action": {
+      "use-the-existing-branch": "Use the existing branch",
+      "create-new-branch": "Create new branch"
     }
   },
   "cel": {

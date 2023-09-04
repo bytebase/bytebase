@@ -337,10 +337,10 @@ message MaskingExceptionPolicy {
     // Level is the masking level that the user can access sensitive data.
     MaskingLevel masking_level = 2;
 
-    // Members is the list of principals who bind to this exception policy instance.
+    // Member is the principal who bind to this exception policy instance.
     //
     // * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-    repeated string members = 3;
+    string member = 3;
 
     // The condition that is associated with this exception policy instance.
     google.type.Expr condition = 4;

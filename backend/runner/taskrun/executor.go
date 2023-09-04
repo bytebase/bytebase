@@ -26,13 +26,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Executor is the task executor.
@@ -67,7 +65,7 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 	return exec.RunOnce(ctx, driverCtx, task)
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string) (*db.MigrationInfo, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return nil, err
@@ -107,7 +105,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 		if len(plans) == 1 {
 			planTypes := []store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport}
 			status := []store.PlanCheckRunStatus{store.PlanCheckRunStatusDone}
-			checks, err := stores.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+			runs, err := stores.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
 				PlanUID: &plans[0].UID,
 				Type:    &planTypes,
 				Status:  &status,
@@ -115,13 +113,31 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to list plan check runs")
 			}
-			sort.Slice(checks, func(i, j int) bool {
-				return checks[i].UID > checks[j].UID
+			sort.Slice(runs, func(i, j int) bool {
+				return runs[i].UID > runs[j].UID
 			})
-			if len(checks) > 0 && checks[0].Result != nil {
-				for _, result := range checks[0].Result.Results {
-					if report, ok := result.Report.(*storepb.PlanCheckRunResult_Result_SqlSummaryReport_); ok && report.SqlSummaryReport != nil {
-						mi.Payload.ChangedResources = report.SqlSummaryReport.ChangedResources
+			foundChangedResources := false
+			for _, run := range runs {
+				if foundChangedResources {
+					break
+				}
+				if run.Config.InstanceUid != int32(task.InstanceID) {
+					continue
+				}
+				if run.Config.DatabaseName != database.DatabaseName {
+					continue
+				}
+				if run.Result == nil {
+					continue
+				}
+				for _, result := range run.Result.Results {
+					if result.Status != storepb.PlanCheckRunResult_Result_SUCCESS {
+						continue
+					}
+					if report := result.GetSqlSummaryReport(); report != nil {
+						mi.Payload.ChangedResources = report.ChangedResources
+						foundChangedResources = true
+						break
 					}
 				}
 			}
@@ -166,24 +182,18 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 		mi.IssueIDInt = &issue.UID
 	}
 
-	if vcsPushEvent == nil {
-		mi.Source = db.UI
-		creator, err := stores.GetUserByID(ctx, task.CreatorID)
-		if err != nil {
-			// If somehow we unable to find the principal, we just emit the error since it's not
-			// critical enough to fail the entire operation.
-			log.Error("Failed to fetch creator for composing the migration info",
-				zap.Int("task_id", task.ID),
-				zap.Error(err),
-			)
-		} else {
-			mi.Creator = creator.Name
-			mi.CreatorID = creator.ID
-		}
+	mi.Source = db.UI
+	creator, err := stores.GetUserByID(ctx, task.CreatorID)
+	if err != nil {
+		// If somehow we unable to find the principal, we just emit the error since it's not
+		// critical enough to fail the entire operation.
+		log.Error("Failed to fetch creator for composing the migration info",
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
 	} else {
-		mi.Source = db.VCS
-		mi.Creator = vcsPushEvent.AuthorName
-		mi.Payload.PushEvent = utils.ConvertVcsPushEvent(vcsPushEvent)
+		mi.Creator = creator.Name
+		mi.CreatorID = creator.ID
 	}
 
 	statement = strings.TrimSpace(statement)
@@ -407,7 +417,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, conn *sql.Conn, t
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, task *store.TaskMessage, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -446,7 +456,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		}
 	}
 
-	writebackBranch, err := isWriteBack(ctx, stores, license, project, repo, task, vcsPushEvent)
+	writebackBranch, err := isWriteBack(ctx, stores, license, project, repo, task)
 	if err != nil {
 		return true, nil, err
 	}
@@ -489,7 +499,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			bytebaseURL = fmt.Sprintf("%s/issue/%s-%d?stage=%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID, task.StageID)
 		}
 
-		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcs, vcsPushEvent, mi, writebackBranch, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcs, nil, mi, writebackBranch, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}
@@ -561,7 +571,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}, nil
 }
 
-func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI.LicenseService, project *store.ProjectMessage, repo *store.RepositoryMessage, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent) (string, error) {
+func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI.LicenseService, project *store.ProjectMessage, repo *store.RepositoryMessage, task *store.TaskMessage) (string, error) {
 	if task.Type != api.TaskDatabaseSchemaBaseline && task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostCutover {
 		return "", nil
 	}
@@ -592,13 +602,6 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 	// Prefer write back to the commit branch than the repo branch.
 	if !strings.Contains(repo.BranchFilter, "*") {
 		branch = repo.BranchFilter
-	}
-	if vcsPushEvent != nil && vcsPushEvent.Ref != "" {
-		b, err := vcsPlugin.Branch(vcsPushEvent.Ref)
-		if err != nil {
-			return "", err
-		}
-		branch = b
 	}
 	if branch == "" {
 		return "", nil
@@ -631,8 +634,8 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 	return branch, nil
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, sheetID *int, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, sheetID *int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion)
 	if err != nil {
 		return true, nil, err
 	}
@@ -641,7 +644,7 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 	if err != nil {
 		return true, nil, err
 	}
-	return postMigration(ctx, store, activityManager, license, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, store, activityManager, license, task, mi, migrationID, schema)
 }
 
 // Writes back the latest schema to the repository after migration.

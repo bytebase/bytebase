@@ -141,7 +141,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err == nil {
 		defer driver.Close(ctx)
-		if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+		if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.String("instance", instance.ResourceID),
 				zap.Error(err))
@@ -198,15 +198,23 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		case "activation":
 			patch.Activation = &request.Instance.Activation
 		case "options.schema_tenant_mode":
-			if patch.Options == nil {
-				patch.Options = &storepb.InstanceOptions{
-					SchemaTenantMode: request.Instance.Options.SchemaTenantMode,
+			if patch.OptionsUpsert == nil {
+				patch.OptionsUpsert = &storepb.InstanceOptions{
+					SchemaTenantMode: request.Instance.Options.GetSchemaTenantMode(),
 				}
 			} else {
-				patch.Options.SchemaTenantMode = request.Instance.Options.SchemaTenantMode
+				patch.OptionsUpsert.SchemaTenantMode = request.Instance.Options.GetSchemaTenantMode()
+			}
+		case "options.sync_interval":
+			if patch.OptionsUpsert == nil {
+				patch.OptionsUpsert = &storepb.InstanceOptions{
+					SyncInterval: request.Instance.Options.GetSyncInterval(),
+				}
+			} else {
+				patch.OptionsUpsert.SyncInterval = request.Instance.Options.GetSyncInterval()
 			}
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
+			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
 		}
 	}
 
@@ -225,7 +233,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+	if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
 		log.Warn("Failed to sync instance",
 			zap.String("instance", instance.ResourceID),
 			zap.Error(err))
@@ -381,8 +389,8 @@ func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, project
 		}
 	}
 
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to sync slow queries for following instances: %s", err.Error())
+	if errs != nil {
+		return nil, status.Errorf(codes.Internal, "failed to sync slow queries for following instances: %s", errs.Error())
 	}
 
 	return &emptypb.Empty{}, nil
@@ -477,7 +485,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
-	if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+	if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
 		return nil, err
 	}
 	// Sync all databases in the instance asynchronously.
@@ -832,13 +840,6 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 			ServiceName:            ds.ServiceName,
 		})
 	}
-	var options *v1pb.InstanceOptions
-	if instance.Options != nil {
-		options = &v1pb.InstanceOptions{
-			SchemaTenantMode: instance.Options.SchemaTenantMode,
-		}
-	}
-
 	return &v1pb.Instance{
 		Name:          fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
 		Uid:           fmt.Sprintf("%d", instance.UID),
@@ -850,7 +851,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 		State:         convertDeletedToState(instance.Deleted),
 		Environment:   fmt.Sprintf("environments/%s", instance.EnvironmentID),
 		Activation:    instance.Activation,
-		Options:       options,
+		Options:       convertToInstanceOptions(instance.Options),
 	}
 }
 
@@ -863,12 +864,6 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 	if err != nil {
 		return nil, err
 	}
-	var options *storepb.InstanceOptions
-	if instance.Options != nil {
-		options = &storepb.InstanceOptions{
-			SchemaTenantMode: instance.Options.SchemaTenantMode,
-		}
-	}
 
 	return &store.InstanceMessage{
 		ResourceID:    instanceID,
@@ -878,7 +873,7 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 		DataSources:   datasources,
 		EnvironmentID: environmentID,
 		Activation:    instance.Activation,
-		Options:       options,
+		Options:       convertInstanceOptions(instance.Options),
 	}, nil
 }
 
@@ -949,4 +944,26 @@ func convertDataSourceTp(tp v1pb.DataSourceType) (api.DataSourceType, error) {
 		return "", errors.Errorf("invalid data source type %v", tp)
 	}
 	return dsType, nil
+}
+
+func convertToInstanceOptions(options *storepb.InstanceOptions) *v1pb.InstanceOptions {
+	if options == nil {
+		return nil
+	}
+
+	return &v1pb.InstanceOptions{
+		SchemaTenantMode: options.SchemaTenantMode,
+		SyncInterval:     options.SyncInterval,
+	}
+}
+
+func convertInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOptions {
+	if options == nil {
+		return nil
+	}
+
+	return &storepb.InstanceOptions{
+		SchemaTenantMode: options.SchemaTenantMode,
+		SyncInterval:     options.SyncInterval,
+	}
 }

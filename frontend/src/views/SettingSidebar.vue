@@ -22,7 +22,7 @@
         <div class="space-y-1">
           <router-link
             to="/setting/profile"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
             >{{ $t("settings.sidebar.profile") }}</router-link
           >
         </div>
@@ -37,7 +37,7 @@
         <div class="space-y-1">
           <router-link
             to="/setting/general"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
           >
             {{ $t("settings.sidebar.general") }}
           </router-link>
@@ -52,24 +52,24 @@
           >
           <router-link
             to="/setting/role"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
             >{{ $t("settings.sidebar.custom-roles") }}</router-link
           >
           <router-link
             v-if="showProjectItem"
             to="/setting/project"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
             >{{ $t("common.projects") }}</router-link
           >
           <router-link
             to="/setting/subscription"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
             >{{ $t("settings.sidebar.subscription") }}</router-link
           >
           <router-link
             v-if="showDebugLogItem"
             to="/setting/debug-log"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
             >{{ $t("settings.sidebar.debug-log") }}</router-link
           >
         </div>
@@ -84,49 +84,49 @@
         <div class="space-y-1">
           <router-link
             to="/setting/sql-review"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
             >{{ $t("sql-review.title") }}</router-link
           >
           <router-link
             to="/setting/slow-query"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2 capitalize"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5 capitalize"
             >{{ $t("slow-query.self") }}</router-link
           >
           <router-link
             to="/setting/schema-template"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2 capitalize"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5 capitalize"
             >{{ $t("schema-template.self") }}</router-link
           >
           <router-link
             to="/setting/risk-center"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-1.5"
           >
             {{ $t("custom-approval.risk.risk-center") }}
           </router-link>
           <router-link
             to="/setting/custom-approval"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-1.5"
           >
             {{ $t("custom-approval.self") }}
           </router-link>
           <router-link
             v-if="showSensitiveDataItem"
             to="/setting/sensitive-data"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-1.5"
           >
             {{ $t("settings.sidebar.sensitive-data") }}
           </router-link>
           <router-link
             v-if="showAccessControlItem"
             to="/setting/access-control"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-1.5"
           >
             {{ $t("settings.sidebar.access-control") }}
           </router-link>
           <router-link
             v-if="showAuditLogItem"
             to="/setting/audit-log"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
             >{{ $t("settings.sidebar.audit-log") }}</router-link
           >
         </div>
@@ -142,27 +142,27 @@
           <router-link
             v-if="showVCSItem"
             to="/setting/gitops"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
             >{{ $t("settings.sidebar.gitops") }}</router-link
           >
           <router-link
             v-if="showSSOItem"
             to="/setting/sso"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-1.5"
           >
             {{ $t("settings.sidebar.sso") }}
           </router-link>
           <router-link
             v-if="showIMIntegrationItem"
             to="/setting/im-integration"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-1.5"
           >
             {{ $t("settings.sidebar.im-integration") }}
           </router-link>
           <router-link
             v-if="showMailDeliveryItem"
             to="/setting/mail-delivery"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-1.5"
           >
             {{ $t("settings.sidebar.mail-delivery") }}
           </router-link>

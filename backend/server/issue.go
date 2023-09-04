@@ -29,7 +29,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -1140,7 +1139,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					if err != nil {
 						return nil, err
 					}
-					taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, instance, c.VCSPushEvent, migrationDetail, schemaVersion)
+					taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, instance, migrationDetail, schemaVersion)
 					if err != nil {
 						return nil, err
 					}
@@ -1225,9 +1224,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							tableToSchemaGroupName[tableName] = fmt.Sprintf("databaseGroups/%s/schemaGroups/%s", databaseGroup.ResourceID, schemaGroup.ResourceID)
 							tableToTaskStatement[tableName] = &strings.Builder{}
 						}
-						if err != nil {
-							return nil, err
-						}
 						// Placeholder is unique in the same database group parent, so we can use it as the key.
 						schemaGroupsToMatchedTableNames[schemaGroup.Placeholder] = matches
 					}
@@ -1262,7 +1258,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						// We don't want empty statements(likes comments) to be involved in the match/replace SchemaGroup operation. We will
 						// put them in the next valid statement.
 						if singleStatement.Empty {
-							if _, err := emptyStatementsBuffer.Write([]byte(singleStatement.Text)); err != nil {
+							if _, err := emptyStatementsBuffer.WriteString(singleStatement.Text); err != nil {
 								return nil, echo.NewHTTPError(http.StatusInternalServerError, "Cannot write to string builder")
 							}
 							continue
@@ -1273,7 +1269,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							if strings.Contains(singleStatement.Text, schemaGroup.Placeholder) {
 								// Current statement belongs to another schemaGroup, we should flush the statement buf to the prevSchemaGroup.
 								if ((prevSchemaGroup == nil) != (schemaGroup == nil)) || (prevSchemaGroup != nil && schemaGroup.ResourceID != prevSchemaGroup.ResourceID) {
-									taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(&emptyStatementsBuffer, tableToTaskStatement, tableToSchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
+									taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(&emptyStatementsBuffer, tableToTaskStatement, tableToSchemaGroupName, database, instance, migrationDetail)
 									emptyStatementsBuffer.Reset()
 									if err != nil {
 										return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
@@ -1302,7 +1298,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						}
 						if !match {
 							if prevSchemaGroup != nil {
-								taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(&emptyStatementsBuffer, tableToTaskStatement, tableToSchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
+								taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(&emptyStatementsBuffer, tableToTaskStatement, tableToSchemaGroupName, database, instance, migrationDetail)
 								emptyStatementsBuffer.Reset()
 								if err != nil {
 									return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
@@ -1328,7 +1324,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						}
 					}
 					// Flush the last statement.
-					taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(&emptyStatementsBuffer, tableToTaskStatement, tableToSchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
+					taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(&emptyStatementsBuffer, tableToTaskStatement, tableToSchemaGroupName, database, instance, migrationDetail)
 					emptyStatementsBuffer.Reset()
 					if err != nil {
 						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
@@ -1375,14 +1371,13 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							Visibility:  store.ProjectSheet,
 							Source:      store.SheetFromBytebaseArtifact,
 							Type:        store.SheetForSQL,
-							Payload:     "",
 						})
 						if err != nil {
 							return nil, err
 						}
 						newMigrationDetail := *migrationDetail
 						newMigrationDetail.SheetID = sheet.UID
-						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", migrationDetailIdx)), migrationDetail.SchemaGroupName)
+						taskCreate, err := getUpdateTask(database, instance, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", migrationDetailIdx)), migrationDetail.SchemaGroupName)
 						if err != nil {
 							return nil, err
 						}
@@ -1394,7 +1389,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					taskIndexDAGList = append(taskIndexDAGList, store.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 				}
 				for _, migrationDetail := range migrationDetailList {
-					taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail), "")
+					taskCreate, err := getUpdateTask(database, instance, migrationDetail, getOrDefaultSchemaVersion(migrationDetail), "")
 					if err != nil {
 						return nil, err
 					}
@@ -1417,7 +1412,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	return create, nil
 }
 
-func flushGroupingDatabaseTaskToTaskCreate(statementPrefix *strings.Builder, table2TaskStatement map[string]*strings.Builder, table2SchemaGroupName map[string]string, database *store.DatabaseMessage, instance *store.InstanceMessage, pushEvent *vcs.PushEvent, migrationDetail *api.MigrationDetail) ([]*store.TaskMessage, error) {
+func flushGroupingDatabaseTaskToTaskCreate(statementPrefix *strings.Builder, table2TaskStatement map[string]*strings.Builder, table2SchemaGroupName map[string]string, database *store.DatabaseMessage, instance *store.InstanceMessage, migrationDetail *api.MigrationDetail) ([]*store.TaskMessage, error) {
 	var taskCreateList []*store.TaskMessage
 	idx := 0
 	for tableName, statement := range table2TaskStatement {
@@ -1428,7 +1423,7 @@ func flushGroupingDatabaseTaskToTaskCreate(statementPrefix *strings.Builder, tab
 		statementWithPrefix := statementPrefix.String() + statement.String()
 		statement.Reset()
 		newMigrationDetail.Statement = statementWithPrefix
-		taskCreate, err := getUpdateTask(database, instance, pushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), table2SchemaGroupName[tableName])
+		taskCreate, err := getUpdateTask(database, instance, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), table2SchemaGroupName[tableName])
 		if err != nil {
 			return nil, err
 		}
@@ -1452,7 +1447,7 @@ func getOrDefaultSchemaVersionWithSuffix(detail *api.MigrationDetail, suffix str
 	return common.DefaultMigrationVersion() + suffix
 }
 
-func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMessage, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string, schemaGroupName string) (*store.TaskMessage, error) {
+func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMessage, d *api.MigrationDetail, schemaVersion string, schemaGroupName string) (*store.TaskMessage, error) {
 	var taskName string
 	var taskType api.TaskType
 
@@ -1475,7 +1470,6 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			SheetID:         d.SheetID,
 			SchemaVersion:   schemaVersion,
-			VCSPushEvent:    vcsPushEvent,
 			SchemaGroupName: schemaGroupName,
 		}
 		bytes, err := json.Marshal(payload)
@@ -1489,7 +1483,6 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
 			SheetID:       d.SheetID,
 			SchemaVersion: schemaVersion,
-			VCSPushEvent:  vcsPushEvent,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -1502,7 +1495,6 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		payload := api.TaskDatabaseDataUpdatePayload{
 			SheetID:           d.SheetID,
 			SchemaVersion:     schemaVersion,
-			VCSPushEvent:      vcsPushEvent,
 			RollbackEnabled:   d.RollbackEnabled,
 			RollbackSQLStatus: api.RollbackSQLStatusPending,
 			SchemaGroupName:   schemaGroupName,
@@ -1603,7 +1595,6 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    "{}",
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create database creation sheet")
@@ -1785,13 +1776,12 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 }
 
 // creates gh-ost TaskCreate list and dependency.
-func createGhostTaskList(database *store.DatabaseMessage, instance *store.InstanceMessage, vcsPushEvent *vcs.PushEvent, detail *api.MigrationDetail, schemaVersion string) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func createGhostTaskList(database *store.DatabaseMessage, instance *store.InstanceMessage, detail *api.MigrationDetail, schemaVersion string) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	var taskCreateList []*store.TaskMessage
 	// task "sync"
 	payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
 		SheetID:       detail.SheetID,
 		SchemaVersion: schemaVersion,
-		VCSPushEvent:  vcsPushEvent,
 	}
 	bytesSync, err := json.Marshal(payloadSync)
 	if err != nil {

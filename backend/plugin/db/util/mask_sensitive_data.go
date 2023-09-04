@@ -6,14 +6,20 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+)
+
+var (
+	defaultMaskingLevel storepb.MaskingLevel = storepb.MaskingLevel_NONE
+	maxMaskingLevel     storepb.MaskingLevel = storepb.MaskingLevel_FULL
 )
 
 type fieldInfo struct {
-	name      string
-	table     string
-	schema    string
-	database  string
-	sensitive bool
+	name         string
+	table        string
+	schema       string
+	database     string
+	maskingLevel storepb.MaskingLevel
 }
 
 type sensitiveFieldExtractor struct {
@@ -49,7 +55,11 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		return extractor.extractMySQLSensitiveField(statement)
+		result, err := extractor.extractMySQLSensitiveField(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
 	case db.Postgres, db.Redshift, db.RisingWave:
 		extractor := &sensitiveFieldExtractor{
 			schemaInfo: schemaInfo,
@@ -81,19 +91,31 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		return extractor.extractOracleSensitiveField(statement)
+		result, err := extractor.extractOracleSensitiveField(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
 	case db.Snowflake:
 		extractor := &sensitiveFieldExtractor{
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		return extractor.extractSnowsqlSensitiveFields(statement)
+		result, err := extractor.extractSnowsqlSensitiveFields(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
 	case db.MSSQL:
 		extractor := &sensitiveFieldExtractor{
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		return extractor.extractTSqlSensitiveFields(statement)
+		result, err := extractor.extractTSqlSensitiveFields(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
 	default:
 		return nil, nil
 	}
