@@ -1,0 +1,58 @@
+name: Build and push CI image
+
+on:
+  # push:
+  #   branches:
+  #     - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel.
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Extract build args
+        run: |
+          echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
+          echo "BUILD_USER=$(id -u -n)" >> $GITHUB_ENV
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 8.6.0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - name: Run pnpm release build
+        run: |
+          cp backend/plugin/advisor/config/* frontend/src/types
+          cp backend/enterprise/api/plan.yaml frontend/src/types
+          pnpm --dir ./frontend i && pnpm --dir ./frontend release
+      - uses: depot/setup-action@v1
+      - name: Build and push
+        id: docker_build
+        uses: depot/build-push-action@v1
+        with:
+          context: .
+          project: jv967c892k
+          token: depot_3c27c00f6476ffdf93bef0ea0453ba142b408732d7c1c2fe2c83ed15e4225a0f
+          file: scripts/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: bytebase/bytebase:release-ci
+          build-args: |
+            RELEASE=release
+            VERSION_SUFFIX=-release-ci
+            GIT_COMMIT=${{ env.GITHUB_SHA }}
+            BUILD_TIME=${{ env.BUILD_TIME }}
+            BUILD_USER=${{ env.BUILD_USER }}
+      - name: Image digest
+        run: echo "Successfully pushed bytebase/bytebase:release-ci " ${{ steps.docker_build.outputs.digest }}
