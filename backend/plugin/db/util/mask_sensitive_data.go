@@ -59,13 +59,6 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		if err != nil {
 			return nil, err
 		}
-		// TODO(zp): remove it
-		// Backfill sensitive.
-		for i := range result {
-			if result[i].MaskingLevel == storepb.MaskingLevel_PARTIAL || result[i].MaskingLevel == storepb.MaskingLevel_FULL {
-				result[i].Sensitive = true
-			}
-		}
 		return result, nil
 	case db.Postgres, db.Redshift, db.RisingWave:
 		extractor := &sensitiveFieldExtractor{
@@ -80,13 +73,6 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 				return nil, nil
 			}
 			return nil, err
-		}
-		// TODO(zp): remove it
-		// Backfill sensitive.
-		for i := range result {
-			if result[i].MaskingLevel == storepb.MaskingLevel_PARTIAL || result[i].MaskingLevel == storepb.MaskingLevel_FULL {
-				result[i].Sensitive = true
-			}
 		}
 		return result, nil
 	case db.Oracle, db.DM:
@@ -109,13 +95,6 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		if err != nil {
 			return nil, err
 		}
-		// TODO(zp): remove it
-		// Backfill sensitive.
-		for i := range result {
-			if result[i].MaskingLevel == storepb.MaskingLevel_PARTIAL || result[i].MaskingLevel == storepb.MaskingLevel_FULL {
-				result[i].Sensitive = true
-			}
-		}
 		return result, nil
 	case db.Snowflake:
 		extractor := &sensitiveFieldExtractor{
@@ -126,13 +105,6 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		if err != nil {
 			return nil, err
 		}
-		// TODO(zp): remove it
-		// Backfill sensitive.
-		for i := range result {
-			if result[i].MaskingLevel == storepb.MaskingLevel_PARTIAL || result[i].MaskingLevel == storepb.MaskingLevel_FULL {
-				result[i].Sensitive = true
-			}
-		}
 		return result, nil
 	case db.MSSQL:
 		extractor := &sensitiveFieldExtractor{
@@ -142,13 +114,6 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		result, err := extractor.extractTSqlSensitiveFields(statement)
 		if err != nil {
 			return nil, err
-		}
-		// TODO(zp): remove it
-		// Backfill sensitive.
-		for i := range result {
-			if result[i].MaskingLevel == storepb.MaskingLevel_PARTIAL || result[i].MaskingLevel == storepb.MaskingLevel_FULL {
-				result[i].Sensitive = true
-			}
 		}
 		return result, nil
 	default:
