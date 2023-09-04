@@ -1733,10 +1733,11 @@ func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Write
 	}
 
 	// TODO: assemble CREATE SEQUENCE
+	_ = sequences
 	return nil
 }
 
-func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	triggerOrderingMap := make(map[string]*triggerOrderingMeta)
 	triggerOrderingRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTriggerOrderingSQL, schema))
 	if err != nil {
@@ -1804,6 +1805,7 @@ func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, out
 
 	// TODO: assemble CREATE TRIGGER
 	_ = triggerOrderingMap
+	_ = triggers
 	return nil
 }
 
