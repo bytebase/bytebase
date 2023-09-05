@@ -58,7 +58,7 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to create issue")
 	}
-	err = ctl.waitRollout(ctx, rollout.Name)
+	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -66,12 +66,25 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 }
 
 // waitRollout waits for pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitRollout(ctx context.Context, rolloutName string) error {
+func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName string) error {
 	// Sleep for 1 second between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
 	time.Sleep(1 * time.Second)
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
+
+	for range ticker.C {
+		issue, err := ctl.issueServiceClient.GetIssue(ctx, &v1pb.GetIssueRequest{Name: issueName})
+		if err != nil {
+			return err
+		}
+		if issue.ApprovalFindingError != "" {
+			return errors.Errorf("approval finding error: %v", issue.ApprovalFindingError)
+		}
+		if issue.ApprovalFindingDone {
+			break
+		}
+	}
 
 	rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{
 		Name: rolloutName,

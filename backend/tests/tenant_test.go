@@ -946,7 +946,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Query schema.
@@ -1491,7 +1491,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issues[0].Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issues[0].ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issues[0].Pipeline.ID))
 			a.NoError(err)
 
 			// Simulate Git commits for data update.
@@ -1523,7 +1523,7 @@ statement: |
 			// Get data update issues.
 			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issues[0].Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issues[0].ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issues[0].Pipeline.ID))
 			a.NoError(err)
 		})
 	}
