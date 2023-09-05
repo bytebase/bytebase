@@ -98,15 +98,6 @@ export const projectWebhookV1ActivityItemList =
         label: t(
           "project.webhook.activity-item.issue-task-status-change.label"
         ),
-        activity: Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE,
-      },
-      {
-        title: t(
-          "project.webhook.activity-item.issue-task-run-status-change.title"
-        ),
-        label: t(
-          "project.webhook.activity-item.issue-task-run-status-change.label"
-        ),
         activity: Activity_Type.TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
       },
       {

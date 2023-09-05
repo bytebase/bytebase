@@ -24,6 +24,7 @@ const (
 	// ActivityPipelineStageStatusUpdate is the type for stage begins or ends.
 	ActivityPipelineStageStatusUpdate ActivityType = "bb.pipeline.stage.status.update"
 	// ActivityPipelineTaskStatusUpdate is the type for updating pipeline task status.
+	// Deprecated: use `ActivityPipelineTaskRunStatusUpdate` instead.
 	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
 	// ActivityPipelineTaskRunStatusUpdate is the type for updating pipeline task run status.
 	ActivityPipelineTaskRunStatusUpdate ActivityType = "bb.pipeline.taskrun.status.update"
