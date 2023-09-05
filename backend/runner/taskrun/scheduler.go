@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -16,20 +15,14 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
-	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
-	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
-)
-
-const (
-	taskSchedulerInterval = time.Duration(1) * time.Second
 )
 
 var (
@@ -58,20 +51,15 @@ var (
 // NewScheduler creates a new task scheduler.
 func NewScheduler(
 	store *store.Store,
-	schemaSyncer *schemasync.Syncer,
 	activityManager *activity.Manager,
 	licenseService enterpriseAPI.LicenseService,
 	stateCfg *state.State,
-	profile config.Profile,
 	metricReporter *metricreport.Reporter) *Scheduler {
 	return &Scheduler{
 		store:           store,
-		schemaSyncer:    schemaSyncer,
 		activityManager: activityManager,
 		licenseService:  licenseService,
-		profile:         profile,
 		stateCfg:        stateCfg,
-		executorMap:     make(map[api.TaskType]Executor),
 		metricReporter:  metricReporter,
 	}
 }
@@ -79,24 +67,10 @@ func NewScheduler(
 // Scheduler is the task scheduler.
 type Scheduler struct {
 	store           *store.Store
-	schemaSyncer    *schemasync.Syncer
 	activityManager *activity.Manager
 	licenseService  enterpriseAPI.LicenseService
 	stateCfg        *state.State
-	profile         config.Profile
-	executorMap     map[api.TaskType]Executor
 	metricReporter  *metricreport.Reporter
-}
-
-// Register will register a task executor factory.
-func (s *Scheduler) Register(taskType api.TaskType, executorGetter Executor) {
-	if executorGetter == nil {
-		panic("scheduler: Register executor is nil for task type: " + taskType)
-	}
-	if _, dup := s.executorMap[taskType]; dup {
-		panic("scheduler: Register called twice for task type: " + taskType)
-	}
-	s.executorMap[taskType] = executorGetter
 }
 
 // PatchTask patches the statement, earliest allowed time and rollbackEnabled for a task.

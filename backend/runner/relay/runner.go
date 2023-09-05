@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
-	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -28,11 +27,10 @@ import (
 )
 
 // NewRunner creates a new runner instance.
-func NewRunner(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, stateCfg *state.State) *Runner {
+func NewRunner(store *store.Store, activityManager *activity.Manager, stateCfg *state.State) *Runner {
 	return &Runner{
 		store:                     store,
 		activityManager:           activityManager,
-		taskScheduler:             taskScheduler,
 		stateCfg:                  stateCfg,
 		Client:                    relayplugin.NewClient(),
 		CheckExternalApprovalChan: make(chan CheckExternalApprovalChanMessage, 100),
@@ -51,7 +49,6 @@ type CheckExternalApprovalChanMessage struct {
 type Runner struct {
 	store           *store.Store
 	activityManager *activity.Manager
-	taskScheduler   *taskrun.Scheduler
 	stateCfg        *state.State
 
 	Client *relayplugin.Client

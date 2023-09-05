@@ -69,7 +69,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			taskPatch := *taskPatch
 			taskPatch.ID = task.ID
 			// TODO(d): patch tasks in batch.
-			if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
+			if err := s.taskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
 				return err
 			}
 		}
@@ -153,7 +153,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "cannot generate rollback SQL statement for a non-DML task")
 		}
 
-		if err := s.TaskScheduler.PatchTask(ctx, task, taskPatch, issue); err != nil {
+		if err := s.taskScheduler.PatchTask(ctx, task, taskPatch, issue); err != nil {
 			return err
 		}
 
@@ -216,7 +216,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		ok, err := s.TaskScheduler.CanPrincipalChangeTaskStatus(ctx, currentPrincipalID, task, taskStatusPatch.Status)
+		ok, err := s.taskScheduler.CanPrincipalChangeTaskStatus(ctx, currentPrincipalID, task, taskStatusPatch.Status)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
 		}
@@ -275,7 +275,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			taskStatusPatch.SkippedReason = taskStatusPatch.Comment
 		}
 
-		if err := s.TaskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
+		if err := s.taskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
 			}
