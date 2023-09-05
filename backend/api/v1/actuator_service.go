@@ -111,7 +111,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		WorkspaceId:               workspaceID,
 		GitopsWebhookUrl:          setting.GitopsWebhookUrl,
 		Debug:                     log.EnabledLevel(zap.DebugLevel),
-		DevelopmentUseV2Scheduler: s.profile.DevelopmentUseV2Scheduler,
+		DevelopmentUseV2Scheduler: true,
 	}
 
 	return &serverInfo, nil
