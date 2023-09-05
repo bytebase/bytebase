@@ -261,7 +261,8 @@
     "search-user": "Search user",
     "branches": "Branches",
     "merge": "Merge",
-    "info": "Info"
+    "info": "Info",
+    "minutes": "Minutes"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1096,6 +1097,11 @@
         "self": "Manage based on schema",
         "description": "Each schema is treated as a managed object. (Only supports non-CDB mode)"
       }
+    },
+    "scan-interval": {
+      "self": "Scan Interval",
+      "default-daily": "Default (daily)",
+      "description": "Bytebase periodically syncs instance schema and detects anomalies."
     }
   },
   "environment": {
@@ -1502,7 +1508,7 @@
   },
   "anomaly": {
     "attention-title": "Anomaly detection",
-    "attention-desc": "Bytebase periodically scans the managed resources and list the detected anomalies here. The list is refreshed roughly every 10 minutes.",
+    "attention-desc": "Bytebase periodically detects anomalies based on the instance scan interval, and surfaces the findings here.",
     "table-search-placeholder": "Search {type} or environment",
     "table-placeholder": "Hooray, no {type} anomaly detected!",
     "tooltip": "{env} has {criticalCount} CRITICAL, {highCount} HIGH and {mediumCount} MEDIUM anomalies",
@@ -2240,6 +2246,10 @@
       "bb-feature-instance-ssh-connection": {
         "title": "Instance SSH connection",
         "desc": "Connect to a instance over SSH."
+      },
+      "bb-feature-custom-instance-scan-interval": {
+        "title": "Custom instance scan interval",
+        "desc": "Customize schema and anomaly scan interval for instance"
       },
       "bb-feature-index-advisor": {
         "title": "Index advisor",

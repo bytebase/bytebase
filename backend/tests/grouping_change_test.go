@@ -822,11 +822,19 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				},
 			})
 			a.NoError(err)
-			_, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: databaseGroup.Name,
-					Sheet:  sheet.Name,
-					Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
+			_, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+									Target: databaseGroup.Name,
+									Sheet:  sheet.Name,
+									Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
+								},
+							},
+						},
+					},
 				},
 			})
 			a.NoError(err)
