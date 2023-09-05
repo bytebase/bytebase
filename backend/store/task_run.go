@@ -215,7 +215,9 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 
 // CreatePendingTaskRuns creates pending task runs.
 func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMessage) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelSerializable,
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin tx")
 	}
