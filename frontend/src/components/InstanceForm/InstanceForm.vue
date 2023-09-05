@@ -210,6 +210,13 @@
             </label>
           </div>
 
+          <ScanIntervalInput
+            v-if="!isCreating"
+            :scan-interval="basicInfo.options?.syncInterval"
+            :allow-edit="allowEdit"
+            @update:scan-interval="changeScanInterval"
+          />
+
           <!--Do not show external link on create to reduce cognitive load-->
           <div v-if="!isCreating" class="sm:col-span-3 sm:col-start-1">
             <label for="external-link" class="textlabel inline-flex">
@@ -390,6 +397,7 @@ import {
   unknownEnvironment,
   ComposedInstance,
 } from "@/types";
+import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
 import {
   DataSource,
@@ -409,6 +417,7 @@ import {
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import OracleSyncModeInput from "./OracleSyncModeInput.vue";
+import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
 import { EditDataSource, extractDataSourceEditState } from "./common";
 import { extractBasicInfo } from "./common";
@@ -650,6 +659,12 @@ const changeSyncMode = (schemaTenantMode: boolean) => {
   }
   basicInfo.value.options.schemaTenantMode = schemaTenantMode;
 };
+const changeScanInterval = (duration: Duration | undefined) => {
+  if (!basicInfo.value.options) {
+    basicInfo.value.options = InstanceOptions.fromPartial({});
+  }
+  basicInfo.value.options.syncInterval = duration;
+};
 
 const trimInputValue = (target: Event["target"]) => {
   return ((target as HTMLInputElement)?.value ?? "").trim();
@@ -812,6 +827,12 @@ const doUpdate = async () => {
       instance.options?.schemaTenantMode
     ) {
       updateMask.push("options.schema_tenant_mode");
+    }
+    if (
+      instancePatch.options?.syncInterval?.seconds !==
+      instance.options?.syncInterval?.seconds
+    ) {
+      updateMask.push("options.sync_interval");
     }
     return await instanceV1Store.updateInstance(instancePatch, updateMask);
   };
