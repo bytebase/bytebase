@@ -196,7 +196,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}, &activity.Metadata{}); err != nil {
 			log.Warn("Failed to create project activity", zap.Error(err))
 		}
-		if err := r.taskScheduler.ChangeIssueStatus(ctx, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+		if err := utils.ChangeIssueStatus(ctx, r.store, r.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
