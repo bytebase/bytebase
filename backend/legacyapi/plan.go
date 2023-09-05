@@ -143,6 +143,8 @@ const (
 	FeatureReadReplicaConnection FeatureType = "bb.feature.read-replica-connection"
 	// FeatureInstanceSSHConnection provides SSH connection for instances.
 	FeatureInstanceSSHConnection FeatureType = "bb.feature.instance-ssh-connection"
+	// FeatureCustomInstanceScanInterval allows user to customize schema and anomaly scan interval per instance.
+	FeatureCustomInstanceScanInterval FeatureType = "bb.feature.custom-instance-scan-interval"
 	// FeatureSyncSchemaAllVersions allows user to sync the base database schema all versions into target database.
 	FeatureSyncSchemaAllVersions FeatureType = "bb.feature.sync-schema-all-versions"
 	// FeatureIndexAdvisor provides the index advisor for databases.
@@ -247,6 +249,8 @@ func (e FeatureType) Name() string {
 		return "Read replica connection"
 	case FeatureInstanceSSHConnection:
 		return "Instance SSH connection"
+	case FeatureCustomInstanceScanInterval:
+		return "Custom instance scan interval"
 	case FeatureSyncSchemaAllVersions:
 		return "Synchronize schema all versions"
 	case FeatureIndexAdvisor:
@@ -324,11 +328,12 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureVCSSheetSync:         {false, true, true},
 	FeatureVCSSQLReviewWorkflow: {true, true, true},
 	// Database management
-	FeaturePITR:                  {false, true, true},
-	FeatureReadReplicaConnection: {false, false, true},
-	FeatureInstanceSSHConnection: {false, false, true},
-	FeatureSyncSchemaAllVersions: {false, true, true},
-	FeatureIndexAdvisor:          {false, false, true},
+	FeaturePITR:                       {false, true, true},
+	FeatureReadReplicaConnection:      {false, false, true},
+	FeatureInstanceSSHConnection:      {false, false, true},
+	FeatureCustomInstanceScanInterval: {false, false, true},
+	FeatureSyncSchemaAllVersions:      {false, true, true},
+	FeatureIndexAdvisor:               {false, false, true},
 	// Policy Control
 	FeatureApprovalPolicy:        {false, true, true},
 	FeatureBackupPolicy:          {false, true, true},
@@ -355,12 +360,13 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureVCSSQLReviewWorkflow: true,
 	FeatureMybatisSQLReview:     true,
 	// Database management
-	FeaturePITR:                  true,
-	FeatureReadReplicaConnection: true,
-	FeatureInstanceSSHConnection: true,
-	FeatureDatabaseGrouping:      true,
-	FeatureSyncSchemaAllVersions: true,
-	FeatureIndexAdvisor:          true,
+	FeaturePITR:                       true,
+	FeatureReadReplicaConnection:      true,
+	FeatureInstanceSSHConnection:      true,
+	FeatureCustomInstanceScanInterval: true,
+	FeatureDatabaseGrouping:           true,
+	FeatureSyncSchemaAllVersions:      true,
+	FeatureIndexAdvisor:               true,
 	// Policy Control
 	FeatureSensitiveData:  true,
 	FeatureCustomApproval: true,
