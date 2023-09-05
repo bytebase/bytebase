@@ -25,6 +25,9 @@ const replacePolicyTypeNameToLowerCase = (name: string) => {
       return `${left}policies/${policyType.toLowerCase()}${right}`;
     }
   );
+  if (replaced.startsWith("/")) {
+    return replaced.slice(1);
+  }
   return replaced;
 };
 

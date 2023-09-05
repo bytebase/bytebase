@@ -1,4 +1,5 @@
-import GlobalMaskingRule from "./GlobalMaskingRule.vue";
+import DataFeatureView from "./DataFeatureView.vue";
+import GlobalMaskingRulesView from "./GlobalMaskingRulesView.vue";
 import SensitiveColumnView from "./SensitiveColumnView.vue";
 
-export { SensitiveColumnView, GlobalMaskingRule };
+export { SensitiveColumnView, GlobalMaskingRulesView, DataFeatureView };
