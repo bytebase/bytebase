@@ -105,25 +105,6 @@ func (ctl *controller) getOnePageIssuesWithToken(projectID *int, statusList []ap
 	return issueResp.Issues, issueResp.NextToken, nil
 }
 
-// patchIssue patches the issue with given ID.
-func (ctl *controller) patchIssueStatus(issueStatusPatch api.IssueStatusPatch) (*api.Issue, error) {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &issueStatusPatch); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal issue status patch")
-	}
-
-	body, err := ctl.patch(fmt.Sprintf("/issue/%d/status", issueStatusPatch.ID), buf)
-	if err != nil {
-		return nil, err
-	}
-
-	issue := new(api.Issue)
-	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal patch issue status patch response")
-	}
-	return issue, nil
-}
-
 // patchTaskStatus patches the status of a task in the pipeline stage.
 func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int, taskID int) (*api.Task, error) {
 	buf := new(bytes.Buffer)
