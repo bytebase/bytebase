@@ -77,3 +77,6 @@ type SettingWorkspaceMailDeliveryValue struct {
 	SMTPEncryptionType     storepb.SMTPMailDeliverySetting_Encryption     `json:"smtpEncryptionType"`
 	SMTPTo                 string                                         `json:"sendTo"`
 }
+
+// DefaultRefreshTokenDurationInSeconds is the default value for refresh token duration config.
+const DefaultRefreshTokenDurationInSeconds = int64(7 * 24 * 60 * 60)
