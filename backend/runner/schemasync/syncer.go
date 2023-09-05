@@ -459,10 +459,16 @@ func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchema
 }
 
 func getOrDefaultSyncInterval(instance *store.InstanceMessage) time.Duration {
-	if instance.Activation && instance.Options.SyncInterval.IsValid() {
-		return instance.Options.SyncInterval.AsDuration()
+	if !instance.Activation {
+		return defaultSyncInterval
 	}
-	return defaultSyncInterval
+	if !instance.Options.SyncInterval.IsValid() {
+		return defaultSyncInterval
+	}
+	if instance.Options.SyncInterval.GetSeconds() == 0 && instance.Options.SyncInterval.GetNanos() == 0 {
+		return defaultSyncInterval
+	}
+	return instance.Options.SyncInterval.AsDuration()
 }
 
 func getOrDefaultLastSyncTime(t *timestamppb.Timestamp) time.Time {
