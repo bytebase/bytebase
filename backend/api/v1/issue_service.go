@@ -1236,7 +1236,7 @@ func (s *IssueService) onIssueApproved(ctx context.Context, issue *store.IssueMe
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := s.taskScheduler.ChangeIssueStatus(ctx, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+				if err := utils.ChangeIssueStatus(ctx, s.store, s.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}
