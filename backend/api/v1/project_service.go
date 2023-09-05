@@ -90,6 +90,14 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	setting, err := s.store.GetDataClassificationSetting(ctx)
+	if err != nil {
+		log.Error("failed to find classification setting", zap.Error(err))
+	}
+	if setting != nil && len(setting.Configs) != 0 {
+		projectMessage.DataClassificationConfigID = setting.Configs[0].Id
+	}
+
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	project, err := s.store.CreateProjectV2(ctx,
 		projectMessage,
