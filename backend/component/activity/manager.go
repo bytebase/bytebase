@@ -19,7 +19,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pkg/errors"
@@ -620,7 +619,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			level = webhook.WebhookSuccess
 			title = "Task completed - " + task.Name
 
-			skipped, skippedReason, err := utils.GetTaskSkippedAndReason(task)
+			skipped, skippedReason, err := getTaskSkippedAndReason(task)
 			if err != nil {
 				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
 				log.Warn(err.Error(), zap.String("task.Payload", task.Payload), zap.Error(err))
@@ -729,7 +728,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			title = "Task run canceled - " + payload.TaskName
 		case api.TaskRunSkipped:
 			title = "Task skipped - " + payload.TaskName
-			_, skippedReason, err := utils.GetTaskSkippedAndReason(task)
+			_, skippedReason, err := getTaskSkippedAndReason(task)
 			if err != nil {
 				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
 				log.Warn(err.Error(), zap.String("task.Payload", task.Payload), zap.Error(err))
@@ -924,4 +923,16 @@ func getUsersFromProjectRole(s *store.Store, role api.Role, projectID string) fu
 		}
 		return users, nil
 	}
+}
+
+// getTaskSkippedAndReason gets skipped and skippedReason from a task.
+func getTaskSkippedAndReason(task *api.Task) (bool, string, error) {
+	var payload struct {
+		Skipped       bool   `json:"skipped,omitempty"`
+		SkippedReason string `json:"skippedReason,omitempty"`
+	}
+	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+		return false, "", err
+	}
+	return payload.Skipped, payload.SkippedReason, nil
 }

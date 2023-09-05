@@ -358,18 +358,6 @@ func GetTaskSheetID(taskPayload string) (int, error) {
 	return taskSheetID.SheetID, nil
 }
 
-// GetTaskSkippedAndReason gets skipped and skippedReason from a task.
-func GetTaskSkippedAndReason(task *api.Task) (bool, string, error) {
-	var payload struct {
-		Skipped       bool   `json:"skipped,omitempty"`
-		SkippedReason string `json:"skippedReason,omitempty"`
-	}
-	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-		return false, "", err
-	}
-	return payload.Skipped, payload.SkippedReason, nil
-}
-
 // GetTaskSkipped gets skipped from a task.
 func GetTaskSkipped(task *store.TaskMessage) (bool, error) {
 	var payload struct {
