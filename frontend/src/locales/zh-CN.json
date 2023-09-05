@@ -259,7 +259,8 @@
     "search-user": "搜索用户",
     "branches": "分支",
     "merge": "合并",
-    "info": "信息"
+    "info": "信息",
+    "minutes": "分钟"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1093,6 +1094,11 @@
         "self": "按 Schema 管理",
         "description": "将每个 Schema 作为管理对象。（仅支持非 CDB 模式）"
       }
+    },
+    "scan-interval": {
+      "self": "扫描间隔",
+      "default-daily": "默认（每天）",
+      "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。"
     }
   },
   "environment": {
@@ -1497,7 +1503,7 @@
   },
   "anomaly": {
     "attention-title": "异常检测",
-    "attention-desc": "Bytebase 会定期扫描托管的资源，并在这里列出检测到的异常。\n该列表大约每 10 分钟刷新一次。",
+    "attention-desc": "Bytebase 会根据实例配置的扫描间隔检测异常，并且展示在这里。",
     "table-search-placeholder": "搜索{type}或者环境",
     "table-placeholder": "很棒，没有检测到{type}异常！",
     "tooltip": "{env} 环境有 {criticalCount} 个严重异常, {highCount} 个高等级异常和 {mediumCount} 个中等级异常",
@@ -2283,6 +2289,10 @@
       "bb-feature-issue-advanced-search": {
         "title": "工单高级搜索",
         "desc": "通过高级搜索来访问无限制的历史工单。"
+      },
+      "bb-feature-custom-instance-scan-interval": {
+        "title": "自定义实例扫描间隔",
+        "desc": "自定义实例的 schema 和异常扫描间隔"
       }
     },
     "feature-require-subscription": "{feature} 需要 {requiredPlan}。"
