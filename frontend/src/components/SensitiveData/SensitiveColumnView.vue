@@ -1,11 +1,36 @@
 <template>
   <div class="w-full mt-4 space-y-4">
-    <div class="flex justify-between">
+    <div>
       <EnvironmentTabFilter
-        :environment="state.environment"
+        :environment="state.selectedEnvironmentName"
         :include-all="true"
-        @update:environment="state.environment = $event"
+        @update:environment="state.selectedEnvironmentName = $event"
       />
+    </div>
+    <div class="flex justify-between items-center">
+      <div class="flex items-center">
+        <ProjectSelect
+          :project="state.selectedProjectUid"
+          :include-default-project="true"
+          :include-all="true"
+          :disabled="false"
+          @update:project="
+            state.selectedProjectUid = $event ?? String(UNKNOWN_ID)
+          "
+        />
+        <InstanceSelect
+          :instance="state.selectedInstanceUid"
+          :include-all="true"
+          :environment="environment?.uid"
+          @update:instance="onInstanceSelect($event)"
+        />
+        <DatabaseSelect
+          :project="state.selectedProjectUid"
+          :instance="state.selectedInstanceUid"
+          :database="state.selectedDatabaseUid"
+          @update:database="onDatabaseSelect($event)"
+        />
+      </div>
       <NButton
         type="primary"
         :disabled="
@@ -89,14 +114,20 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
+  ProjectSelect,
+  InstanceSelect,
+  DatabaseSelect,
+} from "@/components/v2/Select";
+import {
   usePolicyListByResourceTypeAndPolicyType,
   featureToRef,
   useDatabaseV1Store,
   useCurrentUserV1,
+  useEnvironmentV1Store,
   pushNotification,
   usePolicyV1Store,
 } from "@/store";
-import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import { UNKNOWN_ID, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import {
   PolicyType,
   PolicyResourceType,
@@ -106,7 +137,10 @@ import { SensitiveColumn } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface LocalState {
-  environment: string;
+  selectedEnvironmentName: string;
+  selectedProjectUid: string;
+  selectedInstanceUid: string;
+  selectedDatabaseUid: string;
   showFeatureModal: boolean;
   isLoading: boolean;
   sensitiveColumnList: SensitiveColumn[];
@@ -121,7 +155,10 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   isLoading: false,
   sensitiveColumnList: [],
-  environment: UNKNOWN_ENVIRONMENT_NAME,
+  selectedEnvironmentName: UNKNOWN_ENVIRONMENT_NAME,
+  selectedProjectUid: String(UNKNOWN_ID),
+  selectedInstanceUid: String(UNKNOWN_ID),
+  selectedDatabaseUid: String(UNKNOWN_ID),
   pendingGrantAccessColumnIndex: [],
   showGrantAccessDrawer: false,
   showSensitiveColumnDrawer: false,
@@ -129,6 +166,7 @@ const state = reactive<LocalState>({
 const databaseStore = useDatabaseV1Store();
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const policyStore = usePolicyV1Store();
+const environmentStore = useEnvironmentV1Store();
 
 const policyList = usePolicyListByResourceTypeAndPolicyType({
   resourceType: PolicyResourceType.DATABASE,
@@ -267,12 +305,52 @@ const onRowClick = async (
 
 const filteredColumnList = computed(() => {
   return state.sensitiveColumnList.filter((column) => {
-    if (state.environment === UNKNOWN_ENVIRONMENT_NAME) {
-      return true;
+    if (
+      state.selectedEnvironmentName !== UNKNOWN_ENVIRONMENT_NAME &&
+      column.database.effectiveEnvironmentEntity.name !==
+        state.selectedEnvironmentName
+    ) {
+      return false;
     }
-    return (
-      column.database.effectiveEnvironmentEntity.name === state.environment
-    );
+    if (
+      state.selectedProjectUid !== String(UNKNOWN_ID) &&
+      column.database.projectEntity.uid !== state.selectedProjectUid
+    ) {
+      return false;
+    }
+    if (
+      state.selectedInstanceUid !== String(UNKNOWN_ID) &&
+      column.database.instanceEntity.uid !== state.selectedInstanceUid
+    ) {
+      return false;
+    }
+    if (
+      state.selectedDatabaseUid !== String(UNKNOWN_ID) &&
+      column.database.uid !== state.selectedDatabaseUid
+    ) {
+      return false;
+    }
+    return true;
   });
 });
+
+const environment = computed(() => {
+  if (state.selectedEnvironmentName === UNKNOWN_ENVIRONMENT_NAME) {
+    return;
+  }
+  return environmentStore.getEnvironmentByName(state.selectedEnvironmentName);
+});
+
+const onInstanceSelect = (instanceUid: string | undefined) => {
+  state.selectedInstanceUid = instanceUid ?? String(UNKNOWN_ID);
+  state.selectedDatabaseUid = String(UNKNOWN_ID);
+};
+
+const onDatabaseSelect = (databaseUid: string | undefined) => {
+  state.selectedDatabaseUid = databaseUid ?? String(UNKNOWN_ID);
+  if (databaseUid) {
+    const database = databaseStore.getDatabaseByUID(databaseUid);
+    state.selectedInstanceUid = database.instanceEntity.uid;
+  }
+};
 </script>
