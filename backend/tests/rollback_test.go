@@ -97,12 +97,20 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 
 	// Run a DML issue.
-	_, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
-		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Target:          database.Name,
-			Sheet:           dmlSheet.Name,
-			Type:            v1pb.Plan_ChangeDatabaseConfig_DATA,
-			RollbackEnabled: true,
+	_, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target:          database.Name,
+							Sheet:           dmlSheet.Name,
+							Type:            v1pb.Plan_ChangeDatabaseConfig_DATA,
+							RollbackEnabled: true,
+						},
+					},
+				},
+			},
 		},
 	})
 	a.NoError(err)
@@ -131,14 +139,22 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 
 	// Run a rollback issue.
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
-		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Target: database.Name,
-			Sheet:  rollbackSheet,
-			Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
-			RollbackDetail: &v1pb.Plan_ChangeDatabaseConfig_RollbackDetail{
-				RollbackFromTask:  rollbackTaskName,
-				RollbackFromIssue: issue.Name,
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target: database.Name,
+							Sheet:  rollbackSheet,
+							Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
+							RollbackDetail: &v1pb.Plan_ChangeDatabaseConfig_RollbackDetail{
+								RollbackFromTask:  rollbackTaskName,
+								RollbackFromIssue: issue.Name,
+							},
+						},
+					},
+				},
 			},
 		},
 	})
@@ -240,11 +256,19 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 
 	// Run a DML issue with rollbackEnabled set to false.
-	plan, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
-		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Target: database.Name,
-			Sheet:  dmlSheet.Name,
-			Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
+	plan, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target: database.Name,
+							Sheet:  dmlSheet.Name,
+							Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
+						},
+					},
+				},
+			},
 		},
 	})
 	a.NoError(err)
@@ -285,14 +309,22 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 
 	// Run a rollback issue.
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
-		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Target: database.Name,
-			Sheet:  rollbackSheet,
-			Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
-			RollbackDetail: &v1pb.Plan_ChangeDatabaseConfig_RollbackDetail{
-				RollbackFromTask:  rollbackTaskName,
-				RollbackFromIssue: issue.Name,
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target: database.Name,
+							Sheet:  rollbackSheet,
+							Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
+							RollbackDetail: &v1pb.Plan_ChangeDatabaseConfig_RollbackDetail{
+								RollbackFromTask:  rollbackTaskName,
+								RollbackFromIssue: issue.Name,
+							},
+						},
+					},
+				},
 			},
 		},
 	})
@@ -394,12 +426,20 @@ func TestRollbackCanceled(t *testing.T) {
 	a.NoError(err)
 
 	// Run a DML issue.
-	plan, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
-		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Target:          database.Name,
-			Sheet:           sheet.Name,
-			Type:            v1pb.Plan_ChangeDatabaseConfig_DATA,
-			RollbackEnabled: true,
+	plan, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target:          database.Name,
+							Sheet:           sheet.Name,
+							Type:            v1pb.Plan_ChangeDatabaseConfig_DATA,
+							RollbackEnabled: true,
+						},
+					},
+				},
+			},
 		},
 	})
 	a.NoError(err)
