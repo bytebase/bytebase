@@ -11,12 +11,12 @@
       <img
         v-if="customBrandingLogo"
         :src="customBrandingLogo"
-        class="w-auto max-w-full h-auto max-h-12"
+        class="w-auto max-w-full h-8 md:max-h-10"
       />
 
       <img
         v-if="!customBrandingLogo"
-        class="h-12 w-auto"
+        class="h-8 md:h-10 w-auto"
         src="../assets/logo-full.svg"
         alt="Bytebase"
       />
