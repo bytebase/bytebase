@@ -1,9 +1,12 @@
-import { MonacoLanguageClient } from "monaco-languageclient";
-import { ErrorAction, CloseAction } from "vscode-languageclient";
+import {
+  CloseAction,
+  ErrorAction,
+  MonacoLanguageClient,
+} from "monaco-languageclient";
 import {
   BrowserMessageReader,
   BrowserMessageWriter,
-} from "vscode-languageclient/browser";
+} from "vscode-languageserver-protocol/browser";
 
 export const createLanguageClient = (worker: Worker) => {
   const reader = new BrowserMessageReader(worker);

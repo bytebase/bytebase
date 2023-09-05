@@ -80,8 +80,6 @@ export default defineConfig(() => {
       alias: {
         "@/": `${resolve(__dirname, "src")}/`,
         "@sql-lsp/": `${resolve(__dirname, "src/plugins/sql-lsp")}/`,
-        "@public/": `${resolve(__dirname, "public")}/`,
-        vscode: "@codingame/monaco-vscode-api",
       },
     },
     test: {

@@ -25,7 +25,6 @@ import {
 } from "vue";
 import { ComposedDatabase, Database, Language, SQLDialect } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
-import { ExtractPromiseType } from "@/utils";
 import { useLineDecorations } from "./lineDecorations";
 import { useAdvices } from "./plugins/useAdvices";
 import type { AdviceOption } from "./types";
@@ -76,12 +75,11 @@ const monacoInstanceRef = ref<MonacoHelper>();
 const editorContainerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
 const editorInstanceRef = shallowRef<Editor.IStandaloneCodeEditor>();
-const languageClientRef =
-  ref<ExtractPromiseType<ReturnType<typeof useLanguageClient>>>();
+const languageClientRef = ref<ReturnType<typeof useLanguageClient>>();
 
 const isEditorLoaded = ref(false);
 
-const initEditorInstance = async () => {
+const initEditorInstance = () => {
   const { monaco, formatContent, setPositionAtEndOfLine } =
     monacoInstanceRef.value!;
 
@@ -231,8 +229,10 @@ const initEditorInstance = async () => {
 
 onMounted(async () => {
   // Load monaco-editor and sql-lsp/client asynchronously.
-  const monacoHelper = await useMonaco();
-  const { useLanguageClient } = await import("@sql-lsp/client");
+  const [monacoHelper, { useLanguageClient }] = await Promise.all([
+    useMonaco(),
+    import("@sql-lsp/client"),
+  ]);
 
   if (!editorContainerRef.value) {
     // Give up creating monaco editor if the component has been unmounted
@@ -243,15 +243,15 @@ onMounted(async () => {
     return;
   }
 
-  const languageClient = await useLanguageClient();
-  languageClientRef.value = languageClient;
-  languageClient.start();
-
   const { setPositionAtEndOfLine } = monacoHelper;
   monacoInstanceRef.value = monacoHelper;
 
-  const editorInstance = await initEditorInstance();
+  const editorInstance = initEditorInstance();
   editorInstanceRef.value = editorInstance;
+
+  const languageClient = useLanguageClient();
+  languageClientRef.value = languageClient;
+  languageClient.start();
 
   // set the editor focus when the tab is selected
   if (!readOnly.value && props.autoFocus) {
