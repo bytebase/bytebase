@@ -282,12 +282,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue with ID %d", id)).SetInternal(err)
 		}
-		// cancel external approval on assignee change
-		if issuePatch.AssigneeID != nil {
-			if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonReassigned); err != nil {
-				log.Error("failed to cancel external approval on assignee change", zap.Int("issue_id", issue.UID), zap.Error(err))
-			}
-		}
 
 		payloadList := [][]byte{}
 		if issuePatch.Name != nil && *issuePatch.Name != issue.Title {
