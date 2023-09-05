@@ -1116,44 +1116,7 @@ func (s *Scheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int,
 
 // ChangeIssueStatus changes the status of an issue.
 func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) error {
-	if issue.PipelineUID != nil {
-		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: issue.PipelineUID})
-		if err != nil {
-			return err
-		}
-		switch newStatus {
-		case api.IssueOpen:
-		case api.IssueDone:
-			// Returns error if any of the tasks is not DONE.
-			for _, task := range tasks {
-				if task.Status != api.TaskDone {
-					return &common.Error{Code: common.Conflict, Err: errors.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Title, task.Name)}
-				}
-			}
-		case api.IssueCanceled:
-			// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
-			// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
-			// keep those tasks in the same state before the issue was canceled.
-			for _, task := range tasks {
-				if task.Status == api.TaskRunning {
-					if err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
-						ID:        task.ID,
-						UpdaterID: updaterID,
-						Status:    api.TaskCanceled,
-					}); err != nil {
-						return errors.Wrapf(err, "failed to cancel issue: %v, failed to cancel task: %v", issue.Title, task.Name)
-					}
-				}
-			}
-		}
-	}
-
 	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
-	if newStatus != api.IssueOpen && issue.Project.Workflow == api.UIWorkflow {
-		// for UI workflow, set assigneeNeedAttention to false if we are closing the issue.
-		needAttention := false
-		updateIssueMessage.NeedAttention = &needAttention
-	}
 	updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updaterID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
@@ -1167,7 +1130,6 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
 	}
-
 	activityCreate := &store.ActivityMessage{
 		CreatorUID:   updaterID,
 		ContainerUID: issue.UID,
@@ -1176,13 +1138,11 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 		Comment:      comment,
 		Payload:      string(payload),
 	}
-
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: updatedIssue,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
 	}
-
 	return nil
 }
 
