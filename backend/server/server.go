@@ -156,6 +156,7 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
+	// TODO(d): deprecate TaskScheduler.
 	TaskScheduler      *taskrun.Scheduler
 	TaskSchedulerV2    *taskrun.SchedulerV2
 	TaskCheckScheduler *taskcheck.Scheduler
@@ -469,20 +470,19 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile, s.licenseService)
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 
-		if profile.DevelopmentUseV2Scheduler {
-			s.TaskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.ActivityManager)
-			s.TaskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
-			s.TaskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
-		}
+		s.TaskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.ActivityManager)
+		s.TaskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
+		s.TaskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
+
 		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
@@ -991,19 +991,11 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.cancel = cancel
 	if !s.profile.Readonly {
 		// runnerWG waits for all goroutines to complete.
-		if s.profile.DevelopmentUseV2Scheduler {
-			if err := s.TaskSchedulerV2.ClearRunningTaskRuns(ctx); err != nil {
-				return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
-			}
-			s.runnerWG.Add(1)
-			go s.TaskSchedulerV2.Run(ctx, &s.runnerWG)
-		} else {
-			if err := s.TaskScheduler.ClearRunningTasks(ctx); err != nil {
-				return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
-			}
-			s.runnerWG.Add(1)
-			go s.TaskScheduler.Run(ctx, &s.runnerWG)
+		if err := s.TaskSchedulerV2.ClearRunningTaskRuns(ctx); err != nil {
+			return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
 		}
+		s.runnerWG.Add(1)
+		go s.TaskSchedulerV2.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
@@ -1366,112 +1358,70 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	var issueLink string
 	// Use new CI/CD API.
-	if s.profile.DevelopmentUseV2Scheduler {
-		childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, api.SystemBotID)
-		plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
-			Parent: fmt.Sprintf("projects/%s", project.ResourceID),
-			Plan: &v1pb.Plan{
-				Title: "Onboarding sample plan for adding email column to Employee table",
-				Steps: []*v1pb.Plan_Step{
-					{
-						Specs: []*v1pb.Plan_Spec{
-							{
-								Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-									ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-										Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
-										Target: fmt.Sprintf("instances/%s/databases/%s", testDatabase.InstanceID, testDatabase.DatabaseName),
-										Sheet:  fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, testSheet.UID),
-									},
+	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, api.SystemBotID)
+	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Plan: &v1pb.Plan{
+			Title: "Onboarding sample plan for adding email column to Employee table",
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+									Target: fmt.Sprintf("instances/%s/databases/%s", testDatabase.InstanceID, testDatabase.DatabaseName),
+									Sheet:  fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, testSheet.UID),
 								},
 							},
 						},
 					},
-					{
-						Specs: []*v1pb.Plan_Spec{
-							{
-								Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-									ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-										Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
-										Target: fmt.Sprintf("instances/%s/databases/%s", prodDatabase.InstanceID, prodDatabase.DatabaseName),
-										// This will violate the NOT NULL SQL Review policy configured above and emit a
-										// warning. Thus to demonstrate the SQL Review capability.
-										Sheet: fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, prodSheet.UID),
-									},
+				},
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+									Target: fmt.Sprintf("instances/%s/databases/%s", prodDatabase.InstanceID, prodDatabase.DatabaseName),
+									// This will violate the NOT NULL SQL Review policy configured above and emit a
+									// warning. Thus to demonstrate the SQL Review capability.
+									Sheet: fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, prodSheet.UID),
 								},
 							},
 						},
 					},
 				},
 			},
-		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to create plan for sample project")
-		}
-		rollout, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
-			Parent: fmt.Sprintf("projects/%s", project.ResourceID),
-			Plan:   plan.Name,
-		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to create rollout for sample project")
-		}
-		issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
-			Parent: fmt.Sprintf("projects/%s", project.ResourceID),
-			Issue: &v1pb.Issue{
-				Title: "👉👉👉 [START HERE] Add email column to Employee table",
-				Description: `A sample issue to showcase how to review database schema change.
+		},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create plan for sample project")
+	}
+	rollout, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Plan:   plan.Name,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create rollout for sample project")
+	}
+	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Issue: &v1pb.Issue{
+			Title: "👉👉👉 [START HERE] Add email column to Employee table",
+			Description: `A sample issue to showcase how to review database schema change.
 
 				Click "Approve" button to apply the schema update.`,
-				Type:     v1pb.Issue_DATABASE_CHANGE,
-				Assignee: fmt.Sprintf("users/%s", user.Email),
-				Plan:     plan.Name,
-				Rollout:  rollout.Name,
-			},
-		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to create issue for sample project")
-		}
-		issueLink = fmt.Sprintf("/issue/%s-%s", slug.Make(issue.Title), issue.Uid)
-	} else {
-		createContext, err := json.Marshal(
-			&api.MigrationContext{
-				DetailList: []*api.MigrationDetail{
-					{
-						MigrationType: db.Migrate,
-						DatabaseID:    testDatabase.UID,
-						SheetID:       testSheet.UID,
-					},
-					{
-						MigrationType: db.Migrate,
-						DatabaseID:    prodDatabase.UID,
-						// This will violate the NOT NULL SQL Review policy configured above and emit a
-						// warning. Thus to demonstrate the SQL Review capability.
-						SheetID: prodSheet.UID,
-					},
-				},
-			})
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal sample schema update issue context")
-		}
-
-		issueCreate := &api.IssueCreate{
-			ProjectID: project.UID,
-			Name:      "👉👉👉 [START HERE] Add email column to Employee table",
-			Type:      api.IssueDatabaseSchemaUpdate,
-			Description: `A sample issue to showcase how to review database schema change.
-			
-	Click "Approve" button to apply the schema update.`,
-			AssigneeID:            userID,
-			AssigneeNeedAttention: true,
-			CreateContext:         string(createContext),
-		}
-
-		// Use system bot as the creator so that the issue only appears in the user's assignee list.
-		issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create sample issue")
-		}
-		issueLink = fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID)
+			Type:     v1pb.Issue_DATABASE_CHANGE,
+			Assignee: fmt.Sprintf("users/%s", user.Email),
+			Plan:     plan.Name,
+			Rollout:  rollout.Name,
+		},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create issue for sample project")
 	}
+	issueLink = fmt.Sprintf("/issue/%s-%s", slug.Make(issue.Title), issue.Uid)
 
 	// Bookmark the issue.
 	if _, err := s.store.CreateBookmarkV2(ctx, &store.BookmarkMessage{

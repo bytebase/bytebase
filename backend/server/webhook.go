@@ -1458,7 +1458,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 					databaseName := fileInfo.migrationInfo.Database
 					issueName := fmt.Sprintf(sdlIssueNameTemplate, databaseName, "Alter schema")
 					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
-					if err := s.createIssueFromMigrationDetailList(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
+					if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
 						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 					}
 					createdIssueList = append(createdIssueList, issueName)
@@ -1499,7 +1499,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	description := strings.ReplaceAll(fileInfoList[0].migrationInfo.Description, "_", " ")
 	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType, description)
 	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
-	if err := s.createIssueFromMigrationDetailList(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList); err != nil {
+	if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList); err != nil {
 		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
 	}
 	createdIssueList = append(createdIssueList, issueName)
@@ -1678,76 +1678,6 @@ func getChangeType(migrationType db.MigrationType) v1pb.Plan_ChangeDatabaseConfi
 		return v1pb.Plan_ChangeDatabaseConfig_DATA
 	}
 	return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
-}
-
-func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*api.MigrationDetail) error {
-	if s.profile.DevelopmentUseV2Scheduler {
-		return s.createIssueFromMigrationDetailsV2(ctx, project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList)
-	}
-
-	createContext, err := json.Marshal(
-		&api.MigrationContext{
-			VCSPushEvent: &pushEvent,
-			DetailList:   migrationDetailList,
-		},
-	)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
-	}
-
-	// TODO(d): unify issue type for database changes.
-	issueType := api.IssueDatabaseDataUpdate
-	for _, detail := range migrationDetailList {
-		if detail.MigrationType == db.Migrate || detail.MigrationType == db.Baseline {
-			issueType = api.IssueDatabaseSchemaUpdate
-		}
-	}
-	issueCreate := &api.IssueCreate{
-		ProjectID:             project.UID,
-		Name:                  issueName,
-		Type:                  issueType,
-		Description:           issueDescription,
-		AssigneeID:            api.SystemBotID,
-		AssigneeNeedAttention: true,
-		CreateContext:         string(createContext),
-	}
-	issue, err := s.createIssue(ctx, issueCreate, creatorID)
-	if err != nil {
-		log.Error("Failed to create issue", zap.Any("issueCreate", issueCreate), zap.Error(err))
-		errMsg := "Failed to create schema update issue"
-		if issueType == api.IssueDatabaseDataUpdate {
-			errMsg = "Failed to create data update issue"
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
-	}
-
-	// TODO(p0ny): sheet, for each sheet, update the payload to backtrace the issue.
-
-	// Create a project activity after successfully creating the issue from the push event.
-	activityPayload, err := json.Marshal(
-		api.ActivityProjectRepositoryPushPayload{
-			VCSPushEvent: pushEvent,
-			IssueID:      issue.ID,
-			IssueName:    issue.Name,
-		},
-	)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
-	}
-
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:   creatorID,
-		ContainerUID: project.UID,
-		Type:         api.ActivityProjectRepositoryPush,
-		Level:        api.ActivityInfo,
-		Comment:      fmt.Sprintf("Created issue %q.", issue.Name),
-		Payload:      string(activityPayload),
-	}
-	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
-	}
-
-	return nil
 }
 
 func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
@@ -2141,22 +2071,12 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 	// TODO(p0ny): sheet, create new sheets and update task sheet id.
 	// For modified files, we try to update the existing issue's statement.
 	for _, database := range databases {
-		find := &api.TaskFind{
-			DatabaseID: &database.UID,
-			StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
-			TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
-			Payload:    fmt.Sprintf("task.payload->>'schemaVersion' = '%s'", schemaVersion),
-		}
-		if s.profile.DevelopmentUseV2Scheduler {
-			find = &api.TaskFind{
-				DatabaseID:              &database.UID,
-				LatestTaskRunStatusList: &[]api.TaskRunStatus{api.TaskRunNotStarted, api.TaskRunFailed},
-				TypeList:                &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
-				Payload:                 fmt.Sprintf("task.payload->>'schemaVersion' = '%s'", schemaVersion),
-			}
-		}
-
-		taskList, err := s.store.ListTasks(ctx, find)
+		taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
+			DatabaseID:              &database.UID,
+			LatestTaskRunStatusList: &[]api.TaskRunStatus{api.TaskRunNotStarted, api.TaskRunFailed},
+			TypeList:                &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
+			Payload:                 fmt.Sprintf("task.payload->>'schemaVersion' = '%s'", schemaVersion),
+		})
 		if err != nil {
 			return err
 		}
