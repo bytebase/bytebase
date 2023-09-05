@@ -149,7 +149,7 @@ const require2FAEnabled = computed((): boolean => {
 });
 
 const handleDisallowSignupToggle = async (on: boolean) => {
-  if (!hasDisallowSignupFeature.value) {
+  if (!hasDisallowSignupFeature.value && on) {
     state.featureNameForModal = "bb.feature.disallow-signup";
     return;
   }
@@ -164,7 +164,7 @@ const handleDisallowSignupToggle = async (on: boolean) => {
 };
 
 const handleRequire2FAToggle = async (on: boolean) => {
-  if (!has2FAFeature.value) {
+  if (!has2FAFeature.value && on) {
     state.featureNameForModal = "bb.feature.2fa";
     return;
   }
@@ -180,7 +180,7 @@ const handleRequire2FAToggle = async (on: boolean) => {
 };
 
 const handleWatermarkToggle = async (on: boolean) => {
-  if (!hasWatermarkFeature.value) {
+  if (!hasWatermarkFeature.value && on) {
     state.featureNameForModal = "bb.feature.watermark";
     return;
   }
