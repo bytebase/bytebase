@@ -645,7 +645,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 			// sort TaskRunList to get the most recent task run result.
 			sort.Slice(task.TaskRunList, func(i int, j int) bool {
-				return task.TaskRunList[i].UpdatedTs > task.TaskRunList[j].UpdatedTs || (task.TaskRunList[i].UpdatedTs == task.TaskRunList[j].UpdatedTs && task.TaskRunList[i].ID > task.TaskRunList[j].ID)
+				return task.TaskRunList[i].ID > task.TaskRunList[j].ID
 			})
 
 			var result api.TaskRunResultPayload
@@ -712,7 +712,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 			// sort TaskRunList to get the most recent task run result.
 			sort.Slice(task.TaskRunList, func(i int, j int) bool {
-				return task.TaskRunList[i].UpdatedTs > task.TaskRunList[j].UpdatedTs || (task.TaskRunList[i].UpdatedTs == task.TaskRunList[j].UpdatedTs && task.TaskRunList[i].ID > task.TaskRunList[j].ID)
+				return task.TaskRunList[i].ID > task.TaskRunList[j].ID
 			})
 
 			var result api.TaskRunResultPayload
