@@ -24,7 +24,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/runner/apprun"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -61,7 +60,6 @@ var (
 // NewScheduler creates a new task scheduler.
 func NewScheduler(
 	store *store.Store,
-	applicationRunner *apprun.Runner,
 	schemaSyncer *schemasync.Syncer,
 	activityManager *activity.Manager,
 	licenseService enterpriseAPI.LicenseService,
@@ -69,29 +67,27 @@ func NewScheduler(
 	profile config.Profile,
 	metricReporter *metricreport.Reporter) *Scheduler {
 	return &Scheduler{
-		store:             store,
-		applicationRunner: applicationRunner,
-		schemaSyncer:      schemaSyncer,
-		activityManager:   activityManager,
-		licenseService:    licenseService,
-		profile:           profile,
-		stateCfg:          stateCfg,
-		executorMap:       make(map[api.TaskType]Executor),
-		metricReporter:    metricReporter,
+		store:           store,
+		schemaSyncer:    schemaSyncer,
+		activityManager: activityManager,
+		licenseService:  licenseService,
+		profile:         profile,
+		stateCfg:        stateCfg,
+		executorMap:     make(map[api.TaskType]Executor),
+		metricReporter:  metricReporter,
 	}
 }
 
 // Scheduler is the task scheduler.
 type Scheduler struct {
-	store             *store.Store
-	applicationRunner *apprun.Runner
-	schemaSyncer      *schemasync.Syncer
-	activityManager   *activity.Manager
-	licenseService    enterpriseAPI.LicenseService
-	stateCfg          *state.State
-	profile           config.Profile
-	executorMap       map[api.TaskType]Executor
-	metricReporter    *metricreport.Reporter
+	store           *store.Store
+	schemaSyncer    *schemasync.Syncer
+	activityManager *activity.Manager
+	licenseService  enterpriseAPI.LicenseService
+	stateCfg        *state.State
+	profile         config.Profile
+	executorMap     map[api.TaskType]Executor
+	metricReporter  *metricreport.Reporter
 }
 
 // Register will register a task executor factory.
@@ -377,9 +373,6 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			return errors.Errorf("database schema ID not found %v", task.DatabaseID)
 		}
 		// it's ok to fail.
-		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonSQLModified); err != nil {
-			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.UID), zap.Error(err))
-		}
 		s.stateCfg.IssueExternalApprovalRelayCancelChan <- issue.UID
 		if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 			if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
@@ -1166,14 +1159,6 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 	}
 
-	// Cancel external approval, it's ok if we failed.
-	if newStatus != api.IssueOpen {
-		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
-			log.Error("failed to cancel external approval on issue cancellation or completion", zap.Error(err))
-		}
-		s.stateCfg.IssueExternalApprovalRelayCancelChan <- issue.UID
-	}
-
 	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
 		OldStatus: issue.Status,
 		NewStatus: newStatus,
@@ -1273,14 +1258,6 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 		}
 		if !terminatedTaskStatus[task.Status] {
 			stageTaskAllTerminated = false
-		}
-	}
-
-	// every task in the stage completes
-	// cancel external approval, it's ok if we failed.
-	if !taskStage.Active {
-		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonNoTaskPendingApproval); err != nil {
-			log.Error("failed to cancel external approval on stage tasks completion", zap.Int("issue_id", issue.UID), zap.Error(err))
 		}
 	}
 

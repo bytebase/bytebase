@@ -69,7 +69,6 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/anomaly"
 	"github.com/bytebase/bytebase/backend/runner/approval"
-	"github.com/bytebase/bytebase/backend/runner/apprun"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -167,7 +166,6 @@ type Server struct {
 	MailSender         *mail.SlowQueryWeeklyMailSender
 	BackupRunner       *backuprun.Runner
 	AnomalyScanner     *anomaly.Scanner
-	ApplicationRunner  *apprun.Runner
 	RollbackRunner     *rollbackrun.Runner
 	ApprovalRunner     *approval.Runner
 	RelayRunner        *relay.Runner
@@ -467,7 +465,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.SlowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
-		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile, s.licenseService)
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 
 		s.TaskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.ActivityManager)
@@ -483,7 +480,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
 		s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 
-		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
+		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
 		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
@@ -1008,8 +1005,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
