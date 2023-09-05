@@ -72,7 +72,7 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	a.NoError(err)
 	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
-	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -84,7 +84,7 @@ func TestRestoreToNewDatabase(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	err = ctl.waitRollout(ctx, rollout.Name)
+	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime0)
@@ -525,7 +525,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	a.NoError(err)
 	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
-	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -538,7 +538,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.waitRollout(ctx, rollout.Name)
+	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	cancelUpdateRow()
