@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pt-1 overflow-hidden grid grid-cols-5 gap-x-2 gap-y-4 md:inline-flex items-stretch"
+    class="pt-1 overflow-hidden grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch"
   >
     <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
@@ -9,26 +9,12 @@
         data-label="bb-quick-action-add-instance"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createInstance">
-          <heroicons-outline:plus-sm class="w-5 h-5" />
+          <heroicons-outline:plus-sm class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.add-instance") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.user.manage'"
-        class="flex flex-col items-center w-24"
-      >
-        <router-link to="/setting/member" class="btn-icon-primary p-3">
-          <heroicons-outline:users class="w-5 h-5" />
-        </router-link>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("quick-action.manage-user") }}
         </h3>
       </div>
 
@@ -39,7 +25,7 @@
           data-label="bb-quick-action-new-db"
         >
           <button class="btn-icon-primary p-3" @click.prevent="createDatabase">
-            <heroicons-outline:database class="w-5 h-5" />
+            <heroicons-outline:database class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -57,7 +43,7 @@
             data-label="bb-alter-schema-button"
             @click.prevent="alterSchema"
           >
-            <heroicons-outline:pencil-alt class="w-5 h-5" />
+            <heroicons-outline:pencil-alt class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -71,7 +57,7 @@
           class="flex flex-col items-center w-24"
         >
           <button class="btn-icon-primary p-3" @click.prevent="changeData">
-            <heroicons-outline:pencil class="w-5 h-5" />
+            <heroicons-outline:pencil class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -85,7 +71,7 @@
           class="flex flex-col items-center w-24"
         >
           <button class="btn-icon-primary p-3" @click.prevent="designSchema">
-            <GitBranch class="w-5 h-auto" />
+            <GitBranch class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -96,25 +82,11 @@
       </template>
 
       <div
-        v-if="isDev() && quickAction === 'quickaction.bb.database.troubleshoot'"
-        class="flex flex-col items-center w-24"
-      >
-        <router-link to="/issue/new" class="btn-icon-primary p-3">
-          <heroicons-outline:hand class="w-5 h-5" />
-        </router-link>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("quick-action.troubleshoot") }}
-        </h3>
-      </div>
-
-      <div
         v-if="quickAction === 'quickaction.bb.environment.create'"
         class="flex flex-col items-center w-36"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createEnvironment">
-          <heroicons-outline:plus-sm class="w-5 h-5" />
+          <heroicons-outline:plus-sm class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -131,7 +103,7 @@
           class="btn-icon-primary p-3"
           @click.prevent="reorderEnvironment"
         >
-          <heroicons-outline:selector class="transform rotate-90 w-5 h-5" />
+          <heroicons-outline:selector class="transform rotate-90 w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -146,7 +118,7 @@
         data-label="bb-quick-action-new-project"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createProject">
-          <heroicons-outline:template class="w-5 h-5" />
+          <heroicons-outline:template class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -160,7 +132,7 @@
         class="flex flex-col items-center w-24"
       >
         <button class="btn-icon-primary p-3" @click.prevent="transferDatabase">
-          <heroicons-outline:chevron-double-down class="w-5 h-5" />
+          <heroicons-outline:chevron-double-down class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -177,7 +149,7 @@
           class="btn-icon-primary p-3"
           @click.prevent="transferOutDatabase"
         >
-          <heroicons-outline:chevron-double-up class="w-5 h-5" />
+          <heroicons-outline:chevron-double-up class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -195,7 +167,7 @@
             class="btn-icon-primary p-3"
             @click.prevent="state.showRequestQueryPanel = true"
           >
-            <heroicons-outline:document-search class="w-5 h-5" />
+            <heroicons-outline:document-search class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -212,7 +184,7 @@
             class="btn-icon-primary p-3"
             @click.prevent="state.showRequestExportPanel = true"
           >
-            <heroicons-outline:document-download class="w-5 h-5" />
+            <heroicons-outline:document-download class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -234,7 +206,7 @@
                 'quickaction.bb.subscription.license-assignment')
           "
         >
-          <heroicons-outline:academic-cap class="w-5 h-5" />
+          <heroicons-outline:academic-cap class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -348,7 +320,7 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { QuickActionType } from "@/types";
-import { idFromSlug, isDev } from "@/utils";
+import { idFromSlug } from "@/utils";
 
 interface LocalState {
   feature?: string;
@@ -456,10 +428,6 @@ const QuickActionMap: Record<string, Partial<Action>> = {
     name: t("quick-action.add-instance"),
     perform: () => createInstance(),
   },
-  "quickaction.bb.user.manage": {
-    name: t("quick-action.manage-user"),
-    perform: () => router.push({ name: "setting.workspace.member" }),
-  },
   "quickaction.bb.database.create": {
     name: t("quick-action.new-db"),
     perform: () => createDatabase(),
@@ -467,10 +435,6 @@ const QuickActionMap: Record<string, Partial<Action>> = {
   "quickaction.bb.database.schema.update": {
     name: t("database.alter-schema"),
     perform: () => alterSchema(),
-  },
-  "quickaction.bb.database.troubleshoot": {
-    name: t("quick-action.troubleshoot"),
-    perform: () => router.push({ path: "/issue/new" }),
   },
   "quickaction.bb.environment.create": {
     name: t("quick-action.add-environment"),
