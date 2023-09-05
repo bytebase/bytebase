@@ -206,6 +206,9 @@ const icon = computed((): ActionIconType => {
       case "DONE": {
         return "complete";
       }
+      case "SKIPPED": {
+        return "skip";
+      }
       case "FAILED": {
         return "fail";
       }
