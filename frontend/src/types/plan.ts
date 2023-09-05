@@ -41,6 +41,7 @@ export type FeatureType =
   // Database management
   | "bb.feature.pitr"
   | "bb.feature.read-replica-connection"
+  | "bb.feature.custom-instance-scan-interval"
   | "bb.feature.instance-ssh-connection"
   | "bb.feature.sync-schema-all-versions"
   | "bb.feature.index-advisor"
@@ -67,6 +68,7 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.pitr",
   "bb.feature.read-replica-connection",
   "bb.feature.instance-ssh-connection",
+  "bb.feature.custom-instance-scan-interval",
   "bb.feature.sync-schema-all-versions",
   "bb.feature.index-advisor",
   "bb.feature.database-grouping",

@@ -261,7 +261,8 @@
     "search-user": "Buscar usuario",
     "branches": "Ramas",
     "merge": "Combinar",
-    "info": "Información"
+    "info": "Información",
+    "minutes": "Minutos"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1095,6 +1096,11 @@
         "self": "Administrar según el esquema",
         "description": "Cada esquema se trata como un objeto administrado. (Solo es compatible con el modo no CDB)"
       }
+    },
+    "scan-interval": {
+      "self": "Intervalo de escaneo",
+      "default-daily": "Predeterminado (diario)",
+      "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías."
     }
   },
   "environment": {
@@ -1501,7 +1507,7 @@
   },
   "anomaly": {
     "attention-title": "Detección de anomalías",
-    "attention-desc": "Bytebase escanea periódicamente los recursos administrados y lista las anomalías detectadas aquí. La lista se actualiza aproximadamente cada 10 minutos.",
+    "attention-desc": "Bytebase detecta periódicamente anomalías según el intervalo de escaneo de la instancia y muestra los hallazgos aquí.",
     "table-search-placeholder": "Buscar {type} o entorno",
     "table-placeholder": "¡Hurra, no se detectaron anomalías de {type}!",
     "tooltip": "{env} tiene {criticalCount} anomalías CRÍTICAS, {highCount} anomalías ALTAS y {mediumCount} anomalías MEDIA",
@@ -2284,6 +2290,10 @@
       "bb-feature-issue-advanced-search": {
         "title": "Búsqueda avanzada de problemas",
         "desc": "Acceda a un historial de problemas ilimitado con búsqueda avanzada de problemas."
+      },
+      "bb-feature-custom-instance-scan-interval": {
+        "title": "Intervalo de escaneo de instancia personalizado",
+        "desc": "Personalice el esquema y el intervalo de escaneo de anomalías, por ejemplo"
       }
     }
   },
