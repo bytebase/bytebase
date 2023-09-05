@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -171,66 +170,6 @@ func (ctl *controller) createDatabaseFromBackup(ctx context.Context, project *v1
 	return nil
 }
 
-func (ctl *controller) createDatabase(ctx context.Context, projectUID int, instance *v1pb.Instance, databaseName string, owner string, labelMap map[string]string) error {
-	environmentResourceID := strings.TrimPrefix(instance.Environment, "environments/")
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	if err != nil {
-		return err
-	}
-
-	labels, err := marshalLabels(labelMap, environmentResourceID)
-	if err != nil {
-		return err
-	}
-	createCtx := &api.CreateDatabaseContext{
-		InstanceID:   instanceUID,
-		DatabaseName: databaseName,
-		Labels:       labels,
-		CharacterSet: "utf8mb4",
-		Collation:    "utf8mb4_general_ci",
-	}
-	if instance.Engine == v1pb.Engine_POSTGRES {
-		createCtx.Owner = owner
-		createCtx.CharacterSet = "UTF8"
-		createCtx.Collation = "en_US.UTF-8"
-	}
-	createContext, err := json.Marshal(createCtx)
-	if err != nil {
-		return errors.Wrap(err, "failed to construct database creation issue CreateContext payload")
-	}
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("create database %q", databaseName),
-		Type:          api.IssueDatabaseCreate,
-		Description:   fmt.Sprintf("This creates a database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to create database creation issue")
-	}
-	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
-		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval %s", issue.ID, issue.Pipeline.ID, status)
-	}
-	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
-	}
-	if status != api.TaskDone {
-		return errors.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
-	}
-	issue, err = ctl.patchIssueStatus(api.IssueStatusPatch{
-		ID:     issue.ID,
-		Status: api.IssueDone,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
-	}
-	// Add a second sleep to avoid schema version conflict.
-	time.Sleep(time.Second)
-	return nil
-}
-
 // DatabaseEditResult is a subset struct of api.DatabaseEditResult for testing,
 // because of jsonapi doesn't support to unmarshal struct pointer slice.
 type DatabaseEditResult struct {
@@ -254,26 +193,6 @@ func (ctl *controller) postDatabaseEdit(databaseEdit api.DatabaseEdit) (*Databas
 		return nil, errors.Wrap(err, "fail to unmarshal post database edit response")
 	}
 	return databaseEditResult, nil
-}
-
-func marshalLabels(labelMap map[string]string, environmentID string) (string, error) {
-	var labelList []*api.DatabaseLabel
-	for k, v := range labelMap {
-		labelList = append(labelList, &api.DatabaseLabel{
-			Key:   k,
-			Value: v,
-		})
-	}
-	labelList = append(labelList, &api.DatabaseLabel{
-		Key:   api.EnvironmentLabelKey,
-		Value: environmentID,
-	})
-
-	labels, err := json.Marshal(labelList)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to marshal labels %+v", labelList)
-	}
-	return string(labels), nil
 }
 
 // disableAutomaticBackup disables the automatic backup of a database.

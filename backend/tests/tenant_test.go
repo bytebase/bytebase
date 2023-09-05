@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
@@ -36,9 +35,8 @@ func TestTenant(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:                          dataDir,
-		vcsProviderCreator:               fake.NewGitLab,
-		disableDevelopmentUseV2Scheduler: true,
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -56,8 +54,6 @@ func TestTenant(t *testing.T) {
 		},
 		ProjectId: projectID,
 	})
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	// Provision instances.
@@ -124,11 +120,11 @@ func TestTenant(t *testing.T) {
 	// Create issues that create databases.
 	databaseName := "testTenantSchemaUpdate"
 	for i, testInstance := range testInstances {
-		err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
-		err := ctl.createDatabase(ctx, projectUID, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabaseV2(ctx, project, prodInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 
@@ -173,31 +169,33 @@ func TestTenant(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	createContext, err := json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Migrate,
-				SheetID:       sheetUID,
+	testStep, prodStep := &v1pb.Plan_Step{}, &v1pb.Plan_Step{}
+	for _, testDatabase := range testDatabases {
+		testStep.Specs = append(testStep.Specs, &v1pb.Plan_Spec{
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Target: testDatabase.Name,
+					Sheet:  sheet.Name,
+					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+				},
 			},
-		},
-	})
+		})
+	}
+	for _, prodDatabase := range prodDatabases {
+		prodStep.Specs = append(prodStep.Specs, &v1pb.Plan_Spec{
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Target: prodDatabase.Name,
+					Sheet:  sheet.Name,
+					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+				},
+			},
+		})
+	}
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{testStep, prodStep})
 	a.NoError(err)
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("update schema for database %q", databaseName),
-		Type:          api.IssueDatabaseSchemaUpdate,
-		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	})
-	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	// Query schema.
 	for _, testInstance := range testInstances {
@@ -293,9 +291,8 @@ func TestTenantVCS(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:                          t.TempDir(),
-				vcsProviderCreator:               test.vcsProviderCreator,
-				disableDevelopmentUseV2Scheduler: true,
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
 			defer func() {
@@ -423,11 +420,11 @@ func TestTenantVCS(t *testing.T) {
 			// Create issues that create databases.
 			databaseName := "testTenantVCSSchemaUpdate"
 			for i, testInstance := range testInstances {
-				err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+				err := ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 				a.NoError(err)
 			}
 			for i, prodInstance := range prodInstances {
-				err := ctl.createDatabase(ctx, projectUID, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+				err := ctl.createDatabaseV2(ctx, project, prodInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 				a.NoError(err)
 			}
 
@@ -479,11 +476,8 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-
-			// Test pipeline stage patch status.
-			status, err := ctl.waitIssuePipelineWithStageApproval(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 
 			// Query schema.
 			for _, testInstance := range testInstances {
@@ -507,9 +501,8 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:                          dataDir,
-		vcsProviderCreator:               fake.NewGitLab,
-		disableDevelopmentUseV2Scheduler: true,
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
 	})
 
 	a.NoError(err)
@@ -529,8 +522,6 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		},
 		ProjectId: projectID,
 	})
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	// Provision instances.
@@ -583,12 +574,12 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	baseDatabaseName := "testTenant"
 	for i := 0; i < testTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		err := ctl.createDatabase(ctx, projectUID, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabaseV2(ctx, project, prodInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 
@@ -634,31 +625,33 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	createContext, err := json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Migrate,
-				SheetID:       sheetUID,
+	testStep, prodStep := &v1pb.Plan_Step{}, &v1pb.Plan_Step{}
+	for _, testDatabase := range testDatabases {
+		testStep.Specs = append(testStep.Specs, &v1pb.Plan_Spec{
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Target: testDatabase.Name,
+					Sheet:  sheet.Name,
+					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+				},
 			},
-		},
-	})
+		})
+	}
+	for _, prodDatabase := range prodDatabases {
+		prodStep.Specs = append(prodStep.Specs, &v1pb.Plan_Spec{
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Target: prodDatabase.Name,
+					Sheet:  sheet.Name,
+					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+				},
+			},
+		})
+	}
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{testStep, prodStep})
 	a.NoError(err)
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          "update schema for tenants",
-		Type:          api.IssueDatabaseSchemaUpdate,
-		Description:   "This updates the schema of tenant databases.",
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	})
-	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
 
 	// Query schema.
 	for i := 0; i < testTenantNumber; i++ {
@@ -1057,9 +1050,8 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			ctx := context.Background()
 			ctl := &controller{}
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:                          t.TempDir(),
-				vcsProviderCreator:               test.vcsProviderCreator,
-				disableDevelopmentUseV2Scheduler: true,
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
 			defer func() {
@@ -1184,7 +1176,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", nil /* labelMap */)
+				err := ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "", nil /* labelMap */)
 				a.NoError(err)
 			}
 
@@ -1225,9 +1217,8 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 
 			// Query schema.
 			for i, testInstance := range testInstances {
