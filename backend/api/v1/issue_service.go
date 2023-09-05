@@ -23,7 +23,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/relay"
-	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -35,7 +34,6 @@ type IssueService struct {
 	v1pb.UnimplementedIssueServiceServer
 	store           *store.Store
 	activityManager *activity.Manager
-	taskScheduler   *taskrun.Scheduler
 	relayRunner     *relay.Runner
 	stateCfg        *state.State
 	licenseService  enterpriseAPI.LicenseService
@@ -45,7 +43,6 @@ type IssueService struct {
 func NewIssueService(
 	store *store.Store,
 	activityManager *activity.Manager,
-	taskScheduler *taskrun.Scheduler,
 	relayRunner *relay.Runner,
 	stateCfg *state.State,
 	licenseService enterpriseAPI.LicenseService,
@@ -53,7 +50,6 @@ func NewIssueService(
 	return &IssueService{
 		store:           store,
 		activityManager: activityManager,
-		taskScheduler:   taskScheduler,
 		relayRunner:     relayRunner,
 		stateCfg:        stateCfg,
 		licenseService:  licenseService,

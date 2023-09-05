@@ -41,16 +41,6 @@ type TaskCheckRunFind struct {
 	StatusList *[]api.TaskCheckRunStatus
 }
 
-// TaskCheckRunStatusPatch is the API message for patching a task check run.
-type TaskCheckRunStatusPatch struct {
-	ID        *int
-	UpdaterID int
-
-	Status api.TaskCheckRunStatus
-	Code   common.Code
-	Result string
-}
-
 func (run *TaskCheckRunMessage) toTaskCheckRun() *api.TaskCheckRun {
 	return &api.TaskCheckRun{
 		ID: run.ID,
@@ -70,97 +60,6 @@ func (run *TaskCheckRunMessage) toTaskCheckRun() *api.TaskCheckRun {
 		Result:  run.Result,
 		Payload: run.Payload,
 	}
-}
-
-// CreateTaskCheckRun creates task check runs in batch.
-func (s *Store) CreateTaskCheckRun(ctx context.Context, creates ...*TaskCheckRunMessage) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if err := s.createTaskCheckRunImpl(ctx, tx, creates...); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*TaskCheckRunMessage) error {
-	if len(creates) == 0 {
-		return nil
-	}
-	var query strings.Builder
-	var values []any
-	var queryValues []string
-	if _, err := query.WriteString(
-		`INSERT INTO task_check_run (
-			creator_id,
-			updater_id,
-			task_id,
-			status,
-			type,
-			payload) VALUES
-      `); err != nil {
-		return err
-	}
-	for i, create := range creates {
-		if create.Payload == "" {
-			create.Payload = "{}"
-		}
-		values = append(values,
-			create.CreatorID,
-			create.CreatorID,
-			create.TaskID,
-			api.TaskCheckRunRunning,
-			create.Type,
-			create.Payload,
-		)
-		const count = 6
-		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6))
-	}
-	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
-		return err
-	}
-
-	if _, err := tx.ExecContext(ctx, query.String(), values...); err != nil {
-		return err
-	}
-	return nil
-}
-
-// PatchTaskCheckRunStatus updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
-func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *TaskCheckRunStatusPatch) error {
-	if patch.Result == "" {
-		patch.Result = "{}"
-	}
-	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
-	set, args = append(set, "status = $2"), append(args, patch.Status)
-	set, args = append(set, "code = $3"), append(args, patch.Code)
-	set, args = append(set, "result = $4"), append(args, patch.Result)
-
-	where := []string{"TRUE"}
-	if v := patch.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
-		UPDATE task_check_run
-		SET %s
-		WHERE %s`, strings.Join(set, ", "), strings.Join(where, " AND ")),
-		args...,
-	); err != nil {
-		return err
-	}
-
-	return tx.Commit()
 }
 
 // ListTaskCheckRuns list task check runs.
