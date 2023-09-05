@@ -2934,7 +2934,8 @@
       "sql_type": "SQL 类型",
       "expiration_days": "过期天数",
       "export_rows": "导出行数",
-      "table_name": "表名称"
+      "table_name": "表名称",
+      "classification_level": "数据分级"
     }
   }
 }

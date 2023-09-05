@@ -118,6 +118,8 @@
           :disabled="state.processing"
           :masking-rule="item.rule"
           :is-create="item.mode === 'CREATE'"
+          :factor-list="factorList"
+          :factor-options-map="factorOptionsMap"
           @cancel="onCancel(item.rule.id, item.mode)"
           @confirm="(rule: MaskingRulePolicy_MaskingRule) => onConfirm(rule)"
         />
@@ -128,10 +130,12 @@
 
 <script lang="ts" setup>
 import { NCheckbox, NPopconfirm } from "naive-ui";
+import type { SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import BBBadge, { type BBBadgeStyle } from "@/bbkit/BBBadge.vue";
+import { Factor } from "@/plugins/cel";
 import {
   featureToRef,
   pushNotification,
@@ -146,6 +150,12 @@ import {
   MaskingRulePolicy_MaskingRule,
 } from "@/types/proto/v1/org_policy_service";
 import { arraySwap, hasWorkspacePermissionV1 } from "@/utils";
+import {
+  getClassificationLevelOptions,
+  getEnvironmentIdOptions,
+  getInstanceIdOptions,
+  getProjectIdOptions,
+} from "./components/utils";
 
 type MaskingRuleMode = "CREATE" | "EDIT";
 
@@ -367,4 +377,43 @@ const onPolicyUpsert = async () => {
     updateMask: ["payload"],
   });
 };
+
+const factorList = computed((): Factor[] => {
+  const list = [
+    "environment_id", // using `environment.resource_id`
+    "project_id", // using `project.resource_id`
+    "instance_id", // using `instance.resource_id`
+    "database_name",
+    "table_name",
+  ];
+
+  const classificationOptions = getClassificationLevelOptions();
+  if (classificationOptions.length > 0) {
+    list.push("classification_level");
+  }
+
+  return list;
+});
+
+const factorOptionsMap = computed((): Map<Factor, SelectOption[]> => {
+  return factorList.value.reduce((map, factor) => {
+    let options: SelectOption[] = [];
+    switch (factor) {
+      case "environment_id":
+        options = getEnvironmentIdOptions();
+        break;
+      case "instance_id":
+        options = getInstanceIdOptions();
+        break;
+      case "project_id":
+        options = getProjectIdOptions();
+        break;
+      case "classification_level":
+        options = getClassificationLevelOptions();
+        break;
+    }
+    map.set(factor, options);
+    return map;
+  }, new Map<Factor, SelectOption[]>());
+});
 </script>

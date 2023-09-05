@@ -1,11 +1,5 @@
 <template>
-  <span
-    v-if="level"
-    :class="[
-      'px-1 py-0.5 rounded text-xs',
-      bgColorList[Number(level.id) - 1] ?? 'bg-gray-200',
-    ]"
-  >
+  <span v-if="level" :class="['px-1 py-0.5 rounded text-xs', levelColor]">
     {{ level.title }}
   </span>
 </template>
@@ -26,6 +20,13 @@ const bgColorList = [
   "bg-amber-500",
   "bg-red-500",
 ];
+
+const levelColor = computed(() => {
+  const index = (props.classificationConfig?.levels ?? []).findIndex(
+    (level) => level.id === props.levelId
+  );
+  return bgColorList[index] ?? "bg-gray-200";
+});
 
 const level = computed(() => {
   return (props.classificationConfig?.levels ?? []).find(
