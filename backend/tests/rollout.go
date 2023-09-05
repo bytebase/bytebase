@@ -12,29 +12,30 @@ import (
 )
 
 func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project, database *v1pb.Database, sheet *v1pb.Sheet, changeType v1pb.Plan_ChangeDatabaseConfig_Type) error {
-	_, _, _, err := ctl.changeDatabaseWithConfig(ctx, project, &v1pb.Plan_Spec_ChangeDatabaseConfig{
-		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-			Target: database.Name,
-			Sheet:  sheet.Name,
-			Type:   changeType,
-		},
-	})
-	return err
-}
-
-func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1pb.Project, config *v1pb.Plan_Spec_ChangeDatabaseConfig) (*v1pb.Plan, *v1pb.Rollout, *v1pb.Issue, error) {
-	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
-		Parent: project.Name,
-		Plan: &v1pb.Plan{
-			Steps: []*v1pb.Plan_Step{
+	_, _, _, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
 				{
-					Specs: []*v1pb.Plan_Spec{
-						{
-							Config: config,
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target: database.Name,
+							Sheet:  sheet.Name,
+							Type:   changeType,
 						},
 					},
 				},
 			},
+		},
+	},
+	)
+	return err
+}
+
+func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1pb.Project, steps []*v1pb.Plan_Step) (*v1pb.Plan, *v1pb.Rollout, *v1pb.Issue, error) {
+	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: steps,
 		},
 	})
 	if err != nil {
