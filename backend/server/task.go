@@ -240,21 +240,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, "Cannot patch task status because the issue is not approved")
 			}
 
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-			if err != nil {
-				return err
-			}
-			taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
-			if err != nil {
-				return err
-			}
-			ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				return echo.NewHTTPError(http.StatusBadRequest, "The task has not passed all the checks yet")
-			}
 			stages, err := s.store.ListStageV2(ctx, task.PipelineID)
 			if err != nil {
 				return err

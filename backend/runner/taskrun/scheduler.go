@@ -133,64 +133,6 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 		// it's ok to fail.
 		s.stateCfg.IssueExternalApprovalRelayCancelChan <- issue.UID
-		if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-			if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
-				CreatorID: taskPatched.CreatorID,
-				TaskID:    task.ID,
-				Type:      api.TaskCheckGhostSync,
-			}); err != nil {
-				// It's OK if we failed to trigger a check, just emit an error log
-				log.Error("Failed to trigger gh-ost dry run after changing the task statement",
-					zap.Int("task_id", task.ID),
-					zap.String("task_name", task.Name),
-					zap.Error(err),
-				)
-			}
-		}
-
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-		if err != nil {
-			return err
-		}
-
-		if api.IsSQLReviewSupported(instance.Engine) {
-			if err := s.triggerDatabaseStatementAdviseTask(ctx, taskPatched); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
-			}
-		}
-
-		if api.IsStatementTypeCheckSupported(instance.Engine) {
-			if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
-				CreatorID: taskPatched.CreatorID,
-				TaskID:    task.ID,
-				Type:      api.TaskCheckDatabaseStatementType,
-			}); err != nil {
-				// It's OK if we failed to trigger a check, just emit an error log
-				log.Error("Failed to trigger statement type check after changing the task statement",
-					zap.Int("task_id", task.ID),
-					zap.String("task_name", task.Name),
-					zap.Error(err),
-				)
-			}
-		}
-
-		if api.IsTaskCheckReportSupported(instance.Engine) && api.IsTaskCheckReportNeededForTaskType(task.Type) {
-			if err := s.store.CreateTaskCheckRun(ctx,
-				&store.TaskCheckRunMessage{
-					CreatorID: taskPatched.CreatorID,
-					TaskID:    task.ID,
-					Type:      api.TaskCheckDatabaseStatementAffectedRowsReport,
-				},
-				&store.TaskCheckRunMessage{
-					CreatorID: taskPatched.CreatorID,
-					TaskID:    task.ID,
-					Type:      api.TaskCheckDatabaseStatementTypeReport,
-				},
-			); err != nil {
-				// It's OK if we failed to trigger a check, just emit an error log
-				log.Error("Failed to trigger task report check after changing the task statement", zap.Int("task_id", task.ID), zap.String("task_name", task.Name), zap.Error(err))
-			}
-		}
 	}
 
 	if taskPatch.SheetID != nil {
@@ -250,31 +192,6 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
 		}
 	}
-	return nil
-}
-
-func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, task *store.TaskMessage) error {
-	dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
-	if err != nil {
-		return err
-	}
-	if dbSchema == nil {
-		return errors.Errorf("database schema ID not found %v", task.DatabaseID)
-	}
-
-	if err := s.store.CreateTaskCheckRun(ctx, &store.TaskCheckRunMessage{
-		CreatorID: api.SystemBotID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckDatabaseStatementAdvise,
-	}); err != nil {
-		// It's OK if we failed to trigger a check, just emit an error log
-		log.Error("Failed to trigger statement advise task after changing task statement",
-			zap.Int("task_id", task.ID),
-			zap.String("task_name", task.Name),
-			zap.Error(err),
-		)
-	}
-
 	return nil
 }
 
