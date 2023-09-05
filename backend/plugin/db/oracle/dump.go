@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -771,6 +772,325 @@ type functionMeta struct {
 	Timestamp     sql.NullString
 	Line          sql.NullInt64
 	Text          sql.NullString
+}
+
+func assembleIndexes(indexes []*mergedIndexMeta, out io.Writer) error {
+	for _, index := range indexes {
+		if err := assembleIndexStatement(index, out); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte("\n;\n\n")); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func assembleIndexStatement(index *mergedIndexMeta, out io.Writer) error {
+	if _, err := out.Write([]byte(`CREATE`)); err != nil {
+		return err
+	}
+
+	switch index.IndexType.String {
+	case "BITMAP", "FUNCTION-BASED BITMAP":
+		if _, err := out.Write([]byte(` BITMAP`)); err != nil {
+			return err
+		}
+	}
+
+	if index.Uniqueness.String == "UNIQUE" {
+		if _, err := out.Write([]byte(` UNIQUE`)); err != nil {
+			return err
+		}
+	}
+
+	if _, err := out.Write([]byte(` INDEX "`)); err != nil {
+		return err
+	}
+
+	if _, err := out.Write([]byte(index.Owner.String)); err != nil {
+		return err
+	}
+
+	if _, err := out.Write([]byte(`"."`)); err != nil {
+		return err
+	}
+
+	if _, err := out.Write([]byte(index.IndexName.String)); err != nil {
+		return err
+	}
+
+	if _, err := out.Write([]byte(`" ON "`)); err != nil {
+		return err
+	}
+
+	if _, err := out.Write([]byte(index.TableOwner.String)); err != nil {
+		return err
+	}
+
+	if _, err := out.Write([]byte(`"."`)); err != nil {
+		return err
+	}
+
+	if _, err := out.Write([]byte(index.TableName.String)); err != nil {
+		return err
+	}
+
+	if _, err := out.Write([]byte(`" (`)); err != nil {
+		return err
+	}
+
+	if strings.Contains(index.IndexType.String, "FUNCTION-BASED") {
+		for i, expression := range index.ColumnExpression {
+			if i != 0 {
+				if _, err := out.Write([]byte(", ")); err != nil {
+					return err
+				}
+			}
+			if _, err := out.Write([]byte(expression.String)); err != nil {
+				return err
+			}
+
+			if index.Descend[i].Valid {
+				if index.Descend[i].String == "DESC" {
+					if _, err := out.Write([]byte(` DESC`)); err != nil {
+						return err
+					}
+				} else {
+					if _, err := out.Write([]byte(` ASC`)); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	} else {
+		for i, column := range index.ColumnName {
+			if i != 0 {
+				if _, err := out.Write([]byte(", ")); err != nil {
+					return err
+				}
+			}
+			if _, err := out.Write([]byte(`"`)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(column.String)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(`"`)); err != nil {
+				return err
+			}
+			if index.Descend[i].Valid {
+				if index.Descend[i].String == "DESC" {
+					if _, err := out.Write([]byte(` DESC`)); err != nil {
+						return err
+					}
+				} else {
+					if _, err := out.Write([]byte(` ASC`)); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	if _, err := out.Write([]byte(`)`)); err != nil {
+		return err
+	}
+
+	return assembleIndexProperties(index, out)
+}
+
+func assembleIndexProperties(index *mergedIndexMeta, out io.Writer) error {
+	if index.Logging.String == "YES" {
+		if _, err := out.Write([]byte("\nLOGGING")); err != nil {
+			return err
+		}
+	} else {
+		if _, err := out.Write([]byte("\nNOLOGGING")); err != nil {
+			return err
+		}
+	}
+
+	if index.Visibility.String == "INVISIBLE" {
+		if _, err := out.Write([]byte("\nINVISIBLE")); err != nil {
+			return err
+		}
+	} else {
+		if _, err := out.Write([]byte("\nVISIBLE")); err != nil {
+			return err
+		}
+	}
+
+	if index.PctFree.Valid {
+		if _, err := out.Write([]byte(fmt.Sprintf("\nPCTFREE %d", index.PctFree.Int64))); err != nil {
+			return err
+		}
+	}
+
+	if index.IniTrans.Valid {
+		if _, err := out.Write([]byte(fmt.Sprintf("\nINITRANS %d", index.IniTrans.Int64))); err != nil {
+			return err
+		}
+	}
+
+	if err := index.assembleStorage(out); err != nil {
+		return err
+	}
+
+	if index.Status.Valid {
+		if index.Status.String == "VALID" {
+			if _, err := out.Write([]byte("\nUSABLE")); err != nil {
+				return err
+			}
+		} else {
+			if _, err := out.Write([]byte("\nUNUSABLE")); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+type mergedIndexMeta struct {
+	IndexName            sql.NullString
+	Owner                sql.NullString
+	IndexType            sql.NullString
+	Status               sql.NullString
+	TableOwner           sql.NullString
+	TableName            sql.NullString
+	TableType            sql.NullString
+	Uniqueness           sql.NullString
+	Logging              sql.NullString
+	TablespaceName       sql.NullString
+	NumRows              sql.NullInt64
+	LastAnalyzed         sql.NullTime
+	Degree               sql.NullString
+	Instances            sql.NullString
+	Partitioned          sql.NullString
+	Temporary            sql.NullString
+	Generated            sql.NullString
+	BufferPool           sql.NullString
+	IniTrans             sql.NullInt64
+	MaxTrans             sql.NullInt64
+	InitialExtent        sql.NullInt64
+	NextExtent           sql.NullInt64
+	MinExtents           sql.NullInt64
+	MaxExtents           sql.NullInt64
+	PctFree              sql.NullInt64
+	PctThreshold         sql.NullInt64
+	PctIncrease          sql.NullInt64
+	IncludeColumn        sql.NullString
+	FreeLists            sql.NullInt64
+	FreeListGroups       sql.NullInt64
+	BLevel               sql.NullInt64
+	LeafBlocks           sql.NullInt64
+	DistinctKeys         sql.NullInt64
+	AvgLeafBlocksPerKey  sql.NullInt64
+	AvgDataBlocksPerKey  sql.NullInt64
+	ClusteringFactor     sql.NullInt64
+	SampleSize           sql.NullInt64
+	Compression          sql.NullString
+	PrefixLength         sql.NullInt64
+	Secondary            sql.NullString
+	UserStats            sql.NullString
+	Duration             sql.NullString
+	PctDirectAccess      sql.NullInt64
+	ColumnExpression     []sql.NullString
+	Descend              []sql.NullString
+	IndexTypeOwner       sql.NullString
+	IndexTypeName        sql.NullString
+	Parameters           sql.NullString
+	DomidxStatus         sql.NullString
+	DomidxOpstatus       sql.NullString
+	FuncidxStatus        sql.NullString
+	GlobalStats          sql.NullString
+	IotRedundantPkeyElim sql.NullString
+	JoinIndex            sql.NullString
+	Dropped              sql.NullString
+	Visibility           sql.NullString
+	DomidxManagement     sql.NullString
+	FlashCache           sql.NullString
+	ColTabOwner          sql.NullString
+	ColTabName           sql.NullString
+	ColumnName           []sql.NullString
+	ConstraintName       sql.NullString
+	ConstraintType       sql.NullString
+}
+
+func (i *mergedIndexMeta) assembleStorage(out io.Writer) error {
+	switch {
+	case i.InitialExtent.Valid,
+		i.NextExtent.Valid,
+		i.MinExtents.Valid,
+		i.MaxExtents.Valid,
+		i.PctIncrease.Valid,
+		i.FreeLists.Valid,
+		i.FreeListGroups.Valid,
+		i.BufferPool.Valid && i.BufferPool.String != "NULL",
+		i.FlashCache.Valid:
+	default:
+		// No need storage.
+		return nil
+	}
+	if _, err := out.Write([]byte("\nSTORAGE (")); err != nil {
+		return err
+	}
+
+	switch {
+	case i.InitialExtent.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  INITIAL %d", i.InitialExtent.Int64))); err != nil {
+			return err
+		}
+	case i.NextExtent.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  NEXT %d", i.NextExtent.Int64))); err != nil {
+			return err
+		}
+	case i.MinExtents.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  MINEXTENTS %d", i.MinExtents.Int64))); err != nil {
+			return err
+		}
+	case i.MaxExtents.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  MAXEXTENTS %d", i.MaxExtents.Int64))); err != nil {
+			return err
+		}
+	case i.PctIncrease.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  PCTINCREASE %d", i.PctIncrease.Int64))); err != nil {
+			return err
+		}
+	case i.FreeLists.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  FREELISTS %d", i.FreeLists.Int64))); err != nil {
+			return err
+		}
+	case i.FreeListGroups.Valid:
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  FREELIST GROUPS %d", i.FreeListGroups.Int64))); err != nil {
+			return err
+		}
+	case i.BufferPool.Valid && i.BufferPool.String != "NULL":
+		if _, err := out.Write([]byte(fmt.Sprintf("\n  BUFFER_POOL %s", i.BufferPool.String))); err != nil {
+			return err
+		}
+	case i.FlashCache.Valid:
+		switch i.FlashCache.String {
+		case "DEFAULT":
+			if _, err := out.Write([]byte("\n  FLASH_CACHE DEFAULT")); err != nil {
+				return err
+			}
+		case "KEEP":
+			if _, err := out.Write([]byte("\n  FLASH_CACHE KEEP")); err != nil {
+				return err
+			}
+		case "NONE":
+			if _, err := out.Write([]byte("\n  FLASH_CACHE NONE")); err != nil {
+				return err
+			}
+		}
+	}
+
+	if _, err := out.Write([]byte("\n)")); err != nil {
+		return err
+	}
+	return nil
 }
 
 type indexMeta struct {
@@ -1608,7 +1928,7 @@ func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Write
 	return nil
 }
 
-func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
+func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
 	indexes := []*indexMeta{}
 	indexRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpIndexSQL, schema))
 	if err != nil {
@@ -1694,9 +2014,82 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) 
 		return err
 	}
 
-	// TODO: assemble CREATE INDEX
-	_ = indexes
-	return nil
+	var mergedIndexList []*mergedIndexMeta
+	for _, index := range indexes {
+		if len(mergedIndexList) == 0 || mergedIndexList[len(mergedIndexList)-1].IndexName != index.IndexName {
+			mergedIndexList = append(mergedIndexList, &mergedIndexMeta{
+				IndexName:            index.IndexName,
+				Owner:                index.Owner,
+				IndexType:            index.IndexType,
+				Status:               index.Status,
+				TableOwner:           index.TableOwner,
+				TableName:            index.TableName,
+				TableType:            index.TableType,
+				Uniqueness:           index.Uniqueness,
+				Logging:              index.Logging,
+				TablespaceName:       index.TablespaceName,
+				NumRows:              index.NumRows,
+				LastAnalyzed:         index.LastAnalyzed,
+				Degree:               index.Degree,
+				Instances:            index.Instances,
+				Partitioned:          index.Partitioned,
+				Temporary:            index.Temporary,
+				Generated:            index.Generated,
+				BufferPool:           index.BufferPool,
+				IniTrans:             index.IniTrans,
+				MaxTrans:             index.MaxTrans,
+				InitialExtent:        index.InitialExtent,
+				NextExtent:           index.NextExtent,
+				MinExtents:           index.MinExtents,
+				MaxExtents:           index.MaxExtents,
+				PctFree:              index.PctFree,
+				PctThreshold:         index.PctThreshold,
+				PctIncrease:          index.PctIncrease,
+				IncludeColumn:        index.IncludeColumn,
+				FreeLists:            index.FreeLists,
+				FreeListGroups:       index.FreeListGroups,
+				BLevel:               index.BLevel,
+				LeafBlocks:           index.LeafBlocks,
+				DistinctKeys:         index.DistinctKeys,
+				AvgLeafBlocksPerKey:  index.AvgLeafBlocksPerKey,
+				AvgDataBlocksPerKey:  index.AvgDataBlocksPerKey,
+				ClusteringFactor:     index.ClusteringFactor,
+				SampleSize:           index.SampleSize,
+				Compression:          index.Compression,
+				PrefixLength:         index.PrefixLength,
+				Secondary:            index.Secondary,
+				UserStats:            index.UserStats,
+				Duration:             index.Duration,
+				PctDirectAccess:      index.PctDirectAccess,
+				ColumnExpression:     []sql.NullString{index.ColumnExpression},
+				Descend:              []sql.NullString{index.Descend},
+				IndexTypeOwner:       index.IndexTypeOwner,
+				IndexTypeName:        index.IndexTypeName,
+				Parameters:           index.Parameters,
+				DomidxStatus:         index.DomidxStatus,
+				DomidxOpstatus:       index.DomidxOpstatus,
+				FuncidxStatus:        index.FuncidxStatus,
+				GlobalStats:          index.GlobalStats,
+				IotRedundantPkeyElim: index.IotRedundantPkeyElim,
+				JoinIndex:            index.JoinIndex,
+				Dropped:              index.Dropped,
+				Visibility:           index.Visibility,
+				DomidxManagement:     index.DomidxManagement,
+				FlashCache:           index.FlashCache,
+				ColTabOwner:          index.ColTabOwner,
+				ColTabName:           index.ColTabName,
+				ColumnName:           []sql.NullString{index.ColumnName},
+				ConstraintName:       index.ConstraintName,
+				ConstraintType:       index.ConstraintType,
+			})
+		} else {
+			mergedIndexList[len(mergedIndexList)-1].ColumnName = append(mergedIndexList[len(mergedIndexList)-1].ColumnName, index.ColumnName)
+			mergedIndexList[len(mergedIndexList)-1].ColumnExpression = append(mergedIndexList[len(mergedIndexList)-1].ColumnExpression, index.ColumnExpression)
+			mergedIndexList[len(mergedIndexList)-1].Descend = append(mergedIndexList[len(mergedIndexList)-1].Descend, index.Descend)
+		}
+	}
+
+	return assembleIndexes(mergedIndexList, out)
 }
 
 func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
