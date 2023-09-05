@@ -13,7 +13,6 @@ import (
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -97,75 +96,47 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 		Payload:     &storepb.InstanceChangeHistoryPayload{},
 	}
 
-	if profile.DevelopmentUseV2Scheduler {
-		plans, err := stores.ListPlans(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
+	plans, err := stores.ListPlans(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
+	if err != nil {
+		return nil, err
+	}
+	if len(plans) == 1 {
+		planTypes := []store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport}
+		status := []store.PlanCheckRunStatus{store.PlanCheckRunStatusDone}
+		runs, err := stores.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+			PlanUID: &plans[0].UID,
+			Type:    &planTypes,
+			Status:  &status,
+		})
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to list plan check runs")
 		}
-		if len(plans) == 1 {
-			planTypes := []store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport}
-			status := []store.PlanCheckRunStatus{store.PlanCheckRunStatusDone}
-			runs, err := stores.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-				PlanUID: &plans[0].UID,
-				Type:    &planTypes,
-				Status:  &status,
-			})
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to list plan check runs")
+		sort.Slice(runs, func(i, j int) bool {
+			return runs[i].UID > runs[j].UID
+		})
+		foundChangedResources := false
+		for _, run := range runs {
+			if foundChangedResources {
+				break
 			}
-			sort.Slice(runs, func(i, j int) bool {
-				return runs[i].UID > runs[j].UID
-			})
-			foundChangedResources := false
-			for _, run := range runs {
-				if foundChangedResources {
+			if run.Config.InstanceUid != int32(task.InstanceID) {
+				continue
+			}
+			if run.Config.DatabaseName != database.DatabaseName {
+				continue
+			}
+			if run.Result == nil {
+				continue
+			}
+			for _, result := range run.Result.Results {
+				if result.Status != storepb.PlanCheckRunResult_Result_SUCCESS {
+					continue
+				}
+				if report := result.GetSqlSummaryReport(); report != nil {
+					mi.Payload.ChangedResources = report.ChangedResources
+					foundChangedResources = true
 					break
 				}
-				if run.Config.InstanceUid != int32(task.InstanceID) {
-					continue
-				}
-				if run.Config.DatabaseName != database.DatabaseName {
-					continue
-				}
-				if run.Result == nil {
-					continue
-				}
-				for _, result := range run.Result.Results {
-					if result.Status != storepb.PlanCheckRunResult_Result_SUCCESS {
-						continue
-					}
-					if report := result.GetSqlSummaryReport(); report != nil {
-						mi.Payload.ChangedResources = report.ChangedResources
-						foundChangedResources = true
-						break
-					}
-				}
-			}
-		}
-	} else {
-		taskCheckType := api.TaskCheckDatabaseStatementTypeReport
-		typeReportTaskCheckRunFind := &store.TaskCheckRunFind{
-			TaskID:     &task.ID,
-			StageID:    &task.StageID,
-			PipelineID: &task.PipelineID,
-			Type:       &taskCheckType,
-			StatusList: &[]api.TaskCheckRunStatus{api.TaskCheckRunDone},
-		}
-		taskCheckRun, err := stores.ListTaskCheckRuns(ctx, typeReportTaskCheckRunFind)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to list task check runs")
-		}
-		sort.Slice(taskCheckRun, func(i, j int) bool {
-			return taskCheckRun[i].ID > taskCheckRun[j].ID
-		})
-		if len(taskCheckRun) > 0 {
-			checkResult := &api.TaskCheckRunResultPayload{}
-			if err := json.Unmarshal([]byte(taskCheckRun[0].Result), checkResult); err != nil {
-				return nil, err
-			}
-			mi.Payload.ChangedResources, err = mergeChangedResources(checkResult.ResultList)
-			if err != nil {
-				return nil, err
 			}
 		}
 	}
@@ -829,92 +800,4 @@ func getRepositoryAndVCS(ctx context.Context, storage *store.Store, repoUID, vcs
 		return nil, nil, errors.Errorf("vcs not found for schema write-back: %v", vcsUID)
 	}
 	return repo, vcs, nil
-}
-
-type resourceDatabase struct {
-	name    string
-	schemas schemaMap
-}
-
-type databaseMap map[string]*resourceDatabase
-
-type resourceSchema struct {
-	name   string
-	tables tableMap
-}
-
-type schemaMap map[string]*resourceSchema
-
-type resourceTable struct {
-	name string
-}
-
-type tableMap map[string]*resourceTable
-
-func mergeChangedResources(list []api.TaskCheckResult) (*storepb.ChangedResources, error) {
-	databaseMap := make(databaseMap)
-	for _, item := range list {
-		if item.ChangedResources == "" {
-			continue
-		}
-		meta := storepb.ChangedResources{}
-		if err := protojson.Unmarshal([]byte(item.ChangedResources), &meta); err != nil {
-			return nil, err
-		}
-		for _, database := range meta.Databases {
-			dbMeta, ok := databaseMap[database.Name]
-			if !ok {
-				dbMeta = &resourceDatabase{
-					name:    database.Name,
-					schemas: make(schemaMap),
-				}
-				databaseMap[database.Name] = dbMeta
-			}
-			for _, schema := range database.Schemas {
-				schemaMeta, ok := dbMeta.schemas[schema.Name]
-				if !ok {
-					schemaMeta = &resourceSchema{
-						name:   schema.Name,
-						tables: make(tableMap),
-					}
-					dbMeta.schemas[schema.Name] = schemaMeta
-				}
-				for _, table := range schema.Tables {
-					schemaMeta.tables[table.Name] = &resourceTable{
-						name: table.Name,
-					}
-				}
-			}
-		}
-	}
-
-	result := &storepb.ChangedResources{}
-	for _, dbMeta := range databaseMap {
-		db := &storepb.ChangedResourceDatabase{
-			Name: dbMeta.name,
-		}
-		for _, schemaMeta := range dbMeta.schemas {
-			schema := &storepb.ChangedResourceSchema{
-				Name: schemaMeta.name,
-			}
-			for _, tableMeta := range schemaMeta.tables {
-				table := &storepb.ChangedResourceTable{
-					Name: tableMeta.name,
-				}
-				schema.Tables = append(schema.Tables, table)
-			}
-			sort.Slice(schema.Tables, func(i, j int) bool {
-				return schema.Tables[i].Name < schema.Tables[j].Name
-			})
-			db.Schemas = append(db.Schemas, schema)
-		}
-		sort.Slice(db.Schemas, func(i, j int) bool {
-			return db.Schemas[i].Name < db.Schemas[j].Name
-		})
-		result.Databases = append(result.Databases, db)
-	}
-	sort.Slice(result.Databases, func(i, j int) bool {
-		return result.Databases[i].Name < result.Databases[j].Name
-	})
-	return result, nil
 }

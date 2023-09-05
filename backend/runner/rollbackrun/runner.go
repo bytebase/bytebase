@@ -71,19 +71,11 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 // retryGenerateRollbackSQL retries generating rollback SQL for tasks.
 // It is currently called when Bytebase server starts and only rerun unfinished generation.
 func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
-	find := &api.TaskFind{
-		StatusList: &[]api.TaskStatus{api.TaskDone},
-		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND (task.payload->>'threadId'!='' OR task.payload->>'transactionId' != '') AND task.payload->>'rollbackSqlStatus'='PENDING'",
-	}
-	if r.profile.DevelopmentUseV2Scheduler {
-		find = &api.TaskFind{
-			LatestTaskRunStatusList: &[]api.TaskRunStatus{api.TaskRunDone},
-			TypeList:                &[]api.TaskType{api.TaskDatabaseDataUpdate},
-			Payload:                 "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND (task.payload->>'threadId'!='' OR task.payload->>'transactionId' != '') AND task.payload->>'rollbackSqlStatus'='PENDING'",
-		}
-	}
-	taskList, err := r.store.ListTasks(ctx, find)
+	taskList, err := r.store.ListTasks(ctx, &api.TaskFind{
+		LatestTaskRunStatusList: &[]api.TaskRunStatus{api.TaskRunDone},
+		TypeList:                &[]api.TaskType{api.TaskDatabaseDataUpdate},
+		Payload:                 "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND (task.payload->>'threadId'!='' OR task.payload->>'transactionId' != '') AND task.payload->>'rollbackSqlStatus'='PENDING'",
+	})
 	if err != nil {
 		log.Error("Failed to get running DML tasks", zap.Error(err))
 		return
