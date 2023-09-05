@@ -1,7 +1,7 @@
 <template>
   <div
     class="flex justify-center items-center bg-gray-100 rounded-3xl"
-    :class="customBrandingLogo ? 'p-2' : ''"
+    :class="customBrandingLogo ? 'px-2 py-1.5' : ''"
   >
     <img
       v-if="customBrandingLogo"
