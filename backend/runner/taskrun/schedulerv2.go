@@ -21,6 +21,10 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	taskSchedulerInterval = time.Duration(1) * time.Second
+)
+
 // SchedulerV2 is the V2 scheduler for task run.
 type SchedulerV2 struct {
 	store           *store.Store

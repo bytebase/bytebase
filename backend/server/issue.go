@@ -262,7 +262,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				activeStage := utils.GetActiveStage(stages)
 				// When all stages have finished, assignee can be anyone such as creator.
 				if activeStage != nil {
-					ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
+					ok, err := s.taskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
 					if err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
 					}
@@ -426,13 +426,13 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 	// Try to find a more appropriate assignee if the current assignee is the system bot, indicating that the caller might not be sure about who should be the assignee.
 	if issueCreate.AssigneeID == api.SystemBotID {
-		assignee, err := s.TaskScheduler.GetDefaultAssignee(ctx, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+		assignee, err := s.taskScheduler.GetDefaultAssignee(ctx, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
 		}
 		issueCreate.AssigneeID = assignee.ID
 	}
-	ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+	ok, err := s.taskScheduler.CanPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
 	}
@@ -516,10 +516,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
 	if err != nil {
 		return nil, err
-	}
-
-	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, pipeline.ID); err != nil {
-		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Title)
 	}
 
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
@@ -1871,7 +1867,7 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 }
 
 func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
-	if s.TaskScheduler == nil || issue.Pipeline == nil {
+	if s.taskScheduler == nil || issue.Pipeline == nil {
 		// readonly server doesn't have a TaskScheduler.
 		// Skip issues without pipelines.
 		return
