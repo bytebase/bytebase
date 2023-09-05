@@ -38,6 +38,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -955,6 +956,9 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 
 	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
 		ExternalUrl: s.profile.ExternalURL,
+		RefreshTokenDuration: &durationpb.Duration{
+			Seconds: api.DefaultRefreshTokenDurationInSeconds,
+		},
 	}
 	if workspaceProfileSetting != nil {
 		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)
