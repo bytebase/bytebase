@@ -533,7 +533,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 		a.Equal(v1pb.PlanCheckRun_Result_SUCCESS, result.Results[0].Status)
 		rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 		a.NoError(err)
-		_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 			Parent: project.Name,
 			Issue: &v1pb.Issue{
 				Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -545,7 +545,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 			},
 		})
 		a.NoError(err)
-		err = ctl.waitRollout(ctx, rollout.Name)
+		err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 		a.NoError(err)
 	}
 
