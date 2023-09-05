@@ -1,5 +1,5 @@
 <template>
-  <div class="gap-y-4">
+  <div class="gap-y-4 w-full">
     <div class="flex items-stretch gap-x-4 overflow-hidden">
       <div class="flex-1 space-y-2 py-4 overflow-x-hidden overflow-y-auto">
         <h3 class="font-medium text-sm text-control">
@@ -25,7 +25,7 @@
           :options="options"
           :placeholder="$t('settings.sensitive-data.masking-level.selet-level')"
           :consistent-menu-width="false"
-          :disabled="readonly"
+          :disabled="readonly || disabled"
           @update:value="state.dirty = true"
         />
       </div>
@@ -34,10 +34,14 @@
       v-if="(state.dirty || isCreate) && !readonly"
       class="flex justify-end gap-x-3"
     >
-      <NButton @click="onCancel">
+      <NButton :disabled="disabled" @click="onCancel">
         {{ $t("common.cancel") }}
       </NButton>
-      <NButton type="primary" :disabled="!isValid" @click="onConfirm">
+      <NButton
+        type="primary"
+        :disabled="!isValid || disabled"
+        @click="onConfirm"
+      >
         {{ $t("common.confirm") }}
       </NButton>
     </div>
@@ -47,7 +51,7 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { NSelect, SelectOption } from "naive-ui";
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, onMounted, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr } from "@/plugins/cel";
@@ -78,6 +82,7 @@ import {
 const props = defineProps<{
   isCreate?: boolean;
   readonly: boolean;
+  disabled: boolean;
   maskingRule: MaskingRulePolicy_MaskingRule;
 }>();
 
@@ -121,6 +126,7 @@ const options = computed(() => {
 const onCancel = async () => {
   await resetLocalState();
   emit("cancel");
+  nextTick(() => (state.value.dirty = false));
 };
 
 const resetLocalState = async () => {

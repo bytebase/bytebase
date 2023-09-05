@@ -7,7 +7,6 @@
     <FeatureAttention v-else feature="bb.feature.sensitive-data" />
 
     <BBTab
-      v-if="isDev()"
       :tab-item-list="tabItemList"
       :selected-index="state.selectedIndex"
       reorder-model="NEVER"
@@ -18,11 +17,13 @@
           <SensitiveColumnView />
         </BBTabPanel>
         <BBTabPanel :active="state.selectedIndex === 1">
-          <GlobalMaskingRule />
+          <GlobalMaskingRulesView />
+        </BBTabPanel>
+        <BBTabPanel :active="state.selectedIndex === 2">
+          <DataFeatureView />
         </BBTabPanel>
       </div>
     </BBTab>
-    <SensitiveColumnView v-else />
   </div>
 </template>
 
@@ -33,7 +34,8 @@ import { useRouter } from "vue-router";
 import type { BBTabItem } from "@/bbkit/types";
 import {
   SensitiveColumnView,
-  GlobalMaskingRule,
+  GlobalMaskingRulesView,
+  DataFeatureView,
 } from "@/components/SensitiveData";
 import { featureToRef } from "@/store";
 import { isDev } from "@/utils";
@@ -50,7 +52,7 @@ const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const router = useRouter();
 
 const tabItemList = computed((): BBTabItem[] => {
-  return [
+  const tabList = [
     {
       title: t("settings.sensitive-data.sensitive-column-list"),
       id: "sensitive-column-list",
@@ -59,11 +61,14 @@ const tabItemList = computed((): BBTabItem[] => {
       title: t("settings.sensitive-data.global-masking-rule"),
       id: "global-masking-rule",
     },
-    {
+  ];
+  if (isDev()) {
+    tabList.push({
       title: t("settings.sensitive-data.data-feature"),
       id: "data-feature",
-    },
-  ];
+    });
+  }
+  return tabList;
 });
 
 onMounted(() => {

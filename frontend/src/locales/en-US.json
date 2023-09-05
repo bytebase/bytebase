@@ -624,9 +624,13 @@
       "sensitive-column-list": "Sensitive Column List",
       "global-masking-rule": "Global Masking Rule",
       "data-feature": "Data Feature",
-      "add-rule": "Add rule",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
+      "global-rules": {
+        "add-rule": "Add rule",
+        "re-order": "Re-order",
+        "delete-rule-tip": "Delete this rule?"
+      },
       "column-detail": {
         "masking-setting-for-column": "Masking Setting for \"{column}\"",
         "access-user-list": "Access User List",
