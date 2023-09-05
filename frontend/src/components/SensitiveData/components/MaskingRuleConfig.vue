@@ -10,7 +10,7 @@
           :allow-admin="!readonly"
           :factor-list="factorList"
           :factor-support-dropdown="factorSupportDropdown"
-          :factor-options-map="getFactorOptionsMap()"
+          :factor-options-map="factorOptionsMap"
           :factor-operator-override-map="factorOperatorOverrideMap"
           @update="state.dirty = true"
         />
@@ -54,7 +54,7 @@ import { NSelect, SelectOption } from "naive-ui";
 import { computed, ref, onMounted, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
-import type { ConditionGroupExpr } from "@/plugins/cel";
+import type { ConditionGroupExpr, Factor } from "@/plugins/cel";
 import {
   resolveCELExpr,
   wrapAsGroup,
@@ -72,17 +72,14 @@ import {
   convertCELStringToParsedExpr,
   convertParsedExprToCELString,
 } from "@/utils";
-import {
-  factorList,
-  getFactorOptionsMap,
-  factorSupportDropdown,
-  factorOperatorOverrideMap,
-} from "./utils";
+import { factorSupportDropdown, factorOperatorOverrideMap } from "./utils";
 
 const props = defineProps<{
   isCreate?: boolean;
   readonly: boolean;
   disabled: boolean;
+  factorList: Factor[];
+  factorOptionsMap: Map<Factor, SelectOption[]>;
   maskingRule: MaskingRulePolicy_MaskingRule;
 }>();
 

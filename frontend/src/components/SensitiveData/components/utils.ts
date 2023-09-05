@@ -10,6 +10,7 @@ import {
   useEnvironmentV1Store,
   useInstanceV1List,
   useProjectV1ListByCurrentUser,
+  useSettingV1Store,
 } from "@/store";
 import {
   extractEnvironmentResourceName,
@@ -17,15 +18,26 @@ import {
   extractProjectResourceName,
 } from "@/utils";
 
-export const factorList: Factor[] = [
-  "environment_id", // using `environment.resource_id`
-  "project_id", // using `project.resource_id`
-  "instance_id", // using `instance.resource_id`
-  "database_name",
-  "table_name",
-];
+export const getClassificationLevelOptions = () => {
+  const settingStore = useSettingV1Store();
+  const setting = settingStore.getSettingByName(
+    "bb.workspace.data-classification"
+  );
+  if (!setting) {
+    return [];
+  }
+  const config = setting.value?.dataClassificationSettingValue?.configs ?? [];
+  if (config.length === 0) {
+    return [];
+  }
 
-const getEnvironmentIdOptions = () => {
+  return config[0].levels.map<SelectOption>((level) => ({
+    label: level.title,
+    value: level.id,
+  }));
+};
+
+export const getEnvironmentIdOptions = () => {
   const environmentList = useEnvironmentV1Store().getEnvironmentList();
   return environmentList.map<SelectOption>((env) => {
     return {
@@ -35,7 +47,7 @@ const getEnvironmentIdOptions = () => {
   });
 };
 
-const getInstanceIdOptions = () => {
+export const getInstanceIdOptions = () => {
   const { instanceList } = useInstanceV1List(false);
   return instanceList.value.map<SelectOption>((ins) => {
     return {
@@ -45,7 +57,7 @@ const getInstanceIdOptions = () => {
   });
 };
 
-const getProjectIdOptions = () => {
+export const getProjectIdOptions = () => {
   const { projectList } = useProjectV1ListByCurrentUser();
   return projectList.value.map<SelectOption>((proj) => ({
     label: proj.title,
@@ -53,29 +65,11 @@ const getProjectIdOptions = () => {
   }));
 };
 
-export const getFactorOptionsMap = () => {
-  return factorList.reduce((map, factor) => {
-    let options: SelectOption[] = [];
-    switch (factor) {
-      case "environment_id":
-        options = getEnvironmentIdOptions();
-        break;
-      case "instance_id":
-        options = getInstanceIdOptions();
-        break;
-      case "project_id":
-        options = getProjectIdOptions();
-        break;
-    }
-    map.set(factor, options);
-    return map;
-  }, new Map<Factor, SelectOption[]>());
-};
-
 export const factorSupportDropdown: Factor[] = [
   "environment_id",
   "instance_id",
   "project_id",
+  "classification_level",
 ];
 
 export const factorOperatorOverrideMap = new Map<Factor, Operator[]>([
