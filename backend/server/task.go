@@ -69,7 +69,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			taskPatch := *taskPatch
 			taskPatch.ID = task.ID
 			// TODO(d): patch tasks in batch.
-			if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
+			if err := s.taskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
 				return err
 			}
 		}
@@ -153,7 +153,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "cannot generate rollback SQL statement for a non-DML task")
 		}
 
-		if err := s.TaskScheduler.PatchTask(ctx, task, taskPatch, issue); err != nil {
+		if err := s.taskScheduler.PatchTask(ctx, task, taskPatch, issue); err != nil {
 			return err
 		}
 
@@ -216,7 +216,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		ok, err := s.TaskScheduler.CanPrincipalChangeTaskStatus(ctx, currentPrincipalID, task, taskStatusPatch.Status)
+		ok, err := s.taskScheduler.CanPrincipalChangeTaskStatus(ctx, currentPrincipalID, task, taskStatusPatch.Status)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
 		}
@@ -240,21 +240,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, "Cannot patch task status because the issue is not approved")
 			}
 
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-			if err != nil {
-				return err
-			}
-			taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
-			if err != nil {
-				return err
-			}
-			ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				return echo.NewHTTPError(http.StatusBadRequest, "The task has not passed all the checks yet")
-			}
 			stages, err := s.store.ListStageV2(ctx, task.PipelineID)
 			if err != nil {
 				return err
@@ -275,7 +260,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			taskStatusPatch.SkippedReason = taskStatusPatch.Comment
 		}
 
-		if err := s.TaskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
+		if err := s.taskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
 			}
@@ -312,9 +297,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		if err := s.TaskCheckScheduler.ScheduleCheck(ctx, task, c.Get(getPrincipalIDContextKey()).(int)); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
-		}
 		composedTask, err := s.store.GetTaskByID(ctx, task.ID)
 		if err != nil {
 			return err

@@ -84,7 +84,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 
 		// pick any task in the stage to validate
 		// because all tasks in the same stage share the issue & environment.
-		ok, err := s.TaskScheduler.CanPrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0], stageAllTaskStatusPatch.Status)
+		ok, err := s.taskScheduler.CanPrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0], stageAllTaskStatusPatch.Status)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
 		}
@@ -93,23 +93,6 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		}
 
 		if stageAllTaskStatusPatch.Status == api.TaskPending {
-			for _, task := range tasks {
-				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-				if err != nil {
-					return err
-				}
-				taskCheckRuns, err := s.store.ListTaskCheckRuns(ctx, &store.TaskCheckRunFind{TaskID: &task.ID})
-				if err != nil {
-					return err
-				}
-				ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
-				if err != nil {
-					return err
-				}
-				if !ok {
-					return echo.NewHTTPError(http.StatusBadRequest, "The task has not passed all the checks yet")
-				}
-			}
 			if tasks[0].StageID != activeStage.ID {
 				return echo.NewHTTPError(http.StatusBadRequest, "We can only approve the earliest stage with incompleted tasks")
 			}
