@@ -5,6 +5,27 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
+FROM node:18 as frontend
+
+ARG TARGETARCH
+ARG RELEASE="release"
+
+RUN npm i -g pnpm
+
+WORKDIR /frontend-build
+
+# Install build dependency (e.g. vite)
+COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY ./frontend/ .
+# Copy the SQL review config files to the frontend
+COPY ./backend/plugin/advisor/config/ ./src/types
+COPY ./backend/enterprise/api/plan.yaml ./src/types/
+
+# Build frontend
+RUN pnpm "${RELEASE}-docker"
+
 FROM golang:1.21.0 as backend
 ADD go.mod go.sum /
 RUN go mod download
@@ -28,9 +49,6 @@ fi
 WORKDIR /backend-build
 
 COPY . .
-
-RUN ls -al
-RUN ls -al ./backend/server
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
