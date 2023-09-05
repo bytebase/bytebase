@@ -2939,7 +2939,8 @@
       "sql_type": "Tipo SQL",
       "expiration_days": "Días de caducidad",
       "export_rows": "Exportar filas",
-      "table_name": "Nombre de la tabla"
+      "table_name": "Nombre de la tabla",
+      "classification_level": "Nivel de clasificación"
     }
   }
 }
