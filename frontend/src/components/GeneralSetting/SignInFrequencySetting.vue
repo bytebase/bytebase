@@ -50,7 +50,7 @@ import { hasWorkspacePermissionV1 } from "@/utils";
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
-    inputValue: refreshTokenDurationInHours / 7,
+    inputValue: refreshTokenDurationInHours / 24,
     timeFormat: "DAYS",
   };
   const seconds =
