@@ -476,11 +476,8 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-
-			// Test pipeline stage patch status.
-			status, err := ctl.waitIssuePipelineWithStageApproval(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 
 			// Query schema.
 			for _, testInstance := range testInstances {
@@ -1220,9 +1217,8 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			a.Equal(api.TaskDone, status)
 
 			// Query schema.
 			for i, testInstance := range testInstances {

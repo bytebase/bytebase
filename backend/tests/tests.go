@@ -617,14 +617,6 @@ func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, err
 	})
 }
 
-// patch sends a PATCH client request.
-func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	return ctl.request("PATCH", url, body, nil, map[string]string{
-		"Cookie": ctl.cookie,
-	})
-}
-
 // patchOpenAPI sends a openAPI PATCH client request.
 func (ctl *controller) patchOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
