@@ -8,6 +8,8 @@ export type SettingName =
   | "bb.plugin.openai.key"
   | "bb.plugin.openai.endpoint"
   | "bb.enterprise.trial"
-  | "bb.workspace.schema-template";
+  | "bb.workspace.schema-template"
+  | "bb.workspace.data-classification"
+  | "bb.workspace.semantic-category";
 
 export const refreshTokenDurationInHours = 7 * 24;
