@@ -28,7 +28,7 @@
           <span
             class="rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200"
           >
-            <heroicons-outline:clipboard
+            <heroicons-outline:clipboard-document
               class="w-4 h-4"
               @click.stop="handleCopy(history)"
             />
