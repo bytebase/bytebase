@@ -177,14 +177,15 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	defer tx.Rollback()
 
 	project := &ProjectMessage{
-		ResourceID:       create.ResourceID,
-		Title:            create.Title,
-		Key:              create.Key,
-		Workflow:         create.Workflow,
-		Visibility:       create.Visibility,
-		TenantMode:       create.TenantMode,
-		DBNameTemplate:   create.DBNameTemplate,
-		SchemaChangeType: create.SchemaChangeType,
+		ResourceID:                 create.ResourceID,
+		Title:                      create.Title,
+		Key:                        create.Key,
+		Workflow:                   create.Workflow,
+		Visibility:                 create.Visibility,
+		TenantMode:                 create.TenantMode,
+		DBNameTemplate:             create.DBNameTemplate,
+		SchemaChangeType:           create.SchemaChangeType,
+		DataClassificationConfigID: create.DataClassificationConfigID,
 	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO project (
@@ -197,9 +198,10 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 				visibility,
 				tenant_mode,
 				db_name_template,
-				schema_change_type
+				schema_change_type,
+				data_classification_config_id
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 			RETURNING id
 		`,
 		creatorID,
@@ -212,6 +214,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.TenantMode,
 		create.DBNameTemplate,
 		create.SchemaChangeType,
+		create.DataClassificationConfigID,
 	).Scan(
 		&project.UID,
 	); err != nil {
