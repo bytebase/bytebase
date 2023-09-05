@@ -12,4 +12,4 @@ export type SettingName =
   | "bb.workspace.data-classification"
   | "bb.workspace.semantic-category";
 
-export const refreshTokenDurationInHours = 7 * 24;
+export const defaultRefreshTokenDurationInHours = 7 * 24;
