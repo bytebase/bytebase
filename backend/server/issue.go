@@ -518,10 +518,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, err
 	}
 
-	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, pipeline.ID); err != nil {
-		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Title)
-	}
-
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
 	createActivityPayload := api.ActivityIssueCreatePayload{

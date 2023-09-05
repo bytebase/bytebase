@@ -77,7 +77,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
-	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
@@ -158,7 +157,6 @@ type Server struct {
 	// TODO(d): deprecate taskScheduler.
 	taskScheduler      *taskrun.Scheduler
 	TaskSchedulerV2    *taskrun.SchedulerV2
-	TaskCheckScheduler *taskcheck.Scheduler
 	PlanCheckScheduler *plancheck.Scheduler
 	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
@@ -486,22 +484,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.MailSender = mail.NewSender(s.store, s.stateCfg)
 		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.stateCfg)
 		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.ActivityManager, s.RelayRunner, s.licenseService)
-
-		s.TaskCheckScheduler = taskcheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
-		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory, s.licenseService)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
-		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
-		databaseConnectExecutor := taskcheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
-		ghostSyncExecutor := taskcheck.NewGhostSyncExecutor(storeInstance, s.secret)
-		s.TaskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
-		pitrMySQLExecutor := taskcheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
-		statementTypeReportExecutor := taskcheck.NewStatementTypeReportExecutor(storeInstance)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementTypeReport, statementTypeReportExecutor)
-		statementAffectedRowsExecutor := taskcheck.NewStatementAffectedRowsReportExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAffectedRowsReport, statementAffectedRowsExecutor)
 
 		{
 			s.PlanCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
@@ -982,8 +964,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		}
 		s.runnerWG.Add(1)
 		go s.TaskSchedulerV2.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.SchemaSyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
