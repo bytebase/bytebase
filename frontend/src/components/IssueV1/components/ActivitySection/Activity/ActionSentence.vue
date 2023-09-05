@@ -189,6 +189,10 @@ const renderActionSentence = () => {
           params.verb = t("activity.sentence.canceled");
           break;
         }
+        case "SKIPPED": {
+          params.verb = t("activity.sentence.skipped");
+          break;
+        }
         default:
           params.verb = t("activity.sentence.changed");
       }

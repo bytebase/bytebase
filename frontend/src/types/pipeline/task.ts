@@ -235,6 +235,7 @@ export type TaskRunStatus =
   | "PENDING"
   | "RUNNING"
   | "DONE"
+  | "SKIPPED"
   | "FAILED"
   | "CANCELED";
 
