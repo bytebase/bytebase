@@ -515,7 +515,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
@@ -550,7 +550,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.Error(err)
 
 			// Simulate Git commits for a correct modified date update.
@@ -586,7 +586,7 @@ func TestVCS(t *testing.T) {
 			})
 			a.NoError(err)
 
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
@@ -631,7 +631,7 @@ func TestVCS(t *testing.T) {
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			environmentResourceID := strings.TrimPrefix(prodEnvironment.Name, "environments/")
 			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, environmentResourceID, databaseName)
@@ -906,7 +906,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
@@ -935,7 +935,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
@@ -1379,7 +1379,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				if test.expect[idx] {
 					a.Len(issues, 1)
 					issue := issues[0]
-					err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+					err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 					a.NoError(err)
 					err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 					a.NoError(err)
@@ -2208,7 +2208,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a.NoError(err)
 	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
-	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -2233,7 +2233,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 		}
 	}
 
-	err = ctl.waitRollout(ctx, rollout.Name)
+	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	// Query schema.
@@ -2456,7 +2456,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
@@ -2485,7 +2485,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)

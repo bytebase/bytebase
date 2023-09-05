@@ -77,7 +77,7 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 		return err
 	}
 
-	if err := ctl.waitRollout(ctx, rollout.Name); err != nil {
+	if err := ctl.waitRollout(ctx, issue.Name, rollout.Name); err != nil {
 		return err
 	}
 
@@ -154,7 +154,7 @@ func (ctl *controller) createDatabaseFromBackup(ctx context.Context, project *v1
 		return err
 	}
 
-	if err := ctl.waitRollout(ctx, rollout.Name); err != nil {
+	if err := ctl.waitRollout(ctx, issue.Name, rollout.Name); err != nil {
 		return err
 	}
 
