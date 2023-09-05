@@ -32,7 +32,7 @@ jobs:
         uses: depot/build-push-action@v1
         with:
           context: .
-          project: jv967c892k
+          project: ${{ secrets.DEPOT_PROJECT}}
           token: ${{ secrets.DEPOT_TOKEN }}
           file: scripts/Dockerfile
           platforms: linux/amd64,linux/arm64
