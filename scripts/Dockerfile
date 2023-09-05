@@ -41,7 +41,7 @@ ARG RELEASE="release"
 
 # Need gcc for CGO_ENABLED=1
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
-  apt-get install -y gcc-aarch64-linux-gnu; \
+  apt-get update && apt-get install -y gcc-aarch64-linux-gnu; \
 else \
   apt-get install -y gcc ;\
 fi
@@ -49,6 +49,11 @@ fi
 WORKDIR /backend-build
 
 COPY . .
+
+# Copy frontend asset
+COPY --from=frontend /frontend-build/dist ./backend/server/dist
+
+COPY ./scripts/VERSION .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
