@@ -434,7 +434,7 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := r.taskScheduler.ChangeIssueStatus(ctx, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+				if err := utils.ChangeIssueStatus(ctx, r.store, r.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}
