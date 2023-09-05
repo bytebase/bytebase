@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center justify-between h-16 pl-2 pr-4">
+  <div class="flex items-center justify-between h-10 pl-2 pr-4">
     <div class="flex items-center">
       <BytebaseLogo class="block md:hidden" />
 
@@ -8,14 +8,14 @@
           <router-link
             v-if="shouldShowIssueEntry"
             to="/issue"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/issue')"
             >{{ $t("common.issues") }}</router-link
           >
 
           <router-link
             to="/project"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/project')"
             data-label="bb-header-project-button"
           >
@@ -24,7 +24,7 @@
 
           <router-link
             to="/db"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/db')"
             data-label="bb-dashboard-header-database-entry"
             >{{ $t("common.databases") }}</router-link
@@ -33,20 +33,20 @@
           <router-link
             v-if="shouldShowInstanceEntry"
             to="/instance"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/instance')"
             >{{ $t("common.instances") }}</router-link
           >
 
           <router-link
             to="/environment"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/environment')"
             >{{ $t("common.environments") }}</router-link
           >
           <router-link
             to="/setting/member"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/setting')"
             >{{ $t("common.settings") }}</router-link
           >
@@ -111,16 +111,16 @@
         </div>
         <div
           v-if="currentPlan === PlanType.FREE"
-          class="flex justify-between items-center min-w-fit px-4 py-2 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
+          class="flex justify-between items-center min-w-fit px-4 py-1 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
           @click="handleWantHelp"
         >
           <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
-          <heroicons-outline:chat-bubble-left-right class="w-5 h-5" />
+          <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
         </div>
         <router-link to="/inbox" exact-active-class="">
           <span
             v-if="inboxSummary.unread > 0"
-            class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
+            class="absolute rounded-full ml-4 -mt-1 h-2 w-2 bg-accent opacity-75"
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
@@ -157,32 +157,32 @@
     <router-link
       v-if="shouldShowIssueEntry"
       to="/issue"
-      class="bar-link rounded-md block px-3 py-2"
+      class="bar-link rounded-md block px-3 py-1"
     >
       {{ $t("common.issues") }}
     </router-link>
 
-    <router-link to="/project" class="bar-link rounded-md block px-3 py-2">
+    <router-link to="/project" class="bar-link rounded-md block px-3 py-1">
       {{ $t("common.projects") }}
     </router-link>
 
-    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">
+    <router-link to="/db" class="bar-link rounded-md block px-3 py-1">
       {{ $t("common.databases") }}
     </router-link>
 
-    <router-link to="/instance" class="bar-link rounded-md block px-3 py-2">{{
+    <router-link to="/instance" class="bar-link rounded-md block px-3 py-1">{{
       $t("common.instances")
     }}</router-link>
 
     <router-link
       to="/environment"
-      class="bar-link rounded-md block px-3 py-2"
+      class="bar-link rounded-md block px-3 py-1"
       >{{ $t("common.environments") }}</router-link
     >
 
     <router-link
       to="/setting/member"
-      class="bar-link rounded-md block px-3 py-2"
+      class="bar-link rounded-md block px-3 py-1"
       >{{ $t("common.settings") }}</router-link
     >
   </div>

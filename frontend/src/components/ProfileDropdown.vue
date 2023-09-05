@@ -9,7 +9,7 @@
       @click.prevent="menu.toggle()"
       @contextmenu.capture.prevent="menu.toggle()"
     >
-      <UserAvatar :user="currentUserV1" />
+      <UserAvatar :size="'SMALL'" :user="currentUserV1" />
     </button>
     <BBContextMenu ref="menu" class="origin-top-left mt-2 w-48">
       <router-link
