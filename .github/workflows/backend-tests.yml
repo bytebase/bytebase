@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  golangci-lint:
-    runs-on: [self-hosted]
+  go-tests:
+    runs-on: self-hosted
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -43,33 +43,8 @@ jobs:
           version: v1.54.1
           args: --verbose --timeout 20m --max-same-issues=30
           skip-cache: true
-
-  go-tests:
-    strategy:
-      matrix:
-        release-tags:
-          - "mysql"
-    runs-on: self-hosted
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-go@v4
-        with:
-          go-version: 1.21.0
-      - name: Cache MySQL
-        uses: actions/cache@v3
-        with:
-          path: |
-            ./backend/resources/mysql/*.tar.gz
-            ./backend/resources/mysql/*.tar.xz
-          key: ${{ runner.OS }}-build-mysql-cache
-      - name: Install dependencies
-        run: go generate -tags ${{ matrix.release-tags }} ./...
       - name: Run all tests
-        run: go test -v ./... -tags=${{ matrix.release-tags }} -p=10 | tee test.log; exit ${PIPESTATUS[0]}
+        run: go test -v ./... -tags=mysql -p=10 | tee test.log; exit ${PIPESTATUS[0]}
       - name: Pretty print tests running time
         # grep: filter out lines like "--- PASS: TestVCS (15.04s)"
         # sed: remove unnecessary characters
