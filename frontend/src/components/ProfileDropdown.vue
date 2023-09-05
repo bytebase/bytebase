@@ -41,7 +41,7 @@
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
         <router-link to="/setting" class="menu-item" role="menuitem">{{
-          $t("common.settings")
+          $t("settings.sidebar.profile")
         }}</router-link>
         <div
           class="menu-item relative"
