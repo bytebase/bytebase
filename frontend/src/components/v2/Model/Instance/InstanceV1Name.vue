@@ -13,7 +13,7 @@
     <slot name="prefix" />
 
     <NEllipsis :line-clamp="1" :class="textClass">
-      {{ instanceV1Name(instance) }} 123123123123123
+      {{ instanceV1Name(instance) }}
     </NEllipsis>
 
     <InstanceV1EngineIcon
