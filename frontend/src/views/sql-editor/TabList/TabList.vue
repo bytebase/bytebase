@@ -42,7 +42,7 @@
       </button>
     </div>
 
-    <div class="pb-1 hidden lg:block">
+    <div class="hidden lg:block">
       <ToggleSecondarySidebarButton />
     </div>
 
