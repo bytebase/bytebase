@@ -252,10 +252,9 @@ type Task struct {
 	InstanceID int
 	Instance   *Instance `jsonapi:"relation,instance"`
 	// Could be empty for creating database task when the task isn't yet completed successfully.
-	DatabaseID       *int
-	Database         *Database       `jsonapi:"relation,database"`
-	TaskRunList      []*TaskRun      `jsonapi:"relation,taskRun"`
-	TaskCheckRunList []*TaskCheckRun `jsonapi:"relation,taskCheckRun"`
+	DatabaseID  *int
+	Database    *Database  `jsonapi:"relation,database"`
+	TaskRunList []*TaskRun `jsonapi:"relation,taskRun"`
 
 	// Domain specific fields
 	Name              string     `jsonapi:"attr,name"`
@@ -266,10 +265,6 @@ type Task struct {
 	// BlockedBy is an array of Task ID.
 	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
 	BlockedBy []string `jsonapi:"attr,blockedBy"`
-	// Progress is loaded from the task scheduler in memory, NOT from the database
-	Progress Progress `jsonapi:"attr,progress"`
-	// OUTPUT ONLY, used by grouping batch change.
-	Statement string `jsonapi:"attr,statement"`
 	// For v1 api compatibility.
 	LatestTaskRunStatus TaskRunStatus
 }
