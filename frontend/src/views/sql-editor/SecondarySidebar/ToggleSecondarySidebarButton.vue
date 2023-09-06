@@ -1,7 +1,7 @@
 <template>
   <NButton
     size="small"
-    style="--n-padding: 0 6px"
+    style="--n-height: 24px; --n-padding: 0 4px"
     :type="showSecondarySidebar ? 'info' : 'default'"
     ghost
     @click="showSecondarySidebar = !showSecondarySidebar"
