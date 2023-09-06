@@ -17,7 +17,6 @@ import (
 	// embed will embeds the acl policy.
 	_ "embed"
 
-	"github.com/blang/semver/v4"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/google/uuid"
@@ -168,9 +167,6 @@ type Server struct {
 	activityManager *activity.Manager
 
 	licenseService enterpriseAPI.LicenseService
-
-	// SchemaVersion is the bytebase's schema version
-	SchemaVersion *semver.Version
 
 	profile         config.Profile
 	e               *echo.Echo
@@ -327,11 +323,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if profile.Readonly {
 		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
-		metadataVersion, err := migrator.MigrateSchema(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode)
-		if err != nil {
+		if _, err := migrator.MigrateSchema(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode); err != nil {
 			return nil, err
 		}
-		s.SchemaVersion = metadataVersion
 	}
 
 	s.stateCfg = &state.State{
