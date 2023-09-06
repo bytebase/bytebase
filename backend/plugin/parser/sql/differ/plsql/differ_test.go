@@ -56,6 +56,6 @@ func TestPLSQLDiffer(t *testing.T) {
 		"test_differ_data.yaml",
 	}
 	for _, file := range testFileList {
-		runDifferTest(t, file, true /* record */)
+		runDifferTest(t, file, false /* record */)
 	}
 }
