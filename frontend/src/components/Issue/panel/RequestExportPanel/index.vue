@@ -339,7 +339,7 @@ const doCreateIssue = async () => {
     title: t("issue.grant-request.request-sent"),
   });
 
-  if (!!props.redirectToIssuePage) {
+  if (props.redirectToIssuePage) {
     const route = router.resolve({
       path: `/issue/${issueSlug(issue.name, issue.id)}`,
     });
