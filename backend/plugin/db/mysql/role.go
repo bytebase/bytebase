@@ -4,11 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
 
@@ -389,10 +388,10 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 	var err error
 	users, err = driver.getUsersFromMySQLUser(ctx)
 	if err != nil {
-		log.Info("failed to get users", zap.Error(err))
+		slog.Info("failed to get users", log.BBError(err))
 		users, err = driver.getUsersFromUserAttributes(ctx)
 		if err != nil {
-			log.Info("failed to get users", zap.Error(err))
+			slog.Info("failed to get users", log.BBError(err))
 			return nil, nil
 		}
 	}
@@ -420,7 +419,7 @@ func (driver *Driver) getGrantFromUser(ctx context.Context, name string) ([]stri
 		grantQuery,
 	)
 	if err != nil {
-		log.Info("failed to get grants", zap.String("user", name), zap.Error(err))
+		slog.Info("failed to get grants", slog.String("user", name), log.BBError(err))
 		return nil, nil
 	}
 	defer grantRows.Close()

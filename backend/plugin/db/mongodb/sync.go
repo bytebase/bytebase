@@ -3,17 +3,16 @@ package mongodb
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -125,7 +124,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 		dataSize64, err := convertEmptyInterfaceToInt64(dataSize)
 		if err != nil {
-			log.Debug("Failed to convert dataSize to int64", zap.Any("dataSize", dataSize))
+			slog.Debug("Failed to convert dataSize to int64", slog.Any("dataSize", dataSize))
 		}
 
 		totalIndexSize, ok := commandResult["totalIndexSize"]
@@ -134,7 +133,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 		totalIndexSize64, err := convertEmptyInterfaceToInt64(totalIndexSize)
 		if err != nil {
-			log.Debug("Failed to convert totalIndexSize to int64", zap.Any("totalIndexSize", totalIndexSize))
+			slog.Debug("Failed to convert totalIndexSize to int64", slog.Any("totalIndexSize", totalIndexSize))
 		}
 
 		// Get collection indexes.

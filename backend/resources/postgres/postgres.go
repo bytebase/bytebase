@@ -10,6 +10,7 @@ import (
 
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"os/user"
@@ -22,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -76,7 +76,7 @@ func Install(resourceDir string) (string, error) {
 		needInstall = true
 	}
 	if needInstall {
-		log.Info("Installing PostgreSQL utilities...")
+		slog.Info("Installing PostgreSQL utilities...")
 		// The ordering below made Postgres installation atomic.
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 		if err := installInDir(tarName, tmpDir); err != nil {
@@ -184,7 +184,7 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 		dirListToChown = append(dirListToChown, path)
 		path = filepath.Dir(path)
 	}
-	log.Debug("Data directory list to Chown", zap.Any("dirListToChown", dirListToChown))
+	slog.Debug("Data directory list to Chown", slog.Any("dirListToChown", dirListToChown))
 
 	if err := os.MkdirAll(pgDataDir, 0700); err != nil {
 		return errors.Wrapf(err, "failed to make postgres data directory %q", pgDataDir)
@@ -209,9 +209,9 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 			Setpgid:    true,
 			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
-		log.Info(fmt.Sprintf("Recursively change owner of data directory %q to bytebase...", pgDataDir))
+		slog.Info(fmt.Sprintf("Recursively change owner of data directory %q to bytebase...", pgDataDir))
 		for _, dir := range dirListToChown {
-			log.Info(fmt.Sprintf("Change owner of %q to bytebase", dir))
+			slog.Info(fmt.Sprintf("Change owner of %q to bytebase", dir))
 			if err := os.Chown(dir, int(uid), int(gid)); err != nil {
 				return errors.Wrapf(err, "failed to change owner of %q to bytebase", dir)
 			}
@@ -221,11 +221,11 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 	// Suppress log spam
 	p.Stdout = nil
 	p.Stderr = os.Stderr
-	log.Info("-----Postgres initdb BEGIN-----")
+	slog.Info("-----Postgres initdb BEGIN-----")
 	if err := p.Run(); err != nil {
 		return errors.Wrapf(err, "failed to initdb %q", p.String())
 	}
-	log.Info("-----Postgres initdb END-----")
+	slog.Info("-----Postgres initdb END-----")
 
 	return nil
 }
@@ -423,7 +423,7 @@ func StartSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, port i
 	}
 
 	if err := turnOnPGStateStatements(pgDataDir); err != nil {
-		log.Warn("Failed to turn on pg_stat_statements", zap.Error(err))
+		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
 	}
 
 	if err := Start(port, pgBinDir, pgDataDir, mode == common.ReleaseModeDev /* serverLog */); err != nil {
@@ -436,7 +436,7 @@ func StartSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, port i
 	}
 
 	if err := createPGStatStatementsExtension(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
-		log.Warn("Failed to create pg_stat_statements extension", zap.Error(err))
+		slog.Warn("Failed to create pg_stat_statements extension", log.BBError(err))
 	}
 
 	return nil
@@ -464,7 +464,7 @@ func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, da
 	if _, err := driver.Execute(ctx, "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;", false, db.ExecuteOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to create pg_stat_statements extension")
 	}
-	log.Info("Successfully created pg_stat_statements extension")
+	slog.Info("Successfully created pg_stat_statements extension")
 	return nil
 }
 
@@ -513,7 +513,7 @@ func turnOnPGStateStatements(pgDataDir string) error {
 		}
 	}
 
-	log.Info("Successfully added pg_stat_statements to postgresql.conf file")
+	slog.Info("Successfully added pg_stat_statements to postgresql.conf file")
 	return nil
 }
 

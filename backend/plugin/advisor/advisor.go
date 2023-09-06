@@ -5,11 +5,13 @@ package advisor
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"log/slog"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -491,28 +493,21 @@ type Advice struct {
 	Details string `json:"details,omitempty"`
 }
 
-// MarshalLogObject constructs a field that carries Advice.
-func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("status", string(a.Status))
-	enc.AddInt("code", int(a.Code))
-	enc.AddString("title", a.Title)
-	enc.AddString("content", a.Content)
-	enc.AddInt("line", a.Line)
-	enc.AddString("details", a.Details)
-	return nil
-}
+// SLogAdviceArray is a helper to format array of Advice.
+type SLogAdviceArray []Advice
 
-// ZapAdviceArray is a helper to format zap.Array.
-type ZapAdviceArray []Advice
-
-// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
-func (array ZapAdviceArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
-	for i := range array {
-		if err := enc.AppendObject(array[i]); err != nil {
-			return err
+// LogValue implements the LogValuer interface.
+func (arr SLogAdviceArray) LogValue() slog.Value {
+	logArr := []string{}
+	for _, advice := range arr {
+		payload, err := json.Marshal(advice)
+		if err != nil {
+			logArr = append(logArr, err.Error())
+			continue
 		}
+		logArr = append(logArr, string(payload))
 	}
-	return nil
+	return slog.StringValue(strings.Join(logArr, ","))
 }
 
 // SyntaxMode is the type of syntax mode.

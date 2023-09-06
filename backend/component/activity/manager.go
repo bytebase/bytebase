@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,7 +23,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 // Manager is the activity manager.
@@ -421,9 +421,9 @@ func (m *Manager) CreateActivity(ctx context.Context, create *store.ActivityMess
 
 	webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
 	if err != nil {
-		log.Warn("Failed to get webhook context",
-			zap.String("issue_name", meta.Issue.Title),
-			zap.Error(err))
+		slog.Warn("Failed to get webhook context",
+			slog.String("issue_name", meta.Issue.Title),
+			log.BBError(err))
 		return activity, nil
 	}
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
@@ -442,12 +442,12 @@ func postWebhookList(ctx context.Context, webhookCtx *webhook.Context, webhookLi
 				return webhook.Post(hook.Type, *webhookCtx)
 			}); err != nil {
 				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-				log.Warn("Failed to post webhook event on activity",
-					zap.String("webhook type", hook.Type),
-					zap.String("webhook name", hook.Title),
-					zap.String("activity type", webhookCtx.ActivityType),
-					zap.String("title", webhookCtx.Title),
-					zap.Error(err))
+				slog.Warn("Failed to post webhook event on activity",
+					slog.String("webhook type", hook.Type),
+					slog.String("webhook name", hook.Title),
+					slog.String("activity type", webhookCtx.ActivityType),
+					slog.String("title", webhookCtx.Title),
+					log.BBError(err))
 				return
 			}
 		}(&webhookCtx, hook)
@@ -486,9 +486,9 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 	case api.ActivityIssueFieldUpdate:
 		update := new(api.ActivityIssueFieldUpdatePayload)
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
-			log.Warn("Failed to post webhook event after changing the issue field, failed to unmarshal payload",
-				zap.String("issue_name", meta.Issue.Title),
-				zap.Error(err))
+			slog.Warn("Failed to post webhook event after changing the issue field, failed to unmarshal payload",
+				slog.String("issue_name", meta.Issue.Title),
+				log.BBError(err))
 			return nil, err
 		}
 		switch update.FieldID {
@@ -498,26 +498,26 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 				if update.OldValue != "" {
 					oldID, err := strconv.Atoi(update.OldValue)
 					if err != nil {
-						log.Warn("Failed to post webhook event after changing the issue assignee, old assignee id is not number",
-							zap.String("issue_name", meta.Issue.Title),
-							zap.String("old_assignee_id", update.OldValue),
-							zap.Error(err))
+						slog.Warn("Failed to post webhook event after changing the issue assignee, old assignee id is not number",
+							slog.String("issue_name", meta.Issue.Title),
+							slog.String("old_assignee_id", update.OldValue),
+							log.BBError(err))
 						return nil, err
 					}
 					oldAssignee, err = m.store.GetUserByID(ctx, oldID)
 					if err != nil {
-						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
-							zap.String("issue_name", meta.Issue.Title),
-							zap.String("old_assignee_id", update.OldValue),
-							zap.Error(err))
+						slog.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
+							slog.String("issue_name", meta.Issue.Title),
+							slog.String("old_assignee_id", update.OldValue),
+							log.BBError(err))
 						return nil, err
 					}
 					if oldAssignee == nil {
 						err := errors.Errorf("failed to post webhook event after changing the issue assignee, old assignee not found for ID %v", oldID)
-						log.Warn(err.Error(),
-							zap.String("issue_name", meta.Issue.Title),
-							zap.String("old_assignee_id", update.OldValue),
-							zap.Error(err))
+						slog.Warn(err.Error(),
+							slog.String("issue_name", meta.Issue.Title),
+							slog.String("old_assignee_id", update.OldValue),
+							log.BBError(err))
 						return nil, err
 					}
 				}
@@ -525,18 +525,18 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 				if update.NewValue != "" {
 					newID, err := strconv.Atoi(update.NewValue)
 					if err != nil {
-						log.Warn("Failed to post webhook event after changing the issue assignee, new assignee id is not number",
-							zap.String("issue_name", meta.Issue.Title),
-							zap.String("new_assignee_id", update.NewValue),
-							zap.Error(err))
+						slog.Warn("Failed to post webhook event after changing the issue assignee, new assignee id is not number",
+							slog.String("issue_name", meta.Issue.Title),
+							slog.String("new_assignee_id", update.NewValue),
+							log.BBError(err))
 						return nil, err
 					}
 					newAssignee, err = m.store.GetUserByID(ctx, newID)
 					if err != nil {
-						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
-							zap.String("issue_name", meta.Issue.Title),
-							zap.String("new_assignee_id", update.NewValue),
-							zap.Error(err))
+						slog.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
+							slog.String("issue_name", meta.Issue.Title),
+							slog.String("new_assignee_id", update.NewValue),
+							log.BBError(err))
 						return nil, err
 					}
 
@@ -559,10 +559,10 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 	case api.ActivityPipelineStageStatusUpdate:
 		payload := &api.ActivityPipelineStageStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
-			log.Warn(
+			slog.Warn(
 				"failed to post webhook event after stage status updating, failed to unmarshal payload",
-				zap.String("issue_name", meta.Issue.Title),
-				zap.Error(err))
+				slog.String("issue_name", meta.Issue.Title),
+				log.BBError(err))
 			return nil, err
 		}
 		link += fmt.Sprintf("?stage=%d", payload.StageID)
@@ -576,26 +576,26 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
-			log.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal payload",
-				zap.String("issue_name", meta.Issue.Title),
-				zap.Error(err))
+			slog.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal payload",
+				slog.String("issue_name", meta.Issue.Title),
+				log.BBError(err))
 			return nil, err
 		}
 
 		task, err := m.store.GetTaskByID(ctx, update.TaskID)
 		if err != nil {
-			log.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
-				zap.String("issue_name", meta.Issue.Title),
-				zap.Int("task_id", update.TaskID),
-				zap.Error(err))
+			slog.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
+				slog.String("issue_name", meta.Issue.Title),
+				slog.Int("task_id", update.TaskID),
+				log.BBError(err))
 			return nil, err
 		}
 		if task == nil {
 			err := errors.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
-			log.Warn(err.Error(),
-				zap.String("issue_name", meta.Issue.Title),
-				zap.Int("task_id", update.TaskID),
-				zap.Error(err))
+			slog.Warn(err.Error(),
+				slog.String("issue_name", meta.Issue.Title),
+				slog.Int("task_id", update.TaskID),
+				log.BBError(err))
 			return nil, err
 		}
 
@@ -622,7 +622,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			skipped, skippedReason, err := getTaskSkippedAndReason(task)
 			if err != nil {
 				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
-				log.Warn(err.Error(), zap.String("task.Payload", task.Payload), zap.Error(err))
+				slog.Warn(err.Error(), slog.String("task.Payload", task.Payload), log.BBError(err))
 				return nil, err
 			}
 			if skipped {
@@ -636,9 +636,9 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 			if len(task.TaskRunList) == 0 {
 				err := errors.Errorf("expect at least 1 TaskRun, get 0")
-				log.Warn(err.Error(),
-					zap.Any("task", task),
-					zap.Error(err))
+				slog.Warn(err.Error(),
+					slog.Any("task", task),
+					log.BBError(err))
 				return nil, err
 			}
 
@@ -650,9 +650,9 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			var result api.TaskRunResultPayload
 			if err := json.Unmarshal([]byte(task.TaskRunList[0].Result), &result); err != nil {
 				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
-				log.Warn(err.Error(),
-					zap.Any("TaskRun", task.TaskRunList[0]),
-					zap.Error(err))
+				slog.Warn(err.Error(),
+					slog.Any("TaskRun", task.TaskRunList[0]),
+					log.BBError(err))
 				return nil, err
 			}
 			webhookTaskResult.Detail = result.Detail
@@ -661,26 +661,26 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 	case api.ActivityPipelineTaskRunStatusUpdate:
 		payload := &api.ActivityPipelineTaskRunStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
-			log.Warn("Failed to post webhook event after changing the issue task run status, failed to unmarshal payload",
-				zap.String("issue_name", meta.Issue.Title),
-				zap.Error(err))
+			slog.Warn("Failed to post webhook event after changing the issue task run status, failed to unmarshal payload",
+				slog.String("issue_name", meta.Issue.Title),
+				log.BBError(err))
 			return nil, err
 		}
 
 		task, err := m.store.GetTaskByID(ctx, payload.TaskID)
 		if err != nil {
-			log.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
-				zap.String("issue_name", meta.Issue.Title),
-				zap.Int("task_id", payload.TaskID),
-				zap.Error(err))
+			slog.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
+				slog.String("issue_name", meta.Issue.Title),
+				slog.Int("task_id", payload.TaskID),
+				log.BBError(err))
 			return nil, err
 		}
 		if task == nil {
 			err := errors.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", payload.TaskID)
-			log.Warn(err.Error(),
-				zap.String("issue_name", meta.Issue.Title),
-				zap.Int("task_id", payload.TaskID),
-				zap.Error(err))
+			slog.Warn(err.Error(),
+				slog.String("issue_name", meta.Issue.Title),
+				slog.Int("task_id", payload.TaskID),
+				log.BBError(err))
 			return nil, err
 		}
 
@@ -703,9 +703,9 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 			if len(task.TaskRunList) == 0 {
 				err := errors.Errorf("expect at least 1 TaskRun, get 0")
-				log.Warn(err.Error(),
-					zap.Any("task", task),
-					zap.Error(err))
+				slog.Warn(err.Error(),
+					slog.Any("task", task),
+					log.BBError(err))
 				return nil, err
 			}
 
@@ -717,9 +717,9 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			var result api.TaskRunResultPayload
 			if err := json.Unmarshal([]byte(task.TaskRunList[0].Result), &result); err != nil {
 				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
-				log.Warn(err.Error(),
-					zap.Any("TaskRun", task.TaskRunList[0]),
-					zap.Error(err))
+				slog.Warn(err.Error(),
+					slog.Any("TaskRun", task.TaskRunList[0]),
+					log.BBError(err))
 				return nil, err
 			}
 			webhookTaskResult.Detail = result.Detail
@@ -731,7 +731,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			_, skippedReason, err := getTaskSkippedAndReason(task)
 			if err != nil {
 				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
-				log.Warn(err.Error(), zap.String("task.Payload", task.Payload), zap.Error(err))
+				slog.Warn(err.Error(), slog.String("task.Payload", task.Payload), log.BBError(err))
 				return nil, err
 			}
 			webhookTaskResult.SkippedReason = skippedReason
@@ -742,21 +742,21 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 	case api.ActivityIssueApprovalNotify:
 		payload := &api.ActivityIssueApprovalNotifyPayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
-			log.Warn("Failed to post webhook event after changing the issue approval node status, failed to unmarshal payload",
-				zap.String("issue_name", meta.Issue.Title),
-				zap.Error(err))
+			slog.Warn("Failed to post webhook event after changing the issue approval node status, failed to unmarshal payload",
+				slog.String("issue_name", meta.Issue.Title),
+				log.BBError(err))
 			return nil, err
 		}
 		protoPayload := &storepb.ActivityIssueApprovalNotifyPayload{}
 		if err := protojson.Unmarshal([]byte(payload.ProtoPayload), protoPayload); err != nil {
-			log.Warn("Failed to post webhook event")
+			slog.Warn("Failed to post webhook event")
 		}
 		pendingStep := protoPayload.ApprovalStep
 
 		title = "Issue approval needed - " + meta.Issue.Title
 
 		if len(pendingStep.Nodes) != 1 {
-			log.Warn("Failed to post webhook event after changing the issue approval node status, pending step nodes length is not 1")
+			slog.Warn("Failed to post webhook event after changing the issue approval node status, pending step nodes length is not 1")
 			return nil, errors.Errorf("pending step nodes length is not 1, got %v", len(pendingStep.Nodes))
 		}
 
@@ -793,17 +793,17 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 		users, err := usersGetter(ctx)
 		if err != nil {
-			log.Warn("Failed to post webhook event after changing the issue approval node status, failed to get users",
-				zap.String("issue_name", meta.Issue.Title),
-				zap.Error(err))
+			slog.Warn("Failed to post webhook event after changing the issue approval node status, failed to get users",
+				slog.String("issue_name", meta.Issue.Title),
+				log.BBError(err))
 			return nil, err
 		}
 		for _, user := range users {
 			phoneNumber, err := phonenumbers.Parse(user.Phone, "")
 			if err != nil {
-				log.Warn("Failed to post webhook event after changing the issue approval node status, failed to parse phone number",
-					zap.String("issue_name", meta.Issue.Title),
-					zap.Error(err))
+				slog.Warn("Failed to post webhook event after changing the issue approval node status, failed to parse phone number",
+					slog.String("issue_name", meta.Issue.Title),
+					log.BBError(err))
 				continue
 			}
 			phone := strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10)

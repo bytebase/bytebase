@@ -5,10 +5,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log/slog"
 	"sort"
 	"strings"
-
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 
@@ -934,13 +933,13 @@ func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
 	for idx, oldOption := range oldNormalizeOptions {
 		oldOptionStr, err := toString(oldOption)
 		if err != nil {
-			log.Error("failed to convert old column option to string", zap.Error(err))
+			slog.Error("failed to convert old column option to string", log.BBError(err))
 			return false
 		}
 		newOption := newNormalizeOptions[idx]
 		newOptionStr, err := toString(newOption)
 		if err != nil {
-			log.Error("failed to convert new column option to string", zap.Error(err))
+			slog.Error("failed to convert new column option to string", log.BBError(err))
 			return false
 		}
 		if oldOptionStr != newOptionStr {
@@ -1057,12 +1056,12 @@ func isKeyPartEqual(old, new []*ast.IndexPartSpecification) bool {
 		if oldKeyPart.Expr != nil && newKeyPart.Expr != nil {
 			oldKeyPartStr, err := toString(oldKeyPart.Expr)
 			if err != nil {
-				log.Error("failed to convert old key part to string", zap.Error(err))
+				slog.Error("failed to convert old key part to string", log.BBError(err))
 				return false
 			}
 			newKeyPartStr, err := toString(newKeyPart.Expr)
 			if err != nil {
-				log.Error("failed to convert new key part to string", zap.Error(err))
+				slog.Error("failed to convert new key part to string", log.BBError(err))
 				return false
 			}
 			return oldKeyPartStr == newKeyPartStr
@@ -1196,12 +1195,12 @@ func isCheckConstraintEqual(old, new *ast.Constraint) bool {
 
 	oldExpr, err := toString(trimParentheses(old.Expr))
 	if err != nil {
-		log.Error("failed to convert old check constraint expression to string", zap.Error(err))
+		slog.Error("failed to convert old check constraint expression to string", log.BBError(err))
 		return false
 	}
 	newExpr, err := toString(trimParentheses(new.Expr))
 	if err != nil {
-		log.Error("failed to convert new check constraint expression to string", zap.Error(err))
+		slog.Error("failed to convert new check constraint expression to string", log.BBError(err))
 		return false
 	}
 	return oldExpr == newExpr
@@ -1521,24 +1520,24 @@ func (diff *diffNode) isViewEqual(old, new *ast.CreateViewStmt) bool {
 	if diff.ignoreCaseSensitive {
 		oldViewStr, err := toLowerNameString(old)
 		if err != nil {
-			log.Error("fail to convert old view to string", zap.Error(err))
+			slog.Error("fail to convert old view to string", log.BBError(err))
 			return false
 		}
 		newViewStr, err := toLowerNameString(new)
 		if err != nil {
-			log.Error("fail to convert new view to string", zap.Error(err))
+			slog.Error("fail to convert new view to string", log.BBError(err))
 			return false
 		}
 		return oldViewStr == newViewStr
 	}
 	oldViewStr, err := toString(old)
 	if err != nil {
-		log.Error("fail to convert old view to string", zap.Error(err))
+		slog.Error("fail to convert old view to string", log.BBError(err))
 		return false
 	}
 	newViewStr, err := toString(new)
 	if err != nil {
-		log.Error("fail to convert new view to string", zap.Error(err))
+		slog.Error("fail to convert new view to string", log.BBError(err))
 		return false
 	}
 	return oldViewStr == newViewStr

@@ -3,6 +3,7 @@ package mongoutil
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"runtime"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/resources/utils"
 )
 
@@ -51,7 +51,7 @@ func Install(resourceDir string) (string, error) {
 			return "", errors.Wrapf(err, "failed to check binary directory path %q", mongoutilDir)
 		}
 		// Install if not exist yet
-		log.Info("Installing MongoDB utilities, it may take about several minutes...")
+		slog.Info("Installing MongoDB utilities, it may take about several minutes...")
 		if err := installImpl(resourceDir, mongoutilDir, tarName, version); err != nil {
 			return "", errors.Wrap(err, "cannot install mongoutil")
 		}

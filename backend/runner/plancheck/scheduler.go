@@ -4,11 +4,11 @@ package plancheck
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -45,7 +45,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(planCheckSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Plan check scheduler started and will run every %v", planCheckSchedulerInterval))
+	slog.Debug(fmt.Sprintf("Plan check scheduler started and will run every %v", planCheckSchedulerInterval))
 	for {
 		select {
 		case <-ticker.C:
@@ -74,7 +74,7 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 			if !ok {
 				err = errors.Errorf("%v", r)
 			}
-			log.Error("Plan check scheduler PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+			slog.Error("Plan check scheduler PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
 
@@ -84,7 +84,7 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 		},
 	})
 	if err != nil {
-		log.Error("failed to list running plan check runs", zap.Error(err))
+		slog.Error("failed to list running plan check runs", log.BBError(err))
 		return
 	}
 
@@ -96,7 +96,7 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) {
 	executor, ok := s.executors[planCheckRun.Type]
 	if !ok {
-		log.Error("Skip running plan check for unknown type", zap.Int("uid", planCheckRun.UID), zap.Int64("plan_uid", planCheckRun.PlanUID), zap.String("type", string(planCheckRun.Type)))
+		slog.Error("Skip running plan check for unknown type", slog.Int("uid", planCheckRun.UID), slog.Int64("plan_uid", planCheckRun.PlanUID), slog.String("type", string(planCheckRun.Type)))
 		return
 	}
 	if _, ok := s.stateCfg.RunningPlanChecks.Load(planCheckRun.UID); ok {
@@ -140,7 +140,7 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *stor
 		result,
 		planCheckRun.UID,
 	); err != nil {
-		log.Error("failed to mark plan check run failed", zap.Error(err))
+		slog.Error("failed to mark plan check run failed", log.BBError(err))
 	}
 }
 
@@ -154,6 +154,6 @@ func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, planCheckRun *st
 		result,
 		planCheckRun.UID,
 	); err != nil {
-		log.Error("failed to mark plan check run failed", zap.Error(err))
+		slog.Error("failed to mark plan check run failed", log.BBError(err))
 	}
 }

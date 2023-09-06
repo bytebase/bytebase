@@ -2,10 +2,10 @@ package tests
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -22,7 +22,7 @@ type trial struct {
 
 func TestSubscription(t *testing.T) {
 	a := require.New(t)
-	log.SetLevel(zapcore.DebugLevel)
+	log.GLogLevel.Set(slog.LevelDebug)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()

@@ -4,11 +4,11 @@ package slowquerysync
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -52,17 +52,17 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(slowQuerySyncInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Slow query syncer started and will run every %s", slowQuerySyncInterval.String()))
+	slog.Debug(fmt.Sprintf("Slow query syncer started and will run every %s", slowQuerySyncInterval.String()))
 	for {
 		select {
 		case <-ctx.Done():
-			log.Debug("Slow query syncer received context cancellation")
+			slog.Debug("Slow query syncer received context cancellation")
 			return
 		case message := <-s.stateCfg.InstanceSlowQuerySyncChan:
-			log.Debug("Slow query syncer received instance slow query sync request", zap.String("instance", message.InstanceID), zap.String("project", message.ProjectID))
+			slog.Debug("Slow query syncer received instance slow query sync request", slog.String("instance", message.InstanceID), slog.String("project", message.ProjectID))
 			s.syncSlowQuery(ctx, message)
 		case <-ticker.C:
-			log.Debug("Slow query syncer received tick")
+			slog.Debug("Slow query syncer received tick")
 			s.syncSlowQuery(ctx, nil)
 		}
 	}
@@ -75,7 +75,7 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, message *state.InstanceSlowQ
 			if !ok {
 				err = errors.Errorf("%v", r)
 			}
-			log.Error("slow query syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+			slog.Error("slow query syncer PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
 
@@ -87,7 +87,7 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, message *state.InstanceSlowQ
 	}
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
-		log.Error("Failed to list instances", zap.Error(err))
+		slog.Error("Failed to list instances", log.BBError(err))
 		return
 	}
 
@@ -100,9 +100,9 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, message *state.InstanceSlowQ
 		go func(instance *store.InstanceMessage) {
 			defer instanceWG.Done()
 			if err := s.syncInstanceSlowQuery(ctx, instance, project); err != nil {
-				log.Debug("Failed to sync instance slow query",
-					zap.String("instance", instance.ResourceID),
-					zap.Error(err))
+				slog.Debug("Failed to sync instance slow query",
+					slog.String("instance", instance.ResourceID),
+					log.BBError(err))
 			}
 		}(instance)
 	}
@@ -165,11 +165,11 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			defer driver.Close(ctx)
 			return driver.CheckSlowQueryLogEnabled(ctx)
 		}(); err != nil {
-			log.Warn("pg_stat_statements is not enabled",
-				zap.String("instance", instance.ResourceID),
-				zap.String("database", database.DatabaseName),
-				zap.Int("databaseID", database.UID),
-				zap.Error(err))
+			slog.Warn("pg_stat_statements is not enabled",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", database.DatabaseName),
+				slog.Int("databaseID", database.UID),
+				log.BBError(err))
 			continue
 		}
 
@@ -212,11 +212,11 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			EndLogDate:   &nextLogDate,
 		})
 		if err != nil {
-			log.Warn("Failed to list slow query logs",
-				zap.String("instance", instance.ResourceID),
-				zap.String("database", database.DatabaseName),
-				zap.Int("databaseID", database.UID),
-				zap.Error(err))
+			slog.Warn("Failed to list slow query logs",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", database.DatabaseName),
+				slog.Int("databaseID", database.UID),
+				log.BBError(err))
 			logs = nil
 		}
 
@@ -232,11 +232,11 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			SlowLog:       statistics,
 			UpdaterID:     api.SystemBotID,
 		}); err != nil {
-			log.Warn("Failed to upsert slow query log",
-				zap.String("instance", instance.ResourceID),
-				zap.String("database", database.DatabaseName),
-				zap.Int("databaseID", database.UID),
-				zap.Error(err))
+			slog.Warn("Failed to upsert slow query log",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", database.DatabaseName),
+				slog.Int("databaseID", database.UID),
+				log.BBError(err))
 		}
 	}
 

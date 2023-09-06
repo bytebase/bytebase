@@ -4,15 +4,14 @@ package oidc
 import (
 	"context"
 	"crypto/tls"
+	"log/slog"
 	"net/http"
 
 	"github.com/coreos/go-oidc"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/idp"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -135,7 +134,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal claims")
 	}
-	log.Debug("User info", zap.Any("claims", claims))
+	slog.Debug("User info", slog.Any("claims", claims))
 
 	userInfo := &storepb.IdentityProviderUserInfo{}
 	if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Identifier).(string); ok {

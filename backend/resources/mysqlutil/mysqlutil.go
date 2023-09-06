@@ -3,6 +3,7 @@ package mysqlutil
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/resources/utils"
 )
 
@@ -70,7 +70,7 @@ func Install(resourceDir string) (string, error) {
 			return "", errors.Wrapf(err, "failed to check binary directory path %q", mysqlutilDir)
 		}
 		// Install if not exist yet
-		log.Info("Installing MySQL utilities...")
+		slog.Info("Installing MySQL utilities...")
 		if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
 			return "", errors.Wrap(err, "cannot install mysqlutil")
 		}

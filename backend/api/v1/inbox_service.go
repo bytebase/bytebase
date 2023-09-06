@@ -3,9 +3,9 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -104,7 +104,7 @@ func (s *InboxService) ListInbox(ctx context.Context, request *v1pb.ListInboxReq
 	for _, inbox := range inboxList {
 		inboxV1, err := s.convertToInboxMessage(ctx, inbox)
 		if err != nil {
-			log.Error("failed to convert inbox message", zap.Int("inbox", inbox.UID), zap.Error(err))
+			slog.Error("failed to convert inbox message", slog.Int("inbox", inbox.UID), log.BBError(err))
 			continue
 		}
 		resp.InboxMessages = append(resp.InboxMessages, inboxV1)

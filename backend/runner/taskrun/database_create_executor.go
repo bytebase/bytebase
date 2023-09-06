@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -88,10 +88,10 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	}
 
 	// Create database.
-	log.Debug("Start creating database...",
-		zap.String("instance", instance.Title),
-		zap.String("database", payload.DatabaseName),
-		zap.String("statement", statement),
+	slog.Debug("Start creating database...",
+		slog.String("instance", instance.Title),
+		slog.String("database", payload.DatabaseName),
+		slog.String("statement", statement),
 	)
 
 	// Upsert first because we need database id in instance change history.
@@ -204,10 +204,10 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	}
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-		log.Error("failed to sync database schema",
-			zap.String("instanceName", instance.ResourceID),
-			zap.String("databaseName", database.DatabaseName),
-			zap.Error(err),
+		slog.Error("failed to sync database schema",
+			slog.String("instanceName", instance.ResourceID),
+			slog.String("databaseName", database.DatabaseName),
+			log.BBError(err),
 		)
 	}
 
@@ -256,9 +256,9 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 	if err != nil {
 		// If somehow we unable to find the principal, we just emit the error since it's not
 		// critical enough to fail the entire operation.
-		log.Error("Failed to fetch creator for composing the migration info",
-			zap.Int("task_id", task.ID),
-			zap.Error(err),
+		slog.Error("Failed to fetch creator for composing the migration info",
+			slog.Int("task_id", task.ID),
+			log.BBError(err),
 		)
 	} else {
 		mi.Creator = creator.Name
@@ -267,16 +267,16 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not
 		// critical enough to fail the entire operation.
-		log.Error("Failed to fetch containing issue for composing the migration info",
-			zap.Int("task_id", task.ID),
-			zap.Error(err),
+		slog.Error("Failed to fetch containing issue for composing the migration info",
+			slog.Int("task_id", task.ID),
+			log.BBError(err),
 		)
 	}
 	if issue == nil {
 		err := errors.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
-		log.Error(err.Error(),
-			zap.Int("task_id", task.ID),
-			zap.Error(err),
+		slog.Error(err.Error(),
+			slog.Int("task_id", task.ID),
+			log.BBError(err),
 		)
 	} else {
 		mi.IssueID = strconv.Itoa(issue.UID)

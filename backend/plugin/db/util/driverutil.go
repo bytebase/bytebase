@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -217,7 +217,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 			}
 			affectedRows, err := sqlResult.RowsAffected()
 			if err != nil {
-				log.Info("rowsAffected returns error", zap.Error(err))
+				slog.Info("rowsAffected returns error", log.BBError(err))
 			}
 
 			field := []string{"Affected Rows"}

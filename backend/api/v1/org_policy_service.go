@@ -3,11 +3,11 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -92,7 +92,7 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 		if err != nil {
 			st := status.Convert(err)
 			if st.Code() == codes.NotFound {
-				log.Debug("failed to found resource for policy", zap.Error(err), zap.String("resource_type", string(policy.ResourceType)), zap.Int("resource_id", policy.ResourceUID))
+				slog.Debug("failed to found resource for policy", log.BBError(err), slog.String("resource_type", string(policy.ResourceType)), slog.Int("resource_id", policy.ResourceUID))
 				continue
 			}
 			return nil, err

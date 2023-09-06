@@ -3,11 +3,11 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -142,9 +142,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if err == nil {
 		defer driver.Close(ctx)
 		if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
-			log.Warn("Failed to sync instance",
-				zap.String("instance", instance.ResourceID),
-				zap.Error(err))
+			slog.Warn("Failed to sync instance",
+				slog.String("instance", instance.ResourceID),
+				log.BBError(err))
 		}
 		// Sync all databases in the instance asynchronously.
 		s.stateCfg.InstanceDatabaseSyncChan <- instance
@@ -234,9 +234,9 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	}
 
 	if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
-		log.Warn("Failed to sync instance",
-			zap.String("instance", instance.ResourceID),
-			zap.Error(err))
+		slog.Warn("Failed to sync instance",
+			slog.String("instance", instance.ResourceID),
+			log.BBError(err))
 	}
 	// Sync all databases in the instance asynchronously.
 	s.stateCfg.InstanceDatabaseSyncChan <- instance
@@ -277,7 +277,7 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 		}
 		defer driver.Close(ctx)
 		if err := driver.CheckSlowQueryLogEnabled(ctx); err != nil {
-			log.Warn("slow query log is not enabled", zap.String("instance", instance.ResourceID), zap.Error(err))
+			slog.Warn("slow query log is not enabled", slog.String("instance", instance.ResourceID), log.BBError(err))
 			return nil
 		}
 
@@ -317,7 +317,7 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 				defer driver.Close(ctx)
 				return driver.CheckSlowQueryLogEnabled(ctx)
 			}(); err != nil {
-				log.Warn("slow query log is not enabled", zap.String("database", database.DatabaseName), zap.Error(err))
+				slog.Warn("slow query log is not enabled", slog.String("database", database.DatabaseName), log.BBError(err))
 				continue
 			}
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os/exec"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
@@ -179,7 +179,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		errorMsg := make([]byte, 1024)
 		readSize, readErr := errReader.Read(errorMsg)
 		if readSize > 0 {
-			log.Warn(string(errorMsg))
+			slog.Warn(string(errorMsg))
 			allMsg = append(allMsg, errorMsg[0:readSize]...)
 		}
 		if readErr != nil {

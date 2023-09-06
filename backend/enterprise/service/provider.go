@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/enterprise/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -61,7 +61,7 @@ func NewLicenseProvider(config *config.Config, store *store.Store) *LicenseProvi
 func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 	nextFetchTime := p.lastFetchTime + int64(fetchLicenseInterval.Seconds())
 	if time.Now().Unix() < nextFetchTime {
-		log.Debug(fmt.Sprintf("skip fetching license until %d", nextFetchTime))
+		slog.Debug(fmt.Sprintf("skip fetching license until %d", nextFetchTime))
 		return "", nil
 	}
 

@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -17,13 +18,10 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-
-	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 )
@@ -151,7 +149,7 @@ func TestPITRGeneral(t *testing.T) {
 	targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort).Add(time.Second)
 
 	dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
-	log.Debug("mimics schema migration", zap.String("statement", dropColumnStmt))
+	slog.Debug("mimics schema migration", slog.String("statement", dropColumnStmt))
 	_, err = mysqlDB.ExecContext(ctx, dropColumnStmt)
 	a.NoError(err)
 
@@ -322,7 +320,7 @@ func TestPITRTwice(t *testing.T) {
 	})
 	a.NoError(err)
 
-	log.Debug("Creating issue for the first PITR.")
+	slog.Debug("Creating issue for the first PITR.")
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 	ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
 	targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort).Add(time.Second)
@@ -379,9 +377,9 @@ func TestPITRTwice(t *testing.T) {
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
 	validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
 	validateTableUpdateRow(t, mysqlDB, databaseName)
-	log.Debug("First PITR done.")
+	slog.Debug("First PITR done.")
 
-	log.Debug("Wait for the first PITR auto backup to finish.")
+	slog.Debug("Wait for the first PITR auto backup to finish.")
 	resp, err := ctl.databaseServiceClient.ListBackups(ctx, &v1pb.ListBackupsRequest{
 		Parent: database.Name,
 	})
@@ -394,7 +392,7 @@ func TestPITRTwice(t *testing.T) {
 	err = ctl.waitBackup(ctx, database.Name, backups[0].Name)
 	a.NoError(err)
 
-	log.Debug("Creating issue for the second PITR.")
+	slog.Debug("Creating issue for the second PITR.")
 	ctxUpdateRow, cancelUpdateRow = context.WithCancel(ctx)
 	targetTs = startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort).Add(time.Second)
 	insertRangeData(t, mysqlDB, numRowsTime1, numRowsTime2)
@@ -452,7 +450,7 @@ func TestPITRTwice(t *testing.T) {
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
 	validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
 	validateTableUpdateRow(t, mysqlDB, databaseName)
-	log.Debug("Second PITR done.")
+	slog.Debug("Second PITR done.")
 }
 
 func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
@@ -490,7 +488,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, mysqlPort).Add(time.Second)
 
 	dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
-	log.Debug("mimics schema migration", zap.String("statement", dropColumnStmt))
+	slog.Debug("mimics schema migration", slog.String("statement", dropColumnStmt))
 	_, err = sourceMySQLDB.ExecContext(ctx, dropColumnStmt)
 	a.NoError(err)
 
@@ -666,7 +664,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 
 	insertRangeData(t, mysqlDB, 0, numRowsTime0)
 
-	log.Debug("Create a full backup")
+	slog.Debug("Create a full backup")
 	backup, err := ctl.databaseServiceClient.CreateBackup(ctx, &v1pb.CreateBackupRequest{
 		Parent: database.Name,
 		Backup: &v1pb.Backup{
@@ -716,7 +714,7 @@ func initPITRDB(t *testing.T, database string, port int) *sql.DB {
 }
 
 func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
-	log.Debug("Inserting range data", zap.Int("begin", begin), zap.Int("end", end))
+	slog.Debug("Inserting range data", slog.Int("begin", begin), slog.Int("end", end))
 	a := require.New(t)
 	tx, err := db.Begin()
 	a.NoError(err)
@@ -733,7 +731,7 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 }
 
 func validateTbl0(t *testing.T, db *sql.DB, databaseName string, numRows int) {
-	log.Debug("Validate table tbl0")
+	slog.Debug("Validate table tbl0")
 	a := require.New(t)
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s.tbl0;", databaseName))
 	a.NoError(err)
@@ -750,7 +748,7 @@ func validateTbl0(t *testing.T, db *sql.DB, databaseName string, numRows int) {
 }
 
 func validateTbl1(t *testing.T, db *sql.DB, databaseName string, numRows int) {
-	log.Debug("Validate table tbl1")
+	slog.Debug("Validate table tbl1")
 	a := require.New(t)
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s.tbl1;", databaseName))
 	a.NoError(err)
@@ -768,7 +766,7 @@ func validateTbl1(t *testing.T, db *sql.DB, databaseName string, numRows int) {
 }
 
 func validateTableUpdateRow(t *testing.T, db *sql.DB, databaseName string) {
-	log.Debug("Validate table _update_row_")
+	slog.Debug("Validate table _update_row_")
 	a := require.New(t)
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s._update_row_;", databaseName))
 	a.NoError(err)
@@ -790,7 +788,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 	db, err := connectTestMySQL(port, database)
 	a.NoError(err)
 
-	log.Debug("Start updating data concurrently")
+	slog.Debug("Start updating data concurrently")
 	initTimestamp := time.Now()
 
 	// Sleep for one second so that the concurrent update will start no earlier than initTimestamp+1.
@@ -811,7 +809,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 				a.NoError(err)
 				i++
 			case <-ctx.Done():
-				log.Debug("Stop updating data concurrently")
+				slog.Debug("Stop updating data concurrently")
 				return
 			}
 		}

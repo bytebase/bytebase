@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"runtime"
@@ -31,7 +32,6 @@ import (
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -245,18 +245,18 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	// Display config
-	log.Info("-----Config BEGIN-----")
-	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
-	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
-	log.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
-	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
-	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
-	log.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
-	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
-	log.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
-	log.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
-	log.Info(fmt.Sprintf("backupCredentialFile=%s", profile.BackupCredentialFile))
-	log.Info("-----Config END-------")
+	slog.Info("-----Config BEGIN-----")
+	slog.Info(fmt.Sprintf("mode=%s", profile.Mode))
+	slog.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
+	slog.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
+	slog.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
+	slog.Info(fmt.Sprintf("debug=%t", profile.Debug))
+	slog.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
+	slog.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
+	slog.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
+	slog.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
+	slog.Info(fmt.Sprintf("backupCredentialFile=%s", profile.BackupCredentialFile))
+	slog.Info("-----Config END-------")
 
 	serverStarted := false
 	defer func() {
@@ -287,30 +287,30 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Start a Postgres sample server. This is used for onboarding users without requiring them to
 	// configure an external instance.
 	if profile.SampleDatabasePort != 0 {
-		log.Info("-----Sample Postgres Instance BEGIN-----")
+		slog.Info("-----Sample Postgres Instance BEGIN-----")
 		sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir, "test")
-		log.Info(fmt.Sprintf("Start test sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort, sampleDataDir))
+		slog.Info(fmt.Sprintf("Start test sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort, sampleDataDir))
 		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
 			return nil, err
 		}
 		sampleDataDir = common.GetPostgresSampleDataDir(profile.DataDir, "prod")
-		log.Info(fmt.Sprintf("Start prod sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort+1, sampleDataDir))
+		slog.Info(fmt.Sprintf("Start prod sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort+1, sampleDataDir))
 		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort+1, profile.Mode); err != nil {
 			return nil, err
 		}
-		log.Info("-----Sample Postgres Instance END-----")
+		slog.Info("-----Sample Postgres Instance END-----")
 	}
 
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
 		pgDataDir := common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
-		log.Info("-----Embedded Postgres BEGIN-----")
-		log.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", profile.DatastorePort, pgDataDir))
+		slog.Info("-----Embedded Postgres BEGIN-----")
+		slog.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", profile.DatastorePort, pgDataDir))
 		if err := postgres.InitDB(s.pgBinDir, pgDataDir, profile.PgUser); err != nil {
 			return nil, err
 		}
 		s.metaDB = store.NewMetadataDBWithEmbedPg(profile.PgUser, pgDataDir, s.pgBinDir, profile.DemoName, profile.Mode)
-		log.Info("-----Embedded Postgres END-----")
+		slog.Info("-----Embedded Postgres END-----")
 	} else {
 		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoName, profile.Mode)
 	}
@@ -327,7 +327,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	storeInstance := store.New(storeDB)
 	if profile.Readonly {
-		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
+		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
 		metadataVersion, err := migrator.MigrateSchema(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode)
 		if err != nil {
@@ -346,7 +346,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.store = storeInstance
 
 	if err := s.store.BackfillIssueTsVector(ctx); err != nil {
-		log.Warn("failed to backfill issue ts vector", zap.Error(err))
+		slog.Warn("failed to backfill issue ts vector", log.BBError(err))
 	}
 
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
@@ -506,7 +506,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Middleware
 	//
-	// API logger middleware.
+	// API slogger middleware.
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
 			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {
@@ -561,7 +561,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		stack := make([]byte, maxStacksize)
 		stack = stack[:runtime.Stack(stack, true)]
 		// keep a multiline stack
-		log.Error("v1 server panic error", zap.Error(errors.Errorf("error: %v\n%s", p, stack)))
+		slog.Error("v1 server panic error", log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
 		return status.Errorf(codes.Unknown, "error: %v", p)
 	}
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
@@ -778,7 +778,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
-		Description: "The branding logo image in base64 string format.",
+		Description: "The branding slogo image in base64 string format.",
 	}, api.SystemBotID); err != nil {
 		return nil, err
 	}
@@ -989,7 +989,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	}
 	go func() {
 		if err := s.grpcServer.Serve(listen); err != nil {
-			log.Error("grpc server listen error", zap.Error(err))
+			slog.Error("grpc server listen error", log.BBError(err))
 		}
 	}()
 	return s.e.Start(fmt.Sprintf(":%d", port))
@@ -997,8 +997,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 // Shutdown will shut down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Info("Stopping Bytebase...")
-	log.Info("Stopping web server...")
+	slog.Info("Stopping Bytebase...")
+	slog.Info("Stopping web server...")
 
 	// Close the metric reporter
 	if s.MetricReporter != nil {
@@ -1048,10 +1048,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	// Shutdown postgres sample instance.
 	if s.profile.SampleDatabasePort != 0 {
 		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir, "test")); err != nil {
-			log.Error("Failed to stop test postgres sample instance", zap.Error(err))
+			slog.Error("Failed to stop test postgres sample instance", log.BBError(err))
 		}
 		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir, "prod")); err != nil {
-			log.Error("Failed to stop prod postgres sample instance", zap.Error(err))
+			slog.Error("Failed to stop prod postgres sample instance", log.BBError(err))
 		}
 	}
 
@@ -1059,7 +1059,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	if s.metaDB != nil {
 		s.metaDB.Close()
 	}
-	log.Info("Bytebase stopped properly")
+	slog.Info("Bytebase stopped properly")
 
 	return nil
 }

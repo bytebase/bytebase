@@ -3,11 +3,11 @@ package mongodb
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -55,7 +55,7 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 	var commandResult UsersInfo
 	if err := database.RunCommand(ctx, command).Decode(&commandResult); err != nil {
 		if isAtlasUnauthorizedError(err) {
-			log.Info("Skip getting user list because the user is not authorized to run the command 'usersInfo' in atlas cluster M0/M2/M5")
+			slog.Info("Skip getting user list because the user is not authorized to run the command 'usersInfo' in atlas cluster M0/M2/M5")
 			return nil, nil
 		}
 		return nil, errors.Wrap(err, "cannot run usersInfo command")
