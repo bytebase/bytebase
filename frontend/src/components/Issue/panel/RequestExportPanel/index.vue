@@ -23,59 +23,74 @@
             @select-project-id="handleProjectSelect"
           />
         </div>
-        <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
-            {{ $t("common.database") }}
-            <RequiredStar />
-          </span>
-          <div class="flex flex-row justify-start items-center">
-            <EnvironmentSelect
-              class="!w-60 mr-4 shrink-0"
-              name="environment"
-              :select-default="false"
-              :selected-id="state.environmentId"
-              @select-environment-id="handleEnvironmentSelect"
-            />
-            <DatabaseSelect
-              class="!w-96"
-              :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
-              :mode="'ALL'"
-              :environment-id="state.environmentId"
-              :project-id="state.projectId"
-              :sync-status="'OK'"
-              :customize-item="true"
-              @select-database-id="handleDatabaseSelect"
-            >
-              <template #customizeItem="{ database }">
-                <div class="flex items-center">
-                  <InstanceV1EngineIcon :instance="database.instanceEntity" />
-                  <span class="mx-2">{{ database.databaseName }}</span>
-                  <span class="text-gray-400">
-                    ({{ instanceV1Name(database.instanceEntity) }})
-                  </span>
-                </div>
-              </template>
-            </DatabaseSelect>
+
+        <template v-if="props.statementOnly">
+          <div class="w-full flex flex-col justify-start items-start">
+            <span class="flex items-center textlabel mb-2">
+              {{ $t("common.database") }}
+              <RequiredStar />
+            </span>
+            <div class="flex flex-row justify-start items-center">
+              <EnvironmentSelect
+                class="!w-60 mr-4 shrink-0"
+                name="environment"
+                :select-default="false"
+                :selected-id="state.environmentId"
+                @select-environment-id="handleEnvironmentSelect"
+              />
+              <DatabaseSelect
+                class="!w-96"
+                :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
+                :mode="'ALL'"
+                :environment-id="state.environmentId"
+                :project-id="state.projectId"
+                :sync-status="'OK'"
+                :customize-item="true"
+                @select-database-id="handleDatabaseSelect"
+              >
+                <template #customizeItem="{ database }">
+                  <div class="flex items-center">
+                    <InstanceV1EngineIcon :instance="database.instanceEntity" />
+                    <span class="mx-2">{{ database.databaseName }}</span>
+                    <span class="text-gray-400">
+                      ({{ instanceV1Name(database.instanceEntity) }})
+                    </span>
+                  </div>
+                </template>
+              </DatabaseSelect>
+            </div>
           </div>
-        </div>
-        <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
-            {{
-              props.statementOnly
-                ? "SQL"
-                : $t("issue.grant-request.export-method")
-            }}
-            <RequiredStar />
-          </span>
-          <ExportResourceForm
-            :project-id="state.projectId"
-            :database-id="state.databaseId"
-            :statement="statement"
-            :statement-only="props.statementOnly"
-            @update:condition="state.databaseResourceCondition = $event"
-            @update:database-resources="state.databaseResources = $event"
-          />
-        </div>
+          <div class="w-full flex flex-col justify-start items-start">
+            <span class="flex items-center textlabel mb-2">
+              SQL
+              <RequiredStar />
+            </span>
+            <div class="w-full h-[300px] border rounded">
+              <MonacoEditor
+                class="w-full h-full py-2"
+                :value="state.statement"
+                :auto-focus="false"
+                :language="'sql'"
+                :dialect="dialect"
+                @change="(value: string) => (state.statement = value)"
+              />
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <div class="w-full flex flex-col justify-start items-start">
+            <span class="flex items-center textlabel mb-2">
+              {{ $t("common.databases") }}
+              <RequiredStar />
+            </span>
+            <DatabaseResourceForm
+              :project-id="state.projectId"
+              :database-resources="state.databaseResources"
+              @update:condition="state.databaseResourceCondition = $event"
+              @update:database-resources="state.databaseResources = $event"
+            />
+          </div>
+        </template>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">
             {{ $t("issue.grant-request.export-rows") }}
@@ -151,9 +166,12 @@ import {
   DatabaseResource,
   IssueCreate,
   PresetRoleType,
+  SQLDialect,
   SYSTEM_BOT_ID,
   UNKNOWN_ID,
+  dialectOfEngineV1,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
   extractUserUID,
   instanceV1Name,
@@ -161,7 +179,7 @@ import {
   memberListInProjectV1,
 } from "@/utils";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
-import ExportResourceForm from "./ExportResourceForm/index.vue";
+import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 
 interface LocalState {
   projectId?: string;
@@ -190,6 +208,7 @@ const { t } = useI18n();
 const router = useRouter();
 const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
+const projectStore = useProjectV1Store();
 const state = reactive<LocalState>({
   databaseResources: [],
   expireDays: 1,
@@ -224,12 +243,23 @@ const expireDaysOptions = computed(() => [
   },
 ]);
 
+const dialect = computed((): SQLDialect => {
+  const db = selectedDatabase.value;
+  return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
+});
+
 const allowCreate = computed(() => {
-  if (!state.databaseId) {
+  if (!state.projectId) {
     return false;
   }
-  if (isUndefined(state.databaseResourceCondition)) {
-    return false;
+  if (props.statementOnly) {
+    if (!state.databaseId || !state.statement) {
+      return false;
+    }
+  } else {
+    if (isUndefined(state.databaseResourceCondition)) {
+      return false;
+    }
   }
   return true;
 });
@@ -289,9 +319,7 @@ const doCreateIssue = async () => {
   };
 
   // update issue's assignee to first project owner.
-  const project = await useProjectV1Store().getOrFetchProjectByUID(
-    state.projectId!
-  );
+  const project = await projectStore.getOrFetchProjectByUID(state.projectId!);
   const memberList = memberListInProjectV1(project, project.iamPolicy);
   const ownerList = memberList.filter((member) =>
     member.roleList.includes(PresetRoleType.OWNER)
@@ -310,17 +338,25 @@ const doCreateIssue = async () => {
       .toISOString()}")`
   );
   expression.push(`request.row_limit <= ${state.maxRowCount}`);
-  if (state.databaseResourceCondition) {
-    expression.push(state.databaseResourceCondition);
-  }
-  // If the export statement is not empty, add the selected database to the condition.
-  if (state.databaseResources.length === 0) {
-    const condition = stringifyDatabaseResources([
-      {
-        databaseName: selectedDatabase.value!.name,
-      },
-    ]);
-    expression.push(condition);
+  if (props.statementOnly) {
+    // Selected database condition.
+    expression.push(
+      stringifyDatabaseResources([
+        {
+          databaseName: selectedDatabase.value!.name,
+        },
+      ])
+    );
+    // Statement condition.
+    expression.push(
+      `request.statement == "${btoa(
+        unescape(encodeURIComponent(state.statement))
+      )}"`
+    );
+  } else {
+    if (state.databaseResourceCondition) {
+      expression.push(state.databaseResourceCondition);
+    }
   }
 
   const celExpressionString = expression.join(" && ");
@@ -356,28 +392,33 @@ const doCreateIssue = async () => {
 };
 
 const generateIssueName = () => {
-  const database = selectedDatabase.value;
-  if (!database) {
-    throw new Error("No database selected");
-  }
-
-  if (state.databaseResources.length === 0) {
-    return `Request data export for "${database.databaseName} (${database.instanceEntity.title})"`;
-  } else {
-    const sections: string[] = [];
-    for (const databaseResource of state.databaseResources) {
-      const nameList = [database.databaseName];
-      if (databaseResource.schema) {
-        nameList.push(databaseResource.schema);
-      }
-      if (databaseResource.table) {
-        nameList.push(databaseResource.table);
-      }
-      sections.push(nameList.join("."));
+  if (props.statementOnly) {
+    const database = selectedDatabase.value;
+    if (!database) {
+      throw new Error("Database is not selected");
     }
-    return `Request data export for "${sections.join(".")} (${
-      database.instanceEntity.title
-    })"`;
+
+    if (state.databaseResources.length === 0) {
+      return `Request data export for "${database.databaseName} (${database.instanceEntity.title})"`;
+    } else {
+      const sections: string[] = [];
+      for (const databaseResource of state.databaseResources) {
+        const nameList = [database.databaseName];
+        if (databaseResource.schema) {
+          nameList.push(databaseResource.schema);
+        }
+        if (databaseResource.table) {
+          nameList.push(databaseResource.table);
+        }
+        sections.push(nameList.join("."));
+      }
+      return `Request data export for "${sections.join(".")} (${
+        database.instanceEntity.title
+      })"`;
+    }
+  } else {
+    const project = projectStore.getProjectByUID(state.projectId!);
+    return `Request data export for "${project.title}"`;
   }
 };
 </script>
