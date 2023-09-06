@@ -854,3 +854,31 @@ func PLSQLNormalizeIDExpression(idExpression parser.IId_expressionContext) strin
 
 	return ""
 }
+
+// PLSQLNormalizeIndexName returns the normalized index name from the given context.
+func PLSQLNormalizeIndexName(indexName parser.IIndex_nameContext) (string, string) {
+	if indexName == nil {
+		return "", ""
+	}
+
+	if indexName.Id_expression() != nil {
+		return PLSQLNormalizeIdentifierContext(indexName.Identifier()),
+			PLSQLNormalizeIDExpression(indexName.Id_expression())
+	}
+
+	return "", PLSQLNormalizeIdentifierContext(indexName.Identifier())
+}
+
+// PLSQLNormalizeConstraintName returns the normalized constraint name from the given context.
+func PLSQLNormalizeConstraintName(constraintName parser.IConstraint_nameContext) (string, string) {
+	if constraintName == nil {
+		return "", ""
+	}
+
+	if constraintName.Id_expression(0) != nil {
+		return PLSQLNormalizeIdentifierContext(constraintName.Identifier()),
+			PLSQLNormalizeIDExpression(constraintName.Id_expression(0))
+	}
+
+	return "", PLSQLNormalizeIdentifierContext(constraintName.Identifier())
+}
