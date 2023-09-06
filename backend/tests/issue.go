@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -22,25 +21,6 @@ func (ctl *controller) closeIssue(ctx context.Context, projectName, issueName st
 		return err
 	}
 	return nil
-}
-
-// createIssue creates an issue.
-func (ctl *controller) createIssue(issueCreate api.IssueCreate) (*api.Issue, error) {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &issueCreate); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal issue create")
-	}
-
-	body, err := ctl.post("/issue", buf)
-	if err != nil {
-		return nil, err
-	}
-
-	issue := new(api.Issue)
-	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal post issue response")
-	}
-	return issue, nil
 }
 
 // getIssue gets the issue with given ID.

@@ -478,8 +478,6 @@ func TestVCS(t *testing.T) {
 				Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 			})
 			a.NoError(err)
-			databaseUID, err := strconv.Atoi(database.Uid)
-			a.NoError(err)
 
 			// Simulate Git commits for schema update.
 			// We create multiple commits in one push event to test for the behavior of creating one issue per database.
@@ -607,31 +605,10 @@ func TestVCS(t *testing.T) {
 				},
 			})
 			a.NoError(err)
-			sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-			a.NoError(err)
 
 			// Schema change from UI.
 			// Create an issue that updates database schema.
-			createContext, err := json.Marshal(&api.MigrationContext{
-				DetailList: []*api.MigrationDetail{
-					{
-						MigrationType: db.Migrate,
-						DatabaseID:    databaseUID,
-						SheetID:       sheetUID,
-					},
-				},
-			})
-			a.NoError(err)
-			issue, err = ctl.createIssue(api.IssueCreate{
-				ProjectID:     projectUID,
-				Name:          fmt.Sprintf("update schema for database %q", databaseName),
-				Type:          api.IssueDatabaseSchemaUpdate,
-				Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-				AssigneeID:    api.SystemBotID,
-				CreateContext: string(createContext),
-			})
-			a.NoError(err)
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 			a.NoError(err)
 			environmentResourceID := strings.TrimPrefix(prodEnvironment.Name, "environments/")
 			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, environmentResourceID, databaseName)
