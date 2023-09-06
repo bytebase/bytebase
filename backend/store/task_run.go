@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -215,28 +216,39 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 
 // CreatePendingTaskRuns creates pending task runs.
 func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMessage) error {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelSerializable,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin tx")
+	if len(creates) == 0 {
+		return nil
 	}
-	defer tx.Rollback()
+
+	sort.Slice(creates, func(i, j int) bool {
+		return creates[i].TaskUID < creates[j].TaskUID
+	})
 
 	var taskIDs []int
 	for _, create := range creates {
 		taskIDs = append(taskIDs, create.TaskUID)
 	}
 
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
 	exist, err := s.checkTaskRunsExist(ctx, tx, taskIDs, []api.TaskRunStatus{api.TaskRunPending, api.TaskRunRunning, api.TaskRunDone})
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if task runs exist")
 	}
 	if exist {
-		return errors.Wrapf(err, "cannot create pending task runs because some of them already exist")
+		return errors.Errorf("cannot create pending task runs because there are pending/running/done task runs")
 	}
 
-	if err := s.createPendingTaskRunsTx(ctx, tx, creates...); err != nil {
+	attempts, err := s.getTaskNextAttempt(ctx, tx, taskIDs)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get task next attempt")
+	}
+
+	if err := s.createPendingTaskRunsTx(ctx, tx, attempts, creates); err != nil {
 		return errors.Wrapf(err, "failed to create pending task runs")
 	}
 
@@ -247,10 +259,45 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 	return nil
 }
 
-func (s *Store) createPendingTaskRunsTx(ctx context.Context, tx *Tx, creates ...*TaskRunMessage) error {
+func (*Store) getTaskNextAttempt(ctx context.Context, tx *Tx, taskIDs []int) ([]int, error) {
+	query := `
+	WITH tasks AS (
+		SELECT id FROM unnest(CAST($1 AS INTEGER[])) AS id
+	)
+	SELECT
+		(SELECT COALESCE(MAX(attempt)+1, 0) FROM task_run WHERE task_run.task_id = tasks.id)
+	FROM tasks ORDER BY tasks.id ASC;
+	`
+
+	rows, err := tx.QueryContext(ctx, query, taskIDs)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to query")
+	}
+	defer rows.Close()
+
+	var attempts []int
+	for rows.Next() {
+		var attempt int
+		if err := rows.Scan(&attempt); err != nil {
+			return nil, errors.Wrap(err, "failed to scan")
+		}
+		attempts = append(attempts, attempt)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to scan rows")
+	}
+
+	return attempts, nil
+}
+
+func (s *Store) createPendingTaskRunsTx(ctx context.Context, tx *Tx, attempts []int, creates []*TaskRunMessage) error {
+	if len(attempts) != len(creates) {
+		return errors.Errorf("length of attempts and creates are different")
+	}
+
 	// TODO(p0ny): batch create.
-	for _, create := range creates {
-		if err := s.createTaskRunImpl(ctx, tx, create, api.TaskRunPending, create.CreatorID); err != nil {
+	for i, create := range creates {
+		if err := s.createTaskRunImpl(ctx, tx, create, attempts[i], api.TaskRunPending, create.CreatorID); err != nil {
 			return err
 		}
 	}
@@ -274,39 +321,28 @@ func (*Store) checkTaskRunsExist(ctx context.Context, tx *Tx, taskIDs []int, sta
 }
 
 // createTaskRunImpl creates a new taskRun.
-func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMessage, status api.TaskRunStatus, creatorID int) error {
+func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMessage, attempt int, status api.TaskRunStatus, creatorID int) error {
 	query := `
 		INSERT INTO task_run (
 			creator_id,
 			updater_id,
 			task_id,
+			attempt,
 			name,
 			status
-		) VALUES ($1, $2, $3, $4, $5)
+		) VALUES ($1, $2, $3, $4, $5, $6)
 	`
 	if _, err := tx.ExecContext(ctx, query,
 		creatorID,
 		creatorID,
 		create.TaskUID,
+		attempt,
 		create.Name,
 		status,
 	); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (s *Store) getTaskRunTx(ctx context.Context, tx *Tx, find *TaskRunFind) (*TaskRunMessage, error) {
-	taskRuns, err := s.findTaskRunImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-	if len(taskRuns) == 0 {
-		return nil, nil
-	} else if len(taskRuns) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d task runs with filter %+v, expect 1", len(taskRuns), find)}
-	}
-	return taskRuns[0], nil
 }
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.

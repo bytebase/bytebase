@@ -637,6 +637,7 @@ CREATE TABLE task_run (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     task_id INTEGER NOT NULL REFERENCES task (id),
+    attempt INTEGER NOT NULL,
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     code INTEGER NOT NULL DEFAULT 0,
@@ -645,6 +646,8 @@ CREATE TABLE task_run (
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run (task_id, attempt);
 
 ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 
