@@ -62,6 +62,7 @@ import { NButton, NInputGroup } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
+import { getExpiredDateTime } from "@/components/ProjectMember/ProjectRoleTable/utils";
 import { ProjectSelect, InstanceSelect, DatabaseSelect } from "@/components/v2";
 import {
   featureToRef,
@@ -158,40 +159,53 @@ watchEffect(async () => {
       if (!binding.parsedExpr?.expr) {
         continue;
       }
-
+      // Skip the expired export record.
+      const expiredDateTime = getExpiredDateTime(binding);
+      if (
+        expiredDateTime &&
+        new Date().getTime() >= expiredDateTime.getTime()
+      ) {
+        continue;
+      }
       const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
-      if (!conditionExpr.databaseResources) {
+      // Only show the export record with statement condition in export center.
+      if (!conditionExpr.statement || conditionExpr.statement === "") {
+        continue;
+      }
+      if (
+        !conditionExpr.databaseResources ||
+        conditionExpr.databaseResources.length !== 1
+      ) {
         continue;
       }
 
-      for (const databaseResource of conditionExpr.databaseResources) {
-        const description = binding.condition?.description || "";
-        const issueId = description.match(issueDescriptionRegexp)?.[1];
-        const database = await databaseStore.getOrFetchDatabaseByName(
-          databaseResource.databaseName
-        );
-        let statement = conditionExpr.statement || "";
-        // NOTE: concat schema and table name to statement for table level export.
-        // Maybe we need to move this into backend later.
-        if (statement === "" && databaseResource.table) {
-          const names = [];
-          if (databaseResource.schema) {
-            names.push(databaseResource.schema);
-          }
-          names.push(databaseResource.table);
-          statement = `SELECT * FROM ${names.join(".")};`;
+      const databaseResource = conditionExpr.databaseResources[0];
+      const description = binding.condition?.description || "";
+      const issueId = description.match(issueDescriptionRegexp)?.[1];
+      const database = await databaseStore.getOrFetchDatabaseByName(
+        databaseResource.databaseName
+      );
+      let statement = conditionExpr.statement || "";
+      // NOTE: concat schema and table name to statement for table level export.
+      // Maybe we need to move this into backend later.
+      if (statement === "" && databaseResource.table) {
+        const names = [];
+        if (databaseResource.schema) {
+          names.push(databaseResource.schema);
         }
-
-        tempExportRecords.push({
-          databaseResource,
-          database,
-          statement,
-          expiration: conditionExpr.expiredTime || "",
-          maxRowCount: conditionExpr.rowLimit || 0,
-          exportFormat: (conditionExpr.exportFormat as any) || "JSON",
-          issueId: issueId || String(UNKNOWN_ID),
-        });
+        names.push(databaseResource.table);
+        statement = `SELECT * FROM ${names.join(".")};`;
       }
+
+      tempExportRecords.push({
+        databaseResource,
+        database,
+        statement,
+        expiration: conditionExpr.expiredTime || "",
+        maxRowCount: conditionExpr.rowLimit || 0,
+        exportFormat: (conditionExpr.exportFormat as any) || "JSON",
+        issueId: issueId || String(UNKNOWN_ID),
+      });
     }
   }
   state.exportRecords = tempExportRecords;
