@@ -1,7 +1,9 @@
 package v1
 
 import (
+	"crypto/sha1"
 	"encoding/base64"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -409,4 +411,11 @@ func unmarshalPageToken(s string, pageToken *storepb.PageToken) error {
 // https://datatracker.ietf.org/doc/html/rfc4122#section-4.1
 func isValidUUID(id string) bool {
 	return uuidMatcher.MatchString(id)
+}
+
+// generateEtag generates etag for the given body.
+func generateEtag(body []byte) string {
+	hash := sha1.Sum(body)
+	etag := fmt.Sprintf("%x", hash)
+	return etag
 }
