@@ -215,34 +215,24 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceM
 		instanceMap[database.InstanceID] = append(instanceMap[database.InstanceID], database)
 	}
 
-	var instanceWG sync.WaitGroup
 	for _, databaseList := range instanceMap {
-		instanceWG.Add(1)
-		go func(databaseList []*store.DatabaseMessage) {
-			defer instanceWG.Done()
-
-			if len(databaseList) == 0 {
-				return
-			}
-			for _, database := range databaseList {
-				instanceID := database.InstanceID
-				slog.Debug("Sync database schema",
+		for _, database := range databaseList {
+			instanceID := database.InstanceID
+			slog.Debug("Sync database schema",
+				slog.String("instance", instanceID),
+				slog.String("database", database.DatabaseName),
+				slog.Int64("lastSuccessfulSyncTs", database.SuccessfulSyncTimeTs),
+			)
+			// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
+			// We don't force dump database schema because it's rarely changed till the metadata is changed.
+			if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
+				slog.Debug("Failed to sync database schema",
 					slog.String("instance", instanceID),
-					slog.String("database", database.DatabaseName),
-					slog.Int64("lastSuccessfulSyncTs", database.SuccessfulSyncTimeTs),
-				)
-				// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
-				// We don't force dump database schema because it's rarely changed till the metadata is changed.
-				if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
-					slog.Debug("Failed to sync database schema",
-						slog.String("instance", instanceID),
-						slog.String("databaseName", database.DatabaseName),
-						log.BBError(err))
-				}
+					slog.String("databaseName", database.DatabaseName),
+					log.BBError(err))
 			}
-		}(databaseList)
+		}
 	}
-	instanceWG.Wait()
 }
 
 // SyncInstance syncs the schema for all databases in an instance.
