@@ -900,6 +900,7 @@
       "customize": "自定义",
       "data-export-attention": "数据将被导出到一个文件并自动下载。而且您只能完成一次导出操作。",
       "export-method": "导出方式",
+      "request-sent": "导出请求已发送",
       "please-select-database-first": "请先选择数据库"
     },
     "review-sent-back": "审核被退回",
@@ -1097,7 +1098,7 @@
     },
     "scan-interval": {
       "self": "扫描间隔",
-      "default-daily": "默认（每天）",
+      "default-never": "默认（永不）",
       "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。"
     }
   },
@@ -2205,7 +2206,7 @@
       },
       "bb-feature-custom-role": {
         "title": "自定义角色",
-        "desc": "定义自定义角色，你可以将它们应用到项目成员上。"
+        "desc": "定义自定义角色，你可以将它们应用到项目成员上，用于配置自定义审批流。"
       },
       "bb-feature-watermark": {
         "title": "水印设置",

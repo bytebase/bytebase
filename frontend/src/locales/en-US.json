@@ -903,6 +903,7 @@
       "customize": "Customize",
       "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once.",
       "export-method": "Export method",
+      "request-sent": "Request sent",
       "please-select-database-first": "Please select database first"
     },
     "review-sent-back": "Review sent back",
@@ -1100,7 +1101,7 @@
     },
     "scan-interval": {
       "self": "Scan Interval",
-      "default-daily": "Default (daily)",
+      "default-never": "Default (never)",
       "description": "Bytebase periodically syncs instance schema and detects anomalies."
     }
   },
@@ -2210,7 +2211,7 @@
       },
       "bb-feature-custom-role": {
         "title": "Custom role",
-        "desc": "Defining custom roles, and you may apply them to project members."
+        "desc": "Defining custom roles. You may apply them to project members and used in custom approval flow."
       },
       "bb-feature-watermark": {
         "title": "Watermark",
@@ -2839,7 +2840,7 @@
   "role": {
     "self": "Role",
     "setting": {
-      "description": "Defining custom roles, and you may apply them to project members.",
+      "description": "Defining custom roles. You may apply them to project members and used in custom approval flow.",
       "add": "Add role",
       "edit": "Edit role",
       "title-placeholder": "Input role title",
