@@ -4,12 +4,12 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"math"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -209,26 +209,26 @@ func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.Licen
 func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License {
 	license, err := s.findEnterpriseLicense(ctx)
 	if err != nil {
-		log.Debug("failed to load enterprise license", zap.Error(err))
+		slog.Debug("failed to load enterprise license", log.BBError(err))
 	}
 	if license == nil {
 		license, err = s.findTrialingLicense(ctx)
 		if err != nil {
-			log.Debug("failed to load trialing license", zap.Error(err))
+			slog.Debug("failed to load trialing license", log.BBError(err))
 		}
 	}
 
 	if license == nil {
 		license, err = s.fetchLicense(ctx)
 		if err != nil {
-			log.Debug("failed to fetch license", zap.Error(err))
+			slog.Debug("failed to fetch license", log.BBError(err))
 		}
 	}
 	if license == nil {
 		return nil
 	}
 	if err := license.Valid(); err != nil {
-		log.Debug("license is invalid", zap.Error(err))
+		slog.Debug("license is invalid", log.BBError(err))
 		return nil
 	}
 
@@ -259,11 +259,11 @@ func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterprise
 			return nil, errors.Wrapf(err, "failed to parse enterprise license")
 		}
 		if license != nil {
-			log.Debug(
+			slog.Debug(
 				"Load valid license",
-				zap.String("plan", license.Plan.String()),
-				zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
-				zap.Int("instanceCount", license.InstanceCount),
+				slog.String("plan", license.Plan.String()),
+				slog.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
+				slog.Int("instanceCount", license.InstanceCount),
 			)
 			return license, nil
 		}

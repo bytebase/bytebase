@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net"
 	"strings"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -184,7 +184,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	rowsAffected, err := sqlResult.RowsAffected()
 	if err != nil {
 		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-		log.Debug("rowsAffected returns error", zap.Error(err))
+		slog.Debug("rowsAffected returns error", log.BBError(err))
 	}
 	totalRowsAffected += rowsAffected
 

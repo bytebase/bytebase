@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"sort"
 	"strconv"
@@ -17,7 +18,6 @@ import (
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pkg/errors"
 	openai "github.com/sashabaranov/go-openai"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -1726,7 +1726,7 @@ func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, new
 		)
 	}
 	if _, err := s.store.BatchCreateActivityV2(ctx, creates); err != nil {
-		log.Warn("failed to create activities for database project updates", zap.Error(err))
+		slog.Warn("failed to create activities for database project updates", log.BBError(err))
 	}
 	return nil
 }
@@ -1734,7 +1734,7 @@ func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, new
 func getDefaultBackupSetting(instanceID, databaseName string) *v1pb.BackupSetting {
 	sevenDays, err := convertPeriodTsToDuration(int(time.Duration(7 * 24 * time.Hour).Seconds()))
 	if err != nil {
-		log.Warn("failed to convert period ts to duration", zap.Error(err))
+		slog.Warn("failed to convert period ts to duration", log.BBError(err))
 	}
 	return &v1pb.BackupSetting{
 		Name:                 fmt.Sprintf("%s%s/%s%s/%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName, common.BackupSettingSuffix),

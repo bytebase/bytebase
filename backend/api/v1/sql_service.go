@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"reflect"
 	"strconv"
 	"strings"
@@ -20,7 +21,6 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/xuri/excelize/v2"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -120,7 +120,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 	defer func() {
 		if conn != nil {
 			if err := conn.Close(); err != nil {
-				log.Warn("failed to close connection", zap.Error(err))
+				slog.Warn("failed to close connection", log.BBError(err))
 			}
 		}
 		if driver != nil {
@@ -161,7 +161,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		sanitizeResults(result)
 
 		if err := s.postAdminExecute(ctx, activity, durationNs, queryErr); err != nil {
-			log.Error("failed to post admin execute activity", zap.Error(err))
+			slog.Error("failed to post admin execute activity", log.BBError(err))
 		}
 
 		response := &v1pb.AdminExecuteResponse{}
@@ -206,11 +206,11 @@ func (s *SQLService) postAdminExecute(ctx context.Context, activity *store.Activ
 	// TODO: update the advice list
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Warn("Failed to marshal activity after executing sql statement",
-			zap.String("database_name", payload.DatabaseName),
-			zap.Int("instance_id", payload.InstanceID),
-			zap.String("statement", payload.Statement),
-			zap.Error(err))
+		slog.Warn("Failed to marshal activity after executing sql statement",
+			slog.String("database_name", payload.DatabaseName),
+			slog.Int("instance_id", payload.InstanceID),
+			slog.String("statement", payload.Statement),
+			log.BBError(err))
 		return status.Errorf(codes.Internal, "Failed to marshal activity after executing sql statement: %v", err)
 	}
 
@@ -310,11 +310,11 @@ func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMes
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Warn("Failed to marshal activity after exporting sql statement",
-			zap.String("database_name", payload.DatabaseName),
-			zap.Int("instance_id", payload.InstanceID),
-			zap.String("statement", payload.Statement),
-			zap.Error(err))
+		slog.Warn("Failed to marshal activity after exporting sql statement",
+			slog.String("database_name", payload.DatabaseName),
+			slog.Int("instance_id", payload.InstanceID),
+			slog.String("statement", payload.Statement),
+			log.BBError(err))
 		return status.Errorf(codes.Internal, "Failed to marshal activity after exporting sql statement: %v", err)
 	}
 
@@ -895,11 +895,11 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Warn("Failed to marshal activity before exporting sql statement",
-			zap.String("database_name", payload.DatabaseName),
-			zap.Int("instance_id", payload.InstanceID),
-			zap.String("statement", payload.Statement),
-			zap.Error(err))
+		slog.Warn("Failed to marshal activity before exporting sql statement",
+			slog.String("database_name", payload.DatabaseName),
+			slog.Int("instance_id", payload.InstanceID),
+			slog.String("statement", payload.Statement),
+			log.BBError(err))
 		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
 	}
 
@@ -1034,11 +1034,11 @@ func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, advice
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Warn("Failed to marshal activity after executing sql statement",
-			zap.String("database_name", payload.DatabaseName),
-			zap.Int("instance_id", payload.InstanceID),
-			zap.String("statement", payload.Statement),
-			zap.Error(err))
+		slog.Warn("Failed to marshal activity after executing sql statement",
+			slog.String("database_name", payload.DatabaseName),
+			slog.Int("instance_id", payload.InstanceID),
+			slog.String("statement", payload.Statement),
+			log.BBError(err))
 		return nil, status.Errorf(codes.Internal, "Failed to marshal activity after executing sql statement: %v", err)
 	}
 
@@ -1278,7 +1278,7 @@ func allPostgresSystemObjects(statement string) bool {
 	// We need to distinguish between specified public schema and by default.
 	resources, err := parser.ExtractResourceList(parser.Postgres, "", "", statement)
 	if err != nil {
-		log.Debug("Failed to extract resource list from statement", zap.String("statement", statement), zap.Error(err))
+		slog.Debug("Failed to extract resource list from statement", slog.String("statement", statement), log.BBError(err))
 		return false
 	}
 	systemSchemas := make(map[string]bool)
@@ -1307,11 +1307,11 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Warn("Failed to marshal activity before executing sql statement",
-			zap.String("database_name", payload.DatabaseName),
-			zap.Int("instance_id", payload.InstanceID),
-			zap.String("statement", payload.Statement),
-			zap.Error(err))
+		slog.Warn("Failed to marshal activity before executing sql statement",
+			slog.String("database_name", payload.DatabaseName),
+			slog.Int("instance_id", payload.InstanceID),
+			slog.String("statement", payload.Statement),
+			log.BBError(err))
 		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
 	}
 
@@ -1411,13 +1411,13 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		// Build the filtered maskingExceptionPolicy for current principal.
 		var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
 		if maskingExceptionPolicy != nil {
-			log.Debug("found masking exception policy for project", zap.String("database", databaseName), zap.String("project", database.ProjectID), zap.Any("masking exception policy", maskingExceptionPolicy))
+			slog.Debug("found masking exception policy for project", slog.String("database", databaseName), slog.String("project", database.ProjectID), slog.Any("masking exception policy", maskingExceptionPolicy))
 			for _, maskingException := range maskingExceptionPolicy.MaskingExceptions {
 				if maskingException.Action != action {
 					continue
 				}
 				if maskingException.Member == currentPrincipal.Email {
-					log.Debug("hit masking exception for current principal", zap.String("database", databaseName), zap.String("project", database.ProjectID), zap.Any("masking exception", maskingException))
+					slog.Debug("hit masking exception for current principal", slog.String("database", databaseName), slog.String("project", database.ProjectID), slog.Any("masking exception", maskingException))
 					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
 					break
 				}
@@ -1430,7 +1430,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			for _, dataClassificationSetting := range classificationSetting.Configs {
 				if dataClassificationSetting.Id == project.DataClassificationConfigID {
 					dataClassificationConfig = dataClassificationSetting
-					log.Debug("found data classification config for project", zap.String("project", project.ResourceID), zap.Any("data classification config id", dataClassificationConfig.Id))
+					slog.Debug("found data classification config for project", slog.String("project", project.ResourceID), slog.Any("data classification config id", dataClassificationConfig.Id))
 					break
 				}
 			}
@@ -1451,7 +1451,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				}] = maskData
 			}
 		}
-		log.Debug("found masking policy for database", zap.String("database", databaseName), zap.Any("masking policy", maskingPolicy))
+		slog.Debug("found masking policy for database", slog.String("database", databaseName), slog.Any("masking policy", maskingPolicy))
 
 		columnMap := make(sensitiveDataMap)
 		for _, data := range maskingPolicy.MaskData {
@@ -1482,7 +1482,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						ColumnList: []db.ColumnInfo{},
 					}
 					for _, column := range table.Columns {
-						log.Debug("processing sensitive schema info", zap.String("schema", schema.Name), zap.String("table", table.Name))
+						slog.Debug("processing sensitive schema info", slog.String("schema", schema.Name), slog.String("table", table.Name))
 						maskingLevel, err := evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column, maskingPolicyMap, maskingRulePolicy, maskingExceptionContainsCurrentPrincipal, dataClassificationConfig)
 						if err != nil {
 							return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
@@ -1519,7 +1519,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					ColumnList: []db.ColumnInfo{},
 				}
 				for _, column := range table.Columns {
-					log.Debug("processing sensitive schema info", zap.String("database", database.DatabaseName), zap.String("schema", schema.Name), zap.String("table", table.Name), zap.String("column", column.Name))
+					slog.Debug("processing sensitive schema info", slog.String("database", database.DatabaseName), slog.String("schema", schema.Name), slog.String("table", table.Name), slog.String("column", column.Name))
 					maskingLevel, err := evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column, maskingPolicyMap, maskingRulePolicy, maskingExceptionContainsCurrentPrincipal, dataClassificationConfig)
 					if err != nil {
 						return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
@@ -1582,7 +1582,7 @@ func evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schema
 	}
 	maskingData, ok := maskingPolicyMap[key]
 	if (!ok) || (maskingData.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED) {
-		log.Debug("column set DEFAULT masking level in masking policy or masking policy not set yet", zap.String("column", column.Name), zap.Any("masking policy", maskingData))
+		slog.Debug("column set DEFAULT masking level in masking policy or masking policy not set yet", slog.String("column", column.Name), slog.Any("masking policy", maskingData))
 		// If the column has DEFAULT masking level in maskingPolicy or not set yet,
 		// we will eval the maskingRulePolicy to get the maskingLevel.
 		columnClassificationLevel := getClassificationLevelOfColumn(column.Classification, dataClassificationConfig)
@@ -1602,19 +1602,19 @@ func evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schema
 			}
 			if pass {
 				finalLevel = maskingRule.MaskingLevel
-				log.Debug("hit masking rule", zap.String("column", column.Name), zap.Any("masking rule", maskingRule), zap.Any("masking level", maskingRule.MaskingLevel.String()))
+				slog.Debug("hit masking rule", slog.String("column", column.Name), slog.Any("masking rule", maskingRule), slog.Any("masking level", maskingRule.MaskingLevel.String()))
 				break
 			}
 		}
 	} else {
-		log.Debug("column set specific masking level in masking policy", zap.String("column", column.Name), zap.Any("masking level", maskingData.MaskingLevel.String()))
+		slog.Debug("column set specific masking level in masking policy", slog.String("column", column.Name), slog.Any("masking level", maskingData.MaskingLevel.String()))
 		finalLevel = maskingData.MaskingLevel
 	}
 
 	if finalLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED || finalLevel == storepb.MaskingLevel_NONE {
 		// After looking up the maskingPolicy and maskingRulePolicy, if the maskingLevel is still MASKING_LEVEL_UNSPECIFIED or NONE,
 		// return the MASKING_LEVEL_NONE, which means no masking and do not need eval exceptions anymore.
-		log.Debug("After looking up maskingPolicy and maskingRulePolicy, the masking level is UNSPECIFIED or NONE", zap.Any("masking level", finalLevel.String()))
+		slog.Debug("After looking up maskingPolicy and maskingRulePolicy, the masking level is UNSPECIFIED or NONE", slog.Any("masking level", finalLevel.String()))
 		return storepb.MaskingLevel_NONE, nil
 	}
 
@@ -1641,14 +1641,14 @@ func evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schema
 		if !hit {
 			continue
 		}
-		log.Debug("hit masking exception", zap.String("column", column.Name), zap.Any("masking exception", filteredMaskingException), zap.Any("masking level", filteredMaskingException.MaskingLevel.String()))
+		slog.Debug("hit masking exception", slog.String("column", column.Name), slog.Any("masking exception", filteredMaskingException), slog.Any("masking level", filteredMaskingException.MaskingLevel.String()))
 		// TODO(zp): Expectedly, a column should hit only one exception,
 		// but we can take the strictest level here to make the whole program more robust.
 		if cmp.Less[storepb.MaskingLevel](filteredMaskingException.MaskingLevel, finalLevel) {
 			finalLevel = filteredMaskingException.MaskingLevel
 		}
 	}
-	log.Debug("final level of column", zap.String("column", column.Name), zap.Any("final level", finalLevel.String()))
+	slog.Debug("final level of column", slog.String("column", column.Name), slog.Any("final level", finalLevel.String()))
 	return finalLevel, nil
 }
 func getClassificationLevelOfColumn(columnClassificationID string, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) string {
@@ -2470,7 +2470,7 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 			}
 			ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
 			if err != nil {
-				log.Error("failed to evaluate condition", zap.Error(err), zap.String("condition", binding.Condition.Expression))
+				slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.Expression))
 				break
 			}
 			if ok {

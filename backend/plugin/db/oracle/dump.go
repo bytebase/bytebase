@@ -5,12 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log/slog"
 	"sort"
 	"strings"
-
-	"go.uber.org/zap"
-
-	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 // Dump dumps the database.
@@ -682,7 +679,7 @@ func (c *mergedConstraintMeta) assembleStatement(out io.Writer) error {
 			return err
 		}
 	default:
-		log.Warn("Unsupported constraint type", zap.String("type", c.ConstraintType.String))
+		slog.Warn("Unsupported constraint type", slog.String("type", c.ConstraintType.String))
 	}
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -15,9 +16,7 @@ import (
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 )
@@ -83,7 +82,7 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit i
 		args = append(args, "--port", driver.connCfg.Port)
 	}
 	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.dbBinDir), args...)
-	log.Debug("mysqlbinlog", zap.String("command", cmd.String()))
+	slog.Debug("mysqlbinlog", slog.String("command", cmd.String()))
 	if driver.connCfg.Password != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("MYSQL_PWD=%s", driver.connCfg.Password))
 	}

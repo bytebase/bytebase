@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"regexp"
 	"sort"
@@ -16,7 +17,6 @@ import (
 	"github.com/github/gh-ost/go/base"
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -428,9 +428,9 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 
 	defer func() {
 		if err := EndMigration(ctx, s, startedNs, insertedID, updatedSchema, resErr == nil /* isDone */); err != nil {
-			log.Error("Failed to update migration history record",
-				zap.Error(err),
-				zap.String("migration_id", migrationHistoryID),
+			slog.Error("Failed to update migration history record",
+				log.BBError(err),
+				slog.String("migration_id", migrationHistoryID),
 			)
 		}
 	}()
@@ -504,7 +504,7 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 			return migrationHistory.ID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
 		case db.Pending:
 			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
-			log.Debug(err.Error())
+			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
 				return migrationHistory.ID, nil
@@ -512,7 +512,7 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 			return "", common.Wrap(err, common.MigrationPending)
 		case db.Failed:
 			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
-			log.Debug(err.Error())
+			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
 				return migrationHistory.ID, nil

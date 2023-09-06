@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -19,7 +20,6 @@ import (
 	"golang.org/x/crypto/nacl/box"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -780,20 +780,20 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 	for _, file := range allPRFiles {
 		u, err := url.Parse(file.ContentsURL)
 		if err != nil {
-			log.Debug("Failed to parse content url for file",
-				zap.String("content_url", file.ContentsURL),
-				zap.String("file", file.FileName),
-				zap.Error(err),
+			slog.Debug("Failed to parse content url for file",
+				slog.String("content_url", file.ContentsURL),
+				slog.String("file", file.FileName),
+				log.BBError(err),
 			)
 			continue
 		}
 
 		m, err := url.ParseQuery(u.RawQuery)
 		if err != nil {
-			log.Debug("Failed to parse query for file",
-				zap.String("content_url", file.ContentsURL),
-				zap.String("file", file.FileName),
-				zap.Error(err),
+			slog.Debug("Failed to parse query for file",
+				slog.String("content_url", file.ContentsURL),
+				slog.String("file", file.FileName),
+				log.BBError(err),
 			)
 			continue
 		}

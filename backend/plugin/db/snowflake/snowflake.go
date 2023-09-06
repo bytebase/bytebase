@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -19,7 +20,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	snow "github.com/snowflakedb/gosnowflake"
-	"go.uber.org/zap"
 )
 
 var (
@@ -51,10 +51,10 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 		return nil, err
 	}
 
-	log.Debug("Opening Snowflake driver",
-		zap.String("dsn", loggedDSN),
-		zap.String("environment", connCtx.EnvironmentID),
-		zap.String("database", connCtx.InstanceID),
+	slog.Debug("Opening Snowflake driver",
+		slog.String("dsn", loggedDSN),
+		slog.String("environment", connCtx.EnvironmentID),
+		slog.String("database", connCtx.InstanceID),
 	)
 	db, err := sql.Open("snowflake", dsn)
 	if err != nil {
@@ -94,7 +94,7 @@ func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 	redactedDSN, err := snow.DSN(snowConfig)
 	if err != nil {
 		// nolint
-		log.Warn("failed to build redacted Snowflake DSN", zap.Error(err))
+		slog.Warn("failed to build redacted Snowflake DSN", log.BBError(err))
 		return dsn, "", nil
 	}
 	return dsn, redactedDSN, nil
@@ -253,7 +253,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, _ d
 	rowsAffected, err := result.RowsAffected()
 	// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 	if err != nil {
-		log.Debug("rowsAffected returns error", zap.Error(err))
+		slog.Debug("rowsAffected returns error", log.BBError(err))
 		return 0, nil
 	}
 	return rowsAffected, nil

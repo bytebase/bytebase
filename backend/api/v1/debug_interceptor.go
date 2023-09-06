@@ -2,10 +2,10 @@ package v1
 
 import (
 	"context"
+	"log/slog"
 	"runtime/debug"
 	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -53,9 +53,9 @@ func (in *DebugInterceptor) DebugStreamInterceptor(request any, ss grpc.ServerSt
 func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any, fullMethod string, err error) {
 	st := status.Convert(err)
 	if st.Code() == codes.Internal {
-		log.Error("Internal error intercepted", zap.String("method", fullMethod), zap.Error(err), zap.Any("request", request))
+		slog.Error("Internal error intercepted", slog.String("method", fullMethod), log.BBError(err), slog.Any("request", request))
 	}
-	if st.Code() == codes.Internal && log.EnabledLevel(zap.DebugLevel) {
+	if st.Code() == codes.Internal && slog.Default().Enabled(ctx, slog.LevelDebug) {
 		var role api.Role
 		if r, ok := ctx.Value(common.RoleContextKey).(api.Role); ok {
 			role = r

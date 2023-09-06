@@ -3,9 +3,9 @@ package taskrun
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
@@ -61,10 +61,10 @@ func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, driverCtx conte
 
 	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Baseline, "" /* statement */, payload.SchemaVersion, nil /* sheetID */)
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-		log.Error("failed to sync database schema",
-			zap.String("instanceName", instance.ResourceID),
-			zap.String("databaseName", database.DatabaseName),
-			zap.Error(err),
+		slog.Error("failed to sync database schema",
+			slog.String("instanceName", instance.ResourceID),
+			slog.String("databaseName", database.DatabaseName),
+			log.BBError(err),
 		)
 	}
 

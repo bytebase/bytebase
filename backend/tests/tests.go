@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
@@ -241,7 +241,7 @@ func getTestDatabaseString() string {
 
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) (context.Context, error) {
-	log.SetLevel(zap.DebugLevel)
+	log.GLogLevel.Set(slog.LevelDebug)
 	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
 		return nil, err
 	}
@@ -282,7 +282,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 
 // StartServer starts the main server with embed Postgres.
 func (ctl *controller) StartServer(ctx context.Context, config *config) (context.Context, error) {
-	log.SetLevel(zap.DebugLevel)
+	log.GLogLevel.Set(slog.LevelDebug)
 	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
 		return nil, err
 	}
@@ -534,12 +534,12 @@ func (ctl *controller) waitForHealthz() error {
 			gURL := fmt.Sprintf("%s/auth/login", ctl.v1APIURL)
 			req, err := http.NewRequest(http.MethodPost, gURL, nil)
 			if err != nil {
-				log.Error("Fail to create a new POST request", zap.String("URL", gURL), zap.Error(err))
+				slog.Error("Fail to create a new POST request", slog.String("URL", gURL), log.BBError(err))
 				continue
 			}
 			resp, err := ctl.client.Do(req)
 			if err != nil {
-				log.Error("Fail to send a POST request", zap.String("URL", gURL), zap.Error(err))
+				slog.Error("Fail to send a POST request", slog.String("URL", gURL), log.BBError(err))
 				continue
 			}
 			if resp.StatusCode == http.StatusServiceUnavailable {

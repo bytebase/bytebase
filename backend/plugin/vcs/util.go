@@ -2,12 +2,10 @@
 package vcs
 
 import (
+	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
-
-	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 // Branch is the helper function returns the branch name from reference name.
@@ -64,9 +62,9 @@ func (p PushEvent) GetDistinctFileList() []DistinctFileItem {
 	// Use list instead of map because we need to maintain the relative commit order in the source branch.
 	var distinctFileList []DistinctFileItem
 	for _, commit := range p.CommitList {
-		log.Debug("Pre-processing commit to dedup migration files...",
-			zap.String("id", commit.ID),
-			zap.String("title", commit.Title),
+		slog.Debug("Pre-processing commit to dedup migration files...",
+			slog.String("id", commit.ID),
+			slog.String("title", commit.Title),
 		)
 
 		addDistinctFile := func(fileName string, itemType FileItemType) {

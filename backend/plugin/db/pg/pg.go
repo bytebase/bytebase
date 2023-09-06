@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net"
 	"regexp"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -181,7 +181,7 @@ func guessDSN(baseConnConfig *pgx.ConnConfig, username string) (string, *pgx.Con
 			defer db.Close()
 			return db.Ping()
 		}(); err != nil {
-			log.Debug("guessDSN attempt failed", zap.Error(err))
+			slog.Debug("guessDSN attempt failed", log.BBError(err))
 			continue
 		}
 		return guessDatabase, &connConfig, nil
@@ -358,7 +358,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			log.Debug("rowsAffected returns error", zap.Error(err))
+			slog.Debug("rowsAffected returns error", log.BBError(err))
 		} else {
 			totalRowsAffected += rowsAffected
 		}

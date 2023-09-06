@@ -3,10 +3,10 @@ package util
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 
-	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 
@@ -79,14 +79,14 @@ func ProxyConnection(sshClient *ssh.Client, listener net.Listener, databaseAddr 
 				n, err := conn.Read(buf)
 				if err != nil {
 					if err != io.EOF {
-						log.Error("proxy source read error", zap.Error(err))
+						slog.Error("proxy source read error", log.BBError(err))
 					}
 					return
 				}
 
 				_, err = targetConn.Write(buf[:n])
 				if err != nil {
-					log.Error("proxy source write error", zap.Error(err))
+					slog.Error("proxy source write error", log.BBError(err))
 					return
 				}
 			}
@@ -102,14 +102,14 @@ func ProxyConnection(sshClient *ssh.Client, listener net.Listener, databaseAddr 
 				n, err := targetConn.Read(buf)
 				if err != nil {
 					if err != io.EOF {
-						log.Error("proxy target read error", zap.Error(err))
+						slog.Error("proxy target read error", log.BBError(err))
 					}
 					return
 				}
 
 				_, err = conn.Write(buf[:n])
 				if err != nil {
-					log.Error("proxy target write error", zap.Error(err))
+					slog.Error("proxy target write error", log.BBError(err))
 					return
 				}
 			}
