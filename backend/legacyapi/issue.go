@@ -82,15 +82,14 @@ type Issue struct {
 	GrantRequest string `jsonapi:"attr,grantRequest"`
 
 	// Domain specific fields
-	Name                  string       `jsonapi:"attr,name"`
-	Status                IssueStatus  `jsonapi:"attr,status"`
-	Type                  IssueType    `jsonapi:"attr,type"`
-	Description           string       `jsonapi:"attr,description"`
-	AssigneeID            int          `jsonapi:"attr,assigneeId"`
-	AssigneeNeedAttention bool         `jsonapi:"attr,assigneeNeedAttention"`
-	Assignee              *Principal   `jsonapi:"relation,assignee"`
-	SubscriberList        []*Principal `jsonapi:"relation,subscriberList"`
-	Payload               string       `jsonapi:"attr,payload"`
+	Name           string       `jsonapi:"attr,name"`
+	Status         IssueStatus  `jsonapi:"attr,status"`
+	Type           IssueType    `jsonapi:"attr,type"`
+	Description    string       `jsonapi:"attr,description"`
+	AssigneeID     int          `jsonapi:"attr,assigneeId"`
+	Assignee       *Principal   `jsonapi:"relation,assignee"`
+	SubscriberList []*Principal `jsonapi:"relation,subscriberList"`
+	Payload        string       `jsonapi:"attr,payload"`
 }
 
 // IssueResponse is the API message for an issue response.
@@ -101,13 +100,12 @@ type IssueResponse struct {
 
 // IssueCreate is the API message for creating an issue.
 type IssueCreate struct {
-	ProjectID             int       `jsonapi:"attr,projectId"`
-	Name                  string    `jsonapi:"attr,name"`
-	Type                  IssueType `jsonapi:"attr,type"`
-	Description           string    `jsonapi:"attr,description"`
-	AssigneeID            int       `jsonapi:"attr,assigneeId"`
-	AssigneeNeedAttention bool
-	Payload               string `jsonapi:"attr,payload"`
+	ProjectID   int       `jsonapi:"attr,projectId"`
+	Name        string    `jsonapi:"attr,name"`
+	Type        IssueType `jsonapi:"attr,type"`
+	Description string    `jsonapi:"attr,description"`
+	AssigneeID  int       `jsonapi:"attr,assigneeId"`
+	Payload     string    `jsonapi:"attr,payload"`
 	// CreateContext is used to create the issue pipeline and not persisted.
 	// The context format depends on the issue type. For example, create database issue corresponds to CreateDatabaseContext.
 	// This consolidates the pipeline generation to backend because both frontend and VCS pipeline could create issues and
@@ -217,11 +215,10 @@ type PITRContext struct {
 
 // IssuePatch is the API message for patching an issue.
 type IssuePatch struct {
-	Name                  *string `jsonapi:"attr,name"`
-	Description           *string `jsonapi:"attr,description"`
-	AssigneeID            *int    `jsonapi:"attr,assigneeId"`
-	AssigneeNeedAttention *bool   `jsonapi:"attr,assigneeNeedAttention"`
-	Payload               *string `jsonapi:"attr,payload"`
+	Name        *string `jsonapi:"attr,name"`
+	Description *string `jsonapi:"attr,description"`
+	AssigneeID  *int    `jsonapi:"attr,assigneeId"`
+	Payload     *string `jsonapi:"attr,payload"`
 }
 
 // IssueStatusPatch is the API message for patching status of an issue.

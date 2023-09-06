@@ -75,20 +75,19 @@ func (s *Store) FindIssueStripped(ctx context.Context, find *FindIssueMessage) (
 // Note: MUST keep in sync with composeIssueValidateOnly.
 func (s *Store) composeIssue(ctx context.Context, issue *IssueMessage) (*api.Issue, error) {
 	composedIssue := &api.Issue{
-		ID:                    issue.UID,
-		CreatorID:             issue.Creator.ID,
-		CreatedTs:             issue.CreatedTime.Unix(),
-		UpdaterID:             issue.Updater.ID,
-		UpdatedTs:             issue.UpdatedTime.Unix(),
-		ProjectID:             issue.Project.UID,
-		PipelineID:            issue.PipelineUID,
-		Name:                  issue.Title,
-		Status:                issue.Status,
-		Type:                  issue.Type,
-		Description:           issue.Description,
-		AssigneeID:            issue.Assignee.ID,
-		AssigneeNeedAttention: issue.NeedAttention,
-		Payload:               issue.Payload,
+		ID:          issue.UID,
+		CreatorID:   issue.Creator.ID,
+		CreatedTs:   issue.CreatedTime.Unix(),
+		UpdaterID:   issue.Updater.ID,
+		UpdatedTs:   issue.UpdatedTime.Unix(),
+		ProjectID:   issue.Project.UID,
+		PipelineID:  issue.PipelineUID,
+		Name:        issue.Title,
+		Status:      issue.Status,
+		Type:        issue.Type,
+		Description: issue.Description,
+		AssigneeID:  issue.Assignee.ID,
+		Payload:     issue.Payload,
 	}
 
 	creator, err := s.GetPrincipalByID(ctx, issue.Creator.ID)
@@ -143,20 +142,19 @@ func (s *Store) composeIssue(ctx context.Context, issue *IssueMessage) (*api.Iss
 // for reducing the cost and payload of composing a full issue.
 func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (*api.Issue, error) {
 	composedIssue := &api.Issue{
-		ID:                    issue.UID,
-		CreatorID:             issue.Creator.ID,
-		CreatedTs:             issue.CreatedTime.Unix(),
-		UpdaterID:             issue.Updater.ID,
-		UpdatedTs:             issue.UpdatedTime.Unix(),
-		ProjectID:             issue.Project.UID,
-		PipelineID:            issue.PipelineUID,
-		Name:                  issue.Title,
-		Status:                issue.Status,
-		Type:                  issue.Type,
-		Description:           issue.Description,
-		AssigneeID:            issue.Assignee.ID,
-		AssigneeNeedAttention: issue.NeedAttention,
-		Payload:               issue.Payload,
+		ID:          issue.UID,
+		CreatorID:   issue.Creator.ID,
+		CreatedTs:   issue.CreatedTime.Unix(),
+		UpdaterID:   issue.Updater.ID,
+		UpdatedTs:   issue.UpdatedTime.Unix(),
+		ProjectID:   issue.Project.UID,
+		PipelineID:  issue.PipelineUID,
+		Name:        issue.Title,
+		Status:      issue.Status,
+		Type:        issue.Type,
+		Description: issue.Description,
+		AssigneeID:  issue.Assignee.ID,
+		Payload:     issue.Payload,
 	}
 
 	creator, err := s.GetPrincipalByID(ctx, issue.Creator.ID)
@@ -368,17 +366,16 @@ func (s *Store) composeSimplePipeline(ctx context.Context, pipeline *PipelineMes
 
 // IssueMessage is the mssage for issues.
 type IssueMessage struct {
-	Project       *ProjectMessage
-	Title         string
-	Status        api.IssueStatus
-	Type          api.IssueType
-	Description   string
-	Assignee      *UserMessage
-	NeedAttention bool
-	Payload       string
-	Subscribers   []*UserMessage
-	PipelineUID   *int
-	PlanUID       *int64
+	Project     *ProjectMessage
+	Title       string
+	Status      api.IssueStatus
+	Type        api.IssueType
+	Description string
+	Assignee    *UserMessage
+	Payload     string
+	Subscribers []*UserMessage
+	PipelineUID *int
+	PlanUID     *int64
 
 	// The following fields are output only and not used for create().
 	UID         int
@@ -399,13 +396,12 @@ type IssueMessage struct {
 
 // UpdateIssueMessage is the mssage for updating an issue.
 type UpdateIssueMessage struct {
-	Title         *string
-	Status        *api.IssueStatus
-	Description   *string
-	Assignee      *UserMessage
-	NeedAttention *bool
-	Payload       *string
-	Subscribers   *[]*UserMessage
+	Title       *string
+	Status      *api.IssueStatus
+	Description *string
+	Assignee    *UserMessage
+	Payload     *string
+	Subscribers *[]*UserMessage
 
 	PipelineUID *int
 }
@@ -423,7 +419,6 @@ type FindIssueMessage struct {
 	CreatorID       *int
 	AssigneeID      *int
 	SubscriberID    *int
-	NeedAttention   *bool
 	CreatedTsBefore *int64
 	CreatedTsAfter  *int64
 
@@ -494,7 +489,6 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			type,
 			description,
 			assignee_id,
-			assignee_need_attention,
 			payload,
 			ts_vector
 		)
@@ -519,7 +513,6 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.Type,
 		create.Description,
 		create.Assignee.ID,
-		create.NeedAttention,
 		create.Payload,
 		tsVector,
 	).Scan(
@@ -569,9 +562,6 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	}
 	if v := patch.Assignee; v != nil {
 		set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
-	}
-	if v := patch.NeedAttention; v != nil {
-		set, args = append(set, fmt.Sprintf("assignee_need_attention = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
@@ -733,9 +723,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.CreatedTsAfter; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.created_ts > $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.NeedAttention; v != nil {
-		where, args = append(where, fmt.Sprintf("issue.assignee_need_attention = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.SubscriberID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d)", len(args)+1)), append(args, *v)
 	}
@@ -788,7 +775,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.type,
 		issue.description,
 		issue.assignee_id,
-		issue.assignee_need_attention,
 		issue.payload,
 		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers
 	FROM %s
@@ -819,7 +805,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.Type,
 			&issue.Description,
 			&issue.assigneeUID,
-			&issue.NeedAttention,
 			&issue.Payload,
 			&subscriberUIDs,
 		); err != nil {
