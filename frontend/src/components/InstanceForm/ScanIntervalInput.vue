@@ -11,7 +11,7 @@
         :checked="mode === 'DEFAULT'"
         :disabled="!allowEdit"
         value="DEFAULT"
-        @update:checked="handleModeChange('DEFAULT')"
+        @click="handleModeChange('DEFAULT')"
       >
         {{ $t("instance.scan-interval.default-never") }}
       </NRadio>
@@ -21,7 +21,7 @@
         :disabled="!allowEdit"
         value="CUSTOM"
         class="!items-center"
-        @update:checked="handleModeChange('CUSTOM')"
+        @click="handleModeChange('CUSTOM')"
       >
         <div class="flex items-center gap-x-1.5">
           <span>{{ $t("common.custom") }}</span>
@@ -45,7 +45,7 @@
 
     <InstanceAssignment
       :show="showInstanceAssignment"
-      @dismiss="showInstanceAssignment = false"
+      @dismiss="handleInstanceAssignmentDismiss"
     />
   </div>
 </template>
@@ -73,6 +73,7 @@ const emit = defineEmits<{
 const subscriptionStore = useSubscriptionV1Store();
 const { instance } = useInstanceFormContext();
 const showInstanceAssignment = ref(false);
+const ongoingInstanceAssignmentCallback = ref<() => void>();
 
 const mode = computed(() => {
   const duration = props.scanInterval;
@@ -110,6 +111,9 @@ const minutes = computed({
       )
     ) {
       showInstanceAssignment.value = true;
+      ongoingInstanceAssignmentCallback.value = () => {
+        minutes.value = value;
+      };
       return;
     }
 
@@ -132,10 +136,31 @@ const handleModeChange = (mode: Mode) => {
       )
     ) {
       showInstanceAssignment.value = true;
+      ongoingInstanceAssignmentCallback.value = () => {
+        handleModeChange(mode);
+      };
       return;
     }
 
     minutes.value = state.minutes ?? 1440;
+  }
+};
+
+const handleInstanceAssignmentDismiss = () => {
+  showInstanceAssignment.value = false;
+  const callback = ongoingInstanceAssignmentCallback.value;
+  if (!callback) return;
+  ongoingInstanceAssignmentCallback.value = undefined;
+  // Check the feature again, if we successfully assigned the instance's
+  // license, we should run the callback, which is the operation caused the
+  // drawer to open.
+  if (
+    subscriptionStore.hasInstanceFeature(
+      "bb.feature.custom-instance-scan-interval",
+      instance.value
+    )
+  ) {
+    callback();
   }
 };
 </script>
