@@ -289,7 +289,8 @@
     "checking": "Checking...",
     "run-task": "Run checks",
     "check-result": {
-      "title": "Check result for {name}"
+      "title": "Check result for {name}",
+      "title-general": "Check result"
     },
     "check-type": {
       "fake": "Fake",
@@ -916,7 +917,8 @@
         "all-tasks": "All tasks"
       }
     },
-    "not-editable-legacy-issue": "This issue is not editable because it was created in an old version of Bytebase"
+    "not-editable-legacy-issue": "This issue is not editable because it was created in an old version of Bytebase",
+    "action-anyway": "{action} anyway"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -2745,7 +2747,9 @@
       "generating-approval-flow": "Generating approval flow",
       "approved-issue": "approved issue",
       "disallow-approve-reason": {
-        "some-task-checks-didnt-pass": "Some task checks didn't pass"
+        "some-task-checks-didnt-pass": "Some task checks didn't pass",
+        "some-task-checks-are-still-running": "Some task checks are still running",
+        "x-field-is-required": "{field} is required"
       },
       "send-back": "Send back",
       "send-back-issue": "Send back issue?",

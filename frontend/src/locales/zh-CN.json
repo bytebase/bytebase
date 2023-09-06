@@ -287,7 +287,8 @@
     "checking": "检查中…",
     "run-task": "运行检查",
     "check-result": {
-      "title": "{name} 的检查结果"
+      "title": "{name} 的检查结果",
+      "title-general": "检查结果"
     },
     "check-type": {
       "fake": "Fake",
@@ -913,7 +914,8 @@
         "all-tasks": "所有任务"
       }
     },
-    "not-editable-legacy-issue": "这个工单不可编辑，因为它是在旧版本的 Bytebase 中创建的。"
+    "not-editable-legacy-issue": "这个工单不可编辑，因为它是在旧版本的 Bytebase 中创建的。",
+    "action-anyway": "仍要{action}"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -2739,7 +2741,9 @@
       "generating-approval-flow": "正在生成审批流",
       "approved-issue": "批准工单",
       "disallow-approve-reason": {
-        "some-task-checks-didnt-pass": "尚有未通过的任务检查项"
+        "some-task-checks-didnt-pass": "尚有未通过的任务检查项",
+        "some-task-checks-are-still-running": "尚有运行中的任务检查项",
+        "x-field-is-required": "{field}为必填项"
       },
       "send-back": "退回",
       "send-back-issue": "退回工单？",

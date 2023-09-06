@@ -31,18 +31,6 @@ export const planCheckRunListForTask = (issue: ComposedIssue, task: Task) => {
   return issue.planCheckRunList.filter((check) => check.target === target);
 };
 
-export const allPlanChecksPassedForTask = (
-  issue: ComposedIssue,
-  task: Task
-) => {
-  const planCheckRunList = planCheckRunListForTask(issue, task);
-  if (planCheckRunList.length === 0) {
-    return true;
-  }
-  const summary = planCheckRunSummaryForCheckRunList(planCheckRunList);
-  return summary.errorCount === 0;
-};
-
 export const HiddenPlanCheckTypes = new Set<PlanCheckRun_Type>([
   PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT,
 ]);
