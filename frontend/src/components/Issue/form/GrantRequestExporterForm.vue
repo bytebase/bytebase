@@ -6,10 +6,21 @@
       <span class="flex items-center textlabel mb-2">
         {{ $t("common.database") }}
       </span>
-      <DatabaseResourceTable
-        class="w-full"
-        :database-resource-list="selectedDatabaseResources"
-      />
+      <div
+        class="w-full flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
+      >
+        <span
+          v-if="
+            exportMethod !== 'SQL' && selectedDatabaseResources.length === 0
+          "
+          >{{ $t("issue.grant-request.all-databases") }}</span
+        >
+        <DatabaseResourceTable
+          v-else
+          class="w-full"
+          :database-resource-list="selectedDatabaseResources"
+        />
+      </div>
     </div>
     <div
       v-if="exportMethod === 'SQL'"

@@ -23,8 +23,13 @@
         </div>
 
         <template v-if="!isLoading">
-          <!-- Querier blocks -->
-          <div v-if="binding.role === 'roles/QUERIER'" class="w-full">
+          <div
+            v-if="
+              binding.role === 'roles/QUERIER' ||
+              binding.role === 'roles/EXPORTER'
+            "
+            class="w-full"
+          >
             <p class="mb-2">{{ $t("common.databases") }}</p>
             <QuerierDatabaseResourceForm
               :project-id="project.uid"
@@ -36,27 +41,6 @@
 
           <!-- Exporter blocks -->
           <template v-if="binding.role === 'roles/EXPORTER'">
-            <div class="w-full">
-              <span class="block mb-2">{{ $t("common.database") }}</span>
-              <DatabaseSelect
-                class="!w-full"
-                :project="project.uid"
-                :database="state.databaseId"
-                @update:database="state.databaseId = $event"
-              />
-            </div>
-            <div class="w-full">
-              <p class="mb-2">{{ $t("issue.grant-request.export-method") }}</p>
-              <ExporterDatabaseResourceForm
-                class="w-full"
-                :project-id="project.uid"
-                :database-id="state.databaseId"
-                :database-resources="state.databaseResources"
-                :statement="state.statement"
-                @update:condition="state.databaseResourceCondition = $event"
-                @update:database-resources="state.databaseResources = $event"
-              />
-            </div>
             <div class="w-full flex flex-col justify-start items-start">
               <p class="mb-2">
                 {{ $t("issue.grant-request.export-rows") }}
@@ -144,9 +128,7 @@ import {
 } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { onMounted } from "vue";
-import ExporterDatabaseResourceForm from "@/components/Issue/panel/RequestExportPanel/ExportResourceForm/index.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
-import { DatabaseSelect } from "@/components/v2";
 import {
   extractUserEmail,
   useCurrentUserV1,

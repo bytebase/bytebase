@@ -102,11 +102,7 @@ const allowConfirm = computed(() => {
       if (binding.condition?.expression === "") {
         return false;
       }
-      if (
-        (!binding.condition?.expression.includes("request.statement") &&
-          !binding.condition?.expression.includes("resource.database")) ||
-        !binding.condition?.expression.includes("request.row_limit")
-      ) {
+      if (!binding.condition?.expression.includes("request.row_limit")) {
         return false;
       }
     }

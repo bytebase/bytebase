@@ -165,7 +165,15 @@ const isFinishedGrantRequestIssueByCurrentUser = computed(() => {
 
 const showExportCenterLink = computed(() => {
   if (!isFinishedGrantRequestIssueByCurrentUser.value) return false;
-  return issue.value.payload.grantRequest?.role === PresetRoleType.EXPORTER;
+
+  return (
+    issue.value.payload.grantRequest?.role === PresetRoleType.EXPORTER &&
+    // Show the export button only when the grant request condition is based on the statement.
+    // TODO: Use parsed CEL expression instead of string matching.
+    (issue.value.payload.grantRequest?.condition.expression || "").includes(
+      "request.statement == "
+    )
+  );
 });
 
 const showSQLEditorLink = computed(() => {
