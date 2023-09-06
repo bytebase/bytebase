@@ -492,7 +492,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			payload,
 			ts_vector
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id, created_ts, updated_ts
 	`
 
