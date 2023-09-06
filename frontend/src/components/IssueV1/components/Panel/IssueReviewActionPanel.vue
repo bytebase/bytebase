@@ -17,6 +17,35 @@
           </div>
         </div>
 
+        <PlanCheckBar
+          :allow-run-checks="false"
+          class="shrink-0 flex-col gap-y-1"
+          label-class="!text-base"
+        />
+
+        <div v-if="planCheckErrors.length > 0" class="flex flex-col">
+          <ErrorList
+            :errors="planCheckErrors"
+            :bullets="false"
+            class="textinfolabel"
+          >
+            <template #prefix>
+              <heroicons:exclamation-triangle
+                class="text-warning w-4 h-4 inline-block mr-1 mb-px"
+              />
+            </template>
+          </ErrorList>
+          <div>
+            <NCheckbox v-model:checked="performActionAnyway">
+              {{
+                $t("issue.action-anyway", {
+                  action: issueReviewActionDisplayName(action),
+                })
+              }}
+            </NCheckbox>
+          </div>
+        </div>
+
         <div class="flex flex-col gap-y-1">
           <p class="font-medium text-control">
             {{ $t("common.comment") }}
@@ -39,19 +68,28 @@
         <NButton @click="$emit('close')">
           {{ $t("common.cancel") }}
         </NButton>
-        <NButton
-          :disabled="!allowConfirm"
-          v-bind="issueReviewActionButtonProps(action)"
-          @click="handleClickConfirm"
-        >
-          {{ issueReviewActionDisplayName(action) }}
-        </NButton>
+
+        <NTooltip :disabled="confirmErrors.length === 0" placement="top">
+          <template #trigger>
+            <NButton
+              :disabled="confirmErrors.length > 0"
+              v-bind="issueReviewActionButtonProps(action)"
+              @click="handleClickConfirm"
+            >
+              {{ issueReviewActionDisplayName(action) }}
+            </NButton>
+          </template>
+          <template #default>
+            <ErrorList :errors="confirmErrors" />
+          </template>
+        </NTooltip>
       </div>
     </template>
   </CommonDrawer>
 </template>
 
 <script setup lang="ts">
+import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -60,9 +98,13 @@ import {
   targetReviewStatusForReviewAction,
   issueReviewActionButtonProps,
   issueReviewActionDisplayName,
+  planCheckRunSummaryForIssue,
 } from "@/components/IssueV1/logic";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { issueServiceClient } from "@/grpcweb";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import { PlanCheckBar } from "../PlanCheckSection";
+import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 
 type LocalState = {
@@ -82,6 +124,7 @@ const state = reactive<LocalState>({
 });
 const { events, issue } = useIssueContext();
 const comment = ref("");
+const performActionAnyway = ref(false);
 
 const title = computed(() => {
   switch (props.action) {
@@ -95,12 +138,45 @@ const title = computed(() => {
   return ""; // Make linter happy
 });
 
-const allowConfirm = computed(() => {
-  if (props.action === "SEND_BACK" && comment.value === "") {
-    return false;
+const planCheckErrors = computed(() => {
+  const errors: string[] = [];
+  if (props.action === "APPROVE") {
+    const summary = planCheckRunSummaryForIssue(issue.value);
+    if (summary.errorCount > 0 || summary.warnCount) {
+      errors.push(
+        t(
+          "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+        )
+      );
+    }
+    if (summary.runningCount > 0) {
+      errors.push(
+        t(
+          "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
+        )
+      );
+    }
   }
 
-  return true;
+  return errors;
+});
+
+const confirmErrors = computed(() => {
+  const errors: string[] = [];
+  if (props.action === "SEND_BACK" && comment.value === "") {
+    errors.push(
+      t(
+        "custom-approval.issue-review.disallow-approve-reason.x-field-is-required",
+        {
+          field: t("common.comment"),
+        }
+      )
+    );
+  }
+  if (planCheckErrors.value.length > 0 && !performActionAnyway.value) {
+    errors.push(...planCheckErrors.value);
+  }
+  return errors;
 });
 
 const handleClickConfirm = (e: MouseEvent) => {

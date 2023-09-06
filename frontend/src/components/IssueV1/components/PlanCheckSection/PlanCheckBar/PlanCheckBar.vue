@@ -9,12 +9,11 @@
 
     <PlanCheckBadgeBar
       :plan-check-run-list="planCheckRunList"
-      :task="task"
       @select-type="selectedType = $event"
     />
 
     <PlanCheckRunButton
-      v-if="allowRunChecks"
+      v-if="allowRunChecks && task"
       :task="task"
       @run-checks="runChecks"
     />
@@ -46,7 +45,7 @@ import PlanCheckRunButton from "./PlanCheckRunButton.vue";
 
 const props = defineProps<{
   allowRunChecks?: boolean;
-  task: Task;
+  task?: Task;
   labelClass?: VueClass;
 }>();
 
@@ -54,6 +53,9 @@ const { issue, events } = useIssueContext();
 const selectedType = ref<PlanCheckRun_Type>();
 
 const planCheckRunList = computed(() => {
+  if (!props.task) {
+    return issue.value.planCheckRunList;
+  }
   return planCheckRunListForTask(issue.value, props.task);
 });
 

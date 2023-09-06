@@ -1,6 +1,10 @@
 <template>
   <BBModal
-    :title="$t('task.check-result.title', { name: task.title })"
+    :title="
+      task
+        ? $t('task.check-result.title', { name: task.title })
+        : $t('task.check-result.title-general')
+    "
     class="!w-[56rem]"
     header-class="whitespace-pre-wrap break-all gap-x-1"
     @close="$emit('close')"
@@ -9,7 +13,6 @@
       <PlanCheckBadgeBar
         :plan-check-run-list="planCheckRunList"
         :selected-type="selectedType"
-        :task="task"
         @select-type="$emit('select-type', $event)"
       />
       <TabFilter
@@ -44,7 +47,7 @@ import PlanCheckDetail from "./PlanCheckDetail.vue";
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   selectedType: PlanCheckRun_Type;
-  task: Task;
+  task?: Task;
 }>();
 
 defineEmits<{
