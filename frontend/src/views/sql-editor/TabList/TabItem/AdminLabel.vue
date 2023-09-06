@@ -1,5 +1,5 @@
 <template>
-  <label class="flex items-center text-sm h-6 ml-0.5 whitespace-nowrap">
+  <label class="flex items-center text-sm h-5 ml-0.5 whitespace-nowrap">
     <EnvironmentV1Name
       v-if="instance.uid !== String(UNKNOWN_ID)"
       :environment="instance.environmentEntity"
