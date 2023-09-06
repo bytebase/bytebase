@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
@@ -532,120 +531,6 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	}
 
 	return task, nil
-}
-
-// UpdateTaskStatusV2 updates the status of a task.
-func (s *Store) UpdateTaskStatusV2(ctx context.Context, patch *api.TaskStatusPatch) (*TaskMessage, error) {
-	task, err := s.GetTaskV2ByID(ctx, patch.ID)
-	if err != nil {
-		return nil, err
-	}
-	if task == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task ID not found: %d", patch.ID)}
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	taskRunFind := &TaskRunFind{
-		TaskID: &task.ID,
-		StatusList: &[]api.TaskRunStatus{
-			api.TaskRunRunning,
-		},
-	}
-	taskRun, err := s.getTaskRunTx(ctx, tx, taskRunFind)
-	if err != nil {
-		return nil, err
-	}
-	if taskRun == nil {
-		if patch.Status == api.TaskRunning {
-			if err := s.createTaskRunImpl(ctx, tx,
-				&TaskRunMessage{
-					TaskUID: task.ID,
-					Name:    fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
-				},
-				api.TaskRunRunning,
-				patch.UpdaterID,
-			); err != nil {
-				return nil, err
-			}
-		}
-	} else {
-		if patch.Status == api.TaskRunning {
-			return nil, errors.Errorf("task is already running: %v", task.Name)
-		}
-		taskRunStatusPatch := &TaskRunStatusPatch{
-			ID:        taskRun.ID,
-			UpdaterID: patch.UpdaterID,
-			Code:      patch.Code,
-			Result:    patch.Result,
-		}
-		switch patch.Status {
-		case api.TaskDone:
-			taskRunStatusPatch.Status = api.TaskRunDone
-		case api.TaskFailed:
-			taskRunStatusPatch.Status = api.TaskRunFailed
-		case api.TaskPending, api.TaskPendingApproval:
-			// Do nothing.
-		case api.TaskCanceled:
-			taskRunStatusPatch.Status = api.TaskRunCanceled
-		}
-		if _, err := s.patchTaskRunStatusImpl(ctx, tx, taskRunStatusPatch); err != nil {
-			return nil, err
-		}
-	}
-
-	// Updates the task
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
-	set, args = append(set, "status = $2"), append(args, patch.Status)
-	var payloadSet []string
-	if v := patch.Skipped; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('skipped', to_jsonb($%d::BOOLEAN))`, len(args)+1)), append(args, *v)
-	}
-	if v := patch.SkippedReason; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('skippedReason', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
-	}
-	if len(payloadSet) != 0 {
-		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))
-	}
-
-	updatedTask := &TaskMessage{}
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, `
-		UPDATE task
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = `+fmt.Sprintf("%d", patch.ID)+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
-	`,
-		args...,
-	).Scan(
-		&updatedTask.ID,
-		&updatedTask.CreatorID,
-		&updatedTask.CreatedTs,
-		&updatedTask.UpdaterID,
-		&updatedTask.UpdatedTs,
-		&updatedTask.PipelineID,
-		&updatedTask.StageID,
-		&updatedTask.InstanceID,
-		&updatedTask.DatabaseID,
-		&updatedTask.Name,
-		&updatedTask.Status,
-		&updatedTask.Type,
-		&updatedTask.Payload,
-		&updatedTask.EarliestAllowedTs,
-	); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return updatedTask, nil
 }
 
 // BatchSkipTasks batch skip tasks.
