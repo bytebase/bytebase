@@ -154,8 +154,6 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	// TODO(d): deprecate taskScheduler.
-	taskScheduler      *taskrun.Scheduler
 	TaskSchedulerV2    *taskrun.SchedulerV2
 	PlanCheckScheduler *plancheck.Scheduler
 	MetricReporter     *metricreport.Reporter
@@ -478,8 +476,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
 		s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 
-		s.taskScheduler = taskrun.NewScheduler(storeInstance, s.ActivityManager, s.licenseService, s.stateCfg, s.MetricReporter)
-
 		s.RollbackRunner = rollbackrun.NewRunner(&profile, storeInstance, s.dbFactory, s.stateCfg)
 		s.MailSender = mail.NewSender(s.store, s.stateCfg)
 		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.stateCfg)
@@ -551,7 +547,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
 	s.registerTaskRoutes(apiGroup)
-	s.registerStageRoutes(apiGroup)
 
 	// Register healthz endpoint.
 	e.GET("/healthz", func(c echo.Context) error {
