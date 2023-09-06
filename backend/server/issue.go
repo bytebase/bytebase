@@ -251,28 +251,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return err
 			}
 			updateIssueMessage.Assignee = assignee
-			if issue.PipelineUID != nil {
-				stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
-				if err != nil {
-					return err
-				}
-				activeStage := utils.GetActiveStage(stages)
-				// When all stages have finished, assignee can be anyone such as creator.
-				if activeStage != nil {
-					ok, err := s.taskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
-					}
-					if !ok {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
-					}
-				}
-			}
-			// set AssigneeNeedAttention to false on assignee change
-			if issue.Project.Workflow == api.UIWorkflow {
-				needAttention := false
-				updateIssueMessage.NeedAttention = &needAttention
-			}
 		}
 
 		updatedIssue, err := s.store.UpdateIssueV2(ctx, id, updateIssueMessage, updaterID)
@@ -505,11 +483,6 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 }
 
 func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
-	if s.taskScheduler == nil || issue.Pipeline == nil {
-		// readonly server doesn't have a TaskScheduler.
-		// Skip issues without pipelines.
-		return
-	}
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if progress, ok := s.stateCfg.TaskProgress.Load(task.ID); ok {
