@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full flex flex-col px-4">
-    <div class="flex flex-col lg:flex-row justify-between">
+  <div class="w-full flex flex-col">
+    <div class="flex flex-col lg:flex-row justify-between px-4">
       <template v-for="(stage, index) in stageList" :key="stage.uid">
         <StageCard :stage="stage" :index="index" class="h-[68px]" />
         <div
@@ -27,7 +27,7 @@
 
     <div class="w-full border-t mb-4" />
 
-    <div class="lg:flex items-start justify-between">
+    <div class="lg:flex items-start justify-between px-4">
       <StageInfo />
 
       <Actions />

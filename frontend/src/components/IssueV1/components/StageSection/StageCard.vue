@@ -33,21 +33,52 @@
       </template>
       <span>Missing SQL statement</span>
     </NTooltip>
+    <NTooltip
+      v-if="
+        !isCreating &&
+        (planCheckStatus === PlanCheckRun_Result_Status.ERROR ||
+          planCheckStatus === PlanCheckRun_Result_Status.WARNING)
+      "
+      trigger="hover"
+      placement="top"
+    >
+      <template #trigger>
+        <heroicons:exclamation-circle-solid
+          class="w-6 h-6 ml-2"
+          :class="[
+            planCheckStatus === PlanCheckRun_Result_Status.ERROR
+              ? 'text-error hover:text-error-hover'
+              : 'text-warning hover:text-warning-hover',
+          ]"
+        />
+      </template>
+      <span>{{
+        $t(
+          "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+        )
+      }}</span>
+    </NTooltip>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { first } from "lodash-es";
+import { first, uniqBy } from "lodash-es";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   isTaskFinished,
   isValidStage,
+  planCheckRunListForTask,
+  planCheckRunSummaryForCheckRunList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { EMPTY_TASK_NAME, emptyTask } from "@/types";
-import { Stage, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
+import {
+  PlanCheckRun_Result_Status,
+  Stage,
+  task_StatusToJSON,
+} from "@/types/proto/v1/rollout_service";
 import { activeTaskInStageV1 } from "@/utils";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
@@ -57,7 +88,8 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { isCreating, activeTask, selectedStage, events } = useIssueContext();
+const { isCreating, issue, activeTask, selectedStage, events } =
+  useIssueContext();
 
 const activeTaskInStage = computed(() => {
   return activeTaskInStageV1(props.stage);
@@ -114,6 +146,24 @@ const stageTitle = computed(() => {
 const taskTitle = computed(() => {
   const task = isCreating ? first(props.stage.tasks) : activeTaskInStage.value;
   return (task ?? emptyTask()).title;
+});
+
+const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
+  if (isCreating.value) return PlanCheckRun_Result_Status.UNRECOGNIZED;
+  const planCheckList = uniqBy(
+    props.stage.tasks.flatMap((task) =>
+      planCheckRunListForTask(issue.value, task)
+    ),
+    (checkRun) => checkRun.uid
+  );
+  const summary = planCheckRunSummaryForCheckRunList(planCheckList);
+  if (summary.errorCount > 0) {
+    return PlanCheckRun_Result_Status.ERROR;
+  }
+  if (summary.warnCount > 0) {
+    return PlanCheckRun_Result_Status.WARNING;
+  }
+  return PlanCheckRun_Result_Status.SUCCESS;
 });
 
 const activeOrFirstTaskInStage = (stage: Stage) => {

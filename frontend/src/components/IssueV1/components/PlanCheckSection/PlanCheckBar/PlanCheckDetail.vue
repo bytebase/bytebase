@@ -110,6 +110,7 @@ import {
   RuleTemplate,
   RuleType,
   SQLReviewPolicyErrorCode,
+  UNKNOWN_ID,
   findRuleTemplate,
   getRuleLocalization,
   ruleTemplateMap,
@@ -148,7 +149,7 @@ type LocalState = {
 
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
-  task: Task;
+  task?: Task;
 }>();
 
 const { t } = useI18n();
@@ -303,7 +304,11 @@ const COLUMN_LIST = computed(() => {
 
 const reviewPolicy = useReviewPolicyByEnvironmentId(
   computed(() => {
-    const database = databaseForTask(issue.value, props.task);
+    const task = props.task;
+    if (!task) {
+      return String(UNKNOWN_ID);
+    }
+    const database = databaseForTask(issue.value, task);
     return database.effectiveEnvironmentEntity.uid;
   })
 );

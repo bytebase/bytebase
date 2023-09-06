@@ -18,7 +18,6 @@ import { computed } from "vue";
 import {
   PlanCheckRun,
   PlanCheckRun_Type,
-  Task,
 } from "@/types/proto/v1/rollout_service";
 import { groupBy } from "@/utils/collections";
 import PlanCheckBadge from "./PlanCheckBadge.vue";
@@ -26,7 +25,6 @@ import PlanCheckBadge from "./PlanCheckBadge.vue";
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   selectedType?: PlanCheckRun_Type;
-  task: Task;
 }>();
 
 defineEmits<{
