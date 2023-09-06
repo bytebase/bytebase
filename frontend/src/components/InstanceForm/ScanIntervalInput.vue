@@ -151,6 +151,9 @@ const handleInstanceAssignmentDismiss = () => {
   const callback = ongoingInstanceAssignmentCallback.value;
   if (!callback) return;
   ongoingInstanceAssignmentCallback.value = undefined;
+  // Check the feature again, if we successfully assigned the instance's
+  // license, we should run the callback, which is the operation caused the
+  // drawer to open.
   if (
     subscriptionStore.hasInstanceFeature(
       "bb.feature.custom-instance-scan-interval",
