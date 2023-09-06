@@ -216,11 +216,9 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 
 // CreatePendingTaskRuns creates pending task runs.
 func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMessage) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin tx")
+	if len(creates) == 0 {
+		return nil
 	}
-	defer tx.Rollback()
 
 	sort.Slice(creates, func(i, j int) bool {
 		return creates[i].TaskUID < creates[j].TaskUID
@@ -231,12 +229,18 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 		taskIDs = append(taskIDs, create.TaskUID)
 	}
 
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
 	exist, err := s.checkTaskRunsExist(ctx, tx, taskIDs, []api.TaskRunStatus{api.TaskRunPending, api.TaskRunRunning, api.TaskRunDone})
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if task runs exist")
 	}
 	if exist {
-		return errors.Wrapf(err, "cannot create pending task runs because some of them already exist")
+		return errors.Errorf("cannot create pending task runs because there are pending/running/done task runs")
 	}
 
 	attempts, err := s.getTaskNextAttempt(ctx, tx, taskIDs)
@@ -258,7 +262,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 func (*Store) getTaskNextAttempt(ctx context.Context, tx *Tx, taskIDs []int) ([]int, error) {
 	query := `
 	WITH tasks AS (
-		SELECT id FROM unnest($1) AS id
+		SELECT id FROM unnest(CAST($1 AS INTEGER[])) AS id
 	)
 	SELECT
 		(SELECT COALESCE(MAX(attempt)+1, 0) FROM task_run WHERE task_run.task_id = tasks.id)

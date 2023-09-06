@@ -514,7 +514,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	})
 
 	if err := s.store.CreatePendingTaskRuns(ctx, taskRunCreates...); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create pending task runs")
+		return nil, status.Errorf(codes.Internal, "failed to create pending task runs, error %v", err)
 	}
 
 	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, tasksToRun, issue, request.Reason, user.ID); err != nil {
