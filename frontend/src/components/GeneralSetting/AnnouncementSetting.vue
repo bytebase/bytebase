@@ -46,7 +46,6 @@
         >
           <span class="font-medium"
             >{{ $t("settings.general.workspace.announcement-text.self") }}
-            <span class="text-red-600">*</span>
           </span>
 
           <FeatureBadge feature="bb.feature.announcement" />
@@ -177,10 +176,6 @@ const allowEdit = computed((): boolean => {
 
 const allowSave = computed((): boolean => {
   if (!allowEdit.value) {
-    return false;
-  }
-
-  if (state.announcement.text.length === 0) {
     return false;
   }
 
