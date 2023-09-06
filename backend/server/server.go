@@ -154,20 +154,20 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	TaskSchedulerV2    *taskrun.SchedulerV2
-	PlanCheckScheduler *plancheck.Scheduler
-	MetricReporter     *metricreport.Reporter
-	SchemaSyncer       *schemasync.Syncer
-	SlowQuerySyncer    *slowquerysync.Syncer
-	MailSender         *mail.SlowQueryWeeklyMailSender
-	BackupRunner       *backuprun.Runner
-	AnomalyScanner     *anomaly.Scanner
-	RollbackRunner     *rollbackrun.Runner
-	ApprovalRunner     *approval.Runner
-	RelayRunner        *relay.Runner
+	taskSchedulerV2    *taskrun.SchedulerV2
+	planCheckScheduler *plancheck.Scheduler
+	metricReporter     *metricreport.Reporter
+	schemaSyncer       *schemasync.Syncer
+	slowQuerySyncer    *slowquerysync.Syncer
+	mailSender         *mail.SlowQueryWeeklyMailSender
+	backupRunner       *backuprun.Runner
+	anomalyScanner     *anomaly.Scanner
+	rollbackRunner     *rollbackrun.Runner
+	approvalRunner     *approval.Runner
+	relayRunner        *relay.Runner
 	runnerWG           sync.WaitGroup
 
-	ActivityManager *activity.Manager
+	activityManager *activity.Manager
 
 	licenseService enterpriseAPI.LicenseService
 
@@ -382,7 +382,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}
 	}
 
-	s.ActivityManager = activity.NewManager(storeInstance)
+	s.activityManager = activity.NewManager(storeInstance)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 	e := echo.New()
 	e.Debug = profile.Debug
@@ -427,7 +427,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 				s.profile.LastActiveTs = time.Now().Unix()
 				ctx := c.Request().Context()
 
-				s.MetricReporter.Report(ctx, &metricPlugin.Metric{
+				s.metricReporter.Report(ctx, &metricPlugin.Metric{
 					Name:  metric.APIRequestMetricName,
 					Value: 1,
 					Labels: map[string]any{
@@ -455,50 +455,50 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.s3Client = s3Client
 	}
 
-	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, &s.profile, false)
+	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, &s.profile, false)
+	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
-		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
-		s.SlowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
+		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
-		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
+		s.backupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 
-		s.TaskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.ActivityManager)
-		s.TaskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
-		s.TaskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
-		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
-		s.TaskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
-		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
-		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
-		s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
+		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.activityManager)
+		s.taskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
+		s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.schemaSyncer, s.stateCfg, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.backupRunner, s.activityManager, profile))
 
-		s.RollbackRunner = rollbackrun.NewRunner(&profile, storeInstance, s.dbFactory, s.stateCfg)
-		s.MailSender = mail.NewSender(s.store, s.stateCfg)
-		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.stateCfg)
-		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.ActivityManager, s.RelayRunner, s.licenseService)
+		s.rollbackRunner = rollbackrun.NewRunner(&profile, storeInstance, s.dbFactory, s.stateCfg)
+		s.mailSender = mail.NewSender(s.store, s.stateCfg)
+		s.relayRunner = relay.NewRunner(storeInstance, s.activityManager, s.stateCfg)
+		s.approvalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.activityManager, s.relayRunner, s.licenseService)
 
 		{
-			s.PlanCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
+			s.planCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
 			databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
-			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
+			s.planCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
 			statementTypeExecutor := plancheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
-			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseStatementType, statementTypeExecutor)
+			s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementType, statementTypeExecutor)
 			statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(storeInstance, s.dbFactory, s.licenseService)
-			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
+			s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
 			ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.secret)
-			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
+			s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
 			pitrMySQLExecutor := plancheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
-			s.PlanCheckScheduler.Register(store.PlanCheckDatabasePITRMySQL, pitrMySQLExecutor)
+			s.planCheckScheduler.Register(store.PlanCheckDatabasePITRMySQL, pitrMySQLExecutor)
 			statementReportExecutor := plancheck.NewStatementReportExecutor(storeInstance, s.dbFactory)
-			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
+			s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 		}
 
 		// Anomaly scanner
-		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
+		s.anomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
 
 		// Metric reporter
 		s.initMetricReporter()
@@ -585,7 +585,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			recoveryStreamInterceptor,
 		),
 	)
-	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, refreshTokenDuration, s.licenseService, s.MetricReporter, &profile,
+	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, refreshTokenDuration, s.licenseService, s.metricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
 			if s.profile.TestOnlySkipOnboardingData {
 				return nil
@@ -604,30 +604,30 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterSubscriptionServiceServer(s.grpcServer, v1.NewSubscriptionService(
 		s.store,
 		&s.profile,
-		s.MetricReporter,
+		s.metricReporter,
 		s.licenseService))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(
 		s.store,
 		s.licenseService,
-		s.MetricReporter,
+		s.metricReporter,
 		s.secret,
 		s.stateCfg,
 		s.dbFactory,
-		s.SchemaSyncer))
-	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store, s.ActivityManager, s.licenseService))
-	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner, s.SchemaSyncer, s.licenseService))
+		s.schemaSyncer))
+	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store, s.activityManager, s.licenseService))
+	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.backupRunner, s.schemaSyncer, s.licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
 	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile, s.licenseService, s.stateCfg, s.feishuProvider))
 	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
-	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService(s.store, s.SchemaSyncer, s.dbFactory, s.ActivityManager, s.licenseService))
+	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService(s.store, s.schemaSyncer, s.dbFactory, s.activityManager, s.licenseService))
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
-	s.issueService = v1.NewIssueService(s.store, s.ActivityManager, s.RelayRunner, s.stateCfg, s.licenseService)
+	s.issueService = v1.NewIssueService(s.store, s.activityManager, s.relayRunner, s.stateCfg, s.licenseService)
 	v1pb.RegisterIssueServiceServer(s.grpcServer, s.issueService)
-	s.rolloutService = v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.PlanCheckScheduler, s.stateCfg, s.ActivityManager)
+	s.rolloutService = v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.planCheckScheduler, s.stateCfg, s.activityManager)
 	v1pb.RegisterRolloutServiceServer(s.grpcServer, s.rolloutService)
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store, s.licenseService))
@@ -759,7 +759,7 @@ func (s *Server) initMetricReporter() {
 	metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(s.store))
 	metricReporter.Register(metric.SheetCountMetricName, metricCollector.NewSheetCountCollector(s.store))
 	metricReporter.Register(metric.MemberCountMetricName, metricCollector.NewMemberCountCollector(s.store))
-	s.MetricReporter = metricReporter
+	s.metricReporter = metricReporter
 }
 
 // retrieved via the SettingService upon startup.
@@ -954,33 +954,33 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.cancel = cancel
 	if !s.profile.Readonly {
 		// runnerWG waits for all goroutines to complete.
-		if err := s.TaskSchedulerV2.ClearRunningTaskRuns(ctx); err != nil {
+		if err := s.taskSchedulerV2.ClearRunningTaskRuns(ctx); err != nil {
 			return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
 		}
 		s.runnerWG.Add(1)
-		go s.TaskSchedulerV2.Run(ctx, &s.runnerWG)
+		go s.taskSchedulerV2.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.SchemaSyncer.Run(ctx, &s.runnerWG)
+		go s.schemaSyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.SlowQuerySyncer.Run(ctx, &s.runnerWG)
+		go s.slowQuerySyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.MailSender.Run(ctx, &s.runnerWG)
+		go s.mailSender.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.BackupRunner.Run(ctx, &s.runnerWG)
+		go s.backupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
+		go s.anomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.RollbackRunner.Run(ctx, &s.runnerWG)
+		go s.rollbackRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.ApprovalRunner.Run(ctx, &s.runnerWG)
+		go s.approvalRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.RelayRunner.Run(ctx, &s.runnerWG)
+		go s.relayRunner.Run(ctx, &s.runnerWG)
 
 		s.runnerWG.Add(1)
-		go s.MetricReporter.Run(ctx, &s.runnerWG)
+		go s.metricReporter.Run(ctx, &s.runnerWG)
 
 		s.runnerWG.Add(1)
-		go s.PlanCheckScheduler.Run(ctx, &s.runnerWG)
+		go s.planCheckScheduler.Run(ctx, &s.runnerWG)
 	}
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
@@ -1001,8 +1001,8 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	slog.Info("Stopping web server...")
 
 	// Close the metric reporter
-	if s.MetricReporter != nil {
-		s.MetricReporter.Close()
+	if s.metricReporter != nil {
+		s.metricReporter.Close()
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, gracefulShutdownPeriod)
@@ -1151,7 +1151,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 
 	// Sync the instance schema so we can transfer the sample database later.
-	if err := s.SchemaSyncer.SyncInstance(ctx, testInstance); err != nil {
+	if err := s.schemaSyncer.SyncInstance(ctx, testInstance); err != nil {
 		return errors.Wrapf(err, "failed to sync test onboarding instance")
 	}
 
@@ -1181,7 +1181,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Need to sync database schema so we can configure sensitive data policy and create the schema
 	// update issue later.
-	if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, testDatabase, true /* force */); err != nil {
+	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, testDatabase, true /* force */); err != nil {
 		return errors.Wrapf(err, "failed to sync test sample database schema")
 	}
 
@@ -1210,7 +1210,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 
 	// Sync the instance schema so we can transfer the sample database later.
-	if err := s.SchemaSyncer.SyncInstance(ctx, prodInstance); err != nil {
+	if err := s.schemaSyncer.SyncInstance(ctx, prodInstance); err != nil {
 		return errors.Wrapf(err, "failed to sync prod onboarding instance")
 	}
 
@@ -1240,7 +1240,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Need to sync database schema so we can configure sensitive data policy and create the schema
 	// update issue later.
-	if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, prodDatabase, true /* force */); err != nil {
+	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, prodDatabase, true /* force */); err != nil {
 		return errors.Wrapf(err, "failed to sync prod sample database schema")
 	}
 
