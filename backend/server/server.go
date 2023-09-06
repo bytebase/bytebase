@@ -732,8 +732,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) registerOpenAPIRoutes(e *echo.Echo) {
-	e.POST("/v1/sql/advise", s.sqlCheckController)
+func (*Server) registerOpenAPIRoutes(e *echo.Echo) {
 	e.POST("/v1/sql/schema/diff", schemaDiff)
 }
 
