@@ -2,7 +2,10 @@ import { isUndefined, orderBy, uniqBy } from "lodash-es";
 import slug from "slug";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import { AffectedTable } from "@/types/changeHistory";
-import { ChangeHistory } from "@/types/proto/v1/database_service";
+import {
+  ChangeHistory,
+  ChangeHistory_Type,
+} from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "./database";
 
 export const extractChangeHistoryUID = (name: string) => {
@@ -66,4 +69,19 @@ export const getAffectedTablesOfChangeHistory = (
     ),
     (affectedTable) => `${affectedTable.schema}.${affectedTable.table}`
   );
+};
+
+export const getHistoryChangeType = (type: ChangeHistory_Type) => {
+  switch (type) {
+    case ChangeHistory_Type.BASELINE:
+    case ChangeHistory_Type.MIGRATE:
+    case ChangeHistory_Type.MIGRATE_SDL:
+    case ChangeHistory_Type.BRANCH:
+    case ChangeHistory_Type.MIGRATE_GHOST:
+      return "DDL";
+    case ChangeHistory_Type.DATA:
+      return "DML";
+    default:
+      return "-";
+  }
 };
