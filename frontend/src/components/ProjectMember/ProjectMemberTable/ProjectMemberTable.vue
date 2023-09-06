@@ -52,7 +52,7 @@
           <p
             v-for="binding in getSortedBindingList(projectMember.bindingList)"
             :key="binding.role"
-            class="w-auto leading-8 flex flex-row justify-start items-center flex-nowrap gap-x-2"
+            class="w-auto py-0.5 flex flex-row justify-start items-center flex-nowrap gap-x-2"
             :class="isExpired(binding) ? 'line-through' : ''"
           >
             <span class="block truncate">{{
@@ -79,7 +79,7 @@
           <p
             v-for="binding in getSortedBindingList(projectMember.bindingList)"
             :key="binding.role"
-            class="w-full leading-8 truncate"
+            class="w-full py-0.5 truncate"
             :class="isExpired(binding) ? 'line-through' : ''"
           >
             <span>{{ getExpiredTimeString(binding) || "*" }}</span>
@@ -182,7 +182,7 @@ const columnList = computed(() => {
   };
   const EXPIRATION: BBGridColumn = {
     title: t("common.expiration"),
-    width: "1fr",
+    width: "16rem",
   };
   const OPERATIONS: BBGridColumn = {
     title: "",

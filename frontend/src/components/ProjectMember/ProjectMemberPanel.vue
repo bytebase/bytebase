@@ -91,6 +91,16 @@
         />
       </NTabPane>
     </NTabs>
+
+    <div class="mt-2">
+      <BBButtonConfirm
+        :disabled="!allowRemoveExpiredRoles"
+        :style="'DELETE'"
+        :button-text="$t('project.members.clean-up-expired-roles')"
+        :require-confirm="true"
+        @confirm="handleRemoveExpiredRoles"
+      />
+    </div>
   </div>
 
   <AddProjectMembersPanel
@@ -125,11 +135,13 @@ import {
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
 } from "@/utils";
+import { convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberTable, {
   ComposedProjectMember,
 } from "./ProjectMemberTable";
 import ProjectRoleTable from "./ProjectRoleTable";
+import { getExpiredDateTime } from "./ProjectRoleTable/utils";
 
 interface LocalState {
   searchText: string;
@@ -190,6 +202,31 @@ const allowAdmin = computed(() => {
   return false;
 });
 
+const allowRemoveExpiredRoles = computed(() => {
+  for (const binding of iamPolicy.value.bindings) {
+    const parsedExpr = binding.parsedExpr;
+    if (parsedExpr?.expr) {
+      const expression = convertFromExpr(parsedExpr.expr);
+      // Skip EXPORTER role if it has a non-empty statement condition.
+      if (binding.role === "roles/EXPORTER") {
+        if (expression.statement && expression.statement !== "") {
+          continue;
+        }
+      }
+
+      const expiredDateTime = getExpiredDateTime(binding);
+      if (
+        expiredDateTime &&
+        new Date().getTime() >= expiredDateTime.getTime()
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+});
+
 const composedMemberList = computed(() => {
   const distinctUserResourceNameList = uniq(
     iamPolicy.value.bindings.flatMap((binding) => binding.members)
@@ -205,13 +242,27 @@ const composedMemberList = computed(() => {
     );
   });
 
-  const usersByRole = iamPolicy.value.bindings.map((binding) => {
-    return {
-      binding: binding,
-      role: binding.role,
-      users: new Set(binding.members.map(extractUserEmail)),
-    };
-  });
+  const usersByRole = iamPolicy.value.bindings
+    .filter((binding) => {
+      // Don't show EXPORTER role if it has a non-empty statement condition.
+      if (binding.role === "roles/EXPORTER") {
+        const parsedExpr = binding.parsedExpr;
+        if (parsedExpr?.expr) {
+          const expression = convertFromExpr(parsedExpr.expr);
+          if (expression.statement && expression.statement !== "") {
+            return false;
+          }
+        }
+      }
+      return true;
+    })
+    .map((binding) => {
+      return {
+        binding: binding,
+        role: binding.role,
+        users: new Set(binding.members.map(extractUserEmail)),
+      };
+    });
 
   const userRolesList = userList.map<ComposedProjectMember>((user) => {
     const bindingList = uniq(
@@ -360,5 +411,22 @@ const handleRevokeSelectedMembers = () => {
       state.selectedMemberNameList.clear();
     },
   });
+};
+
+const handleRemoveExpiredRoles = async () => {
+  const policy = cloneDeep(iamPolicy.value);
+  // Filter out expired roles.
+  policy.bindings = policy.bindings.filter((binding) => {
+    const expiredDateTime = getExpiredDateTime(binding);
+    if (expiredDateTime && new Date().getTime() >= expiredDateTime.getTime()) {
+      return false;
+    }
+    return true;
+  });
+
+  await useProjectIamPolicyStore().updateProjectIamPolicy(
+    projectResourceName.value,
+    policy
+  );
 };
 </script>
