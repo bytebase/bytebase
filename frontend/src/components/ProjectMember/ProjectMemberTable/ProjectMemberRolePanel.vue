@@ -45,9 +45,6 @@
             class="border"
           >
             <template #item="{ item }: SingleBindingRow">
-              <div class="bb-grid-cell !p-0 items-center justify-center">
-                <RoleExpiredTip v-if="checkRoleExpired(item)" />
-              </div>
               <div class="bb-grid-cell">
                 <span
                   class="text-blue-600 cursor-pointer hover:opacity-80"
@@ -85,6 +82,7 @@
               </template>
               <div class="bb-grid-cell">
                 {{ extractExpiration(item.expiration) }}
+                <RoleExpiredTip v-if="checkRoleExpired(item)" />
               </div>
               <div class="bb-grid-cell">
                 <RoleDescription :description="item.description || ''" />
@@ -258,7 +256,6 @@ const getGridColumns = (role: string) => {
   };
   if (isRoleShouldShowDatabaseRelatedColumns(role)) {
     return [
-      placeholder,
       conditionName,
       ...databaseRelatedColumns,
       expiration,
@@ -266,7 +263,7 @@ const getGridColumns = (role: string) => {
       placeholder,
     ];
   } else {
-    return [placeholder, conditionName, expiration, description, placeholder];
+    return [conditionName, expiration, description, placeholder];
   }
 };
 
