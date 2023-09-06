@@ -1671,7 +1671,8 @@
       "users": "Usuarios",
       "roles": "Roles",
       "search-member": "Buscar miembro",
-      "revoke-members": "Revocar miembros"
+      "revoke-members": "Revocar miembros",
+      "clean-up-expired-roles": "Limpiar roles caducados"
     },
     "mode": {
       "standard": "Modo Estándar",
