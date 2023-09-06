@@ -60,7 +60,10 @@
         <ChangeHistoryStatusIcon class="mx-auto" :status="history.status" />
       </BBTableCell>
       <BBTableCell v-if="mode === 'DATABASE'">
-        {{ changeHistory_SourceToJSON(history.source) }}
+        <div class="flex items-center gap-x-1">
+          {{ getHistoryChangeType(history.type) }}
+          <GitIcon v-if="history.pushEvent" class="w-4 h-4 text-control" />
+        </div>
       </BBTableCell>
       <BBTableCell>
         {{ history.version }}
@@ -127,7 +130,6 @@ import { ComposedDatabase } from "@/types";
 import { AffectedTable } from "@/types/changeHistory";
 import {
   ChangeHistory,
-  changeHistory_SourceToJSON,
   ChangeHistory_Status,
   ChangeHistory_Type,
   changeHistory_TypeToJSON,
@@ -138,6 +140,7 @@ import {
   extractUserResourceName,
   changeHistoryLink,
   getAffectedTablesOfChangeHistory,
+  getHistoryChangeType,
 } from "@/utils";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
 
@@ -168,7 +171,7 @@ const columnList = computed(() => {
         title: "",
       },
       {
-        title: t("change-history.workflow"),
+        title: t("change-history.change-type"),
       },
       {
         title: t("common.version"),
