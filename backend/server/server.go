@@ -539,7 +539,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Register healthz endpoint.
 	e.GET("/healthz", func(c echo.Context) error {
-		return c.String(http.StatusOK, "OK!\n")
+		return c.String(http.StatusOK, "OK")
 	})
 
 	// Setup the gRPC and grpc-gateway.
