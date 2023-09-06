@@ -85,8 +85,9 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, plan
 	if dbSchema == nil {
 		return nil, errors.Errorf("database schema not found: %d", database.UID)
 	}
-	charset := dbSchema.Metadata.CharacterSet
-	collation := dbSchema.Metadata.Collation
+	if dbSchema.Metadata == nil {
+		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
+	}
 
 	sheetUID := int(planCheckRun.Config.SheetUid)
 	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
@@ -125,7 +126,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, plan
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement)
+		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.Metadata)
 	case db.MySQL, db.OceanBase:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 		if err != nil {
@@ -134,7 +135,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, plan
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, charset, collation)
+		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
 	case db.Oracle:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -248,7 +249,9 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get db schema %q", database.UID)
 		}
-
+		if dbSchema.Metadata == nil {
+			return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
+		}
 		schemaGroupsMatchedTables := map[string][]string{}
 		for _, schemaGroup := range schemaGroups {
 			matches, _, err := utils.GetMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
@@ -282,7 +285,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					defer driver.Close(ctx)
 					sqlDB := driver.GetDB()
 
-					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement)
+					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.Metadata)
 				case db.MySQL, db.OceanBase:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 					if err != nil {
@@ -291,9 +294,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					defer driver.Close(ctx)
 					sqlDB := driver.GetDB()
 
-					charset := dbSchema.Metadata.CharacterSet
-					collation := dbSchema.Metadata.Collation
-					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, charset, collation)
+					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
 				case db.Oracle:
 					schema := ""
 					if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -389,7 +390,10 @@ func getChangedResourcesForOracle(databaseName string, schemaName string, statem
 	return parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, statement)
 }
 
-func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, databaseName, statement, charset, collation string) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
+	charset := dbMetadata.CharacterSet
+	collation := dbMetadata.Collation
+
 	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -446,7 +450,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 			}
 		}
 
-		affectedRows, err := getAffectedRowsForMysql(ctx, dbType, sqlDB, root[0])
+		affectedRows, err := getAffectedRowsForMysql(ctx, dbType, sqlDB, dbMetadata, root[0])
 		if err != nil {
 			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
 		} else {
@@ -505,7 +509,7 @@ func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]
 	return parser.ExtractChangedResources(parser.MySQL, currentDatabase, "" /* currentSchema */, statement)
 }
 
-func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
 	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -540,7 +544,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 		sqlTypeSet[sqlType] = struct{}{}
 		changedResources = append(changedResources, resources...)
 
-		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, stmt)
+		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, dbMetadata, stmt)
 		if err != nil {
 			slog.Error("failed to get affected rows for postgres", slog.String("database", database), log.BBError(err))
 		} else {
