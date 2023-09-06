@@ -81,4 +81,13 @@ watch(
   },
   { immediate: true }
 );
+
+watch(
+  () => tabStore.currentTab.id,
+  () => {
+    if (showInfoPane.value) {
+      tab.value = "INFO";
+    }
+  }
+);
 </script>
