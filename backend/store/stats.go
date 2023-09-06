@@ -49,8 +49,8 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 	return count, nil
 }
 
-// CountPrincipal counts the number of endusers.
-func (s *Store) CountPrincipal(ctx context.Context) (int, error) {
+// CountActiveUsers counts the number of endusers.
+func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
@@ -61,14 +61,10 @@ func (s *Store) CountPrincipal(ctx context.Context) (int, error) {
 		SELECT
 			count(1)
 		FROM principal
-		WHERE principal.type = $1`
+		LEFT JOIN member ON principal.id = member.principal_id
+		WHERE (principal.type = $1 OR principal.type = $2) AND member.row_status = $3`
 	var count int
-	if err := tx.QueryRowContext(ctx, `
-		SELECT
-			count(1)
-		FROM principal
-		WHERE principal.type = $1
-	`, api.EndUser).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, api.EndUser, api.ServiceAccount, api.Normal).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
