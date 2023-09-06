@@ -120,6 +120,7 @@
     v-if="state.showRequestExportPanel"
     :database-id="currentTab.connection.databaseId"
     :statement="result.statement"
+    :redirect-to-issue-page="sqlEditorStore.mode === 'BUNDLED'"
     @close="state.showRequestExportPanel = false"
   />
 </template>
@@ -147,6 +148,7 @@ import {
   featureToRef,
   useDatabaseV1Store,
   useCurrentUserV1,
+  useSQLEditorStore,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import {
@@ -200,6 +202,7 @@ const tabStore = useTabStore();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const currentUserV1 = useCurrentUserV1();
+const sqlEditorStore = useSQLEditorStore();
 const dataTable = ref<InstanceType<typeof DataTable>>();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
@@ -237,10 +240,6 @@ const showExportButton = computed(() => {
 });
 
 const allowToExportData = computed(() => {
-  if (!featureToRef("bb.feature.access-control").value) {
-    return true;
-  }
-
   if (
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-access-control",
