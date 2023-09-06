@@ -9,12 +9,11 @@
 
     <PlanCheckBadgeBar
       :plan-check-run-list="planCheckRunList"
-      :task="task"
       @select-type="selectedType = $event"
     />
 
     <PlanCheckRunButton
-      v-if="allowRunChecks"
+      v-if="allowRunChecks && task"
       :task="task"
       @run-checks="runChecks"
     />
@@ -38,7 +37,11 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
-import { PlanCheckRun_Type, Task } from "@/types/proto/v1/rollout_service";
+import {
+  PlanCheckRun,
+  PlanCheckRun_Type,
+  Task,
+} from "@/types/proto/v1/rollout_service";
 import { VueClass } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckPanel from "./PlanCheckPanel.vue";
@@ -46,14 +49,18 @@ import PlanCheckRunButton from "./PlanCheckRunButton.vue";
 
 const props = defineProps<{
   allowRunChecks?: boolean;
-  task: Task;
+  task?: Task;
   labelClass?: VueClass;
+  planCheckRunList?: PlanCheckRun[];
 }>();
 
 const { issue, events } = useIssueContext();
 const selectedType = ref<PlanCheckRun_Type>();
 
 const planCheckRunList = computed(() => {
+  if (!props.task) {
+    return props.planCheckRunList ?? issue.value.planCheckRunList;
+  }
   return planCheckRunListForTask(issue.value, props.task);
 });
 

@@ -23,7 +23,6 @@ import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   StageRolloutAction,
   TaskRolloutAction,
-  allPlanChecksPassedForTask,
   allowUserToApplyTaskRolloutAction,
   taskRolloutActionButtonProps,
   taskRolloutActionDisplayName,
@@ -48,9 +47,6 @@ const { issue, activeTask } = useIssueContext();
 
 const errors = asyncComputed(async () => {
   const errors: string[] = [];
-  if (!allPlanChecksPassedForTask(issue.value, activeTask.value)) {
-    errors.push("Some checks failed");
-  }
   if (
     !(await allowUserToApplyTaskRolloutAction(
       issue.value,

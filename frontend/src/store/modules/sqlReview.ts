@@ -12,6 +12,7 @@ import {
   IdType,
   MaybeRef,
   RuleType,
+  UNKNOWN_ID,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import {
@@ -283,7 +284,9 @@ export const useReviewPolicyByEnvironmentId = (
 ) => {
   const store = useSQLReviewStore();
   watchEffect(() => {
-    store.getOrFetchReviewPolicyByEnvironmentUID(unref(environmentId));
+    const uid = unref(environmentId);
+    if (uid === String(UNKNOWN_ID)) return;
+    store.getOrFetchReviewPolicyByEnvironmentUID(uid);
   });
 
   return computed(() =>
