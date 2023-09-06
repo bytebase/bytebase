@@ -1212,6 +1212,7 @@
     "self": "Change History",
     "select": "Schema version is recorded each time a schema change is applied via Bytebase",
     "workflow": "Workflow",
+    "change-type": "Change Type",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
     "schema-drift": "Schema drift",
