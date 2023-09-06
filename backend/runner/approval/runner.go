@@ -771,6 +771,7 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 	}
 
 	var affectedRowsReportResult, statementTypeReportResult []api.TaskCheckResult
+	// TODO(d): migrate to v2 CI/CD.
 	if api.IsTaskCheckReportSupported(instance.Engine) && api.IsTaskCheckReportNeededForTaskType(task.Type) {
 		affectedRowsReportResultInner, done, err := getReportResult(ctx, s, task, api.TaskCheckDatabaseStatementAffectedRowsReport)
 		if err != nil {
