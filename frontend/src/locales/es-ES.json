@@ -902,6 +902,7 @@
       "customize": "personalice",
       "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez.",
       "export-method": "Método de exportación",
+      "request-sent": "Solicitud enviada",
       "please-select-database-first": "Por favor, seleccione primero la base de datos"
     },
     "review-sent-back": "Revisión devuelta",

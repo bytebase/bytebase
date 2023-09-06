@@ -279,6 +279,7 @@
 
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
+    :redirect-to-issue-page="true"
     @close="state.showRequestExportPanel = false"
   />
 

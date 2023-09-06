@@ -1,6 +1,6 @@
 <template>
   <ChatPanel v-if="openAIKey" />
-  <MockInputPlaceholder v-else />
+  <MockInputPlaceholder v-else-if="allowConfig" />
 </template>
 
 <script lang="ts" setup>
@@ -23,6 +23,15 @@ import MockInputPlaceholder from "./MockInputPlaceholder.vue";
 type LocalState = {
   showHistoryDialog: boolean;
 };
+
+withDefaults(
+  defineProps<{
+    allowConfig?: boolean;
+  }>(),
+  {
+    allowConfig: true,
+  }
+);
 
 const emit = defineEmits<{
   (

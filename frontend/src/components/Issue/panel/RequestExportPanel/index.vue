@@ -140,6 +140,7 @@ import {
   useDatabaseV1Store,
   useIssueStore,
   useProjectV1Store,
+  pushNotification,
 } from "@/store";
 import {
   DatabaseResource,
@@ -172,9 +173,10 @@ interface LocalState {
 const props = defineProps<{
   databaseId?: string;
   statement?: string;
+  redirectToIssuePage?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
@@ -330,7 +332,21 @@ const doCreateIssue = async () => {
   };
 
   const issue = await useIssueStore().createIssue(newIssue);
-  router.push(`/issue/${issueSlug(issue.name, issue.id)}`);
+
+  pushNotification({
+    module: "bytebase",
+    style: "INFO",
+    title: t("issue.grant-request.request-sent"),
+  });
+
+  if (!!props.redirectToIssuePage) {
+    const route = router.resolve({
+      path: `/issue/${issueSlug(issue.name, issue.id)}`,
+    });
+    window.open(route.href, "_blank");
+  }
+
+  emit("close");
 };
 
 const generateIssueName = () => {
