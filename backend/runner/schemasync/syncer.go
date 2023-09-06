@@ -29,8 +29,9 @@ import (
 )
 
 const (
-	schemaSyncInterval  = 1 * time.Minute
-	defaultSyncInterval = 24 * time.Hour
+	schemaSyncInterval = 1 * time.Minute
+	// defaultSyncInterval means never sync.
+	defaultSyncInterval = 0 * time.Second
 )
 
 // NewSyncer creates a schema syncer.
@@ -91,6 +92,9 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	now := time.Now()
 	for _, instance := range instances {
 		interval := getOrDefaultSyncInterval(instance)
+		if interval == defaultSyncInterval {
+			continue
+		}
 		lastSyncTime := getOrDefaultLastSyncTime(instance.Metadata.LastSyncTime)
 		// lastSyncTime + syncInterval > now
 		// Next round not started yet.
@@ -124,6 +128,9 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		}
 		// The database inherits the sync interval from the instance.
 		interval := getOrDefaultSyncInterval(instance)
+		if interval == defaultSyncInterval {
+			continue
+		}
 		lastSyncTime := getOrDefaultLastSyncTime(database.Metadata.LastSyncTime)
 		// lastSyncTime + syncInterval > now
 		// Next round not started yet.
