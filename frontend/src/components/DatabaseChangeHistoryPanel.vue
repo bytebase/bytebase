@@ -11,6 +11,18 @@
         />
       </div>
       <div class="flex flex-row justify-end items-center grow space-x-2">
+        <label
+          v-for="item in CHANGE_TYPES"
+          :key="item"
+          class="flex items-center gap-x-2 text-sm text-gray-600"
+        >
+          <NCheckbox
+            :checked="state.selectedChangeType.has(item)"
+            @update:checked="toggleChangeType(item, $event)"
+          >
+            {{ item }}
+          </NCheckbox>
+        </label>
         <div class="w-44">
           <BBSelect
             :selected-item="state.selectedAffectedTable"
@@ -98,6 +110,7 @@ import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
 import { isEqual, orderBy, uniqBy } from "lodash-es";
+import { NCheckbox } from "naive-ui";
 import { computed, onBeforeMount, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -117,6 +130,7 @@ import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   getAffectedTablesOfChangeHistory,
   instanceV1HasAlterSchema,
+  getHistoryChangeType,
 } from "@/utils";
 
 const EmptyAffectedTable: AffectedTable = {
@@ -131,6 +145,7 @@ interface LocalState {
   selectedChangeHistoryNameList: string[];
   isExporting: boolean;
   selectedAffectedTable: AffectedTable;
+  selectedChangeType: Set<string>;
 }
 
 const props = defineProps({
@@ -148,6 +163,7 @@ const { t } = useI18n();
 
 const changeHistoryStore = useChangeHistoryStore();
 const router = useRouter();
+const CHANGE_TYPES = ["DDL", "DML"];
 
 const state = reactive<LocalState>({
   showBaselineModal: false,
@@ -155,6 +171,7 @@ const state = reactive<LocalState>({
   selectedChangeHistoryNameList: [],
   isExporting: false,
   selectedAffectedTable: EmptyAffectedTable,
+  selectedChangeType: new Set(CHANGE_TYPES),
 });
 
 const prepareChangeHistoryList = async () => {
@@ -207,6 +224,10 @@ const changeHistoryList = computed(() => {
 
 const shownChangeHistoryList = computed(() => {
   return changeHistoryList.value.filter((changeHistory) => {
+    const type = getHistoryChangeType(changeHistory.type);
+    if (!state.selectedChangeType.has(type)) {
+      return false;
+    }
     if (
       state.selectedAffectedTable &&
       !isEqual(state.selectedAffectedTable, EmptyAffectedTable)
@@ -327,5 +348,10 @@ const doCreateBaseline = () => {
       databaseList: `${props.database.uid}`,
     },
   });
+};
+
+const toggleChangeType = (type: string, checked: boolean) => {
+  if (checked) state.selectedChangeType.add(type);
+  else state.selectedChangeType.delete(type);
 };
 </script>
