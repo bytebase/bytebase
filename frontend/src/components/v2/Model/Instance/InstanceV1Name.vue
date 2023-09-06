@@ -12,9 +12,9 @@
 
     <slot name="prefix" />
 
-    <span class="line-clamp-1" :class="textClass">{{
-      instanceV1Name(instance)
-    }}</span>
+    <NEllipsis :line-clamp="1" :class="textClass">
+      {{ instanceV1Name(instance) }} 123123123123123
+    </NEllipsis>
 
     <InstanceV1EngineIcon
       v-if="icon && iconPosition === 'suffix'"
@@ -24,6 +24,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { Instance } from "@/types/proto/v1/instance_service";
 import { instanceV1Name, instanceV1Slug } from "@/utils";
