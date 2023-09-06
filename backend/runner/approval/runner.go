@@ -27,7 +27,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/relay"
-	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/bytebase/bytebase/backend/store"
@@ -42,19 +41,17 @@ type Runner struct {
 	dbFactory       *dbfactory.DBFactory
 	stateCfg        *state.State
 	activityManager *activity.Manager
-	taskScheduler   *taskrun.Scheduler
 	relayRunner     *relay.Runner
 	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, relayRunner *relay.Runner, licenseService enterpriseAPI.LicenseService) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, relayRunner *relay.Runner, licenseService enterpriseAPI.LicenseService) *Runner {
 	return &Runner{
 		store:           store,
 		dbFactory:       dbFactory,
 		stateCfg:        stateCfg,
 		activityManager: activityManager,
-		taskScheduler:   taskScheduler,
 		relayRunner:     relayRunner,
 		licenseService:  licenseService,
 	}
@@ -196,7 +193,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}, &activity.Metadata{}); err != nil {
 			log.Warn("Failed to create project activity", zap.Error(err))
 		}
-		if err := r.taskScheduler.ChangeIssueStatus(ctx, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+		if err := utils.ChangeIssueStatus(ctx, r.store, r.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
@@ -340,12 +337,41 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 	if issue.PlanUID == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
-	plan, err := s.GetPlan(ctx, *issue.PlanUID)
+	plan, err := s.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}
 	if plan == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+	}
+
+	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+		PlanUID: &plan.UID,
+		Type:    &[]store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport},
+	})
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)
+	}
+	type Key struct {
+		InstanceUID  int
+		DatabaseName string
+	}
+	latestPlanCheckRun := map[Key]*store.PlanCheckRunMessage{}
+	for _, run := range planCheckRuns {
+		key := Key{
+			InstanceUID:  int(run.Config.InstanceUid),
+			DatabaseName: run.Config.DatabaseName,
+		}
+		oldValue, ok := latestPlanCheckRun[key]
+		if !ok || oldValue.UID < run.UID {
+			latestPlanCheckRun[key] = run
+		}
+	}
+	for _, run := range latestPlanCheckRun {
+		// the latest plan check run is not done yet, return done=false
+		if run.Status != store.PlanCheckRunStatusDone {
+			return 0, store.RiskSourceUnknown, false, nil
+		}
 	}
 
 	pipelineCreate, err := v1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
@@ -396,7 +422,6 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 				continue
 			}
 
-			// TODO(d): support create database with environment override.
 			environmentID := instance.EnvironmentID
 			var databaseName string
 			if task.Type == api.TaskDatabaseCreate {
@@ -405,6 +430,9 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 					return 0, store.RiskSourceUnknown, false, err
 				}
 				databaseName = payload.DatabaseName
+				if payload.EnvironmentID != "" {
+					environmentID = payload.EnvironmentID
+				}
 			} else {
 				database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					UID: task.DatabaseID,
@@ -457,6 +485,33 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 					if boolVal, ok := val.(bool); ok && boolVal {
 						return risk.Level, nil
 					}
+
+					if run, ok := latestPlanCheckRun[Key{
+						InstanceUID:  instance.UID,
+						DatabaseName: databaseName,
+					}]; ok {
+						for _, result := range run.Result.Results {
+							report := result.GetSqlSummaryReport()
+							if report == nil {
+								continue
+							}
+							args["affected_rows"] = report.AffectedRows
+							for _, statementType := range report.StatementTypes {
+								args["sql_type"] = statementType
+								res, _, err := prg.Eval(args)
+								if err != nil {
+									return 0, err
+								}
+								val, err := res.ConvertToNative(reflect.TypeOf(false))
+								if err != nil {
+									return 0, errors.Wrap(err, "expect bool result")
+								}
+								if boolVal, ok := val.(bool); ok && boolVal {
+									return risk.Level, nil
+								}
+							}
+						}
+					}
 				}
 				return 0, nil
 			}()
@@ -489,6 +544,7 @@ func getDatabaseChangeIssueRisk(ctx context.Context, s *store.Store, issue *stor
 	var maxRiskLevel int64
 	tasks, err := s.ListTasks(ctx, &api.TaskFind{
 		PipelineID: issue.PipelineUID,
+		// TODO(p0ny): use latestTaskRunStatus
 		StatusList: &[]api.TaskStatus{api.TaskPendingApproval},
 	})
 	if err != nil {
@@ -739,7 +795,6 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		return 0, false, errors.New("affected rows report result and statement type report result length mismatch")
 	}
 
-	// TODO(d): support create database with environment override.
 	environmentID := instance.EnvironmentID
 	var databaseName string
 	if task.Type == api.TaskDatabaseCreate {
@@ -748,6 +803,9 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 			return 0, false, err
 		}
 		databaseName = payload.DatabaseName
+		if payload.EnvironmentID != "" {
+			environmentID = payload.EnvironmentID
+		}
 	} else {
 		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			UID: task.DatabaseID,

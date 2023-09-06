@@ -160,6 +160,58 @@ func (Engine) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{1}
 }
 
+type MaskingLevel int32
+
+const (
+	MaskingLevel_MASKING_LEVEL_UNSPECIFIED MaskingLevel = 0
+	MaskingLevel_NONE                      MaskingLevel = 1
+	MaskingLevel_PARTIAL                   MaskingLevel = 2
+	MaskingLevel_FULL                      MaskingLevel = 3
+)
+
+// Enum value maps for MaskingLevel.
+var (
+	MaskingLevel_name = map[int32]string{
+		0: "MASKING_LEVEL_UNSPECIFIED",
+		1: "NONE",
+		2: "PARTIAL",
+		3: "FULL",
+	}
+	MaskingLevel_value = map[string]int32{
+		"MASKING_LEVEL_UNSPECIFIED": 0,
+		"NONE":                      1,
+		"PARTIAL":                   2,
+		"FULL":                      3,
+	}
+)
+
+func (x MaskingLevel) Enum() *MaskingLevel {
+	p := new(MaskingLevel)
+	*p = x
+	return p
+}
+
+func (x MaskingLevel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MaskingLevel) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_common_proto_enumTypes[2].Descriptor()
+}
+
+func (MaskingLevel) Type() protoreflect.EnumType {
+	return &file_v1_common_proto_enumTypes[2]
+}
+
+func (x MaskingLevel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MaskingLevel.Descriptor instead.
+func (MaskingLevel) EnumDescriptor() ([]byte, []int) {
+	return file_v1_common_proto_rawDescGZIP(), []int{2}
+}
+
 var File_v1_common_proto protoreflect.FileDescriptor
 
 var file_v1_common_proto_rawDesc = []byte{
@@ -183,7 +235,12 @@ var file_v1_common_proto_rawDesc = []byte{
 	0x10, 0x0c, 0x12, 0x0b, 0x0a, 0x07, 0x4d, 0x41, 0x52, 0x49, 0x41, 0x44, 0x42, 0x10, 0x0d, 0x12,
 	0x0d, 0x0a, 0x09, 0x4f, 0x43, 0x45, 0x41, 0x4e, 0x42, 0x41, 0x53, 0x45, 0x10, 0x0e, 0x12, 0x06,
 	0x0a, 0x02, 0x44, 0x4d, 0x10, 0x0f, 0x12, 0x0e, 0x0a, 0x0a, 0x52, 0x49, 0x53, 0x49, 0x4e, 0x47,
-	0x57, 0x41, 0x56, 0x45, 0x10, 0x10, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61,
+	0x57, 0x41, 0x56, 0x45, 0x10, 0x10, 0x2a, 0x4e, 0x0a, 0x0c, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e,
+	0x67, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x12, 0x1d, 0x0a, 0x19, 0x4d, 0x41, 0x53, 0x4b, 0x49, 0x4e,
+	0x47, 0x5f, 0x4c, 0x45, 0x56, 0x45, 0x4c, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46,
+	0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x4f, 0x4e, 0x45, 0x10, 0x01, 0x12,
+	0x0b, 0x0a, 0x07, 0x50, 0x41, 0x52, 0x54, 0x49, 0x41, 0x4c, 0x10, 0x02, 0x12, 0x08, 0x0a, 0x04,
+	0x46, 0x55, 0x4c, 0x4c, 0x10, 0x03, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61,
 	0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x33,
 }
@@ -200,10 +257,11 @@ func file_v1_common_proto_rawDescGZIP() []byte {
 	return file_v1_common_proto_rawDescData
 }
 
-var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_v1_common_proto_goTypes = []interface{}{
-	(State)(0),  // 0: bytebase.v1.State
-	(Engine)(0), // 1: bytebase.v1.Engine
+	(State)(0),        // 0: bytebase.v1.State
+	(Engine)(0),       // 1: bytebase.v1.Engine
+	(MaskingLevel)(0), // 2: bytebase.v1.MaskingLevel
 }
 var file_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -223,7 +281,7 @@ func file_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_common_proto_rawDesc,
-			NumEnums:      2,
+			NumEnums:      3,
 			NumMessages:   0,
 			NumExtensions: 0,
 			NumServices:   0,

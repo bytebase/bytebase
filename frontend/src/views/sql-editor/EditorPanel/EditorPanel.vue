@@ -7,20 +7,12 @@
 
       <SheetForIssueTipsBar />
 
-      <template
-        v-if="
-          !tabStore.isDisconnected || isSheetOversize || sheetBacktracePayload
-        "
-      >
-        <SQLEditor @execute="handleExecute" @save-sheet="trySaveSheet" />
-      </template>
-      <template v-else>
-        <ConnectionHolder />
-      </template>
+      <SQLEditor @execute="handleExecute" @save-sheet="trySaveSheet" />
     </template>
 
     <AIChatToSQL
       v-if="!tabStore.isDisconnected"
+      :allow-config="sqlEditorStore.mode === 'BUNDLED'"
       @apply-statement="handleApplyStatement"
     />
 
@@ -31,21 +23,20 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
 import {
   useCurrentTab,
   useInstanceV1Store,
-  useSheetV1Store,
   useTabStore,
+  useSQLEditorStore,
 } from "@/store";
 import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
-import { formatEngineV1, getSheetIssueBacktracePayloadV1 } from "@/utils";
+import { formatEngineV1 } from "@/utils";
 import {
   EditorAction,
   ConnectionPathBar,
-  ConnectionHolder,
   ExecutingHintModal,
   SaveSheetModal,
 } from "../EditorCommon";
@@ -53,21 +44,9 @@ import SQLEditor from "./SQLEditor.vue";
 import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
 
 const tabStore = useTabStore();
-const sheetV1Store = useSheetV1Store();
 const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
 const tab = useCurrentTab();
-
-const sheet = computed(() => {
-  const sheetName = tabStore.currentTab.sheetName;
-  if (!sheetName) return undefined;
-  const sheet = sheetV1Store.getSheetByName(sheetName);
-  return sheet;
-});
-
-const sheetBacktracePayload = computed(() => {
-  if (!sheet.value) return undefined;
-  return getSheetIssueBacktracePayloadV1(sheet.value);
-});
+const sqlEditorStore = useSQLEditorStore();
 
 const { executeReadonly } = useExecuteSQL();
 
@@ -99,15 +78,4 @@ const handleApplyStatement = async (
     });
   }
 };
-
-const isSheetOversize = computed(() => {
-  if (!sheet.value) {
-    return false;
-  }
-
-  return (
-    new TextDecoder().decode(sheet.value.content).length <
-    sheet.value.contentSize
-  );
-});
 </script>

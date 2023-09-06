@@ -10,7 +10,7 @@
   </div>
 
   <PlanCheckBar
-    v-if="!isCreating"
+    v-if="show"
     :allow-run-checks="allowRunChecks"
     :task="selectedTask"
     class="px-4 py-2"
@@ -20,7 +20,11 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { computed } from "vue";
-import { useIssueContext } from "@/components/IssueV1/logic";
+import {
+  planSpecHasPlanChecks,
+  specForTask,
+  useIssueContext,
+} from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
 import {
@@ -32,6 +36,17 @@ import PlanCheckBar from "./PlanCheckBar";
 
 const currentUser = useCurrentUserV1();
 const { isCreating, issue, selectedTask } = useIssueContext();
+
+const show = computed(() => {
+  if (isCreating.value) {
+    return false;
+  }
+  const spec = specForTask(issue.value.planEntity, selectedTask.value);
+  if (!spec) {
+    return false;
+  }
+  return planSpecHasPlanChecks(spec);
+});
 
 const allowRunChecks = computed(() => {
   // Allowing below users to run plan checks

@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetBackupPlanPolicyByEnvID will get the backup plan policy for an environment.
@@ -75,25 +77,6 @@ func (s *Store) GetSQLReviewPolicy(ctx context.Context, environmentID int) (*adv
 	return api.UnmarshalSQLReviewPolicy(policy.Payload)
 }
 
-// GetSensitiveDataPolicy will get the sensitive data policy for database ID.
-func (s *Store) GetSensitiveDataPolicy(ctx context.Context, databaseID int) (*api.SensitiveDataPolicy, error) {
-	resourceType := api.PolicyResourceTypeDatabase
-	pType := api.PolicyTypeSensitiveData
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
-		ResourceType: &resourceType,
-		ResourceUID:  &databaseID,
-		Type:         &pType,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if policy == nil {
-		return &api.SensitiveDataPolicy{}, nil
-	}
-
-	return api.UnmarshalSensitiveDataPolicy(policy.Payload)
-}
-
 // GetSlowQueryPolicy will get the slow query policy for instance ID.
 func (s *Store) GetSlowQueryPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*api.SlowQueryPolicy, error) {
 	pType := api.PolicyTypeSlowQuery
@@ -111,6 +94,78 @@ func (s *Store) GetSlowQueryPolicy(ctx context.Context, resourceType api.PolicyR
 	}
 
 	return api.UnmarshalSlowQueryPolicy(policy.Payload)
+}
+
+// GetMaskingRulePolicy will get the masking rule policy.
+func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRulePolicy, error) {
+	pType := api.PolicyTypeMaskingRule
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		Type: &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if policy == nil {
+		return &storepb.MaskingRulePolicy{}, nil
+	}
+
+	p := new(storepb.MaskingRulePolicy)
+	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+// GetMaskingPolicyByDatabaseUID gets the masking policy for a database.
+func (s *Store) GetMaskingPolicyByDatabaseUID(ctx context.Context, databaseUID int) (*storepb.MaskingPolicy, error) {
+	resourceType := api.PolicyResourceTypeDatabase
+	pType := api.PolicyTypeMasking
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+		ResourceUID:  &databaseUID,
+		Type:         &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if policy == nil {
+		return &storepb.MaskingPolicy{}, nil
+	}
+
+	p := new(storepb.MaskingPolicy)
+	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+// GetMaskingExceptionPolicyByProjectUID gets the masking exception policy for a project.
+func (s *Store) GetMaskingExceptionPolicyByProjectUID(ctx context.Context, projectUID int) (*storepb.MaskingExceptionPolicy, error) {
+	resourceType := api.PolicyResourceTypeProject
+	pType := api.PolicyTypeMaskingException
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+		ResourceUID:  &projectUID,
+		Type:         &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if policy == nil {
+		return &storepb.MaskingExceptionPolicy{}, nil
+	}
+
+	p := new(storepb.MaskingExceptionPolicy)
+	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
 // PolicyMessage is the mssage for policy.

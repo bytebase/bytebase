@@ -3,6 +3,7 @@
     :show="action !== undefined"
     :title="title"
     :loading="state.loading"
+    @show="comment = ''"
     @close="$emit('close')"
   >
     <template #default>
@@ -60,7 +61,6 @@ import {
 } from "@/components/IssueV1/logic";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { Issue } from "@/types/proto/v1/issue_service";
 import CommonDrawer from "./CommonDrawer.vue";
 
 type LocalState = {
@@ -101,16 +101,12 @@ const handleConfirm = async (
 ) => {
   state.loading = true;
   try {
-    const issuePatch = Issue.fromJSON({
-      ...issue.value,
-      status: IssueStatusActionToIssueStatusMap[action],
-    });
-    const response = await issueServiceClient.batchUpdateIssues({
+    await issueServiceClient.batchUpdateIssuesStatus({
       parent: issue.value.project,
-      requests: [{ issue: issuePatch, updateMask: ["status"] }],
+      issues: [issue.value.name],
+      status: IssueStatusActionToIssueStatusMap[action],
+      reason: comment ?? "",
     });
-    const updatedIssue = response.issues[0];
-    Object.assign(issue.value, updatedIssue);
 
     // notify the issue logic to update issue status
     events.emit("status-changed", { eager: true });

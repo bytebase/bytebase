@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,119 +17,156 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (ctl *controller) createDatabase(ctx context.Context, projectUID int, instance *v1pb.Instance, databaseName string, owner string, labelMap map[string]string) error {
-	environmentResourceID := strings.TrimPrefix(instance.Environment, "environments/")
-	instanceUID, err := strconv.Atoi(instance.Uid)
+func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Project, instance *v1pb.Instance, environment *v1pb.Environment, databaseName string, owner string, labels map[string]string) error {
+	characterSet, collation := "utf8mb4", "utf8mb4_general_ci"
+	if instance.Engine == v1pb.Engine_POSTGRES {
+		characterSet = "UTF8"
+		collation = "en_US.UTF-8"
+	}
+	environmentName := ""
+	if environment != nil {
+		environmentName = environment.Name
+	}
+
+	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
+								CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
+									Target:       instance.Name,
+									Database:     databaseName,
+									CharacterSet: characterSet,
+									Collation:    collation,
+									Owner:        owner,
+									Environment:  environmentName,
+									Labels:       labels,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
 	if err != nil {
 		return err
 	}
 
-	labels, err := marshalLabels(labelMap, environmentResourceID)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	if err != nil {
 		return err
 	}
-	createCtx := &api.CreateDatabaseContext{
-		InstanceID:   instanceUID,
-		DatabaseName: databaseName,
-		Labels:       labels,
-		CharacterSet: "utf8mb4",
-		Collation:    "utf8mb4_general_ci",
-	}
-	if instance.Engine == v1pb.Engine_POSTGRES {
-		createCtx.Owner = owner
-		createCtx.CharacterSet = "UTF8"
-		createCtx.Collation = "en_US.UTF-8"
-	}
-	createContext, err := json.Marshal(createCtx)
-	if err != nil {
-		return errors.Wrap(err, "failed to construct database creation issue CreateContext payload")
-	}
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("create database %q", databaseName),
-		Type:          api.IssueDatabaseCreate,
-		Description:   fmt.Sprintf("This creates a database %q.", databaseName),
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
+
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Title:       fmt.Sprintf("create database %q", databaseName),
+			Description: fmt.Sprintf("This creates a database %q.", databaseName),
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+		},
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to create database creation issue")
+		return err
 	}
-	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
-		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval %s", issue.ID, issue.Pipeline.ID, status)
+
+	if err := ctl.waitRollout(ctx, issue.Name, rollout.Name); err != nil {
+		return err
 	}
-	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
-	}
-	if status != api.TaskDone {
-		return errors.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
-	}
-	issue, err = ctl.patchIssueStatus(api.IssueStatusPatch{
-		ID:     issue.ID,
-		Status: api.IssueDone,
+
+	_, err = ctl.issueServiceClient.BatchUpdateIssuesStatus(ctx, &v1pb.BatchUpdateIssuesStatusRequest{
+		Parent: project.Name,
+		Issues: []string{issue.Name},
+		Status: v1pb.IssueStatus_DONE,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
+		return err
 	}
 	// Add a second sleep to avoid schema version conflict.
 	time.Sleep(time.Second)
 	return nil
 }
 
-// cloneDatabaseFromBackup clones the database from an existing backup.
-func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, projectUID int, instance *v1pb.Instance, databaseName string, backup *v1pb.Backup, labelMap map[string]string) error {
-	environmentID := strings.TrimPrefix(instance.Environment, "environments/")
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	if err != nil {
-		return err
+func (ctl *controller) createDatabaseFromBackup(ctx context.Context, project *v1pb.Project, instance *v1pb.Instance, databaseName string, owner string, labels map[string]string, backup *v1pb.Backup) error {
+	characterSet, collation := "utf8mb4", "utf8mb4_general_ci"
+	if instance.Engine == v1pb.Engine_POSTGRES {
+		characterSet = "UTF8"
+		collation = "en_US.UTF-8"
 	}
-	labels, err := marshalLabels(labelMap, environmentID)
+
+	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Steps: []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
+								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
+									Target: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
+									CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
+										Target:       instance.Name,
+										Database:     databaseName,
+										CharacterSet: characterSet,
+										Collation:    collation,
+										Owner:        owner,
+										Labels:       labels,
+									},
+									Source: &v1pb.Plan_RestoreDatabaseConfig_Backup{
+										Backup: backup.Name,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
 	if err != nil {
 		return err
 	}
 
-	backupUID, err := strconv.Atoi(backup.Uid)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	if err != nil {
 		return err
 	}
-	createContext, err := json.Marshal(&api.CreateDatabaseContext{
-		InstanceID:   instanceUID,
-		DatabaseName: databaseName,
-		BackupID:     backupUID,
-		Labels:       labels,
+
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Title:       fmt.Sprintf("create database %q", databaseName),
+			Description: fmt.Sprintf("This creates a database %q.", databaseName),
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+		},
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to construct database creation issue CreateContext payload")
+		return err
 	}
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          fmt.Sprintf("create database %q from backup %q", databaseName, backup.Name),
-		Type:          api.IssueDatabaseCreate,
-		Description:   fmt.Sprintf("This creates a database %q from backup %q.", databaseName, backup.Name),
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
+
+	if err := ctl.waitRollout(ctx, issue.Name, rollout.Name); err != nil {
+		return err
+	}
+
+	_, err = ctl.issueServiceClient.BatchUpdateIssuesStatus(ctx, &v1pb.BatchUpdateIssuesStatusRequest{
+		Parent: project.Name,
+		Issues: []string{issue.Name},
+		Status: v1pb.IssueStatus_DONE,
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to create database creation issue")
+		return err
 	}
-	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
-		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval %s", issue.ID, issue.Pipeline.ID, status)
-	}
-	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
-	}
-	if status != api.TaskDone {
-		return errors.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
-	}
-	issue, err = ctl.patchIssueStatus(api.IssueStatusPatch{
-		ID:     issue.ID,
-		Status: api.IssueDone,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
-	}
+	// Add a second sleep to avoid schema version conflict.
+	time.Sleep(time.Second)
 	return nil
 }
 
@@ -157,26 +193,6 @@ func (ctl *controller) postDatabaseEdit(databaseEdit api.DatabaseEdit) (*Databas
 		return nil, errors.Wrap(err, "fail to unmarshal post database edit response")
 	}
 	return databaseEditResult, nil
-}
-
-func marshalLabels(labelMap map[string]string, environmentID string) (string, error) {
-	var labelList []*api.DatabaseLabel
-	for k, v := range labelMap {
-		labelList = append(labelList, &api.DatabaseLabel{
-			Key:   k,
-			Value: v,
-		})
-	}
-	labelList = append(labelList, &api.DatabaseLabel{
-		Key:   api.EnvironmentLabelKey,
-		Value: environmentID,
-	})
-
-	labels, err := json.Marshal(labelList)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to marshal labels %+v", labelList)
-	}
-	return string(labels), nil
 }
 
 // disableAutomaticBackup disables the automatic backup of a database.

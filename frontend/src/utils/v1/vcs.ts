@@ -15,6 +15,8 @@ export const getVCSUIType = (vcs: ExternalVersionControl): VCSUIType => {
         return "GITLAB_COM";
       }
       return "GITLAB_SELF_HOST";
+    case ExternalVersionControl_Type.AZURE_DEVOPS:
+      return "AZURE_DEVOPS";
     default:
       return "GITLAB_SELF_HOST";
   }

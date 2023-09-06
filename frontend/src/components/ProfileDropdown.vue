@@ -9,7 +9,7 @@
       @click.prevent="menu.toggle()"
       @contextmenu.capture.prevent="menu.toggle()"
     >
-      <UserAvatar :user="currentUserV1" />
+      <UserAvatar :size="'SMALL'" :user="currentUserV1" />
     </button>
     <BBContextMenu ref="menu" class="origin-top-left mt-2 w-48">
       <router-link
@@ -41,7 +41,7 @@
       <div class="border-t border-gray-100"></div>
       <div class="py-1">
         <router-link to="/setting" class="menu-item" role="menuitem">{{
-          $t("common.settings")
+          $t("settings.sidebar.profile")
         }}</router-link>
         <div
           class="menu-item relative"

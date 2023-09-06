@@ -10,6 +10,9 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
       - uses: pnpm/action-setup@v2.2.4
         with:
           version: 8.6.0
@@ -22,9 +25,6 @@ jobs:
         working-directory: frontend
       - run: pnpm release
         working-directory: frontend
-      - uses: actions/setup-go@v4
-        with:
-          go-version: 1.20.1
       - name: Build
         uses: goreleaser/goreleaser-action@v4
         with:
@@ -40,6 +40,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
       - uses: pnpm/action-setup@v2.2.4
         with:
           version: 8.6.0
@@ -52,9 +55,6 @@ jobs:
         working-directory: frontend
       - run: pnpm release
         working-directory: frontend
-      - uses: actions/setup-go@v4
-        with:
-          go-version: 1.20.1
       - name: Build
         uses: goreleaser/goreleaser-action@v4
         with:
@@ -68,9 +68,12 @@ jobs:
           path: dist/bytebase*
   draft-release:
     needs: [build-linux-binary, build-darwin-binary]
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
       - uses: pnpm/action-setup@v2.2.4
         with:
           version: 8.6.0
@@ -83,9 +86,6 @@ jobs:
         working-directory: frontend
       - run: pnpm release
         working-directory: frontend
-      - uses: actions/setup-go@v4
-        with:
-          go-version: 1.20.1
       - name: Make directories
         run: |
           mkdir -p ./bytebase-build/linux

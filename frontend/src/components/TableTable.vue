@@ -58,10 +58,10 @@
   </BBTable>
 
   <TableDetailDrawer
-    v-if="state.selectedTableName"
+    :show="!!state.selectedTableName"
     :database-name="database.name"
     :schema-name="schemaName"
-    :table-name="state.selectedTableName"
+    :table-name="state.selectedTableName ?? ''"
     @dismiss="state.selectedTableName = undefined"
   />
 </template>

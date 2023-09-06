@@ -569,6 +569,8 @@ message Activity {
     TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5;
     // TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now.
     TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE = 6;
+    // TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
+    TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22;
     // TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement.
     TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT = 7;
     // TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement.

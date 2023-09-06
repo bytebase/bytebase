@@ -24,6 +24,7 @@ const (
 	SchemaDesignService_ListSchemaDesigns_FullMethodName  = "/bytebase.v1.SchemaDesignService/ListSchemaDesigns"
 	SchemaDesignService_CreateSchemaDesign_FullMethodName = "/bytebase.v1.SchemaDesignService/CreateSchemaDesign"
 	SchemaDesignService_UpdateSchemaDesign_FullMethodName = "/bytebase.v1.SchemaDesignService/UpdateSchemaDesign"
+	SchemaDesignService_MergeSchemaDesign_FullMethodName  = "/bytebase.v1.SchemaDesignService/MergeSchemaDesign"
 	SchemaDesignService_ParseSchemaString_FullMethodName  = "/bytebase.v1.SchemaDesignService/ParseSchemaString"
 	SchemaDesignService_DeleteSchemaDesign_FullMethodName = "/bytebase.v1.SchemaDesignService/DeleteSchemaDesign"
 )
@@ -36,6 +37,7 @@ type SchemaDesignServiceClient interface {
 	ListSchemaDesigns(ctx context.Context, in *ListSchemaDesignsRequest, opts ...grpc.CallOption) (*ListSchemaDesignsResponse, error)
 	CreateSchemaDesign(ctx context.Context, in *CreateSchemaDesignRequest, opts ...grpc.CallOption) (*SchemaDesign, error)
 	UpdateSchemaDesign(ctx context.Context, in *UpdateSchemaDesignRequest, opts ...grpc.CallOption) (*SchemaDesign, error)
+	MergeSchemaDesign(ctx context.Context, in *MergeSchemaDesignRequest, opts ...grpc.CallOption) (*SchemaDesign, error)
 	ParseSchemaString(ctx context.Context, in *ParseSchemaStringRequest, opts ...grpc.CallOption) (*ParseSchemaStringResponse, error)
 	DeleteSchemaDesign(ctx context.Context, in *DeleteSchemaDesignRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -84,6 +86,15 @@ func (c *schemaDesignServiceClient) UpdateSchemaDesign(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *schemaDesignServiceClient) MergeSchemaDesign(ctx context.Context, in *MergeSchemaDesignRequest, opts ...grpc.CallOption) (*SchemaDesign, error) {
+	out := new(SchemaDesign)
+	err := c.cc.Invoke(ctx, SchemaDesignService_MergeSchemaDesign_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *schemaDesignServiceClient) ParseSchemaString(ctx context.Context, in *ParseSchemaStringRequest, opts ...grpc.CallOption) (*ParseSchemaStringResponse, error) {
 	out := new(ParseSchemaStringResponse)
 	err := c.cc.Invoke(ctx, SchemaDesignService_ParseSchemaString_FullMethodName, in, out, opts...)
@@ -110,6 +121,7 @@ type SchemaDesignServiceServer interface {
 	ListSchemaDesigns(context.Context, *ListSchemaDesignsRequest) (*ListSchemaDesignsResponse, error)
 	CreateSchemaDesign(context.Context, *CreateSchemaDesignRequest) (*SchemaDesign, error)
 	UpdateSchemaDesign(context.Context, *UpdateSchemaDesignRequest) (*SchemaDesign, error)
+	MergeSchemaDesign(context.Context, *MergeSchemaDesignRequest) (*SchemaDesign, error)
 	ParseSchemaString(context.Context, *ParseSchemaStringRequest) (*ParseSchemaStringResponse, error)
 	DeleteSchemaDesign(context.Context, *DeleteSchemaDesignRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSchemaDesignServiceServer()
@@ -130,6 +142,9 @@ func (UnimplementedSchemaDesignServiceServer) CreateSchemaDesign(context.Context
 }
 func (UnimplementedSchemaDesignServiceServer) UpdateSchemaDesign(context.Context, *UpdateSchemaDesignRequest) (*SchemaDesign, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateSchemaDesign not implemented")
+}
+func (UnimplementedSchemaDesignServiceServer) MergeSchemaDesign(context.Context, *MergeSchemaDesignRequest) (*SchemaDesign, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MergeSchemaDesign not implemented")
 }
 func (UnimplementedSchemaDesignServiceServer) ParseSchemaString(context.Context, *ParseSchemaStringRequest) (*ParseSchemaStringResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ParseSchemaString not implemented")
@@ -222,6 +237,24 @@ func _SchemaDesignService_UpdateSchemaDesign_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SchemaDesignService_MergeSchemaDesign_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MergeSchemaDesignRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SchemaDesignServiceServer).MergeSchemaDesign(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SchemaDesignService_MergeSchemaDesign_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SchemaDesignServiceServer).MergeSchemaDesign(ctx, req.(*MergeSchemaDesignRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SchemaDesignService_ParseSchemaString_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ParseSchemaStringRequest)
 	if err := dec(in); err != nil {
@@ -280,6 +313,10 @@ var SchemaDesignService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateSchemaDesign",
 			Handler:    _SchemaDesignService_UpdateSchemaDesign_Handler,
+		},
+		{
+			MethodName: "MergeSchemaDesign",
+			Handler:    _SchemaDesignService_MergeSchemaDesign_Handler,
 		},
 		{
 			MethodName: "ParseSchemaString",

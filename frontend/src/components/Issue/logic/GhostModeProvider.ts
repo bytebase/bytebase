@@ -1,4 +1,5 @@
 import { cloneDeep } from "lodash-es";
+import { v4 as uuidv4 } from "uuid";
 import { computed, defineComponent } from "vue";
 import {
   useSheetV1Store,
@@ -37,6 +38,7 @@ export default defineComponent({
     const {
       create,
       issue,
+      project,
       selectedTask,
       createIssue,
       isTenantMode,
@@ -139,6 +141,26 @@ export default defineComponent({
         if (create.value) {
           const task = selectedTask.value as TaskCreate;
           task.statement = newStatement;
+        } else {
+          const task = selectedTask.value as Task;
+          // Create a new sheet instead of reusing the old one.
+          const sheet = await sheetV1Store.createSheet(project.value.name, {
+            title: uuidv4(),
+            content: new TextEncoder().encode(newStatement),
+            visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+            source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+            type: Sheet_Type.TYPE_SQL,
+          });
+
+          await taskStore.patchTask({
+            issueId: (issue.value as Issue).id,
+            pipelineId: (issue.value as Issue).pipeline!.id,
+            taskId: task.id,
+            taskPatch: {
+              sheetId: Number(extractSheetUID(sheet.name)),
+            },
+          });
+          onStatusChanged(true);
         }
       }
     };

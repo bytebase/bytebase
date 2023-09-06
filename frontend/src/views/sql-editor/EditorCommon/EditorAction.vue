@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="containerRef"
     class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-2 border-b bg-white"
   >
     <div
@@ -11,27 +12,27 @@
         :disabled="!allowQuery"
         @click="handleRunQuery"
       >
-        <mdi:play class="h-5 w-5 -ml-1.5" />
+        <mdi:play class="-ml-1.5" />
         <span>
           {{
             showRunSelected ? $t("sql-editor.run-selected") : $t("common.run")
           }}
         </span>
 
-        <span class="hidden sm:inline ml-1">
+        <span v-show="showShortcutText" class="ml-1">
           ({{ keyboardShortcutStr("cmd_or_ctrl+⏎") }})
         </span>
       </NButton>
       <NButton size="small" :disabled="!allowQuery" @click="handleExplainQuery">
-        <mdi:play class="h-5 w-5 -ml-1.5" />
+        <mdi:play class="-ml-1.5" />
         <span>Explain</span>
-        <span class="hidden sm:inline ml-1">
+        <span v-show="showShortcutText" class="ml-1">
           ({{ keyboardShortcutStr("cmd_or_ctrl+E") }})
         </span>
       </NButton>
       <NButton size="small" :disabled="!allowQuery" @click="handleFormatSQL">
         <span>{{ $t("sql-editor.format") }}</span>
-        <span class="hidden sm:inline ml-1">
+        <span v-show="showShortcutText" class="ml-1">
           ({{ keyboardShortcutStr("shift+opt_or_alt+F") }})
         </span>
       </NButton>
@@ -42,7 +43,7 @@
         @click="handleClearScreen"
       >
         <span>{{ $t("sql-editor.clear-screen") }}</span>
-        <span class="hidden sm:inline ml-1">
+        <span v-show="showShortcutText" class="ml-1">
           ({{ keyboardShortcutStr("shift+opt_or_alt+C") }})
         </span>
       </NButton>
@@ -61,9 +62,9 @@
           :disabled="!allowSave"
           @click="() => emit('save-sheet')"
         >
-          <carbon:save class="h-5 w-5 -ml-1" />
+          <carbon:save class="-ml-1" />
           <span class="ml-1">{{ $t("common.save") }}</span>
-          <span class="hidden sm:inline ml-1">
+          <span v-show="showShortcutText" class="ml-1">
             ({{ keyboardShortcutStr("cmd_or_ctrl+S") }})
           </span>
         </NButton>
@@ -83,7 +84,7 @@
               "
               @click="handleShareButtonClick"
             >
-              <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
+              <carbon:share class="" /> &nbsp; {{ $t("common.share") }}
               <FeatureBadge
                 :feature="'bb.feature.shared-sql-script'"
                 custom-class="ml-2"
@@ -106,7 +107,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineEmits, reactive } from "vue";
+import { useElementSize } from "@vueuse/core";
+import { computed, defineEmits, reactive, ref } from "vue";
 import {
   useTabStore,
   useSQLEditorStore,
@@ -141,6 +143,8 @@ const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 const uiStateStore = useUIStateStore();
 const webTerminalStore = useWebTerminalStore();
+const containerRef = ref<HTMLDivElement>();
+const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 
 const connection = computed(() => tabStore.currentTab.connection);
@@ -242,4 +246,8 @@ const handleShareButtonClick = () => {
     state.requiredFeatureName = "bb.feature.shared-sql-script";
   }
 };
+
+const showShortcutText = computed(() => {
+  return containerWidth.value > 800;
+});
 </script>

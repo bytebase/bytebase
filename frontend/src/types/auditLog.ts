@@ -14,6 +14,7 @@ export const AuditActivityTypeList = [
   LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER,
   // SQL Editor related.
   LogEntity_Action.ACTION_DATABASE_SQL_EDITOR_QUERY,
+  LogEntity_Action.ACTION_DATABASE_SQL_EXPORT,
 ];
 
 export const AuditActivityTypeI18nNameMap: { [key: number]: string } = {
@@ -29,4 +30,5 @@ export const AuditActivityTypeI18nNameMap: { [key: number]: string } = {
     "audit-log.type.project.database-transfer",
   [LogEntity_Action.ACTION_DATABASE_SQL_EDITOR_QUERY]:
     "audit-log.type.sql-editor-query",
+  [LogEntity_Action.ACTION_DATABASE_SQL_EXPORT]: "audit-log.type.sql-export",
 };

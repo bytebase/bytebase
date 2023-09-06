@@ -5,7 +5,7 @@
       :style="style"
       :loading="state.isUpdating"
       :disabled="!allowEdit || state.isUpdating"
-      size="large"
+      size="medium"
       required
       class="bb-issue-title-input"
       @focus="state.isEditing = true"

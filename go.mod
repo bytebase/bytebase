@@ -1,6 +1,6 @@
 module github.com/bytebase/bytebase
 
-go 1.20
+go 1.21
 
 require (
 	cloud.google.com/go/spanner v1.47.0
@@ -22,6 +22,7 @@ require (
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/dgraph-io/ristretto v0.1.1-0.20220403145359-8e850b710d6d
 	github.com/github/gh-ost v1.1.5
+	github.com/go-ego/gse v0.80.2
 	github.com/go-ldap/ldap/v3 v3.4.5
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
@@ -75,9 +76,9 @@ require (
 	golang.org/x/sys v0.9.0
 	golang.org/x/text v0.10.0
 	google.golang.org/api v0.128.0
-	google.golang.org/genproto v0.0.0-20230731193218-e0aa005b6bdf
-	google.golang.org/genproto/googleapis/api v0.0.0-20230731193218-e0aa005b6bdf
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230731190214-cbb8c96f2d6d
+	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d
+	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d
 	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -127,6 +128,7 @@ require (
 	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
+	github.com/vcaesar/cedar v0.20.1 // indirect
 	github.com/xuri/efp v0.0.0-20220603152613-6918739fd470 // indirect
 	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
@@ -135,7 +137,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.110.6 // indirect
+	cloud.google.com/go v0.110.7 // indirect
 	cloud.google.com/go/compute v1.23.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.1 // indirect

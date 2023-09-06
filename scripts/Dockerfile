@@ -26,11 +26,13 @@ COPY ./backend/enterprise/api/plan.yaml ./src/types/
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.20.3 as backend
+FROM golang:1.21.0 as backend
+ADD go.mod go.sum /
+RUN go mod download
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.20.1"
+ARG GO_VERSION="1.21.0"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
@@ -58,14 +60,14 @@ COPY ./scripts/VERSION .
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
   CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; \
 fi && \
-    VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
+    VERSION=`cat ./scripts/VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
     --tags "${RELEASE},embed_frontend" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
     ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
-FROM debian:bullseye-slim as monolithic
+FROM debian:bookworm-slim as monolithic
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"

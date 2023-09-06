@@ -32,7 +32,8 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.audit-log"
   | "bb.permission.workspace.debug-log"
   | "bb.permission.workspace.manage-mail-delivery"
-  | "bb.permission.workspace.manage-database-secrets";
+  | "bb.permission.workspace.manage-database-secrets"
+  | "bb.permission.workspace.manage-announcement";
 
 // A map from a particular workspace permission to the respective enablement of a particular workspace role.
 // The key is the workspace permission type and the value is the workspace [DEVELOPER, DBA, OWNER] triplet.
@@ -63,6 +64,7 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.debug-log", [false, true, true]],
   ["bb.permission.workspace.manage-mail-delivery", [false, false, true]],
   ["bb.permission.workspace.manage-database-secrets", [false, true, true]],
+  ["bb.permission.workspace.manage-announcement", [false, true, true]],
 ]);
 
 // Returns true if RBAC is not enabled or the particular role has the particular permission.

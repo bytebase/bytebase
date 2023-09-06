@@ -63,6 +63,9 @@
             >
             <span class="border-r border-control-border ml-1"></span>
           </template>
+          <template v-if="row.checkResult.sqlSummaryReport">
+            {{ row.checkResult.sqlSummaryReport.affectedRows }}
+          </template>
 
           <a
             v-if="row.link"
@@ -174,6 +177,7 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
       PlanCheckRun_Result.fromPartial({
         status: PlanCheckRun_Result_Status.ERROR,
         title: t("common.error"),
+        content: props.planCheckRun.error,
       }),
     ];
   } else if (props.planCheckRun.status === PlanCheckRun_Status.CANCELED) {
@@ -181,6 +185,7 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
       PlanCheckRun_Result.fromPartial({
         status: PlanCheckRun_Result_Status.WARNING,
         title: t("common.canceled"),
+        content: props.planCheckRun.error,
       }),
     ];
   }
@@ -191,22 +196,31 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
 const categoryAndTitle = (
   checkResult: PlanCheckRun_Result
 ): [string, string] => {
-  const code = checkResult.sqlReviewReport?.code ?? checkResult.code;
-  if (code === SQLReviewPolicyErrorCode.EMPTY_POLICY) {
-    const title = messageWithCode(checkResult.title, code);
-    return ["", title];
-  }
-  if (LocalizedSQLRuleErrorCodes.has(code)) {
-    const rule = ruleTemplateMap.get(checkResult.title as RuleType);
-    if (rule) {
-      const ruleLocalization = getRuleLocalization(rule.type);
-      const key = `sql-review.category.${rule.category.toLowerCase()}`;
-      const category = t(key);
-      const title = messageWithCode(ruleLocalization.title, code);
-      return [category, title];
-    } else {
-      return ["", messageWithCode(checkResult.title, code)];
+  if (checkResult.sqlReviewReport) {
+    const code = checkResult.sqlReviewReport?.code ?? checkResult.code;
+    if (code === SQLReviewPolicyErrorCode.EMPTY_POLICY) {
+      const title = messageWithCode(checkResult.title, code);
+      return ["", title];
     }
+    if (LocalizedSQLRuleErrorCodes.has(code)) {
+      const rule = ruleTemplateMap.get(checkResult.title as RuleType);
+      if (rule) {
+        const ruleLocalization = getRuleLocalization(rule.type);
+        const key = `sql-review.category.${rule.category.toLowerCase()}`;
+        const category = t(key);
+        const title = messageWithCode(ruleLocalization.title, code);
+        return [category, title];
+      } else {
+        return ["", messageWithCode(checkResult.title, code)];
+      }
+    }
+    return ["", checkResult.title];
+  }
+  if (checkResult.sqlSummaryReport) {
+    if (typeof checkResult.sqlSummaryReport.affectedRows === "number") {
+      return ["", t("task.check-type.affected-rows")];
+    }
+    return ["", checkResult.title];
   }
 
   return ["", checkResult.title];

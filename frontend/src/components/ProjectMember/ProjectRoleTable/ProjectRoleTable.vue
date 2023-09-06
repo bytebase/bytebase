@@ -27,8 +27,11 @@
         <div class="bb-grid-cell gap-x-2">
           {{ binding.condition?.title || displayRoleTitle(binding.role) }}
         </div>
-        <div class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
-          {{ getExpiredTime(binding) || "*" }}
+        <div
+          class="bb-grid-cell flex-wrap gap-x-2 gap-y-1"
+          :class="isExpired(binding) ? 'line-through' : ''"
+        >
+          {{ getExpiredTimeString(binding) || "*" }}
         </div>
         <div class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
           <div class="flex flex-row justify-start items-start flex-wrap gap-1">
@@ -94,8 +97,8 @@ import {
   hasPermissionInProjectV1,
   displayRoleTitle,
 } from "@/utils";
-import { convertFromExpr } from "@/utils/issue/cel";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
+import { getExpiredTimeString, isExpired, getExpiredDateTime } from "./utils";
 
 export type ProjectRoleRow = BBGridRow<Binding>;
 
@@ -179,11 +182,9 @@ const roleGroup = computed(() => {
     roleMap.set(
       role,
       roleMap.get(role)?.sort((a, b) => {
-        if (!getExpiredTime(a)) return -1;
-        if (!getExpiredTime(b)) return 1;
         return (
-          new Date(getExpiredTime(b)!).getTime() -
-          new Date(getExpiredTime(a)!).getTime()
+          (getExpiredDateTime(b)?.getTime() ?? -1) -
+          (getExpiredDateTime(a)?.getTime() ?? -1)
         );
       }) || []
     );
@@ -224,16 +225,5 @@ const getUserList = (binding: Binding) => {
     }
   }
   return userList;
-};
-
-const getExpiredTime = (binding: Binding) => {
-  const parsedExpr = binding.parsedExpr;
-  if (parsedExpr?.expr) {
-    const expression = convertFromExpr(parsedExpr.expr);
-    if (expression.expiredTime) {
-      return new Date(expression.expiredTime).toLocaleString();
-    }
-  }
-  return t("project.members.never-expires");
 };
 </script>

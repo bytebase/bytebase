@@ -577,8 +577,8 @@ func local_request_IssueService_UpdateIssueComment_0(ctx context.Context, marsha
 
 }
 
-func request_IssueService_BatchUpdateIssues_0(ctx context.Context, marshaler runtime.Marshaler, client IssueServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq BatchUpdateIssuesRequest
+func request_IssueService_BatchUpdateIssuesStatus_0(ctx context.Context, marshaler runtime.Marshaler, client IssueServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BatchUpdateIssuesStatusRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -606,13 +606,13 @@ func request_IssueService_BatchUpdateIssues_0(ctx context.Context, marshaler run
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 
-	msg, err := client.BatchUpdateIssues(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.BatchUpdateIssuesStatus(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_IssueService_BatchUpdateIssues_0(ctx context.Context, marshaler runtime.Marshaler, server IssueServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq BatchUpdateIssuesRequest
+func local_request_IssueService_BatchUpdateIssuesStatus_0(ctx context.Context, marshaler runtime.Marshaler, server IssueServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BatchUpdateIssuesStatusRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -640,7 +640,7 @@ func local_request_IssueService_BatchUpdateIssues_0(ctx context.Context, marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 
-	msg, err := server.BatchUpdateIssues(ctx, &protoReq)
+	msg, err := server.BatchUpdateIssuesStatus(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -1030,7 +1030,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("POST", pattern_IssueService_BatchUpdateIssues_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_IssueService_BatchUpdateIssuesStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -1038,12 +1038,12 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/BatchUpdateIssues", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/issues:batchUpdate"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.IssueService/BatchUpdateIssuesStatus", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/issues:batchUpdateStatus"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_IssueService_BatchUpdateIssues_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_IssueService_BatchUpdateIssuesStatus_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -1051,7 +1051,7 @@ func RegisterIssueServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_IssueService_BatchUpdateIssues_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_IssueService_BatchUpdateIssuesStatus_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1325,25 +1325,25 @@ func RegisterIssueServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("POST", pattern_IssueService_BatchUpdateIssues_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_IssueService_BatchUpdateIssuesStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/BatchUpdateIssues", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/issues:batchUpdate"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.IssueService/BatchUpdateIssuesStatus", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/issues:batchUpdateStatus"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_IssueService_BatchUpdateIssues_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_IssueService_BatchUpdateIssuesStatus_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_IssueService_BatchUpdateIssues_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_IssueService_BatchUpdateIssuesStatus_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1431,7 +1431,7 @@ var (
 
 	pattern_IssueService_UpdateIssueComment_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "issues", "parent"}, "comment"))
 
-	pattern_IssueService_BatchUpdateIssues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "issues"}, "batchUpdate"))
+	pattern_IssueService_BatchUpdateIssuesStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "issues"}, "batchUpdateStatus"))
 
 	pattern_IssueService_ApproveIssue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "issues", "name"}, "approve"))
 
@@ -1455,7 +1455,7 @@ var (
 
 	forward_IssueService_UpdateIssueComment_0 = runtime.ForwardResponseMessage
 
-	forward_IssueService_BatchUpdateIssues_0 = runtime.ForwardResponseMessage
+	forward_IssueService_BatchUpdateIssuesStatus_0 = runtime.ForwardResponseMessage
 
 	forward_IssueService_ApproveIssue_0 = runtime.ForwardResponseMessage
 

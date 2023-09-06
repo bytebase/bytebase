@@ -78,6 +78,10 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits<{
+  (event: "list:update", list: LogEntity[]): void;
+}>();
+
 const state = reactive<LocalState>({
   loading: false,
   auditLogList: [],
@@ -131,15 +135,16 @@ const fetchData = async (refresh = false) => {
       state.auditLogList.push(...logEntities);
     }
 
-    if (logEntities.length < expectedRowCount) {
-      state.hasMore = false;
-    } else if (!isFirstFetch) {
+    if (!isFirstFetch && logEntities.length === expectedRowCount) {
       // If we didn't reach the end, memorize we've clicked the "load more" button.
       sessionState.value.page++;
     }
 
     sessionState.value.updatedTs = Date.now();
     state.paginationToken = nextPageToken;
+    if (!nextPageToken) {
+      state.hasMore = false;
+    }
   } catch (e) {
     console.error(e);
   } finally {
@@ -177,4 +182,9 @@ watch(isLoggedIn, () => {
     resetSession();
   }
 });
+
+watch(
+  () => state.auditLogList,
+  (list) => emit("list:update", list)
+);
 </script>

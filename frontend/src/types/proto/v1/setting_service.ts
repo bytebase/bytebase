@@ -89,6 +89,7 @@ export interface Value {
   externalApprovalSettingValue?: ExternalApprovalSetting | undefined;
   schemaTemplateSettingValue?: SchemaTemplateSetting | undefined;
   dataClassificationSettingValue?: DataClassificationSetting | undefined;
+  semanticCategorySettingValue?: SemanticCategorySetting | undefined;
 }
 
 export interface SMTPMailDeliverySettingValue {
@@ -289,7 +290,66 @@ export interface WorkspaceProfileSetting {
   /** The webhook URL for the GitOps workflow. */
   gitopsWebhookUrl: string;
   /** The duration for refresh token. */
-  refreshTokenDuration?: Duration | undefined;
+  refreshTokenDuration?:
+    | Duration
+    | undefined;
+  /** The setting of custom announcement */
+  announcement?: Announcement | undefined;
+}
+
+export interface Announcement {
+  /** The alert level of announcemnt */
+  level: Announcement_AlertLevel;
+  /** The text of announcemnt */
+  text: string;
+  /** The optional link, user can follow the link to check extra details */
+  link: string;
+}
+
+/** We support three levels of AlertLevel: INFO, WARNING, and ERROR. */
+export enum Announcement_AlertLevel {
+  ALERT_LEVEL_UNSPECIFIED = 0,
+  ALERT_LEVEL_INFO = 1,
+  ALERT_LEVEL_WARNING = 2,
+  ALERT_LEVEL_CRITICAL = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function announcement_AlertLevelFromJSON(object: any): Announcement_AlertLevel {
+  switch (object) {
+    case 0:
+    case "ALERT_LEVEL_UNSPECIFIED":
+      return Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED;
+    case 1:
+    case "ALERT_LEVEL_INFO":
+      return Announcement_AlertLevel.ALERT_LEVEL_INFO;
+    case 2:
+    case "ALERT_LEVEL_WARNING":
+      return Announcement_AlertLevel.ALERT_LEVEL_WARNING;
+    case 3:
+    case "ALERT_LEVEL_CRITICAL":
+      return Announcement_AlertLevel.ALERT_LEVEL_CRITICAL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Announcement_AlertLevel.UNRECOGNIZED;
+  }
+}
+
+export function announcement_AlertLevelToJSON(object: Announcement_AlertLevel): string {
+  switch (object) {
+    case Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED:
+      return "ALERT_LEVEL_UNSPECIFIED";
+    case Announcement_AlertLevel.ALERT_LEVEL_INFO:
+      return "ALERT_LEVEL_INFO";
+    case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
+      return "ALERT_LEVEL_WARNING";
+    case Announcement_AlertLevel.ALERT_LEVEL_CRITICAL:
+      return "ALERT_LEVEL_CRITICAL";
+    case Announcement_AlertLevel.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface WorkspaceApprovalSetting {
@@ -382,6 +442,19 @@ export interface DataClassificationSetting_DataClassificationConfig_DataClassifi
 export interface DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
   key: string;
   value?: DataClassificationSetting_DataClassificationConfig_DataClassification | undefined;
+}
+
+export interface SemanticCategorySetting {
+  categories: SemanticCategorySetting_SemanticCategory[];
+}
+
+export interface SemanticCategorySetting_SemanticCategory {
+  /** id is the uuid for category item. */
+  id: string;
+  /** the title of the category item, it should not be empty. */
+  title: string;
+  /** the description of the category item, it can be empty. */
+  description: string;
 }
 
 function createBaseListSettingsRequest(): ListSettingsRequest {
@@ -800,6 +873,7 @@ function createBaseValue(): Value {
     externalApprovalSettingValue: undefined,
     schemaTemplateSettingValue: undefined,
     dataClassificationSettingValue: undefined,
+    semanticCategorySettingValue: undefined,
   };
 }
 
@@ -834,6 +908,9 @@ export const Value = {
     }
     if (message.dataClassificationSettingValue !== undefined) {
       DataClassificationSetting.encode(message.dataClassificationSettingValue, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.semanticCategorySettingValue !== undefined) {
+      SemanticCategorySetting.encode(message.semanticCategorySettingValue, writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -915,6 +992,13 @@ export const Value = {
 
           message.dataClassificationSettingValue = DataClassificationSetting.decode(reader, reader.uint32());
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.semanticCategorySettingValue = SemanticCategorySetting.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -951,6 +1035,9 @@ export const Value = {
         : undefined,
       dataClassificationSettingValue: isSet(object.dataClassificationSettingValue)
         ? DataClassificationSetting.fromJSON(object.dataClassificationSettingValue)
+        : undefined,
+      semanticCategorySettingValue: isSet(object.semanticCategorySettingValue)
+        ? SemanticCategorySetting.fromJSON(object.semanticCategorySettingValue)
         : undefined,
     };
   },
@@ -990,6 +1077,10 @@ export const Value = {
     message.dataClassificationSettingValue !== undefined &&
       (obj.dataClassificationSettingValue = message.dataClassificationSettingValue
         ? DataClassificationSetting.toJSON(message.dataClassificationSettingValue)
+        : undefined);
+    message.semanticCategorySettingValue !== undefined &&
+      (obj.semanticCategorySettingValue = message.semanticCategorySettingValue
+        ? SemanticCategorySetting.toJSON(message.semanticCategorySettingValue)
         : undefined);
     return obj;
   },
@@ -1035,6 +1126,10 @@ export const Value = {
     message.dataClassificationSettingValue =
       (object.dataClassificationSettingValue !== undefined && object.dataClassificationSettingValue !== null)
         ? DataClassificationSetting.fromPartial(object.dataClassificationSettingValue)
+        : undefined;
+    message.semanticCategorySettingValue =
+      (object.semanticCategorySettingValue !== undefined && object.semanticCategorySettingValue !== null)
+        ? SemanticCategorySetting.fromPartial(object.semanticCategorySettingValue)
         : undefined;
     return message;
   },
@@ -1494,6 +1589,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     outboundIpList: [],
     gitopsWebhookUrl: "",
     refreshTokenDuration: undefined,
+    announcement: undefined,
   };
 }
 
@@ -1516,6 +1612,9 @@ export const WorkspaceProfileSetting = {
     }
     if (message.refreshTokenDuration !== undefined) {
       Duration.encode(message.refreshTokenDuration, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.announcement !== undefined) {
+      Announcement.encode(message.announcement, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -1569,6 +1668,13 @@ export const WorkspaceProfileSetting = {
 
           message.refreshTokenDuration = Duration.decode(reader, reader.uint32());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.announcement = Announcement.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1588,6 +1694,7 @@ export const WorkspaceProfileSetting = {
       refreshTokenDuration: isSet(object.refreshTokenDuration)
         ? Duration.fromJSON(object.refreshTokenDuration)
         : undefined,
+      announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
     };
   },
 
@@ -1605,6 +1712,8 @@ export const WorkspaceProfileSetting = {
     message.refreshTokenDuration !== undefined && (obj.refreshTokenDuration = message.refreshTokenDuration
       ? Duration.toJSON(message.refreshTokenDuration)
       : undefined);
+    message.announcement !== undefined &&
+      (obj.announcement = message.announcement ? Announcement.toJSON(message.announcement) : undefined);
     return obj;
   },
 
@@ -1622,6 +1731,93 @@ export const WorkspaceProfileSetting = {
     message.refreshTokenDuration = (object.refreshTokenDuration !== undefined && object.refreshTokenDuration !== null)
       ? Duration.fromPartial(object.refreshTokenDuration)
       : undefined;
+    message.announcement = (object.announcement !== undefined && object.announcement !== null)
+      ? Announcement.fromPartial(object.announcement)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAnnouncement(): Announcement {
+  return { level: 0, text: "", link: "" };
+}
+
+export const Announcement = {
+  encode(message: Announcement, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.level !== 0) {
+      writer.uint32(8).int32(message.level);
+    }
+    if (message.text !== "") {
+      writer.uint32(18).string(message.text);
+    }
+    if (message.link !== "") {
+      writer.uint32(26).string(message.link);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Announcement {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAnnouncement();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.level = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.text = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.link = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Announcement {
+    return {
+      level: isSet(object.level) ? announcement_AlertLevelFromJSON(object.level) : 0,
+      text: isSet(object.text) ? String(object.text) : "",
+      link: isSet(object.link) ? String(object.link) : "",
+    };
+  },
+
+  toJSON(message: Announcement): unknown {
+    const obj: any = {};
+    message.level !== undefined && (obj.level = announcement_AlertLevelToJSON(message.level));
+    message.text !== undefined && (obj.text = message.text);
+    message.link !== undefined && (obj.link = message.link);
+    return obj;
+  },
+
+  create(base?: DeepPartial<Announcement>): Announcement {
+    return Announcement.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Announcement>): Announcement {
+    const message = createBaseAnnouncement();
+    message.level = object.level ?? 0;
+    message.text = object.text ?? "";
+    message.link = object.link ?? "";
     return message;
   },
 };
@@ -2816,6 +3012,156 @@ export const DataClassificationSetting_DataClassificationConfig_ClassificationEn
     message.value = (object.value !== undefined && object.value !== null)
       ? DataClassificationSetting_DataClassificationConfig_DataClassification.fromPartial(object.value)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseSemanticCategorySetting(): SemanticCategorySetting {
+  return { categories: [] };
+}
+
+export const SemanticCategorySetting = {
+  encode(message: SemanticCategorySetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.categories) {
+      SemanticCategorySetting_SemanticCategory.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticCategorySetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSemanticCategorySetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.categories.push(SemanticCategorySetting_SemanticCategory.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SemanticCategorySetting {
+    return {
+      categories: Array.isArray(object?.categories)
+        ? object.categories.map((e: any) => SemanticCategorySetting_SemanticCategory.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SemanticCategorySetting): unknown {
+    const obj: any = {};
+    if (message.categories) {
+      obj.categories = message.categories.map((e) =>
+        e ? SemanticCategorySetting_SemanticCategory.toJSON(e) : undefined
+      );
+    } else {
+      obj.categories = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SemanticCategorySetting>): SemanticCategorySetting {
+    return SemanticCategorySetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SemanticCategorySetting>): SemanticCategorySetting {
+    const message = createBaseSemanticCategorySetting();
+    message.categories = object.categories?.map((e) => SemanticCategorySetting_SemanticCategory.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSemanticCategorySetting_SemanticCategory(): SemanticCategorySetting_SemanticCategory {
+  return { id: "", title: "", description: "" };
+}
+
+export const SemanticCategorySetting_SemanticCategory = {
+  encode(message: SemanticCategorySetting_SemanticCategory, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticCategorySetting_SemanticCategory {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSemanticCategorySetting_SemanticCategory();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SemanticCategorySetting_SemanticCategory {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+    };
+  },
+
+  toJSON(message: SemanticCategorySetting_SemanticCategory): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SemanticCategorySetting_SemanticCategory>): SemanticCategorySetting_SemanticCategory {
+    return SemanticCategorySetting_SemanticCategory.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SemanticCategorySetting_SemanticCategory>): SemanticCategorySetting_SemanticCategory {
+    const message = createBaseSemanticCategorySetting_SemanticCategory();
+    message.id = object.id ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
     return message;
   },
 };

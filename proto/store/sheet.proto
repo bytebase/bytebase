@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "store/common.proto";
+import "store/vcs.proto";
 
 option go_package = "generated-go/store";
 
@@ -21,20 +22,36 @@ message SheetPayload {
     string author = 4;
     string last_commit_id = 5;
     int64 last_sync_ts = 6;
+
+    PushEvent push_event = 7;
   }
   VCSPayload vcs_payload = 2;
 
-  message UsedByIssue {
-    int64 issue_id = 1;
-    string issue_title = 2;
-  }
-  // used_by_issues link to the issues where the sheet is used.
-  repeated UsedByIssue used_by_issues = 3;
-
   message SchemaDesign {
-    // The baseline instance change history id of the schema design.
-    string baseline_change_history_id = 1;
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      // Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts.
+      MAIN_BRANCH = 1;
+      // Personal draft type is a copy of the main branch type schema designs.
+      PERSONAL_DRAFT = 2;
+    }
+    // The type of the schema design.
+    Type type = 1;
+    // The database instance engine of the schema design.
     Engine engine = 2;
+    // The id of the baseline sheet including the baseline full schema.
+    string baseline_sheet_id = 3;
+    // The sheet id of the baseline schema design. Only valid when the schema design is a personal draft.
+    string baseline_schema_design_id = 4;
+    // The id of the baseline change history including the baseline change history.(optional)
+    string baseline_change_history_id = 5;
+
+    message Protection {
+      // Permits force pushes to the branch.
+      bool allow_force_pushes = 1;
+    }
+    // The protection of the schema design.
+    Protection protection = 6;
   }
-  SchemaDesign schema_design = 4;
+  SchemaDesign schema_design = 3;
 }

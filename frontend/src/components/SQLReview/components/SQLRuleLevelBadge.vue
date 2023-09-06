@@ -3,29 +3,31 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
-import { RuleLevel } from "@/types/sqlReview";
+import {
+  SQLReviewRuleLevel,
+  sQLReviewRuleLevelToJSON,
+} from "@/types/proto/v1/org_policy_service";
 
-const props = defineProps({
-  level: {
-    required: true,
-    type: String as PropType<RuleLevel>,
-  },
-  suffix: {
-    type: String,
-    default: "",
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    level: SQLReviewRuleLevel;
+    suffix?: string;
+  }>(),
+  {
+    suffix: "",
+  }
+);
 
 const { t } = useI18n();
 
 const style = computed((): BBBadgeStyle => {
   switch (props.level) {
-    case RuleLevel.ERROR:
+    case SQLReviewRuleLevel.ERROR:
       return "CRITICAL";
-    case RuleLevel.WARNING:
+    case SQLReviewRuleLevel.WARNING:
       return "WARN";
     default:
       return "DISABLED";
@@ -34,7 +36,9 @@ const style = computed((): BBBadgeStyle => {
 
 const text = computed(() => {
   const { level, suffix } = props;
-  const parts = [t(`sql-review.level.${level.toLowerCase()}`)];
+  const parts = [
+    t(`sql-review.level.${sQLReviewRuleLevelToJSON(level).toLowerCase()}`),
+  ];
   if (suffix) {
     parts.push(suffix);
   }

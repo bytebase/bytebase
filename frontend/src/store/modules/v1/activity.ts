@@ -104,10 +104,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     const [listForIssue, listForPipeline] = await Promise.all(requests);
     const mergedList = [...listForIssue, ...listForPipeline];
     mergedList.sort((a, b) => {
-      if (a.createTime !== b.createTime) {
-        return (a.createTime?.getTime() ?? 0) - (b.createTime?.getTime() ?? 0);
-      }
-
       return getLogId(a.name) - getLogId(b.name);
     });
 
@@ -141,10 +137,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     const [listForIssue, listForPipeline] = await Promise.all(requests);
     const mergedList = [...listForIssue, ...listForPipeline];
     mergedList.sort((a, b) => {
-      if (a.createTime !== b.createTime) {
-        return (a.createTime?.getTime() ?? 0) - (b.createTime?.getTime() ?? 0);
-      }
-
       return getLogId(a.name) - getLogId(b.name);
     });
 

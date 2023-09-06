@@ -33,7 +33,7 @@ interface LocalState {
 const props = defineProps<{
   style?: BBAttentionStyle;
   feature: FeatureType;
-  customClass: string;
+  customClass?: string;
 }>();
 
 const state = reactive<LocalState>({

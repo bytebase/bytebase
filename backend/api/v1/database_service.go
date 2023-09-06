@@ -238,9 +238,9 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			}
 			patch.ProjectID = &project.ResourceID
 		case "labels":
-			metadata := database.Metadata
-			metadata.Labels = request.Database.Labels
-			patch.Metadata = metadata
+			patch.MetadataUpsert = &storepb.DatabaseMetadata{
+				Labels: request.Database.Labels,
+			}
 		case "environment":
 			if request.Database.Environment == "" {
 				unsetEnvironment := ""
@@ -372,18 +372,19 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.FailedPrecondition, "project %q is deleted", projectID)
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if err := s.createTransferProjectActivity(ctx, project, principalID, databases...); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
 	response := &v1pb.BatchUpdateDatabasesResponse{}
-	for _, database := range updatedDatabases {
-		response.Databases = append(response.Databases, convertToDatabase(database))
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	if len(databases) > 0 {
+		updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if err := s.createTransferProjectActivity(ctx, project, principalID, databases...); err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		for _, database := range updatedDatabases {
+			response.Databases = append(response.Databases, convertToDatabase(database))
+		}
 	}
 	return response, nil
 }
@@ -840,7 +841,6 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		Schema:            h.Schema,
 		PrevSchema:        h.SchemaPrev,
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
-		PushEvent:         convertToPushEvent(h.Payload.GetPushEvent()),
 		Issue:             "",
 	}
 	if h.IssueUID != nil {
@@ -853,6 +853,9 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 }
 
 func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResources {
+	if r == nil {
+		return nil
+	}
 	result := &v1pb.ChangedResources{}
 	for _, database := range r.Databases {
 		v1Database := &v1pb.ChangedResourceDatabase{

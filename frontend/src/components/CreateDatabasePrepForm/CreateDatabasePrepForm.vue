@@ -215,7 +215,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, PropType, watchEffect, ref, toRef } from "vue";
@@ -324,12 +323,6 @@ const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const developmentUseV1IssueUI = computed(() => {
   return !!useActuatorV1Store().serverInfo?.developmentUseV2Scheduler;
-});
-
-useEventListener("keydown", (e: KeyboardEvent) => {
-  if (e.code == "Escape") {
-    cancel();
-  }
 });
 
 const showAssigneeSelect = computed(() => {

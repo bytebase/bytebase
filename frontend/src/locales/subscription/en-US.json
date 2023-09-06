@@ -1,7 +1,7 @@
 {
   "current": "Current plan",
   "unlimited": "Unlimited",
-  "instance-count": "Instance count",
+  "max-instance-count": "Max instance count",
   "user-count": "User count",
   "expires-at": "Expires at",
   "start-free-trial": "Start free trial",
@@ -16,8 +16,8 @@
   "billed-annually": "Billed annually",
   "billed-monthly": "Billed monthly",
   "per-instance": "Per instance",
-  "free-price-intro": "Unlimited users and environments",
-  "team-price-intro": "Up to 20 instances",
+  "free-price-intro": "Up to 20 users and 10 instances",
+  "team-price-intro": "Purchase up to 20 instances",
   "enterprise-price-intro": "Customized, billed annually",
   "deploy": "Deploy",
   "contact-us": "Contact us",
@@ -35,17 +35,17 @@
     "free": {
       "title": "Free Plan",
       "label": "",
-      "desc": "Team essentials to centralize database lifecycle management"
+      "desc": "Team essentials to manage database development lifecycle."
     },
     "team": {
       "title": "Pro Plan",
       "label": "",
-      "desc": "More collaboration and control policies for advanced database lifecycle management"
+      "desc": "More policies to standardize and facilitate collaboration across teams."
     },
     "enterprise": {
       "title": "Enterprise Plan",
       "label": "",
-      "desc": "Large organization, has dedicated DBA group to manage database fleet with custom requirements"
+      "desc": "Extra security, compliance, and permission features. Dedicated support with SLA."
     }
   },
   "feature-sections": {
@@ -62,8 +62,7 @@
         "instance-maximum-20": "Up to 20",
         "instance-maximum-20-tooltip": "Maximum 20. Talk to us for pricing if your instances go over the limit.",
         "instance-unlimited": "Unlimited",
-        "environment-count": "Environment count",
-        "environment-unlimited": "Unlimited",
+        "instance-unlimited-tooltip": "Allow unlimited instances. Purchase instance license to enable advanced instance features.",
         "state-based-change": "State-based change",
         "migration-based-change": "Migration-based change",
         "batch-change": "Batch change",
@@ -91,7 +90,11 @@
         "sync-schema-advanced": "Advanced",
         "sync-schema-advanced-tooltip": "Sync from arbitrary schema version",
         "terraform-provider": "Terraform Integration",
-        "custom-approval": "Custom approval"
+        "custom-approval": "Custom approval",
+        "issue-advanced-search": "Issue advanced search",
+        "issue-advanced-search-basic": "30-day limit",
+        "issue-advanced-search-basic-tooltip": "Issues older than 30 days are hidden",
+        "issue-advanced-search-advanced": "Unlimited"
       }
     },
     "sql-editor": {
@@ -146,7 +149,8 @@
         "anomaly-detection-advanced": "Advanced",
         "anomaly-detection-advanced-tooltip": "Basic + Schema drift detection",
         "archiving": "Archiving",
-        "disallow-signup": "Disallow signup"
+        "disallow-signup": "Disallow signup",
+        "announcement-banner": "Announcement-Banner"
       }
     },
     "bespoke": {

@@ -9,6 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const celLimit = 1024 * 1024
+
 // RiskFactors are the variables when evaluating the risk level.
 var RiskFactors = []cel.EnvOption{
 	// string factors
@@ -30,6 +32,7 @@ var RiskFactors = []cel.EnvOption{
 var ApprovalFactors = []cel.EnvOption{
 	cel.Variable("level", cel.IntType),
 	cel.Variable("source", cel.IntType),
+	cel.ParserExpressionSizeLimit(celLimit),
 }
 
 // QueryExportPolicyCELAttributes are the variables when evaluating query and export permissions.
@@ -41,6 +44,30 @@ var QueryExportPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("resource.database", cel.StringType),
 	cel.Variable("resource.schema", cel.StringType),
 	cel.Variable("resource.table", cel.StringType),
+	cel.ParserExpressionSizeLimit(celLimit),
+}
+
+// MaskingRulePolicyCELAttributes are the variables when evaluating masking rule.
+var MaskingRulePolicyCELAttributes = []cel.EnvOption{
+	cel.Variable("environment_id", cel.StringType),
+	cel.Variable("project_id", cel.StringType),
+	cel.Variable("instance_id", cel.StringType),
+	cel.Variable("database_name", cel.StringType),
+	cel.Variable("schema_name", cel.StringType),
+	cel.Variable("table_name", cel.StringType),
+	cel.Variable("classification_level", cel.StringType),
+	cel.ParserExpressionSizeLimit(celLimit),
+}
+
+// MaskingExceptionPolicyCELAttributes are the variables when evaluating masking exception.
+var MaskingExceptionPolicyCELAttributes = []cel.EnvOption{
+	cel.Variable("resource.instance_id", cel.StringType),
+	cel.Variable("resource.database_name", cel.StringType),
+	cel.Variable("resource.table_name", cel.StringType),
+	cel.Variable("resource.schema_name", cel.StringType),
+	cel.Variable("resource.column_name", cel.StringType),
+	cel.Variable("request.time", cel.TimestampType),
+	cel.ParserExpressionSizeLimit(celLimit),
 }
 
 // ConvertParsedRisk converts parsed risk to unparsed format.
@@ -119,6 +146,44 @@ func ConvertUnparsedApproval(expression *expr.Expr) (*v1alpha1.ParsedExpr, error
 func ValidateGroupCELExpr(expr string) (cel.Program, error) {
 	e, err := cel.NewEnv(
 		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(expr)
+	if issues != nil && issues.Err() != nil {
+		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	return prog, nil
+}
+
+// ValidateMaskingRuleCELExpr validates masking rule expr.
+func ValidateMaskingRuleCELExpr(expr string) (cel.Program, error) {
+	e, err := cel.NewEnv(
+		MaskingRulePolicyCELAttributes...,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(expr)
+	if issues != nil && issues.Err() != nil {
+		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	return prog, nil
+}
+
+// ValidateMaskingExceptionCELExpr validates masking exception expr.
+func ValidateMaskingExceptionCELExpr(expr string) (cel.Program, error) {
+	e, err := cel.NewEnv(
+		MaskingExceptionPolicyCELAttributes...,
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

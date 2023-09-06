@@ -38,6 +38,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -68,7 +69,6 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/anomaly"
 	"github.com/bytebase/bytebase/backend/runner/approval"
-	"github.com/bytebase/bytebase/backend/runner/apprun"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -77,7 +77,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
-	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
@@ -155,9 +154,7 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	TaskScheduler      *taskrun.Scheduler
 	TaskSchedulerV2    *taskrun.SchedulerV2
-	TaskCheckScheduler *taskcheck.Scheduler
 	PlanCheckScheduler *plancheck.Scheduler
 	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
@@ -165,7 +162,6 @@ type Server struct {
 	MailSender         *mail.SlowQueryWeeklyMailSender
 	BackupRunner       *backuprun.Runner
 	AnomalyScanner     *anomaly.Scanner
-	ApplicationRunner  *apprun.Runner
 	RollbackRunner     *rollbackrun.Runner
 	ApprovalRunner     *approval.Runner
 	RelayRunner        *relay.Runner
@@ -187,6 +183,10 @@ type Server struct {
 	startedTs       int64
 	secret          string
 	errorRecordRing api.ErrorRecordRing
+
+	// Stubs.
+	rolloutService *v1.RolloutService
+	issueService   *v1.IssueService
 
 	// MySQL utility binaries
 	mysqlBinDir string
@@ -341,8 +341,14 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		InstanceSlowQuerySyncChan:            make(chan *state.InstanceSlowQuerySyncMessage, 100),
 		InstanceOutstandingConnections:       make(map[int]int),
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
+		TaskSkippedOrDoneChan:                make(chan int, 1000),
 	}
 	s.store = storeInstance
+
+	if err := s.store.BackfillIssueTsVector(ctx); err != nil {
+		log.Warn("failed to backfill issue ts vector", zap.Error(err))
+	}
+
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
@@ -451,60 +457,29 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, &s.profile, false)
 	if !profile.Readonly {
-		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
+		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 		s.SlowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
-		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile, s.licenseService)
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 
-		if profile.DevelopmentUseV2Scheduler {
-			s.TaskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg)
-			s.TaskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
-			s.TaskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
-			s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
-		}
-		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
-		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
-		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
+		s.TaskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.ActivityManager)
+		s.TaskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
+		s.TaskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
+		s.TaskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 
-		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
+		s.RollbackRunner = rollbackrun.NewRunner(&profile, storeInstance, s.dbFactory, s.stateCfg)
 		s.MailSender = mail.NewSender(s.store, s.stateCfg)
-		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.TaskScheduler, s.stateCfg)
-		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.ActivityManager, s.TaskScheduler, s.RelayRunner, s.licenseService)
-
-		s.TaskCheckScheduler = taskcheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
-		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory, s.licenseService)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
-		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
-		databaseConnectExecutor := taskcheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
-		ghostSyncExecutor := taskcheck.NewGhostSyncExecutor(storeInstance, s.secret)
-		s.TaskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
-		pitrMySQLExecutor := taskcheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
-		statementTypeReportExecutor := taskcheck.NewStatementTypeReportExecutor(storeInstance)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementTypeReport, statementTypeReportExecutor)
-		statementAffectedRowsExecutor := taskcheck.NewStatementAffectedRowsReportExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAffectedRowsReport, statementAffectedRowsExecutor)
+		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.stateCfg)
+		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.ActivityManager, s.RelayRunner, s.licenseService)
 
 		{
 			s.PlanCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
@@ -518,6 +493,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
 			pitrMySQLExecutor := plancheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
 			s.PlanCheckScheduler.Register(store.PlanCheckDatabasePITRMySQL, pitrMySQLExecutor)
+			statementReportExecutor := plancheck.NewStatementReportExecutor(storeInstance, s.dbFactory)
+			s.PlanCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 		}
 
 		// Anomaly scanner
@@ -570,7 +547,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
 	s.registerTaskRoutes(apiGroup)
-	s.registerStageRoutes(apiGroup)
 
 	// Register healthz endpoint.
 	e.GET("/healthz", func(c echo.Context) error {
@@ -617,7 +593,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			// Only generate onboarding data after the first enduser signup.
 			if firstEndUser {
 				if profile.SampleDatabasePort != 0 {
-					if err := s.generateOnboardingData(ctx, user.ID); err != nil {
+					if err := s.generateOnboardingData(ctx, user); err != nil {
 						return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
 					}
 				}
@@ -649,8 +625,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService(s.store, s.SchemaSyncer, s.dbFactory, s.ActivityManager, s.licenseService))
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
-	v1pb.RegisterIssueServiceServer(s.grpcServer, v1.NewIssueService(s.store, s.ActivityManager, s.TaskScheduler, s.TaskCheckScheduler, s.RelayRunner, s.stateCfg))
-	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskCheckScheduler, s.PlanCheckScheduler, s.stateCfg, s.ActivityManager))
+	s.issueService = v1.NewIssueService(s.store, s.ActivityManager, s.RelayRunner, s.stateCfg, s.licenseService)
+	v1pb.RegisterIssueServiceServer(s.grpcServer, s.issueService)
+	s.rolloutService = v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.PlanCheckScheduler, s.stateCfg, s.ActivityManager)
+	v1pb.RegisterRolloutServiceServer(s.grpcServer, s.rolloutService)
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store, s.licenseService))
 	v1pb.RegisterSchemaDesignServiceServer(s.grpcServer, v1.NewSchemaDesignService(s.store, s.licenseService))
@@ -941,6 +919,9 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 
 	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
 		ExternalUrl: s.profile.ExternalURL,
+		RefreshTokenDuration: &durationpb.Duration{
+			Seconds: api.DefaultRefreshTokenDurationInSeconds,
+		},
 	}
 	if workspaceProfileSetting != nil {
 		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)
@@ -973,21 +954,11 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.cancel = cancel
 	if !s.profile.Readonly {
 		// runnerWG waits for all goroutines to complete.
-		if s.profile.DevelopmentUseV2Scheduler {
-			if err := s.TaskSchedulerV2.ClearRunningTaskRuns(ctx); err != nil {
-				return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
-			}
-			s.runnerWG.Add(1)
-			go s.TaskSchedulerV2.Run(ctx, &s.runnerWG)
-		} else {
-			if err := s.TaskScheduler.ClearRunningTasks(ctx); err != nil {
-				return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
-			}
-			s.runnerWG.Add(1)
-			go s.TaskScheduler.Run(ctx, &s.runnerWG)
+		if err := s.TaskSchedulerV2.ClearRunningTaskRuns(ctx); err != nil {
+			return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
 		}
 		s.runnerWG.Add(1)
-		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
+		go s.TaskSchedulerV2.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.SchemaSyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
@@ -999,8 +970,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		s.runnerWG.Add(1)
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
 		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApprovalRunner.Run(ctx, &s.runnerWG)
@@ -1010,10 +979,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		s.runnerWG.Add(1)
 		go s.MetricReporter.Run(ctx, &s.runnerWG)
 
-		if s.profile.Mode == common.ReleaseModeDev {
-			s.runnerWG.Add(1)
-			go s.PlanCheckScheduler.Run(ctx, &s.runnerWG)
-		}
+		s.runnerWG.Add(1)
+		go s.PlanCheckScheduler.Run(ctx, &s.runnerWG)
 	}
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
@@ -1145,7 +1112,8 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 }
 
 // generateOnboardingData generates onboarding data after the first signup.
-func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
+func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMessage) error {
+	userID := user.ID
 	project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
 		ResourceID: "project-sample",
 		Title:      "Sample Project",
@@ -1183,7 +1151,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	}
 
 	// Sync the instance schema so we can transfer the sample database later.
-	if _, err := s.SchemaSyncer.SyncInstance(ctx, testInstance); err != nil {
+	if err := s.SchemaSyncer.SyncInstance(ctx, testInstance); err != nil {
 		return errors.Wrapf(err, "failed to sync test onboarding instance")
 	}
 
@@ -1242,7 +1210,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	}
 
 	// Sync the instance schema so we can transfer the sample database later.
-	if _, err := s.SchemaSyncer.SyncInstance(ctx, prodInstance); err != nil {
+	if err := s.SchemaSyncer.SyncInstance(ctx, prodInstance); err != nil {
 		return errors.Wrapf(err, "failed to sync prod onboarding instance")
 	}
 
@@ -1326,7 +1294,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    "{}",
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create test sheet for sample project")
@@ -1343,72 +1310,99 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
-		Payload:    "{}",
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create prod sheet for sample project")
 	}
 
-	createContext, err := json.Marshal(
-		&api.MigrationContext{
-			DetailList: []*api.MigrationDetail{
+	var issueLink string
+	// Use new CI/CD API.
+	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, api.SystemBotID)
+	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Plan: &v1pb.Plan{
+			Title: "Onboarding sample plan for adding email column to Employee table",
+			Steps: []*v1pb.Plan_Step{
 				{
-					MigrationType: db.Migrate,
-					DatabaseID:    testDatabase.UID,
-					SheetID:       testSheet.UID,
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+									Target: fmt.Sprintf("instances/%s/databases/%s", testDatabase.InstanceID, testDatabase.DatabaseName),
+									Sheet:  fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, testSheet.UID),
+								},
+							},
+						},
+					},
 				},
 				{
-					MigrationType: db.Migrate,
-					DatabaseID:    prodDatabase.UID,
-					// This will violate the NOT NULL SQL Review policy configured above and emit a
-					// warning. Thus to demonstrate the SQL Review capability.
-					SheetID: prodSheet.UID,
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+									Target: fmt.Sprintf("instances/%s/databases/%s", prodDatabase.InstanceID, prodDatabase.DatabaseName),
+									// This will violate the NOT NULL SQL Review policy configured above and emit a
+									// warning. Thus to demonstrate the SQL Review capability.
+									Sheet: fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, prodSheet.UID),
+								},
+							},
+						},
+					},
 				},
 			},
-		})
+		},
+	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal sample schema update issue context")
+		return errors.Wrapf(err, "failed to create plan for sample project")
 	}
-
-	issueCreate := &api.IssueCreate{
-		ProjectID: project.UID,
-		Name:      "👉👉👉 [START HERE] Add email column to Employee table",
-		Type:      api.IssueDatabaseSchemaUpdate,
-		Description: `A sample issue to showcase how to review database schema change.
-		
-Click "Approve" button to apply the schema update.`,
-		AssigneeID:            userID,
-		AssigneeNeedAttention: true,
-		CreateContext:         string(createContext),
-	}
-
-	// Use system bot as the creator so that the issue only appears in the user's assignee list
-	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
+	rollout, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Plan:   plan.Name,
+	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create sample issue")
+		return errors.Wrapf(err, "failed to create rollout for sample project")
 	}
+	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Issue: &v1pb.Issue{
+			Title: "👉👉👉 [START HERE] Add email column to Employee table",
+			Description: `A sample issue to showcase how to review database schema change.
+
+				Click "Approve" button to apply the schema update.`,
+			Type:     v1pb.Issue_DATABASE_CHANGE,
+			Assignee: fmt.Sprintf("users/%s", user.Email),
+			Plan:     plan.Name,
+			Rollout:  rollout.Name,
+		},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create issue for sample project")
+	}
+	issueLink = fmt.Sprintf("/issue/%s-%s", slug.Make(issue.Title), issue.Uid)
 
 	// Bookmark the issue.
 	if _, err := s.store.CreateBookmarkV2(ctx, &store.BookmarkMessage{
 		Name: "Sample Issue",
-		Link: fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
+		Link: issueLink,
 	}, userID); err != nil {
 		return errors.Wrapf(err, "failed to bookmark sample issue")
 	}
 
 	// Add a sensitive data policy to pair it with the sample query below. So that user can
 	// experience the sensitive data masking feature from SQL Editor.
-	sensitiveDataPolicy := api.SensitiveDataPolicy{
-		SensitiveDataList: []api.SensitiveData{
+	maskingPolicy := &storepb.MaskingPolicy{
+		MaskData: []*storepb.MaskData{
 			{
-				Schema: "public",
-				Table:  "salary",
-				Column: "amount",
-				Type:   api.SensitiveDataMaskTypeDefault,
+				Schema:       "public",
+				Table:        "salary",
+				Column:       "amount",
+				MaskingLevel: storepb.MaskingLevel_FULL,
 			},
 		},
 	}
-	policyPayload, err = json.Marshal(sensitiveDataPolicy)
+	policyPayload, err = json.Marshal(maskingPolicy)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal onboarding sensitive data policy")
 	}
@@ -1417,7 +1411,7 @@ Click "Approve" button to apply the schema update.`,
 		ResourceUID:       prodDatabase.UID,
 		ResourceType:      api.PolicyResourceTypeDatabase,
 		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeSensitiveData,
+		Type:              api.PolicyTypeMasking,
 		InheritFromParent: true,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,

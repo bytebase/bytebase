@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -24,6 +23,7 @@ import (
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -251,6 +251,16 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for starred", spec.value))
 			}
+		case "source":
+			switch spec.operator {
+			case comparatorTypeEqual:
+				source := store.SheetSource(spec.value)
+				sheetFind.Source = &source
+			case comparatorTypeNotEqual:
+				source := store.SheetSource(spec.value)
+				sheetFind.NotSource = &source
+			}
+
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid filter key %q", spec.key))
 		}
@@ -358,8 +368,6 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 			}
 			stringVisibility := string(visibility)
 			sheetPatch.Visibility = &stringVisibility
-		case "payload":
-			sheetPatch.Payload = &request.Sheet.Payload
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
 		}
@@ -573,17 +581,15 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to fetch commit data from VCS, instance URL: %s, repo ID: %s, commit ID: %s", vcs.InstanceURL, repo.ExternalID, fileMeta.LastCommitID))
 		}
 
-		sheetVCSPayload := &api.SheetVCSPayload{
-			FileName:     fileMeta.Name,
-			FilePath:     fileMeta.Path,
-			Size:         fileMeta.Size,
-			Author:       lastCommit.AuthorName,
-			LastCommitID: lastCommit.ID,
-			LastSyncTs:   time.Now().Unix(),
-		}
-		payload, err := json.Marshal(sheetVCSPayload)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to marshal sheetVCSPayload")
+		sheetVCSPayload := &storepb.SheetPayload{
+			VcsPayload: &storepb.SheetPayload_VCSPayload{
+				FileName:     fileMeta.Name,
+				FilePath:     fileMeta.Path,
+				Size:         fileMeta.Size,
+				Author:       lastCommit.AuthorName,
+				LastCommitId: lastCommit.ID,
+				LastSyncTs:   time.Now().Unix(),
+			},
 		}
 
 		var databaseID *int
@@ -649,7 +655,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 				Visibility: store.ProjectSheet,
 				Source:     sheetSource,
 				Type:       store.SheetForSQL,
-				Payload:    string(payload),
+				Payload:    sheetVCSPayload,
 			}
 			if databaseID != nil {
 				sheetCreate.DatabaseUID = databaseID
@@ -659,12 +665,11 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 				return nil, status.Errorf(codes.Internal, "Failed to create sheet from VCS")
 			}
 		} else {
-			payloadString := string(payload)
 			sheetPatch := store.PatchSheetMessage{
 				UID:       sheet.UID,
 				UpdaterID: currentPrincipalID,
 				Statement: &fileContent,
-				Payload:   &payloadString,
+				Payload:   sheetVCSPayload,
 			}
 			if databaseID != nil {
 				sheetPatch.DatabaseUID = databaseID
@@ -873,6 +878,11 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with id %d not found", sheet.ProjectUID))
 	}
+	sheetPayload := sheet.Payload
+	var v1PushEvent *v1pb.PushEvent
+	if sheetPayload.VcsPayload != nil && sheetPayload.VcsPayload.PushEvent != nil {
+		v1PushEvent = convertToPushEvent(sheetPayload.VcsPayload.PushEvent)
+	}
 
 	return &v1pb.Sheet{
 		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheet.UID),
@@ -887,7 +897,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		Source:      source,
 		Type:        tp,
 		Starred:     sheet.Starred,
-		Payload:     sheet.Payload,
+		PushEvent:   v1PushEvent,
 	}, nil
 }
 
@@ -932,7 +942,6 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		Visibility:  visibility,
 		Source:      source,
 		Type:        tp,
-		Payload:     sheet.Payload,
 	}, nil
 }
 

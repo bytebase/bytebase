@@ -1,18 +1,20 @@
 <template>
   <div v-if="shouldShowEarliestAllowedTime" class="flex items-center gap-x-3">
     <h2 class="flex flex-col items-end">
-      <NTooltip>
-        <template #trigger>
-          <div class="flex gap-x-1 items-center textlabel">
-            {{ $t("common.when") }}
-          </div>
-        </template>
-        <template #default>
-          <div class="w-60">
-            {{ $t("task.earliest-allowed-time-hint") }}
-          </div>
-        </template>
-      </NTooltip>
+      <div class="flex gap-x-1 items-center textlabel">
+        <NTooltip>
+          <template #trigger>
+            <span>{{ $t("task.rollout-time") }}</span>
+          </template>
+          <template #default>
+            <div class="w-60">
+              {{ $t("task.earliest-allowed-time-hint") }}
+            </div>
+          </template>
+        </NTooltip>
+
+        <FeatureBadge feature="bb.feature.task-schedule-time" />
+      </div>
 
       <div class="text-gray-600 text-xs">
         {{ "UTC" + dayjs().format("ZZ") }}
@@ -40,6 +42,12 @@
         </template>
       </NTooltip>
     </div>
+
+    <FeatureModal
+      :open="showFeatureModal"
+      feature="bb.feature.task-schedule-time"
+      @cancel="showFeatureModal = false"
+    />
   </div>
 </template>
 
@@ -51,13 +59,15 @@ import { cloneDeep } from "lodash-es";
 import { NDatePicker, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
+import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import {
   notifyNotEditableLegacyIssue,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1";
 import { rolloutServiceClient } from "@/grpcweb";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { extractUserResourceName } from "@/utils";
@@ -69,6 +79,7 @@ const currentUser = useCurrentUserV1();
 const { isCreating, issue, isTenantMode, selectedTask, events } =
   useIssueContext();
 const isUpdating = ref(false);
+const showFeatureModal = ref(false);
 
 const shouldShowEarliestAllowedTime = computed(() => {
   if (isTenantMode.value) {
@@ -106,6 +117,11 @@ const allowEditEarliestAllowedTime = computed(() => {
 });
 
 const handleUpdateEarliestAllowedTime = async (timestampMS: number | null) => {
+  if (!hasFeature("bb.feature.task-schedule-time")) {
+    showFeatureModal.value = true;
+    return;
+  }
+
   if (isCreating.value) {
     const spec = specForTask(issue.value.planEntity, selectedTask.value);
     if (!spec) return;

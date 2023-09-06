@@ -2,12 +2,15 @@
 package util
 
 import (
+	"cmp"
+
 	"github.com/antlr4-go/antlr/v4"
 	plsql "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (extractor *sensitiveFieldExtractor) extractOracleSensitiveField(statement string) ([]db.SensitiveField, error) {
@@ -51,8 +54,8 @@ func (l *selectStatementListener) EnterSelect_statement(ctx *plsql.Select_statem
 
 			for _, field := range fieldList {
 				l.result = append(l.result, db.SensitiveField{
-					Name:      field.name,
-					Sensitive: field.sensitive,
+					Name:         field.name,
+					MaskingLevel: field.maskingLevel,
 				})
 			}
 		}
@@ -106,8 +109,8 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractFactoringElement(ctx plsql
 		}
 		for _, field := range initialField {
 			cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
-				Name:      field.name,
-				Sensitive: field.sensitive,
+				Name:         field.name,
+				MaskingLevel: field.maskingLevel,
 			})
 		}
 
@@ -136,9 +139,9 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractFactoringElement(ctx plsql
 
 			changed := false
 			for i, field := range fieldList {
-				if field.sensitive != cteInfo.ColumnList[i].Sensitive {
+				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingLevel, field.maskingLevel) {
 					changed = true
-					cteInfo.ColumnList[i].Sensitive = true
+					cteInfo.ColumnList[i].MaskingLevel = field.maskingLevel
 				}
 			}
 
@@ -216,8 +219,8 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.
 	}
 	for _, field := range fieldList {
 		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
-			Name:      field.name,
-			Sensitive: field.sensitive,
+			Name:         field.name,
+			MaskingLevel: field.maskingLevel,
 		})
 	}
 	return result, nil
@@ -278,11 +281,15 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryOperationPart(ctx 
 
 	var result []fieldInfo
 	for i, field := range rightField {
+		finalLevel := leftField[i].maskingLevel
+		if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
+			finalLevel = field.maskingLevel
+		}
 		result = append(result, fieldInfo{
-			name:      leftField[i].name,
-			table:     leftField[i].table,
-			database:  leftField[i].database,
-			sensitive: leftField[i].sensitive || field.sensitive,
+			name:         leftField[i].name,
+			table:        leftField[i].table,
+			database:     leftField[i].database,
+			maskingLevel: finalLevel,
 		})
 	}
 
@@ -347,7 +354,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuer
 					}
 				}
 			} else {
-				fieldName, sensitive, err := extractor.plsqlIsSensitiveExpression(element.Expression())
+				fieldName, maskingLevel, err := extractor.plsqlEvalMaskingLevelInExpression(element.Expression())
 				if err != nil {
 					return nil, err
 				}
@@ -357,9 +364,9 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuer
 					fieldName = element.Expression().GetText()
 				}
 				result = append(result, fieldInfo{
-					database:  extractor.currentDatabase,
-					name:      fieldName,
-					sensitive: sensitive,
+					database:     extractor.currentDatabase,
+					name:         fieldName,
+					maskingLevel: maskingLevel,
 				})
 			}
 		}
@@ -368,7 +375,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuer
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlCheckFieldSensitive(schemaName string, tableName string, columnName string) bool {
+func (extractor *sensitiveFieldExtractor) plsqlCheckFieldMaskingLevel(schemaName string, tableName string, columnName string) storepb.MaskingLevel {
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
 	//
 	//  select (
@@ -388,7 +395,7 @@ func (extractor *sensitiveFieldExtractor) plsqlCheckFieldSensitive(schemaName st
 		sameTable := (tableName == field.table || tableName == "")
 		sameColumn := (columnName == field.name)
 		if sameSchema && sameTable && sameColumn {
-			return field.sensitive
+			return field.maskingLevel
 		}
 	}
 
@@ -397,43 +404,43 @@ func (extractor *sensitiveFieldExtractor) plsqlCheckFieldSensitive(schemaName st
 		sameTable := (tableName == field.table || tableName == "")
 		sameColumn := (columnName == field.name)
 		if sameSchema && sameTable && sameColumn {
-			return field.sensitive
+			return field.maskingLevel
 		}
 	}
 
-	return false
+	return defaultMaskingLevel
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.ParserRuleContext) (string, bool, error) {
+func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
 	if ctx == nil {
-		return "", false, nil
+		return "", defaultMaskingLevel, nil
 	}
 
 	switch rule := ctx.(type) {
 	case plsql.IColumn_nameContext:
 		schemaName, tableName, columnName, err := plsqlNormalizeColumnName(extractor.currentDatabase, rule)
 		if err != nil {
-			return "", false, err
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
-		return columnName, extractor.plsqlCheckFieldSensitive(schemaName, tableName, columnName), nil
+		return columnName, extractor.plsqlCheckFieldMaskingLevel(schemaName, tableName, columnName), nil
 	case plsql.IIdentifierContext:
 		id := parser.PLSQLNormalizeIdentifierContext(rule)
-		return id, extractor.plsqlCheckFieldSensitive("", "", id), nil
+		return id, extractor.plsqlCheckFieldMaskingLevel("", "", id), nil
 	case plsql.IConstantContext:
 		list := rule.AllQuoted_string()
 		if len(list) == 1 && rule.DATE() == nil && rule.TIMESTAMP() == nil && rule.INTERVAL() == nil {
 			// This case may be a column name...
-			return extractor.plsqlIsSensitiveExpression(list[0])
+			return extractor.plsqlEvalMaskingLevelInExpression(list[0])
 		}
 	case plsql.IQuoted_stringContext:
 		if rule.Variable_name() != nil {
-			return extractor.plsqlIsSensitiveExpression(rule.Variable_name())
+			return extractor.plsqlEvalMaskingLevelInExpression(rule.Variable_name())
 		}
-		return "", false, nil
+		return "", defaultMaskingLevel, nil
 	case plsql.IVariable_nameContext:
 		if rule.Bind_variable() != nil {
 			// TODO: handle bind variable
-			return "", false, nil
+			return "", defaultMaskingLevel, nil
 		}
 		var list []string
 		for _, item := range rule.AllId_expression() {
@@ -441,25 +448,25 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		switch len(list) {
 		case 1:
-			return list[0], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, "", list[0]), nil
+			return list[0], extractor.plsqlCheckFieldMaskingLevel(extractor.currentDatabase, "", list[0]), nil
 		case 2:
-			return list[1], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, list[0], list[1]), nil
+			return list[1], extractor.plsqlCheckFieldMaskingLevel(extractor.currentDatabase, list[0], list[1]), nil
 		case 3:
-			return list[2], extractor.plsqlCheckFieldSensitive(list[0], list[1], list[2]), nil
+			return list[2], extractor.plsqlCheckFieldMaskingLevel(list[0], list[1], list[2]), nil
 		default:
-			return "", false, nil
+			return "", defaultMaskingLevel, nil
 		}
 	case plsql.IGeneral_elementContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllGeneral_element_part() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IGeneral_element_partContext:
 		// This case is for functions, such as CONCAT(a, b)
 		if rule.Function_argument() != nil {
-			_, sensitive, err := extractor.plsqlIsSensitiveExpression(rule.Function_argument())
-			return "", sensitive, err
+			_, maskingLevel, err := extractor.plsqlEvalMaskingLevelInExpression(rule.Function_argument())
+			return "", maskingLevel, err
 		}
 
 		// This case is for column names, such as root.a.b
@@ -469,22 +476,22 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		switch len(list) {
 		case 1:
-			return list[0], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, "", list[0]), nil
+			return list[0], extractor.plsqlCheckFieldMaskingLevel(extractor.currentDatabase, "", list[0]), nil
 		case 2:
-			return list[1], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, list[0], list[1]), nil
+			return list[1], extractor.plsqlCheckFieldMaskingLevel(extractor.currentDatabase, list[0], list[1]), nil
 		case 3:
-			return list[2], extractor.plsqlCheckFieldSensitive(list[0], list[1], list[2]), nil
+			return list[2], extractor.plsqlCheckFieldMaskingLevel(list[0], list[1], list[2]), nil
 		default:
-			return "", false, nil
+			return "", defaultMaskingLevel, nil
 		}
 	case plsql.IExpressionContext:
 		if rule.Logical_expression() != nil {
-			return extractor.plsqlIsSensitiveExpression(rule.Logical_expression())
+			return extractor.plsqlEvalMaskingLevelInExpression(rule.Logical_expression())
 		}
 
-		return extractor.plsqlIsSensitiveExpression(rule.Cursor_expression())
+		return extractor.plsqlEvalMaskingLevelInExpression(rule.Cursor_expression())
 	case plsql.ICursor_expressionContext:
-		return extractor.plsqlIsSensitiveExpression(rule.Subquery())
+		return extractor.plsqlEvalMaskingLevelInExpression(rule.Subquery())
 	case plsql.IQuery_blockContext:
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
@@ -496,14 +503,18 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		fieldList, err := subqueryExtractor.plsqlExtractQueryBlock(rule)
 		if err != nil {
-			return "", false, err
+			return "", defaultMaskingLevel, err
 		}
+		finalLevel := defaultMaskingLevel
 		for _, field := range fieldList {
-			if field.sensitive {
-				return "", true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
+				finalLevel = field.maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return "", finalLevel, nil
 			}
 		}
-		return "", false, nil
+		return "", finalLevel, nil
 	case plsql.ISubqueryContext:
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
@@ -515,25 +526,29 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		fieldList, err := subqueryExtractor.plsqlExtractSubquery(rule)
 		if err != nil {
-			return "", false, err
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
+		finalLevel := defaultMaskingLevel
 		for _, field := range fieldList {
-			if field.sensitive {
-				return "", true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
+				finalLevel = field.maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return "", finalLevel, nil
 			}
 		}
-		return "", false, nil
+		return "", finalLevel, nil
 	case plsql.ILogical_expressionContext:
 		if rule.Unary_logical_expression() != nil {
-			return extractor.plsqlIsSensitiveExpression(rule.Unary_logical_expression())
+			return extractor.plsqlEvalMaskingLevelInExpression(rule.Unary_logical_expression())
 		}
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllLogical_expression() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IUnary_logical_expressionContext:
-		return extractor.plsqlIsSensitiveExpression(rule.Multiset_expression())
+		return extractor.plsqlEvalMaskingLevelInExpression(rule.Multiset_expression())
 	case plsql.IMultiset_expressionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Relational_expression() != nil {
@@ -542,7 +557,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Concatenation() != nil {
 			list = append(list, rule.Concatenation())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IRelational_expressionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllRelational_expression() {
@@ -551,7 +566,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Compound_expression() != nil {
 			list = append(list, rule.Compound_expression())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.ICompound_expressionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllConcatenation() {
@@ -563,7 +578,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Between_elements() != nil {
 			list = append(list, rule.Between_elements())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IIn_elementsContext:
 		var list []antlr.ParserRuleContext
 		if rule.Subquery() != nil {
@@ -572,13 +587,13 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		for _, item := range rule.AllConcatenation() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IBetween_elementsContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllConcatenation() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IConcatenationContext:
 		var list []antlr.ParserRuleContext
 		if rule.Model_expression() != nil {
@@ -590,7 +605,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		for _, item := range rule.AllConcatenation() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IModel_expressionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Unary_expression() != nil {
@@ -599,13 +614,13 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Model_expression_element() != nil {
 			list = append(list, rule.Model_expression_element())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IInterval_expressionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllConcatenation() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IUnary_expressionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Unary_expression() != nil {
@@ -623,7 +638,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Atom() != nil {
 			list = append(list, rule.Atom())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.ICase_statementContext:
 		var list []antlr.ParserRuleContext
 		if rule.Simple_case_statement() != nil {
@@ -632,7 +647,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Searched_case_statement() != nil {
 			list = append(list, rule.Searched_case_statement())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.ISimple_case_statementContext:
 		var list []antlr.ParserRuleContext
 		if rule.Expression() != nil {
@@ -644,17 +659,17 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Case_else_part() != nil {
 			list = append(list, rule.Case_else_part())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.ISimple_case_when_partContext:
 		// not handle seq_of_statements
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.ICase_else_partContext:
 		// not handle seq_of_statements
-		return extractor.plsqlExistSensitiveExpression([]antlr.ParserRuleContext{rule.Expression()})
+		return extractor.plsqlEvalMaskingLevelInExpressionList([]antlr.ParserRuleContext{rule.Expression()})
 	case plsql.ISearched_case_statementContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllSearched_case_when_part() {
@@ -663,14 +678,14 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Case_else_part() != nil {
 			list = append(list, rule.Case_else_part())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.ISearched_case_when_partContext:
 		// not handle seq_of_statements
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IQuantified_expressionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Expression() != nil {
@@ -679,7 +694,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Select_only_statement() != nil {
 			list = append(list, rule.Select_only_statement())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.ISelect_only_statementContext:
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
@@ -691,14 +706,18 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		fieldList, err := subqueryExtractor.plsqlExtractSelectOnlyStatement(rule)
 		if err != nil {
-			return "", false, err
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
+		finalLevel := defaultMaskingLevel
 		for _, field := range fieldList {
-			if field.sensitive {
-				return "", true, nil
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
+				finalLevel = field.maskingLevel
+			}
+			if finalLevel == maxMaskingLevel {
+				return "", finalLevel, nil
 			}
 		}
-		return "", false, nil
+		return "", finalLevel, nil
 	case plsql.IStandard_functionContext:
 		var list []antlr.ParserRuleContext
 		if rule.String_function() != nil {
@@ -713,7 +732,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Other_function() != nil {
 			list = append(list, rule.Other_function())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IString_functionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
@@ -728,7 +747,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Concatenation() != nil {
 			list = append(list, rule.Concatenation())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.INumeric_function_wrapperContext:
 		var list []antlr.ParserRuleContext
 		if rule.Numeric_function() != nil {
@@ -740,7 +759,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Multi_column_for_loop() != nil {
 			list = append(list, rule.Multi_column_for_loop())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.INumeric_functionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Expression() != nil {
@@ -753,14 +772,14 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 			list = append(list, rule.Concatenation())
 		}
 		// TODO(rebelice): handle over_clause
-		_, sensitive, err := extractor.plsqlExistSensitiveExpression(list)
+		_, sensitive, err := extractor.plsqlEvalMaskingLevelInExpressionList(list)
 		return "", sensitive, err
 	case plsql.IExpressionsContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.ISingle_column_for_loopContext:
 		var list []antlr.ParserRuleContext
 		if rule.Column_name() != nil {
@@ -769,7 +788,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		for _, item := range rule.AllExpression() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IMulti_column_for_loopContext:
 		var list []antlr.ParserRuleContext
 		if rule.Paren_column_list() != nil {
@@ -781,7 +800,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Expressions() != nil {
 			list = append(list, rule.Expressions())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IJson_functionContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllJson_array_element() {
@@ -793,7 +812,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Json_object_content() != nil {
 			list = append(list, rule.Json_object_content())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IJson_array_elementContext:
 		var list []antlr.ParserRuleContext
 		if rule.Expression() != nil {
@@ -802,13 +821,13 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Json_function() != nil {
 			list = append(list, rule.Json_function())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IJson_object_contentContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllJson_object_entry() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IJson_object_entryContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
@@ -817,7 +836,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Identifier() != nil {
 			list = append(list, rule.Identifier())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IOther_functionContext:
 		var list []antlr.ParserRuleContext
 		if rule.Function_argument_analytic() != nil {
@@ -848,18 +867,18 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 			list = append(list, item)
 		}
 		// TODO: handle xmltable
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IFunction_argument_analyticContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllArgument() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IArgumentContext:
-		return extractor.plsqlIsSensitiveExpression(rule.Expression())
+		return extractor.plsqlEvalMaskingLevelInExpression(rule.Expression())
 	case plsql.IFunction_argument_modelingContext:
 		// TODO(rebelice): implement standard function with USING
-		return "", false, nil
+		return "", defaultMaskingLevel, nil
 	case plsql.ITable_elementContext:
 		// handled as column name
 		var str []string
@@ -868,20 +887,20 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		}
 		switch len(str) {
 		case 1:
-			return str[0], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, "", str[0]), nil
+			return str[0], extractor.plsqlCheckFieldMaskingLevel(extractor.currentDatabase, "", str[0]), nil
 		case 2:
-			return str[1], extractor.plsqlCheckFieldSensitive(extractor.currentDatabase, str[0], str[1]), nil
+			return str[1], extractor.plsqlCheckFieldMaskingLevel(extractor.currentDatabase, str[0], str[1]), nil
 		case 3:
-			return str[2], extractor.plsqlCheckFieldSensitive(str[0], str[1], str[2]), nil
+			return str[2], extractor.plsqlCheckFieldMaskingLevel(str[0], str[1], str[2]), nil
 		default:
-			return "", false, nil
+			return "", defaultMaskingLevel, nil
 		}
 	case plsql.IFunction_argumentContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllArgument() {
 			list = append(list, item)
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IAtomContext:
 		var list []antlr.ParserRuleContext
 		if rule.Table_element() != nil {
@@ -902,9 +921,9 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.General_element() != nil {
 			list = append(list, rule.General_element())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.ISubquery_operation_partContext:
-		return extractor.plsqlIsSensitiveExpression(rule.Subquery_basic_elements())
+		return extractor.plsqlEvalMaskingLevelInExpression(rule.Subquery_basic_elements())
 	case plsql.ISubquery_basic_elementsContext:
 		var list []antlr.ParserRuleContext
 		if rule.Query_block() != nil {
@@ -913,7 +932,7 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Subquery() != nil {
 			list = append(list, rule.Subquery())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	case plsql.IModel_expression_elementContext:
 		var list []antlr.ParserRuleContext
 		for _, item := range rule.AllExpression() {
@@ -925,29 +944,33 @@ func (extractor *sensitiveFieldExtractor) plsqlIsSensitiveExpression(ctx antlr.P
 		if rule.Multi_column_for_loop() != nil {
 			list = append(list, rule.Multi_column_for_loop())
 		}
-		return extractor.plsqlExistSensitiveExpression(list)
+		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	}
 
-	return "", false, nil
+	return "", defaultMaskingLevel, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExistSensitiveExpression(list []antlr.ParserRuleContext) (string, bool, error) {
+func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpressionList(list []antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
 	var fieldName string
-	var sensitive bool
 	var err error
+	var level storepb.MaskingLevel
+	finalLevel := defaultMaskingLevel
 	for _, ctx := range list {
-		fieldName, sensitive, err = extractor.plsqlIsSensitiveExpression(ctx)
+		fieldName, level, err = extractor.plsqlEvalMaskingLevelInExpression(ctx)
 		if err != nil {
-			return "", false, err
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
 		if len(list) != 1 {
 			fieldName = ""
 		}
-		if sensitive {
-			return fieldName, true, nil
+		if cmp.Less[storepb.MaskingLevel](finalLevel, level) {
+			finalLevel = level
+		}
+		if finalLevel == maxMaskingLevel {
+			return fieldName, finalLevel, nil
 		}
 	}
-	return fieldName, false, nil
+	return fieldName, finalLevel, nil
 }
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractFromClause(ctx plsql.IFrom_clauseContext) ([]fieldInfo, error) {
@@ -1015,11 +1038,15 @@ func (extractor *sensitiveFieldExtractor) plsqlMergeJoin(leftField []fieldInfo, 
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			if rField, exists := rightFieldMap[field.name]; exists {
+				finalLevel := field.maskingLevel
+				if cmp.Less[storepb.MaskingLevel](finalLevel, rField.maskingLevel) {
+					finalLevel = rField.maskingLevel
+				}
 				result = append(result, fieldInfo{
-					database:  field.database,
-					table:     field.table,
-					name:      field.name,
-					sensitive: field.sensitive || rField.sensitive,
+					database:     field.database,
+					table:        field.table,
+					name:         field.name,
+					maskingLevel: finalLevel,
 				})
 			} else {
 				result = append(result, field)
@@ -1051,11 +1078,15 @@ func (extractor *sensitiveFieldExtractor) plsqlMergeJoin(leftField []fieldInfo, 
 			_, existsInUsingMap := usingMap[field.name]
 			rField, existsInRightFieldMap := rightFieldMap[field.name]
 			if existsInUsingMap && existsInRightFieldMap {
+				finalLevel := field.maskingLevel
+				if cmp.Less[storepb.MaskingLevel](finalLevel, rField.maskingLevel) {
+					finalLevel = rField.maskingLevel
+				}
 				result = append(result, fieldInfo{
-					database:  field.database,
-					table:     field.table,
-					name:      field.name,
-					sensitive: field.sensitive || rField.sensitive,
+					database:     field.database,
+					table:        field.table,
+					name:         field.name,
+					maskingLevel: finalLevel,
 				})
 			} else {
 				result = append(result, field)
@@ -1096,10 +1127,10 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractTableRefAux(ctx plsql.ITab
 	var result []fieldInfo
 	for _, field := range list {
 		result = append(result, fieldInfo{
-			database:  field.database,
-			table:     alias,
-			name:      field.name,
-			sensitive: field.sensitive,
+			database:     field.database,
+			table:        alias,
+			name:         field.name,
+			maskingLevel: field.maskingLevel,
 		})
 	}
 
@@ -1132,10 +1163,10 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractDmlTableExpressionClause(c
 		var result []fieldInfo
 		for _, column := range tableSchema.ColumnList {
 			result = append(result, fieldInfo{
-				database:  schema,
-				table:     table,
-				name:      column.Name,
-				sensitive: column.Sensitive,
+				database:     schema,
+				table:        table,
+				name:         column.Name,
+				maskingLevel: column.MaskingLevel,
 			})
 		}
 		return result, nil
@@ -1177,7 +1208,11 @@ func (extractor *sensitiveFieldExtractor) plsqlFindTableSchema(schemaName, table
 		if schema.Name != schemaName {
 			continue
 		}
-		for _, table := range schema.TableList {
+		if len(schema.SchemaList) == 0 {
+			continue
+		}
+		tableList := schema.SchemaList[0].TableList
+		for _, table := range tableList {
 			if table.Name == tableName {
 				return table, nil
 			}

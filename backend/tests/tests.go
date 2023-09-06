@@ -162,6 +162,7 @@ type controller struct {
 	client                   *http.Client
 	grpcConn                 *grpc.ClientConn
 	issueServiceClient       v1pb.IssueServiceClient
+	rolloutServiceClient     v1pb.RolloutServiceClient
 	orgPolicyServiceClient   v1pb.OrgPolicyServiceClient
 	projectServiceClient     v1pb.ProjectServiceClient
 	authServiceClient        v1pb.AuthServiceClient
@@ -436,6 +437,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	}
 	ctl.grpcConn = grpcConn
 	ctl.issueServiceClient = v1pb.NewIssueServiceClient(ctl.grpcConn)
+	ctl.rolloutServiceClient = v1pb.NewRolloutServiceClient(ctl.grpcConn)
 	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)
@@ -613,14 +615,6 @@ func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, err
 	})
 }
 
-// patch sends a PATCH client request.
-func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	return ctl.request("PATCH", url, body, nil, map[string]string{
-		"Cookie": ctl.cookie,
-	})
-}
-
 // patchOpenAPI sends a openAPI PATCH client request.
 func (ctl *controller) patchOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
@@ -671,6 +665,7 @@ func (ctl *controller) Signup() error {
 	if err != nil {
 		return errors.Wrap(err, "fail to post login request")
 	}
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read body")
@@ -690,7 +685,7 @@ func (ctl *controller) Login() error {
 	if err != nil {
 		return errors.Wrap(err, "fail to post login request")
 	}
-
+	defer resp.Body.Close()
 	cookie := ""
 	h := resp.Header.Get("Set-Cookie")
 	parts := strings.Split(h, "; ")

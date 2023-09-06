@@ -11,6 +11,31 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+func TestGenerateEtag(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      string
+	}{
+		{
+			statement: "",
+			want:      "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+		},
+		{
+			statement: "test",
+			want:      "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3",
+		},
+		{
+			statement: "CREATE TABLE test;",
+			want:      "ecbe3800ad8d24592e2dc963ae63f96c608723db",
+		},
+	}
+
+	for _, test := range tests {
+		got := GenerateEtag([]byte(test.statement))
+		require.Equal(t, test.want, got)
+	}
+}
+
 type transformTest struct {
 	Engine   v1pb.Engine
 	Schema   string

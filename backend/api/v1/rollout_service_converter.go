@@ -89,6 +89,7 @@ func convertToPlanSpecCreateDatabaseConfig(config *storepb.PlanConfig_Spec_Creat
 			Cluster:      c.Cluster,
 			Owner:        c.Owner,
 			Backup:       c.Backup,
+			Environment:  c.Environment,
 			Labels:       c.Labels,
 		},
 	}
@@ -109,6 +110,7 @@ func convertToPlanCreateDatabaseConfig(c *storepb.PlanConfig_CreateDatabaseConfi
 		Cluster:      c.Cluster,
 		Owner:        c.Owner,
 		Backup:       c.Backup,
+		Environment:  c.Environment,
 		Labels:       c.Labels,
 	}
 }
@@ -236,6 +238,7 @@ func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *s
 		Cluster:      c.Cluster,
 		Owner:        c.Owner,
 		Backup:       c.Backup,
+		Environment:  c.Environment,
 		Labels:       c.Labels,
 	}
 }
@@ -325,16 +328,17 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, r
 		Results:    convertToPlanCheckRunResults(run.Result.Results),
 		Error:      run.Result.Error,
 	}
-	if run.Config.DatabaseId != 0 {
-		databaseUID := int(run.Config.DatabaseId)
-		database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseUID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database")
-		}
-		converted.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
+
+	instanceUID := int(run.Config.InstanceUid)
+	databaseName := run.Config.DatabaseName
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance")
 	}
-	if run.Config.SheetId != 0 {
-		sheetUID := int(run.Config.SheetId)
+	converted.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instance.ResourceID, common.DatabaseIDPrefix, databaseName)
+
+	if run.Config.SheetUid != 0 {
+		sheetUID := int(run.Config.SheetUid)
 		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet")
@@ -404,8 +408,10 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 	case *storepb.PlanCheckRunResult_Result_SqlSummaryReport_:
 		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlSummaryReport_{
 			SqlSummaryReport: &v1pb.PlanCheckRun_Result_SqlSummaryReport{
-				StatementType: report.SqlSummaryReport.StatementType,
-				AffectedRows:  report.SqlSummaryReport.AffectedRows,
+				Code:             report.SqlSummaryReport.Code,
+				StatementTypes:   report.SqlSummaryReport.StatementTypes,
+				AffectedRows:     report.SqlSummaryReport.AffectedRows,
+				ChangedResources: convertToChangedResources(report.SqlSummaryReport.ChangedResources),
 			},
 		}
 	case *storepb.PlanCheckRunResult_Result_SqlReviewReport_:
@@ -541,7 +547,7 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	case api.TaskDatabaseDataUpdate:
 		return convertToTaskFromDataUpdate(ctx, s, project, task)
 	case api.TaskDatabaseBackup:
-		return convertToTaskFromDatabaseBackUp(ctx, s, project, task)
+		return convertToTaskFromDatabaseBackup(ctx, s, project, task)
 	case api.TaskDatabaseRestorePITRRestore:
 		return convertToTaskFromDatabaseRestoreRestore(ctx, s, project, task)
 	case api.TaskDatabaseRestorePITRCutover:
@@ -601,6 +607,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Sheet:        getResourceNameForSheet(project, payload.SheetID),
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
+				Environment:  fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, payload.EnvironmentID),
 				Labels:       labels,
 			},
 		},
@@ -617,7 +624,7 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -651,7 +658,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -694,7 +701,7 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -728,7 +735,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	if payload.RollbackSheetID != 0 {
 		rollbackSheetName = getResourceNameForSheet(project, payload.RollbackSheetID)
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -786,7 +793,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	return v1pbTask, nil
 }
 
-func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+func convertToTaskFromDatabaseBackup(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
@@ -802,7 +809,8 @@ func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, projec
 		return nil, errors.Errorf("backup not found")
 	}
 	databaseBackup, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		UID: &backup.DatabaseUID,
+		UID:         &backup.DatabaseUID,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to get database: %v", err)
@@ -810,7 +818,7 @@ func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, projec
 	if databaseBackup == nil {
 		return nil, errors.Errorf("database not found")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -844,7 +852,7 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -895,7 +903,8 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 			return nil, errors.Errorf("backup not found")
 		}
 		databaseBackup, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			UID: &backup.DatabaseUID,
+			UID:         &backup.DatabaseUID,
+			ShowDeleted: true,
 		})
 		if err != nil {
 			return nil, errors.Errorf("failed to get database: %v", err)
@@ -925,7 +934,7 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -948,14 +957,13 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 	return v1pbTask, nil
 }
 
-func convertToTaskStatus(latestTaskRunStatus *api.TaskRunStatus, skipped bool) v1pb.Task_Status {
+func convertToTaskStatus(latestTaskRunStatus api.TaskRunStatus, skipped bool) v1pb.Task_Status {
 	if skipped {
 		return v1pb.Task_SKIPPED
 	}
-	if latestTaskRunStatus == nil {
+	switch latestTaskRunStatus {
+	case api.TaskRunNotStarted:
 		return v1pb.Task_NOT_STARTED
-	}
-	switch *latestTaskRunStatus {
 	case api.TaskRunPending:
 		return v1pb.Task_PENDING
 	case api.TaskRunRunning:

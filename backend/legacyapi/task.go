@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/plugin/vcs"
 )
 
 // TaskStatus is the status of a task.
@@ -23,6 +22,8 @@ const (
 	TaskFailed TaskStatus = "FAILED"
 	// TaskCanceled is the task status for CANCELED.
 	TaskCanceled TaskStatus = "CANCELED"
+	// TaskSkipped is the task status for SKIPPED.
+	TaskSkipped TaskStatus = "SKIPPED"
 )
 
 // TaskType is the type of a task.
@@ -102,13 +103,14 @@ type TaskDatabaseCreatePayload struct {
 	SpecID        string `json:"specId,omitempty"`
 
 	// The project owning the database.
-	ProjectID    int    `json:"projectId,omitempty"`
-	DatabaseName string `json:"databaseName,omitempty"`
-	TableName    string `json:"tableName,omitempty"`
-	SheetID      int    `json:"sheetId,omitempty"`
-	CharacterSet string `json:"character,omitempty"`
-	Collation    string `json:"collation,omitempty"`
-	Labels       string `json:"labels,omitempty"`
+	ProjectID     int    `json:"projectId,omitempty"`
+	DatabaseName  string `json:"databaseName,omitempty"`
+	TableName     string `json:"tableName,omitempty"`
+	SheetID       int    `json:"sheetId,omitempty"`
+	CharacterSet  string `json:"character,omitempty"`
+	Collation     string `json:"collation,omitempty"`
+	EnvironmentID string `json:"environmentId,omitempty"`
+	Labels        string `json:"labels,omitempty"`
 }
 
 // TaskDatabaseSchemaBaselinePayload is the task payload for database schema baseline.
@@ -128,10 +130,9 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 	SpecID        string `json:"specId,omitempty"`
 
-	SheetID         int            `json:"sheetId,omitempty"`
-	SchemaVersion   string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent    *vcs.PushEvent `json:"pushEvent,omitempty"`
-	SchemaGroupName string         `json:"schemaGroupName,omitempty"`
+	SheetID         int    `json:"sheetId,omitempty"`
+	SchemaVersion   string `json:"schemaVersion,omitempty"`
+	SchemaGroupName string `json:"schemaGroupName,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update (SDL).
@@ -141,9 +142,8 @@ type TaskDatabaseSchemaUpdateSDLPayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 	SpecID        string `json:"specId,omitempty"`
 
-	SheetID       int            `json:"sheetId,omitempty"`
-	SchemaVersion string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+	SheetID       int    `json:"sheetId,omitempty"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
@@ -153,9 +153,8 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 	SpecID        string `json:"specId,omitempty"`
 
-	SheetID       int            `json:"sheetId,omitempty"`
-	SchemaVersion string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+	SheetID       int    `json:"sheetId,omitempty"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
 	// SocketFileName is the socket file that gh-ost listens on.
 	// The name follows this template,
 	// `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.sock`
@@ -189,9 +188,8 @@ type TaskDatabaseDataUpdatePayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 	SpecID        string `json:"specId,omitempty"`
 
-	SheetID       int            `json:"sheetId,omitempty"`
-	SchemaVersion string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+	SheetID       int    `json:"sheetId,omitempty"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
 
 	// MySQL rollback SQL related.
 
@@ -272,6 +270,8 @@ type Task struct {
 	Progress Progress `jsonapi:"attr,progress"`
 	// OUTPUT ONLY, used by grouping batch change.
 	Statement string `jsonapi:"attr,statement"`
+	// For v1 api compatibility.
+	LatestTaskRunStatus TaskRunStatus
 }
 
 // Progress is a generalized struct which can track the progress of a task.
@@ -291,7 +291,8 @@ type Progress struct {
 
 // TaskFind is the API message for finding tasks.
 type TaskFind struct {
-	ID *int
+	ID  *int
+	IDs *[]int
 
 	// Related fields
 	PipelineID *int
@@ -306,6 +307,8 @@ type TaskFind struct {
 	Payload         string
 	NoBlockingStage bool
 	NonRollbackTask bool
+
+	LatestTaskRunStatusList *[]TaskRunStatus
 }
 
 func (find *TaskFind) String() string {

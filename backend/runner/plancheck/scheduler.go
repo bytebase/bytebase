@@ -103,7 +103,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		return
 	}
 
-	instanceUID := int(planCheckRun.Config.InstanceId)
+	instanceUID := int(planCheckRun.Config.InstanceUid)
 
 	s.stateCfg.Lock()
 	if s.stateCfg.InstanceOutstandingConnections[instanceUID] >= state.InstanceMaximumConnectionNumber {
@@ -121,7 +121,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 			s.stateCfg.InstanceOutstandingConnections[instanceUID]--
 			s.stateCfg.Unlock()
 		}()
-		results, err := executor.Run(ctx, planCheckRun)
+		results, err := runExecutorOnce(ctx, executor, planCheckRun)
 		if err != nil {
 			s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
 			return

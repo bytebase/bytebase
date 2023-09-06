@@ -29,7 +29,7 @@ service SchemaDesignService {
       post: "/v1/{parent=projects/*}/schemaDesign"
       body: "schema_design"
     };
-    option (google.api.method_signature) = "parent,schemaDesign";
+    option (google.api.method_signature) = "parent,schema_design";
   }
 
   rpc UpdateSchemaDesign(UpdateSchemaDesignRequest) returns (SchemaDesign) {
@@ -37,7 +37,12 @@ service SchemaDesignService {
       patch: "/v1/{schema_design.name=projects/*/schemaDesigns/*}"
       body: "schema_design"
     };
-    option (google.api.method_signature) = "schemaDesign,update_mask";
+    option (google.api.method_signature) = "schema_design,update_mask";
+  }
+
+  rpc MergeSchemaDesign(MergeSchemaDesignRequest) returns (SchemaDesign) {
+    option (google.api.http) = {post: "/v1/{name=projects/*/schemaDesigns/*}:merge"};
+    option (google.api.method_signature) = "name,target_name";
   }
 
   rpc ParseSchemaString(ParseSchemaStringRequest) returns (ParseSchemaStringResponse) {
@@ -81,23 +86,48 @@ message SchemaDesign {
   // Format: instances/{instance}/databases/{database}
   string baseline_database = 8 [(google.api.field_behavior) = IMMUTABLE];
 
-  // The selected schema version of the baseline database.
-  // If not specified, the latest schema of database will be used as baseline schema.
-  string schema_version = 9 [(google.api.field_behavior) = IMMUTABLE];
+  // The name of the baseline sheet.
+  // For main branch, its format will be: projects/{project}/sheets/{sheet}
+  // For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign}
+  string baseline_sheet_name = 9 [(google.api.field_behavior) = IMMUTABLE];
+
+  // The baseline change history id.
+  optional string baseline_change_history_id = 10 [(google.api.field_behavior) = IMMUTABLE];
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    // Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts.
+    MAIN_BRANCH = 1;
+    // Personal draft type is a copy of the main branch type schema designs.
+    PERSONAL_DRAFT = 2;
+  }
+  // The type of the schema design.
+  Type type = 11;
+
+  // The etag of the schema design.
+  string etag = 12;
+
+  message Protection {
+    // Permits force pushes to the branch.
+    bool allow_force_pushes = 1;
+  }
+
+  // The protection of the schema design branch.
+  Protection protection = 13;
 
   // The creator of the schema design.
   // Format: users/{email}
-  string creator = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The updater of the schema design.
   // Format: users/{email}
-  string updater = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string updater = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the schema design was created.
-  google.protobuf.Timestamp create_time = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the schema design was last updated.
-  google.protobuf.Timestamp update_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message GetSchemaDesignRequest {
@@ -112,10 +142,6 @@ message ListSchemaDesignsRequest {
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // To filter the search result.
-  // Format: only support the following spec for now:
-  // - `creator = users/{email}`, `creator != users/{email}`
-  // - `starred = true`, `starred = false`.
-  // Not support empty filter for now.
   string filter = 2;
 
   // The maximum number of schema designs to return. The service may return fewer than
@@ -160,9 +186,21 @@ message UpdateSchemaDesignRequest {
   google.protobuf.FieldMask update_mask = 2;
 }
 
+message MergeSchemaDesignRequest {
+  // The name of the schema design to merge.
+  // Format: projects/{project}/schemaDesigns/{schemaDesign}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The target schema design to merge into.
+  // Format: projects/{project}/schemaDesigns/{schemaDesign}
+  string target_name = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
 message ParseSchemaStringRequest {
+  // The schema string to parse.
   string schema_string = 1 [(google.api.field_behavior) = REQUIRED];
 
+  // The database engine of the schema string.
   Engine engine = 2;
 }
 

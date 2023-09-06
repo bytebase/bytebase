@@ -1,20 +1,21 @@
 <template>
   <BBOutline
-    id="database"
-    :title="$t('common.databases')"
-    :item-list="mixedDatabaseList"
+    id="bb.recent-databases"
+    :title="$t('database.recent')"
+    :item-list="recentDatabaseItemList"
     :allow-collapse="false"
-    :outline-item-class="'pt-0.5 pb-0.5'"
+    outline-item-class="pt-0.5 pb-0.5"
   />
 </template>
 
 <script lang="ts" setup>
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { cloneDeep } from "lodash-es";
-import { computed, h, watchEffect } from "vue";
+import { useDebounce, useStorage } from "@vueuse/core";
+import { cloneDeep, uniqBy } from "lodash-es";
+import { computed, h, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import type { BBOutlineItem } from "@/bbkit/types";
+import { useRoute, useRouter } from "vue-router";
+import { BBOutline, type BBOutlineItem } from "@/bbkit";
 import {
   useEnvironmentV1List,
   useDatabaseV1Store,
@@ -23,7 +24,11 @@ import {
   useDBGroupStore,
   useProjectV1ListByCurrentUser,
 } from "@/store";
-import { DEFAULT_PROJECT_V1_NAME, UNKNOWN_USER_NAME } from "@/types";
+import {
+  DEFAULT_PROJECT_V1_NAME,
+  UNKNOWN_ID,
+  UNKNOWN_USER_NAME,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   PolicyResourceType,
@@ -36,6 +41,9 @@ import {
   projectV1Slug,
   isDatabaseV1Accessible,
   extractProjectResourceName,
+  uidFromSlug,
+  keyBy,
+  extractUserUID,
 } from "@/utils";
 import DatabaseGroupIcon from "./DatabaseGroupIcon.vue";
 import EngineIcon from "./Icon/EngineIcon.vue";
@@ -48,10 +56,77 @@ const currentUserV1 = useCurrentUserV1();
 const rawEnvironmentList = useEnvironmentV1List();
 const { projectList } = useProjectV1ListByCurrentUser();
 
+type RecentVisitDatabase = {
+  uid: string;
+};
+
+const useRecentDatabaseList = () => {
+  const me = useCurrentUserV1();
+  const STORAGE_KEY_PREFIX = "bb.ui.recent-database-list";
+  const MAX_HISTORY = 10;
+  // The format of storage key if {HARDCODED_PREFIX}.#{USER_UID}
+  // to provide separate storage for each user in a same browser.
+  const KEY = `${STORAGE_KEY_PREFIX}.#${extractUserUID(me.value.name)}`;
+
+  const route = useRoute();
+  const recentList = useStorage(KEY, [] as RecentVisitDatabase[]);
+  const uid = computed(() => {
+    if (route.matched.length === 0) {
+      return undefined;
+    }
+    if (route.name === "workspace.database.detail") {
+      const slug = route.params.databaseSlug;
+      if (!slug || typeof slug !== "string") {
+        return undefined;
+      }
+      const uid = uidFromSlug(slug);
+      if (!uid || uid === String(UNKNOWN_ID)) {
+        return undefined;
+      }
+      return uid;
+    }
+    return undefined;
+  });
+
+  watch(
+    // Debounce the listener so we can skip internal immediate redirection
+    useDebounce(uid, 50),
+    (uid) => {
+      if (!uid) return;
+      if (uid === String(UNKNOWN_ID)) return;
+      const list = [...recentList.value];
+      const index = list.findIndex((item) => {
+        return item.uid === uid;
+      });
+      if (index >= 0) {
+        // current page exists in the history already
+        // pull it out before next step
+        list.splice(index, 1);
+      }
+      // then prepend the latest item to the queue
+      list.unshift({ uid });
+
+      // ensure the queue's length
+      // should be no more than (MAX_HISTORY)
+      while (list.length > MAX_HISTORY) {
+        list.pop();
+      }
+      recentList.value = uniqBy(list, (item) => item.uid);
+    },
+    {
+      immediate: true,
+    }
+  );
+
+  return recentList;
+};
+
 // Reserve the environment list, put "Prod" to the top.
 const environmentList = computed(() =>
   cloneDeep(rawEnvironmentList.value).reverse()
 );
+
+const recentDatabaseList = useRecentDatabaseList();
 
 // Prepare policy list for checking if user has access to the database.
 const preparePolicyList = () => {
@@ -84,6 +159,26 @@ const databaseList = computed(() => {
     .filter((database) =>
       isDatabaseV1Accessible(database, currentUserV1.value)
     );
+});
+
+const recentDatabaseItemList = computed(() => {
+  const databaseMap = keyBy(databaseList.value, (db) => db.uid);
+  const recentDatabaseItemList: BBOutlineItem[] = [];
+  recentDatabaseList.value.forEach((item) => {
+    const db = databaseMap.get(item.uid);
+    if (db) {
+      recentDatabaseItemList.push({
+        id: `bb.database.${db.uid}`,
+        name: `${db.databaseName} (${db.instanceEntity.title})`,
+        link: `/db/${databaseV1Slug(db)}`,
+        prefix: h(EngineIcon, {
+          class: "shrink-0",
+          engine: db.instanceEntity.engine,
+        }),
+      });
+    }
+  });
+  return recentDatabaseItemList;
 });
 
 const databaseListByEnvironment = computed(() => {

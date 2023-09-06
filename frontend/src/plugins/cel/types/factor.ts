@@ -18,6 +18,8 @@ export const StringFactorList = [
   "environment_id", // using `environment.resource_id`
   "project_id", // using `project.resource_id`
   "database_name",
+  "table_name",
+  "instance_id",
   "db_engine",
   "sql_type",
 
@@ -34,6 +36,11 @@ export const StringFactorList = [
   "resource.instance_id", // using `instance.resourceId`
   "resource.database_name",
   "resource.table_name",
+  // Masking
+  "resource.column_name",
+  "resource.schema_name",
+  // Masking rule
+  "classification_level",
 ] as const;
 export type StringFactor = typeof StringFactorList[number];
 

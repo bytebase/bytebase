@@ -119,6 +119,7 @@
             :username="
               issue.assignee ? issue.assignee.name : $t('common.unassigned')
             "
+            :email="issue.assignee?.email"
           />
           <span class="ml-2">
             {{ issue.assignee ? issue.assignee.name : $t("common.unassigned") }}
@@ -127,7 +128,11 @@
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell w-36">
         <div class="flex flex-row items-center">
-          <BBAvatar :size="'SMALL'" :username="issue.creator.name" />
+          <BBAvatar
+            :size="'SMALL'"
+            :username="issue.creator.name"
+            :email="issue.creator.email"
+          />
           <span class="ml-2">
             {{ issue.creator.name }}
           </span>

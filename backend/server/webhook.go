@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -45,6 +46,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -1456,7 +1458,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 					databaseName := fileInfo.migrationInfo.Database
 					issueName := fmt.Sprintf(sdlIssueNameTemplate, databaseName, "Alter schema")
 					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
-					if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repoInfo.project.UID, migrationDetailListForFile); err != nil {
+					if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
 						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 					}
 					createdIssueList = append(createdIssueList, issueName)
@@ -1497,7 +1499,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	description := strings.ReplaceAll(fileInfoList[0].migrationInfo.Description, "_", " ")
 	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType, description)
 	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
-	if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repoInfo.project.UID, migrationDetailList); err != nil {
+	if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList); err != nil {
 		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
 	}
 	createdIssueList = append(createdIssueList, issueName)
@@ -1525,51 +1527,124 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 	return ret
 }
 
-func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationDetailList []*api.MigrationDetail) error {
-	createContext, err := json.Marshal(
-		&api.MigrationContext{
-			VCSPushEvent: &pushEvent,
-			DetailList:   migrationDetailList,
+func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*api.MigrationDetail) error {
+	var steps []*v1pb.Plan_Step
+	if len(migrationDetailList) == 1 && migrationDetailList[0].DatabaseID == 0 {
+		migrationDetail := migrationDetailList[0]
+		deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, project.UID)
+		if err != nil {
+			return err
+		}
+		apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
+		if err != nil {
+			return err
+		}
+		deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
+		if err != nil {
+			return err
+		}
+		allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return err
+		}
+		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, allDatabases)
+		if err != nil {
+			return err
+		}
+		changeType := getChangeType(migrationDetail.MigrationType)
+		for _, stage := range matrix {
+			step := &v1pb.Plan_Step{}
+			for _, database := range stage {
+				step.Specs = append(step.Specs, &v1pb.Plan_Spec{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Type:          changeType,
+							Target:        fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
+							Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
+							SchemaVersion: migrationDetail.SchemaVersion,
+						},
+					},
+				})
+			}
+			steps = append(steps, step)
+		}
+	} else {
+		var specs []*v1pb.Plan_Spec
+		for _, migrationDetail := range migrationDetailList {
+			changeType := getChangeType(migrationDetail.MigrationType)
+			var target string
+			if migrationDetail.DatabaseID != 0 {
+				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.DatabaseID})
+				if err != nil {
+					return err
+				}
+				if database == nil {
+					return errors.Errorf("database %d not found", migrationDetail.DatabaseID)
+				}
+				target = fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
+			} else {
+				// TODO(d): should never reach this.
+				return errors.Errorf("tenant database is not supported yet")
+			}
+			specs = append(specs, &v1pb.Plan_Spec{
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Type:          changeType,
+						Target:        target,
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
+						SchemaVersion: migrationDetail.SchemaVersion,
+					},
+				},
+			})
+		}
+		steps = []*v1pb.Plan_Step{
+			{
+				Specs: specs,
+			},
+		}
+	}
+	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
+	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Plan: &v1pb.Plan{
+			Title: issueName,
+			Steps: steps,
 		},
-	)
+	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
+		return errors.Wrapf(err, "failed to create plan for sample project")
 	}
-
-	// TODO(d): unify issue type for database changes.
-	issueType := api.IssueDatabaseDataUpdate
-	for _, detail := range migrationDetailList {
-		if detail.MigrationType == db.Migrate || detail.MigrationType == db.Baseline {
-			issueType = api.IssueDatabaseSchemaUpdate
-		}
-	}
-	issueCreate := &api.IssueCreate{
-		ProjectID:             projectID,
-		Name:                  issueName,
-		Type:                  issueType,
-		Description:           issueDescription,
-		AssigneeID:            api.SystemBotID,
-		AssigneeNeedAttention: true,
-		CreateContext:         string(createContext),
-	}
-	issue, err := s.createIssue(ctx, issueCreate, creatorID)
+	rollout, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Plan:   plan.Name,
+	})
 	if err != nil {
-		log.Error("Failed to create issue", zap.Any("issueCreate", issueCreate), zap.Error(err))
-		errMsg := "Failed to create schema update issue"
-		if issueType == api.IssueDatabaseDataUpdate {
-			errMsg = "Failed to create data update issue"
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
+		return errors.Wrapf(err, "failed to create rollout for sample project")
 	}
-
-	// TODO(p0ny): sheet, for each sheet, update the payload to backtrace the issue.
-
+	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Issue: &v1pb.Issue{
+			Title:       issueName,
+			Description: issueDescription,
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+		},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create issue for sample project")
+	}
+	issueUID, err := strconv.Atoi(issue.Uid)
+	if err != nil {
+		return err
+	}
 	// Create a project activity after successfully creating the issue from the push event.
 	activityPayload, err := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
 			VCSPushEvent: pushEvent,
-			IssueID:      issue.ID,
-			IssueName:    issue.Name,
+			IssueID:      issueUID,
+			IssueName:    issue.Title,
 		},
 	)
 	if err != nil {
@@ -1578,17 +1653,31 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 
 	activityCreate := &store.ActivityMessage{
 		CreatorUID:   creatorID,
-		ContainerUID: projectID,
+		ContainerUID: project.UID,
 		Type:         api.ActivityProjectRepositoryPush,
 		Level:        api.ActivityInfo,
-		Comment:      fmt.Sprintf("Created issue %q.", issue.Name),
+		Comment:      fmt.Sprintf("Created issue %q.", issue.Title),
 		Payload:      string(activityPayload),
 	}
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issueUID)).SetInternal(err)
 	}
 
 	return nil
+}
+
+func getChangeType(migrationType db.MigrationType) v1pb.Plan_ChangeDatabaseConfig_Type {
+	switch migrationType {
+	case db.Baseline:
+		return v1pb.Plan_ChangeDatabaseConfig_BASELINE
+	case db.Migrate:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE
+	case db.MigrateSDL:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL
+	case db.Data:
+		return v1pb.Plan_ChangeDatabaseConfig_DATA
+	}
+	return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 }
 
 func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
@@ -1746,7 +1835,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 		file,
 		vcs.RefInfo{
 			RefType: vcs.RefTypeCommit,
-			RefName: pushEvent.CommitList[0].ID,
+			RefName: pushEvent.CommitList[len(pushEvent.CommitList)-1].ID,
 		},
 	)
 	if err != nil {
@@ -1770,6 +1859,11 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
+	sheetPayload := &storepb.SheetPayload{
+		VcsPayload: &storepb.SheetPayload_VCSPayload{
+			PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
+		},
+	}
 	sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: repoInfo.project.UID,
@@ -1778,6 +1872,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
 		Type:       store.SheetForSQL,
+		Payload:    sheetPayload,
 	})
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
@@ -1786,13 +1881,12 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 
 	var migrationDetailList []*api.MigrationDetail
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
-		migrationDetailList = append(migrationDetailList,
-			&api.MigrationDetail{
+		return []*api.MigrationDetail{
+			{
 				MigrationType: db.MigrateSDL,
 				SheetID:       sheet.UID,
 			},
-		)
-		return migrationDetailList, nil
+		}, nil
 	}
 
 	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, dbName, schemaInfo.Environment)
@@ -1834,6 +1928,11 @@ func (s *Server) prepareIssueFromFile(
 		}
 	}
 
+	sheetPayload := &storepb.SheetPayload{
+		VcsPayload: &storepb.SheetPayload_VCSPayload{
+			PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
+		},
+	}
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
 		// A non-YAML file means the whole file content is the SQL statement
 		if !fileInfo.item.IsYAML {
@@ -1845,6 +1944,7 @@ func (s *Server) prepareIssueFromFile(
 				Visibility: store.ProjectSheet,
 				Source:     store.SheetFromBytebaseArtifact,
 				Type:       store.SheetForSQL,
+				Payload:    sheetPayload,
 			})
 			if err != nil {
 				activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -1881,6 +1981,7 @@ func (s *Server) prepareIssueFromFile(
 			Visibility: store.ProjectSheet,
 			Source:     store.SheetFromBytebaseArtifact,
 			Type:       store.SheetForSQL,
+			Payload:    sheetPayload,
 		})
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -1931,6 +2032,7 @@ func (s *Server) prepareIssueFromFile(
 			Visibility: store.ProjectSheet,
 			Source:     store.SheetFromBytebaseArtifact,
 			Type:       store.SheetForSQL,
+			Payload:    sheetPayload,
 		})
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -1952,7 +2054,7 @@ func (s *Server) prepareIssueFromFile(
 	}
 
 	migrationVersion := fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())
-	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, migrationVersion, content); err != nil {
+	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, migrationVersion, content, pushEvent); err != nil {
 		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(
 				repoInfo.project.UID,
@@ -1965,17 +2067,16 @@ func (s *Server) prepareIssueFromFile(
 	return nil, nil
 }
 
-func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases []*store.DatabaseMessage, fileName, schemaVersion, statement string) error {
+func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases []*store.DatabaseMessage, fileName, schemaVersion, statement string, pushEvent vcs.PushEvent) error {
 	// TODO(p0ny): sheet, create new sheets and update task sheet id.
 	// For modified files, we try to update the existing issue's statement.
 	for _, database := range databases {
-		find := &api.TaskFind{
-			DatabaseID: &database.UID,
-			StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
-			TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
-			Payload:    fmt.Sprintf("task.payload->>'schemaVersion' = '%s'", schemaVersion),
-		}
-		taskList, err := s.store.ListTasks(ctx, find)
+		taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
+			DatabaseID:              &database.UID,
+			LatestTaskRunStatusList: &[]api.TaskRunStatus{api.TaskRunNotStarted, api.TaskRunFailed},
+			TypeList:                &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
+			Payload:                 fmt.Sprintf("task.payload->>'schemaVersion' = '%s'", schemaVersion),
+		})
 		if err != nil {
 			return err
 		}
@@ -1997,6 +2098,11 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			return nil
 		}
 
+		sheetPayload := &storepb.SheetPayload{
+			VcsPayload: &storepb.SheetPayload_VCSPayload{
+				PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
+			},
+		}
 		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: issue.Project.UID,
@@ -2005,6 +2111,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			Visibility: store.ProjectSheet,
 			Source:     store.SheetFromBytebaseArtifact,
 			Type:       store.SheetForSQL,
+			Payload:    sheetPayload,
 		})
 		if err != nil {
 			return err
@@ -2017,9 +2124,34 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			SheetID:   &sheet.UID,
 			UpdaterID: api.SystemBotID,
 		}
-		if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
+		if err := patchTask(ctx, s.store, s.ActivityManager, task, &taskPatch, issue); err != nil {
 			log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID), zap.Error(err))
 			return nil
+		}
+
+		if issue.PlanUID != nil {
+			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+			if err != nil {
+				log.Error("failed to get plan", zap.Int64("plan ID", *issue.PlanUID), zap.Error(err))
+			}
+			for _, step := range plan.Config.Steps {
+				for _, spec := range step.Specs {
+					v, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig)
+					if !ok {
+						continue
+					}
+					if v.ChangeDatabaseConfig.SchemaVersion == schemaVersion && v.ChangeDatabaseConfig.Target == fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName) {
+						v.ChangeDatabaseConfig.Sheet = fmt.Sprintf("projects/%s/sheets/%d", issue.Project.ResourceID, sheet.UID)
+					}
+				}
+			}
+			if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
+				UID:       *issue.PlanUID,
+				Config:    plan.Config,
+				UpdaterID: api.SystemBotID,
+			}); err != nil {
+				log.Error("failed to update plan", zap.Int64("plan ID", *issue.PlanUID), zap.Error(err))
+			}
 		}
 
 		// dismiss stale review, re-find the approval template

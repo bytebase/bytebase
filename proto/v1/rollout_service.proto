@@ -7,6 +7,7 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/database_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -194,31 +195,36 @@ message Plan {
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
     // Format: instances/{instance}
-    string target = 1;
+    string target = 1 [(google.api.field_behavior) = REQUIRED];
     // The name of the database to create.
-    string database = 2;
+    string database = 2 [(google.api.field_behavior) = REQUIRED];
     // table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
     // For example, in MongoDB, it only creates the database when we first store data in that database.
-    string table = 3;
+    string table = 3 [(google.api.field_behavior) = OPTIONAL];
     // character_set is the character set of the database.
-    string character_set = 4;
+    string character_set = 4 [(google.api.field_behavior) = OPTIONAL];
     // collation is the collation of the database.
-    string collation = 5;
+    string collation = 5 [(google.api.field_behavior) = OPTIONAL];
     // cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>".
-    string cluster = 6;
+    string cluster = 6 [(google.api.field_behavior) = OPTIONAL];
     // owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
-    string owner = 7;
+    string owner = 7 [(google.api.field_behavior) = OPTIONAL];
     // backup is the resource name of the backup.
     // Format: instances/{instance}/databases/{database}/backups/{backup-name}
-    string backup = 8;
+    string backup = 8 [(google.api.field_behavior) = OPTIONAL];
+    // The environment resource.
+    // Format: environments/prod where prod is the environment resource ID.
+    string environment = 9 [(google.api.field_behavior) = OPTIONAL];
     // labels of the database.
-    map<string, string> labels = 9;
+    map<string, string> labels = 10 [(google.api.field_behavior) = OPTIONAL];
   }
 
   message ChangeDatabaseConfig {
     // The resource name of the target.
     // Format: instances/{instance-id}/databases/{database-name}.
-    // Format: projects/{project}/databaseGroups/{databaseGroup}
+    // Format: projects/{project}/databaseGroups/{databaseGroup}.
+    // Format: projects/{project}/deploymentConfigs/default. The plan should
+    // have a single step and single spec for the deployment configuration type.
     string target = 1;
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
@@ -323,6 +329,8 @@ message BatchRunTasksRequest {
   // The tasks to run.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
+
+  string reason = 3;
 }
 
 message BatchRunTasksResponse {}
@@ -334,6 +342,8 @@ message BatchSkipTasksRequest {
   // The tasks to skip.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
+
+  string reason = 3;
 }
 
 message BatchSkipTasksResponse {}
@@ -346,6 +356,8 @@ message BatchCancelTaskRunsRequest {
   // The taskRuns to cancel.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   repeated string task_runs = 2;
+
+  string reason = 3;
 }
 
 message BatchCancelTaskRunsResponse {}
@@ -407,8 +419,11 @@ message PlanCheckRun {
       SqlReviewReport sql_review_report = 6;
     }
     message SqlSummaryReport {
-      string statement_type = 1;
-      int64 affected_rows = 2;
+      int64 code = 1;
+      // statement_types are the types of statements that are found in the sql.
+      repeated string statement_types = 2;
+      int64 affected_rows = 3;
+      ChangedResources changed_resources = 4;
     }
     message SqlReviewReport {
       int64 line = 1;
@@ -582,7 +597,8 @@ message Task {
     string sheet = 4;
     string character_set = 5;
     string collation = 6;
-    map<string, string> labels = 7;
+    string environment = 7;
+    map<string, string> labels = 8;
   }
 
   message DatabaseSchemaBaseline {

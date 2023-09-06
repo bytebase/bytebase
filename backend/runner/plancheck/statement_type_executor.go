@@ -15,9 +15,9 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	"github.com/bytebase/bytebase/backend/runner/utils"
+	runnerutils "github.com/bytebase/bytebase/backend/runner/utils"
 	"github.com/bytebase/bytebase/backend/store"
-	backendutils "github.com/bytebase/bytebase/backend/utils"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -44,18 +44,42 @@ func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.Pla
 		return nil, errors.Errorf("change database type is unspecified")
 	}
 
-	databaseID := int(planCheckRun.Config.DatabaseId)
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID})
-	if err != nil {
-		return nil, err
+	if planCheckRun.Config.DatabaseGroupUid != nil {
+		return e.runForDatabaseGroupTarget(ctx, planCheckRun, *planCheckRun.Config.DatabaseGroupUid)
 	}
-	if database == nil {
-		return nil, errors.Errorf("database not found: %d", databaseID)
+	return e.runForDatabaseTarget(ctx, planCheckRun)
+}
+
+func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
+	changeType := planCheckRun.Config.ChangeDatabaseType
+	config := planCheckRun.Config
+
+	instanceUID := int(config.InstanceUid)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found UID %v", instanceUID)
 	}
 
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	if !isStatementTypeCheckSupported(instance.Engine) {
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Code:    common.Ok.Int64(),
+				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Engine),
+				Content: "",
+			},
+		}, nil
+	}
+
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v", database.InstanceID)
+		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
 	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
@@ -66,13 +90,13 @@ func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.Pla
 		return nil, errors.Errorf("database schema not found: %d", database.UID)
 	}
 
-	sheetID := int(planCheckRun.Config.SheetId)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID}, api.SystemBotID)
+	sheetUID := int(planCheckRun.Config.SheetUid)
+	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetID)
+		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}
 	if sheet == nil {
-		return nil, errors.Errorf("sheet %d not found", sheetID)
+		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
 	if sheet.Size > common.MaxSheetSizeForTaskCheck {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -85,14 +109,14 @@ func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.Pla
 		}, nil
 	}
 
-	statement, err := e.store.GetSheetStatementByID(ctx, sheetID)
+	statement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetID)
+		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
 	}
 
-	materials := backendutils.GetSecretMapFromDatabaseMessage(database)
+	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := backendutils.RenderStatement(statement, materials)
+	renderedStatement := utils.RenderStatement(statement, materials)
 
 	var results []*storepb.PlanCheckRunResult_Result
 	switch instance.Engine {
@@ -134,8 +158,187 @@ func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.Pla
 	return results, nil
 }
 
+func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, databaseGroupUID int64) ([]*storepb.PlanCheckRunResult_Result, error) {
+	changeType := planCheckRun.Config.ChangeDatabaseType
+	config := planCheckRun.Config
+
+	databaseGroup, err := e.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		UID: &databaseGroupUID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database group %d", databaseGroupUID)
+	}
+	if databaseGroup == nil {
+		return nil, errors.Errorf("database group not found %d", databaseGroupUID)
+	}
+
+	schemaGroups, err := e.store.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{DatabaseGroupUID: &databaseGroup.UID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list schema groups for database group %q", databaseGroup.UID)
+	}
+	project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		UID: &databaseGroup.ProjectUID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project %d", databaseGroup.ProjectUID)
+	}
+	if project == nil {
+		return nil, errors.Errorf("project not found %d", databaseGroup.ProjectUID)
+	}
+
+	allDatabases, err := e.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+	}
+
+	matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroup.ResourceID)
+	}
+	if len(matchedDatabases) == 0 {
+		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroup.ResourceID)
+	}
+
+	sheetUID := int(planCheckRun.Config.SheetUid)
+	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
+	}
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %d not found", sheetUID)
+	}
+	if sheet.Size > common.MaxSheetSizeForTaskCheck {
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Code:    common.Ok.Int64(),
+				Title:   "Large SQL review policy is disabled",
+				Content: "",
+			},
+		}, nil
+	}
+	sheetStatement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
+	}
+
+	var results []*storepb.PlanCheckRunResult_Result
+
+	for _, database := range matchedDatabases {
+		if database.DatabaseName != config.DatabaseName {
+			continue
+		}
+
+		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
+		}
+		if instance == nil {
+			return nil, errors.Errorf("instance %q not found", database.InstanceID)
+		}
+		if !isStatementTypeCheckSupported(instance.Engine) {
+			continue
+		}
+		if instance.UID != int(config.InstanceUid) {
+			continue
+		}
+
+		environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+		if err != nil {
+			return nil, err
+		}
+		if environment == nil {
+			return nil, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
+		}
+
+		dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get db schema %q", database.UID)
+		}
+
+		schemaGroupsMatchedTables := map[string][]string{}
+		for _, schemaGroup := range schemaGroups {
+			matches, _, err := utils.GetMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get matched and unmatched tables in schema group %q", schemaGroup.ResourceID)
+			}
+			schemaGroupsMatchedTables[schemaGroup.ResourceID] = matches
+		}
+
+		parserEngineType, err := utils.ConvertDatabaseToParserEngineType(instance.Engine)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
+		}
+
+		statements, _, err := utils.GetStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, "", schemaGroups, schemaGroupsMatchedTables)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get statements from schema groups")
+		}
+
+		for _, statement := range statements {
+			materials := utils.GetSecretMapFromDatabaseMessage(database)
+			// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
+			renderedStatement := utils.RenderStatement(statement, materials)
+
+			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
+				var results []*storepb.PlanCheckRunResult_Result
+				switch instance.Engine {
+				case db.Postgres, db.RisingWave:
+					checkResults, err := postgresqlStatementTypeCheck(renderedStatement, changeType)
+					if err != nil {
+						return nil, err
+					}
+					results = append(results, checkResults...)
+				case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+					checkResults, err := mysqlStatementTypeCheck(renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation, changeType)
+					if err != nil {
+						return nil, err
+					}
+					results = append(results, checkResults...)
+					if changeType == storepb.PlanCheckRunConfig_SDL {
+						sdlAdvice, err := e.mysqlSDLTypeCheck(ctx, renderedStatement, instance, database)
+						if err != nil {
+							return nil, err
+						}
+						results = append(results, sdlAdvice...)
+					}
+				default:
+					return nil, common.Errorf(common.Invalid, "invalid check statement type database type: %s", instance.Engine)
+				}
+
+				return results, nil
+			}()
+			if err != nil {
+				results = append(results, &storepb.PlanCheckRunResult_Result{
+					Status:  storepb.PlanCheckRunResult_Result_ERROR,
+					Title:   "Failed to run statement type check",
+					Content: err.Error(),
+					Code:    common.Internal.Int64(),
+					Report:  nil,
+				})
+			} else {
+				results = append(results, stmtResults...)
+			}
+		}
+	}
+
+	if len(results) == 0 {
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Title:   "OK",
+				Content: "",
+				Code:    common.Ok.Int64(),
+				Report:  nil,
+			},
+		}, nil
+	}
+
+	return results, nil
+}
+
 func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema string, instance *store.InstanceMessage, database *store.DatabaseMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
-	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database, e.dbFactory, newSchema)
+	ddl, err := runnerutils.ComputeDatabaseSchemaDiff(ctx, instance, database, e.dbFactory, newSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -311,25 +514,6 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 	p.EnableWindowFunc(true)
 
 	stmts, _, err := p.Parse(supportStmt, charset, collation)
-	if err != nil {
-		// nolint: nilerr
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Syntax error",
-				Content: err.Error(),
-				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:   0,
-						Detail: "",
-						Code:   advisor.StatementSyntaxError.Int64(),
-					},
-				},
-			},
-		}, nil
-	}
-
 	if err != nil {
 		// nolint: nilerr
 		return []*storepb.PlanCheckRunResult_Result{

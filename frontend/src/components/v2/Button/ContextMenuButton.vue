@@ -1,5 +1,5 @@
 <template>
-  <NButtonGroup v-if="currentAction" size="small">
+  <NButtonGroup v-if="currentAction" :size="size">
     <NButton
       v-bind="currentAction.props"
       @click="$emit('click', currentAction)"
@@ -33,17 +33,29 @@
 <script setup lang="ts">
 import { useLocalStorage } from "@vueuse/core";
 import { head } from "lodash-es";
-import { NButton, NButtonGroup, NPopselect, SelectOption } from "naive-ui";
+import {
+  NButton,
+  NButtonGroup,
+  ButtonGroupProps,
+  NPopselect,
+  SelectOption,
+} from "naive-ui";
 import { ref, computed } from "vue";
 import { ContextMenuButtonAction } from "./types";
 
 const STORE_PREFIX = "bb.context-menu-button";
 
-const props = defineProps<{
-  preferenceKey: string;
-  actionList: ContextMenuButtonAction[];
-  defaultActionKey: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    preferenceKey: string;
+    actionList: ContextMenuButtonAction[];
+    defaultActionKey: string;
+    size?: ButtonGroupProps["size"];
+  }>(),
+  {
+    size: "small",
+  }
+);
 
 defineEmits<{
   (event: "click", action: ContextMenuButtonAction): void;

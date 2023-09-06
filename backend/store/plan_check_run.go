@@ -68,6 +68,7 @@ type FindPlanCheckRunMessage struct {
 	PlanUID *int64
 
 	Status *[]PlanCheckRunStatus
+	Type   *[]PlanCheckRunType
 }
 
 // CreatePlanCheckRuns creates new plan check runs.
@@ -132,12 +133,12 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 		args = append(args, *v)
 	}
 	if v := find.Status; v != nil {
-		var list []string
-		for _, status := range *v {
-			list = append(list, fmt.Sprintf("$%d", len(args)+1))
-			args = append(args, status)
-		}
-		where = append(where, fmt.Sprintf("plan_check_run.status in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("plan_check_run.status = ANY($%d)", len(args)+1))
+		args = append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where = append(where, fmt.Sprintf("plan_check_run.type = ANY($%d)", len(args)+1))
+		args = append(args, *v)
 	}
 	query := fmt.Sprintf(`
 		SELECT

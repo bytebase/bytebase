@@ -38,7 +38,11 @@
       </BBTableCell>
       <BBTableCell class="w-[12%]">
         <div class="flex flex-row items-center">
-          <BBAvatar :size="'SMALL'" :username="getUser(activity)?.title" />
+          <BBAvatar
+            :size="'SMALL'"
+            :username="getUser(activity)?.title"
+            :email="getUser(activity)?.email"
+          />
           <span class="ml-2">{{ getUser(activity)?.title }}</span>
         </div>
       </BBTableCell>

@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -119,7 +120,6 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 }
 
 // Query will execute a readonly / SELECT query.
-// TODO(rebelice): remove Query function and rename Query to Query after frontend is ready to use the new API.
 func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
 	if err != nil {
@@ -150,12 +150,18 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
 	}
 
+	var fieldMaskingLevels []storepb.MaskingLevel
 	var fieldMaskInfo []bool
 	var fieldSensitiveInfo []bool
 	for i := range columnNames {
-		sensitive := len(fieldList) > 0 && fieldList[i].Sensitive
-		fieldSensitiveInfo = append(fieldSensitiveInfo, sensitive)
+		maskingLevel := storepb.MaskingLevel_NONE
+		if len(fieldList) > i && queryContext.EnableSensitive {
+			maskingLevel = fieldList[i].MaskingLevel
+		}
+		fieldMaskingLevels = append(fieldMaskingLevels, maskingLevel)
+		sensitive := len(fieldList) > i && (maskingLevel == storepb.MaskingLevel_FULL || maskingLevel == storepb.MaskingLevel_PARTIAL)
 		fieldMaskInfo = append(fieldMaskInfo, sensitive && queryContext.EnableSensitive)
+		fieldSensitiveInfo = append(fieldSensitiveInfo, sensitive)
 	}
 
 	columnTypes, err := rows.ColumnTypes()
@@ -170,7 +176,7 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows2(rows, columnTypes, columnTypeNames, fieldMaskInfo)
+	data, err := readRows(rows, columnTypeNames, fieldMaskingLevels)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +287,7 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows2(rows, columnTypes, columnTypeNames, nil)
+	data, err := readRows(rows, columnTypeNames, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -297,18 +303,17 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	}, nil
 }
 
-// TODO(rebelice): remove the readRows and rename readRows2 to readRows if legacy API is deprecated.
-func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldMaskInfo []bool) ([]*v1pb.QueryRow, error) {
+func readRows(rows *sql.Rows, columnTypeNames []string, fieldMaskingLevels []storepb.MaskingLevel) ([]*v1pb.QueryRow, error) {
 	var data []*v1pb.QueryRow
-	if len(columnTypes) == 0 {
+	if len(columnTypeNames) == 0 {
 		// No rows.
 		// The oracle driver will panic if there is no rows such as EXPLAIN PLAN FOR statement.
 		return data, nil
 	}
 	for rows.Next() {
 		// wantBytesValue want to convert StringValue to BytesValue when columnTypeName is BIT or VARBIT
-		wantBytesValue := make([]bool, len(columnTypes))
-		scanArgs := make([]any, len(columnTypes))
+		wantBytesValue := make([]bool, len(columnTypeNames))
+		scanArgs := make([]any, len(columnTypeNames))
 		for i, v := range columnTypeNames {
 			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
 			switch v {
@@ -333,43 +338,101 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 		}
 
 		var rowData v1pb.QueryRow
-		for i := range columnTypes {
-			if len(fieldMaskInfo) > 0 && fieldMaskInfo[i] {
+		for i := range columnTypeNames {
+			if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_FULL {
 				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}})
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: v.Bool}})
+				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+					s := fmt.Sprintf("%t", v.Bool)
+					result := getMiddlePartOfString(s)
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+				} else {
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: v.Bool}})
+				}
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
 				if wantBytesValue[i] {
-					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: []byte(v.String)}})
+					if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+						result := getMiddlePartOfString(v.String)
+						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+					} else {
+						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: []byte(v.String)}})
+					}
 				} else {
-					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String}})
+					if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+						result := getMiddlePartOfString(v.String)
+						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+					} else {
+						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String}})
+					}
 				}
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: v.Int64}})
+				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+					s := strconv.FormatInt(v.Int64, 10)
+					result := getMiddlePartOfString(s)
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+				} else {
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: v.Int64}})
+				}
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: v.Int32}})
+				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+					s := strconv.FormatInt(int64(v.Int32), 10)
+					result := getMiddlePartOfString(s)
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+				} else {
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: v.Int32}})
+				}
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: v.Float64}})
+				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+					s := strconv.FormatFloat(v.Float64, 'f', -1, 64)
+					result := getMiddlePartOfString(s)
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+				} else {
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: v.Float64}})
+				}
 				continue
 			}
 			// If none of them match, set nil to its value.
-			rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
+			if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "**UL**"}})
+			} else {
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
+			}
 		}
 
 		data = append(data, &rowData)
 	}
 
 	return data, nil
+}
+
+func paddingAsterisk(s string) string {
+	return fmt.Sprintf("**%s**", s)
+}
+
+// getMiddlePartOfString will get the middle part of the string.
+func getMiddlePartOfString(stmt string) string {
+	if len(stmt) == 0 || len(stmt) == 1 {
+		return ""
+	}
+	s := []rune(stmt)
+	if len(s)%4 != 0 {
+		s = s[:len(s)/4*4]
+	}
+
+	var ret []rune
+	ret = append(ret, s[len(s)/4:len(s)/2]...)
+	ret = append(ret, s[len(s)/2:len(s)/4*3]...)
+	return string(ret)
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {

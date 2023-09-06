@@ -14,6 +14,7 @@
   <template v-else-if="atom.type === 'database'">
     <span class="flex items-center gap-x-1">
       <InstancePrefix
+        v-if="connectionTreeStore.tree.mode === ConnectionTreeMode.PROJECT"
         :instance="database.instanceEntity"
         :environment="environment"
         :disabled="atom.disabled"
@@ -30,12 +31,14 @@ import {
   useDatabaseV1Store,
   useInstanceV1Store,
   useEnvironmentV1Store,
+  useConnectionTreeStore,
 } from "@/store";
 import {
   ConnectionAtom,
   unknownInstance,
   unknownDatabase,
   unknownEnvironment,
+  ConnectionTreeMode,
 } from "@/types";
 import InstancePrefix from "./InstancePrefix.vue";
 
@@ -46,6 +49,7 @@ const props = defineProps<{
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const environmentStore = useEnvironmentV1Store();
+const connectionTreeStore = useConnectionTreeStore();
 
 const instance = computed(() => {
   const { atom } = props;

@@ -29,8 +29,9 @@ type PlanMessage struct {
 
 // FindPlanMessage is the message to find a plan.
 type FindPlanMessage struct {
-	UID       *int64
-	ProjectID *string
+	UID        *int64
+	ProjectID  *string
+	PipelineID *int
 
 	Limit  *int
 	Offset *int
@@ -102,8 +103,8 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 }
 
 // GetPlan gets a plan.
-func (s *Store) GetPlan(ctx context.Context, uid int64) (*PlanMessage, error) {
-	plans, err := s.ListPlans(ctx, &FindPlanMessage{UID: &uid})
+func (s *Store) GetPlan(ctx context.Context, find *FindPlanMessage) (*PlanMessage, error) {
+	plans, err := s.ListPlans(ctx, find)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list plans")
 	}
@@ -111,7 +112,7 @@ func (s *Store) GetPlan(ctx context.Context, uid int64) (*PlanMessage, error) {
 		return nil, nil
 	}
 	if len(plans) > 1 {
-		return nil, errors.Errorf("found multiple plans with UID %d", uid)
+		return nil, errors.Errorf("expect to find one plan, found %d", len(plans))
 	}
 	return plans[0], nil
 }
@@ -124,6 +125,9 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.PipelineID; v != nil {
+		where, args = append(where, fmt.Sprintf("plan.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
 	query := fmt.Sprintf(`
 		SELECT

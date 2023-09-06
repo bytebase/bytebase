@@ -83,7 +83,8 @@ export const useAuthStore = defineStore("auth_v1", {
       const userId = getIntCookie("user");
       if (userId) {
         const loggedInUser = await useUserStore().getOrFetchUserById(
-          String(userId)
+          String(userId),
+          true // silent
         );
         this.currentUser = loggedInUser;
         return loggedInUser;
@@ -92,7 +93,10 @@ export const useAuthStore = defineStore("auth_v1", {
     },
     async refreshUserIfNeeded(name: string) {
       if (name === this.currentUser.name) {
-        const refreshedUser = await useUserStore().fetchUser(name);
+        const refreshedUser = await useUserStore().fetchUser(
+          name,
+          true // silent
+        );
         if (!isEqual(refreshedUser, this.currentUser)) {
           this.currentUser = refreshedUser;
         }

@@ -53,6 +53,7 @@ var resourceActionTypeMap = map[string][]api.ActivityType{
 	"pipelines": {
 		api.ActivityPipelineStageStatusUpdate,
 		api.ActivityPipelineTaskStatusUpdate,
+		api.ActivityPipelineTaskRunStatusUpdate,
 		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
 		api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
@@ -112,6 +113,9 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 		if orderByKeys[0].isAscend {
 			order = api.ASC
 		}
+		activityFind.Order = &order
+	} else {
+		order := api.ASC
 		activityFind.Order = &order
 	}
 
@@ -314,6 +318,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 	case
 		api.ActivityPipelineStageStatusUpdate,
 		api.ActivityPipelineTaskStatusUpdate,
+		api.ActivityPipelineTaskRunStatusUpdate,
 		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
 		api.ActivityPipelineTaskEarliestAllowedTimeUpdate:
@@ -396,6 +401,8 @@ func convertToActivityType(action v1pb.LogEntity_Action) (api.ActivityType, erro
 		return api.ActivityPipelineStageStatusUpdate, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_STATUS_UPDATE:
 		return api.ActivityPipelineTaskStatusUpdate, nil
+	case v1pb.LogEntity_ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
+		return api.ActivityPipelineTaskRunStatusUpdate, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_FILE_COMMIT:
 		return api.ActivityPipelineTaskFileCommit, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
@@ -449,6 +456,8 @@ func convertToActionType(activityType api.ActivityType) v1pb.LogEntity_Action {
 		return v1pb.LogEntity_ACTION_PIPELINE_STAGE_STATUS_UPDATE
 	case api.ActivityPipelineTaskStatusUpdate:
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_STATUS_UPDATE
+	case api.ActivityPipelineTaskRunStatusUpdate:
+		return v1pb.LogEntity_ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE
 	case api.ActivityPipelineTaskFileCommit:
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_FILE_COMMIT
 	case api.ActivityPipelineTaskStatementUpdate:

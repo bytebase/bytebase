@@ -1,12 +1,12 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import { resolve } from "path";
-import { CodeInspectorPlugin } from "code-inspector-plugin";
 import VueI18n from "@intlify/vite-plugin-vue-i18n";
-import Icons from "unplugin-icons/vite";
-import IconsResolver from "unplugin-icons/resolver";
-import Components from "unplugin-vue-components/vite";
 import yaml from "@rollup/plugin-yaml";
+import vue from "@vitejs/plugin-vue";
+import { CodeInspectorPlugin } from "code-inspector-plugin";
+import { resolve } from "path";
+import IconsResolver from "unplugin-icons/resolver";
+import Icons from "unplugin-icons/vite";
+import Components from "unplugin-vue-components/vite";
+import { defineConfig } from "vite";
 
 const SERVER_PORT = parseInt(process.env.PORT ?? "3000", 10) ?? 3000;
 const HTTPS_PORT = 443;

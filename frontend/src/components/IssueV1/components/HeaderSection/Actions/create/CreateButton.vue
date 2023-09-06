@@ -3,7 +3,7 @@
     <template #trigger>
       <NButton
         type="primary"
-        size="large"
+        size="medium"
         tag="div"
         :disabled="issueCreateErrorList.length > 0 || loading"
         :loading="loading"
@@ -18,20 +18,19 @@
     </template>
   </NTooltip>
 
-  <Teleport v-if="loading" to="body">
-    <!-- prevent clicking the page -->
-    <div
-      v-zindexable="{ enabled: true }"
-      class="fixed inset-0 pointer-events-auto flex flex-col items-center justify-center"
-      @click.stop.prevent
-    />
-  </Teleport>
+  <!-- prevent clicking the page when creating in progress -->
+  <div
+    v-if="loading"
+    v-zindexable="{ enabled: true }"
+    class="fixed inset-0 pointer-events-auto flex flex-col items-center justify-center"
+    @click.stop.prevent
+  />
 </template>
 
 <script setup lang="ts">
 import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
-import { computed, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -43,6 +42,7 @@ import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
+import { Issue } from "@/types/proto/v1/issue_service";
 import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { extractSheetUID, getSheetStatement, setSheetStatement } from "@/utils";
@@ -77,9 +77,13 @@ const doCreateIssue = async () => {
     issue.value.plan = createdPlan.name;
     issue.value.planEntity = createdPlan;
 
+    const issueCreate = {
+      ...Issue.fromPartial(issue.value),
+      rollout: "",
+    };
     const createdIssue = await issueServiceClient.createIssue({
       parent: issue.value.project,
-      issue: issue.value,
+      issue: issueCreate,
     });
 
     const createdRollout = await rolloutServiceClient.createRollout({
@@ -96,7 +100,9 @@ const doCreateIssue = async () => {
       rolloutEntity: createdRollout,
     };
 
-    router.push(`/issue/${composedIssue.uid}`);
+    nextTick(() => {
+      router.push(`/issue/${composedIssue.uid}`);
+    });
 
     return composedIssue;
   } catch {

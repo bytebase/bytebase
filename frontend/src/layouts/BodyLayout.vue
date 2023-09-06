@@ -28,13 +28,13 @@
             </div>
             <router-link
               to="/archive"
-              class="outline-item group flex items-center px-4 py-2"
+              class="outline-item group flex items-center px-4 py-1.5"
             >
               <heroicons-outline:archive class="w-5 h-5 mr-2" />
               {{ $t("common.archive") }}
             </router-link>
             <div
-              class="flex-shrink-0 flex border-t border-block-border px-3 py-2"
+              class="flex-shrink-0 flex border-t border-block-border px-3 py-1.5"
             >
               <div
                 v-if="isDemo"
@@ -99,13 +99,13 @@
           </div>
           <router-link
             to="/archive"
-            class="outline-item group flex items-center px-4 py-2"
+            class="outline-item group flex items-center px-4 py-1.5"
           >
             <heroicons-outline:archive class="w-5 h-5 mr-2" />
             {{ $t("common.archive") }}
           </router-link>
           <div
-            class="flex-shrink-0 flex justify-between border-t border-block-border px-3 py-2"
+            class="flex-shrink-0 flex justify-between border-t border-block-border px-3 py-1.5"
           >
             <div
               v-if="isDemo"
@@ -167,12 +167,12 @@
         <!-- Static sidebar for mobile -->
         <aside class="md:hidden">
           <div
-            class="flex items-center justify-start bg-gray-50 border-b border-block-border px-4 py-1.5"
+            class="flex items-center justify-start bg-gray-50 border-b border-block-border px-4"
           >
             <div>
               <button
                 type="button"
-                class="-mr-3 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900"
+                class="-mr-3 h-8 w-8 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900"
                 @click.prevent="state.showMobileOverlay = true"
               >
                 <span class="sr-only">Open sidebar</span>
@@ -194,7 +194,7 @@
             <div
               class="w-full flex flex-row justify-between items-center flex-wrap px-4 gap-x-4"
             >
-              <div v-if="quickActionList.length > 0" class="flex-1 pt-6 pb-2">
+              <div v-if="quickActionList.length > 0" class="flex-1 pt-3 pb-2">
                 <QuickActionPanel :quick-action-list="quickActionList" />
               </div>
               <div
@@ -217,8 +217,9 @@
         </div>
         <!-- This area may scroll -->
         <div
+          id="bb-layout-main"
           class="md:min-w-0 md:flex-1 overflow-y-auto"
-          :class="showBreadcrumb || quickActionList.length > 0 ? 'mt-2' : ''"
+          :class="showBreadcrumb && quickActionList.length == 0 ? 'mt-2' : ''"
         >
           <!-- Start main area-->
           <router-view name="content" />

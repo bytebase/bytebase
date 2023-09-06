@@ -4,23 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
-	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -33,19 +36,17 @@ type RolloutService struct {
 	store              *store.Store
 	licenseService     enterpriseAPI.LicenseService
 	dbFactory          *dbfactory.DBFactory
-	taskCheckScheduler *taskcheck.Scheduler
 	planCheckScheduler *plancheck.Scheduler
 	stateCfg           *state.State
 	activityManager    *activity.Manager
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskCheckScheduler *taskcheck.Scheduler, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
 	return &RolloutService{
 		store:              store,
 		licenseService:     licenseService,
 		dbFactory:          dbFactory,
-		taskCheckScheduler: taskCheckScheduler,
 		planCheckScheduler: planCheckScheduler,
 		stateCfg:           stateCfg,
 		activityManager:    activityManager,
@@ -58,7 +59,7 @@ func (s *RolloutService) GetPlan(ctx context.Context, request *v1pb.GetPlanReque
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	plan, err := s.store.GetPlan(ctx, planID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
 	}
@@ -162,7 +163,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		return nil, status.Errorf(codes.Internal, "failed to create plan, error: %v", err)
 	}
 
-	planCheckRuns, err := getPlanCheckRunsForPlan(ctx, s.store, plan)
+	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
 	}
@@ -257,7 +258,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	plan, err := s.store.GetPlan(ctx, planID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
 	}
@@ -339,7 +340,7 @@ func (s *RolloutService) RunPlanChecks(ctx context.Context, request *v1pb.RunPla
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	plan, err := s.store.GetPlan(ctx, planUID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planUID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
 	}
@@ -347,7 +348,7 @@ func (s *RolloutService) RunPlanChecks(ctx context.Context, request *v1pb.RunPla
 		return nil, status.Errorf(codes.NotFound, "plan not found")
 	}
 
-	planCheckRuns, err := getPlanCheckRunsForPlan(ctx, s.store, plan)
+	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
 	}
@@ -495,10 +496,12 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	}
 
 	var taskRunCreates []*store.TaskRunMessage
+	var tasksToRun []*store.TaskMessage
 	for _, task := range stageToRunTasks {
 		if !taskIDsToRunMap[task.ID] {
 			continue
 		}
+		tasksToRun = append(tasksToRun, task)
 		create := &store.TaskRunMessage{
 			TaskUID:   task.ID,
 			Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
@@ -506,9 +509,16 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		}
 		taskRunCreates = append(taskRunCreates, create)
 	}
+	sort.Slice(taskRunCreates, func(i, j int) bool {
+		return taskRunCreates[i].TaskUID < taskRunCreates[j].TaskUID
+	})
 
 	if err := s.store.CreatePendingTaskRuns(ctx, taskRunCreates...); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create pending task runs")
+		return nil, status.Errorf(codes.Internal, "failed to create pending task runs, error %v", err)
+	}
+
+	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, tasksToRun, issue, request.Reason, user.ID); err != nil {
+		log.Error("failed to batch create activities for running tasks", zap.Error(err))
 	}
 
 	return &v1pb.BatchRunTasksResponse{}, nil
@@ -516,19 +526,73 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 
 // BatchSkipTasks skips tasks in batch.
 func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.BatchSkipTasksRequest) (*v1pb.BatchSkipTasksResponse, error) {
+	projectID, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+	}
+
+	rollout, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find rollout, error: %v", err)
+	}
+	if rollout == nil {
+		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
+	}
+
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
+	}
+	if issue == nil {
+		return nil, status.Errorf(codes.NotFound, "issue not found for rollout %v", rolloutID)
+	}
+
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
+	}
+
+	taskByID := make(map[int]*store.TaskMessage)
+	for _, task := range tasks {
+		taskByID[task.ID] = task
+	}
+
 	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
 	var taskUIDs []int
+	var tasksToSkip []*store.TaskMessage
 	for _, task := range request.Tasks {
 		_, _, _, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
+		if _, ok := taskByID[taskID]; !ok {
+			return nil, status.Errorf(codes.NotFound, "task %v not found in the rollout", taskID)
+		}
 		taskUIDs = append(taskUIDs, taskID)
+		tasksToSkip = append(tasksToSkip, taskByID[taskID])
 	}
 
-	if err := s.store.BatchSkipTasks(ctx, taskUIDs, "", updaterID); err != nil {
+	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason, updaterID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to skip tasks, error: %v", err)
 	}
+
+	for _, task := range tasksToSkip {
+		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
+	}
+
+	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, updaterID); err != nil {
+		log.Error("failed to batch create activities for skipping tasks", zap.Error(err))
+	}
+
 	return &v1pb.BatchSkipTasksResponse{}, nil
 }
 
@@ -607,12 +671,19 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 	}
 
 	var taskRunIDs []int
+	var taskIDs []int
 	for _, taskRun := range request.TaskRuns {
-		_, _, _, _, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
+		_, _, _, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
+		taskIDs = append(taskIDs, taskID)
 		taskRunIDs = append(taskRunIDs, taskRunID)
+	}
+
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{IDs: &taskIDs})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
 	}
 
 	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
@@ -643,6 +714,10 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
 	}
 
+	if err := s.activityManager.BatchCreateActivitiesForCancelTaskRuns(ctx, tasks, issue, request.Reason, principalID); err != nil {
+		log.Error("failed to batch create activities for cancel task runs", zap.Error(err))
+	}
+
 	return &v1pb.BatchCancelTaskRunsResponse{}, nil
 }
 
@@ -663,7 +738,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	oldPlan, err := s.store.GetPlan(ctx, planID)
+	oldPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan %q: %v", request.Plan.Name, err)
 	}
@@ -671,6 +746,11 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		return nil, status.Errorf(codes.NotFound, "plan %q not found", request.Plan.Name)
 	}
 	oldSteps := convertToPlanSteps(oldPlan.Config.Steps)
+
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
+	}
 
 	removed, added, updated := diffSpecs(oldSteps, request.Plan.Steps)
 	if len(removed) > 0 {
@@ -688,6 +768,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		updatedByID[spec.Id] = spec
 	}
 
+	var doUpdateSheet bool
 	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if oldPlan.PipelineUID != nil {
 		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
@@ -763,6 +844,10 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 					if err != nil {
 						return status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
 					}
+					if taskPayload.SheetID == sheetID {
+						return nil
+					}
+
 					sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 						UID: &sheetID,
 					}, api.SystemBotID)
@@ -773,6 +858,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 						return status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
 					}
 					doUpdate = true
+					doUpdateSheet = true
 					// TODO(p0ny): update schema version
 					taskPatch.SheetID = &sheet.UID
 				}
@@ -785,15 +871,19 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				continue
 			}
 
-			taskPatched, err := s.store.UpdateTaskV2(ctx, taskPatch)
-			if err != nil {
+			if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
+			}
+
+			taskPatched, err := s.store.GetTaskV2ByID(ctx, task.ID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get updated task %q: %v", task.Name, err)
 			}
 
 			// enqueue or cancel after it's written to the database.
 			if taskPatch.RollbackEnabled != nil {
 				// Enqueue the rollback sql generation if the task done.
-				if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus != nil && *taskPatched.LatestTaskRunStatus == api.TaskRunDone {
+				if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus == api.TaskRunDone {
 					s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
 				} else if !*taskPatch.RollbackEnabled {
 					// Cancel running rollback sql generation.
@@ -818,13 +908,51 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		return nil, status.Errorf(codes.Internal, "failed to update plan %q: %v", request.Plan.Name, err)
 	}
 
-	updatedPlan, err := s.store.GetPlan(ctx, oldPlan.UID)
+	updatedPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &oldPlan.UID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get updated plan %q: %v", request.Plan.Name, err)
 	}
 	if updatedPlan == nil {
 		return nil, status.Errorf(codes.NotFound, "updated plan %q not found", request.Plan.Name)
 	}
+
+	if doUpdateSheet {
+		planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, updatedPlan)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
+		}
+		if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
+		}
+	}
+
+	if issue != nil && doUpdateSheet {
+		if err := func() error {
+			payload := &storepb.IssuePayload{}
+			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+				return errors.Errorf("failed to unmarshal issue payload: %v", err)
+			}
+			payload.Approval = &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			}
+			payloadBytes, err := protojson.Marshal(payload)
+			if err != nil {
+				return errors.Errorf("failed to marshal issue payload: %v", err)
+			}
+			payloadStr := string(payloadBytes)
+			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+				Payload: &payloadStr,
+			}, api.SystemBotID)
+			if err != nil {
+				return errors.Errorf("failed to update issue: %v", err)
+			}
+			s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+			return nil
+		}(); err != nil {
+			log.Error("failed to update issue to refind approval", zap.Error(err))
+		}
+	}
+
 	return convertToPlan(updatedPlan), nil
 }
 
@@ -969,7 +1097,6 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 					Visibility: store.ProjectSheet,
 					Source:     store.SheetFromBytebaseArtifact,
 					Type:       store.SheetForSQL,
-					Payload:    "{}",
 				})
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to create sheet for task %v", c.Name)

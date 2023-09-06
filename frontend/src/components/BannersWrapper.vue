@@ -19,6 +19,7 @@
   <template v-if="shouldShowExternalUrlBanner">
     <BannerExternalUrl />
   </template>
+  <BannerAnnouncement />
 </template>
 
 <script lang="ts" setup>
@@ -31,6 +32,7 @@ import {
 } from "@/store/modules";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1, isDev } from "@/utils";
+import BannerAnnouncement from "@/views/BannerAnnouncement.vue";
 import BannerDebug from "@/views/BannerDebug.vue";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";

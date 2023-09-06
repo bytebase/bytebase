@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -357,16 +359,15 @@ func GetTaskSheetID(taskPayload string) (int, error) {
 	return taskSheetID.SheetID, nil
 }
 
-// GetTaskSkippedAndReason gets skipped and skippedReason from a task.
-func GetTaskSkippedAndReason(task *api.Task) (bool, string, error) {
+// GetTaskSkipped gets skipped from a task.
+func GetTaskSkipped(task *store.TaskMessage) (bool, error) {
 	var payload struct {
-		Skipped       bool   `json:"skipped,omitempty"`
-		SkippedReason string `json:"skippedReason,omitempty"`
+		Skipped bool `json:"skipped,omitempty"`
 	}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-		return false, "", err
+		return false, err
 	}
-	return payload.Skipped, payload.SkippedReason, nil
+	return payload.Skipped, nil
 }
 
 // MergeTaskCreateLists merges a matrix of taskCreate and taskIndexDAG to a list of taskCreate and taskIndexDAG.
@@ -392,88 +393,6 @@ func MergeTaskCreateLists(taskCreateLists [][]*store.TaskMessage, taskIndexDAGLi
 		offset += len(taskCreateList)
 	}
 	return resTaskCreateList, resTaskIndexDAGList, nil
-}
-
-// PassAllCheck checks whether a task has passed all task checks.
-func PassAllCheck(task *store.TaskMessage, allowedStatus api.TaskCheckStatus, taskCheckRuns []*store.TaskCheckRunMessage, engine db.Type) (bool, error) {
-	var runs []*store.TaskCheckRunMessage
-	for _, run := range taskCheckRuns {
-		if run.TaskID == task.ID {
-			runs = append(runs, run)
-		}
-	}
-	// schema update, data update and gh-ost sync task have required task check.
-	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := passCheck(runs, api.TaskCheckDatabaseConnect, allowedStatus)
-		if err != nil {
-			return false, err
-		}
-		if !pass {
-			return false, nil
-		}
-
-		if api.IsSQLReviewSupported(engine) {
-			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-
-		if engine == db.Postgres {
-			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementType, allowedStatus)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-	}
-
-	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		ok, err := passCheck(runs, api.TaskCheckGhostSync, allowedStatus)
-		if err != nil {
-			return false, err
-		}
-		if !ok {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
-// Returns true only if the task check run result is at least the minimum required level.
-// For PendingApproval->Pending transitions, the minimum level is SUCCESS.
-// For Pending->Running transitions, the minimum level is WARN.
-func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
-	var lastRun *store.TaskCheckRunMessage
-	for _, run := range taskCheckRunList {
-		if checkType != run.Type {
-			continue
-		}
-		if lastRun == nil || lastRun.ID < run.ID {
-			lastRun = run
-		}
-	}
-
-	if lastRun == nil || lastRun.Status != api.TaskCheckRunDone {
-		return false, nil
-	}
-	checkResult := &api.TaskCheckRunResultPayload{}
-	if err := json.Unmarshal([]byte(lastRun.Result), checkResult); err != nil {
-		return false, err
-	}
-	for _, result := range checkResult.ResultList {
-		if result.Status.LessThan(allowedStatus) {
-			return false, nil
-		}
-	}
-
-	return true, nil
 }
 
 // ExecuteMigrationDefault executes migration.
@@ -956,4 +875,108 @@ func ConvertVcsPushEvent(pushEvent *vcs.PushEvent) *storepb.PushEvent {
 		Commits:            convertVcsPushEventCommits(pushEvent.CommitList),
 		FileCommit:         convertVcsPushEventFileCommit(&pushEvent.FileCommit),
 	}
+}
+
+// GetMatchedAndUnmatchedDatabasesInDatabaseGroup returns the matched and unmatched databases in the given database group.
+func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
+	if err != nil {
+		return nil, nil, err
+	}
+	var matches []*store.DatabaseMessage
+	var unmatches []*store.DatabaseMessage
+
+	// DONOT check bb.feature.database-grouping for instance. The API here is read-only in the frontend, we need to show if the instance is matched but missing required license.
+	// The feature guard will works during issue creation.
+	for _, database := range allDatabases {
+		res, _, err := prog.ContextEval(ctx, map[string]any{
+			"resource": map[string]any{
+				"database_name":    database.DatabaseName,
+				"environment_name": fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID),
+				"instance_id":      database.InstanceID,
+			},
+		})
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Internal, err.Error())
+		}
+
+		val, err := res.ConvertToNative(reflect.TypeOf(false))
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Internal, "expect bool result")
+		}
+		if boolVal, ok := val.(bool); ok && boolVal {
+			matches = append(matches, database)
+		} else {
+			unmatches = append(unmatches, database)
+		}
+	}
+	return matches, unmatches, nil
+}
+
+// GetMatchedAndUnmatchedTablesInSchemaGroup returns the matched and unmatched tables in the given schema group.
+func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *store.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
+	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var matched []string
+	var unmatched []string
+
+	for _, schema := range dbSchema.Metadata.Schemas {
+		for _, table := range schema.Tables {
+			res, _, err := prog.ContextEval(ctx, map[string]any{
+				"resource": map[string]any{
+					"table_name": table.Name,
+				},
+			})
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, err.Error())
+			}
+
+			val, err := res.ConvertToNative(reflect.TypeOf(false))
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "expect bool result")
+			}
+
+			if boolVal, ok := val.(bool); ok && boolVal {
+				matched = append(matched, table.Name)
+			} else {
+				unmatched = append(unmatched, table.Name)
+			}
+		}
+	}
+	return matched, unmatched, nil
+}
+
+// ChangeIssueStatus changes the status of an issue.
+func ChangeIssueStatus(ctx context.Context, stores *store.Store, activityManager *activity.Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) error {
+	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
+	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updaterID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
+	}
+
+	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
+		OldStatus: issue.Status,
+		NewStatus: newStatus,
+		IssueName: updatedIssue.Title,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
+	}
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   updaterID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueStatusUpdate,
+		Level:        api.ActivityInfo,
+		Comment:      comment,
+		Payload:      string(payload),
+	}
+	if _, err := activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: updatedIssue,
+	}); err != nil {
+		return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
+	}
+	return nil
 }

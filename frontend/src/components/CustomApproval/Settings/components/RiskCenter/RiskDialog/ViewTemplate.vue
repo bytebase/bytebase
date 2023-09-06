@@ -1,16 +1,22 @@
 <template>
   <ExprEditor
     :expr="template.expr"
-    :risk-source="source"
     :allow-admin="false"
-    :allow-high-level-factors="false"
+    :factor-list="getFactorList(source)"
+    :factor-support-dropdown="factorSupportDropdown"
+    :factor-options-map="getFactorOptionsMap(source)"
   />
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import ExprEditor from "@/components/ExprEditor";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
-import { ExprEditor } from "../../common";
+import {
+  getFactorList,
+  getFactorOptionsMap,
+  factorSupportDropdown,
+} from "../../common/utils";
 import { type RuleTemplate } from "./template";
 
 const props = defineProps<{

@@ -1,7 +1,10 @@
 <template>
   <div class="sqleditor--wrapper">
     <TabList />
-    <Splitpanes class="default-theme flex flex-col flex-1 overflow-hidden">
+    <Splitpanes
+      class="default-theme flex flex-col flex-1 overflow-hidden"
+      :dbl-click-splitter="false"
+    >
       <Pane v-if="windowWidth >= 800" size="20">
         <AsidePanel @alter-schema="handleAlterSchema" />
       </Pane>
@@ -42,9 +45,24 @@
               v-if="allowReadOnlyMode"
               horizontal
               class="default-theme"
+              :dbl-click-splitter="false"
             >
               <Pane>
-                <EditorPanel />
+                <Splitpanes
+                  vertical
+                  class="default-theme"
+                  :dbl-click-splitter="false"
+                >
+                  <Pane>
+                    <EditorPanel />
+                  </Pane>
+                  <Pane
+                    v-if="showSecondarySidebar && windowWidth >= 1024"
+                    :size="25"
+                  >
+                    <SecondarySidebar @alter-schema="handleAlterSchema" />
+                  </Pane>
+                </Splitpanes>
               </Pane>
               <Pane v-if="!isDisconnected" :size="40">
                 <ResultPanel />
@@ -136,6 +154,10 @@ import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import ResultPanel from "./ResultPanel";
+import {
+  provideSecondarySidebarContext,
+  default as SecondarySidebar,
+} from "./SecondarySidebar";
 import { provideSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
@@ -160,6 +182,7 @@ const sqlEditorStore = useSQLEditorStore();
 const currentUserV1 = useCurrentUserV1();
 // provide context for sheets
 const { showPanel: showSheetPanel } = provideSheetContext();
+const { show: showSecondarySidebar } = provideSecondarySidebarContext();
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
@@ -264,6 +287,6 @@ const handleAlterSchema = async (params: {
   --color-branding: #4f46e5;
   --border-color: rgba(200, 200, 200, 0.2);
 
-  @apply flex-1 overflow-hidden flex flex-col pt-2;
+  @apply flex-1 overflow-hidden flex flex-col pt-1;
 }
 </style>

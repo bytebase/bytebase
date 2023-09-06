@@ -16,7 +16,7 @@ import {
 } from "./id";
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
-import { StageStatusUpdateType, TaskStatus } from "./pipeline";
+import { StageStatusUpdateType, TaskRunStatus, TaskStatus } from "./pipeline";
 import { ApprovalEvent } from "./review";
 import { Advice } from "./sqlAdvice";
 import { VCSPushEvent } from "./vcs";
@@ -35,6 +35,8 @@ export function activityName(action: LogEntity_Action): string {
       return t("activity.type.pipeline-stage-status-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE:
       return t("activity.type.pipeline-task-status-update");
+    case LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
+      return t("activity.type.pipeline-task-run-status-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT:
       return t("activity.type.pipeline-task-file-commit");
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
@@ -98,6 +100,7 @@ export type ActivityIssueStatusUpdatePayload = {
   newStatus: IssueStatus;
   issueName: string;
 };
+
 export type ActivityStageStatusUpdatePayload = {
   stageId: StageId;
   stageStatusUpdateType: StageStatusUpdateType;
@@ -109,6 +112,13 @@ export type ActivityTaskStatusUpdatePayload = {
   taskId: TaskId;
   oldStatus: TaskStatus;
   newStatus: TaskStatus;
+  issueName: string;
+  taskName: string;
+};
+
+export type ActivityPipelineTaskRunStatusUpdatePayload = {
+  taskId: TaskId;
+  newStatus: TaskRunStatus;
   issueName: string;
   taskName: string;
 };

@@ -2,7 +2,6 @@ categoryList:
   - type: change-management
     featureList:
       - user-count
-      - environment-count
       - instance-count
       - state-based-change
       - migration-based-change
@@ -16,6 +15,7 @@ categoryList:
       - custom-approval
       - database-group
       - batch-change
+      - issue-advanced-search
   - type: sql-editor
     featureList:
       - auto-complete
@@ -49,6 +49,7 @@ categoryList:
       - audit-log
       - disallow-signup
       - anomaly-detection
+      - announcement-banner
   - type: bespoke
     featureList:
       - support
@@ -75,8 +76,6 @@ planList:
         content: user-maximum-20
       - type: instance-count
         content: instance-maximum-10
-      - type: environment-count
-        content: environment-unlimited
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
@@ -94,6 +93,9 @@ planList:
       - type: rollout-policy
         content: rollout-policy-basic
         tooltip: rollout-policy-basic-tooltip
+      - type: issue-advanced-search
+        content: issue-advanced-search-basic
+        tooltip: issue-advanced-search-basic-tooltip
       # SQL Editor
       - type: auto-complete
       - type: schema-editor
@@ -149,8 +151,6 @@ planList:
       - type: instance-count
         content: instance-maximum-20
         tooltip: instance-maximum-20-tooltip
-      - type: environment-count
-        content: environment-unlimited
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
@@ -169,6 +169,8 @@ planList:
       - type: rollout-policy
         content: rollout-policy-advanced
         tooltip: rollout-policy-advanced-tooltip
+      - type: issue-advanced-search
+        content: issue-advanced-search-advanced
       # SQL Editor
       - type: auto-complete
       - type: schema-editor
@@ -223,8 +225,7 @@ planList:
         content: user-unlimited
       - type: instance-count
         content: instance-unlimited
-      - type: environment-count
-        content: environment-unlimited
+        tooltip: instance-unlimited-tooltip
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
@@ -245,6 +246,8 @@ planList:
         content: rollout-policy-advanced
         tooltip: rollout-policy-advanced-tooltip
       - type: custom-approval
+      - type: issue-advanced-search
+        content: issue-advanced-search-advanced
       # SQL Editor
       - type: auto-complete
       - type: schema-editor
@@ -282,6 +285,7 @@ planList:
       - type: watermark
       - type: audit-log
       - type: disallow-signup
+      - type: announcement-banner
       # Bespoke
       - type: support
         content: support-sla

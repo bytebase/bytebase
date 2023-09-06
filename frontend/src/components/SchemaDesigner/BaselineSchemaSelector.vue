@@ -4,21 +4,12 @@
   >
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center shrink-0 text-sm">
-        {{ $t("common.project") }}
-      </span>
-      <ProjectSelect
-        class="!w-60 shrink-0"
-        :selected-id="state.projectId"
-        @select-project-id="handleProjectSelect"
-      />
-    </div>
-    <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.database") }}
       </span>
       <EnvironmentSelect
         class="!w-60 mr-4 shrink-0"
         name="environment"
+        :disabled="props.readonly"
         :selected-id="state.environmentId"
         :select-default="false"
         @select-environment-id="handleEnvironmentSelect"
@@ -27,8 +18,9 @@
         class="!w-128"
         :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
         :mode="'USER'"
+        :disabled="props.readonly"
         :environment-id="state.environmentId"
-        :project-id="state.projectId"
+        :project-id="props.projectId"
         :engine-type-list="allowedEngineTypeList"
         :sync-status="'OK'"
         :customize-item="true"
@@ -52,10 +44,11 @@
       </span>
       <div
         class="w-192 flex flex-row justify-start items-center relative"
-        :class="isValidId(state.projectId) ? '' : 'opacity-50'"
+        :class="isValidId(props.projectId) ? '' : 'opacity-50'"
       >
         <BBSelect
           class="w-full"
+          :disabled="props.readonly"
           :selected-item="state.changeHistory"
           :item-list="
                   databaseChangeHistoryList(state.databaseId as string)
@@ -116,13 +109,14 @@ import {
 import { instanceV1Name } from "@/utils";
 
 interface BaselineSchema {
-  projectId?: string;
   databaseId?: string;
   changeHistory?: ChangeHistory;
 }
 
 const props = defineProps<{
+  projectId?: string;
   baselineSchema?: BaselineSchema;
+  readonly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -130,7 +124,6 @@ const emit = defineEmits<{
 }>();
 
 interface LocalState {
-  projectId?: string;
   environmentId?: string;
   databaseId?: string;
   changeHistory?: ChangeHistory;
@@ -167,17 +160,27 @@ onMounted(async () => {
       const database = await databaseStore.getOrFetchDatabaseByUID(
         props.baselineSchema.databaseId || ""
       );
-      state.projectId = props.baselineSchema.projectId;
       state.databaseId = database.uid;
       state.environmentId = database.effectiveEnvironmentEntity.uid;
       state.changeHistory = props.baselineSchema.changeHistory;
     } catch (error) {
       // do nothing.
     }
-  } else if (props.baselineSchema?.projectId) {
-    state.projectId = props.baselineSchema.projectId;
   }
 });
+
+watch(
+  () => props.projectId,
+  () => {
+    if (!database.value || !props.projectId) {
+      return;
+    }
+    if (database.value.projectEntity.uid !== props.projectId) {
+      state.environmentId = undefined;
+      state.databaseId = undefined;
+    }
+  }
+);
 
 watch(
   () => state.databaseId,
@@ -245,13 +248,6 @@ const isValidId = (id: any): id is string => {
   return true;
 };
 
-const handleProjectSelect = async (projectId: string) => {
-  if (projectId !== state.projectId) {
-    state.databaseId = String(UNKNOWN_ID);
-  }
-  state.projectId = projectId;
-};
-
 const handleEnvironmentSelect = async (environmentId: string) => {
   if (environmentId !== state.environmentId) {
     state.databaseId = String(UNKNOWN_ID);
@@ -269,7 +265,6 @@ const handleDatabaseSelect = async (databaseId: string) => {
     const environment = environmentStore.getEnvironmentByName(
       database.effectiveEnvironment
     );
-    state.projectId = database.projectEntity.uid;
     state.environmentId = environment?.uid;
     state.databaseId = databaseId;
     dbSchemaStore.getOrFetchDatabaseMetadata(database.name);

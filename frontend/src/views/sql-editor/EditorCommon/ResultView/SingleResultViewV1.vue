@@ -11,7 +11,7 @@
           size="small"
           type="text"
           :placeholder="t('sql-editor.search-results')"
-          @update:value="debouncedUpdateKeyword"
+          @update:value="updateKeyword"
         >
           <template #prefix>
             <heroicons-outline:search class="h-5 w-5 text-gray-300" />
@@ -45,23 +45,29 @@
         >
           {{ $t("sql-editor.visualize-explain") }}
         </NButton>
-        <NDropdown
+        <NTooltip v-if="DISMISS_PLACEHOLDER">
+          <template #trigger>
+            <NButton
+              size="small"
+              style="--n-padding: 0 8px"
+              @click="DISMISS_PLACEHOLDER = false"
+            >
+              <template #icon>
+                <heroicons:academic-cap class="w-4 h-4" />
+              </template>
+            </NButton>
+          </template>
+          <template #default>
+            {{ $t("plugin.ai.chat-sql") }}
+          </template>
+        </NTooltip>
+        <DataExportButton
           v-if="showExportButton"
-          trigger="hover"
-          :options="exportDropdownOptions"
-          @select="handleExportBtnClick"
-        >
-          <NButton
-            size="small"
-            :loading="isExportingData"
-            :disabled="isExportingData"
-          >
-            <template #icon>
-              <heroicons-outline:download class="h-5 w-5" />
-            </template>
-            {{ t("common.export") }}
-          </NButton>
-        </NDropdown>
+          size="small"
+          :disabled="props.result === null || isEmpty(props.result)"
+          :support-formats="['CSV', 'JSON', 'SQL', 'XLSX']"
+          @export="handleExportBtnClick"
+        />
         <NButton v-else @click="state.showRequestExportPanel = true">
           {{ $t("quick-action.request-export") }}
         </NButton>
@@ -113,7 +119,8 @@
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
     :database-id="currentTab.connection.databaseId"
-    :statement="currentTab.statement"
+    :statement="result.statement"
+    :redirect-to-issue-page="sqlEditorStore.mode === 'BUNDLED'"
     @close="state.showRequestExportPanel = false"
   />
 </template>
@@ -127,10 +134,13 @@ import {
 } from "@tanstack/vue-table";
 import { useDebounceFn } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
-import { NInput, NPagination } from "naive-ui";
+import { NInput, NPagination, NTooltip } from "naive-ui";
+import { BinaryLike } from "node:crypto";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { ExportFormat } from "@/components/DataExportButton.vue";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
+import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
   useInstanceV1Store,
   useTabStore,
@@ -138,7 +148,9 @@ import {
   featureToRef,
   useDatabaseV1Store,
   useCurrentUserV1,
+  useSQLEditorStore,
 } from "@/store";
+import { useExportData } from "@/store/modules/export";
 import {
   ExecuteConfig,
   ExecuteOption,
@@ -158,7 +170,6 @@ import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
 import { useSQLResultViewContext } from "./context";
-import { useExportData } from "./useExportData";
 
 type LocalState = {
   search: string;
@@ -191,8 +202,9 @@ const tabStore = useTabStore();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const currentUserV1 = useCurrentUserV1();
+const sqlEditorStore = useSQLEditorStore();
 const dataTable = ref<InstanceType<typeof DataTable>>();
-const { isExportingData, exportData } = useExportData();
+const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
 
 const viewMode = computed((): ViewMode => {
@@ -228,10 +240,6 @@ const showExportButton = computed(() => {
 });
 
 const allowToExportData = computed(() => {
-  if (!featureToRef("bb.feature.access-control").value) {
-    return true;
-  }
-
   if (
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-access-control",
@@ -248,6 +256,10 @@ const allowToExportData = computed(() => {
 const debouncedUpdateKeyword = useDebounceFn((value: string) => {
   keyword.value = value;
 }, 200);
+const updateKeyword = (value: string) => {
+  state.search = value;
+  debouncedUpdateKeyword(value);
+};
 
 const columns = computed(() => {
   const columns = props.result.columnNames;
@@ -297,30 +309,10 @@ const pageSize = computed(() => {
   return table.getState().pagination.pageSize;
 });
 
-const exportDropdownOptions = computed(() => [
-  {
-    label: t("sql-editor.download-as-file", { file: "CSV" }),
-    key: "CSV",
-    disabled: props.result === null || isEmpty(props.result),
-  },
-  {
-    label: t("sql-editor.download-as-file", { file: "JSON" }),
-    key: "JSON",
-    disabled: props.result === null || isEmpty(props.result),
-  },
-  {
-    label: t("sql-editor.download-as-file", { file: "SQL" }),
-    key: "SQL",
-    disabled: props.result === null || isEmpty(props.result),
-  },
-  {
-    label: t("sql-editor.download-as-file", { file: "XLSX" }),
-    key: "XLSX",
-    disabled: props.result === null || isEmpty(props.result),
-  },
-]);
-
-const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL" | "XLSX") => {
+const handleExportBtnClick = async (
+  format: ExportFormat,
+  callback: (content: BinaryLike | Blob, format: ExportFormat) => void
+) => {
   const { instanceId, databaseId } = tabStore.currentTab.connection;
   const instance = instanceStore.getInstanceByUID(instanceId).name;
   const database =
@@ -330,7 +322,8 @@ const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL" | "XLSX") => {
   const statement = props.result.statement;
   const admin = tabStore.currentTab.mode === TabMode.Admin;
   const limit = admin ? 0 : RESULT_ROWS_LIMIT;
-  exportData({
+
+  const content = await exportData({
     database,
     instance,
     format,
@@ -338,6 +331,8 @@ const handleExportBtnClick = (format: "CSV" | "JSON" | "SQL" | "XLSX") => {
     limit,
     admin,
   });
+
+  callback(content, format);
 };
 
 const showVisualizeButton = computed((): boolean => {

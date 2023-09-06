@@ -3,6 +3,14 @@
     <div class="flex items-center justify-between gap-x-6">
       <div class="flex-1 textinfolabel">
         {{ $t("role.setting.description") }}
+        <a
+          href="https://www.bytebase.com/docs/administration/custom-roles?source=console"
+          class="normal-link text-sm inline-flex flex-row items-center"
+          target="_blank"
+        >
+          {{ $t("common.learn-more") }}
+          <heroicons-outline:external-link class="w-4 h-4" />
+        </a>
       </div>
       <div>
         <NButton type="primary" :disabled="!allowAdmin" @click="addRole">

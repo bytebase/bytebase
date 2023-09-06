@@ -92,14 +92,24 @@
               <div class="bb-grid-cell space-x-1">
                 <NTooltip v-if="allowAdmin" trigger="hover">
                   <template #trigger>
-                    <button
+                    <NButton
+                      tag="div"
+                      text
                       class="cursor-pointer opacity-60 hover:opacity-100"
+                      :disabled="!allowDeleteCondition(item)"
                       @click="handleDeleteCondition(item)"
                     >
                       <heroicons-outline:trash class="w-4 h-4" />
-                    </button>
+                    </NButton>
                   </template>
-                  {{ $t("common.delete") }}
+                  <template #default>
+                    <template v-if="!allowDeleteCondition(item)">
+                      {{ $t("project.members.cannot-remove-last-owner") }}
+                    </template>
+                    <template v-else>
+                      {{ $t("common.delete") }}
+                    </template>
+                  </template>
                 </NTooltip>
               </div>
             </template>
@@ -352,6 +362,13 @@ const handleDeleteRole = (role: string) => {
       );
     },
   });
+};
+
+const allowDeleteCondition = (singleBinding: SingleBinding) => {
+  if (singleBinding.rawBinding.role === PresetRoleType.OWNER) {
+    return allowRemoveRole(PresetRoleType.OWNER);
+  }
+  return true;
 };
 
 const handleDeleteCondition = async (singleBinding: SingleBinding) => {

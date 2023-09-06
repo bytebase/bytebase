@@ -247,6 +247,7 @@ import { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { BBTabFilterItem } from "@/bbkit/types";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
@@ -349,7 +350,7 @@ const state = reactive<LocalState>({
   syncingSchema: false,
   showSchemaDiagram: false,
 });
-
+const route = useRoute();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
@@ -615,6 +616,7 @@ const selectTab = (index: number) => {
   router.replace({
     name: "workspace.database.detail",
     hash: "#" + item.hash,
+    query: route.query,
   });
 };
 

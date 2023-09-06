@@ -17,7 +17,7 @@
       :render-option="renderDropdownOption"
       @select="handleDropdownSelect"
     >
-      <NButton :quaternary="true" size="large" style="--n-padding: 0 4px">
+      <NButton :quaternary="true" size="medium" style="--n-padding: 0 4px">
         <heroicons:ellipsis-vertical class="w-6 h-6" />
       </NButton>
     </NDropdown>
@@ -31,7 +31,7 @@
     :render-option="renderDropdownOption"
     @select="handleDropdownSelect"
   >
-    <NButton :quaternary="true" size="large" style="--n-padding: 0 4px">
+    <NButton :quaternary="true" size="medium" style="--n-padding: 0 4px">
       <heroicons:ellipsis-vertical class="w-6 h-6" />
     </NButton>
   </NDropdown>

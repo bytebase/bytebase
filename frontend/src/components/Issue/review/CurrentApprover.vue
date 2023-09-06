@@ -7,7 +7,11 @@
       <BBSpin />
     </template>
     <template v-else-if="currentApprover">
-      <BBAvatar :size="'SMALL'" :username="currentApprover.title" />
+      <BBAvatar
+        :size="'SMALL'"
+        :username="currentApprover.title"
+        :email="currentApprover.email"
+      />
       <span class="ml-2">
         {{ currentApprover.title }}
       </span>

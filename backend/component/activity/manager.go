@@ -19,7 +19,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pkg/errors"
@@ -41,6 +40,260 @@ func NewManager(store *store.Store) *Manager {
 	return &Manager{
 		store: store,
 	}
+}
+
+// BatchCreateActivitiesForCreateIssue creates activities for running tasks.
+func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []*store.TaskMessage, issue *store.IssueMessage, comment string, updaterUID int) error {
+	var creates []*store.ActivityMessage
+	for _, task := range tasks {
+		payload, err := json.Marshal(api.ActivityPipelineTaskRunStatusUpdatePayload{
+			TaskID:    task.ID,
+			NewStatus: api.TaskRunPending,
+			IssueName: issue.Title,
+			TaskName:  task.Name,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
+		}
+
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   updaterUID,
+			ContainerUID: task.PipelineID,
+			Type:         api.ActivityPipelineTaskRunStatusUpdate,
+			Level:        api.ActivityInfo,
+			Comment:      comment,
+			Payload:      string(payload),
+		}
+		creates = append(creates, activityCreate)
+	}
+
+	activityList, err := m.store.BatchCreateActivityV2(ctx, creates)
+	if err != nil {
+		return err
+	}
+	if len(activityList) == 0 {
+		return errors.Errorf("failed to create any activity")
+	}
+	anyActivity := activityList[0]
+
+	activityType := api.ActivityPipelineTaskRunStatusUpdate
+	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
+		ProjectID:    &issue.Project.UID,
+		ActivityType: &activityType,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", issue.Title)
+	}
+
+	if len(webhookList) == 0 {
+		return nil
+	}
+
+	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get workspace setting")
+	}
+
+	user, err := m.store.GetUserByID(ctx, anyActivity.CreatorUID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get principal %d", anyActivity.CreatorUID)
+	}
+
+	// Send one webhook post for all activities.
+	webhookCtx := webhook.Context{
+		Level:        webhook.WebhookInfo,
+		ActivityType: string(activityType),
+		Title:        fmt.Sprintf("Issue task runs start - %s", issue.Title),
+		Issue: &webhook.Issue{
+			ID:          issue.UID,
+			Name:        issue.Title,
+			Status:      string(issue.Status),
+			Type:        string(issue.Type),
+			Description: issue.Description,
+		},
+		Project: &webhook.Project{
+			ID:   issue.Project.UID,
+			Name: issue.Project.Title,
+		},
+		Description:  anyActivity.Comment,
+		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID),
+		CreatorID:    anyActivity.CreatorUID,
+		CreatorName:  user.Name,
+		CreatorEmail: user.Email,
+	}
+	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
+	go postWebhookList(ctx, &webhookCtx, webhookList)
+
+	return nil
+}
+
+// BatchCreateActivitiesForSkipTasks creates activities for skipping tasks.
+func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks []*store.TaskMessage, issue *store.IssueMessage, comment string, updaterID int) error {
+	var creates []*store.ActivityMessage
+	for _, task := range tasks {
+		payload, err := json.Marshal(api.ActivityPipelineTaskRunStatusUpdatePayload{
+			TaskID:    task.ID,
+			NewStatus: api.TaskRunSkipped,
+			IssueName: issue.Title,
+			TaskName:  task.Name,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
+		}
+
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   updaterID,
+			ContainerUID: task.PipelineID,
+			Type:         api.ActivityPipelineTaskRunStatusUpdate,
+			Level:        api.ActivityInfo,
+			Comment:      comment,
+			Payload:      string(payload),
+		}
+		creates = append(creates, activityCreate)
+	}
+
+	activityList, err := m.store.BatchCreateActivityV2(ctx, creates)
+	if err != nil {
+		return err
+	}
+	if len(activityList) == 0 {
+		return errors.Errorf("failed to create any activity")
+	}
+	anyActivity := activityList[0]
+
+	activityType := api.ActivityPipelineTaskRunStatusUpdate
+	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
+		ProjectID:    &issue.Project.UID,
+		ActivityType: &activityType,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", issue.Title)
+	}
+	if len(webhookList) == 0 {
+		return nil
+	}
+
+	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get workspace setting")
+	}
+
+	user, err := m.store.GetUserByID(ctx, anyActivity.CreatorUID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get principal %d", anyActivity.CreatorUID)
+	}
+
+	// Send one webhook post for all activities.
+	webhookCtx := webhook.Context{
+		Level:        webhook.WebhookInfo,
+		ActivityType: string(activityType),
+		Title:        fmt.Sprintf("Issue tasks skipped - %s", issue.Title),
+		Issue: &webhook.Issue{
+			ID:          issue.UID,
+			Name:        issue.Title,
+			Status:      string(issue.Status),
+			Type:        string(issue.Type),
+			Description: issue.Description,
+		},
+		Project: &webhook.Project{
+			ID:   issue.Project.UID,
+			Name: issue.Project.Title,
+		},
+		Description:  anyActivity.Comment,
+		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID),
+		CreatorID:    anyActivity.CreatorUID,
+		CreatorName:  user.Name,
+		CreatorEmail: user.Email,
+	}
+	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
+	go postWebhookList(ctx, &webhookCtx, webhookList)
+
+	return nil
+}
+
+// BatchCreateActivitiesForCancelTaskRuns creates activities for cancelling task runs.
+func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, tasks []*store.TaskMessage, issue *store.IssueMessage, comment string, updaterUID int) error {
+	var creates []*store.ActivityMessage
+	for _, task := range tasks {
+		payload, err := json.Marshal(api.ActivityPipelineTaskRunStatusUpdatePayload{
+			TaskID:    task.ID,
+			NewStatus: api.TaskRunCanceled,
+			IssueName: issue.Title,
+			TaskName:  task.Name,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
+		}
+
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   updaterUID,
+			ContainerUID: task.PipelineID,
+			Type:         api.ActivityPipelineTaskRunStatusUpdate,
+			Level:        api.ActivityInfo,
+			Comment:      comment,
+			Payload:      string(payload),
+		}
+		creates = append(creates, activityCreate)
+	}
+
+	activityList, err := m.store.BatchCreateActivityV2(ctx, creates)
+	if err != nil {
+		return err
+	}
+	if len(activityList) == 0 {
+		return errors.Errorf("failed to create any activity")
+	}
+	anyActivity := activityList[0]
+
+	activityType := api.ActivityPipelineTaskRunStatusUpdate
+	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
+		ProjectID:    &issue.Project.UID,
+		ActivityType: &activityType,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", issue.Title)
+	}
+
+	if len(webhookList) == 0 {
+		return nil
+	}
+
+	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get workspace setting")
+	}
+
+	user, err := m.store.GetUserByID(ctx, anyActivity.CreatorUID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get principal %d", anyActivity.CreatorUID)
+	}
+
+	// Send one webhook post for all activities.
+	webhookCtx := webhook.Context{
+		Level:        webhook.WebhookInfo,
+		ActivityType: string(activityType),
+		Title:        fmt.Sprintf("Issue task runs start - %s", issue.Title),
+		Issue: &webhook.Issue{
+			ID:          issue.UID,
+			Name:        issue.Title,
+			Status:      string(issue.Status),
+			Type:        string(issue.Type),
+			Description: issue.Description,
+		},
+		Project: &webhook.Project{
+			ID:   issue.Project.UID,
+			Name: issue.Project.Title,
+		},
+		Description:  anyActivity.Comment,
+		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID),
+		CreatorID:    anyActivity.CreatorUID,
+		CreatorName:  user.Name,
+		CreatorEmail: user.Email,
+	}
+	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
+	go postWebhookList(ctx, &webhookCtx, webhookList)
+
+	return nil
 }
 
 // BatchCreateTaskStatusUpdateApprovalActivity creates a batch task status update activities for task approvals.
@@ -286,21 +539,13 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 							zap.Error(err))
 						return nil, err
 					}
-					if newAssignee == nil {
-						err := errors.Errorf("failed to post webhook event after changing the issue assignee, new assignee not found for ID %v", newID)
-						log.Warn(err.Error(),
-							zap.String("issue_name", meta.Issue.Title),
-							zap.String("new_assignee_id", update.NewValue),
-							zap.Error(err))
-						return nil, err
-					}
 
 					if oldAssignee != nil && newAssignee != nil {
 						title = fmt.Sprintf("Reassigned issue from %s to %s - %s", oldAssignee.Name, newAssignee.Name, meta.Issue.Title)
 					} else if newAssignee != nil {
 						title = fmt.Sprintf("Assigned issue to %s - %s", newAssignee.Name, meta.Issue.Title)
 					} else if oldAssignee != nil {
-						title = fmt.Sprintf("Unassigned issue from %s - %s", newAssignee.Name, meta.Issue.Title)
+						title = fmt.Sprintf("Unassigned issue from %s - %s", oldAssignee.Name, meta.Issue.Title)
 					}
 				}
 			}
@@ -374,7 +619,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			level = webhook.WebhookSuccess
 			title = "Task completed - " + task.Name
 
-			skipped, skippedReason, err := utils.GetTaskSkippedAndReason(task)
+			skipped, skippedReason, err := getTaskSkippedAndReason(task)
 			if err != nil {
 				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
 				log.Warn(err.Error(), zap.String("task.Payload", task.Payload), zap.Error(err))
@@ -399,7 +644,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 			// sort TaskRunList to get the most recent task run result.
 			sort.Slice(task.TaskRunList, func(i int, j int) bool {
-				return task.TaskRunList[i].UpdatedTs > task.TaskRunList[j].UpdatedTs || (task.TaskRunList[i].UpdatedTs == task.TaskRunList[j].UpdatedTs && task.TaskRunList[i].ID > task.TaskRunList[j].ID)
+				return task.TaskRunList[i].ID > task.TaskRunList[j].ID
 			})
 
 			var result api.TaskRunResultPayload
@@ -412,6 +657,88 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			}
 			webhookTaskResult.Detail = result.Detail
 		}
+
+	case api.ActivityPipelineTaskRunStatusUpdate:
+		payload := &api.ActivityPipelineTaskRunStatusUpdatePayload{}
+		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
+			log.Warn("Failed to post webhook event after changing the issue task run status, failed to unmarshal payload",
+				zap.String("issue_name", meta.Issue.Title),
+				zap.Error(err))
+			return nil, err
+		}
+
+		task, err := m.store.GetTaskByID(ctx, payload.TaskID)
+		if err != nil {
+			log.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
+				zap.String("issue_name", meta.Issue.Title),
+				zap.Int("task_id", payload.TaskID),
+				zap.Error(err))
+			return nil, err
+		}
+		if task == nil {
+			err := errors.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", payload.TaskID)
+			log.Warn(err.Error(),
+				zap.String("issue_name", meta.Issue.Title),
+				zap.Int("task_id", payload.TaskID),
+				zap.Error(err))
+			return nil, err
+		}
+
+		webhookTaskResult = &webhook.TaskResult{
+			Name:   payload.TaskName,
+			Status: string(payload.NewStatus),
+		}
+
+		switch payload.NewStatus {
+		case api.TaskRunPending:
+			title = "Task run started - " + payload.TaskName
+		case api.TaskRunRunning:
+			title = "Task run started to run - " + payload.TaskName
+		case api.TaskRunDone:
+			level = webhook.WebhookSuccess
+			title = "Task run completed - " + payload.TaskName
+		case api.TaskRunFailed:
+			level = webhook.WebhookError
+			title = "Task run failed - " + payload.TaskName
+
+			if len(task.TaskRunList) == 0 {
+				err := errors.Errorf("expect at least 1 TaskRun, get 0")
+				log.Warn(err.Error(),
+					zap.Any("task", task),
+					zap.Error(err))
+				return nil, err
+			}
+
+			// sort TaskRunList to get the most recent task run result.
+			sort.Slice(task.TaskRunList, func(i int, j int) bool {
+				return task.TaskRunList[i].ID > task.TaskRunList[j].ID
+			})
+
+			var result api.TaskRunResultPayload
+			if err := json.Unmarshal([]byte(task.TaskRunList[0].Result), &result); err != nil {
+				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
+				log.Warn(err.Error(),
+					zap.Any("TaskRun", task.TaskRunList[0]),
+					zap.Error(err))
+				return nil, err
+			}
+			webhookTaskResult.Detail = result.Detail
+
+		case api.TaskRunCanceled:
+			title = "Task run canceled - " + payload.TaskName
+		case api.TaskRunSkipped:
+			title = "Task skipped - " + payload.TaskName
+			_, skippedReason, err := getTaskSkippedAndReason(task)
+			if err != nil {
+				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
+				log.Warn(err.Error(), zap.String("task.Payload", task.Payload), zap.Error(err))
+				return nil, err
+			}
+			webhookTaskResult.SkippedReason = skippedReason
+		default:
+			title = "Task run changed - " + payload.TaskName
+		}
+
 	case api.ActivityIssueApprovalNotify:
 		payload := &api.ActivityIssueApprovalNotifyPayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
@@ -596,4 +923,16 @@ func getUsersFromProjectRole(s *store.Store, role api.Role, projectID string) fu
 		}
 		return users, nil
 	}
+}
+
+// getTaskSkippedAndReason gets skipped and skippedReason from a task.
+func getTaskSkippedAndReason(task *api.Task) (bool, string, error) {
+	var payload struct {
+		Skipped       bool   `json:"skipped,omitempty"`
+		SkippedReason string `json:"skippedReason,omitempty"`
+	}
+	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+		return false, "", err
+	}
+	return payload.Skipped, payload.SkippedReason, nil
 }

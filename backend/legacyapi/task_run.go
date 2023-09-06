@@ -20,6 +20,10 @@ const (
 	TaskRunFailed TaskRunStatus = "FAILED"
 	// TaskRunCanceled is the task run status for CANCELED.
 	TaskRunCanceled TaskRunStatus = "CANCELED"
+	// TaskRunNotStarted is the task run status for NOT_STARTED.
+	TaskRunNotStarted TaskRunStatus = "NOT_STARTED"
+	// TaskRunSkipped is the task run status for SKIPPED.
+	TaskRunSkipped TaskRunStatus = "SKIPPED"
 )
 
 // TaskRunResultPayload is the result payload for a task run.

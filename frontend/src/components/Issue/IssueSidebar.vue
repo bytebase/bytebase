@@ -117,7 +117,7 @@
          -->
         <div>
           <h2 class="textlabel flex items-center">
-            <span class="mr-1">{{ $t("common.when") }}</span>
+            <span class="mr-1">{{ $t("task.rollout-time") }}</span>
             <NTooltip>
               <template #trigger>
                 <heroicons-outline:question-mark-circle class="h-4 w-4" />

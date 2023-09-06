@@ -1,24 +1,11 @@
 <template>
-  <img class="h-4 w-auto" :src="icon" />
+  <EngineIcon :engine="engine" />
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { SchemaRuleEngineType } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 
-const props = defineProps<{
-  engine: SchemaRuleEngineType;
+defineProps<{
+  engine: Engine;
 }>();
-
-const icon = computed(() => {
-  if (props.engine === "ORACLE") {
-    return new URL("../../../assets/db-oracle.svg", import.meta.url).href;
-  } else if (props.engine === "MSSQL") {
-    return new URL("../../../assets/db-mssql.svg", import.meta.url).href;
-  }
-  return new URL(
-    `../../../assets/db-${props.engine.toLowerCase()}.png`,
-    import.meta.url
-  ).href;
-});
 </script>

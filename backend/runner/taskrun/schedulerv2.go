@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -20,19 +21,25 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	taskSchedulerInterval = time.Duration(1) * time.Second
+)
+
 // SchedulerV2 is the V2 scheduler for task run.
 type SchedulerV2 struct {
-	store       *store.Store
-	stateCfg    *state.State
-	executorMap map[api.TaskType]Executor
+	store           *store.Store
+	stateCfg        *state.State
+	activityManager *activity.Manager
+	executorMap     map[api.TaskType]Executor
 }
 
 // NewSchedulerV2 will create a new scheduler.
-func NewSchedulerV2(store *store.Store, stateCfg *state.State) *SchedulerV2 {
+func NewSchedulerV2(store *store.Store, stateCfg *state.State, activityManager *activity.Manager) *SchedulerV2 {
 	return &SchedulerV2{
-		store:       store,
-		stateCfg:    stateCfg,
-		executorMap: map[api.TaskType]Executor{},
+		store:           store,
+		stateCfg:        stateCfg,
+		activityManager: activityManager,
+		executorMap:     map[api.TaskType]Executor{},
 	}
 }
 
@@ -49,6 +56,8 @@ func (s *SchedulerV2) Register(taskType api.TaskType, executorGetter Executor) {
 
 // Run will start the scheduler.
 func (s *SchedulerV2) Run(ctx context.Context, wg *sync.WaitGroup) {
+	go s.ListenTaskSkippedOrDone(ctx)
+
 	ticker := time.NewTicker(taskSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -88,8 +97,7 @@ func (s *SchedulerV2) runOnce(ctx context.Context) {
 }
 
 func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
-	// TODO(p0ny): check if the task can be rolled out.
-	taskIDs, err := s.store.ListTasksWithNoTaskRun(ctx)
+	taskIDs, err := s.store.ListNotSkippedTasksWithNoTaskRun(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list tasks with zero task run")
 	}
@@ -106,6 +114,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
+
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return err
@@ -153,6 +162,54 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		}
 	}
 
+	// the latest checks of the plan must pass
+	pass, err := func() (bool, error) {
+		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to get plan")
+		}
+		if plan == nil {
+			return true, nil
+		}
+		planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{PlanUID: &plan.UID})
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to list plan check runs")
+		}
+		type key struct {
+			instanceUID  int
+			databaseName string
+			checkType    store.PlanCheckRunType
+		}
+		latestRun := map[key]*store.PlanCheckRunMessage{}
+		for _, run := range planCheckRuns {
+			k := key{
+				instanceUID:  int(run.Config.InstanceUid),
+				databaseName: run.Config.DatabaseName,
+				checkType:    run.Type,
+			}
+			if latest, ok := latestRun[k]; !ok || latest.UID < run.UID {
+				latestRun[k] = run
+			}
+		}
+		for _, run := range latestRun {
+			if run.Status != store.PlanCheckRunStatusDone {
+				return false, nil
+			}
+			for _, result := range run.Result.Results {
+				if result.Status != storepb.PlanCheckRunResult_Result_SUCCESS {
+					return false, nil
+				}
+			}
+		}
+		return true, nil
+	}()
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if plan check passes")
+	}
+	if !pass {
+		return nil
+	}
+
 	create := &store.TaskRunMessage{
 		CreatorID: api.SystemBotID,
 		TaskUID:   task.ID,
@@ -162,6 +219,11 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	if err := s.store.CreatePendingTaskRuns(ctx, create); err != nil {
 		return errors.Wrapf(err, "failed to create pending task runs")
 	}
+
+	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, []*store.TaskMessage{task}, issue, "", api.SystemBotID); err != nil {
+		log.Error("failed to create activities for running tasks", zap.Error(err))
+	}
+
 	return nil
 }
 
@@ -205,7 +267,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 			continue
 		}
 
-		if blockingTask.LatestTaskRunStatus == nil || *blockingTask.LatestTaskRunStatus != api.TaskRunDone {
+		if blockingTask.LatestTaskRunStatus != api.TaskRunDone {
 			return nil
 		}
 	}
@@ -395,6 +457,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
+		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunFailed)
 		return
 	}
 
@@ -429,7 +492,198 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			)
 			return
 		}
+		s.createActivityForTaskRunStatusUpdate(ctx, task, api.TaskRunDone)
+		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 		return
+	}
+}
+
+func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("%v", r)
+			}
+			log.Error("ListenTaskSkippedOrDone PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+		}
+	}()
+	log.Info("TaskSkippedOrDoneListener started")
+	stageDoneConfirmed := map[int]bool{}
+
+	for {
+		select {
+		case taskUID := <-s.stateCfg.TaskSkippedOrDoneChan:
+			if err := func() error {
+				task, err := s.store.GetTaskV2ByID(ctx, taskUID)
+				if err != nil {
+					return errors.Wrapf(err, "failed to get task")
+				}
+				if stageDoneConfirmed[task.StageID] {
+					return nil
+				}
+
+				stageTasks, err := s.store.ListTasks(ctx, &api.TaskFind{StageID: &task.StageID})
+				if err != nil {
+					return errors.Wrapf(err, "failed to list tasks")
+				}
+
+				skippedOrDone, err := tasksSkippedOrDone(stageTasks)
+				if err != nil {
+					return errors.Wrapf(err, "failed to check if tasks are skipped or done")
+				}
+				if !skippedOrDone {
+					return nil
+				}
+
+				stageDoneConfirmed[task.StageID] = true
+				go func(stageID int) {
+					time.Sleep(1 * time.Minute)
+					delete(stageDoneConfirmed, stageID)
+				}(task.StageID)
+
+				stages, err := s.store.ListStageV2(ctx, task.PipelineID)
+				if err != nil {
+					return errors.Wrapf(err, "failed to list stages")
+				}
+
+				var taskStage *store.StageMessage
+				var pipelineDone bool
+				for i, stage := range stages {
+					if stage.ID == task.StageID {
+						taskStage = stages[i]
+						if i == len(stages)-1 {
+							pipelineDone = true
+						}
+						break
+					}
+				}
+				if taskStage == nil {
+					return errors.Errorf("failed to find stage")
+				}
+
+				issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+				if err != nil {
+					return errors.Wrapf(err, "failed to get issue")
+				}
+				if issue == nil {
+					return nil
+				}
+
+				// every task in the stage terminated
+				// create "stage ends" activity.
+				if err := func() error {
+					createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+						StageID:               taskStage.ID,
+						StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
+						IssueName:             issue.Title,
+						StageName:             taskStage.Name,
+					}
+					bytes, err := json.Marshal(createActivityPayload)
+					if err != nil {
+						return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
+					}
+					activityCreate := &store.ActivityMessage{
+						CreatorUID:   api.SystemBotID,
+						ContainerUID: *issue.PipelineUID,
+						Type:         api.ActivityPipelineStageStatusUpdate,
+						Level:        api.ActivityInfo,
+						Payload:      string(bytes),
+					}
+					if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+						Issue: issue,
+					}); err != nil {
+						return errors.Wrap(err, "failed to create activity")
+					}
+					return nil
+				}(); err != nil {
+					log.Error("failed to create ActivityPipelineStageStatusUpdate activity", zap.Error(err))
+				}
+
+				if pipelineDone {
+					// Every task in the pipeline has finished.
+					// Resolve the issue.
+					if err := func() error {
+						newStatus := api.IssueDone
+						updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus}, api.SystemBotID)
+						if err != nil {
+							return errors.Wrapf(err, "failed to update issue status")
+						}
+
+						payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
+							OldStatus: issue.Status,
+							NewStatus: updatedIssue.Status,
+							IssueName: updatedIssue.Title,
+						})
+						if err != nil {
+							return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
+						}
+						activityCreate := &store.ActivityMessage{
+							CreatorUID:   api.SystemBotID,
+							ContainerUID: updatedIssue.UID,
+							Type:         api.ActivityIssueStatusUpdate,
+							Level:        api.ActivityInfo,
+							Comment:      "",
+							Payload:      string(payload),
+						}
+						if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+							Issue: updatedIssue,
+						}); err != nil {
+							return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
+						}
+						return nil
+					}(); err != nil {
+						log.Error("failed to update issue status", zap.Error(err))
+					}
+				}
+				return nil
+			}(); err != nil {
+				log.Error("failed to handle task skipped or done", zap.Error(err))
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus api.TaskRunStatus) {
+	if err := func() error {
+		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+			PipelineID: &task.PipelineID,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to get issue")
+		}
+		if issue == nil {
+			return nil
+		}
+
+		createActivityPayload := api.ActivityPipelineTaskRunStatusUpdatePayload{
+			TaskID:    task.ID,
+			NewStatus: newStatus,
+			IssueName: issue.Title,
+			TaskName:  task.Name,
+		}
+		bytes, err := json.Marshal(createActivityPayload)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal ActivityPipelineTaskRunStatusUpdatePayload payload")
+		}
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: task.PipelineID,
+			Type:         api.ActivityPipelineTaskRunStatusUpdate,
+			Level:        api.ActivityInfo,
+			Payload:      string(bytes),
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return errors.Wrap(err, "failed to create activity")
+		}
+
+		return nil
+	}(); err != nil {
+		log.Error("failed to create activity for task run status update", zap.Error(err))
 	}
 }
 
@@ -456,4 +710,18 @@ func (s *SchedulerV2) ClearRunningTaskRuns(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func tasksSkippedOrDone(tasks []*store.TaskMessage) (bool, error) {
+	for _, task := range tasks {
+		skipped, err := utils.GetTaskSkipped(task)
+		if err != nil {
+			return false, err
+		}
+		done := task.LatestTaskRunStatus == api.TaskRunDone
+		if !skipped && !done {
+			return false, nil
+		}
+	}
+	return true, nil
 }
