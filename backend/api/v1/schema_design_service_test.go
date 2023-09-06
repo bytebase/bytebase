@@ -31,7 +31,7 @@ func TestGenerateEtag(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got := GenerateEtag([]byte(test.statement))
+		got := generateEtag([]byte(test.statement))
 		require.Equal(t, test.want, got)
 	}
 }
