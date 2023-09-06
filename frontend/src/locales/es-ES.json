@@ -2205,7 +2205,7 @@
       },
       "bb-feature-custom-role": {
         "title": "Roles personalizados",
-        "desc": "Definición de roles personalizados, y puede aplicarlos a los miembros del proyecto."
+        "desc": "Definición de roles personalizados. Puede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado."
       },
       "bb-feature-watermark": {
         "title": "Marca de agua",
@@ -2835,7 +2835,7 @@
   "role": {
     "self": "Rol",
     "setting": {
-      "description": "Definir roles personalizados y aplicarlos a los miembros del proyecto.",
+      "description": "Definición de roles personalizados. Puede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado.",
       "add": "Agregar rol",
       "edit": "Editar rol",
       "title-placeholder": "Ingrese el título del rol",

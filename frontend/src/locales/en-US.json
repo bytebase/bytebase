@@ -2209,7 +2209,7 @@
       },
       "bb-feature-custom-role": {
         "title": "Custom role",
-        "desc": "Defining custom roles, and you may apply them to project members."
+        "desc": "Defining custom roles. You may apply them to project members and used in custom approval flow."
       },
       "bb-feature-watermark": {
         "title": "Watermark",
@@ -2838,7 +2838,7 @@
   "role": {
     "self": "Role",
     "setting": {
-      "description": "Defining custom roles, and you may apply them to project members.",
+      "description": "Defining custom roles. You may apply them to project members and used in custom approval flow.",
       "add": "Add role",
       "edit": "Edit role",
       "title-placeholder": "Input role title",

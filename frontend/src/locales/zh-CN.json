@@ -2204,7 +2204,7 @@
       },
       "bb-feature-custom-role": {
         "title": "自定义角色",
-        "desc": "定义自定义角色，你可以将它们应用到项目成员上。"
+        "desc": "定义自定义角色，你可以将它们应用到项目成员上，用于配置自定义审批流。"
       },
       "bb-feature-watermark": {
         "title": "水印设置",
