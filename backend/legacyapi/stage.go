@@ -29,16 +29,3 @@ type Stage struct {
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
 }
-
-// StageAllTaskStatusPatch is the API message for patching task status for all tasks in a stage.
-type StageAllTaskStatusPatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
-	Status  TaskStatus `jsonapi:"attr,status"`
-	Comment *string    `jsonapi:"attr,comment"`
-}

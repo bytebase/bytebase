@@ -220,10 +220,6 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 	if err != nil {
 		return nil, err
 	}
-	taskCheckRuns, err := s.ListTaskCheckRuns(ctx, &TaskCheckRunFind{PipelineID: &pipeline.ID})
-	if err != nil {
-		return nil, err
-	}
 	var composedTasks []*api.Task
 	for _, task := range tasks {
 		composedTask := task.toTask()
@@ -252,24 +248,6 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 				}
 				composedTaskRun.Updater = updater
 				composedTask.TaskRunList = append(composedTask.TaskRunList, composedTaskRun)
-			}
-		}
-		for _, taskCheckRun := range taskCheckRuns {
-			if taskCheckRun.TaskID == task.ID {
-				composedTaskCheckRun := taskCheckRun.toTaskCheckRun()
-				creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
-				if err != nil {
-					return nil, err
-				}
-				composedTaskCheckRun.Creator = creator
-				updater, err := s.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
-				if err != nil {
-					return nil, err
-				}
-				composedTaskCheckRun.Updater = updater
-				composedTaskCheckRun.CreatedTs = taskCheckRun.CreatedTs
-				composedTaskCheckRun.UpdatedTs = taskCheckRun.UpdatedTs
-				composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, composedTaskCheckRun)
 			}
 		}
 

@@ -41,27 +41,6 @@ type TaskCheckRunFind struct {
 	StatusList *[]api.TaskCheckRunStatus
 }
 
-func (run *TaskCheckRunMessage) toTaskCheckRun() *api.TaskCheckRun {
-	return &api.TaskCheckRun{
-		ID: run.ID,
-
-		// Standard fields
-		UpdaterID: run.UpdaterID,
-		UpdatedTs: run.UpdatedTs,
-
-		// Related fields
-		TaskID: run.TaskID,
-
-		// Domain specific fields
-		Status:  run.Status,
-		Type:    run.Type,
-		Code:    run.Code,
-		Comment: run.Comment,
-		Result:  run.Result,
-		Payload: run.Payload,
-	}
-}
-
 // ListTaskCheckRuns list task check runs.
 func (s *Store) ListTaskCheckRuns(ctx context.Context, find *TaskCheckRunFind) ([]*TaskCheckRunMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})

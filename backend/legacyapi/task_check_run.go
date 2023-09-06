@@ -2,8 +2,6 @@ package api
 
 import (
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -128,30 +126,6 @@ type TaskCheckRun struct {
 	Comment string             `jsonapi:"attr,comment"`
 	Result  string             `jsonapi:"attr,result"`
 	Payload string             `jsonapi:"attr,payload"`
-}
-
-// IsSQLReviewSupported checks the engine type if SQL review supports it.
-func IsSQLReviewSupported(dbType db.Type) bool {
-	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB || dbType == db.MariaDB || dbType == db.Oracle || dbType == db.OceanBase || dbType == db.Snowflake || dbType == db.MSSQL {
-		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
-		if err != nil {
-			return false
-		}
-
-		return advisor.IsSQLReviewSupported(advisorDB)
-	}
-
-	return false
-}
-
-// IsStatementTypeCheckSupported checks the engine type if statement type check supports it.
-func IsStatementTypeCheckSupported(dbType db.Type) bool {
-	switch dbType {
-	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB, db.OceanBase:
-		return true
-	default:
-		return false
-	}
 }
 
 // IsTaskCheckReportSupported checks if the task report supports the engine type.
