@@ -1099,9 +1099,8 @@
     },
     "scan-interval": {
       "self": "Intervalo de escaneo",
-      "default-daily": "Predeterminado (diario)",
-      "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías.",
-      "default-never": "Predeterminado (nunca)"
+      "default-never": "Predeterminado (nunca)",
+      "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías."
     }
   },
   "environment": {

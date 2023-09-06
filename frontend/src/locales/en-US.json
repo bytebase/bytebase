@@ -1100,9 +1100,8 @@
     },
     "scan-interval": {
       "self": "Scan Interval",
-      "default-daily": "Default (daily)",
-      "description": "Bytebase periodically syncs instance schema and detects anomalies.",
-      "default-never": "Default (never)"
+      "default-never": "Default (never)",
+      "description": "Bytebase periodically syncs instance schema and detects anomalies."
     }
   },
   "environment": {
