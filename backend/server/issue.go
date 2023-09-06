@@ -132,10 +132,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		for _, issue := range issueList {
-			s.setTaskProgressForIssue(issue)
-		}
-
-		for _, issue := range issueList {
 			if issue.Pipeline == nil {
 				continue
 			}
@@ -192,8 +188,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
-
-		s.setTaskProgressForIssue(issue)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {
@@ -461,19 +455,6 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 	}
 	composedIssue.Assignee = composedAssignee
 	return composedIssue, nil
-}
-
-func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
-	if s.profile.Readonly {
-		return
-	}
-	for _, stage := range issue.Pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if progress, ok := s.stateCfg.TaskProgress.Load(task.ID); ok {
-				task.Progress = progress.(api.Progress)
-			}
-		}
-	}
 }
 
 func marshalPageToken(id int) (string, error) {
