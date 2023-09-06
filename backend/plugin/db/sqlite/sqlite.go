@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -147,7 +147,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	rowsAffected, err := sqlResult.RowsAffected()
 	if err != nil {
 		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-		log.Debug("rowsAffected returns error", zap.Error(err))
+		slog.Debug("rowsAffected returns error", log.BBError(err))
 		return 0, nil
 	}
 

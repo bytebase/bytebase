@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strconv"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -518,7 +518,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	}
 
 	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, tasksToRun, issue, request.Reason, user.ID); err != nil {
-		log.Error("failed to batch create activities for running tasks", zap.Error(err))
+		slog.Error("failed to batch create activities for running tasks", log.BBError(err))
 	}
 
 	return &v1pb.BatchRunTasksResponse{}, nil
@@ -590,7 +590,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 	}
 
 	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, updaterID); err != nil {
-		log.Error("failed to batch create activities for skipping tasks", zap.Error(err))
+		slog.Error("failed to batch create activities for skipping tasks", log.BBError(err))
 	}
 
 	return &v1pb.BatchSkipTasksResponse{}, nil
@@ -715,7 +715,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 	}
 
 	if err := s.activityManager.BatchCreateActivitiesForCancelTaskRuns(ctx, tasks, issue, request.Reason, principalID); err != nil {
-		log.Error("failed to batch create activities for cancel task runs", zap.Error(err))
+		slog.Error("failed to batch create activities for cancel task runs", log.BBError(err))
 	}
 
 	return &v1pb.BatchCancelTaskRunsResponse{}, nil
@@ -949,7 +949,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 			return nil
 		}(); err != nil {
-			log.Error("failed to update issue to refind approval", zap.Error(err))
+			slog.Error("failed to update issue to refind approval", log.BBError(err))
 		}
 	}
 

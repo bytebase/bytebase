@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net"
 	"regexp"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -249,7 +249,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		}
 		// Restore the current transaction role to the current user.
 		if _, err := tx.ExecContext(ctx, "SET SESSION AUTHORIZATION DEFAULT"); err != nil {
-			log.Warn("Failed to restore the current transaction role to the current user", zap.Error(err))
+			slog.Warn("Failed to restore the current transaction role to the current user", log.BBError(err))
 		}
 
 		if err := tx.Commit(); err != nil {
@@ -258,7 +258,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			log.Debug("rowsAffected returns error", zap.Error(err))
+			slog.Debug("rowsAffected returns error", log.BBError(err))
 		} else {
 			totalRowsAffected += rowsAffected
 		}

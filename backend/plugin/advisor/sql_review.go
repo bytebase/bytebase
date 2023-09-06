@@ -6,12 +6,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
@@ -751,7 +751,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 		advisorType, err := getAdvisorTypeByRule(rule.Type, checkContext.DbType)
 		if err != nil {
 			if rule.Engine != "" {
-				log.Warn("not supported rule", zap.String("rule type", string(rule.Type)), zap.String("engine", string(rule.Engine)), zap.Error(err))
+				slog.Warn("not supported rule", slog.String("rule type", string(rule.Type)), slog.String("engine", string(rule.Engine)), log.BBError(err))
 			}
 			continue
 		}
@@ -949,7 +949,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 				return nil, errors.Errorf("invalid payload for ColumnIsReferencedByView, expect []string but found %T", walkThroughError.Payload)
 			}
 			if definition, err := getViewDefinition(checkContext, list); err != nil {
-				log.Warn("failed to get view definition", zap.Error(err))
+				slog.Warn("failed to get view definition", log.BBError(err))
 			} else {
 				details = definition
 			}
@@ -971,7 +971,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 				return nil, errors.Errorf("invalid payload for TableIsReferencedByView, expect []string but found %T", walkThroughError.Payload)
 			}
 			if definition, err := getViewDefinition(checkContext, list); err != nil {
-				log.Warn("failed to get view definition", zap.Error(err))
+				slog.Warn("failed to get view definition", log.BBError(err))
 			} else {
 				details = definition
 			}

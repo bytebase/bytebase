@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/url"
 	"os"
 	"os/exec"
@@ -17,7 +18,6 @@ import (
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -209,7 +209,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		// We make best-effort attempt to parse the content and fallback to single bulk result on failure.
 		result, err := getSimpleStatementResult(outContent.Bytes())
 		if err != nil {
-			log.Error("failed to get simple statement result", zap.String("content", outContent.String()), zap.Error(err))
+			slog.Error("failed to get simple statement result", slog.String("content", outContent.String()), log.BBError(err))
 		} else {
 			result.Latency = durationpb.New(time.Since(startTime))
 			result.Statement = statement

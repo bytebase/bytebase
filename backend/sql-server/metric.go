@@ -1,11 +1,11 @@
 package sqlserver
 
 import (
+	"log/slog"
 	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
@@ -23,10 +23,10 @@ func (m *metricReporter) Report(metric *metric.Metric) {
 	}
 
 	if err := m.reporter.Report(m.workspaceID, metric); err != nil {
-		log.Error(
+		slog.Error(
 			"Failed to report metric",
-			zap.String("metric", string(metricAPI.OpenAPIMetricName)),
-			zap.Error(err),
+			slog.String("metric", string(metricAPI.OpenAPIMetricName)),
+			log.BBError(err),
 		)
 	}
 }

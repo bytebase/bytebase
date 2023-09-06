@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -54,7 +54,7 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 			if !ok {
 				panicErr = errors.Errorf("%v", r)
 			}
-			log.Error("TaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("panic-stack"))
+			slog.Error("TaskExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
 			terminated = true
 			result = nil
 			err = errors.Errorf("encounter internal error when executing task")
@@ -143,7 +143,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 
 	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
-		log.Error("failed to find containing issue", zap.Error(err))
+		slog.Error("failed to find containing issue", log.BBError(err))
 	}
 	if issue != nil {
 		// Concat issue title and task name as the migration description so that user can see
@@ -158,9 +158,9 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	if err != nil {
 		// If somehow we unable to find the principal, we just emit the error since it's not
 		// critical enough to fail the entire operation.
-		log.Error("Failed to fetch creator for composing the migration info",
-			zap.Int("task_id", task.ID),
-			zap.Error(err),
+		slog.Error("Failed to fetch creator for composing the migration info",
+			slog.Int("task_id", task.ID),
+			log.BBError(err),
 		)
 	} else {
 		mi.Creator = creator.Name
@@ -199,12 +199,12 @@ func executeMigration(ctx context.Context, driverCtx context.Context, stores *st
 	defer driver.Close(ctx)
 
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	log.Debug("Start migration...",
-		zap.String("instance", instance.ResourceID),
-		zap.String("database", database.DatabaseName),
-		zap.String("source", string(mi.Source)),
-		zap.String("type", string(mi.Type)),
-		zap.String("statement", statementRecord),
+	slog.Debug("Start migration...",
+		slog.String("instance", instance.ResourceID),
+		slog.String("database", database.DatabaseName),
+		slog.String("source", string(mi.Source)),
+		slog.String("type", string(mi.Type)),
+		slog.String("statement", statementRecord),
 	)
 
 	var migrationID string
@@ -272,13 +272,13 @@ func getSetOracleTransactionIDFunc(ctx context.Context, task *store.TaskMessage,
 	return func(tx *sql.Tx) error {
 		payload := &api.TaskDatabaseDataUpdatePayload{}
 		if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-			log.Error("failed to unmarshal task payload", zap.Int("TaskId", task.ID), zap.Error(err))
+			slog.Error("failed to unmarshal task payload", slog.Int("TaskId", task.ID), log.BBError(err))
 			return nil
 		}
 		// Get oracle current transaction id;
 		transactionID, err := tx.QueryContext(ctx, "SELECT RAWTOHEX(tx.xid) FROM v$transaction tx JOIN v$session s ON tx.ses_addr = s.saddr")
 		if err != nil {
-			log.Error("failed to transaction id in task", zap.Int("TaskId", task.ID), zap.Error(err))
+			slog.Error("failed to transaction id in task", slog.Int("TaskId", task.ID), log.BBError(err))
 			return nil
 		}
 		defer transactionID.Close()
@@ -286,7 +286,7 @@ func getSetOracleTransactionIDFunc(ctx context.Context, task *store.TaskMessage,
 		for transactionID.Next() {
 			err := transactionID.Scan(&txID)
 			if err != nil {
-				log.Error("failed to the Oracle transaction id in task", zap.Int("TaskId", task.ID), zap.Error(err))
+				slog.Error("failed to the Oracle transaction id in task", slog.Int("TaskId", task.ID), log.BBError(err))
 				return nil
 			}
 		}
@@ -296,7 +296,7 @@ func getSetOracleTransactionIDFunc(ctx context.Context, task *store.TaskMessage,
 		payload.TransactionID = txID
 		updatedPayload, err := json.Marshal(payload)
 		if err != nil {
-			log.Error("failed to unmarshal task payload", zap.Int("TaskId", task.ID), zap.Error(err), zap.Any("payload", updatedPayload))
+			slog.Error("failed to unmarshal task payload", slog.Int("TaskId", task.ID), log.BBError(err), slog.Any("payload", updatedPayload))
 			return nil
 		}
 		updatedPayloadString := string(updatedPayload)
@@ -306,7 +306,7 @@ func getSetOracleTransactionIDFunc(ctx context.Context, task *store.TaskMessage,
 			Payload:   &updatedPayloadString,
 		}
 		if _, err = store.UpdateTaskV2(ctx, patch); err != nil {
-			log.Error("failed to update task with new payload", zap.Any("TaskPatch", patch), zap.Error(err))
+			slog.Error("failed to update task with new payload", slog.Any("TaskPatch", patch), log.BBError(err))
 			return nil
 		}
 		return nil
@@ -330,7 +330,7 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, conn *sql.Conn, ta
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
 	}
 	if (binlogInfo == api.BinlogInfo{}) {
-		log.Warn("binlog is not enabled", zap.Int("task", task.ID))
+		slog.Warn("binlog is not enabled", slog.Int("task", task.ID))
 		return task, nil
 	}
 	payload.BinlogFileStart = binlogInfo.FileName
@@ -365,7 +365,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, conn *sql.Conn, t
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
 	}
 	if (binlogInfo == api.BinlogInfo{}) {
-		log.Warn("binlog is not enabled", zap.Int("task", task.ID))
+		slog.Warn("binlog is not enabled", slog.Int("task", task.ID))
 		return task, nil
 	}
 	payload.BinlogFileEnd = binlogInfo.FileName
@@ -404,11 +404,11 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
-		log.Error("failed to find containing issue", zap.Error(err))
+		slog.Error("failed to find containing issue", log.BBError(err))
 	}
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
-		log.Error("failed to find containing issue", zap.Error(err))
+		slog.Error("failed to find containing issue", log.BBError(err))
 	}
 	repo, err := stores.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
 		ProjectResourceID: &project.ResourceID,
@@ -432,10 +432,10 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		return true, nil, err
 	}
 
-	log.Debug("Post migration...",
-		zap.String("instance", instance.ResourceID),
-		zap.String("database", database.DatabaseName),
-		zap.String("writeback_branch", writebackBranch),
+	slog.Debug("Post migration...",
+		slog.String("instance", instance.ResourceID),
+		slog.String("database", database.DatabaseName),
+		slog.String("writeback_branch", writebackBranch),
 	)
 
 	if writebackBranch != "" {
@@ -486,11 +486,11 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 				CommitID:           commitID,
 			})
 			if err != nil {
-				log.Error("Failed to marshal file commit activity after writing back the latest schema",
-					zap.Int("task_id", task.ID),
-					zap.String("repository", repo.WebURL),
-					zap.String("file_path", latestSchemaFile),
-					zap.Error(err),
+				slog.Error("Failed to marshal file commit activity after writing back the latest schema",
+					slog.Int("task_id", task.ID),
+					slog.String("repository", repo.WebURL),
+					slog.String("file_path", latestSchemaFile),
+					log.BBError(err),
 				)
 			}
 
@@ -507,11 +507,11 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			}
 
 			if _, err := activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
-				log.Error("Failed to create file commit activity after writing back the latest schema",
-					zap.Int("task_id", task.ID),
-					zap.String("repository", repo.WebURL),
-					zap.String("file_path", latestSchemaFile),
-					zap.Error(err),
+				slog.Error("Failed to create file commit activity after writing back the latest schema",
+					slog.Int("task_id", task.ID),
+					slog.String("repository", repo.WebURL),
+					slog.String("file_path", latestSchemaFile),
+					log.BBError(err),
 				)
 			}
 		}
@@ -522,11 +522,11 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		DatabaseUID: task.DatabaseID,
 		Type:        api.AnomalyDatabaseSchemaDrift,
 	}); err != nil && common.ErrorCode(err) != common.NotFound {
-		log.Error("Failed to archive anomaly",
-			zap.String("instance", instance.ResourceID),
-			zap.String("database", database.DatabaseName),
-			zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-			zap.Error(err))
+		slog.Error("Failed to archive anomaly",
+			slog.String("instance", instance.ResourceID),
+			slog.String("database", database.DatabaseName),
+			slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+			log.BBError(err))
 	}
 
 	detail := fmt.Sprintf("Applied migration version %s to database %q.", mi.Version, database.DatabaseName)
@@ -565,7 +565,7 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 	}
 
 	if err := license.IsFeatureEnabledForInstance(api.FeatureVCSSchemaWriteBack, instance); err != nil {
-		log.Debug(err.Error(), zap.String("instance", instance.ResourceID))
+		slog.Debug(err.Error(), slog.String("instance", instance.ResourceID))
 		return "", nil
 	}
 
@@ -702,8 +702,8 @@ func writeBackLatestSchema(
 		AuthorEmail:   vcsPlugin.BytebaseAuthorEmail,
 	}
 	if createSchemaFile {
-		log.Debug("Create latest schema file",
-			zap.String("schema_file", latestSchemaFile),
+		slog.Debug("Create latest schema file",
+			slog.String("schema_file", latestSchemaFile),
 		)
 
 		err := vcsPlugin.Get(vcs2.Type, vcsPlugin.ProviderConfig{}).CreateFile(
@@ -724,8 +724,8 @@ func writeBackLatestSchema(
 			return "", errors.Wrapf(err, "failed to create file after applying migration %s to %q", mi.Version, mi.Database)
 		}
 	} else {
-		log.Debug("Update latest schema file",
-			zap.String("schema_file", latestSchemaFile),
+		slog.Debug("Update latest schema file",
+			slog.String("schema_file", latestSchemaFile),
 		)
 
 		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID

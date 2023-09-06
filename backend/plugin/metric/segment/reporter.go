@@ -2,9 +2,8 @@
 package segment
 
 import (
+	"log/slog"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
@@ -30,7 +29,7 @@ func NewReporter(key string) metric.Reporter {
 		Logger: &sinkLogger{},
 	})
 	if err != nil {
-		log.Error("failed to create reporter", zap.Error(err))
+		slog.Error("failed to create reporter", log.BBError(err))
 		client = analytics.New(key)
 	}
 

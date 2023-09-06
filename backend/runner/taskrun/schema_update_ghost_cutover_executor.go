@@ -3,6 +3,7 @@ package taskrun
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/github/gh-ost/go/base"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -100,10 +100,10 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ contex
 	// not using the rendered statement here because we want to avoid leaking the rendered statement
 	terminated, result, err := cutover(ctx, e.store, e.dbFactory, e.activityManager, e.license, e.profile, task, statement, payload.SheetID, payload.SchemaVersion, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 	if err := e.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-		log.Error("failed to sync database schema",
-			zap.String("instanceName", instance.ResourceID),
-			zap.String("databaseName", database.DatabaseName),
-			zap.Error(err),
+		slog.Error("failed to sync database schema",
+			slog.String("instanceName", instance.ResourceID),
+			slog.String("databaseName", database.DatabaseName),
+			log.BBError(err),
 		)
 	}
 

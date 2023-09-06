@@ -2,9 +2,9 @@ package plancheck
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -19,7 +19,7 @@ func runExecutorOnce(ctx context.Context, exec Executor, planCheckRun *store.Pla
 			if !ok {
 				panicErr = errors.Errorf("%v", r)
 			}
-			log.Error("TaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("panic-stack"))
+			slog.Error("TaskExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
 			err = errors.Errorf("encounter internal error when executing check")
 		}
 	}()

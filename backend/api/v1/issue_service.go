@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -641,7 +641,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			Level:        api.ActivityInfo,
 			Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, payload.GrantRequest.Role),
 		}, &activity.Metadata{}); err != nil {
-			log.Warn("Failed to create project activity", zap.Error(err))
+			slog.Warn("Failed to create project activity", log.BBError(err))
 		}
 	}
 
@@ -678,7 +678,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create skipping steps activity after approving issue", zap.Error(err))
+		slog.Error("failed to create skipping steps activity after approving issue", log.BBError(err))
 	}
 
 	if err := func() error {
@@ -716,7 +716,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create approval step pending activity after creating issue", zap.Error(err))
+		slog.Error("failed to create approval step pending activity after creating issue", log.BBError(err))
 	}
 
 	s.onIssueApproved(ctx, issue)
@@ -824,7 +824,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 		}
 		return nil
 	}(); err != nil {
-		log.Error("failed to create activity after rejecting issue", zap.Error(err))
+		slog.Error("failed to create activity after rejecting issue", log.BBError(err))
 	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
@@ -934,7 +934,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create skipping steps activity after approving issue", zap.Error(err))
+		slog.Error("failed to create skipping steps activity after approving issue", log.BBError(err))
 	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
@@ -1126,7 +1126,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 		}
 		return errs
 	}(); err != nil {
-		log.Error("failed to create activity after changing the issue status", zap.Error(err))
+		slog.Error("failed to create activity after changing the issue status", log.BBError(err))
 	}
 
 	return &v1pb.BatchUpdateIssuesStatusResponse{}, nil
@@ -1238,7 +1238,7 @@ func (s *IssueService) onIssueApproved(ctx context.Context, issue *store.IssueMe
 			}
 			return nil
 		}(); err != nil {
-			log.Debug("failed to update issue status to done if grant request issue is approved", zap.Error(err))
+			slog.Debug("failed to update issue status to done if grant request issue is approved", log.BBError(err))
 		}
 	}
 }

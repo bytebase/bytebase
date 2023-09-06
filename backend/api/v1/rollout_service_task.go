@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -117,7 +117,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
 			driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 			if err != nil {
-				log.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", zap.Error(err), zap.String("instance", instance.Title))
+				slog.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", log.BBError(err), slog.String("instance", instance.Title))
 				break
 			}
 			defer driver.Close(ctx)
@@ -125,7 +125,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			var unused any
 			db := driver.GetDB()
 			if err := db.QueryRowContext(ctx, "SHOW VARIABLES LIKE 'lower_case_table_names'").Scan(&unused, &lowerCaseTableNames); err != nil {
-				log.Warn("failed to get lower_case_table_names for instance %q", zap.Error(err), zap.String("instance", instance.Title))
+				slog.Warn("failed to get lower_case_table_names for instance %q", log.BBError(err), slog.String("instance", instance.Title))
 				break
 			}
 			if lowerCaseTableNames == 1 {

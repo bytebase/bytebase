@@ -1,9 +1,10 @@
 package server
 
 import (
+	"log/slog"
+
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 )
@@ -16,7 +17,7 @@ func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 				if !ok {
 					err = errors.Errorf("%v", r)
 				}
-				log.Error("Middleware PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+				slog.Error("Middleware PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 
 				c.Error(err)
 			}

@@ -3,6 +3,7 @@ package taskrun
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -143,7 +143,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 
 	go func() {
 		if err := migrator.Migrate(); err != nil {
-			log.Error("failed to run gh-ost migration", zap.Error(err))
+			slog.Error("failed to run gh-ost migration", log.BBError(err))
 			migrationError <- err
 			return
 		}

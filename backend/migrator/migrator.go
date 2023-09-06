@@ -7,6 +7,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -14,10 +15,8 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -58,7 +57,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get cutoff version")
 	}
-	log.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
+	slog.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
 	if err := initializeSchema(ctx, storeInstance, metadataDriver, cutoffSchemaVersion, serverVersion); err != nil {
 		return nil, err
 	}
@@ -93,7 +92,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
-	log.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
+	slog.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
 	if err := setupDemoData(demoName, metadataDriver.GetDB()); err != nil {
 		return nil, errors.Wrapf(err, "failed to setup demo data."+
@@ -116,7 +115,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	if exists {
 		return nil
 	}
-	log.Info("The database schema has not been setup.")
+	slog.Info("The database schema has not been setup.")
 
 	latestSchemaPath := fmt.Sprintf("migration/%s/%s", common.ReleaseModeProd, latestSchemaFile)
 	buf, err := migrationFS.ReadFile(latestSchemaPath)
@@ -160,7 +159,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	}); err != nil {
 		return err
 	}
-	log.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
+	slog.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
 	return nil
 }
 
@@ -191,11 +190,11 @@ func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.V
 			// Non-success migration history record is an anomaly, in the case where the actual
 			// migration has been applied, the followup migration will likely fail because the
 			// schema has already been applied. Thus emitting a warning here will assist debugging.
-			log.Warn(fmt.Sprintf("Found %s migration history", h.Status),
-				zap.String("type", string(h.Type)),
-				zap.String("version", h.Version),
-				zap.String("description", h.Description),
-				zap.String("statement", stmt),
+			slog.Warn(fmt.Sprintf("Found %s migration history", h.Status),
+				slog.String("type", string(h.Type)),
+				slog.String("version", h.Version),
+				slog.String("description", h.Description),
+				slog.String("statement", stmt),
 			)
 			continue
 		}
@@ -216,11 +215,11 @@ func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.V
 // setupDemoData loads the demo data.
 func setupDemoData(demoName string, db *sql.DB) error {
 	if demoName == "" {
-		log.Debug("Skip setting up demo data. Demo not specified.")
+		slog.Debug("Skip setting up demo data. Demo not specified.")
 		return nil
 	}
 
-	log.Info(fmt.Sprintf("Setting up demo %q...", demoName))
+	slog.Info(fmt.Sprintf("Setting up demo %q...", demoName))
 
 	// Reset existing demo data.
 	if err := applyDataFile("demo/reset.sql", db); err != nil {
@@ -244,13 +243,13 @@ func setupDemoData(demoName string, db *sql.DB) error {
 			return errors.Wrapf(err, "Failed to load demo data: %q", name)
 		}
 	}
-	log.Info("Completed demo data setup.")
+	slog.Info("Completed demo data setup.")
 	return nil
 }
 
 // applyDataFile runs a single demo data file within a transaction.
 func applyDataFile(name string, db *sql.DB) error {
-	log.Info(fmt.Sprintf("Applying data file %s...", name))
+	slog.Info(fmt.Sprintf("Applying data file %s...", name))
 	tx, err := db.Begin()
 	if err != nil {
 		return err
@@ -282,8 +281,8 @@ const (
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
 func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion, curVer semver.Version, mode common.ReleaseMode, serverVersion, databaseName string) error {
-	log.Info("Apply database migration if needed...")
-	log.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
+	slog.Info("Apply database migration if needed...")
+	slog.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 
 	var histories []*store.InstanceChangeHistoryMessage
 	// Because dev migrations don't use semantic versioning, we have to look at all migration history to
@@ -313,7 +312,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 	}
 
 	for _, minorVersion := range minorVersions {
-		log.Info(fmt.Sprintf("Starting minor version migration cycle from %s ...", minorVersion))
+		slog.Info(fmt.Sprintf("Starting minor version migration cycle from %s ...", minorVersion))
 		names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeProd, minorVersion.Major, minorVersion.Minor))
 		if err != nil {
 			return err
@@ -334,10 +333,10 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 			//   after - prod 1.3 with 123.sql; dev: something else.
 			// When dev starts, it will try to apply version 1.3 including 123.sql. If we don't skip, the same statement will be re-applied and most likely to fail.
 			if mode == common.ReleaseModeDev && migrationExists(string(buf), histories) {
-				log.Info(fmt.Sprintf("Skip migrating migration file %s that's already migrated.", pv.filename))
+				slog.Info(fmt.Sprintf("Skip migrating migration file %s that's already migrated.", pv.filename))
 				continue
 			}
-			log.Info(fmt.Sprintf("Migrating %s...", pv.version))
+			slog.Info(fmt.Sprintf("Migrating %s...", pv.version))
 			mi := &dbdriver.MigrationInfo{
 				InstanceID:            nil,
 				CreatorID:             api.SystemBotID,
@@ -359,9 +358,9 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 			retVersion = pv.version
 		}
 		if retVersion.EQ(curVer) {
-			log.Info(fmt.Sprintf("Database schema is at version %s; nothing to migrate.", curVer))
+			slog.Info(fmt.Sprintf("Database schema is at version %s; nothing to migrate.", curVer))
 		} else {
-			log.Info(fmt.Sprintf("Completed database migration from version %s to %s.", curVer, retVersion))
+			slog.Info(fmt.Sprintf("Completed database migration from version %s to %s.", curVer, retVersion))
 		}
 	}
 
@@ -414,18 +413,18 @@ func migrateDev(ctx context.Context, storeInstance *store.Store, metadataDriver 
 	// Skip migrations that are already applied, otherwise the migration reattempt will most likely to fail with already exists error.
 	for _, m := range devMigrations {
 		if migrationExists(m.statement, histories) {
-			log.Info(fmt.Sprintf("Skip migrating dev migration file %s that's already migrated.", m.filename))
+			slog.Info(fmt.Sprintf("Skip migrating dev migration file %s that's already migrated.", m.filename))
 		} else {
 			migrations = append(migrations, m)
 		}
 	}
 	if len(migrations) == 0 {
-		log.Info("Skip dev mode migration; no new version.")
+		slog.Info("Skip dev mode migration; no new version.")
 		return nil
 	}
 
 	for _, m := range migrations {
-		log.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
+		slog.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
 		// We expect to use semantic versioning for dev environment too because getLatestVersion() always expect to get the latest version in semantic format.
 		mi := &dbdriver.MigrationInfo{
 			InstanceID:            nil,
@@ -555,7 +554,7 @@ func getMinorMigrationVersions(names []string, currentVersion semver.Version) ([
 		// If the migration version is less than to the current version, we will skip the migration since it's already applied.
 		// We should still double check the current version in case there's any patch needed.
 		if version.LT(currentVersion) {
-			log.Debug(fmt.Sprintf("Skip migration %s; the current schema version %s is higher.", version, currentVersion))
+			slog.Debug(fmt.Sprintf("Skip migration %s; the current schema version %s is higher.", version, currentVersion))
 			continue
 		}
 		migrateVersions = append(migrateVersions, version)

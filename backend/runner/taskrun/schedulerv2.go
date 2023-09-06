@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -61,7 +61,7 @@ func (s *SchedulerV2) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(taskSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Task scheduler V2 started and will run every %v", taskSchedulerInterval))
+	slog.Debug(fmt.Sprintf("Task scheduler V2 started and will run every %v", taskSchedulerInterval))
 	for {
 		select {
 		case <-ticker.C:
@@ -79,20 +79,20 @@ func (s *SchedulerV2) runOnce(ctx context.Context) {
 			if !ok {
 				err = errors.Errorf("%v", r)
 			}
-			log.Error("Task scheduler V2 PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+			slog.Error("Task scheduler V2 PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
 
 	if err := s.scheduleAutoRolloutTasks(ctx); err != nil {
-		log.Error("failed to schedule auto rollout tasks", zap.Error(err))
+		slog.Error("failed to schedule auto rollout tasks", log.BBError(err))
 	}
 
 	if err := s.schedulePendingTaskRuns(ctx); err != nil {
-		log.Error("failed to schedule pending task runs", zap.Error(err))
+		slog.Error("failed to schedule pending task runs", log.BBError(err))
 	}
 
 	if err := s.scheduleRunningTaskRuns(ctx); err != nil {
-		log.Error("failed to schedule running task runs", zap.Error(err))
+		slog.Error("failed to schedule running task runs", log.BBError(err))
 	}
 }
 
@@ -103,7 +103,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
 	}
 	for _, taskID := range taskIDs {
 		if err := s.scheduleAutoRolloutTask(ctx, taskID); err != nil {
-			log.Error("failed to schedule auto rollout task", zap.Error(err))
+			slog.Error("failed to schedule auto rollout task", log.BBError(err))
 		}
 	}
 	return nil
@@ -221,7 +221,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	}
 
 	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, []*store.TaskMessage{task}, issue, "", api.SystemBotID); err != nil {
-		log.Error("failed to create activities for running tasks", zap.Error(err))
+		slog.Error("failed to create activities for running tasks", log.BBError(err))
 	}
 
 	return nil
@@ -236,7 +236,7 @@ func (s *SchedulerV2) schedulePendingTaskRuns(ctx context.Context) error {
 	}
 	for _, taskRun := range taskRuns {
 		if err := s.schedulePendingTaskRun(ctx, taskRun); err != nil {
-			log.Error("failed to schedule pending task run", zap.Error(err))
+			slog.Error("failed to schedule pending task run", log.BBError(err))
 		}
 	}
 
@@ -296,7 +296,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 	for _, taskRun := range taskRuns {
 		task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 		if err != nil {
-			log.Error("failed to get task", zap.Int("task id", taskRun.TaskUID), zap.Error(err))
+			slog.Error("failed to get task", slog.Int("task id", taskRun.TaskUID), log.BBError(err))
 			continue
 		}
 		if task.DatabaseID == nil {
@@ -316,7 +316,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		}
 		task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 		if err != nil {
-			log.Error("failed to get task", zap.Int("task id", taskRun.TaskUID), zap.Error(err))
+			slog.Error("failed to get task", slog.Int("task id", taskRun.TaskUID), log.BBError(err))
 			continue
 		}
 		if task.DatabaseID != nil && minTaskIDForDatabase[*task.DatabaseID] != task.ID {
@@ -331,10 +331,10 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		}
 		executor, ok := s.executorMap[task.Type]
 		if !ok {
-			log.Error("Skip running task with unknown type",
-				zap.Int("id", task.ID),
-				zap.String("name", task.Name),
-				zap.String("type", string(task.Type)),
+			slog.Error("Skip running task with unknown type",
+				slog.Int("id", task.ID),
+				slog.String("name", task.Name),
+				slog.String("type", string(task.Type)),
 			)
 			continue
 		}
@@ -368,21 +368,21 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task)
 
 	if !done && err != nil {
-		log.Debug("Encountered transient error running task, will retry",
-			zap.Int("id", task.ID),
-			zap.String("name", task.Name),
-			zap.String("type", string(task.Type)),
-			zap.Error(err),
+		slog.Debug("Encountered transient error running task, will retry",
+			slog.Int("id", task.ID),
+			slog.String("name", task.Name),
+			slog.String("type", string(task.Type)),
+			log.BBError(err),
 		)
 		return
 	}
 
 	if done && err != nil && errors.Is(err, context.Canceled) {
-		log.Warn("task run is canceled",
-			zap.Int("id", task.ID),
-			zap.String("name", task.Name),
-			zap.String("type", string(task.Type)),
-			zap.Error(err),
+		slog.Warn("task run is canceled",
+			slog.Int("id", task.ID),
+			slog.String("name", task.Name),
+			slog.String("type", string(task.Type)),
+			log.BBError(err),
 		)
 		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
 			Detail:        "The task run is canceled",
@@ -390,10 +390,10 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			Version:       "",
 		})
 		if marshalErr != nil {
-			log.Error("Failed to marshal task run result",
-				zap.Int("task_id", task.ID),
-				zap.String("type", string(task.Type)),
-				zap.Error(marshalErr),
+			slog.Error("Failed to marshal task run result",
+				slog.Int("task_id", task.ID),
+				slog.String("type", string(task.Type)),
+				log.BBError(marshalErr),
 			)
 			return
 		}
@@ -408,10 +408,10 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		}
 
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
-			log.Error("Failed to mark task as CANCELED",
-				zap.Int("id", task.ID),
-				zap.String("name", task.Name),
-				zap.Error(err),
+			slog.Error("Failed to mark task as CANCELED",
+				slog.Int("id", task.ID),
+				slog.String("name", task.Name),
+				log.BBError(err),
 			)
 			return
 		}
@@ -419,11 +419,11 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	}
 
 	if done && err != nil {
-		log.Warn("task run failed",
-			zap.Int("id", task.ID),
-			zap.String("name", task.Name),
-			zap.String("type", string(task.Type)),
-			zap.Error(err),
+		slog.Warn("task run failed",
+			slog.Int("id", task.ID),
+			slog.String("name", task.Name),
+			slog.String("type", string(task.Type)),
+			log.BBError(err),
 		)
 
 		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
@@ -432,10 +432,10 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			Version:       "",
 		})
 		if marshalErr != nil {
-			log.Error("Failed to marshal task run result",
-				zap.Int("task_id", task.ID),
-				zap.String("type", string(task.Type)),
-				zap.Error(marshalErr),
+			slog.Error("Failed to marshal task run result",
+				slog.Int("task_id", task.ID),
+				slog.String("type", string(task.Type)),
+				log.BBError(marshalErr),
 			)
 			return
 		}
@@ -450,10 +450,10 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		}
 
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
-			log.Error("Failed to mark task as FAILED",
-				zap.Int("id", task.ID),
-				zap.String("name", task.Name),
-				zap.Error(err),
+			slog.Error("Failed to mark task as FAILED",
+				slog.Int("id", task.ID),
+				slog.String("name", task.Name),
+				log.BBError(err),
 			)
 			return
 		}
@@ -468,10 +468,10 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			Version:       result.Version,
 		})
 		if marshalErr != nil {
-			log.Error("Failed to marshal task run result",
-				zap.Int("task_id", task.ID),
-				zap.String("type", string(task.Type)),
-				zap.Error(marshalErr),
+			slog.Error("Failed to marshal task run result",
+				slog.Int("task_id", task.ID),
+				slog.String("type", string(task.Type)),
+				log.BBError(marshalErr),
 			)
 			return
 		}
@@ -485,10 +485,10 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			Result:    &result,
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
-			log.Error("Failed to mark task as DONE",
-				zap.Int("id", task.ID),
-				zap.String("name", task.Name),
-				zap.Error(err),
+			slog.Error("Failed to mark task as DONE",
+				slog.Int("id", task.ID),
+				slog.String("name", task.Name),
+				log.BBError(err),
 			)
 			return
 		}
@@ -505,10 +505,10 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 			if !ok {
 				err = errors.Errorf("%v", r)
 			}
-			log.Error("ListenTaskSkippedOrDone PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+			slog.Error("ListenTaskSkippedOrDone PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
-	log.Info("TaskSkippedOrDoneListener started")
+	slog.Info("TaskSkippedOrDoneListener started")
 	stageDoneConfirmed := map[int]bool{}
 
 	for {
@@ -597,7 +597,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					}
 					return nil
 				}(); err != nil {
-					log.Error("failed to create ActivityPipelineStageStatusUpdate activity", zap.Error(err))
+					slog.Error("failed to create ActivityPipelineStageStatusUpdate activity", log.BBError(err))
 				}
 
 				if pipelineDone {
@@ -633,12 +633,12 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						}
 						return nil
 					}(); err != nil {
-						log.Error("failed to update issue status", zap.Error(err))
+						slog.Error("failed to update issue status", log.BBError(err))
 					}
 				}
 				return nil
 			}(); err != nil {
-				log.Error("failed to handle task skipped or done", zap.Error(err))
+				slog.Error("failed to handle task skipped or done", log.BBError(err))
 			}
 		case <-ctx.Done():
 			return
@@ -683,7 +683,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create activity for task run status update", zap.Error(err))
+		slog.Error("failed to create activity for task run status update", log.BBError(err))
 	}
 }
 

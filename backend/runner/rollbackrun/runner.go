@@ -7,11 +7,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -53,7 +53,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ticker.C:
 			r.stateCfg.RollbackGenerate.Range(func(key, value any) bool {
 				task := value.(*store.TaskMessage)
-				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
+				slog.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
 				ctx, cancel := context.WithCancel(ctx)
 				r.stateCfg.RollbackCancel.Store(task.ID, cancel)
 				r.generateRollbackSQL(ctx, task)
@@ -77,11 +77,11 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 		Payload:                 "(task.payload->>'rollbackEnabled')::BOOLEAN IS TRUE AND (task.payload->>'threadId'!='' OR task.payload->>'transactionId' != '') AND task.payload->>'rollbackSqlStatus'='PENDING'",
 	})
 	if err != nil {
-		log.Error("Failed to get running DML tasks", zap.Error(err))
+		slog.Error("Failed to get running DML tasks", log.BBError(err))
 		return
 	}
 	for _, task := range taskList {
-		log.Debug("retry generate rollback SQL for task", zap.Int("ID", task.ID), zap.String("name", task.Name))
+		slog.Debug("retry generate rollback SQL for task", slog.Int("ID", task.ID), slog.String("name", task.Name))
 		r.stateCfg.RollbackGenerate.Store(task.ID, task)
 	}
 }
@@ -93,28 +93,28 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 			if !ok {
 				err = errors.Errorf("%v", r)
 			}
-			log.Error("Rollback runner PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+			slog.Error("Rollback runner PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
 
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		log.Error("Invalid database data update payload", zap.Error(err))
+		slog.Error("Invalid database data update payload", log.BBError(err))
 		return
 	}
 	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
-		log.Error("Failed to find instance", zap.Error(err))
+		slog.Error("Failed to find instance", log.BBError(err))
 		return
 	}
 	database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
-		log.Error("Failed to find database", zap.Error(err))
+		slog.Error("Failed to find database", log.BBError(err))
 		return
 	}
 	project, err := r.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
-		log.Error("Failed to find project", zap.Error(err))
+		slog.Error("Failed to find project", log.BBError(err))
 		return
 	}
 
@@ -133,7 +133,7 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 
 	statementsBuffer, err := r.generateOracleRollbackSQLImpl(ctx, payload, instance)
 	if err != nil {
-		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
+		slog.Error("Failed to generate rollback SQL statement", log.BBError(err))
 		rollbackSQLStatus = api.RollbackSQLStatusFailed
 		rollbackError = err.Error()
 	} else {
@@ -151,7 +151,7 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 		Type:       store.SheetForSQL,
 	})
 	if err != nil {
-		log.Error("failed to create database creation sheet", zap.Error(err))
+		slog.Error("failed to create database creation sheet", log.BBError(err))
 		return
 	}
 
@@ -163,10 +163,10 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
-		log.Error("Failed to patch task with the Oracle payload", zap.Int("taskID", task.ID))
+		slog.Error("Failed to patch task with the Oracle payload", slog.Int("taskID", task.ID))
 		return
 	}
-	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
+	slog.Debug("Rollback SQL generation success", slog.Int("taskID", task.ID))
 }
 
 func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) (*bytes.Buffer, error) {
@@ -220,7 +220,7 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		} else if mysql.IsErrParseBinlogName(err) {
 			rollbackError = "Failed to generate rollback SQL statement. Please check if binlog is enabled."
 		} else {
-			log.Error("Failed to generate rollback SQL statement", zap.Error(err))
+			slog.Error("Failed to generate rollback SQL statement", log.BBError(err))
 			rollbackError = err.Error()
 		}
 	} else {
@@ -238,7 +238,7 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		Type:       store.SheetForSQL,
 	})
 	if err != nil {
-		log.Error("failed to create database creation sheet", zap.Error(err))
+		slog.Error("failed to create database creation sheet", log.BBError(err))
 		return
 	}
 	patch := &api.TaskPatch{
@@ -249,10 +249,10 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
-		log.Error("Failed to patch task with the MySQL thread ID", zap.Int("taskID", task.ID))
+		slog.Error("Failed to patch task with the MySQL thread ID", slog.Int("taskID", task.ID))
 		return
 	}
-	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
+	slog.Debug("Rollback SQL generation success", slog.Int("taskID", task.ID))
 }
 
 func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.TaskDatabaseDataUpdatePayload, binlogSizeLimit int, instance *store.InstanceMessage) (string, error) {

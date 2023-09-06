@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -15,11 +16,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
 )
@@ -487,7 +486,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 
 			for _, r := range l.Value {
 				if r.Project.State != "wellFormed" {
-					log.Debug("Skip the repository whose project is not wellFormed", zap.String("organization", organization), zap.String("project", r.Project.Name), zap.String("repository", r.Name))
+					slog.Debug("Skip the repository whose project is not wellFormed", slog.String("organization", organization), slog.String("project", r.Project.Name), slog.String("repository", r.Name))
 				}
 
 				result = append(result, &vcs.Repository{
@@ -813,7 +812,7 @@ func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.Oauth
 			return errors.Wrapf(err, "POST %s", url)
 		}
 		if code == http.StatusBadRequest {
-			log.Info("Failed to create file, retrying", zap.String("url", url), zap.String("body", string(body)))
+			slog.Info("Failed to create file, retrying", slog.String("url", url), slog.String("body", string(body)))
 			continue
 		}
 		if code != http.StatusCreated {

@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -215,7 +214,7 @@ func (ctl *controller) waitBackup(ctx context.Context, databaseName, backupName 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
-	log.Debug("Waiting for backup.", zap.String("id", backupName))
+	slog.Debug("Waiting for backup.", slog.String("id", backupName))
 	for range ticker.C {
 		resp, err := ctl.databaseServiceClient.ListBackups(ctx, &v1pb.ListBackupsRequest{Parent: databaseName})
 		if err != nil {
@@ -248,7 +247,7 @@ func (ctl *controller) waitBackupArchived(ctx context.Context, databaseName, bac
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
-	log.Debug("Waiting for backup.", zap.String("id", backupName))
+	slog.Debug("Waiting for backup.", slog.String("id", backupName))
 	for range ticker.C {
 		resp, err := ctl.databaseServiceClient.ListBackups(ctx, &v1pb.ListBackupsRequest{Parent: databaseName})
 		if err != nil {

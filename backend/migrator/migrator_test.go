@@ -3,12 +3,12 @@ package migrator
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"path"
 	"testing"
 
 	"github.com/blang/semver/v4"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -146,7 +146,7 @@ var (
 )
 
 func TestMigrationCompatibility(t *testing.T) {
-	log.SetLevel(zap.DebugLevel)
+	log.GLogLevel.Set(slog.LevelDebug)
 	pgDir := t.TempDir()
 	pgBinDir, err := postgres.Install(path.Join(pgDir, "resource"))
 	pgDataDir := path.Join(pgDir, "data")
