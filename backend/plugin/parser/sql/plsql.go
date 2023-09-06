@@ -868,3 +868,17 @@ func PLSQLNormalizeIndexName(indexName parser.IIndex_nameContext) (string, strin
 
 	return "", PLSQLNormalizeIdentifierContext(indexName.Identifier())
 }
+
+// PLSQLNormalizeConstraintName returns the normalized constraint name from the given context.
+func PLSQLNormalizeConstraintName(constraintName parser.IConstraint_nameContext) (string, string) {
+	if constraintName == nil {
+		return "", ""
+	}
+
+	if constraintName.Id_expression(0) != nil {
+		return PLSQLNormalizeIdentifierContext(constraintName.Identifier()),
+			PLSQLNormalizeIDExpression(constraintName.Id_expression(0))
+	}
+
+	return "", PLSQLNormalizeIdentifierContext(constraintName.Identifier())
+}

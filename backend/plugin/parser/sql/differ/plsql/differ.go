@@ -29,10 +29,75 @@ type SchemaDiffer struct {
 }
 
 type diffNode struct {
-	schemaName  string
-	dropTable   []string
-	createTable []string
-	addColumn   []string
+	schemaName     string
+	dropConstraint []string
+	dropColumn     []string
+	dropTable      []string
+	createTable    []string
+	addColumn      []string
+	modifyColumn   []string
+	addConstraint  []string
+}
+
+func (diff *diffNode) String() (string, error) {
+	var buf strings.Builder
+	for _, dropConstraint := range diff.dropConstraint {
+		if _, err := buf.WriteString(dropConstraint); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	for _, dropColumn := range diff.dropColumn {
+		if _, err := buf.WriteString(dropColumn); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	for _, dropTable := range diff.dropTable {
+		if _, err := buf.WriteString(dropTable); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	for _, createTable := range diff.createTable {
+		if _, err := buf.WriteString(createTable); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	for _, addColumn := range diff.addColumn {
+		if _, err := buf.WriteString(addColumn); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	for _, modifyColumn := range diff.modifyColumn {
+		if _, err := buf.WriteString(modifyColumn); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	for _, addConstraint := range diff.addConstraint {
+		if _, err := buf.WriteString(addConstraint); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
 }
 
 // SchemaDiff implements the differ.SchemaDiffer interface.
@@ -80,6 +145,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 		diff.dropTable = append(diff.dropTable, fmt.Sprintf(`DROP TABLE "%s"."%s";`, oldSchemaInfo.name, table.name))
 	}
 
+	// return diff.String()
 	return "", nil
 }
 
@@ -87,8 +153,192 @@ func (diff *diffNode) diffTable(oldTable, newTable *tableInfo) error {
 	if err := diff.diffColumn(oldTable, newTable); err != nil {
 		return err
 	}
+	if err := diff.diffConstraint(oldTable, newTable); err != nil {
+		return err
+	}
 
 	return nil
+}
+
+func buildConstraintMap(table *tableInfo) map[string]plsql.IRelational_propertyContext {
+	constraintMap := make(map[string]plsql.IRelational_propertyContext)
+	if table.createTable.Relational_table() == nil {
+		return constraintMap
+	}
+	for _, item := range table.createTable.Relational_table().AllRelational_property() {
+		switch {
+		case item.Out_of_line_constraint() != nil:
+			constraint := item.Out_of_line_constraint()
+			if constraint.Constraint_name() == nil {
+				continue
+			}
+			_, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
+			if constraintName == "" {
+				continue
+			}
+			constraintMap[constraintName] = item
+		case item.Out_of_line_ref_constraint() != nil:
+			constraint := item.Out_of_line_ref_constraint()
+			if constraint.Constraint_name() == nil {
+				continue
+			}
+			_, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
+			if constraintName == "" {
+				continue
+			}
+			constraintMap[constraintName] = item
+		}
+	}
+	return constraintMap
+}
+
+func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
+	if newTable.createTable.Relational_table() == nil {
+		// TODO: support object_table and xmltype_table
+		return nil
+	}
+
+	var addConstraints []plsql.IRelational_propertyContext
+	var dropConstraints []string
+	oldConstraintMap := buildConstraintMap(oldTable)
+	for _, item := range newTable.createTable.Relational_table().AllRelational_property() {
+		switch {
+		case item.Out_of_line_constraint() != nil:
+			constraint := item.Out_of_line_constraint()
+			if constraint.Constraint_name() == nil {
+				continue
+			}
+			schema, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
+			if schema != "" && schema != diff.schemaName {
+				continue
+			}
+			if constraintName == "" {
+				continue
+			}
+			oldConstraint, ok := oldConstraintMap[constraintName]
+			if !ok {
+				addConstraints = append(addConstraints, item)
+				continue
+			}
+			// Compare the constraint definition.
+			if !isConstraintEqual(oldConstraint, item) {
+				addConstraints = append(addConstraints, item)
+				dropConstraints = append(dropConstraints, constraintName)
+			}
+			delete(oldConstraintMap, constraintName)
+		case item.Out_of_line_ref_constraint() != nil:
+			constraint := item.Out_of_line_ref_constraint()
+			if constraint.Constraint_name() == nil {
+				continue
+			}
+			schema, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
+			if schema != "" && schema != diff.schemaName {
+				continue
+			}
+			if constraintName == "" {
+				continue
+			}
+			oldConstraint, ok := oldConstraintMap[constraintName]
+			if !ok {
+				addConstraints = append(addConstraints, item)
+				continue
+			}
+			// Compare the constraint definition.
+			if !isConstraintEqual(oldConstraint, item) {
+				addConstraints = append(addConstraints, item)
+				dropConstraints = append(dropConstraints, constraintName)
+			}
+			delete(oldConstraintMap, constraintName)
+		}
+	}
+	for constraintName := range oldConstraintMap {
+		dropConstraints = append(dropConstraints, constraintName)
+	}
+
+	return diff.appendConstraintDiff(newTable.name, addConstraints, dropConstraints)
+}
+
+func (diff *diffNode) appendConstraintDiff(tableName string, addConstraints []plsql.IRelational_propertyContext, dropConstraints []string) error {
+	for _, constraint := range addConstraints {
+		if err := diff.appendAddConstraint(tableName, constraint); err != nil {
+			return err
+		}
+	}
+	for _, constraint := range dropConstraints {
+		if err := diff.appendDropConstraint(tableName, constraint); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (diff *diffNode) appendDropConstraint(tableName string, constraint string) error {
+	var buf strings.Builder
+
+	if _, err := buf.WriteString(`ALTER TABLE "`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(diff.schemaName); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`"."`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(tableName); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`" DROP CONSTRAINT "`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(diff.schemaName); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`"."`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(constraint); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("\";"); err != nil {
+		return err
+	}
+	diff.dropConstraint = append(diff.dropConstraint, buf.String())
+	return nil
+}
+
+func (diff *diffNode) appendAddConstraint(tableName string, constraint plsql.IRelational_propertyContext) error {
+	var buf strings.Builder
+
+	if _, err := buf.WriteString(`ALTER TABLE "`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(diff.schemaName); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`"."`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(tableName); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`" ADD `); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(constraint.GetParser().GetTokenStream().GetTextFromRuleContext(constraint)); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(";"); err != nil {
+		return err
+	}
+	diff.addConstraint = append(diff.addConstraint, buf.String())
+	return nil
+}
+
+func isConstraintEqual(oldConstraint, newConstraint plsql.IRelational_propertyContext) bool {
+	// TODO: compare constraint definition instead of text.
+	oldString := oldConstraint.GetParser().GetTokenStream().GetTextFromRuleContext(oldConstraint)
+	newString := newConstraint.GetParser().GetTokenStream().GetTextFromRuleContext(newConstraint)
+	return oldString == newString
 }
 
 func buildColumnMap(table *tableInfo) map[string]plsql.IColumn_definitionContext {
@@ -194,6 +444,7 @@ func (diff *diffNode) appendDropColumn(tableName string, dropColumns []string) e
 	if _, err := buf.WriteString("\n);"); err != nil {
 		return err
 	}
+	diff.dropColumn = append(diff.dropColumn, buf.String())
 	return nil
 }
 
@@ -231,6 +482,7 @@ func (diff *diffNode) appendModifyColumn(tableName string, modifyColumns []plsql
 	if _, err := buf.WriteString("\n);"); err != nil {
 		return err
 	}
+	diff.modifyColumn = append(diff.modifyColumn, buf.String())
 	return nil
 }
 
@@ -268,6 +520,7 @@ func (diff *diffNode) appendAddColumn(tableName string, addColumns []plsql.IColu
 	if _, err := buf.WriteString("\n);"); err != nil {
 		return err
 	}
+	diff.addColumn = append(diff.addColumn, buf.String())
 	return nil
 }
 
