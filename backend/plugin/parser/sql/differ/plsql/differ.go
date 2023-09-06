@@ -145,8 +145,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 		diff.dropTable = append(diff.dropTable, fmt.Sprintf(`DROP TABLE "%s"."%s";`, oldSchemaInfo.name, table.name))
 	}
 
-	// return diff.String()
-	return "", nil
+	return diff.String()
 }
 
 func (diff *diffNode) diffTable(oldTable, newTable *tableInfo) error {
