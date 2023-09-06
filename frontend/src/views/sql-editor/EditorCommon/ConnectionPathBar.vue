@@ -13,13 +13,18 @@
           />
         </template>
         <p class="py-1">
-          {{ $t("instance.no-read-only-data-source-warn") }}
-          <span
-            class="underline text-accent cursor-pointer hover:opacity-80"
-            @click="gotoInstanceDetailPage"
-          >
-            {{ $t("sql-editor.create-read-only-data-source") }}
-          </span>
+          <template v-if="allowManageInstance">
+            {{ $t("instance.no-read-only-data-source-warn-for-owner-dba") }}
+            <span
+              class="underline text-accent cursor-pointer hover:opacity-80"
+              @click="gotoInstanceDetailPage"
+            >
+              {{ $t("sql-editor.create-read-only-data-source") }}
+            </span>
+          </template>
+          <template v-else>
+            {{ $t("instance.no-read-only-data-source-warn-for-developer") }}
+          </template>
         </p>
       </NPopover>
 
@@ -87,11 +92,16 @@ import {
   InstanceV1EngineIcon,
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
-import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
+import {
+  useTabStore,
+  useDatabaseV1ByUID,
+  useInstanceV1ByUID,
+  useCurrentUserV1,
+} from "@/store";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { instanceV1Slug } from "@/utils";
+import { hasWorkspacePermissionV1, instanceV1Slug } from "@/utils";
 
 const router = useRouter();
 const tabStore = useTabStore();
@@ -137,6 +147,14 @@ const showReadonlyDatasourceHint = computed(() => {
     !isAdminMode.value &&
     selectedInstance.value.uid !== String(UNKNOWN_ID) &&
     !hasReadonlyDataSource.value
+  );
+});
+
+const currentUserV1 = useCurrentUserV1();
+const allowManageInstance = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-instance",
+    currentUserV1.value.userRole
   );
 });
 
