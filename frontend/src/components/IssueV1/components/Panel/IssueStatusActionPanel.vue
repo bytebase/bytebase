@@ -7,7 +7,7 @@
     @close="$emit('close')"
   >
     <template #default>
-      <div v-if="action" class="flex flex-col gap-y-4">
+      <div v-if="action" class="flex flex-col gap-y-4 px-1">
         <div class="flex flex-col gap-y-1">
           <div class="font-medium text-control">
             {{ $t("common.issue") }}

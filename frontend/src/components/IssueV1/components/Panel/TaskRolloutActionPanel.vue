@@ -3,11 +3,14 @@
     :show="action !== undefined"
     :title="title"
     :loading="state.loading"
-    @show="comment = ''"
+    @show="resetState"
     @close="$emit('close')"
   >
     <template #default>
-      <div v-if="action" class="flex flex-col gap-y-4 h-full overflow-y-hidden">
+      <div
+        v-if="action"
+        class="flex flex-col gap-y-4 h-full overflow-y-hidden px-1"
+      >
         <div
           class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
         >
@@ -37,13 +40,34 @@
             </ul>
           </div>
         </div>
+
         <PlanCheckBar
-          v-if="taskList.length === 1 && action === 'ROLLOUT'"
+          v-if="action === 'ROLLOUT'"
           :allow-run-checks="false"
-          :task="taskList[0]"
+          :plan-check-run-list="planCheckRunList"
           class="shrink-0 flex-col gap-y-1"
           label-class="!text-base"
         />
+
+        <div v-if="planCheckErrors.length > 0" class="flex flex-col">
+          <ErrorList :errors="planCheckErrors" :bullets="false" class="text-sm">
+            <template #prefix>
+              <heroicons:exclamation-triangle
+                class="text-warning w-4 h-4 inline-block mr-1 mb-px"
+              />
+            </template>
+          </ErrorList>
+          <div>
+            <NCheckbox v-model:checked="performActionAnyway">
+              {{
+                $t("issue.action-anyway", {
+                  action: taskRolloutActionDialogButtonName(action, taskList),
+                })
+              }}
+            </NCheckbox>
+          </div>
+        </div>
+
         <div class="flex flex-col gap-y-1 shrink-0">
           <p class="font-medium text-control">
             {{ $t("common.comment") }}
@@ -65,24 +89,36 @@
         <NButton @click="$emit('close')">
           {{ $t("common.cancel") }}
         </NButton>
-        <NButton
-          v-bind="taskRolloutActionButtonProps(action)"
-          @click="handleConfirm(action, comment)"
-        >
-          {{ taskRolloutActionDialogButtonName(action, taskList) }}
-        </NButton>
+
+        <NTooltip :disabled="confirmErrors.length === 0" placement="top">
+          <template #trigger>
+            <NButton
+              :disabled="confirmErrors.length > 0"
+              v-bind="taskRolloutActionButtonProps(action)"
+              @click="handleConfirm(action, comment)"
+            >
+              {{ taskRolloutActionDialogButtonName(action, taskList) }}
+            </NButton>
+          </template>
+          <template #default>
+            <ErrorList :errors="confirmErrors" />
+          </template>
+        </NTooltip>
       </div>
     </template>
   </CommonDrawer>
 </template>
 
 <script setup lang="ts">
-import { groupBy } from "lodash-es";
+import { groupBy, uniqBy } from "lodash-es";
+import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { PlanCheckBar } from "@/components/IssueV1/components/PlanCheckSection";
 import {
   TaskRolloutAction,
+  planCheckRunListForTask,
+  planCheckRunSummaryForCheckRunList,
   stageForTask,
   taskRolloutActionButtonProps,
   taskRolloutActionDialogButtonName,
@@ -97,6 +133,7 @@ import {
   TaskRun,
   TaskRun_Status,
 } from "@/types/proto/v1/rollout_service";
+import CommonDrawer from "./CommonDrawer.vue";
 
 type LocalState = {
   loading: boolean;
@@ -116,6 +153,7 @@ const state = reactive<LocalState>({
 });
 const { issue, events } = useIssueContext();
 const comment = ref("");
+const performActionAnyway = ref(false);
 
 const title = computed(() => {
   if (!props.action) return "";
@@ -135,6 +173,44 @@ const distinctTaskList = computed(() => {
     const [task, ...similar] = groups[taskName];
     return { task, similar };
   });
+});
+
+const planCheckRunList = computed(() => {
+  const list = props.taskList.flatMap((task) =>
+    planCheckRunListForTask(issue.value, task)
+  );
+  return uniqBy(list, (checkRun) => checkRun.uid);
+});
+
+const planCheckErrors = computed(() => {
+  const errors: string[] = [];
+  if (props.action === "ROLLOUT") {
+    const summary = planCheckRunSummaryForCheckRunList(planCheckRunList.value);
+    if (summary.errorCount > 0 || summary.warnCount) {
+      errors.push(
+        t(
+          "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+        )
+      );
+    }
+    if (summary.runningCount > 0) {
+      errors.push(
+        t(
+          "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
+        )
+      );
+    }
+  }
+
+  return errors;
+});
+
+const confirmErrors = computed(() => {
+  const errors: string[] = [];
+  if (planCheckErrors.value.length > 0 && !performActionAnyway.value) {
+    errors.push(...planCheckErrors.value);
+  }
+  return errors;
 });
 
 const handleConfirm = async (
@@ -202,5 +278,10 @@ const handleConfirm = async (
   // changeIssueStatus(transition.to, comment);
   // isTransiting.value = false;
   // emit("updated");
+};
+
+const resetState = () => {
+  comment.value = "";
+  performActionAnyway.value = false;
 };
 </script>

@@ -3,11 +3,11 @@
     :show="action !== undefined"
     :title="title"
     :loading="state.loading"
-    @show="comment = ''"
+    @show="resetState"
     @close="$emit('close')"
   >
     <template #default>
-      <div v-if="action" class="flex flex-col gap-y-4">
+      <div v-if="action" class="flex flex-col gap-y-4 px-1">
         <div class="flex flex-col gap-y-1">
           <div class="font-medium text-control">
             {{ $t("common.issue") }}
@@ -18,17 +18,14 @@
         </div>
 
         <PlanCheckBar
+          v-if="issue.planCheckRunList.length > 0"
           :allow-run-checks="false"
           class="shrink-0 flex-col gap-y-1"
           label-class="!text-base"
         />
 
         <div v-if="planCheckErrors.length > 0" class="flex flex-col">
-          <ErrorList
-            :errors="planCheckErrors"
-            :bullets="false"
-            class="textinfolabel"
-          >
+          <ErrorList :errors="planCheckErrors" :bullets="false" class="text-sm">
             <template #prefix>
               <heroicons:exclamation-triangle
                 class="text-warning w-4 h-4 inline-block mr-1 mb-px"
@@ -234,5 +231,10 @@ const handleConfirm = async (onSuccess: () => void) => {
     state.loading = false;
     emit("close");
   }
+};
+
+const resetState = () => {
+  comment.value = "";
+  performActionAnyway.value = false;
 };
 </script>
