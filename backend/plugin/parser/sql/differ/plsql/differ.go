@@ -254,6 +254,10 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 		dropConstraints = append(dropConstraints, constraintName)
 	}
 
+	sort.Slice(dropConstraints, func(i, j int) bool {
+		return dropConstraints[i] < dropConstraints[j]
+	})
+
 	return diff.appendConstraintDiff(newTable.name, addConstraints, dropConstraints)
 }
 
@@ -386,6 +390,10 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) error {
 	for _, column := range oldColumnMap {
 		dropColumns = append(dropColumns, parser.PLSQLNormalizeIdentifierContext(column.Column_name().Identifier()))
 	}
+
+	sort.Slice(dropColumns, func(i, j int) bool {
+		return dropColumns[i] < dropColumns[j]
+	})
 
 	return diff.appendColumnDiff(oldTable.name, addColumns, modifyColumns, dropColumns)
 }
