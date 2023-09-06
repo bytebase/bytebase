@@ -1436,7 +1436,8 @@
     "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
     "classification": {
       "self": "Clasificación"
-    }
+    },
+    "recent": "Reciente"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
