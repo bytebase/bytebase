@@ -432,6 +432,10 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 
 // UndeleteUser undeletes a user.
 func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUserRequest) (*v1pb.User, error) {
+	if err := s.userCountGuard(ctx); err != nil {
+		return nil, err
+	}
+
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	userID, err := common.GetUserID(request.Name)
 	if err != nil {
@@ -911,13 +915,12 @@ func generateRecoveryCodes(n int) ([]string, error) {
 func (s *AuthService) userCountGuard(ctx context.Context) error {
 	userLimit := s.licenseService.GetPlanLimitValue(ctx, enterpriseAPI.PlanLimitMaximumUser)
 
-	count, err := s.store.CountPrincipal(ctx)
+	count, err := s.store.CountActiveUsers(ctx)
 	if err != nil {
 		return status.Errorf(codes.Internal, err.Error())
 	}
 	if int64(count) >= userLimit {
 		return status.Errorf(codes.ResourceExhausted, "reached the maximum user count %d", userLimit)
 	}
-
 	return nil
 }
