@@ -29,9 +29,8 @@ type TaskMessage struct {
 	StageID    int
 	InstanceID int
 	// Could be empty for creating database task when the task isn't yet completed successfully.
-	DatabaseID          *int
-	TaskRunRawList      []*TaskRunMessage
-	TaskCheckRunRawList []*TaskCheckRunMessage
+	DatabaseID     *int
+	TaskRunRawList []*TaskRunMessage
 
 	// Domain specific fields
 	Name              string
@@ -138,13 +137,6 @@ func (s *Store) composeTask(ctx context.Context, task *TaskMessage) (*api.Task, 
 	if err != nil {
 		return nil, err
 	}
-	taskCheckRunFind := &TaskCheckRunFind{
-		TaskID: &composedTask.ID,
-	}
-	taskCheckRunRawList, err := s.ListTaskCheckRuns(ctx, taskCheckRunFind)
-	if err != nil {
-		return nil, err
-	}
 	for _, taskRunRaw := range taskRunRawList {
 		taskRun := taskRunRaw.toTaskRun()
 		creator, err := s.GetPrincipalByID(ctx, taskRun.CreatorID)
@@ -159,22 +151,6 @@ func (s *Store) composeTask(ctx context.Context, task *TaskMessage) (*api.Task, 
 		}
 		taskRun.Updater = updater
 		composedTask.TaskRunList = append(composedTask.TaskRunList, taskRun)
-	}
-	for _, taskCheckRunRaw := range taskCheckRunRawList {
-		composedTaskCheckRun := taskCheckRunRaw.toTaskCheckRun()
-		creator, err := s.GetPrincipalByID(ctx, taskCheckRunRaw.CreatorID)
-		if err != nil {
-			return nil, err
-		}
-		composedTaskCheckRun.Creator = creator
-		updater, err := s.GetPrincipalByID(ctx, taskCheckRunRaw.UpdaterID)
-		if err != nil {
-			return nil, err
-		}
-		composedTaskCheckRun.Updater = updater
-		composedTaskCheckRun.CreatedTs = taskCheckRunRaw.CreatedTs
-		composedTaskCheckRun.UpdatedTs = taskCheckRunRaw.UpdatedTs
-		composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, composedTaskCheckRun)
 	}
 
 	instance, err := s.GetInstanceByID(ctx, composedTask.InstanceID)
