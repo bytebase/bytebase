@@ -13,16 +13,28 @@ import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { useProjectV1ListByCurrentUser } from "@/store";
+import { useCurrentUserV1, useProjectV1ListByCurrentUser } from "@/store";
+import { DEFAULT_PROJECT_ID } from "@/types";
 import { BBOutlineItem } from "../bbkit/types";
-import { projectV1Slug } from "../utils";
+import { isMemberOfProjectV1, projectV1Slug } from "../utils";
 
 const { t } = useI18n();
 const router = useRouter();
+const currentUserV1 = useCurrentUserV1();
 const { projectList } = useProjectV1ListByCurrentUser();
 
+const filteredProjectList = computed(() => {
+  const list = projectList.value.filter(
+    (project) =>
+      project.uid != String(DEFAULT_PROJECT_ID) &&
+      // Only show projects that the user is a member of.
+      isMemberOfProjectV1(project.iamPolicy, currentUserV1.value)
+  );
+  return list;
+});
+
 const outlineItemList = computed((): BBOutlineItem[] => {
-  return projectList.value
+  return filteredProjectList.value
     .map((project): BBOutlineItem => {
       return {
         id: project.uid,
