@@ -43,6 +43,7 @@ import {
   extractProjectResourceName,
   uidFromSlug,
   keyBy,
+  extractUserUID,
 } from "@/utils";
 import DatabaseGroupIcon from "./DatabaseGroupIcon.vue";
 import EngineIcon from "./Icon/EngineIcon.vue";
@@ -60,11 +61,15 @@ type RecentVisitDatabase = {
 };
 
 const useRecentDatabaseList = () => {
-  const STORAGE_KEY = "bb.ui.recent-database-list";
+  const me = useCurrentUserV1();
+  const STORAGE_KEY_PREFIX = "bb.ui.recent-database-list";
   const MAX_HISTORY = 10;
+  // The format of storage key if {HARDCODED_PREFIX}.#{USER_UID}
+  // to provide separate storage for each user in a same browser.
+  const KEY = `${STORAGE_KEY_PREFIX}.#${extractUserUID(me.value.name)}`;
 
   const route = useRoute();
-  const recentList = useStorage(STORAGE_KEY, [] as RecentVisitDatabase[]);
+  const recentList = useStorage(KEY, [] as RecentVisitDatabase[]);
   const uid = computed(() => {
     if (route.matched.length === 0) {
       return undefined;
