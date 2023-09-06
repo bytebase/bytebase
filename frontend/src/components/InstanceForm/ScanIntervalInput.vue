@@ -13,7 +13,7 @@
         value="DEFAULT"
         @update:checked="handleModeChange('DEFAULT')"
       >
-        {{ $t("instance.scan-interval.default-daily") }}
+        {{ $t("instance.scan-interval.default-never") }}
       </NRadio>
 
       <NRadio
