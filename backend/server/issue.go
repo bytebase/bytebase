@@ -44,7 +44,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return err
 		}
 
-		s.MetricReporter.Report(ctx, &metric.Metric{
+		s.metricReporter.Report(ctx, &metric.Metric{
 			Name:  metricAPI.IssueCreateMetricName,
 			Value: 1,
 			Labels: map[string]any{
@@ -281,7 +281,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				Level:        api.ActivityInfo,
 				Payload:      string(payload),
 			}
-			if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 				Issue: updatedIssue,
 			}); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Title)).SetInternal(err)
@@ -322,7 +322,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
 
-		if err := utils.ChangeIssueStatus(ctx, s.store, s.ActivityManager, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment); err != nil {
+		if err := utils.ChangeIssueStatus(ctx, s.store, s.activityManager, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment); err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
 			} else if common.ErrorCode(err) == common.Conflict {
@@ -417,7 +417,7 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 		Level:        api.ActivityInfo,
 		Payload:      string(bytes),
 	}
-	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: issue,
 	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
