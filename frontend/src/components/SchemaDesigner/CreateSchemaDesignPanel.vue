@@ -88,7 +88,7 @@ import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useDatabaseV1Store,
-  useProjectV1ByUID,
+  useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
@@ -137,6 +137,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
+const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const sheetStore = useSheetV1Store();
@@ -218,8 +219,8 @@ const cancel = () => {
 };
 
 const project = computed(() => {
-  const { project } = useProjectV1ByUID(state.projectId || "");
-  return project.value;
+  const project = projectStore.getProjectByUID(state.projectId || "");
+  return project;
 });
 
 const handleConfirm = async () => {
