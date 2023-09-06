@@ -10,3 +10,11 @@ export const groupBy = <T, K>(
     return map;
   }, new Map<K, T[]>());
 };
+
+export const keyBy = <T, K>(array: T[], keyOf: (item: T) => K): Map<K, T> => {
+  return array.reduce((map, item) => {
+    const key = keyOf(item);
+    map.set(key, item);
+    return map;
+  }, new Map<K, T>());
+};
