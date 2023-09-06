@@ -73,7 +73,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			taskPatch := *taskPatch
 			taskPatch.ID = task.ID
 			// TODO(d): patch tasks in batch.
-			if err := patchTask(ctx, s.store, s.ActivityManager, task, &taskPatch, issue); err != nil {
+			if err := patchTask(ctx, s.store, s.activityManager, task, &taskPatch, issue); err != nil {
 				return err
 			}
 		}
@@ -157,7 +157,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "cannot generate rollback SQL statement for a non-DML task")
 		}
 
-		if err := patchTask(ctx, s.store, s.ActivityManager, task, taskPatch, issue); err != nil {
+		if err := patchTask(ctx, s.store, s.activityManager, task, taskPatch, issue); err != nil {
 			return err
 		}
 

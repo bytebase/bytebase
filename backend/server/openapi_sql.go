@@ -175,7 +175,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
 	}
 
-	s.MetricReporter.Report(ctx, &metric.Metric{
+	s.metricReporter.Report(ctx, &metric.Metric{
 		Name:  metricAPI.SQLAdviseAPIMetricName,
 		Value: 1,
 		Labels: map[string]any{

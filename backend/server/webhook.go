@@ -1240,7 +1240,7 @@ func (s *Server) processPushEvent(ctx context.Context, repoInfoList []*repoInfo,
 				createdMessageList = append(createdMessageList, createdMessage)
 			} else {
 				for _, activityCreate := range activityCreateList {
-					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
+					if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 						slog.Warn("Failed to create project activity for the ignored repository files", log.BBError(err))
 					}
 				}
@@ -1659,7 +1659,7 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 		Comment:      fmt.Sprintf("Created issue %q.", issue.Title),
 		Payload:      string(activityPayload),
 	}
-	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issueUID)).SetInternal(err)
 	}
 
@@ -2124,7 +2124,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			SheetID:   &sheet.UID,
 			UpdaterID: api.SystemBotID,
 		}
-		if err := patchTask(ctx, s.store, s.ActivityManager, task, &taskPatch, issue); err != nil {
+		if err := patchTask(ctx, s.store, s.activityManager, task, &taskPatch, issue); err != nil {
 			slog.Error("Failed to patch task with the same migration version", slog.Int("issueID", issue.UID), slog.Int("taskID", task.ID), log.BBError(err))
 			return nil
 		}
