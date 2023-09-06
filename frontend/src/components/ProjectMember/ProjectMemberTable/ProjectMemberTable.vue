@@ -25,11 +25,13 @@
       </div>
     </template>
     <template #item="{ item: projectMember }: ProjectMemberRow">
-      <div v-if="showSelectionColumn" class="bb-grid-cell items-center !px-2">
-        <slot name="selection" :member="projectMember" />
+      <div v-if="showSelectionColumn" class="bb-grid-cell items-start !px-2">
+        <div class="h-10 flex flex-col items-center justify-center">
+          <slot name="selection" :member="projectMember" />
+        </div>
       </div>
-      <div class="bb-grid-cell gap-x-2">
-        <UserAvatar :user="projectMember.user" />
+      <div class="bb-grid-cell items-start gap-x-2">
+        <UserAvatar class="mt-1" :user="projectMember.user" />
         <div class="flex flex-col">
           <div class="flex flex-row items-center space-x-2">
             <router-link
@@ -86,25 +88,27 @@
           </p>
         </div>
       </div>
-      <div class="bb-grid-cell gap-x-2 justify-end">
-        <NTooltip v-if="allowAdmin" trigger="hover">
-          <template #trigger>
-            <button
-              class="cursor-pointer opacity-60 hover:opacity-100"
-              @click="editingMember = projectMember"
-            >
-              <heroicons-outline:pencil class="w-4 h-4" />
-            </button>
-          </template>
-          {{ $t("common.edit") }}
-        </NTooltip>
-        <NButton
-          v-else-if="allowView(projectMember)"
-          size="tiny"
-          @click="editingMember = projectMember"
-        >
-          {{ $t("common.view") }}
-        </NButton>
+      <div class="bb-grid-cell items-start gap-x-2 justify-end">
+        <div class="h-10 flex flex-col items-center justify-center">
+          <NTooltip v-if="allowAdmin" trigger="hover">
+            <template #trigger>
+              <button
+                class="cursor-pointer opacity-60 hover:opacity-100"
+                @click="editingMember = projectMember"
+              >
+                <heroicons-outline:pencil class="w-4 h-4" />
+              </button>
+            </template>
+            {{ $t("common.edit") }}
+          </NTooltip>
+          <NButton
+            v-else-if="allowView(projectMember)"
+            size="tiny"
+            @click="editingMember = projectMember"
+          >
+            {{ $t("common.view") }}
+          </NButton>
+        </div>
       </div>
     </template>
 
