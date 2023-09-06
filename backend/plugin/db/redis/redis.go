@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"strconv"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -95,7 +95,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 	// switch to cluster if cluster is enabled.
 	if clusterEnabled {
 		if err := d.rdb.Close(); err != nil {
-			log.Warn("failed to close redis driver when switching to redis cluster driver", zap.Error(err))
+			slog.Warn("failed to close redis driver when switching to redis cluster driver", log.BBError(err))
 		}
 		d.rdb = redis.NewClusterClient(&redis.ClusterOptions{
 			Addrs:     []string{addr},

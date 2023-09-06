@@ -4,6 +4,7 @@ package metricreport
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -16,8 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric/segment"
 	"github.com/bytebase/bytebase/backend/store"
-
-	"go.uber.org/zap"
 )
 
 const (
@@ -79,7 +78,7 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 
-	log.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
+	slog.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
 
 	for {
 		select {
@@ -91,7 +90,7 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = errors.Errorf("%v", r)
 						}
-						log.Error("Metrics reporter PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+						slog.Error("Metrics reporter PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 					}
 				}()
 
@@ -99,19 +98,19 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 				// identify will be triggered in every schedule loop so that we can update the latest workspace profile such as subscription plan.
 				workspaceID, err := m.identify(ctx)
 				if err != nil {
-					log.Error("failed to report identifier", zap.Error(err))
+					slog.Error("failed to report identifier", log.BBError(err))
 					return
 				}
 
 				for name, collector := range m.collectors {
-					log.Debug("Run metric collector", zap.String("collector", name))
+					slog.Debug("Run metric collector", slog.String("collector", name))
 
 					metricList, err := collector.Collect(ctx)
 					if err != nil {
-						log.Error(
+						slog.Error(
 							"Failed to collect metric",
-							zap.String("collector", name),
-							zap.Error(err),
+							slog.String("collector", name),
+							log.BBError(err),
 						)
 						continue
 					}
@@ -139,10 +138,10 @@ func (m *Reporter) Register(metricName metric.Name, collector metric.Collector) 
 
 func (m *Reporter) reportMetric(id string, metric *metric.Metric) {
 	if err := m.reporter.Report(id, metric); err != nil {
-		log.Error(
+		slog.Error(
 			"Failed to report metric",
-			zap.String("metric", string(metric.Name)),
-			zap.Error(err),
+			slog.String("metric", string(metric.Name)),
+			log.BBError(err),
 		)
 	}
 }
@@ -172,7 +171,7 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 
 	user, err := m.store.GetUserByID(ctx, api.PrincipalIDForFirstUser)
 	if err != nil {
-		log.Debug("unable to get the first principal user", zap.Int("id", api.PrincipalIDForFirstUser), zap.Error(err))
+		slog.Debug("unable to get the first principal user", slog.Int("id", api.PrincipalIDForFirstUser), log.BBError(err))
 	}
 	email := ""
 	name := ""
@@ -212,7 +211,7 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 func (m *Reporter) Report(ctx context.Context, metric *metric.Metric) {
 	workspaceID, err := m.store.GetWorkspaceID(ctx)
 	if err != nil {
-		log.Error("failed to find the workspace id", zap.Error(err))
+		slog.Error("failed to find the workspace id", log.BBError(err))
 		return
 	}
 	m.reportMetric(workspaceID, metric)

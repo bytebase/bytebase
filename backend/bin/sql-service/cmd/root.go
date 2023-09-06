@@ -4,13 +4,13 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -103,13 +103,12 @@ func init() {
 
 func start() {
 	if flags.debug {
-		log.SetLevel(zap.DebugLevel)
+		log.GLogLevel.Set(slog.LevelDebug)
 	}
-	defer log.Sync()
 
 	// check flags
 	if !common.HasPrefixes(flags.host, "http://", "https://") {
-		log.Error(fmt.Sprintf("--host %s must start with http:// or https://", flags.host))
+		slog.Error(fmt.Sprintf("--host %s must start with http:// or https://", flags.host))
 		return
 	}
 
@@ -125,7 +124,7 @@ func start() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		sig := <-c
-		log.Info(fmt.Sprintf("%s received.", sig.String()))
+		slog.Info(fmt.Sprintf("%s received.", sig.String()))
 		if s != nil {
 			_ = s.Shutdown(ctx)
 		}
@@ -134,14 +133,14 @@ func start() {
 
 	s, err := server.NewServer(ctx, activeProfile)
 	if err != nil {
-		log.Error("Cannot new server", zap.Error(err))
+		slog.Error("Cannot new server", log.BBError(err))
 		return
 	}
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", activeProfile.Version, activeProfile.BackendHost, activeProfile.BackendPort))
 	// Execute program.
 	if err := s.Run(); err != nil {
 		if err != http.ErrServerClosed {
-			log.Error(err.Error())
+			slog.Error(err.Error())
 			_ = s.Shutdown(ctx)
 			cancel()
 		}

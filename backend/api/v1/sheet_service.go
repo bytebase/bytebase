@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -277,14 +277,14 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 		}
 		if !canAccess {
-			log.Warn("cannot access sheet", zap.String("name", sheet.Name))
+			slog.Warn("cannot access sheet", slog.String("name", sheet.Name))
 			continue
 		}
 		v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 		if err != nil {
 			st := status.Convert(err)
 			if st.Code() == codes.NotFound {
-				log.Debug("failed to found resource for sheet", zap.Error(err), zap.Int("id", sheet.UID), zap.Int("project", sheet.ProjectUID))
+				slog.Debug("failed to found resource for sheet", log.BBError(err), slog.Int("id", sheet.UID), slog.Int("project", sheet.ProjectUID))
 				continue
 			}
 			return nil, err

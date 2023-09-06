@@ -7,12 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os/exec"
 	"regexp"
 	"strings"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
 
@@ -100,10 +99,10 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	// Before we dump the real data, we should record the binlog position for PITR.
 	// Please refer to https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md#full-backup for details.
 	if !schemaOnly {
-		log.Debug("flush tables in database with read locks",
-			zap.String("database", driver.databaseName))
+		slog.Debug("flush tables in database with read locks",
+			slog.String("database", driver.databaseName))
 		if err := FlushTablesWithReadLock(ctx, driver.dbType, conn, driver.databaseName); err != nil {
-			log.Error("flush tables failed", zap.Error(err))
+			slog.Error("flush tables failed", log.BBError(err))
 			return "", err
 		}
 
@@ -111,9 +110,9 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 		if err != nil {
 			return "", err
 		}
-		log.Debug("binlog coordinate at dump time",
-			zap.String("fileName", binlog.FileName),
-			zap.Int64("position", binlog.Position))
+		slog.Debug("binlog coordinate at dump time",
+			slog.String("fileName", binlog.FileName),
+			slog.Int64("position", binlog.Position))
 
 		payload := api.BackupPayload{BinlogInfo: binlog}
 		payloadBytes, err = json.Marshal(payload)
@@ -136,7 +135,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	}
 	defer txn.Rollback()
 
-	log.Debug("begin to dump database", zap.String("database", driver.databaseName), zap.Bool("schemaOnly", schemaOnly))
+	slog.Debug("begin to dump database", slog.String("database", driver.databaseName), slog.Bool("schemaOnly", schemaOnly))
 	if err := dumpTxn(txn, driver.dbType, driver.databaseName, out, schemaOnly); err != nil {
 		return "", err
 	}

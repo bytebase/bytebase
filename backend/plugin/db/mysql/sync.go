@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -52,11 +52,11 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	lowerCaseTableNames := 0
 	lowerCaseTableNamesText, err := driver.getServerVariable(ctx, "lower_case_table_names")
 	if err != nil {
-		log.Debug("failed to get lower_case_table_names variable", zap.Error(err))
+		slog.Debug("failed to get lower_case_table_names variable", log.BBError(err))
 	} else {
 		lowerCaseTableNames, err = strconv.Atoi(lowerCaseTableNamesText)
 		if err != nil {
-			log.Debug("failed to parse lower_case_table_names variable", zap.Error(err))
+			slog.Debug("failed to parse lower_case_table_names variable", log.BBError(err))
 		}
 	}
 
@@ -688,7 +688,7 @@ func extractDatabase(defaultDB string, sql string) []string {
 	list, err := parser.ExtractDatabaseList(parser.MySQL, sql, "")
 	if err != nil {
 		// If we can't extract the database, we just use the default database.
-		log.Debug("extract database failed", zap.Error(err), zap.String("sql", sql))
+		slog.Debug("extract database failed", log.BBError(err), slog.String("sql", sql))
 		return []string{defaultDB}
 	}
 

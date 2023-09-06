@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -363,7 +363,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 		}
 		resources, err := getChangedResourcesForOracle(databaseName, schemaName, stmt.Text)
 		if err != nil {
-			log.Error("failed to extract changed resources", zap.String("statement", stmt.Text), zap.Error(err))
+			slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
 		} else {
 			changedResources = append(changedResources, resources...)
 		}
@@ -424,11 +424,11 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
 		if err != nil {
-			log.Error("failed to parse statement", zap.String("statement", stmt.Text), zap.Error(err))
+			slog.Error("failed to parse statement", slog.String("statement", stmt.Text), log.BBError(err))
 			continue
 		}
 		if len(root) != 1 {
-			log.Error("failed to parse statement, expect to get one node from parser", zap.String("statement", stmt.Text), zap.Error(err))
+			slog.Error("failed to parse statement, expect to get one node from parser", slog.String("statement", stmt.Text), log.BBError(err))
 			continue
 		}
 		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
@@ -437,7 +437,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 			if dbType != db.TiDB {
 				resources, err := getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
 				if err != nil {
-					log.Error("failed to get statement changed resources", zap.Error(err))
+					slog.Error("failed to get statement changed resources", log.BBError(err))
 				} else {
 					changedResources = append(changedResources, resources...)
 				}
@@ -448,7 +448,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 
 		affectedRows, err := getAffectedRowsForMysql(ctx, dbType, sqlDB, root[0])
 		if err != nil {
-			log.Error("failed to get affected rows for mysql", zap.String("database", databaseName), zap.Error(err))
+			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
 		} else {
 			totalAffectedRows += affectedRows
 		}
@@ -533,7 +533,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 		if sqlType == "COMMENT" {
 			resources, err = postgresExtractResourcesFromCommentStatement(database, "public", stmt.Text())
 			if err != nil {
-				log.Error("failed to extract resources from comment statement", zap.String("statement", stmt.Text()), zap.Error(err))
+				slog.Error("failed to extract resources from comment statement", slog.String("statement", stmt.Text()), log.BBError(err))
 				resources = nil
 			}
 		}
@@ -542,7 +542,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 
 		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, stmt)
 		if err != nil {
-			log.Error("failed to get affected rows for postgres", zap.String("database", database), zap.Error(err))
+			slog.Error("failed to get affected rows for postgres", slog.String("database", database), log.BBError(err))
 		} else {
 			totalAffectedRows += rowCount
 		}

@@ -2,9 +2,9 @@ package v1
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -43,11 +43,11 @@ func (s *ActuatorService) GetActuatorInfo(ctx context.Context, _ *v1pb.GetActuat
 func (s *ActuatorService) UpdateActuatorInfo(ctx context.Context, request *v1pb.UpdateActuatorInfoRequest) (*v1pb.ActuatorInfo, error) {
 	for _, path := range request.UpdateMask.Paths {
 		if path == "debug" {
-			lvl := zap.InfoLevel
+			lvl := slog.LevelInfo
 			if request.Actuator.Debug {
-				lvl = zap.DebugLevel
+				lvl = slog.LevelDebug
 			}
-			log.SetLevel(lvl)
+			log.GLogLevel.Set(lvl)
 		}
 	}
 
@@ -110,7 +110,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		LastActiveTime:            timestamppb.New(time.Unix(s.profile.LastActiveTs, 0)),
 		WorkspaceId:               workspaceID,
 		GitopsWebhookUrl:          setting.GitopsWebhookUrl,
-		Debug:                     log.EnabledLevel(zap.DebugLevel),
+		Debug:                     slog.Default().Enabled(ctx, slog.LevelDebug),
 		DevelopmentUseV2Scheduler: true,
 	}
 

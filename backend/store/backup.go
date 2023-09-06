@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -153,19 +153,21 @@ type BackupMessage struct {
 	Payload api.BackupPayload
 }
 
-// ZapBackupArray is a helper to format zap.Array.
-type ZapBackupArray []*BackupMessage
+// SLogBackupArray is a helper to format []*BackupMessage.
+type SLogBackupArray []*BackupMessage
 
-// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
-func (backups ZapBackupArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+// LogValue implements the LogValuer interface.
+func (backups SLogBackupArray) LogValue() slog.Value {
+	backupList := []string{}
 	for _, backup := range backups {
 		payload, err := json.Marshal(backup.Payload)
 		if err != nil {
-			return err
+			backupList = append(backupList, err.Error())
+			continue
 		}
-		arr.AppendString(fmt.Sprintf("{name:%s, id:%d, payload:%s}", backup.Name, backup.UID, payload))
+		backupList = append(backupList, fmt.Sprintf("{name:%s, id:%d, payload:%s}", backup.Name, backup.UID, payload))
 	}
-	return nil
+	return slog.StringValue(strings.Join(backupList, ","))
 }
 
 // FindBackupMessage is the message for finding backup.

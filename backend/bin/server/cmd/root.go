@@ -4,6 +4,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -186,26 +186,25 @@ func checkPort(port int) error {
 
 func start() {
 	if flags.debug {
-		log.SetLevel(zap.DebugLevel)
+		log.GLogLevel.Set(slog.LevelDebug)
 	}
-	defer log.Sync()
 
 	var err error
 
 	if flags.externalURL != "" {
 		flags.externalURL, err = common.NormalizeExternalURL(flags.externalURL)
 		if err != nil {
-			log.Error("invalid --external-url", zap.Error(err))
+			slog.Error("invalid --external-url", log.BBError(err))
 			return
 		}
 	}
 	if err := checkDataDir(); err != nil {
-		log.Error(err.Error())
+		slog.Error(err.Error())
 		return
 	}
 
 	if err := checkCloudBackupFlags(); err != nil {
-		log.Error("invalid flags for cloud backup", zap.Error(err))
+		slog.Error("invalid flags for cloud backup", log.BBError(err))
 		return
 	}
 
@@ -220,17 +219,17 @@ func start() {
 	// and then complain unable to bind port. Thus we cannot rely on checking /healthz. As a
 	// workaround, we check whether the port is available here.
 	if err := checkPort(flags.port); err != nil {
-		log.Error(fmt.Sprintf("server port %d is not available", flags.port), zap.Error(err))
+		slog.Error(fmt.Sprintf("server port %d is not available", flags.port), log.BBError(err))
 		return
 	}
 	if profile.UseEmbedDB() {
 		if err := checkPort(profile.DatastorePort); err != nil {
-			log.Error(fmt.Sprintf("database port %d is not available", profile.DatastorePort), zap.Error(err))
+			slog.Error(fmt.Sprintf("database port %d is not available", profile.DatastorePort), log.BBError(err))
 			return
 		}
 	}
 	if err := checkPort(profile.GrpcPort); err != nil {
-		log.Error(fmt.Sprintf("gRPC server port %d is not available", profile.GrpcPort), zap.Error(err))
+		slog.Error(fmt.Sprintf("gRPC server port %d is not available", profile.GrpcPort), log.BBError(err))
 		return
 	}
 
@@ -244,7 +243,7 @@ func start() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		sig := <-c
-		log.Info(fmt.Sprintf("%s received.", sig.String()))
+		slog.Info(fmt.Sprintf("%s received.", sig.String()))
 		if s != nil {
 			_ = s.Shutdown(ctx)
 		}
@@ -253,7 +252,7 @@ func start() {
 
 	s, err = server.NewServer(ctx, profile)
 	if err != nil {
-		log.Error("Cannot new server", zap.Error(err))
+		slog.Error("Cannot new server", log.BBError(err))
 		return
 	}
 
@@ -266,7 +265,7 @@ func start() {
 	// Execute program.
 	if err := s.Run(ctx, flags.port); err != nil {
 		if err != http.ErrServerClosed {
-			log.Error(err.Error())
+			slog.Error(err.Error())
 			_ = s.Shutdown(ctx)
 			cancel()
 		}

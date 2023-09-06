@@ -3,13 +3,13 @@ package mssql
 
 import (
 	"fmt"
+	"log/slog"
 	"math"
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -103,7 +103,7 @@ func (l *columnMaximumVarcharLengthChecker) EnterData_type(ctx *parser.Data_type
 		}
 		length, err := strconv.Atoi(ctx.GetScale().GetText())
 		if err != nil {
-			log.Error("failed to convert scale to int", zap.Error(err))
+			slog.Error("failed to convert scale to int", log.BBError(err))
 		}
 		currentLength = length
 		line = ctx.GetScale().GetLine()

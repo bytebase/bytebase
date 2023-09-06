@@ -5,17 +5,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -745,7 +744,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	// We will just return the version string as is.
 	pgVersion, redshiftVersion, err := getPgVersionAndRedshiftVersion(version)
 	if err != nil {
-		log.Debug("Failed to parse version string", zap.String("version", version))
+		slog.Debug("Failed to parse version string", slog.String("version", version))
 		// nolint
 		return version, nil
 	}

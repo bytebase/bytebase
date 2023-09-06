@@ -3,15 +3,14 @@ package snowflake
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 )
@@ -113,7 +112,7 @@ func (l *namingTableListener) EnterAlter_table(ctx *parser.Alter_tableContext) {
 
 	allObjectNames := ctx.AllObject_name()
 	if len(allObjectNames) != 2 {
-		log.Warn("Unexpected number of object names in alter table rename statement", zap.Int("objectNameCount", len(allObjectNames)))
+		slog.Warn("Unexpected number of object names in alter table rename statement", slog.Int("objectNameCount", len(allObjectNames)))
 		return
 	}
 

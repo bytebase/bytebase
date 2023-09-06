@@ -6,12 +6,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -59,7 +59,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(schemaSyncInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
+	slog.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
 	for {
 		select {
 		case <-ticker.C:
@@ -80,12 +80,12 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			if !ok {
 				err = errors.Errorf("%v", r)
 			}
-			log.Error("Instance syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+			slog.Error("Instance syncer PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
 	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
 	if err != nil {
-		log.Error("Failed to retrieve instances", zap.Error(err))
+		slog.Error("Failed to retrieve instances", log.BBError(err))
 		return
 	}
 
@@ -103,11 +103,11 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			continue
 		}
 
-		log.Debug("Sync instance schema", zap.String("instance", instance.ResourceID))
+		slog.Debug("Sync instance schema", slog.String("instance", instance.ResourceID))
 		if err := s.SyncInstance(ctx, instance); err != nil {
-			log.Debug("Failed to sync instance",
-				zap.String("instance", instance.ResourceID),
-				zap.String("error", err.Error()))
+			slog.Debug("Failed to sync instance",
+				slog.String("instance", instance.ResourceID),
+				slog.String("error", err.Error()))
 		}
 	}
 
@@ -118,7 +118,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{})
 	if err != nil {
-		log.Error("Failed to retrieve databases", zap.Error(err))
+		slog.Error("Failed to retrieve databases", log.BBError(err))
 		return
 	}
 	for _, database := range databases {
@@ -139,10 +139,10 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			continue
 		}
 		if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
-			log.Debug("Failed to sync database schema",
-				zap.String("instance", instance.ResourceID),
-				zap.String("databaseName", database.DatabaseName),
-				zap.Error(err))
+			slog.Debug("Failed to sync database schema",
+				slog.String("instance", instance.ResourceID),
+				slog.String("databaseName", database.DatabaseName),
+				log.BBError(err))
 		}
 	}
 }
@@ -154,7 +154,7 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceM
 			if !ok {
 				err = errors.Errorf("%v", r)
 			}
-			log.Error("Database syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+			slog.Error("Database syncer PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
 
@@ -164,8 +164,8 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceM
 	}
 	databases, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
-		log.Debug("Failed to find databases to sync",
-			zap.String("error", err.Error()))
+		slog.Debug("Failed to find databases to sync",
+			slog.String("error", err.Error()))
 		return
 	}
 
@@ -189,18 +189,18 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceM
 			}
 			for _, database := range databaseList {
 				instanceID := database.InstanceID
-				log.Debug("Sync database schema",
-					zap.String("instance", instanceID),
-					zap.String("database", database.DatabaseName),
-					zap.Int64("lastSuccessfulSyncTs", database.SuccessfulSyncTimeTs),
+				slog.Debug("Sync database schema",
+					slog.String("instance", instanceID),
+					slog.String("database", database.DatabaseName),
+					slog.Int64("lastSuccessfulSyncTs", database.SuccessfulSyncTimeTs),
 				)
 				// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
 				// We don't force dump database schema because it's rarely changed till the metadata is changed.
 				if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
-					log.Debug("Failed to sync database schema",
-						zap.String("instance", instanceID),
-						zap.String("databaseName", database.DatabaseName),
-						zap.Error(err))
+					slog.Debug("Failed to sync database schema",
+						slog.String("instance", instanceID),
+						slog.String("databaseName", database.DatabaseName),
+						log.BBError(err))
 				}
 			}
 		}(databaseList)
@@ -390,11 +390,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			Limit:      &limit,
 		})
 		if err != nil {
-			log.Error("Failed to check anomaly",
-				zap.String("instance", instance.ResourceID),
-				zap.String("database", database.DatabaseName),
-				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-				zap.Error(err))
+			slog.Error("Failed to check anomaly",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", database.DatabaseName),
+				slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+				log.BBError(err))
 			return nil
 		}
 		latestSchema := string(rawDump)
@@ -407,11 +407,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 				}
 				payload, err := json.Marshal(anomalyPayload)
 				if err != nil {
-					log.Error("Failed to marshal anomaly payload",
-						zap.String("instance", instance.ResourceID),
-						zap.String("database", database.DatabaseName),
-						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-						zap.Error(err))
+					slog.Error("Failed to marshal anomaly payload",
+						slog.String("instance", instance.ResourceID),
+						slog.String("database", database.DatabaseName),
+						slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+						log.BBError(err))
 				} else {
 					if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
 						InstanceID:  instance.ResourceID,
@@ -419,11 +419,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 						Type:        api.AnomalyDatabaseSchemaDrift,
 						Payload:     string(payload),
 					}); err != nil {
-						log.Error("Failed to create anomaly",
-							zap.String("instance", instance.ResourceID),
-							zap.String("database", database.DatabaseName),
-							zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-							zap.Error(err))
+						slog.Error("Failed to create anomaly",
+							slog.String("instance", instance.ResourceID),
+							slog.String("database", database.DatabaseName),
+							slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+							log.BBError(err))
 					}
 				}
 			} else {
@@ -432,11 +432,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 					Type:        api.AnomalyDatabaseSchemaDrift,
 				})
 				if err != nil && common.ErrorCode(err) != common.NotFound {
-					log.Error("Failed to close anomaly",
-						zap.String("instance", instance.ResourceID),
-						zap.String("database", database.DatabaseName),
-						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-						zap.Error(err))
+					slog.Error("Failed to close anomaly",
+						slog.String("instance", instance.ResourceID),
+						slog.String("database", database.DatabaseName),
+						slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+						log.BBError(err))
 				}
 			}
 		}

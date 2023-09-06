@@ -3,14 +3,12 @@ package s3
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
-	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 const (
@@ -38,7 +36,7 @@ func TestS3Operations(t *testing.T) {
 		list, err := client.ListObjects(ctx, "backup/")
 		a.NoError(err)
 		for _, obj := range list {
-			log.Info("Object", zap.String("Key", *obj.Key), zap.Time("LastModified", *obj.LastModified))
+			slog.Info("Object", slog.String("Key", *obj.Key), slog.Time("LastModified", *obj.LastModified))
 		}
 	})
 
@@ -47,7 +45,7 @@ func TestS3Operations(t *testing.T) {
 		blob := bytes.NewReader(buf)
 		resp, err := client.UploadObject(ctx, "backup/test/blob", blob)
 		a.NoError(err)
-		log.Info("Uploaded", zap.String("name", *resp.Key))
+		slog.Info("Uploaded", slog.String("name", *resp.Key))
 	})
 
 	t.Run("DownloadObjects", func(t *testing.T) {
@@ -55,12 +53,12 @@ func TestS3Operations(t *testing.T) {
 		a.NoError(err)
 		n, err := client.DownloadObject(ctx, "backup/test/blob", file)
 		a.NoError(err)
-		log.Info("Downloaded", zap.Int64("length", n))
+		slog.Info("Downloaded", slog.Int64("length", n))
 	})
 
 	t.Run("DeleteObjects", func(t *testing.T) {
 		resp, err := client.DeleteObjects(ctx, "backup/test/blob")
 		a.NoError(err)
-		log.Info("Deleted", zap.Any("meta", resp.ResultMetadata))
+		slog.Info("Deleted", slog.Any("meta", resp.ResultMetadata))
 	})
 }

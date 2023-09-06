@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"sort"
 	"strconv"
@@ -15,7 +16,6 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	v1 "github.com/bytebase/bytebase/backend/api/v1"
@@ -64,7 +64,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(approvalRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Approval runner started and will run every %v", approvalRunnerInterval))
+	slog.Debug(fmt.Sprintf("Approval runner started and will run every %v", approvalRunnerInterval))
 	r.retryFindApprovalTemplate(ctx)
 	for {
 		select {
@@ -94,7 +94,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				return errs
 			}(); err != nil {
-				log.Error("approval runner", zap.Error(err))
+				slog.Error("approval runner", log.BBError(err))
 			}
 
 		case <-ctx.Done():
@@ -109,12 +109,12 @@ func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
 	})
 	if err != nil {
 		err := errors.Wrap(err, "failed to list issues")
-		log.Error("failed to retry finding approval template", zap.Error(err))
+		slog.Error("failed to retry finding approval template", log.BBError(err))
 	}
 	for _, issue := range issues {
 		payload := &storepb.IssuePayload{}
 		if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-			log.Error("failed to retry finding approval template", zap.Int("issueID", issue.UID), zap.Error(err))
+			slog.Error("failed to retry finding approval template", slog.Int("issueID", issue.UID), log.BBError(err))
 			continue
 		}
 		if payload.Approval == nil || !payload.Approval.ApprovalFindingDone {
@@ -191,7 +191,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			Level:        api.ActivityInfo,
 			Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, payload.GrantRequest.Role),
 		}, &activity.Metadata{}); err != nil {
-			log.Warn("Failed to create project activity", zap.Error(err))
+			slog.Warn("Failed to create project activity", log.BBError(err))
 		}
 		if err := utils.ChangeIssueStatus(ctx, r.store, r.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
@@ -234,7 +234,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create activity after approving review", zap.Error(err))
+		slog.Error("failed to create activity after approving review", log.BBError(err))
 	}
 
 	if err := func() error {
@@ -272,7 +272,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create approval step pending activity after creating review", zap.Error(err))
+		slog.Error("failed to create approval step pending activity after creating review", log.BBError(err))
 	}
 
 	return true, nil
@@ -867,7 +867,7 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 				if affectedRowsReportResult[i].Code == common.Ok.Int() {
 					affectedRows, err := strconv.ParseInt(affectedRowsReportResult[i].Content, 10, 64)
 					if err != nil {
-						log.Warn("failed to convert affectedRows to int64, will use 0 as the value of affected_rows", zap.Error(err))
+						slog.Warn("failed to convert affectedRows to int64, will use 0 as the value of affected_rows", log.BBError(err))
 					} else {
 						args["affected_rows"] = affectedRows
 					}

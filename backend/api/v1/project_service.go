@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"path"
 	"reflect"
 	"strconv"
@@ -13,7 +14,6 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -92,7 +92,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 
 	setting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
-		log.Error("failed to find classification setting", zap.Error(err))
+		slog.Error("failed to find classification setting", log.BBError(err))
 	}
 	if setting != nil && len(setting.Configs) != 0 {
 		projectMessage.DataClassificationConfigID = setting.Configs[0].Id
@@ -640,7 +640,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 			repo.ExternalWebhookID,
 		); err != nil {
 			// Despite the error here, we have deleted the repository in the database, we still return success.
-			log.Error("failed to delete webhook for project", zap.String("project", projectName), zap.Int("repo", repo.UID), zap.Error(err))
+			slog.Error("failed to delete webhook for project", slog.String("project", projectName), slog.Int("repo", repo.UID), log.BBError(err))
 		}
 	}
 
@@ -675,7 +675,7 @@ func (s *ProjectService) CreateIAMPolicyUpdateActivity(ctx context.Context, remo
 
 	for _, a := range activities {
 		if _, err := s.activityManager.CreateActivity(ctx, a, &activity.Metadata{}); err != nil {
-			log.Warn("Failed to create project activity", zap.Error(err))
+			slog.Warn("Failed to create project activity", log.BBError(err))
 		}
 	}
 }
@@ -1237,7 +1237,7 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("VCS target branch info", zap.String("last_commit", branch.LastCommitID), zap.String("name", branch.Name))
+	slog.Debug("VCS target branch info", slog.String("last_commit", branch.LastCommitID), slog.String("name", branch.Name))
 
 	branchCreate := &vcsPlugin.BranchInfo{
 		Name:         fmt.Sprintf("bytebase-vcs-%d", time.Now().Unix()),
@@ -1302,12 +1302,12 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 		},
 	)
 	if err != nil {
-		log.Debug(
+		slog.Debug(
 			"Failed to get file meta",
-			zap.String("file", github.SQLReviewActionFilePath),
-			zap.String("last_commit", branch.LastCommitID),
-			zap.Int("code", common.ErrorCode(err).Int()),
-			zap.Error(err),
+			slog.String("file", github.SQLReviewActionFilePath),
+			slog.String("last_commit", branch.LastCommitID),
+			slog.Int("code", common.ErrorCode(err).Int()),
+			log.BBError(err),
 		)
 	} else if fileMeta != nil {
 		fileLastCommitID = fileMeta.LastCommitID
@@ -1438,12 +1438,12 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 		},
 	)
 	if err != nil {
-		log.Debug(
+		slog.Debug(
 			"Failed to get file meta",
-			zap.String("file", azure.SQLReviewPipelineFilePath),
-			zap.String("last_commit", branch.LastCommitID),
-			zap.Int("code", common.ErrorCode(err).Int()),
-			zap.Error(err),
+			slog.String("file", azure.SQLReviewPipelineFilePath),
+			slog.String("last_commit", branch.LastCommitID),
+			slog.Int("code", common.ErrorCode(err).Int()),
+			log.BBError(err),
 		)
 	} else if fileMeta != nil {
 		fileLastCommitID = fileMeta.LastCommitID
@@ -1509,11 +1509,11 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 		},
 	)
 	if err != nil {
-		log.Debug(
+		slog.Debug(
 			"Failed to get file meta",
-			zap.String("last_commit", branch.LastCommitID),
-			zap.Int("code", common.ErrorCode(err).Int()),
-			zap.Error(err),
+			slog.String("last_commit", branch.LastCommitID),
+			slog.Int("code", common.ErrorCode(err).Int()),
+			log.BBError(err),
 		)
 		if common.ErrorCode(err) == common.NotFound {
 			fileExisted = false

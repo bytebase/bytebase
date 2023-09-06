@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"reflect"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -79,10 +79,10 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 		DialTimeout: 10 * time.Second,
 	})
 
-	log.Debug("Opening ClickHouse driver",
-		zap.String("addr", addr),
-		zap.String("environment", connCtx.EnvironmentID),
-		zap.String("database", connCtx.InstanceID),
+	slog.Debug("Opening ClickHouse driver",
+		slog.String("addr", addr),
+		slog.String("environment", connCtx.EnvironmentID),
+		slog.String("database", connCtx.InstanceID),
 	)
 
 	driver.dbType = dbType
@@ -143,7 +143,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, _ d
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			log.Debug("rowsAffected returns error", zap.Error(err))
+			slog.Debug("rowsAffected returns error", log.BBError(err))
 		} else {
 			totalRowsAffected += rowsAffected
 		}

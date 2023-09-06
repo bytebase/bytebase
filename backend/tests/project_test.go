@@ -3,10 +3,10 @@ package tests
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -16,7 +16,7 @@ import (
 
 func TestArchiveProject(t *testing.T) {
 	a := require.New(t)
-	log.SetLevel(zapcore.DebugLevel)
+	log.GLogLevel.Set(slog.LevelDebug)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()

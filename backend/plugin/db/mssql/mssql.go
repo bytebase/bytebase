@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"strings"
 	"time"
@@ -13,8 +14,6 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
 	"google.golang.org/protobuf/types/known/durationpb"
-
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -106,7 +105,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			log.Debug("rowsAffected returns error", zap.Error(err))
+			slog.Debug("rowsAffected returns error", log.BBError(err))
 		} else {
 			totalRowsAffected += rowsAffected
 		}
