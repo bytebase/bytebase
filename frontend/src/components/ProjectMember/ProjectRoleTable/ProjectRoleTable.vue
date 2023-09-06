@@ -97,6 +97,7 @@ import {
   hasPermissionInProjectV1,
   displayRoleTitle,
 } from "@/utils";
+import { convertFromExpr } from "@/utils/issue/cel";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import { getExpiredTimeString, isExpired, getExpiredDateTime } from "./utils";
 
@@ -139,6 +140,17 @@ const columnList = computed(() => {
 const roleGroup = computed(() => {
   let roleMap = new Map<string, Binding[]>();
   for (const binding of iamPolicy.value.bindings) {
+    // Don't show EXPORTER role if it has a non-empty statement condition.
+    if (binding.role === "roles/EXPORTER") {
+      const parsedExpr = binding.parsedExpr;
+      if (parsedExpr?.expr) {
+        const expression = convertFromExpr(parsedExpr.expr);
+        if (expression.statement && expression.statement !== "") {
+          continue;
+        }
+      }
+    }
+
     // Filter by search text.
     if (props.searchText !== "") {
       let isMatch = false;
