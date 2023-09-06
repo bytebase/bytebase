@@ -360,6 +360,9 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.FailedPrecondition, "schema design has been updated")
 	}
 
+	// To merge from one schema design to another, we focus on the three schema string(map to database metadata):
+	// Head Schema, Baseline of Head Schema, and Target Schema.
+
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       targetSheetUID,
