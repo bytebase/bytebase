@@ -89,6 +89,29 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		return
 	}
 
+	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	if err != nil {
+		slog.Error("Failed to retrieve environments", log.BBError(err))
+		return
+	}
+
+	environmentsMap := map[string]*store.EnvironmentMessage{}
+	for _, environment := range environments {
+		environmentsMap[environment.ResourceID] = environment
+	}
+
+	backupPlanPolicyMap := make(map[string]*api.BackupPlanPolicy)
+	for _, environment := range environments {
+		policy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, environment.UID)
+		if err != nil {
+			slog.Error("Failed to retrieve backup policy",
+				slog.String("environment", environment.Title),
+				log.BBError(err))
+			return
+		}
+		backupPlanPolicyMap[environment.ResourceID] = policy
+	}
+
 	now := time.Now()
 	for _, instance := range instances {
 		interval := getOrDefaultSyncInterval(instance)
@@ -122,6 +145,9 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		return
 	}
 	for _, database := range databases {
+		if database.SyncState != api.OK {
+			continue
+		}
 		instance, ok := instancesMap[database.InstanceID]
 		if !ok {
 			continue
@@ -144,6 +170,17 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 				slog.String("databaseName", database.DatabaseName),
 				log.BBError(err))
 		}
+
+		environment, ok := environmentsMap[database.EffectiveEnvironmentID]
+		if !ok {
+			continue
+		}
+		backupPlanPolicy, ok := backupPlanPolicyMap[database.EffectiveEnvironmentID]
+		if !ok {
+			continue
+		}
+
+		s.checkBackupAnomaly(ctx, environment, instance, database, backupPlanPolicy)
 	}
 }
 
@@ -216,9 +253,11 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
+		s.upsertInstanceConnectionAnomaly(ctx, instance, err)
 		return err
 	}
 	defer driver.Close(ctx)
+	s.upsertInstanceConnectionAnomaly(ctx, instance, nil)
 
 	instanceMeta, err := driver.SyncInstance(ctx)
 	if err != nil {
@@ -318,9 +357,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
+		s.upsertDatabaseConnectionAnomaly(ctx, instance, database, err)
 		return err
 	}
 	defer driver.Close(ctx)
+	s.upsertDatabaseConnectionAnomaly(ctx, instance, database, nil)
 	// Sync database schema
 	databaseMetadata, err := driver.SyncDBSchema(ctx)
 	if err != nil {
@@ -452,6 +493,251 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	return nil
 }
 
+func (s *Syncer) upsertInstanceConnectionAnomaly(ctx context.Context, instance *store.InstanceMessage, connErr error) {
+	if connErr != nil {
+		anomalyPayload := api.AnomalyInstanceConnectionPayload{
+			Detail: connErr.Error(),
+		}
+		payload, err := json.Marshal(anomalyPayload)
+		if err != nil {
+			slog.Error("Failed to marshal anomaly payload",
+				slog.String("instance", instance.ResourceID),
+				slog.String("type", string(api.AnomalyInstanceConnection)),
+				log.BBError(err))
+			return
+		}
+		if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+			InstanceID: instance.ResourceID,
+			Type:       api.AnomalyInstanceConnection,
+			Payload:    string(payload),
+		}); err != nil {
+			slog.Error("Failed to create anomaly",
+				slog.String("instance", instance.ResourceID),
+				slog.String("type", string(api.AnomalyInstanceConnection)),
+				log.BBError(err))
+		}
+		return
+	}
+
+	err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+		InstanceID: &instance.ResourceID,
+		Type:       api.AnomalyInstanceConnection,
+	})
+	if err != nil && common.ErrorCode(err) != common.NotFound {
+		slog.Error("Failed to close anomaly",
+			slog.String("instance", instance.ResourceID),
+			slog.String("type", string(api.AnomalyInstanceConnection)),
+			log.BBError(err))
+	}
+}
+
+func (s *Syncer) upsertDatabaseConnectionAnomaly(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, connErr error) {
+	if connErr != nil {
+		anomalyPayload := api.AnomalyDatabaseConnectionPayload{
+			Detail: connErr.Error(),
+		}
+		payload, err := json.Marshal(anomalyPayload)
+		if err != nil {
+			slog.Error("Failed to marshal anomaly payload",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", database.DatabaseName),
+				slog.String("type", string(api.AnomalyDatabaseConnection)),
+				log.BBError(err))
+		} else {
+			if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+				InstanceID:  instance.ResourceID,
+				DatabaseUID: &database.UID,
+				Type:        api.AnomalyDatabaseConnection,
+				Payload:     string(payload),
+			}); err != nil {
+				slog.Error("Failed to create anomaly",
+					slog.String("instance", instance.ResourceID),
+					slog.String("database", database.DatabaseName),
+					slog.String("type", string(api.AnomalyDatabaseConnection)),
+					log.BBError(err))
+			}
+		}
+		return
+	}
+
+	err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+		DatabaseUID: &database.UID,
+		Type:        api.AnomalyDatabaseConnection,
+	})
+	if err != nil && common.ErrorCode(err) != common.NotFound {
+		slog.Error("Failed to close anomaly",
+			slog.String("instance", instance.ResourceID),
+			slog.String("database", database.DatabaseName),
+			slog.String("type", string(api.AnomalyDatabaseConnection)),
+			log.BBError(err))
+	}
+}
+
+func (s *Syncer) checkBackupAnomaly(ctx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, policy *api.BackupPlanPolicy) {
+	if disableBackupAnomalyCheck(instance.Engine) {
+		// skip checking backup anomalies for MongoDB, Spanner, Redis, Oracle, etc. because they don't support Backup.
+		return
+	}
+
+	schedule := api.BackupPlanPolicyScheduleUnset
+	backupSetting, err := s.store.GetBackupSettingV2(ctx, database.UID)
+	if err != nil {
+		slog.Error("Failed to retrieve backup setting",
+			slog.String("instance", instance.ResourceID),
+			slog.String("database", database.DatabaseName),
+			log.BBError(err))
+		return
+	}
+
+	if backupSetting != nil && backupSetting.Enabled && backupSetting.HourOfDay != -1 {
+		if backupSetting.DayOfWeek == -1 {
+			schedule = api.BackupPlanPolicyScheduleDaily
+		} else {
+			schedule = api.BackupPlanPolicyScheduleWeekly
+		}
+	}
+
+	// Check backup policy violation
+	{
+		var backupPolicyAnomalyPayload *api.AnomalyDatabaseBackupPolicyViolationPayload
+		if policy.Schedule != api.BackupPlanPolicyScheduleUnset {
+			if policy.Schedule == api.BackupPlanPolicyScheduleDaily &&
+				schedule != api.BackupPlanPolicyScheduleDaily {
+				backupPolicyAnomalyPayload = &api.AnomalyDatabaseBackupPolicyViolationPayload{
+					EnvironmentID:          environment.UID,
+					ExpectedBackupSchedule: policy.Schedule,
+					ActualBackupSchedule:   schedule,
+				}
+			} else if policy.Schedule == api.BackupPlanPolicyScheduleWeekly &&
+				schedule == api.BackupPlanPolicyScheduleUnset {
+				backupPolicyAnomalyPayload = &api.AnomalyDatabaseBackupPolicyViolationPayload{
+					EnvironmentID:          environment.UID,
+					ExpectedBackupSchedule: policy.Schedule,
+					ActualBackupSchedule:   schedule,
+				}
+			}
+		}
+
+		if backupPolicyAnomalyPayload != nil {
+			payload, err := json.Marshal(*backupPolicyAnomalyPayload)
+			if err != nil {
+				slog.Error("Failed to marshal anomaly payload",
+					slog.String("instance", instance.ResourceID),
+					slog.String("database", database.DatabaseName),
+					slog.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
+					log.BBError(err))
+			} else {
+				if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+					InstanceID:  instance.ResourceID,
+					DatabaseUID: &database.UID,
+					Type:        api.AnomalyDatabaseBackupPolicyViolation,
+					Payload:     string(payload),
+				}); err != nil {
+					slog.Error("Failed to create anomaly",
+						slog.String("instance", instance.ResourceID),
+						slog.String("database", database.DatabaseName),
+						slog.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
+						log.BBError(err))
+				}
+			}
+		} else {
+			err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+				DatabaseUID: &database.UID,
+				Type:        api.AnomalyDatabaseBackupPolicyViolation,
+			})
+			if err != nil && common.ErrorCode(err) != common.NotFound {
+				slog.Error("Failed to close anomaly",
+					slog.String("instance", instance.ResourceID),
+					slog.String("database", database.DatabaseName),
+					slog.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
+					log.BBError(err))
+			}
+		}
+	}
+
+	// Check backup missing
+	{
+		var backupMissingAnomalyPayload *api.AnomalyDatabaseBackupMissingPayload
+		// The anomaly fires if backup is enabled, however no successful backup has been taken during the period.
+		if backupSetting != nil && backupSetting.Enabled {
+			expectedSchedule := api.BackupPlanPolicyScheduleWeekly
+			backupMaxAge := time.Duration(7*24) * time.Hour
+			if backupSetting.DayOfWeek == -1 {
+				expectedSchedule = api.BackupPlanPolicyScheduleDaily
+				backupMaxAge = time.Duration(24) * time.Hour
+			}
+
+			// Ignore if backup setting has been changed after the max age.
+			if backupSetting.UpdatedTs < time.Now().Add(-backupMaxAge).Unix() {
+				status := api.BackupStatusDone
+				backupFind := &store.FindBackupMessage{
+					DatabaseUID: &database.UID,
+					Status:      &status,
+				}
+				backupList, err := s.store.ListBackupV2(ctx, backupFind)
+				if err != nil {
+					slog.Error("Failed to retrieve backup list",
+						slog.String("instance", instance.ResourceID),
+						slog.String("database", database.DatabaseName),
+						log.BBError(err))
+				}
+
+				hasValidBackup := false
+				if len(backupList) > 0 {
+					if backupList[0].UpdatedTs >= time.Now().Add(-backupMaxAge).Unix() {
+						hasValidBackup = true
+					}
+				}
+
+				if !hasValidBackup {
+					backupMissingAnomalyPayload = &api.AnomalyDatabaseBackupMissingPayload{
+						ExpectedBackupSchedule: expectedSchedule,
+					}
+					if len(backupList) > 0 {
+						backupMissingAnomalyPayload.LastBackupTs = backupList[0].UpdatedTs
+					}
+				}
+			}
+		}
+
+		if backupMissingAnomalyPayload != nil {
+			payload, err := json.Marshal(*backupMissingAnomalyPayload)
+			if err != nil {
+				slog.Error("Failed to marshal anomaly payload",
+					slog.String("instance", instance.ResourceID),
+					slog.String("database", database.DatabaseName),
+					slog.String("type", string(api.AnomalyDatabaseBackupMissing)),
+					log.BBError(err))
+			} else {
+				if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+					InstanceID:  instance.ResourceID,
+					DatabaseUID: &database.UID,
+					Type:        api.AnomalyDatabaseBackupMissing,
+					Payload:     string(payload),
+				}); err != nil {
+					slog.Error("Failed to create anomaly",
+						slog.String("instance", instance.ResourceID),
+						slog.String("database", database.DatabaseName),
+						slog.String("type", string(api.AnomalyDatabaseBackupMissing)),
+						log.BBError(err))
+				}
+			}
+		} else {
+			err := s.store.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
+				DatabaseUID: &database.UID,
+				Type:        api.AnomalyDatabaseBackupMissing,
+			})
+			if err != nil && common.ErrorCode(err) != common.NotFound {
+				slog.Error("Failed to close anomaly",
+					slog.String("instance", instance.ResourceID),
+					slog.String("database", database.DatabaseName),
+					slog.String("type", string(api.AnomalyDatabaseBackupMissing)),
+					log.BBError(err))
+			}
+		}
+	}
+}
+
 func equalInstanceMetadata(x, y *storepb.InstanceMetadata) bool {
 	return cmp.Equal(x, y, protocmp.Transform(), protocmp.IgnoreFields(&storepb.InstanceMetadata{}, "last_sync_time"))
 }
@@ -499,6 +785,20 @@ func disableSchemaDriftAnomalyCheck(dbTp db.Type) bool {
 		db.Redis:    {},
 		db.Oracle:   {},
 		db.MSSQL:    {},
+		db.Redshift: {},
+	}
+	_, ok := m[dbTp]
+	return ok
+}
+
+func disableBackupAnomalyCheck(dbTp db.Type) bool {
+	m := map[db.Type]struct{}{
+		db.MongoDB:  {},
+		db.Spanner:  {},
+		db.Redis:    {},
+		db.Oracle:   {},
+		db.MSSQL:    {},
+		db.MariaDB:  {},
 		db.Redshift: {},
 	}
 	_, ok := m[dbTp]
