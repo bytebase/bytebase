@@ -67,7 +67,6 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
-	"github.com/bytebase/bytebase/backend/runner/anomaly"
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/mail"
@@ -161,7 +160,6 @@ type Server struct {
 	slowQuerySyncer    *slowquerysync.Syncer
 	mailSender         *mail.SlowQueryWeeklyMailSender
 	backupRunner       *backuprun.Runner
-	anomalyScanner     *anomaly.Scanner
 	rollbackRunner     *rollbackrun.Runner
 	approvalRunner     *approval.Runner
 	relayRunner        *relay.Runner
@@ -496,9 +494,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			statementReportExecutor := plancheck.NewStatementReportExecutor(storeInstance, s.dbFactory)
 			s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 		}
-
-		// Anomaly scanner
-		s.anomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
 
 		// Metric reporter
 		s.initMetricReporter()
@@ -967,8 +962,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.mailSender.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.backupRunner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.anomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.rollbackRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
