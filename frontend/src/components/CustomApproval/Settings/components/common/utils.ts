@@ -60,10 +60,20 @@ const StringFactorList = [
 ] as const;
 
 const FactorList = {
-  DDL: uniq(without([...StringFactorList], "expiration_days", "export_rows")),
+  DDL: uniq(
+    without(
+      [...NumberFactorList, ...StringFactorList],
+      "level",
+      "source",
+      "expiration_days",
+      "export_rows"
+    )
+  ),
   DML: uniq(
     without(
       [...NumberFactorList, ...StringFactorList],
+      "level",
+      "source",
       "expiration_days",
       "export_rows"
     )
