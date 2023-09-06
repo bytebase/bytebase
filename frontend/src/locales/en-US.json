@@ -1672,7 +1672,8 @@
       "users": "Users",
       "roles": "Roles",
       "search-member": "Search member",
-      "revoke-members": "Revoke these members"
+      "revoke-members": "Revoke these members",
+      "clean-up-expired-roles": "Clean up expired roles"
     },
     "mode": {
       "standard": "Standard Mode",
