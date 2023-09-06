@@ -210,6 +210,10 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceM
 
 // SyncInstance syncs the schema for all databases in an instance.
 func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) error {
+	if s.profile.Readonly {
+		return nil
+	}
+
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		return err
@@ -301,6 +305,10 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 // SyncDatabaseSchema will sync the schema for a database.
 func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, force bool) error {
+	if s.profile.Readonly {
+		return nil
+	}
+
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return err
