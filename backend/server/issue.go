@@ -464,6 +464,9 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 }
 
 func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
+	if s.profile.Readonly {
+		return
+	}
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if progress, ok := s.stateCfg.TaskProgress.Load(task.ID); ok {
