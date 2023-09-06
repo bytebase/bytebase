@@ -132,10 +132,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		for _, issue := range issueList {
-			s.setTaskProgressForIssue(issue)
-		}
-
-		for _, issue := range issueList {
 			if issue.Pipeline == nil {
 				continue
 			}
@@ -193,8 +189,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
 
-		s.setTaskProgressForIssue(issue)
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal issue ID response: %v", id)).SetInternal(err)
@@ -215,10 +209,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue request").SetInternal(err)
 		}
 
-		if issuePatch.AssigneeNeedAttention != nil && !*issuePatch.AssigneeNeedAttention {
-			return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention to false")
-		}
-
 		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
@@ -227,22 +217,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
 		}
 		updateIssueMessage := &store.UpdateIssueMessage{
-			Title:         issuePatch.Name,
-			Description:   issuePatch.Description,
-			NeedAttention: issuePatch.AssigneeNeedAttention,
-			Payload:       issuePatch.Payload,
-		}
-
-		// If we are to set AssigneeNeedAttention to true
-		// make sure that CI approval is finished.
-		if issuePatch.AssigneeNeedAttention != nil && *issuePatch.AssigneeNeedAttention {
-			approved, err := utils.CheckIssueApproved(issue)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the issue is approved").SetInternal(err)
-			}
-			if !approved {
-				return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention because the issue is not approved")
-			}
+			Title:       issuePatch.Name,
+			Description: issuePatch.Description,
+			Payload:     issuePatch.Payload,
 		}
 
 		if issuePatch.AssigneeID != nil {
@@ -412,13 +389,12 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
 	}
 	issueCreateMessage := &store.IssueMessage{
-		Project:       project,
-		Title:         issueCreate.Name,
-		Type:          issueCreate.Type,
-		Description:   issueCreate.Description,
-		Assignee:      assignee,
-		NeedAttention: issueCreate.AssigneeNeedAttention,
-		Payload:       string(issueCreatePayloadBytes),
+		Project:     project,
+		Title:       issueCreate.Name,
+		Type:        issueCreate.Type,
+		Description: issueCreate.Description,
+		Assignee:    assignee,
+		Payload:     string(issueCreatePayloadBytes),
 	}
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
 	if err != nil {
@@ -449,20 +425,19 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 
 	// Composed the issue.
 	composedIssue := &api.Issue{
-		ID:                    issue.UID,
-		CreatorID:             issue.Creator.ID,
-		CreatedTs:             issue.CreatedTime.Unix(),
-		UpdaterID:             issue.Updater.ID,
-		UpdatedTs:             issue.UpdatedTime.Unix(),
-		ProjectID:             issue.Project.UID,
-		PipelineID:            issue.PipelineUID,
-		Name:                  issue.Title,
-		Status:                issue.Status,
-		Type:                  issue.Type,
-		Description:           issue.Description,
-		AssigneeID:            issue.Assignee.ID,
-		AssigneeNeedAttention: issue.NeedAttention,
-		Payload:               issue.Payload,
+		ID:          issue.UID,
+		CreatorID:   issue.Creator.ID,
+		CreatedTs:   issue.CreatedTime.Unix(),
+		UpdaterID:   issue.Updater.ID,
+		UpdatedTs:   issue.UpdatedTime.Unix(),
+		ProjectID:   issue.Project.UID,
+		PipelineID:  issue.PipelineUID,
+		Name:        issue.Title,
+		Status:      issue.Status,
+		Type:        issue.Type,
+		Description: issue.Description,
+		AssigneeID:  issue.Assignee.ID,
+		Payload:     issue.Payload,
 	}
 	composedCreator, err := s.store.GetPrincipalByID(ctx, issue.Creator.ID)
 	if err != nil {
@@ -480,16 +455,6 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 	}
 	composedIssue.Assignee = composedAssignee
 	return composedIssue, nil
-}
-
-func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
-	for _, stage := range issue.Pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if progress, ok := s.stateCfg.TaskProgress.Load(task.ID); ok {
-				task.Progress = progress.(api.Progress)
-			}
-		}
-	}
 }
 
 func marshalPageToken(id int) (string, error) {
