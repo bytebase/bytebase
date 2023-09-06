@@ -31,11 +31,13 @@ type SchemaDiffer struct {
 type diffNode struct {
 	schemaName     string
 	dropConstraint []string
+	dropIndex      []string
 	dropColumn     []string
 	dropTable      []string
 	createTable    []string
 	addColumn      []string
 	modifyColumn   []string
+	addIndex       []string
 	addConstraint  []string
 }
 
@@ -43,6 +45,14 @@ func (diff *diffNode) String() (string, error) {
 	var buf strings.Builder
 	for _, dropConstraint := range diff.dropConstraint {
 		if _, err := buf.WriteString(dropConstraint); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	for _, dropIndex := range diff.dropIndex {
+		if _, err := buf.WriteString(dropIndex); err != nil {
 			return "", err
 		}
 		if _, err := buf.WriteString("\n"); err != nil {
@@ -83,6 +93,14 @@ func (diff *diffNode) String() (string, error) {
 	}
 	for _, modifyColumn := range diff.modifyColumn {
 		if _, err := buf.WriteString(modifyColumn); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	for _, addIndex := range diff.addIndex {
+		if _, err := buf.WriteString(addIndex); err != nil {
 			return "", err
 		}
 		if _, err := buf.WriteString("\n"); err != nil {
@@ -145,7 +163,49 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 		diff.dropTable = append(diff.dropTable, fmt.Sprintf(`DROP TABLE "%s"."%s";`, oldSchemaInfo.name, table.name))
 	}
 
+	var newIndexes []*indexInfo
+	for _, index := range newSchemaInfo.indexMap {
+		newIndexes = append(newIndexes, index)
+	}
+	sort.Slice(newIndexes, func(i, j int) bool {
+		return newIndexes[i].id < newIndexes[j].id
+	})
+	for _, newIndex := range newIndexes {
+		indexName := newIndex.name
+		oldIndex, exists := oldSchemaInfo.indexMap[indexName]
+		if !exists {
+			diff.addIndex = append(diff.addIndex, newIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.createIndex))
+			continue
+		}
+		if err := diff.diffIndex(oldIndex, newIndex); err != nil {
+			return "", err
+		}
+		delete(oldSchemaInfo.indexMap, indexName)
+	}
+
+	var remainingIndexes []*indexInfo
+	for _, index := range oldSchemaInfo.indexMap {
+		remainingIndexes = append(remainingIndexes, index)
+	}
+	sort.Slice(remainingIndexes, func(i, j int) bool {
+		return remainingIndexes[i].id < remainingIndexes[j].id
+	})
+	for _, index := range remainingIndexes {
+		diff.dropIndex = append(diff.dropIndex, fmt.Sprintf(`DROP INDEX "%s"."%s";`, oldSchemaInfo.name, index.name))
+	}
+
 	return diff.String()
+}
+
+func (diff *diffNode) diffIndex(oldIndex, newIndex *indexInfo) error {
+	// TODO: compare index definition instead of text.
+	oldString := oldIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(oldIndex.createIndex)
+	newString := newIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.createIndex)
+	if oldString != newString {
+		diff.dropIndex = append(diff.dropIndex, fmt.Sprintf(`DROP INDEX "%s"."%s";`, diff.schemaName, oldIndex.name))
+		diff.addIndex = append(diff.addIndex, newIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.createIndex))
+	}
+	return nil
 }
 
 func (diff *diffNode) diffTable(oldTable, newTable *tableInfo) error {
@@ -203,10 +263,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 			if constraint.Constraint_name() == nil {
 				continue
 			}
-			schema, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
-			if schema != "" && schema != diff.schemaName {
-				continue
-			}
+			_, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
 			if constraintName == "" {
 				continue
 			}
@@ -226,10 +283,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 			if constraint.Constraint_name() == nil {
 				continue
 			}
-			schema, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
-			if schema != "" && schema != diff.schemaName {
-				continue
-			}
+			_, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
 			if constraintName == "" {
 				continue
 			}
