@@ -152,11 +152,7 @@ func (diff *diffNode) diffTable(oldTable, newTable *tableInfo) error {
 	if err := diff.diffColumn(oldTable, newTable); err != nil {
 		return err
 	}
-	if err := diff.diffConstraint(oldTable, newTable); err != nil {
-		return err
-	}
-
-	return nil
+	return diff.diffConstraint(oldTable, newTable)
 }
 
 func buildConstraintMap(table *tableInfo) map[string]plsql.IRelational_propertyContext {
@@ -621,7 +617,6 @@ type tableMap map[string]*tableInfo
 type indexMap map[string]*indexInfo
 
 type schemaInfo struct {
-	id       int
 	name     string
 	tableMap tableMap
 	indexMap indexMap
