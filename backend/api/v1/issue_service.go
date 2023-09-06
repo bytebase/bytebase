@@ -481,15 +481,14 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	}
 
 	issueCreateMessage := &store.IssueMessage{
-		Project:       project,
-		PlanUID:       planUID,
-		PipelineUID:   rolloutUID,
-		Title:         request.Issue.Title,
-		Status:        api.IssueOpen,
-		Type:          api.IssueDatabaseGeneral,
-		Description:   request.Issue.Description,
-		Assignee:      assignee,
-		NeedAttention: false,
+		Project:     project,
+		PlanUID:     planUID,
+		PipelineUID: rolloutUID,
+		Title:       request.Issue.Title,
+		Status:      api.IssueOpen,
+		Type:        api.IssueDatabaseGeneral,
+		Description: request.Issue.Description,
+		Assignee:    assignee,
 	}
 
 	issueCreatePayload := &storepb.IssuePayload{
@@ -1338,7 +1337,6 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		Type:                 convertToIssueType(issue.Type),
 		Status:               convertToIssueStatus(issue.Status),
 		Assignee:             fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Assignee.Email),
-		AssigneeAttention:    issue.NeedAttention,
 		Approvers:            nil,
 		ApprovalTemplates:    nil,
 		ApprovalFindingDone:  false,
