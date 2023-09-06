@@ -120,6 +120,7 @@
     v-if="state.showRequestExportPanel"
     :database-id="currentTab.connection.databaseId"
     :statement="result.statement"
+    :statement-only="true"
     :redirect-to-issue-page="sqlEditorStore.mode === 'BUNDLED'"
     @close="state.showRequestExportPanel = false"
   />

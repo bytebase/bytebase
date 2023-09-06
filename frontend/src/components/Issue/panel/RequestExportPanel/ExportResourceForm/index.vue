@@ -1,6 +1,7 @@
 <template>
   <div class="w-full mb-2">
     <NRadioGroup
+      v-if="!props.statementOnly"
       v-model:value="state.exportMethod"
       class="w-full !flex flex-row justify-start items-center gap-4"
     >
@@ -30,17 +31,19 @@
       @change="handleStatementChange"
     />
   </div>
-  <div
-    v-if="state.exportMethod === 'DATABASE'"
-    class="w-full flex flex-row justify-start items-center"
-  >
-    <DatabaseResourceSelector
-      :project-id="project!.uid"
-      :database-id="(props.databaseId as string)"
-      :database-resources="state.databaseResources"
-      @update="handleTableResourceUpdate"
-    />
-  </div>
+  <template v-if="!props.statementOnly">
+    <div
+      v-if="state.exportMethod === 'DATABASE'"
+      class="w-full flex flex-row justify-start items-center"
+    >
+      <DatabaseResourceSelector
+        :project-id="project!.uid"
+        :database-id="(props.databaseId as string)"
+        :database-resources="state.databaseResources"
+        @update="handleTableResourceUpdate"
+      />
+    </div>
+  </template>
 </template>
 
 <script lang="ts" setup>
@@ -63,6 +66,7 @@ const props = defineProps<{
   projectId?: string;
   databaseId?: string;
   statement?: string;
+  statementOnly?: boolean;
   databaseResources?: DatabaseResource[];
 }>();
 
