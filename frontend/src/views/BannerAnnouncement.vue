@@ -1,24 +1,17 @@
 <template>
-  <div v-if="showBanner" :class="[`${bgColor}`]">
-    <div
-      class="mx-auto py-1 px-3 w-full flex flex-row items-center justify-center flex-wrap"
+  <div
+    v-if="showBanner"
+    class="max-auto py-1 px-3 w-full flex flex-row justify-center flex-wrap"
+    :class="[`${bgColor}`]"
+  >
+    <a
+      :href="announcementLink"
+      target="_blank"
+      class="font-medium text-center text-white hover:underline flex flex-row items-center"
     >
-      <div class="px-1 font-medium text-white flex flex-row items-center">
-        <p>{{ announcementText }}</p>
-      </div>
-      <div
-        v-if="announcementLink.length > 0"
-        class="item-center px-1 font-medium text-white truncate"
-      >
-        <a
-          :href="announcementLink"
-          target="_blank"
-          class="text-center underline"
-        >
-          <heroicons-solid:arrow-long-right class="mr-3 w-5 h-5" />
-        </a>
-      </div>
-    </div>
+      <p class="px-1">{{ announcementText }}</p>
+      <heroicons-solid:arrow-long-right class="mr-3 w-5 h-5" />
+    </a>
   </div>
 </template>
 
