@@ -14,15 +14,58 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func getAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, node ast.Node) (int64, error) {
+func getTableDataSize(metadata *storepb.DatabaseSchemaMetadata, schemaName, tableName string) int64 {
+	if metadata == nil {
+		return 0
+	}
+	for _, schema := range metadata.Schemas {
+		if schema.Name != schemaName {
+			continue
+		}
+		for _, table := range schema.Tables {
+			if table.Name != tableName {
+				continue
+			}
+			return table.RowCount
+		}
+	}
+	return 0
+}
+
+func getAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node ast.Node) (int64, error) {
 	switch node := node.(type) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
 		if node, ok := node.(*ast.InsertStmt); ok && len(node.ValueList) > 0 {
 			return int64(len(node.ValueList)), nil
 		}
 		return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()), getAffectedRowsCountForPostgres)
+	case *ast.AlterTableStmt:
+		if node.Table.Type == ast.TableTypeBaseTable {
+			schemaName := "public"
+			if node.Table.Schema != "" {
+				schemaName = node.Table.Schema
+			}
+			tableName := node.Table.Name
+
+			return getTableDataSize(metadata, schemaName, tableName), nil
+		}
+		return 0, nil
+	case *ast.DropTableStmt:
+		var total int64
+		for _, table := range node.TableList {
+			schemaName := "public"
+			if table.Schema != "" {
+				schemaName = table.Schema
+			}
+			tableName := table.Name
+
+			total += getTableDataSize(metadata, schemaName, tableName)
+		}
+		return total, nil
+
 	default:
 		return 0, nil
 	}
@@ -178,7 +221,7 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]any, er
 	return []any{columnNames, columnTypeNames, data}, nil
 }
 
-func getAffectedRowsForMysql(ctx context.Context, dbType db.Type, sqlDB *sql.DB, node tidbast.StmtNode) (int64, error) {
+func getAffectedRowsForMysql(ctx context.Context, dbType db.Type, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node tidbast.StmtNode) (int64, error) {
 	switch node := node.(type) {
 	case *tidbast.InsertStmt, *tidbast.UpdateStmt, *tidbast.DeleteStmt:
 		if node, ok := node.(*tidbast.InsertStmt); ok && node.Select == nil {
@@ -188,6 +231,20 @@ func getAffectedRowsForMysql(ctx context.Context, dbType db.Type, sqlDB *sql.DB,
 			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", node.Text()), getAffectedRowsCountForOceanBase)
 		}
 		return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()), getAffectedRowsCountForMysql)
+
+	case *tidbast.AlterTableStmt:
+		schemaName := ""
+		tableName := node.Table.Name.L
+		return getTableDataSize(metadata, schemaName, tableName), nil
+
+	case *tidbast.DropTableStmt:
+		var total int64
+		schemaName := ""
+		for _, table := range node.Tables {
+			tableName := table.Name.L
+			total += getTableDataSize(metadata, schemaName, tableName)
+		}
+		return total, nil
 	default:
 		return 0, nil
 	}
