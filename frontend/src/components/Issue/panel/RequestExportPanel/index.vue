@@ -60,13 +60,18 @@
         </div>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">
-            {{ $t("issue.grant-request.export-method") }}
+            {{
+              props.statementOnly
+                ? "SQL"
+                : $t("issue.grant-request.export-method")
+            }}
             <RequiredStar />
           </span>
           <ExportResourceForm
             :project-id="state.projectId"
             :database-id="state.databaseId"
             :statement="statement"
+            :statement-only="props.statementOnly"
             @update:condition="state.databaseResourceCondition = $event"
             @update:database-resources="state.databaseResources = $event"
           />
@@ -173,6 +178,7 @@ interface LocalState {
 const props = defineProps<{
   databaseId?: string;
   statement?: string;
+  statementOnly?: boolean;
   redirectToIssuePage?: boolean;
 }>();
 
