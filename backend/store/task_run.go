@@ -291,6 +291,10 @@ func (*Store) getTaskNextAttempt(ctx context.Context, tx *Tx, taskIDs []int) ([]
 }
 
 func (s *Store) createPendingTaskRunsTx(ctx context.Context, tx *Tx, attempts []int, creates []*TaskRunMessage) error {
+	if len(attempts) != len(creates) {
+		return errors.Errorf("length of attempts and creates are different")
+	}
+
 	// TODO(p0ny): batch create.
 	for i, create := range creates {
 		if err := s.createTaskRunImpl(ctx, tx, create, attempts[i], api.TaskRunPending, create.CreatorID); err != nil {
