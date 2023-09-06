@@ -23,7 +23,10 @@
       <ProjectMemberRoleSelect v-model:role="state.role" class="mt-2" />
     </div>
 
-    <div v-if="state.role === 'roles/QUERIER'" class="w-full">
+    <div
+      v-if="state.role === 'roles/QUERIER' || state.role === 'roles/EXPORTER'"
+      class="w-full"
+    >
       <span class="block mb-2">{{ $t("common.databases") }}</span>
       <QuerierDatabaseResourceForm
         :project-id="project.uid"
@@ -33,28 +36,6 @@
       />
     </div>
     <template v-if="state.role === 'roles/EXPORTER'">
-      <div class="w-full">
-        <span class="block mb-2">{{ $t("common.database") }}</span>
-        <DatabaseSelect
-          class="!w-full"
-          :project="project.uid"
-          :database="state.databaseId"
-          @update:database="state.databaseId = $event"
-        />
-      </div>
-      <div class="w-full">
-        <span class="block mb-2">{{
-          $t("issue.grant-request.export-method")
-        }}</span>
-        <ExporterDatabaseResourceForm
-          class="w-full"
-          :project-id="project.uid"
-          :database-id="state.databaseId"
-          :database-resources="state.databaseResources"
-          @update:condition="state.databaseResourceCondition = $event"
-          @update:database-resources="state.databaseResources = $event"
-        />
-      </div>
       <div class="w-full flex flex-col justify-start items-start">
         <span class="mb-2">
           {{ $t("issue.grant-request.export-rows") }}
@@ -86,9 +67,7 @@ import { NInputNumber } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
-import ExporterDatabaseResourceForm from "@/components/Issue/panel/RequestExportPanel/ExportResourceForm/index.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
-import { DatabaseSelect } from "@/components/v2";
 import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
 import { useUserStore } from "@/store";
 import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
