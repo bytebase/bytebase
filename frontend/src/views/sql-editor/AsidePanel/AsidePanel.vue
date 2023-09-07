@@ -4,7 +4,7 @@
       v-model:value="databaseTab"
       type="segment"
       size="small"
-      class="h-full"
+      class="primary-sidebar h-full"
       pane-style="height: calc(100% - 35px); padding: 0;"
     >
       <NTabPane name="projects" :tab="$t('common.projects')">
@@ -70,3 +70,9 @@ watchEffect(() => {
   }
 });
 </script>
+
+<style lang="postcss">
+.primary-sidebar .n-tabs-rail {
+  @apply pt-1;
+}
+</style>
