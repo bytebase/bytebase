@@ -118,7 +118,7 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 		userInfo.Identifier = v
 	}
 	if userInfo.Identifier == "" {
-		slog.Error("Missing identifier in response body", slog.String("token", token), slog.Any("claims", claims), log.BBError(err))
+		slog.Error("Missing identifier in response body", slog.String("token", token), slog.Any("claims", claims))
 		return nil, errors.Errorf("the field %q is not found in claims or has empty value", p.config.FieldMapping.Identifier)
 	}
 

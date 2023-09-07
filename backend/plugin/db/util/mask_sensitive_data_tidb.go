@@ -14,7 +14,7 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 )
 
-func (extractor *sensitiveFieldExtractor) extractMySQLSensitiveField(statement string) ([]db.SensitiveField, error) {
+func (extractor *sensitiveFieldExtractor) extractTiDBSensitiveField(statement string) ([]db.SensitiveField, error) {
 	p := tidbparser.New()
 
 	// To support MySQL8 window function syntax.
@@ -599,7 +599,7 @@ func (extractor *sensitiveFieldExtractor) buildTableSchemaForView(viewName strin
 		currentDatabase: extractor.currentDatabase,
 		schemaInfo:      extractor.schemaInfo,
 	}
-	fields, err := newExtractor.extractMySQLSensitiveField(definition)
+	fields, err := newExtractor.extractTiDBSensitiveField(definition)
 	if err != nil {
 		return db.TableSchema{}, err
 	}
