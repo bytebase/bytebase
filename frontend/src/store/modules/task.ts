@@ -114,8 +114,8 @@ function convertPartial(
     : {};
 
   const taskRunList: TaskRun[] = [];
-  const taskRunIdList = task.relationships!.taskRun
-    .data as ResourceIdentifier[];
+  const taskRunIdList = (task.relationships?.taskRun?.data ??
+    []) as ResourceIdentifier[];
   // Needs to iterate through taskIdList to maintain the order
   for (const idItem of taskRunIdList) {
     for (const item of includedList || []) {
@@ -129,8 +129,8 @@ function convertPartial(
   }
 
   const taskCheckRunList: TaskCheckRun[] = [];
-  const taskCheckRunIdList = task.relationships!.taskCheckRun
-    .data as ResourceIdentifier[];
+  const taskCheckRunIdList = (task.relationships?.taskCheckRun?.data ??
+    []) as ResourceIdentifier[];
   // Needs to iterate through taskIdList to maintain the order
   for (const idItem of taskCheckRunIdList) {
     for (const item of includedList || []) {
