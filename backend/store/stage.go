@@ -14,10 +14,6 @@ type StageMessage struct {
 	PipelineID    int
 	TaskList      []*TaskMessage
 
-	// Active is true if not all tasks are done within the stage.
-	// Deprecated: deprecated in favor of TaskSchedulerV2, should be removed after we switch over.
-	// TODO(p0ny): remove
-	Active bool
 	// Output only.
 	ID int
 
@@ -113,8 +109,7 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			stage.id,
 			stage.pipeline_id,
 			stage.environment_id,
-			stage.name,
-			(SELECT COUNT(1) > 0 FROM task WHERE task.pipeline_id = stage.pipeline_id AND task.stage_id <= stage.id AND task.status != 'DONE')
+			stage.name
 		FROM stage
 		WHERE %s ORDER BY id ASC`, strings.Join(where, " AND ")),
 		args...,
@@ -132,7 +127,6 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			&stage.PipelineID,
 			&stage.EnvironmentID,
 			&stage.Name,
-			&stage.Active,
 		); err != nil {
 			return nil, err
 		}

@@ -2068,7 +2068,6 @@ func (s *Server) prepareIssueFromFile(
 }
 
 func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases []*store.DatabaseMessage, fileName, schemaVersion, statement string, pushEvent vcs.PushEvent) error {
-	// TODO(p0ny): sheet, create new sheets and update task sheet id.
 	// For modified files, we try to update the existing issue's statement.
 	for _, database := range databases {
 		taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
