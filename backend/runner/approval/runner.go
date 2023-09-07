@@ -459,7 +459,6 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 					if err != nil {
 						return 0, err
 					}
-					// TODO(p0ny): implement sql type and affected rows
 					args := map[string]any{
 						"environment_id": environmentID,
 						"project_id":     issue.Project.ResourceID,
