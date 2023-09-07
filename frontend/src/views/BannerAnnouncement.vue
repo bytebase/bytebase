@@ -5,7 +5,7 @@
     :class="[`${bgColor}`]"
   >
     <a
-      v-if="announcementLink.length > 0"
+      v-if="announcementLink !== ''"
       :href="announcementLink"
       target="_blank"
       class="hover:underline flex flex-row items-center"
