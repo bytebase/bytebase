@@ -61,7 +61,7 @@
           </div>
 
           <div
-            v-if="subscriptionStore.currentPlan !== PlanType.FREE"
+            v-if="subscriptionStore.currentPlan !== PlanType.FREE && allowEdit"
             class="sm:col-span-2 ml-0 sm:ml-3"
           >
             <label for="activation" class="textlabel block">
@@ -78,10 +78,7 @@
               class="mt-2"
               :text="false"
               :value="basicInfo.activation"
-              :disabled="
-                !allowEdit ||
-                (!basicInfo.activation && availableLicenseCount === 0)
-              "
+              :disabled="!basicInfo.activation && availableLicenseCount === 0"
               @toggle="changeInstanceActivation"
             />
           </div>
