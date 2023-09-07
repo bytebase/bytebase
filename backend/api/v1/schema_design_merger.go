@@ -5,12 +5,38 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+func tryMerge(base, head, target *v1pb.DatabaseMetadata) (*v1pb.DatabaseMetadata, error) {
+	base, head, target = proto.Clone(base).(*v1pb.DatabaseMetadata), proto.Clone(head).(*v1pb.DatabaseMetadata), proto.Clone(target).(*v1pb.DatabaseMetadata)
+
+	diffBetweenBaseAndHead, err := diffMetadata(base, head)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to diff between base and head")
+	}
+
+	diffBetweenBaseAndTarget, err := diffMetadata(base, target)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to diff between base and target")
+	}
+
+	if conflict, msg := diffBetweenBaseAndHead.isConflictWith(diffBetweenBaseAndTarget); conflict {
+		return nil, errors.Errorf("merge conflict: %s", msg)
+	}
+
+	if err := diffBetweenBaseAndHead.applyDiffTo(target); err != nil {
+		return nil, errors.Wrap(err, "failed to apply diff to target")
+	}
+
+	return target, nil
+}
+
 type metadataDiffNode interface {
 	isConflictWith(other metadataDiffNode) (bool, string)
+	applyDiffTo(target proto.Message) error
 }
 
 type diffAction string
@@ -41,6 +67,15 @@ func (mr *metadataDiffRootNode) isConflictWith(other *metadataDiffRootNode) (boo
 		}
 	}
 	return false, ""
+}
+
+func (mr *metadataDiffRootNode) applyDiffTo(target *v1pb.DatabaseMetadata) error {
+	for _, schema := range mr.schemas {
+		if err := schema.applyDiffTo(target); err != nil {
+			return errors.Wrapf(err, "failed to apply diff to schema %q", schema.name)
+		}
+	}
+	return nil
 }
 
 /* schema related */
@@ -84,6 +119,37 @@ func (n *metadataDiffSchemaNode) isConflictWith(other metadataDiffNode) (bool, s
 	default:
 		return true, fmt.Sprintf("non-expected node type pair, one is %T, the other is %T", n, other)
 	}
+}
+
+func (n *metadataDiffSchemaNode) applyDiffTo(target proto.Message) error {
+	databaseTarget, ok := target.(*v1pb.DatabaseMetadata)
+	if !ok {
+		return errors.Errorf("target is not a database metadata, but %T", target)
+	}
+
+	switch n.action {
+	case diffActionCreate:
+		databaseTarget.Schemas = append(databaseTarget.Schemas, n.to)
+	case diffActionDrop:
+		for i, schema := range databaseTarget.Schemas {
+			if schema.Name == n.name {
+				databaseTarget.Schemas = append(databaseTarget.Schemas[:i], databaseTarget.Schemas[i+1:]...)
+				break
+			}
+		}
+	case diffActionUpdate:
+		for _, schema := range databaseTarget.Schemas {
+			if schema.Name == n.name {
+				// Update schema currently is only contains diff of tables. So we do apply table diff to target schema.
+				for _, table := range n.tables {
+					if err := table.applyDiffTo(schema); err != nil {
+						return errors.Wrapf(err, "failed to apply diff to table %q", table)
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 /* table related */
@@ -141,6 +207,42 @@ func (n *metadataDiffTableNode) isConflictWith(other metadataDiffNode) (bool, st
 	}
 }
 
+func (n *metadataDiffTableNode) applyDiffTo(target proto.Message) error {
+	schemaTarget, ok := target.(*v1pb.SchemaMetadata)
+	if !ok {
+		return errors.Errorf("target is not a schema metadata, but %T", target)
+	}
+
+	switch n.action {
+	case diffActionCreate:
+		schemaTarget.Tables = append(schemaTarget.Tables, n.to)
+	case diffActionDrop:
+		for i, table := range schemaTarget.Tables {
+			if table.Name == n.name {
+				schemaTarget.Tables = append(schemaTarget.Tables[:i], schemaTarget.Tables[i+1:]...)
+				break
+			}
+		}
+	case diffActionUpdate:
+		for _, table := range schemaTarget.Tables {
+			// Update table currently is only contains diff of columns and foreign keys. So we do apply column and foreign key diff to target table.
+			if table.Name == n.name {
+				for _, column := range n.columns {
+					if err := column.applyDiffTo(table); err != nil {
+						return errors.Wrapf(err, "failed to apply diff to column %q", column)
+					}
+				}
+				for _, foreignKey := range n.foreignKeys {
+					if err := foreignKey.applyDiffTo(table); err != nil {
+						return errors.Wrapf(err, "failed to apply diff to foreign key %q", foreignKey)
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
 /* column related */
 type metadataDiffColumnNode struct {
 	metadataDiffBaseNode
@@ -167,6 +269,34 @@ func (n *metadataDiffColumnNode) isConflictWith(other metadataDiffNode) (bool, s
 	}
 }
 
+func (n *metadataDiffColumnNode) applyDiffTo(target proto.Message) error {
+	tableTarget, ok := target.(*v1pb.TableMetadata)
+	if !ok {
+		return errors.Errorf("target is not a table metadata, but %T", target)
+	}
+
+	//TODO(zp): handle the column position...
+	switch n.action {
+	case diffActionCreate:
+		tableTarget.Columns = append(tableTarget.Columns, n.to)
+	case diffActionDrop:
+		for i, column := range tableTarget.Columns {
+			if column.Name == n.name {
+				tableTarget.Columns = append(tableTarget.Columns[:i], tableTarget.Columns[i+1:]...)
+				break
+			}
+		}
+	case diffActionUpdate:
+		for i, column := range tableTarget.Columns {
+			if column.Name == n.name {
+				tableTarget.Columns[i] = n.to
+				break
+			}
+		}
+	}
+	return nil
+}
+
 /* foreignKey related */
 type metadataDiffForeignKeyNode struct {
 	metadataDiffBaseNode
@@ -191,6 +321,33 @@ func (n *metadataDiffForeignKeyNode) isConflictWith(other metadataDiffNode) (boo
 	default:
 		return true, fmt.Sprintf("non-expected node type pair, one is %T, the other is %T", n, other)
 	}
+}
+
+func (n *metadataDiffForeignKeyNode) applyDiffTo(target proto.Message) error {
+	tableTarget, ok := target.(*v1pb.TableMetadata)
+	if !ok {
+		return errors.Errorf("target is not a table metadata, but %T", target)
+	}
+
+	switch n.action {
+	case diffActionCreate:
+		tableTarget.ForeignKeys = append(tableTarget.ForeignKeys, n.to)
+	case diffActionDrop:
+		for i, foreignKey := range tableTarget.ForeignKeys {
+			if foreignKey.Name == n.name {
+				tableTarget.ForeignKeys = append(tableTarget.ForeignKeys[:i], tableTarget.ForeignKeys[i+1:]...)
+				break
+			}
+		}
+	case diffActionUpdate:
+		for i, foreignKey := range tableTarget.ForeignKeys {
+			if foreignKey.Name == n.name {
+				tableTarget.ForeignKeys[i] = n.to
+				break
+			}
+		}
+	}
+	return nil
 }
 
 func diffMetadata(from, to *v1pb.DatabaseMetadata) (*metadataDiffRootNode, error) {
