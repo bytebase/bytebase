@@ -55,7 +55,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		result, err := extractor.extractMySQLSensitiveField(statement)
+		result, err := extractor.extractTiDBSensitiveField(statement)
 		if err != nil {
 			return nil, err
 		}
