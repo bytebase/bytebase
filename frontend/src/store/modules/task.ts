@@ -57,37 +57,6 @@ function convertTaskRun(
   };
 }
 
-function convertTaskCheckRun(
-  taskCheckRun: ResourceObject,
-  includedList: ResourceObject[]
-): TaskCheckRun {
-  const result = taskCheckRun.attributes.result
-    ? JSON.parse((taskCheckRun.attributes.result as string) || "{}")
-    : {};
-
-  const payload = taskCheckRun.attributes.payload
-    ? JSON.parse((taskCheckRun.attributes.payload as string) || "{}")
-    : {};
-
-  return {
-    ...(taskCheckRun.attributes as Omit<
-      TaskCheckRun,
-      "id" | "result" | "payload" | "creator" | "updater"
-    >),
-    id: parseInt(taskCheckRun.id),
-    creator: getPrincipalFromIncludedList(
-      taskCheckRun.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      taskCheckRun.relationships!.updater.data,
-      includedList
-    ),
-    result,
-    payload,
-  };
-}
-
 function convertTaskProgress(attributes: any): TaskProgress {
   if (!attributes) return unknown("TASK_PROGRESS");
 
@@ -129,23 +98,6 @@ function convertPartial(
   }
 
   const taskCheckRunList: TaskCheckRun[] = [];
-  const taskCheckRunIdList = task.relationships!.taskCheckRun
-    .data as ResourceIdentifier[];
-  // Needs to iterate through taskIdList to maintain the order
-  for (const idItem of taskCheckRunIdList) {
-    for (const item of includedList || []) {
-      if (item.type == "taskCheckRun") {
-        if (idItem.id == item.id) {
-          const taskCheckRun: TaskCheckRun = convertTaskCheckRun(
-            item,
-            includedList
-          );
-          taskCheckRunList.push(taskCheckRun);
-        }
-      }
-    }
-  }
-
   let instance: Instance = empty("INSTANCE") as Instance;
   if (task.relationships?.instance.data) {
     const instanceId = (task.relationships.instance.data as ResourceIdentifier)
