@@ -129,7 +129,7 @@
     "long": "^5.2.3",
     "popper.js": "1.16.1",
     "postcss": "8.4.21",
-    "prettier": "2.7.1",
+    "prettier": "3.0.3",
     "protobufjs": "^7.2.5",
     "tailwindcss": "3.2.1",
     "ts-proto": "^1.157.0",
