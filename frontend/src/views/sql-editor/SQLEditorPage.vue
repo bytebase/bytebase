@@ -40,66 +40,78 @@
       <Pane class="relative">
         <TabList />
 
-        <template v-if="allowAccess">
-          <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
-            <Splitpanes
-              v-if="allowReadOnlyMode"
-              horizontal
-              class="default-theme"
-              :dbl-click-splitter="false"
-            >
-              <Pane>
+        <div class="flex flex-row w-full h-full overflow-hidden">
+          <div class="flex-1 h-full">
+            <template v-if="allowAccess">
+              <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
                 <Splitpanes
-                  vertical
+                  v-if="allowReadOnlyMode"
+                  horizontal
                   class="default-theme"
                   :dbl-click-splitter="false"
                 >
                   <Pane>
-                    <EditorPanel />
+                    <Splitpanes
+                      vertical
+                      class="default-theme"
+                      :dbl-click-splitter="false"
+                    >
+                      <Pane>
+                        <EditorPanel />
+                      </Pane>
+                      <Pane
+                        v-if="showSecondarySidebar && windowWidth >= 1024"
+                        :size="25"
+                      >
+                        <SecondarySidebar @alter-schema="handleAlterSchema" />
+                      </Pane>
+                    </Splitpanes>
                   </Pane>
-                  <Pane
-                    v-if="showSecondarySidebar && windowWidth >= 1024"
-                    :size="25"
-                  >
-                    <SecondarySidebar @alter-schema="handleAlterSchema" />
+                  <Pane v-if="!isDisconnected" :size="40">
+                    <ResultPanel />
                   </Pane>
                 </Splitpanes>
-              </Pane>
-              <Pane v-if="!isDisconnected" :size="40">
-                <ResultPanel />
-              </Pane>
-            </Splitpanes>
 
+                <div
+                  v-else
+                  class="w-full h-full flex flex-col items-center justify-center gap-y-2"
+                >
+                  <img
+                    src="../../assets/illustration/403.webp"
+                    class="max-h-[40%]"
+                  />
+                  <i18n-t
+                    class="textinfolabel flex items-center"
+                    keypath="sql-editor.allow-admin-mode-only"
+                    tag="div"
+                  >
+                    <template #instance>
+                      <InstanceV1Name :instance="instance" :link="false" />
+                    </template>
+                  </i18n-t>
+                  <AdminModeButton />
+                </div>
+              </template>
+
+              <TerminalPanelV1
+                v-if="tabStore.currentTab.mode === TabMode.Admin"
+              />
+            </template>
             <div
               v-else
-              class="w-full h-full flex flex-col items-center justify-center gap-y-2"
+              class="w-full h-full flex flex-col items-center justify-center"
             >
               <img
                 src="../../assets/illustration/403.webp"
                 class="max-h-[40%]"
               />
-              <i18n-t
-                class="textinfolabel flex items-center"
-                keypath="sql-editor.allow-admin-mode-only"
-                tag="div"
-              >
-                <template #instance>
-                  <InstanceV1Name :instance="instance" :link="false" />
-                </template>
-              </i18n-t>
-              <AdminModeButton />
+              <div class="textinfolabel">
+                {{ $t("database.access-denied") }}
+              </div>
             </div>
-          </template>
-
-          <TerminalPanelV1 v-if="tabStore.currentTab.mode === TabMode.Admin" />
-        </template>
-        <div
-          v-else
-          class="w-full h-full flex flex-col items-center justify-center"
-        >
-          <img src="../../assets/illustration/403.webp" class="max-h-[40%]" />
-          <div class="textinfolabel">
-            {{ $t("database.access-denied") }}
+          </div>
+          <div v-if="windowWidth >= 1024" class="h-full border-l">
+            <SecondaryGutterBar />
           </div>
         </div>
 
@@ -159,6 +171,7 @@ import {
   provideSecondarySidebarContext,
   default as SecondarySidebar,
 } from "./SecondarySidebar";
+import { SecondaryGutterBar } from "./SecondarySidebar";
 import { provideSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
@@ -278,6 +291,10 @@ const handleAlterSchema = async (params: {
 .splitpanes.default-theme .splitpanes__splitter:hover::after {
   @apply bg-white opacity-100;
 }
+
+.secondary-sidebar-gutter .n-tabs-wrapper {
+  @apply pt-0;
+}
 </style>
 
 <style scoped>
@@ -288,6 +305,6 @@ const handleAlterSchema = async (params: {
   --color-branding: #4f46e5;
   --border-color: rgba(200, 200, 200, 0.2);
 
-  @apply flex-1 overflow-hidden flex flex-col;
+  @apply w-full flex-1 overflow-hidden flex flex-row;
 }
 </style>

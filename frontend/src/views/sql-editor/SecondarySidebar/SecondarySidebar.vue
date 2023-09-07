@@ -1,25 +1,15 @@
 <template>
-  <NTabs
-    v-model:value="tab"
-    type="segment"
-    size="small"
-    class="h-full"
-    pane-style="height: calc(100% - 35px); padding: 0;"
-  >
-    <NTabPane v-if="showInfoPane" name="INFO" :tab="$t('common.info')">
-      <InfoTabPane @alter-schema="$emit('alter-schema', $event)" />
-    </NTabPane>
-    <NTabPane name="SHEET" :tab="$t('sheet.sheet')">
-      <SheetTabPane />
-    </NTabPane>
-    <NTabPane name="HISTORY" :tab="$t('common.history')">
-      <HistoryTabPane />
-    </NTabPane>
-  </NTabs>
+  <div class="h-full">
+    <InfoTabPane
+      v-if="tab === 'INFO'"
+      @alter-schema="$emit('alter-schema', $event)"
+    />
+    <SheetTabPane v-if="tab === 'SHEET'" />
+    <HistoryTabPane v-if="tab === 'HISTORY'" />
+  </div>
 </template>
 
 <script setup lang="ts">
-import { NTabs, NTabPane } from "naive-ui";
 import { computed, watch } from "vue";
 import { useInstanceV1Store, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
