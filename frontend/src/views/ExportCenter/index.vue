@@ -49,6 +49,7 @@
     :project-id="state.filterParams.project?.uid"
     :database-id="state.filterParams.database?.uid"
     :redirect-to-issue-page="true"
+    :statement-only="true"
     @close="state.showRequestExportPanel = false"
   />
 
