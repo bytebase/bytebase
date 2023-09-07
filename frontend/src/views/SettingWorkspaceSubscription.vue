@@ -56,6 +56,7 @@
           {{ $t("subscription.instance-assignment.used-and-total-license") }}
         </dt>
         <dd
+          v-if="canManageSubscription"
           class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
           @click="state.showInstanceAssignmentDrawer = true"
         >
