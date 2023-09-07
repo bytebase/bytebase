@@ -51,6 +51,8 @@ func schemaDiff(c echo.Context) error {
 		engine = parser.MySQL
 	case parser.EngineType(db.TiDB):
 		engine = parser.TiDB
+	case parser.EngineType(db.Oracle):
+		engine = parser.Oracle
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid database engine %s", request.EngineType))
 	}

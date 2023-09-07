@@ -1365,7 +1365,7 @@
       "select-source-schema": "选择源 Schema",
       "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
-      "select-database-placeholder": "选择数据库 (仅限 MySQL, PostgreSQL)",
+      "select-database-placeholder": "选择数据库 (仅限 MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "源数据库",
       "source-schema": "源 Schema",
       "schema-version": {

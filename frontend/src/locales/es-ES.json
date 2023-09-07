@@ -1367,7 +1367,7 @@
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "select-project": "Seleccione el proyecto",
-      "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL)",
+      "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "Base de datos de origen",
       "source-schema": "Esquema de origen",
       "schema-version": {

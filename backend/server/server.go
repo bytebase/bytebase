@@ -128,6 +128,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/mysql"
 	// Register postgres differ driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/pg"
+	// Register oracle differ driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/plsql"
 	// Register mysql edit driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/edit/mysql"
 	// Register postgres edit driver.

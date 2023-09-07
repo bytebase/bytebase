@@ -603,6 +603,9 @@ func buildSchemaInfo(statement string) (*schemaInfo, error) {
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, node)
 	if listener.err != nil {
+		if strings.Contains(listener.err.Error(), "schema name mismatch") {
+			return nil, errors.Wrapf(listener.err, "Oracle sync schema only supports single schema, please use \"Manage based on schema\" sync mode for this operation")
+		}
 		return nil, listener.err
 	}
 	return listener.schemaInfo, nil
