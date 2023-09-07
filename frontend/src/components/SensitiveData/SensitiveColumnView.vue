@@ -34,9 +34,11 @@
       <NButton
         type="primary"
         :disabled="
-          state.pendingGrantAccessColumnIndex.length === 0 || !hasPermission
+          state.pendingGrantAccessColumnIndex.length === 0 ||
+          !hasPermission ||
+          !hasSensitiveDataFeature
         "
-        @click="state.showGrantAccessDrawer = true"
+        @click="onGrantAccessButtonClick"
       >
         {{ $t("settings.sensitive-data.grant-access") }}
       </NButton>
@@ -70,6 +72,7 @@
   <FeatureModal
     feature="bb.feature.sensitive-data"
     :open="state.showFeatureModal"
+    :instance="findInstanceWithoutLicense()"
     @cancel="state.showFeatureModal = false"
   />
 
@@ -126,8 +129,13 @@ import {
   useEnvironmentV1Store,
   pushNotification,
   usePolicyV1Store,
+  useSubscriptionV1Store,
 } from "@/store";
-import { UNKNOWN_ID, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import {
+  UNKNOWN_ID,
+  UNKNOWN_ENVIRONMENT_NAME,
+  ComposedInstance,
+} from "@/types";
 import {
   PolicyType,
   PolicyResourceType,
@@ -167,6 +175,7 @@ const databaseStore = useDatabaseV1Store();
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const policyStore = usePolicyV1Store();
 const environmentStore = useEnvironmentV1Store();
+const subscriptionStore = useSubscriptionV1Store();
 
 const policyList = usePolicyListByResourceTypeAndPolicyType({
   resourceType: PolicyResourceType.DATABASE,
@@ -277,6 +286,13 @@ const onColumnRemove = async (column: SensitiveColumn) => {
   });
 };
 
+const isMissingLicenseForInstance = (instance: ComposedInstance): boolean => {
+  return subscriptionStore.instanceMissingLicense(
+    "bb.feature.sensitive-data",
+    instance
+  );
+};
+
 const onRowClick = async (
   item: SensitiveColumn,
   row: number,
@@ -298,6 +314,10 @@ const onRowClick = async (
       break;
     case "EDIT":
       state.pendingGrantAccessColumnIndex = [row];
+      if (isMissingLicenseForInstance(item.database.instanceEntity)) {
+        state.showFeatureModal = true;
+        return;
+      }
       state.showSensitiveColumnDrawer = true;
       break;
   }
@@ -334,6 +354,16 @@ const filteredColumnList = computed(() => {
   });
 });
 
+const findInstanceWithoutLicense = () => {
+  for (const index of state.pendingGrantAccessColumnIndex) {
+    const instance = filteredColumnList.value[index]?.database?.instanceEntity;
+    const missingLicense = isMissingLicenseForInstance(instance);
+    if (missingLicense) {
+      return instance;
+    }
+  }
+};
+
 const environment = computed(() => {
   if (state.selectedEnvironmentName === UNKNOWN_ENVIRONMENT_NAME) {
     return;
@@ -352,5 +382,14 @@ const onDatabaseSelect = (databaseUid: string | undefined) => {
     const database = databaseStore.getDatabaseByUID(databaseUid);
     state.selectedInstanceUid = database.instanceEntity.uid;
   }
+};
+
+const onGrantAccessButtonClick = () => {
+  const instance = findInstanceWithoutLicense();
+  if (instance) {
+    state.showFeatureModal = true;
+    return;
+  }
+  state.showGrantAccessDrawer = true;
 };
 </script>
