@@ -22,6 +22,8 @@
     >
       {{ $t("common.history") }}
     </div>
+
+    <OpenAIButton class="self-center" />
   </div>
 </template>
 
@@ -30,7 +32,8 @@ import { computed, watch } from "vue";
 import { useInstanceV1Store, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { instanceV1HasAlterSchema, isDisconnectedTab } from "@/utils";
-import { TabView, useSecondarySidebarContext } from "./context";
+import { TabView, useSecondarySidebarContext } from "../context";
+import OpenAIButton from "./OpenAIButton.vue";
 
 const { show, tab } = useSecondarySidebarContext();
 

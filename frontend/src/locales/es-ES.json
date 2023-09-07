@@ -2593,7 +2593,9 @@
       },
       "statement-copied": "Declaración copiada al portapapeles",
       "dont-show-again": "No mostrar de nuevo",
-      "chat-sql": "ChatSQL"
+      "chat-sql": "ChatSQL",
+      "disable-chat-sql": "Deshabilitar Chat SQL",
+      "enable-chat-sql": "Habilitar Chat SQL"
     }
   },
   "custom-approval": {

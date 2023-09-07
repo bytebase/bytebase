@@ -11,7 +11,7 @@
     </template>
 
     <AIChatToSQL
-      v-if="!tabStore.isDisconnected"
+      v-if="!tabStore.isDisconnected && showAIChatBox"
       :allow-config="sqlEditorStore.mode === 'BUNDLED'"
       @apply-statement="handleApplyStatement"
     />
@@ -40,6 +40,7 @@ import {
   ExecutingHintModal,
   SaveSheetModal,
 } from "../EditorCommon";
+import { useSQLEditorContext } from "../context";
 import SQLEditor from "./SQLEditor.vue";
 import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
 
@@ -47,6 +48,7 @@ const tabStore = useTabStore();
 const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
 const tab = useCurrentTab();
 const sqlEditorStore = useSQLEditorStore();
+const { showAIChatBox } = useSQLEditorContext();
 
 const { executeReadonly } = useExecuteSQL();
 

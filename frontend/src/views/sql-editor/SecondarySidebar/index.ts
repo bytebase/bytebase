@@ -1,4 +1,4 @@
-import SecondaryGutterBar from "./SecondaryGutterBar.vue";
+import SecondaryGutterBar from "./SecondaryGutterBar";
 import SecondarySidebar from "./SecondarySidebar.vue";
 import ToggleSecondarySidebarButton from "./ToggleSecondarySidebarButton.vue";
 

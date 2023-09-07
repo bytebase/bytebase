@@ -176,6 +176,7 @@ import { provideSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
 import TerminalPanelV1 from "./TerminalPanel/TerminalPanelV1.vue";
+import { provideSQLEditorContext } from "./context";
 
 type LocalState = {
   sidebarExpanded: boolean;
@@ -194,6 +195,8 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const currentUserV1 = useCurrentUserV1();
+// provide context for SQL Editor
+provideSQLEditorContext();
 // provide context for sheets
 const { showPanel: showSheetPanel } = provideSheetContext();
 const { show: showSecondarySidebar } = provideSecondarySidebarContext();

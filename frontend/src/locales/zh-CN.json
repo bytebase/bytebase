@@ -2590,7 +2590,9 @@
       },
       "statement-copied": "语句已复制到剪贴板",
       "dont-show-again": "不再显示",
-      "chat-sql": "ChatSQL"
+      "chat-sql": "ChatSQL",
+      "disable-chat-sql": "关闭 Chat SQL",
+      "enable-chat-sql": "开启 Chat SQL"
     }
   },
   "custom-approval": {
