@@ -151,7 +151,7 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 		dmlBatchSize                        = 10
 		maxLagMillisecondsThrottleThreshold = 1500
 		defaultNumRetries                   = 60
-		cutoverLockTimeoutSeconds           = 3
+		cutoverLockTimeoutSeconds           = 10
 		exponentialBackoffMaxInterval       = 64
 		throttleHTTPIntervalMillis          = 100
 		throttleHTTPTimeoutMillis           = 1000
