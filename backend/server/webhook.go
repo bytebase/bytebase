@@ -2094,7 +2094,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			return nil
 		}
 		if issue == nil {
-			slog.Error("issue not found by pipeline ID", slog.Int("pipeline ID", task.PipelineID), log.BBError(err))
+			slog.Error("issue not found by pipeline ID", slog.Int("pipeline ID", task.PipelineID))
 			return nil
 		}
 
