@@ -1,3 +1,5 @@
+<!-- This component is used when uses don't have available plan to access the feature, or the instance is missing required license. -->
+<!-- Normally this should be a blocker to use the feature -->
 <template>
   <div
     v-if="instanceMissingLicense"
@@ -41,7 +43,7 @@
     </NTooltip>
   </template>
   <InstanceAssignment
-    v-if="instanceMissingLicense"
+    v-if="instanceMissingLicense && canManageSubscription"
     :show="state.showInstanceAssignmentDrawer"
     @dismiss="state.showInstanceAssignmentDrawer = false"
   />
@@ -50,9 +52,10 @@
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
 import { reactive, PropType, computed } from "vue";
-import { useSubscriptionV1Store } from "@/store";
+import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
 import { Instance } from "@/types/proto/v1/instance_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
@@ -83,6 +86,7 @@ const state = reactive<LocalState>({
 });
 
 const subscriptionStore = useSubscriptionV1Store();
+const currentUserV1 = useCurrentUserV1();
 
 const hasFeature = computed(() => {
   return subscriptionStore.hasInstanceFeature(props.feature, props.instance);
@@ -92,6 +96,13 @@ const instanceMissingLicense = computed(() => {
   return subscriptionStore.instanceMissingLicense(
     props.feature,
     props.instance
+  );
+});
+
+const canManageSubscription = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-subscription",
+    currentUserV1.value.userRole
   );
 });
 </script>
