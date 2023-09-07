@@ -46,6 +46,8 @@
 
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
+    :project-id="state.filterParams.project?.uid"
+    :database-id="state.filterParams.database?.uid"
     :redirect-to-issue-page="true"
     @close="state.showRequestExportPanel = false"
   />
