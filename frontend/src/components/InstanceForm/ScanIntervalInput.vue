@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import { NInputNumber, NRadio } from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive } from "vue";
 import { useSubscriptionV1Store } from "@/store";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { useInstanceFormContext } from "./context";
