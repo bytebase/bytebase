@@ -10,7 +10,11 @@
     :description="
       $t('subscription.instance-assignment.missing-license-attention')
     "
-    :action-text="$t('subscription.instance-assignment.assign-license')"
+    :action-text="
+      canManageSubscription
+        ? $t('subscription.instance-assignment.assign-license')
+        : ''
+    "
     @click-action="onClick"
   />
   <InstanceAssignment
@@ -20,11 +24,12 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
+import { reactive, computed } from "vue";
 import { BBAttentionStyle } from "@/bbkit";
-import { useSubscriptionV1Store } from "@/store";
+import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
 import { FeatureType, instanceLimitFeature } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
@@ -42,8 +47,16 @@ const state = reactive<LocalState>({
 
 const subscriptionV1Store = useSubscriptionV1Store();
 const featureKey = props.feature.split(".").join("-");
+const currentUserV1 = useCurrentUserV1();
 
 const onClick = () => {
   state.showInstanceAssignmentDrawer = true;
 };
+
+const canManageSubscription = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-subscription",
+    currentUserV1.value.userRole
+  );
+});
 </script>
