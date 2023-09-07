@@ -431,8 +431,9 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 			slog.Error("failed to parse statement", slog.String("statement", stmt.Text), log.BBError(err))
 			continue
 		}
+
 		if len(root) != 1 {
-			slog.Error("failed to parse statement, expect to get one node from parser", slog.String("statement", stmt.Text), log.BBError(err))
+			slog.Debug("failed to parse statement, expect to get one node from parser", slog.String("statement", stmt.Text))
 			continue
 		}
 		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
