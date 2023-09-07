@@ -223,16 +223,6 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-// GetActiveStage returns the first active stage among all stages.
-func GetActiveStage(stages []*store.StageMessage) *store.StageMessage {
-	for _, stage := range stages {
-		if stage.Active {
-			return stage
-		}
-	}
-	return nil
-}
-
 // isMatchExpression checks whether a databases matches the query.
 // labels is a mapping from database label key to value.
 func isMatchExpression(labels map[string]string, expression *api.LabelSelectorRequirement) bool {
