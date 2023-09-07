@@ -1368,7 +1368,7 @@
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
       "select-project": "Select project",
-      "select-database-placeholder": "Select database (MySQL, PostgreSQL only)",
+      "select-database-placeholder": "Select database (MySQL, PostgreSQL, TiDB, Oracle only)",
       "source-database": "Source database",
       "source-schema": "Source schema",
       "schema-version": {
