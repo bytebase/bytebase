@@ -1,6 +1,5 @@
 <template>
   <div class="sqleditor--wrapper">
-    <TabList />
     <Splitpanes
       class="default-theme flex flex-col flex-1 overflow-hidden"
       :dbl-click-splitter="false"
@@ -39,6 +38,8 @@
         </teleport>
       </template>
       <Pane class="relative">
+        <TabList />
+
         <template v-if="allowAccess">
           <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
             <Splitpanes
@@ -287,6 +288,6 @@ const handleAlterSchema = async (params: {
   --color-branding: #4f46e5;
   --border-color: rgba(200, 200, 200, 0.2);
 
-  @apply flex-1 overflow-hidden flex flex-col pt-1;
+  @apply flex-1 overflow-hidden flex flex-col;
 }
 </style>
