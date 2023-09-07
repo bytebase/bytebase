@@ -134,7 +134,7 @@
             class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
           >
-            <span>{{ $t("database.alter-schema") }}</span>
+            <span>{{ $t("database.edit-schema") }}</span>
           </button>
         </div>
       </div>

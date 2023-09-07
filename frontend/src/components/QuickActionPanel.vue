@@ -48,7 +48,7 @@
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
-            {{ $t("database.alter-schema") }}
+            {{ $t("database.edit-schema") }}
           </h3>
         </div>
 
@@ -434,7 +434,7 @@ const QuickActionMap: Record<string, Partial<Action>> = {
     perform: () => createDatabase(),
   },
   "quickaction.bb.database.schema.update": {
-    name: t("database.alter-schema"),
+    name: t("database.edit-schema"),
     perform: () => alterSchema(),
   },
   "quickaction.bb.environment.create": {

@@ -11,7 +11,7 @@
         <heroicons-outline:pencil-alt class="w-4 h-4" />
       </NButton>
     </template>
-    {{ $t("database.alter-schema") }}
+    {{ $t("database.edit-schema") }}
   </NTooltip>
 </template>
 
