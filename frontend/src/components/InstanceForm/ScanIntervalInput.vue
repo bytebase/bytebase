@@ -9,44 +9,42 @@
     <div class="flex items-center gap-x-6">
       <NRadio
         :checked="mode === 'DEFAULT'"
-        :disabled="!allowEdit"
+        :disabled="!allowEdit || !hasSecretFeature"
         value="DEFAULT"
         @click="handleModeChange('DEFAULT')"
       >
         {{ $t("instance.scan-interval.default-never") }}
       </NRadio>
 
-      <NRadio
-        :checked="mode === 'CUSTOM'"
-        :disabled="!allowEdit"
-        value="CUSTOM"
-        class="!items-center"
-        @click="handleModeChange('CUSTOM')"
-      >
-        <div class="flex items-center gap-x-1.5">
-          <span>{{ $t("common.custom") }}</span>
-          <NInputNumber
-            v-model:value="minutes"
-            :show-button="false"
-            :min="30"
-            placeholder=""
-            size="small"
-            style="width: 4rem"
-            :disabled="mode !== 'CUSTOM'"
-          />
-          <span>{{ $t("common.minutes") }}</span>
-          <FeatureBadgeForInstanceLicense
-            feature="bb.feature.custom-instance-scan-interval"
-            :instance="instance"
-          />
-        </div>
-      </NRadio>
+      <div class="flex items-center">
+        <NRadio
+          :checked="mode === 'CUSTOM'"
+          :disabled="!allowEdit || !hasSecretFeature"
+          value="CUSTOM"
+          class="!items-center"
+          @click="handleModeChange('CUSTOM')"
+        >
+          <div class="flex items-center gap-x-1.5">
+            <span>{{ $t("common.custom") }}</span>
+            <NInputNumber
+              v-model:value="minutes"
+              :show-button="false"
+              :min="30"
+              placeholder=""
+              size="small"
+              style="width: 4rem"
+              :disabled="mode !== 'CUSTOM'"
+            />
+            <span>{{ $t("common.minutes") }}</span>
+          </div>
+        </NRadio>
+        <FeatureBadge
+          feature="bb.feature.custom-instance-scan-interval"
+          :instance="instance"
+          :clickable="allowEdit"
+        />
+      </div>
     </div>
-
-    <InstanceAssignment
-      :show="showInstanceAssignment"
-      @dismiss="handleInstanceAssignmentDismiss"
-    />
   </div>
 </template>
 
@@ -55,8 +53,6 @@ import { NInputNumber, NRadio } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useSubscriptionV1Store } from "@/store";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import FeatureBadgeForInstanceLicense from "../FeatureGuard/FeatureBadgeForInstanceLicense.vue";
-import InstanceAssignment from "../InstanceAssignment.vue";
 import { useInstanceFormContext } from "./context";
 
 type Mode = "DEFAULT" | "CUSTOM";
@@ -72,8 +68,13 @@ const emit = defineEmits<{
 
 const subscriptionStore = useSubscriptionV1Store();
 const { instance } = useInstanceFormContext();
-const showInstanceAssignment = ref(false);
-const ongoingInstanceAssignmentCallback = ref<() => void>();
+
+const hasSecretFeature = computed(() => {
+  return subscriptionStore.hasInstanceFeature(
+    "bb.feature.custom-instance-scan-interval",
+    instance.value
+  );
+});
 
 const mode = computed(() => {
   const duration = props.scanInterval;
@@ -104,19 +105,6 @@ const minutes = computed({
       return;
     }
 
-    if (
-      !subscriptionStore.hasInstanceFeature(
-        "bb.feature.custom-instance-scan-interval",
-        instance.value
-      )
-    ) {
-      showInstanceAssignment.value = true;
-      ongoingInstanceAssignmentCallback.value = () => {
-        minutes.value = value;
-      };
-      return;
-    }
-
     state.minutes = value;
     const duration = Duration.fromPartial({
       seconds: value * 60,
@@ -129,38 +117,7 @@ const handleModeChange = (mode: Mode) => {
   if (mode === "DEFAULT") {
     minutes.value = undefined;
   } else {
-    if (
-      !subscriptionStore.hasInstanceFeature(
-        "bb.feature.custom-instance-scan-interval",
-        instance.value
-      )
-    ) {
-      showInstanceAssignment.value = true;
-      ongoingInstanceAssignmentCallback.value = () => {
-        handleModeChange(mode);
-      };
-      return;
-    }
-
     minutes.value = state.minutes ?? 1440;
-  }
-};
-
-const handleInstanceAssignmentDismiss = () => {
-  showInstanceAssignment.value = false;
-  const callback = ongoingInstanceAssignmentCallback.value;
-  if (!callback) return;
-  ongoingInstanceAssignmentCallback.value = undefined;
-  // Check the feature again, if we successfully assigned the instance's
-  // license, we should run the callback, which is the operation caused the
-  // drawer to open.
-  if (
-    subscriptionStore.hasInstanceFeature(
-      "bb.feature.custom-instance-scan-interval",
-      instance.value
-    )
-  ) {
-    callback();
   }
 };
 </script>
