@@ -222,6 +222,7 @@ const allowedEngineTypeList: Engine[] = [
   Engine.MYSQL,
   Engine.POSTGRES,
   Engine.TIDB,
+  Engine.ORACLE,
 ];
 const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.BASELINE,
