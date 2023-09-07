@@ -1,6 +1,6 @@
 <template>
   <BBModal
-    :title="$t('database.alter-schema')"
+    :title="$t('database.edit-schema')"
     :trap-focus="false"
     class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
     @close="dismissModal"

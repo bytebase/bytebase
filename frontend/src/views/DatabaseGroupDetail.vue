@@ -57,7 +57,7 @@
           }}</NButton>
           <NButton
             @click="createMigration('bb.issue.database.schema.update')"
-            >{{ $t("database.alter-schema") }}</NButton
+            >{{ $t("database.edit-schema") }}</NButton
           >
           <NButton @click="createMigration('bb.issue.database.data.update')">{{
             $t("database.change-data")

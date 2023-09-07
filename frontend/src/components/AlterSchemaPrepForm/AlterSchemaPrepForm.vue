@@ -4,7 +4,7 @@
       <div class="flex flex-col gap-y-1">
         <span>{{
           isAlterSchema
-            ? $t("database.alter-schema")
+            ? $t("database.edit-schema")
             : $t("database.change-data")
         }}</span>
         <i18n-t

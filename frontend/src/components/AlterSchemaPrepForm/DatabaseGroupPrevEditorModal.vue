@@ -124,7 +124,7 @@ const allowPreviewIssue = computed(() => {
 
 const title = computed(() => {
   if (props.issueType === "bb.issue.database.schema.update") {
-    return t("database.alter-schema");
+    return t("database.edit-schema");
   } else {
     return t("database.change-data");
   }
