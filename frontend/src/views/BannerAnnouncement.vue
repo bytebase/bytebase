@@ -1,17 +1,19 @@
 <template>
   <div
     v-if="showBanner"
-    class="max-auto py-1 px-3 w-full flex flex-row justify-center flex-wrap"
+    class="max-auto py-1 px-3 w-full flex flex-row justify-center flex-wrap text-center text-white font-medium"
     :class="[`${bgColor}`]"
   >
     <a
+      v-if="announcementLink.length > 0"
       :href="announcementLink"
       target="_blank"
-      class="font-medium text-center text-white hover:underline flex flex-row items-center"
+      class="hover:underline flex flex-row items-center"
     >
       <p class="px-1">{{ announcementText }}</p>
       <heroicons-solid:arrow-long-right class="mr-3 w-5 h-5" />
     </a>
+    <p v-else>{{ announcementText }}</p>
   </div>
 </template>
 
