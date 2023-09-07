@@ -1977,7 +1977,8 @@
           "rename": "Rename"
         }
       }
-    }
+    },
+    "filter-by-name": "Filter by name"
   },
   "schema-editor": {
     "self": "Schema Editor",

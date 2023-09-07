@@ -1973,7 +1973,8 @@
           "rename": "Rebautizar"
         }
       }
-    }
+    },
+    "filter-by-name": "Filtrar por nombre"
   },
   "schema-editor": {
     "self": "Editor de esquema",

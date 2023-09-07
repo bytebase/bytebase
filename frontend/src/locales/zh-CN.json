@@ -1972,7 +1972,8 @@
           "rename": "重命名"
         }
       }
-    }
+    },
+    "filter-by-name": "根据名称过滤"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
