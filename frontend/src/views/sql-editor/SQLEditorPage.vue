@@ -1,117 +1,129 @@
 <template>
   <div class="sqleditor--wrapper">
-    <Splitpanes
-      class="default-theme flex flex-col flex-1 overflow-hidden"
-      :dbl-click-splitter="false"
-    >
-      <Pane v-if="windowWidth >= 800" size="20">
-        <AsidePanel @alter-schema="handleAlterSchema" />
-      </Pane>
-      <template v-else>
-        <teleport to="body">
-          <div
-            id="fff"
-            class="fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-[4rem] flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-[99999999] transition-all"
-            :class="[
-              state.sidebarExpanded
-                ? 'left-[80%] -translate-x-5'
-                : 'left-[1rem]',
-            ]"
-            style="
-              transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-              transition-duration: 300ms;
-            "
-            @click="state.sidebarExpanded = !state.sidebarExpanded"
-          >
-            <heroicons-outline:chevron-left
-              class="w-6 h-6 transition-transform"
-              :class="[state.sidebarExpanded ? '' : '-scale-100']"
-            />
-          </div>
-          <NDrawer
-            v-model:show="state.sidebarExpanded"
-            width="80vw"
-            placement="left"
-          >
-            <AsidePanel @alter-schema="handleAlterSchema" />
-          </NDrawer>
-        </teleport>
-      </template>
-      <Pane class="relative">
-        <TabList />
-
-        <template v-if="allowAccess">
-          <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
-            <Splitpanes
-              v-if="allowReadOnlyMode"
-              horizontal
-              class="default-theme"
-              :dbl-click-splitter="false"
+    <div class="flex-1 flex flex-row h-full">
+      <Splitpanes
+        class="default-theme flex flex-col flex-1 overflow-hidden"
+        :dbl-click-splitter="false"
+      >
+        <Pane v-if="windowWidth >= 800" size="20">
+          <AsidePanel @alter-schema="handleAlterSchema" />
+        </Pane>
+        <template v-else>
+          <teleport to="body">
+            <div
+              id="fff"
+              class="fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-[4rem] flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-[99999999] transition-all"
+              :class="[
+                state.sidebarExpanded
+                  ? 'left-[80%] -translate-x-5'
+                  : 'left-[1rem]',
+              ]"
+              style="
+                transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+                transition-duration: 300ms;
+              "
+              @click="state.sidebarExpanded = !state.sidebarExpanded"
             >
-              <Pane>
+              <heroicons-outline:chevron-left
+                class="w-6 h-6 transition-transform"
+                :class="[state.sidebarExpanded ? '' : '-scale-100']"
+              />
+            </div>
+            <NDrawer
+              v-model:show="state.sidebarExpanded"
+              width="80vw"
+              placement="left"
+            >
+              <AsidePanel @alter-schema="handleAlterSchema" />
+            </NDrawer>
+          </teleport>
+        </template>
+        <Pane class="relative">
+          <TabList />
+
+          <div class="w-full h-full overflow-hidden">
+            <template v-if="allowAccess">
+              <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
                 <Splitpanes
-                  vertical
+                  v-if="allowReadOnlyMode"
+                  horizontal
                   class="default-theme"
                   :dbl-click-splitter="false"
                 >
                   <Pane>
-                    <EditorPanel />
+                    <Splitpanes
+                      vertical
+                      class="default-theme"
+                      :dbl-click-splitter="false"
+                    >
+                      <Pane>
+                        <EditorPanel />
+                      </Pane>
+                      <Pane
+                        v-if="showSecondarySidebar && windowWidth >= 1024"
+                        :size="25"
+                      >
+                        <SecondarySidebar @alter-schema="handleAlterSchema" />
+                      </Pane>
+                    </Splitpanes>
                   </Pane>
-                  <Pane
-                    v-if="showSecondarySidebar && windowWidth >= 1024"
-                    :size="25"
-                  >
-                    <SecondarySidebar @alter-schema="handleAlterSchema" />
+                  <Pane v-if="!isDisconnected" :size="40">
+                    <ResultPanel />
                   </Pane>
                 </Splitpanes>
-              </Pane>
-              <Pane v-if="!isDisconnected" :size="40">
-                <ResultPanel />
-              </Pane>
-            </Splitpanes>
 
+                <div
+                  v-else
+                  class="w-full h-full flex flex-col items-center justify-center gap-y-2"
+                >
+                  <img
+                    src="../../assets/illustration/403.webp"
+                    class="max-h-[40%]"
+                  />
+                  <i18n-t
+                    class="textinfolabel flex items-center"
+                    keypath="sql-editor.allow-admin-mode-only"
+                    tag="div"
+                  >
+                    <template #instance>
+                      <InstanceV1Name :instance="instance" :link="false" />
+                    </template>
+                  </i18n-t>
+                  <AdminModeButton />
+                </div>
+              </template>
+
+              <TerminalPanelV1
+                v-if="tabStore.currentTab.mode === TabMode.Admin"
+              />
+            </template>
             <div
               v-else
-              class="w-full h-full flex flex-col items-center justify-center gap-y-2"
+              class="w-full h-full flex flex-col items-center justify-center"
             >
               <img
                 src="../../assets/illustration/403.webp"
                 class="max-h-[40%]"
               />
-              <i18n-t
-                class="textinfolabel flex items-center"
-                keypath="sql-editor.allow-admin-mode-only"
-                tag="div"
-              >
-                <template #instance>
-                  <InstanceV1Name :instance="instance" :link="false" />
-                </template>
-              </i18n-t>
-              <AdminModeButton />
+              <div class="textinfolabel">
+                {{ $t("database.access-denied") }}
+              </div>
             </div>
-          </template>
-
-          <TerminalPanelV1 v-if="tabStore.currentTab.mode === TabMode.Admin" />
-        </template>
-        <div
-          v-else
-          class="w-full h-full flex flex-col items-center justify-center"
-        >
-          <img src="../../assets/illustration/403.webp" class="max-h-[40%]" />
-          <div class="textinfolabel">
-            {{ $t("database.access-denied") }}
           </div>
-        </div>
 
-        <div
-          v-if="isFetchingSheet"
-          class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
-        >
-          <BBSpin />
-        </div>
-      </Pane>
-    </Splitpanes>
+          <div
+            v-if="isFetchingSheet"
+            class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
+          >
+            <BBSpin />
+          </div>
+        </Pane>
+      </Splitpanes>
 
+      <div v-if="windowWidth >= 1024" class="h-full border-l shrink-0">
+        <SecondaryGutterBar />
+      </div>
+    </div>
     <Quickstart />
 
     <Drawer v-model:show="showSheetPanel">
@@ -159,10 +171,12 @@ import {
   provideSecondarySidebarContext,
   default as SecondarySidebar,
 } from "./SecondarySidebar";
+import { SecondaryGutterBar } from "./SecondarySidebar";
 import { provideSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
 import TerminalPanelV1 from "./TerminalPanel/TerminalPanelV1.vue";
+import { provideSQLEditorContext } from "./context";
 
 type LocalState = {
   sidebarExpanded: boolean;
@@ -181,6 +195,8 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const currentUserV1 = useCurrentUserV1();
+// provide context for SQL Editor
+provideSQLEditorContext();
 // provide context for sheets
 const { showPanel: showSheetPanel } = provideSheetContext();
 const { show: showSecondarySidebar } = provideSecondarySidebarContext();
@@ -278,6 +294,10 @@ const handleAlterSchema = async (params: {
 .splitpanes.default-theme .splitpanes__splitter:hover::after {
   @apply bg-white opacity-100;
 }
+
+.secondary-sidebar-gutter .n-tabs-wrapper {
+  @apply pt-0;
+}
 </style>
 
 <style scoped>
@@ -288,6 +308,6 @@ const handleAlterSchema = async (params: {
   --color-branding: #4f46e5;
   --border-color: rgba(200, 200, 200, 0.2);
 
-  @apply flex-1 overflow-hidden flex flex-col;
+  @apply w-full flex-1 overflow-hidden flex flex-col;
 }
 </style>

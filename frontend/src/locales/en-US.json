@@ -1977,7 +1977,8 @@
           "rename": "Rename"
         }
       }
-    }
+    },
+    "filter-by-name": "Filter by name"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2596,7 +2597,9 @@
       },
       "statement-copied": "Statement copied to clipboard",
       "dont-show-again": "Don't show again",
-      "chat-sql": "ChatSQL"
+      "chat-sql": "ChatSQL",
+      "disable-chat-sql": "Disable Chat SQL",
+      "enable-chat-sql": "Enable Chat SQL"
     }
   },
   "custom-approval": {

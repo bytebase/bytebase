@@ -308,6 +308,13 @@
   .fix-scrollbar-z-index {
     transform: translate3d(0, 0, 0);
   }
+
+  .writing-vertical-rl {
+    writing-mode: vertical-rl;
+  }
+  .writing-vertical-lr {
+    writing-mode: vertical-lr;
+  }
 }
 
 .fade-enter-active,
