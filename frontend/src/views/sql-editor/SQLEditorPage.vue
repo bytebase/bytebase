@@ -1,47 +1,47 @@
 <template>
   <div class="sqleditor--wrapper">
-    <Splitpanes
-      class="default-theme flex flex-col flex-1 overflow-hidden"
-      :dbl-click-splitter="false"
-    >
-      <Pane v-if="windowWidth >= 800" size="20">
-        <AsidePanel @alter-schema="handleAlterSchema" />
-      </Pane>
-      <template v-else>
-        <teleport to="body">
-          <div
-            id="fff"
-            class="fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-[4rem] flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-[99999999] transition-all"
-            :class="[
-              state.sidebarExpanded
-                ? 'left-[80%] -translate-x-5'
-                : 'left-[1rem]',
-            ]"
-            style="
-              transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-              transition-duration: 300ms;
-            "
-            @click="state.sidebarExpanded = !state.sidebarExpanded"
-          >
-            <heroicons-outline:chevron-left
-              class="w-6 h-6 transition-transform"
-              :class="[state.sidebarExpanded ? '' : '-scale-100']"
-            />
-          </div>
-          <NDrawer
-            v-model:show="state.sidebarExpanded"
-            width="80vw"
-            placement="left"
-          >
-            <AsidePanel @alter-schema="handleAlterSchema" />
-          </NDrawer>
-        </teleport>
-      </template>
-      <Pane class="relative">
-        <TabList />
+    <div class="flex-1 flex flex-row h-full">
+      <Splitpanes
+        class="default-theme flex flex-col flex-1 overflow-hidden"
+        :dbl-click-splitter="false"
+      >
+        <Pane v-if="windowWidth >= 800" size="20">
+          <AsidePanel @alter-schema="handleAlterSchema" />
+        </Pane>
+        <template v-else>
+          <teleport to="body">
+            <div
+              id="fff"
+              class="fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-[4rem] flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer z-[99999999] transition-all"
+              :class="[
+                state.sidebarExpanded
+                  ? 'left-[80%] -translate-x-5'
+                  : 'left-[1rem]',
+              ]"
+              style="
+                transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+                transition-duration: 300ms;
+              "
+              @click="state.sidebarExpanded = !state.sidebarExpanded"
+            >
+              <heroicons-outline:chevron-left
+                class="w-6 h-6 transition-transform"
+                :class="[state.sidebarExpanded ? '' : '-scale-100']"
+              />
+            </div>
+            <NDrawer
+              v-model:show="state.sidebarExpanded"
+              width="80vw"
+              placement="left"
+            >
+              <AsidePanel @alter-schema="handleAlterSchema" />
+            </NDrawer>
+          </teleport>
+        </template>
+        <Pane class="relative">
+          <TabList />
 
-        <div class="flex flex-row w-full h-full overflow-hidden">
-          <div class="flex-1 h-full">
+          <div class="w-full h-full overflow-hidden">
             <template v-if="allowAccess">
               <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
                 <Splitpanes
@@ -110,20 +110,20 @@
               </div>
             </div>
           </div>
-          <div v-if="windowWidth >= 1024" class="h-full border-l">
-            <SecondaryGutterBar />
+
+          <div
+            v-if="isFetchingSheet"
+            class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
+          >
+            <BBSpin />
           </div>
-        </div>
+        </Pane>
+      </Splitpanes>
 
-        <div
-          v-if="isFetchingSheet"
-          class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
-        >
-          <BBSpin />
-        </div>
-      </Pane>
-    </Splitpanes>
-
+      <div v-if="windowWidth >= 1024" class="h-full border-l shrink-0">
+        <SecondaryGutterBar />
+      </div>
+    </div>
     <Quickstart />
 
     <Drawer v-model:show="showSheetPanel">
