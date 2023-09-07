@@ -63,6 +63,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
+import { head } from "lodash-es";
 import { NInputNumber } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -73,6 +74,7 @@ import { useUserStore } from "@/store";
 import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Binding } from "@/types/proto/v1/iam_policy";
+import { displayRoleTitle, extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -185,7 +187,7 @@ watch(
 watch(
   () => state,
   () => {
-    let conditionName = "";
+    const conditionName = generateConditionTitle();
     if (state.userUidList) {
       props.binding.members = state.userUidList.map((uid) => {
         const user = userStore.getUserById(uid);
@@ -200,9 +202,6 @@ watch(
       const now = dayjs();
       const expiresAt = now.add(state.expireDays, "days");
       expression.push(`request.time < timestamp("${expiresAt.toISOString()}")`);
-      conditionName = `${now.format("YYYY-MM-DD")} to ${expiresAt.format(
-        "YYYY-MM-DD"
-      )}`;
     }
     if (state.role === PresetRoleType.QUERIER) {
       if (state.databaseResourceCondition) {
@@ -233,6 +232,56 @@ watch(
     deep: true,
   }
 );
+
+const generateConditionTitle = () => {
+  if (!state.role) {
+    return "";
+  }
+
+  let conditionName = displayRoleTitle(state.role);
+  if (state.role === "roles/QUERIER" || state.role === "roles/EXPORTER") {
+    if (!state.databaseResources || state.databaseResources.length === 0) {
+      conditionName = `${conditionName} All`;
+    } else if (state.databaseResources.length <= 3) {
+      const databaseResourceNames = state.databaseResources.map((ds) =>
+        getDatabaseResourceName(ds)
+      );
+      conditionName = `${conditionName} ${databaseResourceNames.join(", ")}`;
+    } else {
+      const firstDatabaseResourceName = getDatabaseResourceName(
+        head(state.databaseResources)!
+      );
+      conditionName = `${conditionName} ${firstDatabaseResourceName} and ${
+        state.databaseResources.length - 1
+      } more`;
+    }
+  }
+  if (state.expireDays > 0) {
+    const now = dayjs();
+    const expiresAt = now.add(state.expireDays, "days");
+    conditionName = `${conditionName} ${now.format(
+      "YYYY-MM-DD"
+    )} to ${expiresAt.format("YYYY-MM-DD")}`;
+  }
+  return conditionName;
+};
+
+const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
+  const { database } = extractDatabaseResourceName(
+    databaseResource.databaseName
+  );
+  if (databaseResource.table) {
+    if (databaseResource.schema) {
+      return `${database}.${databaseResource.schema}.${databaseResource.table}`;
+    } else {
+      return `${database}.${databaseResource.table}`;
+    }
+  } else if (databaseResource.schema) {
+    return `${database}.${databaseResource.schema}`;
+  } else {
+    return database;
+  }
+};
 
 defineExpose({
   allowConfirm: computed(() => {
