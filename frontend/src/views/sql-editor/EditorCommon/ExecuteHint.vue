@@ -14,7 +14,7 @@
             <template #want>
               {{
                 isDDL
-                  ? $t("database.alter-schema").toLowerCase()
+                  ? $t("database.edit-schema").toLowerCase()
                   : $t("database.change-data").toLowerCase()
               }}
             </template>
@@ -23,7 +23,7 @@
                 {{
                   sqlEditorStore.mode === "BUNDLED"
                     ? isDDL
-                      ? $t("database.alter-schema")
+                      ? $t("database.edit-schema")
                       : $t("database.change-data")
                     : $t("sql-editor.admin-mode.self")
                 }}
@@ -55,7 +55,7 @@
           type="primary"
           @click="gotoAlterSchema"
         >
-          {{ isDDL ? $t("database.alter-schema") : $t("database.change-data") }}
+          {{ isDDL ? $t("database.edit-schema") : $t("database.change-data") }}
         </NButton>
         <AdminModeButton v-else @enter="$emit('close')" />
       </div>
@@ -108,7 +108,7 @@ const gotoAlterSchema = () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("sql-editor.goto-alter-schema-hint"),
+      title: t("sql-editor.goto-edit-schema-hint"),
     });
     return;
   }

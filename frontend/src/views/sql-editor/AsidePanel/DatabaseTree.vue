@@ -101,7 +101,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (
-    event: "alter-schema",
+    event: "edit-schema",
     params: { databaseId: DatabaseId; schema: string; table: string }
   ): void;
   (event: "update:search-pattern", keyword: string): void;
@@ -163,8 +163,8 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
       const database = databaseStore.getDatabaseByUID(atom.id);
       if (instanceV1HasAlterSchema(database.instanceEntity)) {
         items.push({
-          key: "alter-schema",
-          label: t("database.alter-schema"),
+          key: "edit-schema",
+          label: t("database.edit-schema"),
           item: atom,
         });
       }
@@ -272,8 +272,8 @@ const handleSelect = (key: string) => {
     return;
   }
 
-  if (key === "alter-schema") {
-    emit("alter-schema", {
+  if (key === "edit-schema") {
+    emit("edit-schema", {
       databaseId: option.item.id,
       schema: "",
       table: "",
