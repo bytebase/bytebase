@@ -1,33 +1,48 @@
 <template>
-  <div class="w-full h-full relative overflow-hidden">
-    <template v-if="databaseMetadata">
-      <DatabaseSchema
-        :database="database"
-        :database-metadata="databaseMetadata"
-        :header-clickable="state.selected !== undefined"
-        @click-header="state.selected = undefined"
-        @select-table="handleSelectTable"
-        @alter-schema="emit('alter-schema', $event)"
-      />
-      <Transition name="slide-up" appear>
-        <TableSchema
-          v-if="state.selected"
-          class="absolute bottom-0 w-full h-[calc(100%-41px)] bg-white"
+  <div class="flex flex-col h-full py-0.5">
+    <div class="flex items-center gap-x-1 px-0.5">
+      <NInput
+        v-model:value="keyword"
+        size="small"
+        :placeholder="$t('sql-editor.filter-by-name')"
+        :clearable="true"
+      >
+        <template #prefix>
+          <heroicons-outline:search class="h-5 w-5 text-gray-300" />
+        </template>
+      </NInput>
+    </div>
+
+    <div class="w-full h-full relative overflow-hidden">
+      <template v-if="databaseMetadata">
+        <DatabaseSchema
           :database="database"
           :database-metadata="databaseMetadata"
-          :schema="state.selected.schema"
-          :table="state.selected.table"
-          @close="state.selected = undefined"
+          :header-clickable="state.selected !== undefined"
+          @click-header="state.selected = undefined"
+          @select-table="handleSelectTable"
           @alter-schema="emit('alter-schema', $event)"
         />
-      </Transition>
-    </template>
+        <Transition name="slide-up" appear>
+          <TableSchema
+            v-if="state.selected"
+            class="absolute bottom-0 w-full h-[calc(100%-41px)] bg-white"
+            :database="database"
+            :database-metadata="databaseMetadata"
+            :schema="state.selected.schema"
+            :table="state.selected.table"
+            @close="state.selected = undefined"
+            @alter-schema="emit('alter-schema', $event)"
+          />
+        </Transition>
+      </template>
 
-    <div
-      v-else
-      class="absolute inset-0 bg-white/50 flex flex-col items-center justify-center"
-    >
-      <BBSpin />
+      <div
+        v-else
+        class="absolute inset-0 bg-white/50 flex flex-col items-center justify-center"
+      >
+        <BBSpin />
+      </div>
     </div>
   </div>
 </template>
@@ -43,6 +58,7 @@ import {
 } from "@/types/proto/v1/database_service";
 import DatabaseSchema from "./DatabaseSchema.vue";
 import TableSchema from "./TableSchema.vue";
+import { provideSchemaPanelContext } from "./context";
 
 type LocalState = {
   selected?: { schema: SchemaMetadata; table: TableMetadata };
@@ -62,6 +78,7 @@ const state = reactive<LocalState>({
 const dbSchemaStore = useDBSchemaV1Store();
 const { currentTab } = storeToRefs(useTabStore());
 const conn = computed(() => currentTab.value.connection);
+const { keyword } = provideSchemaPanelContext();
 
 const { database } = useDatabaseV1ByUID(computed(() => conn.value.databaseId));
 const databaseMetadata = ref<DatabaseMetadata>();

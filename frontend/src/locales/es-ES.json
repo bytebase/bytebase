@@ -1973,7 +1973,8 @@
           "rename": "Rebautizar"
         }
       }
-    }
+    },
+    "filter-by-name": "Filtrar por nombre"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2593,7 +2594,9 @@
       },
       "statement-copied": "Declaración copiada al portapapeles",
       "dont-show-again": "No mostrar de nuevo",
-      "chat-sql": "ChatSQL"
+      "chat-sql": "ChatSQL",
+      "disable-chat-sql": "Deshabilitar Chat SQL",
+      "enable-chat-sql": "Habilitar Chat SQL"
     }
   },
   "custom-approval": {

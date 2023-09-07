@@ -1,6 +1,5 @@
 <template>
   <ChatPanel v-if="openAIKey" />
-  <MockInputPlaceholder v-else-if="allowConfig" />
 </template>
 
 <script lang="ts" setup>
@@ -18,7 +17,6 @@ import { Connection } from "@/types";
 import { useChatByTab, provideAIContext } from "../logic";
 import type { AIContextEvents } from "../types";
 import ChatPanel from "./ChatPanel.vue";
-import MockInputPlaceholder from "./MockInputPlaceholder.vue";
 
 type LocalState = {
   showHistoryDialog: boolean;
