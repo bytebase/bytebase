@@ -76,7 +76,10 @@ const filteredTableList = computed(() => {
     return flattenTableList.value;
   }
   return flattenTableList.value.filter(({ schema, table }) => {
-    return schema.name.includes(kw) || table.name.includes(kw);
+    return (
+      schema.name.toLowerCase().includes(kw) ||
+      table.name.toLowerCase().includes(kw)
+    );
   });
 });
 
