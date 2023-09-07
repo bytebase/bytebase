@@ -194,6 +194,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
+  projectId?: string;
   databaseId?: string;
   statement?: string;
   statementOnly?: boolean;
@@ -265,6 +266,9 @@ const allowCreate = computed(() => {
 });
 
 onMounted(async () => {
+  if (props.projectId) {
+    handleProjectSelect(props.projectId);
+  }
   if (props.databaseId) {
     handleDatabaseSelect(props.databaseId);
   }
