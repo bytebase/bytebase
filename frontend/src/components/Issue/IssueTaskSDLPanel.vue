@@ -85,7 +85,6 @@
 </template>
 
 <script lang="ts" setup>
-import axios from "axios";
 import { NTabs, NTab, NTooltip } from "naive-ui";
 import { CodeDiff } from "v-code-diff";
 import { reactive, watch, computed, ref } from "vue";
@@ -99,7 +98,6 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { Task, TaskId } from "@/types";
-import { engineToJSON } from "@/types/proto/v1/common";
 import MonacoEditor from "../MonacoEditor";
 import { useIssueLogic } from "./logic";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";

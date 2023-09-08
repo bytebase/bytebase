@@ -1,10 +1,8 @@
-import axios from "axios";
 import Emittery from "emittery";
 import { computed, reactive, watch } from "vue";
 import { sqlServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import { useChangeHistoryStore, useDatabaseV1Store } from "@/store";
-import { engineToJSON } from "@/types/proto/v1/common";
 import {
   Task,
   TaskRun_Status,
