@@ -8,8 +8,8 @@
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
-        :selected-id="state.projectId"
-        @select-project-id="handleProjectSelect"
+        :project="state.projectId"
+        @update:project="handleProjectSelect"
       />
     </div>
     <div class="w-full flex flex-row justify-start items-center">
@@ -19,32 +19,17 @@
       <EnvironmentSelect
         class="!w-60 mr-4 shrink-0"
         name="environment"
-        :selected-id="state.environmentId"
-        :select-default="false"
-        @select-environment-id="handleEnvironmentSelect"
+        :environment="state.environmentId"
+        @update:environment="handleEnvironmentSelect"
       />
       <DatabaseSelect
         class="!w-128"
-        :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
-        :mode="'USER'"
-        :environment-id="state.environmentId"
-        :project-id="state.projectId"
-        :engine-type-list="allowedEngineTypeList"
-        :sync-status="'OK'"
-        :customize-item="true"
+        :database="state.databaseId"
+        :environment="state.environmentId"
+        :project="state.projectId"
         :placeholder="$t('database.sync-schema.select-database-placeholder')"
-        @select-database-id="handleDatabaseSelect"
-      >
-        <template #customizeItem="{ database: db }">
-          <div class="flex items-center">
-            <InstanceV1EngineIcon :instance="db.instanceEntity" />
-            <span class="mx-2">{{ db.databaseName }}</span>
-            <span class="text-gray-400">
-              ({{ instanceV1Name(db.instanceEntity) }})
-            </span>
-          </div>
-        </template>
-      </DatabaseSelect>
+        @update:database="handleDatabaseSelect"
+      />
     </div>
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center shrink-0 text-sm">
@@ -57,9 +42,7 @@
         <BBSelect
           class="w-full"
           :selected-item="state.changeHistory"
-          :item-list="
-                  databaseChangeHistoryList(state.databaseId as string)
-                "
+          :item-list="databaseChangeHistoryList(state.databaseId as string)"
           :placeholder="$t('change-history.select')"
           :show-prefix-item="databaseChangeHistoryList(state.databaseId as string).length > 0"
           @select-item="(changeHistory: ChangeHistory) => handleSchemaVersionSelect(changeHistory)"
@@ -105,7 +88,11 @@
 <script lang="ts" setup>
 import { head, isNull, isUndefined } from "lodash-es";
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
+import {
+  EnvironmentSelect,
+  ProjectSelect,
+  DatabaseSelect,
+} from "@/components/v2";
 import {
   useChangeHistoryStore,
   useDBSchemaV1Store,
@@ -114,13 +101,11 @@ import {
   useEnvironmentV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import {
   ChangeHistory,
   ChangeHistoryView,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
-import { instanceV1Name } from "@/utils";
 import { ChangeHistorySourceSchema } from "./types";
 
 const props = defineProps<{
@@ -218,12 +203,6 @@ watch(() => state.changeHistory, prepareFullViewChangeHistory, {
   deep: true,
 });
 
-const allowedEngineTypeList: Engine[] = [
-  Engine.MYSQL,
-  Engine.POSTGRES,
-  Engine.TIDB,
-  Engine.ORACLE,
-];
 const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.BASELINE,
   ChangeHistory_Type.MIGRATE,
@@ -237,21 +216,21 @@ const isValidId = (id: any): id is string => {
   return true;
 };
 
-const handleProjectSelect = async (projectId: string) => {
+const handleProjectSelect = async (projectId: string | undefined) => {
   if (projectId !== state.projectId) {
-    state.databaseId = String(UNKNOWN_ID);
+    state.databaseId = undefined;
   }
   state.projectId = projectId;
 };
 
-const handleEnvironmentSelect = async (environmentId: string) => {
+const handleEnvironmentSelect = async (environmentId: string | undefined) => {
   if (environmentId !== state.environmentId) {
-    state.databaseId = String(UNKNOWN_ID);
+    state.databaseId = undefined;
   }
   state.environmentId = environmentId;
 };
 
-const handleDatabaseSelect = async (databaseId: string) => {
+const handleDatabaseSelect = async (databaseId: string | undefined) => {
   if (isValidId(databaseId)) {
     const database = databaseStore.getDatabaseByUID(databaseId);
     if (!database) {

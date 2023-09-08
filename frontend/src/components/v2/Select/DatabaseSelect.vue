@@ -2,7 +2,7 @@
   <NSelect
     :value="database"
     :options="options"
-    :placeholder="$t('database.select')"
+    :placeholder="placeholder ?? $t('database.select')"
     :virtual-scroll="true"
     :filter="filterByDatabaseName"
     :filterable="true"
@@ -41,6 +41,7 @@ const props = withDefaults(
     allowedEngineTypeList?: readonly Engine[];
     includeAll?: boolean;
     autoReset?: boolean;
+    placeholder?: string;
     filter?: (database: ComposedDatabase, index: number) => boolean;
   }>(),
   {
@@ -51,6 +52,7 @@ const props = withDefaults(
     allowedEngineTypeList: () => supportedEngineV1List(),
     includeAll: false,
     autoReset: true,
+    placeholder: undefined,
     filter: undefined,
   }
 );
