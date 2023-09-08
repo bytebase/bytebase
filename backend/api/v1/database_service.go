@@ -846,16 +846,16 @@ func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.Dif
 			return "", err
 		}
 		return changeHistory.Schema, nil
-	} else {
-		databaseSchema, err := s.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
-			Name:      fmt.Sprintf("%s/schema", request.Name),
-			SdlFormat: true,
-		})
-		if err != nil {
-			return "", err
-		}
-		return databaseSchema.Schema, nil
 	}
+
+	databaseSchema, err := s.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+		Name:      fmt.Sprintf("%s/schema", request.Name),
+		SdlFormat: true,
+	})
+	if err != nil {
+		return "", err
+	}
+	return databaseSchema.Schema, nil
 }
 
 func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {
