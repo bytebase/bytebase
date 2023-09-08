@@ -18,9 +18,8 @@
           </span>
           <ProjectSelect
             class="!w-60 shrink-0"
-            :only-userself="false"
-            :selected-id="state.projectId"
-            @select-project-id="handleProjectSelect"
+            :project="state.projectId"
+            @update:project="handleProjectSelect"
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
@@ -78,12 +77,13 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { head, isUndefined, uniq } from "lodash-es";
-import { NDrawer, NDrawerContent, NInput } from "naive-ui";
+import { NButton, NDrawer, NDrawerContent, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
+import { ProjectSelect } from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -189,7 +189,7 @@ const allowCreate = computed(() => {
   return true;
 });
 
-const handleProjectSelect = async (projectId: string) => {
+const handleProjectSelect = async (projectId: string | undefined) => {
   state.projectId = projectId;
 };
 
