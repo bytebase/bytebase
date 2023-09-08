@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col h-full py-1 gap-y-2">
-    <div class="flex items-center gap-x-1">
+    <div class="flex items-center gap-x-1 px-1 pt-1">
       <NInput
         v-model:value="keyword"
         size="small"

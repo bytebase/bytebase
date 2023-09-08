@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full py-0.5">
-    <div class="flex items-center gap-x-1 px-0.5">
+  <div class="flex flex-col h-full py-0.5 gap-y-1">
+    <div class="flex items-center gap-x-1 px-2 pt-1.5">
       <NInput
         v-model:value="keyword"
         size="small"
@@ -26,7 +26,7 @@
         <Transition name="slide-up" appear>
           <TableSchema
             v-if="state.selected"
-            class="absolute bottom-0 w-full h-[calc(100%-41px)] bg-white"
+            class="absolute bottom-0 w-full h-[calc(100%-33px)] bg-white"
             :database="database"
             :database-metadata="databaseMetadata"
             :schema="state.selected.schema"
