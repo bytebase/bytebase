@@ -23,6 +23,12 @@
       <heroicons-outline:database class="w-4 h-4" />
     </span>
   </template>
+  <template v-else-if="atom.type === 'schema'">
+    <carbon:data-structured class="w-4 h-4" />
+  </template>
+  <template v-else-if="atom.type === 'table'">
+    <heroicons-outline:table class="h-4 w-4" />
+  </template>
 </template>
 
 <script lang="ts" setup>

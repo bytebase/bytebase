@@ -97,7 +97,97 @@ const prepareAccessibleDatabaseList = async () => {
   connectionTreeStore.tree.databaseList = databaseList;
 };
 
-const prepareConnectionTree = async () => {
+const connectionTreeCache: Record<"instance" | "project", ConnectionAtom[]> = {
+  project: [],
+  instance: [],
+};
+
+const initializeConnectionTree = async () => {
+  const build = (mode: ConnectionTreeMode): ConnectionAtom[] => {
+    if (mode) {
+      const { databaseList } = connectionTreeStore.tree;
+      const instanceList = uniqBy(
+        databaseList.map((db) => db.instanceEntity),
+        (instance) => instance.uid
+      );
+      const tree = instanceList.map((instance) => {
+        const node = connectionTreeStore.mapAtom(
+          instance,
+          "instance",
+          undefined /* ROOT */
+        );
+        return node;
+      });
+
+      for (const instance of instanceList) {
+        const instanceItem = tree.find(
+          (item: ConnectionAtom) => item.id === instance.uid
+        )!;
+
+        instanceItem.children = databaseList
+          .filter((db) => db.instanceEntity.uid === instance.uid)
+          .map((db) => {
+            const node = connectionTreeStore.mapAtom(
+              db,
+              "database",
+              instanceItem
+            );
+            node.disabled = !isDatabaseV1Queryable(db, currentUserV1.value);
+            if (node.disabled) {
+              // If a database node is not accessible
+              // it's not expandable either.
+              node.isLeaf = true;
+            }
+            return node;
+          });
+      }
+      return tree;
+    } else {
+      const databaseList = connectionTreeStore.tree.databaseList.filter(
+        (db) => {
+          return db.project !== DEFAULT_PROJECT_V1_NAME;
+        }
+      );
+      const projectList = uniqBy(
+        databaseList.map((db) => db.projectEntity),
+        (project) => project.uid
+      );
+
+      const projectAtomList = projectList.map((project) => {
+        const node = connectionTreeStore.mapAtom(
+          project,
+          "project",
+          undefined /* ROOT */
+        );
+        return node;
+      });
+
+      projectAtomList.forEach((projectAtom) => {
+        projectAtom.children = databaseList
+          .filter((db) => db.projectEntity.uid === projectAtom.id)
+          .map((db) => {
+            const node = connectionTreeStore.mapAtom(
+              db,
+              "database",
+              projectAtom
+            );
+            node.disabled = !isDatabaseV1Queryable(db, currentUserV1.value);
+            if (node.disabled) {
+              // If a database node is not accessible
+              // it's not expandable either.
+              node.isLeaf = true;
+            }
+            return node;
+          });
+      });
+
+      return projectAtomList;
+    }
+  };
+
+  connectionTreeCache.instance = build(ConnectionTreeMode.INSTANCE);
+  connectionTreeCache.project = build(ConnectionTreeMode.PROJECT);
+
   if (connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE) {
     if (
       !hasWorkspacePermissionV1(
@@ -108,77 +198,19 @@ const prepareConnectionTree = async () => {
       connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;
       return;
     }
-    const { databaseList } = connectionTreeStore.tree;
-    const instanceList = uniqBy(
-      databaseList.map((db) => db.instanceEntity),
-      (instance) => instance.uid
-    );
-    const connectionTree = instanceList.map((instance) => {
-      const node = connectionTreeStore.mapAtom(instance, "instance", "0");
-      return node;
-    });
-
-    for (const instance of instanceList) {
-      const instanceItem = connectionTree.find(
-        (item: ConnectionAtom) => item.id === instance.uid
-      )!;
-
-      instanceItem.children = databaseList
-        .filter((db) => db.instanceEntity.uid === instance.uid)
-        .map((db) => {
-          const node = connectionTreeStore.mapAtom(
-            db,
-            "database",
-            instance.uid
-          );
-          node.disabled = !isDatabaseV1Queryable(db, currentUserV1.value);
-          if (node.disabled) {
-            // If a database node is not accessible
-            // it's not expandable either.
-            node.isLeaf = true;
-          }
-          return node;
-        });
-    }
-    connectionTreeStore.tree.data = connectionTree;
-  } else {
-    const databaseList = connectionTreeStore.tree.databaseList.filter((db) => {
-      return db.project !== DEFAULT_PROJECT_V1_NAME;
-    });
-    const projectList = uniqBy(
-      databaseList.map((db) => db.projectEntity),
-      (project) => project.uid
-    );
-
-    const projectAtomList = projectList.map((project) => {
-      const node = connectionTreeStore.mapAtom(project, "project", "0");
-      return node;
-    });
-
-    projectAtomList.forEach((projectAtom) => {
-      projectAtom.children = databaseList
-        .filter((db) => db.projectEntity.uid === projectAtom.id)
-        .map((db) => {
-          const node = connectionTreeStore.mapAtom(
-            db,
-            "database",
-            projectAtom.id
-          );
-          node.disabled = !isDatabaseV1Queryable(db, currentUserV1.value);
-          if (node.disabled) {
-            // If a database node is not accessible
-            // it's not expandable either.
-            node.isLeaf = true;
-          }
-          return node;
-        });
-    });
-
-    connectionTreeStore.tree.data = projectAtomList;
   }
-
   // Won't fetch tableList for every database here.
   // Will fetch them asynchronously only when a database node opens.
+};
+
+const switchConnectionTree = () => {
+  const tree = connectionTreeStore.tree;
+  const mode = tree.mode;
+  if (mode === ConnectionTreeMode.INSTANCE) {
+    tree.data = connectionTreeCache.instance;
+  } else {
+    tree.data = connectionTreeCache.project;
+  }
 };
 
 const prepareSheet = async () => {
@@ -396,10 +428,11 @@ onMounted(async () => {
     await usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM");
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
+    await initializeConnectionTree();
     connectionTreeStore.tree.state = ConnectionTreeState.LOADED;
   }
 
-  watch(() => connectionTreeStore.tree.mode, prepareConnectionTree, {
+  watch(() => connectionTreeStore.tree.mode, switchConnectionTree, {
     immediate: true,
   });
 
