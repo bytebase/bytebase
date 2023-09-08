@@ -204,6 +204,19 @@ export interface GetDatabaseSchemaRequest {
   sdlFormat: boolean;
 }
 
+export interface GetDatabaseSchemaDiffRequest {
+  /**
+   * The name of the database to retrieve schema.
+   * Format: instances/{instance}/databases/{database}/schema
+   */
+  name: string;
+  schema: string;
+}
+
+export interface DatabaseSchemaDiff {
+  diff: string;
+}
+
 export interface GetBackupSettingRequest {
   /**
    * The name of the database to retrieve backup setting.
@@ -2116,6 +2129,133 @@ export const GetDatabaseSchemaRequest = {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
     message.sdlFormat = object.sdlFormat ?? false;
+    return message;
+  },
+};
+
+function createBaseGetDatabaseSchemaDiffRequest(): GetDatabaseSchemaDiffRequest {
+  return { name: "", schema: "" };
+}
+
+export const GetDatabaseSchemaDiffRequest = {
+  encode(message: GetDatabaseSchemaDiffRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.schema !== "") {
+      writer.uint32(18).string(message.schema);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseSchemaDiffRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetDatabaseSchemaDiffRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetDatabaseSchemaDiffRequest {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      schema: isSet(object.schema) ? String(object.schema) : "",
+    };
+  },
+
+  toJSON(message: GetDatabaseSchemaDiffRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.schema !== undefined && (obj.schema = message.schema);
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetDatabaseSchemaDiffRequest>): GetDatabaseSchemaDiffRequest {
+    return GetDatabaseSchemaDiffRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<GetDatabaseSchemaDiffRequest>): GetDatabaseSchemaDiffRequest {
+    const message = createBaseGetDatabaseSchemaDiffRequest();
+    message.name = object.name ?? "";
+    message.schema = object.schema ?? "";
+    return message;
+  },
+};
+
+function createBaseDatabaseSchemaDiff(): DatabaseSchemaDiff {
+  return { diff: "" };
+}
+
+export const DatabaseSchemaDiff = {
+  encode(message: DatabaseSchemaDiff, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.diff !== "") {
+      writer.uint32(10).string(message.diff);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseSchemaDiff {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseSchemaDiff();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.diff = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseSchemaDiff {
+    return { diff: isSet(object.diff) ? String(object.diff) : "" };
+  },
+
+  toJSON(message: DatabaseSchemaDiff): unknown {
+    const obj: any = {};
+    message.diff !== undefined && (obj.diff = message.diff);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseSchemaDiff>): DatabaseSchemaDiff {
+    return DatabaseSchemaDiff.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DatabaseSchemaDiff>): DatabaseSchemaDiff {
+    const message = createBaseDatabaseSchemaDiff();
+    message.diff = object.diff ?? "";
     return message;
   },
 };
@@ -7257,6 +7397,73 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    diffDatabaseSchema: {
+      name: "DiffDatabaseSchema",
+      requestType: GetDatabaseSchemaDiffRequest,
+      requestStream: false,
+      responseType: DatabaseSchemaDiff,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              51,
+              58,
+              1,
+              42,
+              34,
+              46,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              125,
+              58,
+              100,
+              105,
+              102,
+              102,
+            ]),
+          ],
+        },
+      },
+    },
     getBackupSetting: {
       name: "GetBackupSetting",
       requestType: GetBackupSettingRequest,
@@ -8048,6 +8255,10 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: GetDatabaseSchemaRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<DatabaseSchema>>;
+  diffDatabaseSchema(
+    request: GetDatabaseSchemaDiffRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<DatabaseSchemaDiff>>;
   getBackupSetting(
     request: GetBackupSettingRequest,
     context: CallContext & CallContextExt,
@@ -8116,6 +8327,10 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<GetDatabaseSchemaRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<DatabaseSchema>;
+  diffDatabaseSchema(
+    request: DeepPartial<GetDatabaseSchemaDiffRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<DatabaseSchemaDiff>;
   getBackupSetting(
     request: DeepPartial<GetBackupSettingRequest>,
     options?: CallOptions & CallOptionsExt,

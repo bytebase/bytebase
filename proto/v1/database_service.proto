@@ -62,6 +62,13 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
 
+  rpc DiffDatabaseSchema(GetDatabaseSchemaDiffRequest) returns (DatabaseSchemaDiff) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*/databases/*/schema}:diff"
+      body: "*"
+    };
+  }
+
   rpc GetBackupSetting(GetBackupSettingRequest) returns (BackupSetting) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/backupSetting}"};
   }
@@ -242,6 +249,18 @@ message GetDatabaseSchemaRequest {
 
   // Format the schema dump into SDL format.
   bool sdl_format = 2;
+}
+
+message GetDatabaseSchemaDiffRequest {
+  // The name of the database to retrieve schema.
+  // Format: instances/{instance}/databases/{database}/schema
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  string schema = 2;
+}
+
+message DatabaseSchemaDiff {
+  string diff = 1;
 }
 
 message GetBackupSettingRequest {

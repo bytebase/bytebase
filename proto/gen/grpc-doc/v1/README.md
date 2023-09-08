@@ -150,6 +150,7 @@
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
+    - [DatabaseSchemaDiff](#bytebase-v1-DatabaseSchemaDiff)
     - [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest)
     - [DependentColumn](#bytebase-v1-DependentColumn)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
@@ -159,6 +160,7 @@
     - [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest)
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
+    - [GetDatabaseSchemaDiffRequest](#bytebase-v1-GetDatabaseSchemaDiffRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
     - [ListBackupsRequest](#bytebase-v1-ListBackupsRequest)
@@ -2741,6 +2743,21 @@ DatabaseMetadata is the metadata for databases.
 
 
 
+<a name="bytebase-v1-DatabaseSchemaDiff"></a>
+
+### DatabaseSchemaDiff
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-DeleteSecretRequest"></a>
 
 ### DeleteSecretRequest
@@ -2885,6 +2902,22 @@ FunctionMetadata is the metadata for functions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database to retrieve. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseSchemaDiffRequest"></a>
+
+### GetDatabaseSchemaDiffRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database}/schema |
+| schema | [string](#string) |  |  |
 
 
 
@@ -3559,6 +3592,7 @@ The type of the backup.
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
+| DiffDatabaseSchema | [GetDatabaseSchemaDiffRequest](#bytebase-v1-GetDatabaseSchemaDiffRequest) | [DatabaseSchemaDiff](#bytebase-v1-DatabaseSchemaDiff) |  |
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | UpdateBackupSetting | [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | CreateBackup | [CreateBackupRequest](#bytebase-v1-CreateBackupRequest) | [Backup](#bytebase-v1-Backup) |  |
