@@ -40,7 +40,7 @@
           </p>
         </div>
         <div v-if="hasRBACFeature" class="sm:hidden w-36">
-          <RoleSelect v-model:role="user.userRole" />
+          <WorkspaceRoleSelect v-model:role="user.userRole" />
         </div>
         <div
           v-if="hasRBACFeature"
@@ -99,7 +99,7 @@
 import { cloneDeep } from "lodash-es";
 import { NButton, NInput, NSwitch } from "naive-ui";
 import { computed, reactive } from "vue";
-import { RoleSelect, RoleRadioSelect } from "@/components/v2";
+import { WorkspaceRoleSelect, RoleRadioSelect } from "@/components/v2";
 import {
   useUIStateStore,
   featureToRef,
