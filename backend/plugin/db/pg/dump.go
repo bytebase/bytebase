@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -60,20 +61,21 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 
 func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
 	var args []string
-	args = append(args, fmt.Sprintf("--username=%s", driver.config.Username))
+	var dbConnPairs []string
+	dbConnPairs = append(dbConnPairs, fmt.Sprintf("user=%s", driver.config.Username))
 	if driver.config.Password == "" {
 		args = append(args, "--no-password")
 	}
 	if driver.sshClient == nil {
-		args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
-		args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
+		dbConnPairs = append(dbConnPairs, fmt.Sprintf("host=%s", driver.config.Host))
+		dbConnPairs = append(dbConnPairs, fmt.Sprintf("port=%s", driver.config.Port))
 	} else {
 		localPort := <-util.PortFIFO
 		defer func() {
 			util.PortFIFO <- localPort
 		}()
-		args = append(args, fmt.Sprintf("--host=%s", "localhost"))
-		args = append(args, fmt.Sprintf("--port=%d", localPort))
+		dbConnPairs = append(dbConnPairs, "host=localhost")
+		dbConnPairs = append(dbConnPairs, fmt.Sprintf("port=%d", localPort))
 		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", localPort))
 		if err != nil {
 			return err
@@ -91,23 +93,60 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	args = append(args, "--no-owner")
 	// Avoid pg_dump v15 generate REVOKE/GRANT statement.
 	args = append(args, "--no-privileges")
-	args = append(args, database)
+	dbConnPairs = append(dbConnPairs, fmt.Sprintf("dbname=%s", database))
 
-	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
-	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
-	// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 	if driver.config.Password != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
+		dbConnPairs = append(dbConnPairs, fmt.Sprintf("password=%s", driver.config.Password))
 	}
 	if driver.config.TLSConfig.SslCert != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLCERT=%s", driver.config.TLSConfig.SslCert))
+		sslCertFile, err := os.CreateTemp(os.TempDir(), "pgsslcert")
+		if err != nil {
+			return errors.Wrap(err, "failed to create temporary file to store PG SSL Cert")
+		}
+		defer os.Remove(sslCertFile.Name())
+		if _, err := sslCertFile.WriteString(driver.config.TLSConfig.SslCert); err != nil {
+			return errors.Wrap(err, "failed to write SSL Cert to temporary file")
+		}
+		if err := sslCertFile.Close(); err != nil {
+			return errors.Wrap(err, "failed to close SSL Cert temporary file")
+		}
+		dbConnPairs = append(dbConnPairs, fmt.Sprintf("sslcert=%s", sslCertFile.Name()))
 	}
 	if driver.config.TLSConfig.SslCA != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", driver.config.TLSConfig.SslCA))
+		sslRootCertFile, err := os.CreateTemp(os.TempDir(), "pgsslrootcert")
+		if err != nil {
+			return errors.Wrap(err, "failed to create temporary file to store PG SSL CA")
+		}
+		defer os.Remove(sslRootCertFile.Name())
+		if _, err := sslRootCertFile.WriteString(driver.config.TLSConfig.SslCA); err != nil {
+			return errors.Wrap(err, "failed to write SSL CA to temporary file")
+		}
+		if err := sslRootCertFile.Close(); err != nil {
+			return errors.Wrap(err, "failed to close SSL CA temporary file")
+		}
+		dbConnPairs = append(dbConnPairs, fmt.Sprintf("sslrootcert=%s", sslRootCertFile.Name()))
 	}
 	if driver.config.TLSConfig.SslKey != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLKEY=%s", driver.config.TLSConfig.SslKey))
+		sslKeyFile, err := os.CreateTemp(os.TempDir(), "pgsslkey")
+		if err != nil {
+			return errors.Wrap(err, "failed to create temporary file to store PG SSL Key")
+		}
+		defer os.Remove(sslKeyFile.Name())
+		if _, err := sslKeyFile.WriteString(driver.config.TLSConfig.SslKey); err != nil {
+			return errors.Wrap(err, "failed to write SSL Key to temporary file")
+		}
+		if err := sslKeyFile.Close(); err != nil {
+			return errors.Wrap(err, "failed to close SSL Key temporary file")
+		}
+		dbConnPairs = append(dbConnPairs, fmt.Sprintf("sslkey=%s", sslKeyFile.Name()))
 	}
+
+	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
+	dbConnStr := strings.Join(dbConnPairs, " ")
+	args = append([]string{dbConnStr}, args...)
+
+	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
+	// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 	cmd.Env = append(cmd.Env, "OPENSSL_CONF=/etc/ssl/")
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
