@@ -998,9 +998,29 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 	return removed, added, updated
 }
 
-func validateSteps(_ []*v1pb.Plan_Step) error {
-	// FIXME: impl this func
-	// targets should be unique
+func validateSteps(steps []*v1pb.Plan_Step) error {
+	var databaseTarget, databaseGroupTarget, deploymentConfigTarget int
+	for _, step := range steps {
+		for _, spec := range step.Specs {
+			if config := spec.GetChangeDatabaseConfig(); config != nil {
+				if _, _, err := common.GetInstanceDatabaseID(config.Target); err == nil {
+					databaseTarget++
+				} else if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
+					databaseGroupTarget++
+				} else if _, _, err := common.GetProjectIDDeploymentConfigID(config.Target); err == nil {
+					deploymentConfigTarget++
+				} else {
+					return errors.Errorf("unknown target %q", config.Target)
+				}
+			}
+		}
+	}
+	if deploymentConfigTarget > 1 {
+		return errors.Errorf("expect at most on deploymentConfig target, got %d", deploymentConfigTarget)
+	}
+	if deploymentConfigTarget != 0 && (databaseTarget > 0 || databaseGroupTarget > 0) {
+		return errors.Errorf("expect no database or databaseGroup target when deploymentConfig target is set")
+	}
 	return nil
 }
 
@@ -1009,7 +1029,22 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 	pipelineCreate := &store.PipelineMessage{
 		Name: "Rollout Pipeline",
 	}
-	for _, step := range steps {
+
+	transformedSteps := steps
+	if len(steps) == 1 && len(steps[0].Specs) == 1 {
+		spec := steps[0].Specs[0]
+		if config := spec.GetChangeDatabaseConfig(); config != nil {
+			if _, _, err := common.GetProjectIDDeploymentConfigID(config.Target); err == nil {
+				stepsFromDeploymentConfig, err := transformDeploymentConfigTargetToSteps(ctx, s, spec, config, project)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to transform deploymentConfig target to steps")
+				}
+				transformedSteps = stepsFromDeploymentConfig
+			}
+		}
+	}
+
+	for _, step := range transformedSteps {
 		stageCreate := &store.StageMessage{}
 
 		var stageEnvironmentID string
@@ -1023,7 +1058,6 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 			}
 			return nil
 		}
-
 		for _, spec := range step.Specs {
 			taskCreates, taskIndexDAGCreates, err := getTaskCreatesFromSpec(ctx, s, licenseService, dbFactory, spec, project, registerEnvironmentID)
 			if err != nil {
@@ -1042,6 +1076,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &stageEnvironmentID})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get environment")
+		}
+		if environment == nil {
+			return nil, errors.Errorf("environment %q not found", stageEnvironmentID)
 		}
 		stageCreate.EnvironmentID = environment.UID
 		stageCreate.Name = fmt.Sprintf("%s Stage", environment.Title)
