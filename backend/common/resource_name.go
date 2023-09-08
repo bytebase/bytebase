@@ -42,6 +42,7 @@ const (
 	LogNamePrefix                = "logs/"
 	InboxNamePrefix              = "inbox/"
 	SchemaDesignPrefix           = "schemaDesigns/"
+	DeploymentConfigPrefix       = "deploymentConfigs/"
 
 	DeploymentConfigSuffix = "/deploymentConfig"
 	BackupSettingSuffix    = "/backupSetting"
@@ -80,6 +81,14 @@ func GetProjectIDDatabaseGroupIDSchemaGroupID(name string) (string, string, stri
 // GetProjectIDWebhookID returns the project ID and webhook ID from a resource name.
 func GetProjectIDWebhookID(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, WebhookIDPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+func GetProjectIDDeploymentConfigID(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, DeploymentConfigPrefix)
 	if err != nil {
 		return "", "", err
 	}

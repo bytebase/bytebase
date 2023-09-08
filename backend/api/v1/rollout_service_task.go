@@ -21,6 +21,73 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) ([]*storepb.PlanConfig_Step, error) {
+	projectID, _, err := common.GetProjectIDDeploymentConfigID(c.Target)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project and deployment id from target %q", c.Target)
+	}
+	if project.ResourceID != projectID {
+		return nil, errors.Errorf("project id %q in target %q does not match project id %q in plan config", projectID, c.Target, project.ResourceID)
+	}
+
+	switch c.Type {
+	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
+	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+	default:
+		return nil, errors.Errorf("unsupported change database config type: %v", c.Type)
+	}
+
+	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get deployment config")
+	}
+	apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert deployment config to api deployment config")
+	}
+	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
+	}
+	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list databases")
+	}
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, allDatabases)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
+	}
+
+	var steps []*storepb.PlanConfig_Step
+	for _, databases := range matrix {
+		if len(databases) == 0 {
+			continue
+		}
+
+		step := &storepb.PlanConfig_Step{}
+		for _, database := range databases {
+			step.Specs = append(step.Specs, &storepb.PlanConfig_Spec{
+				EarliestAllowedTime: spec.EarliestAllowedTime,
+				Id:                  spec.Id,
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						Type:            c.Type,
+						Target:          fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
+						Sheet:           c.Sheet,
+						SchemaVersion:   c.SchemaVersion,
+						RollbackEnabled: c.RollbackEnabled,
+						RollbackDetail:  c.RollbackDetail,
+					},
+				},
+			})
+		}
+		steps = append(steps, step)
+	}
+	return steps, nil
+}
+
 func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	if licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
@@ -190,12 +257,17 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	// possible target:
 	// 1. instances/{instance}/databases/{database}
 	// 2. projects/{project}/databaseGroups/{databaseGroup}
+	// 3. projects/{project}/deploymentConfigs/{deploymentConfig}
 	if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
 		return getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, project, registerEnvironmentID)
 	}
 	if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
 		return getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx, s, spec, c, project, registerEnvironmentID)
 	}
+	if _, _, err := common.GetProjectIDDeploymentConfigID(c.Target); err == nil {
+		return nil, nil, errors.Errorf("unexpected deployment config target %q", c.Target)
+	}
+
 	return nil, nil, errors.Errorf("unknown target %q", c.Target)
 }
 
