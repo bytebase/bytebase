@@ -101,6 +101,9 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 			return errors.Wrap(err, "failed to create temporary file to store PG SSL Cert")
 		}
 		defer os.Remove(sslCertFile.Name())
+		if err := sslCertFile.Chmod(0400); err != nil {
+			return errors.Wrap(err, "failed to chmod SSL Cert file to 0400")
+		}
 		if _, err := sslCertFile.WriteString(driver.config.TLSConfig.SslCert); err != nil {
 			return errors.Wrap(err, "failed to write SSL Cert to temporary file")
 		}
@@ -115,6 +118,9 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 			return errors.Wrap(err, "failed to create temporary file to store PG SSL CA")
 		}
 		defer os.Remove(sslRootCertFile.Name())
+		if err := sslRootCertFile.Chmod(0400); err != nil {
+			return errors.Wrap(err, "failed to chmod SSL CA file to 0400")
+		}
 		if _, err := sslRootCertFile.WriteString(driver.config.TLSConfig.SslCA); err != nil {
 			return errors.Wrap(err, "failed to write SSL CA to temporary file")
 		}
@@ -129,6 +135,9 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 			return errors.Wrap(err, "failed to create temporary file to store PG SSL Key")
 		}
 		defer os.Remove(sslKeyFile.Name())
+		if err := sslKeyFile.Chmod(0400); err != nil {
+			return errors.Wrap(err, "failed to chmod SSL Key file to 0400")
+		}
 		if _, err := sslKeyFile.WriteString(driver.config.TLSConfig.SslKey); err != nil {
 			return errors.Wrap(err, "failed to write SSL Key to temporary file")
 		}
