@@ -97,7 +97,7 @@ import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import {
   FeatureType,
   planTypeToString,
-  defaultRefreshTokenDurationInHours,
+  defaultTokenDurationInHours,
 } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -157,9 +157,9 @@ watch(
       set.add("bb.feature.2fa");
     }
     if (
-      !!settingV1Store.workspaceProfileSetting?.refreshTokenDuration?.seconds &&
-      settingV1Store.workspaceProfileSetting?.refreshTokenDuration?.seconds !=
-        defaultRefreshTokenDurationInHours * 60 * 60
+      !!settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds &&
+      settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds !=
+        defaultTokenDurationInHours * 60 * 60
     ) {
       set.add("bb.feature.secure-token");
     }

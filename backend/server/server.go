@@ -370,8 +370,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		if settingValue.ExternalUrl != "" {
 			externalURL = settingValue.ExternalUrl
 		}
-		if settingValue.RefreshTokenDuration != nil && settingValue.RefreshTokenDuration.Seconds > 0 {
-			tokenDuration = settingValue.RefreshTokenDuration.AsDuration()
+		if settingValue.TokenDuration != nil && settingValue.TokenDuration.Seconds > 0 {
+			tokenDuration = settingValue.TokenDuration.AsDuration()
 		}
 	}
 
