@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-stretch justify-start text-sm space-y-2">
+  <div class="h-full flex flex-col items-stretch justify-between text-sm pb-1">
     <div class="divide-y border-b">
       <div
         v-if="showInfoPane"
