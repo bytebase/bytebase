@@ -76,12 +76,8 @@ import { computed, onMounted, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
-import { useDBGroupStore, useNotificationStore, useIssueStore } from "@/store";
-import {
-  ComposedDatabaseGroup,
-  ComposedSchemaGroup,
-  MigrationType,
-} from "@/types";
+import { useDBGroupStore, useNotificationStore } from "@/store";
+import { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
@@ -110,7 +106,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const router = useRouter();
-const issueStore = useIssueStore();
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   editStatement: "",
@@ -209,34 +204,6 @@ const handleUploadFile = (e: Event) => {
 };
 
 const handlePreviewIssue = async () => {
-  let migrationType: MigrationType = "MIGRATE";
-  if (props.issueType === "bb.issue.database.data.update") {
-    migrationType = "DATA";
-  }
-
-  try {
-    await issueStore.validateIssue({
-      name: "Validate only issue for grouping",
-      assigneeId: 1,
-      projectId: Number(props.databaseGroup.project.uid),
-      createContext: {
-        detailList: [
-          {
-            migrationType: migrationType,
-            databaseGroupName: props.databaseGroup.name,
-            statement: state.editStatement,
-            earliestAllowedTs: 0,
-          },
-        ],
-      },
-      payload: {},
-      type: props.issueType,
-      description: "",
-    });
-  } catch (error) {
-    return;
-  }
-
   const issueRoute = generateDatabaseGroupIssueRoute(
     props.issueType,
     props.databaseGroup,
