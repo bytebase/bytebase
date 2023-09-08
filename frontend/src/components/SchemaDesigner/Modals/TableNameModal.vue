@@ -1,6 +1,10 @@
 <template>
   <BBModal
-    :title="$t('schema-editor.actions.create-table')"
+    :title="
+      isCreatingTable
+        ? $t('schema-editor.actions.create-table')
+        : $t('schema-editor.actions.rename')
+    "
     class="shadow-inner outline outline-gray-200"
     @close="dismissModal"
   >
@@ -19,23 +23,23 @@
         {{ $t("common.cancel") }}
       </button>
       <button class="btn-primary" @click="handleConfirmButtonClick">
-        {{ $t("common.create") }}
+        {{ isCreatingTable ? $t("common.create") : $t("common.save") }}
       </button>
     </div>
   </BBModal>
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
+import { generateUniqueTabId, useNotificationStore } from "@/store";
 import {
   convertColumnMetadataToColumn,
   convertTableMetadataToTable,
 } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
-import { useSchemaDesignerContext } from "../common";
+import { SchemaDesignerTabType, useSchemaDesignerContext } from "../common";
 
 const tableNameFieldRegexp = /^\S+$/;
 
@@ -43,26 +47,24 @@ interface LocalState {
   tableName: string;
 }
 
-const props = defineProps({
-  schemaId: {
-    type: String,
-    default: "",
-  },
-  tableId: {
-    type: String,
-    default: undefined,
-  },
-});
+const props = defineProps<{
+  schemaId: string;
+  tableId?: string;
+}>();
 
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
 const { t } = useI18n();
-const { engine, editableSchemas } = useSchemaDesignerContext();
+const { engine, editableSchemas, addTab } = useSchemaDesignerContext();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   tableName: "",
+});
+
+const isCreatingTable = computed(() => {
+  return props.tableId === undefined;
 });
 
 const handleTableNameChange = (event: Event) => {
@@ -90,25 +92,46 @@ const handleConfirmButtonClick = async () => {
     });
     return;
   }
-
-  const table = TableMetadata.fromPartial({});
-  table.name = state.tableName;
-  const column = ColumnMetadata.fromPartial({});
-  column.name = "id";
-  if (engine.value === Engine.POSTGRES) {
-    column.type = "INTEGER";
-  } else {
-    column.type = "INT";
+  const tableNameList = schema.tableList.map((table) => table.name);
+  if (tableNameList.includes(state.tableName)) {
+    notificationStore.pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("schema-editor.message.duplicated-table-name"),
+    });
+    return;
   }
-  column.comment = "ID";
-  const columnEdit = convertColumnMetadataToColumn(column);
-  columnEdit.status = "created";
-  const tableEdit = convertTableMetadataToTable(table);
-  tableEdit.status = "created";
-  tableEdit.columnList.push(columnEdit);
-  tableEdit.primaryKey.columnIdList.push(columnEdit.id);
-  schema.tableList.push(tableEdit);
 
+  if (isCreatingTable.value) {
+    const table = TableMetadata.fromPartial({});
+    table.name = state.tableName;
+    const column = ColumnMetadata.fromPartial({});
+    column.name = "id";
+    if (engine.value === Engine.POSTGRES) {
+      column.type = "INTEGER";
+    } else {
+      column.type = "INT";
+    }
+    column.comment = "ID";
+    const columnEdit = convertColumnMetadataToColumn(column);
+    columnEdit.status = "created";
+    const tableEdit = convertTableMetadataToTable(table);
+    tableEdit.status = "created";
+    tableEdit.columnList.push(columnEdit);
+    tableEdit.primaryKey.columnIdList.push(columnEdit.id);
+    schema.tableList.push(tableEdit);
+    addTab({
+      id: generateUniqueTabId(),
+      type: SchemaDesignerTabType.TabForTable,
+      schemaId: props.schemaId,
+      tableId: tableEdit.id,
+    });
+  } else {
+    const table = schema.tableList.find((table) => table.id === props.tableId);
+    if (table) {
+      table.name = state.tableName;
+    }
+  }
   dismissModal();
 };
 
