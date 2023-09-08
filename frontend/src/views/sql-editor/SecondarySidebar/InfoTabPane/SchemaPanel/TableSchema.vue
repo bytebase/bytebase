@@ -1,13 +1,13 @@
 <template>
   <div class="overflow-hidden flex flex-col">
-    <div class="flex items-center justify-between p-2 pl-4 border-b">
+    <div class="flex items-center justify-between pl-4 pr-2 py-1 border-b">
       <div
         class="flex items-center flex-1 truncate cursor-pointer"
         @click="emit('close')"
       >
         <heroicons-outline:table class="h-4 w-4 mr-1 flex-shrink-0" />
-        <span v-if="schema.name" class="font-semibold">{{ schema.name }}.</span>
-        <span class="font-semibold">{{ table.name }}</span>
+        <span v-if="schema.name" class="text-sm">{{ schema.name }}.</span>
+        <span class="text-sm">{{ table.name }}</span>
       </div>
 
       <div

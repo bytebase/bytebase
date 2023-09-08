@@ -31,6 +31,7 @@
 
         <NInputGroup style="width: auto">
           <InstanceSelect
+            class="!w-48"
             :instance="state.instanceFilter"
             :include-all="true"
             :environment="selectedEnvironment?.uid"

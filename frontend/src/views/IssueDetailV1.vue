@@ -15,7 +15,7 @@
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
 import { NSpin } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   IssueDetailPage,
@@ -23,6 +23,7 @@ import {
   useBaseIssueContext,
   useInitializeIssue,
 } from "@/components/IssueV1";
+import { useUIStateStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 
 interface LocalState {
@@ -48,6 +49,7 @@ const { isCreating, issue, isInitializing } = useInitializeIssue(issueSlug);
 const ready = computed(() => {
   return !isInitializing.value && !!issue.value;
 });
+const uiStateStore = useUIStateStore();
 
 provideIssueContext(
   {
@@ -62,6 +64,15 @@ provideIssueContext(
   },
   true /* root */
 );
+
+onMounted(() => {
+  if (!uiStateStore.getIntroStateByKey("issue.visit")) {
+    uiStateStore.saveIntroStateByKey({
+      key: "issue.visit",
+      newState: true,
+    });
+  }
+});
 
 const documentTitle = computed(() => {
   if (isCreating.value) {

@@ -18,9 +18,8 @@
           </span>
           <ProjectSelect
             class="!w-60 shrink-0"
-            :only-userself="false"
-            :selected-id="state.projectId"
-            @select-project-id="handleProjectSelect"
+            :project="state.projectId"
+            @update:project="handleProjectSelect"
           />
         </div>
 
@@ -33,30 +32,16 @@
             <div class="flex flex-row justify-start items-center">
               <EnvironmentSelect
                 class="!w-60 mr-4 shrink-0"
-                name="environment"
-                :select-default="false"
-                :selected-id="state.environmentId"
-                @select-environment-id="handleEnvironmentSelect"
+                :environment="state.environmentId"
+                @update:environment="handleEnvironmentSelect"
               />
               <DatabaseSelect
                 class="!w-96"
-                :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
-                :mode="'ALL'"
-                :environment-id="state.environmentId"
-                :project-id="state.projectId"
-                :sync-status="'OK'"
-                :customize-item="true"
-                @select-database-id="handleDatabaseSelect"
+                :database="state.databaseId"
+                :environment="state.environmentId"
+                :project="state.projectId"
+                @update:database="handleDatabaseSelect"
               >
-                <template #customizeItem="{ database }">
-                  <div class="flex items-center">
-                    <InstanceV1EngineIcon :instance="database.instanceEntity" />
-                    <span class="mx-2">{{ database.databaseName }}</span>
-                    <span class="text-gray-400">
-                      ({{ instanceV1Name(database.instanceEntity) }})
-                    </span>
-                  </div>
-                </template>
               </DatabaseSelect>
             </div>
           </div>
@@ -96,12 +81,12 @@
             {{ $t("issue.grant-request.export-rows") }}
             <RequiredStar />
           </span>
-          <input
-            v-model="state.maxRowCount"
+          <NInputNumber
+            v-model:value="state.maxRowCount"
             required
-            type="number"
-            class="textfield"
+            class="!w-60"
             placeholder="Max row count"
+            :min="1"
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
@@ -147,14 +132,23 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { head, isUndefined } from "lodash-es";
-import { NDrawer, NDrawerContent, NInput } from "naive-ui";
+import {
+  NButton,
+  NDrawer,
+  NDrawerContent,
+  NInput,
+  NInputNumber,
+} from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import DatabaseSelect from "@/components/DatabaseSelect.vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
+import {
+  ProjectSelect,
+  EnvironmentSelect,
+  DatabaseSelect,
+} from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -172,12 +166,7 @@ import {
   dialectOfEngineV1,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  extractUserUID,
-  instanceV1Name,
-  issueSlug,
-  memberListInProjectV1,
-} from "@/utils";
+import { extractUserUID, issueSlug, memberListInProjectV1 } from "@/utils";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 
@@ -277,11 +266,11 @@ onMounted(async () => {
   }
 });
 
-const handleProjectSelect = async (projectId: string) => {
+const handleProjectSelect = async (projectId: string | undefined) => {
   state.projectId = projectId;
 };
 
-const handleEnvironmentSelect = (environmentId: string) => {
+const handleEnvironmentSelect = (environmentId: string | undefined) => {
   state.environmentId = environmentId;
   const database = databaseStore.getDatabaseByUID(
     state.databaseId || String(UNKNOWN_ID)
@@ -296,7 +285,7 @@ const handleEnvironmentSelect = (environmentId: string) => {
   }
 };
 
-const handleDatabaseSelect = (databaseId: string) => {
+const handleDatabaseSelect = (databaseId: string | undefined) => {
   state.databaseId = databaseId;
   const database = databaseStore.getDatabaseByUID(
     state.databaseId || String(UNKNOWN_ID)

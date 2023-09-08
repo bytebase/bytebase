@@ -1,5 +1,6 @@
 <template>
   <NSelect
+    v-bind="$attrs"
     :value="project"
     :options="options"
     :placeholder="$t('project.select')"

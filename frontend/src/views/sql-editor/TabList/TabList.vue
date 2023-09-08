@@ -42,7 +42,7 @@
       </button>
     </div>
 
-    <div class="hidden lg:block">
+    <div class="hidden lg:block -mt-0.5">
       <ProfileDropdown v-if="showProfileDropdown" />
     </div>
 
