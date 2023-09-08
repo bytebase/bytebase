@@ -31,6 +31,7 @@
         :render-prefix="renderPrefix"
         :node-props="nodeProps"
         :virtual-scroll="true"
+        @load="handleLoadSubTree"
         @update:expanded-keys="updateExpandedKeys"
       />
     </div>
@@ -85,6 +86,7 @@ import {
   instanceV1AllowsCrossDatabaseQuery,
 } from "@/utils";
 import { Prefix, Label } from "./TreeNode";
+import { fetchDatabaseSubTree } from "./common";
 
 type Position = {
   x: number;
@@ -202,6 +204,11 @@ const setConnection = (
   }
 ) => {
   if (option) {
+    if (option.type === "schema" || option.type === "table") {
+      // TODO: sync secondary panel state
+      return;
+    }
+
     if (option.type === "project") {
       // Not connectable to a project
       return;
@@ -341,10 +348,17 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   };
 };
 
+const handleLoadSubTree = (node: TreeOption) => {
+  const atom = node as any as ConnectionAtom;
+  const type = atom.type;
+  if (type === "database") {
+    return fetchDatabaseSubTree(atom);
+  }
+  return Promise.resolve();
+};
+
 const updateExpandedKeys = (keys: string[]) => {
-  connectionTreeStore.expandedTreeNodeKeys = keys.filter(
-    (key) => !key.startsWith("database-")
-  );
+  connectionTreeStore.expandedTreeNodeKeys = keys;
 };
 
 // When switching tabs, scroll the matched node into view if needed.

@@ -11,6 +11,10 @@ import {
 } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import {
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 import { Policy } from "@/types/proto/v1/org_policy_service";
 import { Project } from "@/types/proto/v1/project_service";
 import { emptyConnection } from "@/utils";
@@ -89,11 +93,17 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
   };
   // utilities
   const mapAtom = (
-    item: Project | ComposedInstance | ComposedDatabase,
+    item:
+      | Project
+      | ComposedInstance
+      | ComposedDatabase
+      | SchemaMetadata
+      | TableMetadata,
     type: ConnectionAtomType,
-    parentId: string
+    parentId: string,
+    children?: ConnectionAtom[]
   ) => {
-    const id = item.uid;
+    const id = idForConnectionAtomItem(type, item);
     const key = `${type}-${id}`;
     const connectionAtom: ConnectionAtom = {
       parentId,
@@ -106,9 +116,14 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
           ? (item as ComposedInstance).title
           : type === "database"
           ? (item as ComposedDatabase).databaseName
+          : type === "schema"
+          ? (item as SchemaMetadata).name
+          : type === "table"
+          ? (item as TableMetadata).name
           : "",
       type,
-      isLeaf: type === "database",
+      isLeaf: type === "table",
+      children,
     };
     return connectionAtom;
   };
@@ -198,4 +213,30 @@ export const isConnectableAtom = (atom: ConnectionAtom): boolean => {
     return engine === Engine.MYSQL || engine === Engine.TIDB;
   }
   return false;
+};
+
+export const idForConnectionAtomItem = (
+  type: ConnectionAtomType,
+  item:
+    | Project
+    | ComposedInstance
+    | ComposedDatabase
+    | SchemaMetadata
+    | TableMetadata
+) => {
+  if (type === "project" || type === "instance" || type === "database") {
+    const target = item as Project | ComposedInstance | ComposedDatabase;
+    return target.uid;
+  }
+  if (type === "schema") {
+    const target = item as SchemaMetadata;
+    return target.name;
+  }
+  if (type === "table") {
+    const target = item as TableMetadata;
+    return target.name;
+  }
+
+  console.error("should never reach this line", type, item);
+  return "";
 };
