@@ -38,25 +38,25 @@ import (
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
-	store                *store.Store
-	secret               string
-	refreshTokenDuration time.Duration
-	licenseService       enterpriseAPI.LicenseService
-	metricReporter       *metricreport.Reporter
-	profile              *config.Profile
-	postCreateUser       func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
+	store          *store.Store
+	secret         string
+	tokenDuration  time.Duration
+	licenseService enterpriseAPI.LicenseService
+	metricReporter *metricreport.Reporter
+	profile        *config.Profile
+	postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, refreshTokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
+func NewAuthService(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
 	return &AuthService{
-		store:                store,
-		secret:               secret,
-		refreshTokenDuration: refreshTokenDuration,
-		licenseService:       licenseService,
-		metricReporter:       metricReporter,
-		profile:              profile,
-		postCreateUser:       postCreateUser,
+		store:          store,
+		secret:         secret,
+		tokenDuration:  tokenDuration,
+		licenseService: licenseService,
+		metricReporter: metricReporter,
+		profile:        profile,
+		postCreateUser: postCreateUser,
 	}
 }
 
@@ -583,7 +583,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
 	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
 	if s.licenseService.IsFeatureEnabled(api.Feature2FA) == nil && !mfaSecondLogin && userMFAEnabled {
-		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
+		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, s.tokenDuration)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA temp token")
 		}
@@ -592,19 +592,13 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		}, nil
 	}
 
-	var accessToken, refreshToken string
+	var accessToken string
 	if loginUser.Type == api.EndUser {
-		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
+		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, s.tokenDuration)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
 		accessToken = token
-		if request.Web {
-			refreshToken, err = auth.GenerateRefreshToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, s.refreshTokenDuration)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to generate API access token")
-			}
-		}
 	} else if loginUser.Type == api.ServiceAccount {
 		token, err := auth.GenerateAPIToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
@@ -617,9 +611,8 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 
 	if request.Web {
 		if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-			auth.GatewayMetadataAccessTokenKey:  accessToken,
-			auth.GatewayMetadataRefreshTokenKey: refreshToken,
-			auth.GatewayMetadataUserIDKey:       fmt.Sprintf("%d", loginUser.ID),
+			auth.GatewayMetadataAccessTokenKey: accessToken,
+			auth.GatewayMetadataUserIDKey:      fmt.Sprintf("%d", loginUser.ID),
 		})); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 		}
@@ -640,9 +633,8 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 // Logout is the auth logout method.
 func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb.Empty, error) {
 	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-		auth.GatewayMetadataAccessTokenKey:  "",
-		auth.GatewayMetadataRefreshTokenKey: "",
-		auth.GatewayMetadataUserIDKey:       "",
+		auth.GatewayMetadataAccessTokenKey: "",
+		auth.GatewayMetadataUserIDKey:      "",
 	})); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 	}
