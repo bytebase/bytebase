@@ -673,37 +673,18 @@ func mysqlExtractJtColumn(ctx mysql.IJtColumnContext) []string {
 	return []string{}
 }
 
-func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.ParserRuleContext) (storepb.MaskingLevel, error) {
+func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
 	if ctx == nil {
 		return defaultMaskingLevel, nil
 	}
 
 	switch ctx := ctx.(type) {
-	case mysql.IExprContext:
-		var list []antlr.ParserRuleContext
-		for _, child := range ctx.GetChildren() {
-			switch child := child.(type) {
-			case mysql.IBoolPriContext:
-				list = append(list, child)
-			case mysql.IExprContext:
-				list = append(list, child)
-			}
-		}
-		return extractor.mysqlEvalMaskingLevelInExprList(list)
-	case mysql.IBoolPriContext:
-		var list []antlr.ParserRuleContext
-		for _, child := range ctx.GetChildren() {
-			switch child := child.(type) {
-			case mysql.IBoolPriContext:
-				list = append(list, child)
-			case mysql.IPredicateContext:
-				list = append(list, child)
-			case mysql.ISubqueryContext:
-				list = append(list, child)
-			}
-		}
-		return extractor.mysqlEvalMaskingLevelInExprList(list)
 	case mysql.ISubqueryContext:
+		// Subquery in SELECT fields is special.
+		// It can be the non-associated or associated subquery.
+		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
+		// So that the subquery can access the outer schema.
+		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &sensitiveFieldExtractor{
 			currentDatabase: extractor.currentDatabase,
 			schemaInfo:      extractor.schemaInfo,
@@ -711,7 +692,7 @@ func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.
 		}
 		fieldList, err := subqueryExtractor.mysqlExtractSubquery(ctx)
 		if err != nil {
-			return defaultMaskingLevel, err
+			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
 		finalLevel := defaultMaskingLevel
 		for _, field := range fieldList {
@@ -719,97 +700,80 @@ func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.
 				finalLevel = field.maskingLevel
 			}
 			if finalLevel == maxMaskingLevel {
-				return finalLevel, nil
+				return "", finalLevel, nil
 			}
 		}
-		return finalLevel, nil
-	case mysql.IPredicateContext:
-		var list []antlr.ParserRuleContext
-		for _, child := range ctx.GetChildren() {
-			switch child := child.(type) {
-			case mysql.IBitExprContext:
-				list = append(list, child)
-			case mysql.IPredicateOperationsContext:
-				list = append(list, child)
-			case mysql.ISimpleExprWithParenthesesContext:
-				list = append(list, child)
-			}
-		}
-		return extractor.mysqlEvalMaskingLevelInExprList(list)
-	case mysql.IBitExprContext:
-		var list []antlr.ParserRuleContext
-		for _, child := range ctx.GetChildren() {
-			switch child := child.(type) {
-			case mysql.IBitExprContext:
-				list = append(list, child)
-			case mysql.ISimpleExprContext:
-				list = append(list, child)
-			case mysql.IExprContext:
-				list = append(list, child)
-			}
-		}
-		return extractor.mysqlEvalMaskingLevelInExprList(list)
-	case mysql.IPredicateOperationsContext:
-		var list []antlr.ParserRuleContext
-		for _, child := range ctx.GetChildren() {
-			switch child := child.(type) {
-			case mysql.ISubqueryContext:
-				list = append(list, child)
-			case mysql.IExprListContext:
-				list = append(list, child)
-			case mysql.IBitExprContext:
-				list = append(list, child)
-			case mysql.IPredicateContext:
-				list = append(list, child)
-			case mysql.ISimpleExprContext:
-				list = append(list, child)
-			}
-		}
-		return extractor.mysqlEvalMaskingLevelInExprList(list)
-	case mysql.ISimpleExprWithParenthesesContext:
-		return extractor.mysqlEvalMaskingLevelInExpr(ctx.SimpleExpr())
-	case mysql.IExprListContext:
-		var list []antlr.ParserRuleContext
-		for _, child := range ctx.AllExpr() {
+		return "", finalLevel, nil
+	case mysql.IColumnRefContext:
+		level := extractor.mysqlCheckFieldMaskingLevel("", "", parser.NormalizeMySQLIdentifier(ctx.Identifier()))
+	}
+
+	var list []antlr.ParserRuleContext
+	for _, child := range ctx.GetChildren() {
+		if child, ok := child.(antlr.ParserRuleContext); ok {
 			list = append(list, child)
 		}
-		return extractor.mysqlEvalMaskingLevelInExprList(list)
-	case mysql.ISimpleExprContext:
-		var list []antlr.ParserRuleContext
-		for _, child := range ctx.GetChildren() {
-			switch child := child.(type) {
-			case mysql.IExprContext:
-				list = append(list, child)
-			case mysql.IColumnRefContext:
-				list = append(list, child)
-			case mysql.IRuntimeFunctionCallContext:
-				list = append(list, child)
-			case mysql.IFunctionCallContext:
-				list = append(list, child)
-			case mysql.ISimpleExprContext:
-				list = append(list, child)
-			case mysql.ISumExprContext:
-				list = append(list, child)
-			case mysql.IGroupingOperationContext:
-				list = append(list, child)
-			}
-		}
-		return extractor.mysqlEvalMaskingLevelInExprList(list)
 	}
 
-	return defaultMaskingLevel, nil
+	return extractor.mysqlEvalMaskingLevelInExprList(list)
 }
 
-func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExprList(list []antlr.ParserRuleContext) (storepb.MaskingLevel, error) {
-	result := defaultMaskingLevel
+func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExprList(list []antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
+	finalLevel := defaultMaskingLevel
+	var fieldName string
+	var err error
 	for _, ctx := range list {
-		level, err := extractor.mysqlEvalMaskingLevelInExpr(ctx)
+		var level storepb.MaskingLevel
+		fieldName, level, err = extractor.mysqlEvalMaskingLevelInExpr(ctx)
 		if err != nil {
-			return defaultMaskingLevel, err
+			return "", defaultMaskingLevel, err
 		}
-		if level > result {
-			result = level
+		if len(list) != 1 {
+			fieldName = ""
 		}
+		if cmp.Less[storepb.MaskingLevel](finalLevel, level) {
+			finalLevel = level
+		}
+		if finalLevel == maxMaskingLevel {
+			return fieldName, finalLevel, nil
+		}
+
 	}
-	return result, nil
+	return fieldName, finalLevel, nil
+}
+
+func (extractor *sensitiveFieldExtractor) mysqlCheckFieldMaskingLevel(databaseName string, tableName string, columnName string) storepb.MaskingLevel {
+	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
+	//
+	//  select (
+	//    select (
+	//      select max(a) > x1.a from t
+	//    )
+	//    from t1 as x1
+	//    limit 1
+	//  )
+	//  from t as x1;
+	//
+	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
+	// This is the reason we loop the slice in reversed order.
+	// for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
+	// 	field := extractor.outerSchemaInfo[i]
+	// 	sameDatabase := (databaseName == field.database || (databaseName == "" && field.database == extractor.currentDatabase))
+	// 	sameTable := (tableName == field.table || tableName == "")
+	// 	sameField := (columnName == field.name)
+	// 	if sameDatabase && sameTable && sameField {
+	// 		return field.maskingLevel
+	// 	}
+	// }
+
+	// for _, field := range extractor.fromFieldList {
+	// 	sameDatabase := (databaseName == field.database || (databaseName == "" && field.database == extractor.currentDatabase))
+	// 	sameTable := (tableName == field.table || tableName == "")
+	// 	sameField := (columnName == field.name)
+	// 	if sameDatabase && sameTable && sameField {
+	// 		return field.maskingLevel
+	// 	}
+	// }
+
+	return defaultMaskingLevel
 }
