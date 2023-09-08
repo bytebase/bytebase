@@ -125,8 +125,10 @@ func (extractor *sensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt
 				// The error content comes from MySQL.
 				return nil, errors.Errorf("The used SELECT statements have a different number of columns")
 			}
-			for index := 0; index < len(result); index++ {
-				result[index].maskingLevel = fieldList[index].maskingLevel
+			for i := 0; i < len(result); i++ {
+				if cmp.Less[storepb.MaskingLevel](result[i].maskingLevel, fieldList[i].maskingLevel) {
+					result[i].maskingLevel = fieldList[i].maskingLevel
+				}
 			}
 		}
 	}
@@ -333,7 +335,6 @@ func (extractor *sensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt
 					}
 				}
 			} else {
-				// TODO(zp): make it returns maskingLevel.
 				maskingLevel, err := extractor.extractColumnFromExprNode(field.Expr)
 				if err != nil {
 					return nil, err
