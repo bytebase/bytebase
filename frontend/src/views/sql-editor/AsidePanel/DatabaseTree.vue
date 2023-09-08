@@ -1,10 +1,10 @@
 <template>
   <div
     v-if="connectionTreeStore.tree.state === ConnectionTreeState.LOADED"
-    class="databases-tree p-0.5 gap-y-2 h-full flex flex-col"
+    class="databases-tree p-0.5 gap-y-1 h-full flex flex-col"
     :class="connectionTreeStore.tree.mode"
   >
-    <div class="databases-tree--input">
+    <div class="databases-tree--input pt-1 px-2">
       <NInput
         size="small"
         :value="searchPattern"

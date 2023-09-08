@@ -12,6 +12,7 @@
       </div>
       <NInputGroup style="width: auto">
         <InstanceSelect
+          class="!w-48"
           :instance="state.instance"
           :include-all="true"
           :filter="filterInstance"

@@ -12,15 +12,11 @@
       </label>
     </div>
     <div class="flex flex-col space-y-1">
-      <BBTextField
-        :required="item.required"
-        :force-required="false"
+      <NInput
         :value="getLabelValue(item.label)"
         :placeholder="getLabelPlaceholder(item.label)"
         class="text-sm"
-        @input="
-          setLabelValue(item.label, ($event.target as HTMLInputElement).value)
-        "
+        @input="(value) => setLabelValue(item.label, value)"
       />
     </div>
   </div>
@@ -29,6 +25,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
+import { NInput } from "naive-ui";
 import { capitalize } from "lodash-es";
 import { computed, defineComponent } from "vue";
 import type { Project } from "@/types/proto/v1/project_service";
@@ -38,7 +35,6 @@ import {
   parseLabelListInTemplate,
   PRESET_LABEL_KEYS,
 } from "@/utils";
-import { BBTextField } from "@/bbkit";
 
 const props = defineProps<{
   project: Project;

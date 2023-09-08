@@ -9,6 +9,7 @@
             @update:project="changeProjectId"
           />
           <InstanceSelect
+            class="!w-48"
             :instance="state.filterParams.instance?.uid ?? String(UNKNOWN_ID)"
             :include-all="true"
             @update:instance="changeInstanceId"
