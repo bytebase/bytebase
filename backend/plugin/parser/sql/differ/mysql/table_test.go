@@ -338,6 +338,12 @@ func TestView(t *testing.T) {
 				"CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS SELECT `id` AS `a_id` FROM `book`;\n\n" +
 				"CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT `a_id` AS `b_id` FROM `a`;\n\n",
 		},
+		{
+			old: ``,
+			new: `CREATE VIEW a AS WITH cte AS (SELECT id, name FROM book) SELECT id, name FROM cte UNION SELECT c, d FROM e;`,
+			want: "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS SELECT 1 AS `id`,1 AS `name`;\n\n" +
+				"CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS WITH `cte` AS (SELECT `id`,`name` FROM `book`) SELECT `id`,`name` FROM `cte` UNION SELECT `c`,`d` FROM `e`;\n\n",
+		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
