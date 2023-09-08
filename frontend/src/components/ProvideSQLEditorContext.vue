@@ -111,7 +111,11 @@ const initializeConnectionTree = async () => {
         (instance) => instance.uid
       );
       const tree = instanceList.map((instance) => {
-        const node = connectionTreeStore.mapAtom(instance, "instance", "0");
+        const node = connectionTreeStore.mapAtom(
+          instance,
+          "instance",
+          undefined /* ROOT */
+        );
         return node;
       });
 
@@ -126,7 +130,7 @@ const initializeConnectionTree = async () => {
             const node = connectionTreeStore.mapAtom(
               db,
               "database",
-              instance.uid
+              instanceItem
             );
             node.disabled = !isDatabaseV1Queryable(db, currentUserV1.value);
             if (node.disabled) {
@@ -150,7 +154,11 @@ const initializeConnectionTree = async () => {
       );
 
       const projectAtomList = projectList.map((project) => {
-        const node = connectionTreeStore.mapAtom(project, "project", "0");
+        const node = connectionTreeStore.mapAtom(
+          project,
+          "project",
+          undefined /* ROOT */
+        );
         return node;
       });
 
@@ -161,7 +169,7 @@ const initializeConnectionTree = async () => {
             const node = connectionTreeStore.mapAtom(
               db,
               "database",
-              projectAtom.id
+              projectAtom
             );
             node.disabled = !isDatabaseV1Queryable(db, currentUserV1.value);
             if (node.disabled) {

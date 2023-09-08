@@ -66,6 +66,8 @@ import {
   useSQLEditorStore,
   useIsLoggedIn,
   useTabStore,
+  CONNECTION_TREE_DELIMITER,
+  useDBSchemaV1Store,
 } from "@/store";
 import type { ConnectionAtom, CoreTabInfo, DatabaseId } from "@/types";
 import {
@@ -74,6 +76,7 @@ import {
   TabMode,
   UNKNOWN_ID,
 } from "@/types";
+import { SchemaMetadata } from "@/types/proto/v1/database_service";
 import {
   emptyConnection,
   getSuggestedTabNameFromConnection,
@@ -85,6 +88,7 @@ import {
   isSimilarTab,
   instanceV1AllowsCrossDatabaseQuery,
 } from "@/utils";
+import { useSQLEditorContext } from "../context";
 import { Prefix, Label } from "./TreeNode";
 import { fetchDatabaseSubTree } from "./common";
 
@@ -118,6 +122,7 @@ const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUserV1 = useCurrentUserV1();
 const sqlEditorStore = useSQLEditorStore();
+const { selectedDatabaseSchema } = useSQLEditorContext();
 
 const mounted = useMounted();
 const treeRef = ref<InstanceType<typeof NTree>>();
@@ -205,7 +210,7 @@ const setConnection = (
 ) => {
   if (option) {
     if (option.type === "schema" || option.type === "table") {
-      // TODO: sync secondary panel state
+      // Should be handled in maybeSelectTable
       return;
     }
 
@@ -317,6 +322,43 @@ const maybeExpandKey = (key: string) => {
   }
 };
 
+const maybeSelectTable = async (atom: ConnectionAtom) => {
+  const parts = atom.id.split(CONNECTION_TREE_DELIMITER);
+  if (parts.length < 2 || parts.length > 3) {
+    return;
+  }
+  const databaseUID = parts[0];
+  if (databaseUID !== tabStore.currentTab.connection.databaseId) {
+    // TODO: connect to database before going further
+    return;
+  }
+  const database = databaseStore.getDatabaseByUID(parts[0]);
+  const databaseMetadata =
+    await useDBSchemaV1Store().getOrFetchDatabaseMetadata(database.name);
+  let schemaMetadata: SchemaMetadata | undefined = undefined;
+  if (parts.length === 2) {
+    // database -> table
+    schemaMetadata = databaseMetadata.schemas.find((s) => s.name === "");
+  }
+  if (parts.length === 3) {
+    // database -> schema -> table
+    const schema = parts[1];
+    schemaMetadata = databaseMetadata.schemas.find((s) => s.name === schema);
+  }
+  if (!schemaMetadata) {
+    return;
+  }
+  const table = parts[parts.length - 1];
+  const tableMetadata = schemaMetadata.tables.find((t) => t.name === table);
+  if (!tableMetadata) {
+    return;
+  }
+  selectedDatabaseSchema.value = {
+    schema: schemaMetadata,
+    table: tableMetadata,
+  };
+};
+
 const nodeProps = ({ option }: { option: TreeOption }) => {
   const atom = option as any as ConnectionAtom;
   return {
@@ -328,6 +370,9 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // And ignore the fold/unfold arrow.
         if (atom.type === "instance" || atom.type === "database") {
           setConnection(atom);
+        }
+        if (atom.type === "table") {
+          maybeSelectTable(atom);
         }
       }
     },

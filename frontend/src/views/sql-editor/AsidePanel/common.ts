@@ -1,5 +1,4 @@
 import {
-  idForConnectionAtomItem,
   useConnectionTreeStore,
   useDatabaseV1Store,
   useDBSchemaV1Store,
@@ -22,21 +21,21 @@ export const fetchDatabaseSubTree = async (atom: ConnectionAtom) => {
     // A single schema database, should render tables directly as a database
     // node's children
     atom.children = schemas[0].tables.map((table) =>
-      useConnectionTreeStore().mapAtom(table, "table", atom.id)
+      useConnectionTreeStore().mapAtom(table, "table", atom)
     );
     return;
   } else {
     // Multiple schema database
     atom.children = schemas.map((schema) => {
-      const id = idForConnectionAtomItem("schema", schema);
-      return useConnectionTreeStore().mapAtom(
+      const schemaNode = useConnectionTreeStore().mapAtom(
         schema,
         "schema",
-        atom.id,
-        schema.tables.map((table) =>
-          useConnectionTreeStore().mapAtom(table, "table", id)
-        )
+        atom
       );
+      schemaNode.children = schema.tables.map((table) =>
+        useConnectionTreeStore().mapAtom(table, "table", schemaNode)
+      );
+      return schemaNode;
     });
     return;
   }

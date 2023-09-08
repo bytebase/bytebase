@@ -24,6 +24,9 @@ import {
   useDBSchemaV1Store,
 } from "./v1";
 
+export const ROOT_NODE_ID = "ROOT";
+export const CONNECTION_TREE_DELIMITER = "->";
+
 // Normalize value, fallback to ConnectionTreeMode.PROJECT
 const normalizeConnectionTreeMode = (raw: string) => {
   if (raw === ConnectionTreeMode.INSTANCE) {
@@ -53,7 +56,6 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
     state: ConnectionTreeState.UNSET,
   });
   const expandedTreeNodeKeys = ref<string[]>([]);
-  const selectedTableAtom = ref<ConnectionAtom>();
 
   // actions
   const fetchConnectionByInstanceIdAndDatabaseId = async (
@@ -100,13 +102,13 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
       | SchemaMetadata
       | TableMetadata,
     type: ConnectionAtomType,
-    parentId: string,
+    parent: ConnectionAtom | undefined,
     children?: ConnectionAtom[]
   ) => {
-    const id = idForConnectionAtomItem(type, item);
+    const id = idForConnectionAtomItem(type, item, parent);
     const key = `${type}-${id}`;
     const connectionAtom: ConnectionAtom = {
-      parentId,
+      parentId: parent?.id ?? ROOT_NODE_ID,
       id,
       key,
       label:
@@ -140,7 +142,6 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
     accessControlPolicyList,
     tree,
     expandedTreeNodeKeys,
-    selectedTableAtom,
     fetchConnectionByInstanceIdAndDatabaseId,
     fetchConnectionByInstanceId,
     mapAtom,
@@ -222,7 +223,8 @@ export const idForConnectionAtomItem = (
     | ComposedInstance
     | ComposedDatabase
     | SchemaMetadata
-    | TableMetadata
+    | TableMetadata,
+  parent: ConnectionAtom | undefined
 ) => {
   if (type === "project" || type === "instance" || type === "database") {
     const target = item as Project | ComposedInstance | ComposedDatabase;
@@ -230,11 +232,15 @@ export const idForConnectionAtomItem = (
   }
   if (type === "schema") {
     const target = item as SchemaMetadata;
-    return target.name;
+    return [parent?.id ?? ROOT_NODE_ID, target.name].join(
+      CONNECTION_TREE_DELIMITER
+    );
   }
   if (type === "table") {
     const target = item as TableMetadata;
-    return target.name;
+    return [parent?.id ?? ROOT_NODE_ID, target.name].join(
+      CONNECTION_TREE_DELIMITER
+    );
   }
 
   console.error("should never reach this line", type, item);
