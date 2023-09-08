@@ -32,7 +32,6 @@ import {
   languageOfEngineV1,
   dialectOfEngineV1,
 } from "@/types";
-import { IssuePayload } from "@/types/proto/store/issue";
 import {
   Sheet_Visibility,
   Sheet_Source,
@@ -413,21 +412,6 @@ export const isTaskEditable = (task: Task): boolean => {
     }
   }
 
-  return false;
-};
-
-export const isGroupingChangeIssue = (issue: Issue): boolean => {
-  const route = useRoute();
-  if (!route || !route.query) {
-    return false;
-  }
-  if (route.query.databaseGroupName && route.query.databaseGroupName !== "") {
-    return true;
-  }
-  const groupName = (issue.payload as IssuePayload).grouping?.databaseGroupName;
-  if (groupName && groupName !== "") {
-    return true;
-  }
   return false;
 };
 
