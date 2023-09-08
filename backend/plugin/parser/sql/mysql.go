@@ -683,6 +683,15 @@ func NormalizeMySQLIdentifier(identifier parser.IIdentifierContext) string {
 	return identifier.GetText()
 }
 
+// NormalizeMySQLSelectAlias normalizes the given select alias.
+func NormalizeMySQLSelectAlias(selectAlias parser.ISelectAliasContext) string {
+	if selectAlias.Identifier() != nil {
+		return NormalizeMySQLIdentifier(selectAlias.Identifier())
+	}
+	textString := selectAlias.TextStringLiteral().GetText()
+	return textString[1 : len(textString)-1]
+}
+
 // IsMySQLAffectedRowsStatement returns true if the given statement is an affected rows statement.
 func IsMySQLAffectedRowsStatement(statement string) bool {
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
