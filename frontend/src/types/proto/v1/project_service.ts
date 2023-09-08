@@ -487,7 +487,7 @@ export interface SetIamPolicyRequest {
 export interface GetDeploymentConfigRequest {
   /**
    * The name of the resource.
-   * Format: projects/{project}/deploymentConfig
+   * Format: projects/{project}/deploymentConfigs/default.
    */
   name: string;
 }
@@ -697,7 +697,7 @@ export function webhook_TypeToJSON(object: Webhook_Type): string {
 export interface DeploymentConfig {
   /**
    * The name of the resource.
-   * Format: projects/{project}/deploymentConfig
+   * Format: projects/{project}/deploymentConfigs/default.
    */
   name: string;
   /** The title of the deployment config. */
@@ -5545,9 +5545,9 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              40,
+              43,
               18,
-              38,
+              41,
               47,
               118,
               49,
@@ -5585,6 +5585,9 @@ export const ProjectServiceDefinition = {
               102,
               105,
               103,
+              115,
+              47,
+              42,
               125,
             ]),
           ],
@@ -5601,7 +5604,7 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              55,
+              58,
               58,
               6,
               99,
@@ -5611,7 +5614,7 @@ export const ProjectServiceDefinition = {
               105,
               103,
               50,
-              45,
+              48,
               47,
               118,
               49,
@@ -5656,6 +5659,9 @@ export const ProjectServiceDefinition = {
               102,
               105,
               103,
+              115,
+              47,
+              42,
               125,
             ]),
           ],

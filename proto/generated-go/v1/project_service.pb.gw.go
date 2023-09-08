@@ -2287,7 +2287,7 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{name=projects/*/deploymentConfig}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{name=projects/*/deploymentConfigs/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2312,7 +2312,7 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/UpdateDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{config.name=projects/*/deploymentConfig}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/UpdateDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{config.name=projects/*/deploymentConfigs/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3046,7 +3046,7 @@ func RegisterProjectServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{name=projects/*/deploymentConfig}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{name=projects/*/deploymentConfigs/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3068,7 +3068,7 @@ func RegisterProjectServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/UpdateDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{config.name=projects/*/deploymentConfig}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/UpdateDeploymentConfig", runtime.WithHTTPPathPattern("/v1/{config.name=projects/*/deploymentConfigs/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3504,9 +3504,9 @@ var (
 
 	pattern_ProjectService_SetIamPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "project"}, "setIamPolicy"))
 
-	pattern_ProjectService_GetDeploymentConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 4, 3, 5, 3}, []string{"v1", "projects", "deploymentConfig", "name"}, ""))
+	pattern_ProjectService_GetDeploymentConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "deploymentConfigs", "name"}, ""))
 
-	pattern_ProjectService_UpdateDeploymentConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 4, 3, 5, 3}, []string{"v1", "projects", "deploymentConfig", "config.name"}, ""))
+	pattern_ProjectService_UpdateDeploymentConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "deploymentConfigs", "config.name"}, ""))
 
 	pattern_ProjectService_AddWebhook_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "project"}, "addWebhook"))
 
