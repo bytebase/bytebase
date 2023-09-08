@@ -720,9 +720,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	wrappedGrpc := grpcweb.WrapServer(s.grpcServer, options...)
 	e.Any("/bytebase.v1.*", echo.WrapHandler(wrappedGrpc))
 
-	// Register open API routes
-	s.registerOpenAPIRoutes(e)
-
 	// Register pprof endpoints.
 	pprof.Register(e)
 	// Register prometheus metrics endpoint.
@@ -731,10 +728,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	serverStarted = true
 	return s, nil
-}
-
-func (*Server) registerOpenAPIRoutes(e *echo.Echo) {
-	e.POST("/v1/sql/schema/diff", schemaDiff)
 }
 
 // initMetricReporter will initial the metric scheduler.

@@ -82,12 +82,11 @@ export const useSDLState = () => {
     const expectedSDL = statement;
 
     const getSchemaDiff = async () => {
-      const { data } = await axios.post("/v1/sql/schema/diff", {
-        engineType: engineToJSON(database.instanceEntity.engine),
-        sourceSchema: previousSDL ?? "",
-        targetSchema: expectedSDL ?? "",
+      const { diff } = await databaseStore.diffSchema({
+        name: database.name,
+        schema: expectedSDL,
       });
-      return data ?? "";
+      return diff ?? "";
     };
     const diffDDL = await useSilentRequest(getSchemaDiff);
 

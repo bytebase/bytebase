@@ -2,16 +2,10 @@ package tests
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -554,31 +548,11 @@ func prodTemplateSQLReviewPolicyForMySQL() (*v1pb.SQLReviewPolicy, error) {
 	return policy, nil
 }
 
-type schemaDiffRequest struct {
-	EngineType   parser.EngineType `json:"engineType"`
-	SourceSchema string            `json:"sourceSchema"`
-	TargetSchema string            `json:"targetSchema"`
-}
-
 // getSchemaDiff gets the schema diff.
-func (ctl *controller) getSchemaDiff(schemaDiff schemaDiffRequest) (string, error) {
-	buf, err := json.Marshal(&schemaDiff)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal schemaDiffRequest")
-	}
-
-	body, err := ctl.postOpenAPI("/sql/schema/diff", strings.NewReader(string(buf)))
+func (ctl *controller) getSchemaDiff(ctx context.Context, schemaDiff *v1pb.DiffSchemaRequest) (string, error) {
+	resp, err := ctl.databaseServiceClient.DiffSchema(ctx, schemaDiff)
 	if err != nil {
 		return "", err
 	}
-
-	diff, err := io.ReadAll(body)
-	if err != nil {
-		return "", err
-	}
-	diffString := ""
-	if err := json.Unmarshal(diff, &diffString); err != nil {
-		return "", err
-	}
-	return diffString, nil
+	return resp.Diff, nil
 }
