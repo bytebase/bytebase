@@ -62,9 +62,10 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
 
-  rpc DiffDatabaseSchema(GetDatabaseSchemaDiffRequest) returns (DatabaseSchemaDiff) {
+  rpc DiffDatabaseSchema(GetDatabaseSchemaDiffRequest) returns (DatabaseSchemaDiffResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=instances/*/databases/*/schema}:diff"
+      post: "/v1/{name=instances/*/databases/*}:diffSchema"
+      additional_bindings {post: "/v1/{name=instances/*/databases/*/changeHistories/*}:diffSchema"}
       body: "*"
     };
   }
@@ -252,14 +253,21 @@ message GetDatabaseSchemaRequest {
 }
 
 message GetDatabaseSchemaDiffRequest {
-  // The name of the database to retrieve schema.
-  // Format: instances/{instance}/databases/{database}/schema
+  // The name of the database.
+  // Format: instances/{instance}/databases/{database}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-  string schema = 2;
+  oneof target {
+    // The target schema.
+    string schema = 2;
+
+    // The resource name of the change history
+    // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+    string change_history = 3;
+  }
 }
 
-message DatabaseSchemaDiff {
+message DatabaseSchemaDiffResponse {
   string diff = 1;
 }
 

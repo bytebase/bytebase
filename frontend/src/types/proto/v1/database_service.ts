@@ -206,14 +206,22 @@ export interface GetDatabaseSchemaRequest {
 
 export interface GetDatabaseSchemaDiffRequest {
   /**
-   * The name of the database to retrieve schema.
-   * Format: instances/{instance}/databases/{database}/schema
+   * The name of the database.
+   * Format: instances/{instance}/databases/{database}
    */
   name: string;
-  schema: string;
+  /** The target schema. */
+  schema?:
+    | string
+    | undefined;
+  /**
+   * The resource name of the change history
+   * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+   */
+  changeHistory?: string | undefined;
 }
 
-export interface DatabaseSchemaDiff {
+export interface DatabaseSchemaDiffResponse {
   diff: string;
 }
 
@@ -2134,7 +2142,7 @@ export const GetDatabaseSchemaRequest = {
 };
 
 function createBaseGetDatabaseSchemaDiffRequest(): GetDatabaseSchemaDiffRequest {
-  return { name: "", schema: "" };
+  return { name: "", schema: undefined, changeHistory: undefined };
 }
 
 export const GetDatabaseSchemaDiffRequest = {
@@ -2142,8 +2150,11 @@ export const GetDatabaseSchemaDiffRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.schema !== "") {
+    if (message.schema !== undefined) {
       writer.uint32(18).string(message.schema);
+    }
+    if (message.changeHistory !== undefined) {
+      writer.uint32(26).string(message.changeHistory);
     }
     return writer;
   },
@@ -2169,6 +2180,13 @@ export const GetDatabaseSchemaDiffRequest = {
 
           message.schema = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.changeHistory = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2181,7 +2199,8 @@ export const GetDatabaseSchemaDiffRequest = {
   fromJSON(object: any): GetDatabaseSchemaDiffRequest {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      schema: isSet(object.schema) ? String(object.schema) : "",
+      schema: isSet(object.schema) ? String(object.schema) : undefined,
+      changeHistory: isSet(object.changeHistory) ? String(object.changeHistory) : undefined,
     };
   },
 
@@ -2189,6 +2208,7 @@ export const GetDatabaseSchemaDiffRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.schema !== undefined && (obj.schema = message.schema);
+    message.changeHistory !== undefined && (obj.changeHistory = message.changeHistory);
     return obj;
   },
 
@@ -2199,27 +2219,28 @@ export const GetDatabaseSchemaDiffRequest = {
   fromPartial(object: DeepPartial<GetDatabaseSchemaDiffRequest>): GetDatabaseSchemaDiffRequest {
     const message = createBaseGetDatabaseSchemaDiffRequest();
     message.name = object.name ?? "";
-    message.schema = object.schema ?? "";
+    message.schema = object.schema ?? undefined;
+    message.changeHistory = object.changeHistory ?? undefined;
     return message;
   },
 };
 
-function createBaseDatabaseSchemaDiff(): DatabaseSchemaDiff {
+function createBaseDatabaseSchemaDiffResponse(): DatabaseSchemaDiffResponse {
   return { diff: "" };
 }
 
-export const DatabaseSchemaDiff = {
-  encode(message: DatabaseSchemaDiff, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const DatabaseSchemaDiffResponse = {
+  encode(message: DatabaseSchemaDiffResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.diff !== "") {
       writer.uint32(10).string(message.diff);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseSchemaDiff {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseSchemaDiffResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDatabaseSchemaDiff();
+    const message = createBaseDatabaseSchemaDiffResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2239,22 +2260,22 @@ export const DatabaseSchemaDiff = {
     return message;
   },
 
-  fromJSON(object: any): DatabaseSchemaDiff {
+  fromJSON(object: any): DatabaseSchemaDiffResponse {
     return { diff: isSet(object.diff) ? String(object.diff) : "" };
   },
 
-  toJSON(message: DatabaseSchemaDiff): unknown {
+  toJSON(message: DatabaseSchemaDiffResponse): unknown {
     const obj: any = {};
     message.diff !== undefined && (obj.diff = message.diff);
     return obj;
   },
 
-  create(base?: DeepPartial<DatabaseSchemaDiff>): DatabaseSchemaDiff {
-    return DatabaseSchemaDiff.fromPartial(base ?? {});
+  create(base?: DeepPartial<DatabaseSchemaDiffResponse>): DatabaseSchemaDiffResponse {
+    return DatabaseSchemaDiffResponse.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<DatabaseSchemaDiff>): DatabaseSchemaDiff {
-    const message = createBaseDatabaseSchemaDiff();
+  fromPartial(object: DeepPartial<DatabaseSchemaDiffResponse>): DatabaseSchemaDiffResponse {
+    const message = createBaseDatabaseSchemaDiffResponse();
     message.diff = object.diff ?? "";
     return message;
   },
@@ -7401,18 +7422,20 @@ export const DatabaseServiceDefinition = {
       name: "DiffDatabaseSchema",
       requestType: GetDatabaseSchemaDiffRequest,
       requestStream: false,
-      responseType: DatabaseSchemaDiff,
+      responseType: DatabaseSchemaDiffResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              51,
+              117,
               58,
               1,
               42,
+              90,
+              65,
               34,
-              46,
+              63,
               47,
               118,
               49,
@@ -7447,18 +7470,82 @@ export const DatabaseServiceDefinition = {
               47,
               42,
               47,
-              115,
               99,
               104,
-              101,
-              109,
               97,
+              110,
+              103,
+              101,
+              72,
+              105,
+              115,
+              116,
+              111,
+              114,
+              105,
+              101,
+              115,
+              47,
+              42,
               125,
               58,
               100,
               105,
               102,
               102,
+              83,
+              99,
+              104,
+              101,
+              109,
+              97,
+              34,
+              45,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              100,
+              105,
+              102,
+              102,
+              83,
+              99,
+              104,
+              101,
+              109,
+              97,
             ]),
           ],
         },
@@ -8258,7 +8345,7 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
   diffDatabaseSchema(
     request: GetDatabaseSchemaDiffRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseSchemaDiff>>;
+  ): Promise<DeepPartial<DatabaseSchemaDiffResponse>>;
   getBackupSetting(
     request: GetBackupSettingRequest,
     context: CallContext & CallContextExt,
@@ -8330,7 +8417,7 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
   diffDatabaseSchema(
     request: DeepPartial<GetDatabaseSchemaDiffRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseSchemaDiff>;
+  ): Promise<DatabaseSchemaDiffResponse>;
   getBackupSetting(
     request: DeepPartial<GetBackupSettingRequest>,
     options?: CallOptions & CallOptionsExt,

@@ -55,7 +55,7 @@ type DatabaseServiceClient interface {
 	SyncDatabase(ctx context.Context, in *SyncDatabaseRequest, opts ...grpc.CallOption) (*SyncDatabaseResponse, error)
 	GetDatabaseMetadata(ctx context.Context, in *GetDatabaseMetadataRequest, opts ...grpc.CallOption) (*DatabaseMetadata, error)
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
-	DiffDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaDiffRequest, opts ...grpc.CallOption) (*DatabaseSchemaDiff, error)
+	DiffDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaDiffRequest, opts ...grpc.CallOption) (*DatabaseSchemaDiffResponse, error)
 	GetBackupSetting(ctx context.Context, in *GetBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
 	UpdateBackupSetting(ctx context.Context, in *UpdateBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
 	CreateBackup(ctx context.Context, in *CreateBackupRequest, opts ...grpc.CallOption) (*Backup, error)
@@ -149,8 +149,8 @@ func (c *databaseServiceClient) GetDatabaseSchema(ctx context.Context, in *GetDa
 	return out, nil
 }
 
-func (c *databaseServiceClient) DiffDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaDiffRequest, opts ...grpc.CallOption) (*DatabaseSchemaDiff, error) {
-	out := new(DatabaseSchemaDiff)
+func (c *databaseServiceClient) DiffDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaDiffRequest, opts ...grpc.CallOption) (*DatabaseSchemaDiffResponse, error) {
+	out := new(DatabaseSchemaDiffResponse)
 	err := c.cc.Invoke(ctx, DatabaseService_DiffDatabaseSchema_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -270,7 +270,7 @@ type DatabaseServiceServer interface {
 	SyncDatabase(context.Context, *SyncDatabaseRequest) (*SyncDatabaseResponse, error)
 	GetDatabaseMetadata(context.Context, *GetDatabaseMetadataRequest) (*DatabaseMetadata, error)
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
-	DiffDatabaseSchema(context.Context, *GetDatabaseSchemaDiffRequest) (*DatabaseSchemaDiff, error)
+	DiffDatabaseSchema(context.Context, *GetDatabaseSchemaDiffRequest) (*DatabaseSchemaDiffResponse, error)
 	GetBackupSetting(context.Context, *GetBackupSettingRequest) (*BackupSetting, error)
 	UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error)
 	CreateBackup(context.Context, *CreateBackupRequest) (*Backup, error)
@@ -313,7 +313,7 @@ func (UnimplementedDatabaseServiceServer) GetDatabaseMetadata(context.Context, *
 func (UnimplementedDatabaseServiceServer) GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDatabaseSchema not implemented")
 }
-func (UnimplementedDatabaseServiceServer) DiffDatabaseSchema(context.Context, *GetDatabaseSchemaDiffRequest) (*DatabaseSchemaDiff, error) {
+func (UnimplementedDatabaseServiceServer) DiffDatabaseSchema(context.Context, *GetDatabaseSchemaDiffRequest) (*DatabaseSchemaDiffResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffDatabaseSchema not implemented")
 }
 func (UnimplementedDatabaseServiceServer) GetBackupSetting(context.Context, *GetBackupSettingRequest) (*BackupSetting, error) {

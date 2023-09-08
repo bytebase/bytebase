@@ -150,7 +150,7 @@
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
-    - [DatabaseSchemaDiff](#bytebase-v1-DatabaseSchemaDiff)
+    - [DatabaseSchemaDiffResponse](#bytebase-v1-DatabaseSchemaDiffResponse)
     - [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest)
     - [DependentColumn](#bytebase-v1-DependentColumn)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
@@ -2743,9 +2743,9 @@ DatabaseMetadata is the metadata for databases.
 
 
 
-<a name="bytebase-v1-DatabaseSchemaDiff"></a>
+<a name="bytebase-v1-DatabaseSchemaDiffResponse"></a>
 
-### DatabaseSchemaDiff
+### DatabaseSchemaDiffResponse
 
 
 
@@ -2916,8 +2916,9 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database}/schema |
-| schema | [string](#string) |  |  |
+| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  | The target schema. |
+| change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 
 
 
@@ -3592,7 +3593,7 @@ The type of the backup.
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
-| DiffDatabaseSchema | [GetDatabaseSchemaDiffRequest](#bytebase-v1-GetDatabaseSchemaDiffRequest) | [DatabaseSchemaDiff](#bytebase-v1-DatabaseSchemaDiff) |  |
+| DiffDatabaseSchema | [GetDatabaseSchemaDiffRequest](#bytebase-v1-GetDatabaseSchemaDiffRequest) | [DatabaseSchemaDiffResponse](#bytebase-v1-DatabaseSchemaDiffResponse) |  |
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | UpdateBackupSetting | [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | CreateBackup | [CreateBackupRequest](#bytebase-v1-CreateBackupRequest) | [Backup](#bytebase-v1-Backup) |  |
