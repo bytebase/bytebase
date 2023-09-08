@@ -31,6 +31,7 @@
         :render-prefix="renderPrefix"
         :node-props="nodeProps"
         :virtual-scroll="true"
+        @load="handleLoadSubTree"
         @update:expanded-keys="updateExpandedKeys"
       />
     </div>
@@ -65,6 +66,8 @@ import {
   useSQLEditorStore,
   useIsLoggedIn,
   useTabStore,
+  CONNECTION_TREE_DELIMITER,
+  useDBSchemaV1Store,
 } from "@/store";
 import type { ConnectionAtom, CoreTabInfo, DatabaseId } from "@/types";
 import {
@@ -73,6 +76,7 @@ import {
   TabMode,
   UNKNOWN_ID,
 } from "@/types";
+import { SchemaMetadata } from "@/types/proto/v1/database_service";
 import {
   emptyConnection,
   getSuggestedTabNameFromConnection,
@@ -84,7 +88,9 @@ import {
   isSimilarTab,
   instanceV1AllowsCrossDatabaseQuery,
 } from "@/utils";
+import { useSQLEditorContext } from "../context";
 import { Prefix, Label } from "./TreeNode";
+import { fetchDatabaseSubTree } from "./common";
 
 type Position = {
   x: number;
@@ -116,6 +122,7 @@ const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUserV1 = useCurrentUserV1();
 const sqlEditorStore = useSQLEditorStore();
+const { selectedDatabaseSchema } = useSQLEditorContext();
 
 const mounted = useMounted();
 const treeRef = ref<InstanceType<typeof NTree>>();
@@ -194,6 +201,26 @@ const allowAdmin = computed(() =>
 
 const treeData = computed(() => connectionTreeStore.tree.data);
 
+const connect = (target: CoreTabInfo) => {
+  if (isSimilarTab(target, tabStore.currentTab)) {
+    // Don't go further if the connection doesn't change.
+    return;
+  }
+  if (tabStore.currentTab.isFreshNew) {
+    // If the current tab is "fresh new", update its connection directly.
+    tabStore.updateCurrentTab(target);
+  } else {
+    // Otherwise select or add a new tab and set its connection
+    const name = getSuggestedTabNameFromConnection(target.connection);
+    tabStore.selectOrAddSimilarTab(
+      target,
+      /* beside */ false,
+      /* defaultTabName */ name
+    );
+    tabStore.updateCurrentTab(target);
+  }
+};
+
 const setConnection = (
   option: ConnectionAtom,
   extra: { sheetName?: string; mode: TabMode } = {
@@ -202,6 +229,11 @@ const setConnection = (
   }
 ) => {
   if (option) {
+    if (option.type === "schema" || option.type === "table") {
+      // Should be handled in maybeSelectTable
+      return;
+    }
+
     if (option.type === "project") {
       // Not connectable to a project
       return;
@@ -220,26 +252,6 @@ const setConnection = (
     };
     const conn = target.connection;
 
-    const connect = () => {
-      if (isSimilarTab(target, tabStore.currentTab)) {
-        // Don't go further if the connection doesn't change.
-        return;
-      }
-      if (tabStore.currentTab.isFreshNew) {
-        // If the current tab is "fresh new", update its connection directly.
-        tabStore.updateCurrentTab(target);
-      } else {
-        // Otherwise select or add a new tab and set its connection
-        const name = getSuggestedTabNameFromConnection(target.connection);
-        tabStore.selectOrAddSimilarTab(
-          target,
-          /* beside */ false,
-          /* defaultTabName */ name
-        );
-        tabStore.updateCurrentTab(target);
-      }
-    };
-
     // If selected item is instance node
     if (option.type === "instance") {
       conn.instanceId = option.id;
@@ -250,7 +262,7 @@ const setConnection = (
       conn.databaseId = database.uid;
     }
 
-    connect();
+    connect(target);
   }
 };
 
@@ -310,6 +322,52 @@ const maybeExpandKey = (key: string) => {
   }
 };
 
+const maybeSelectTable = async (atom: ConnectionAtom) => {
+  const parts = atom.id.split(CONNECTION_TREE_DELIMITER);
+  if (parts.length < 2 || parts.length > 3) {
+    return;
+  }
+  const database = databaseStore.getDatabaseByUID(parts[0]);
+  if (database.uid !== tabStore.currentTab.connection.databaseId) {
+    const target: CoreTabInfo = {
+      connection: {
+        instanceId: database.instanceEntity.uid,
+        databaseId: database.uid,
+      },
+      mode: TabMode.ReadOnly,
+    };
+    target.connection.instanceId = database.instanceEntity.uid;
+    target.connection.databaseId = database.uid;
+
+    connect(target);
+    await nextTick();
+  }
+  const databaseMetadata =
+    await useDBSchemaV1Store().getOrFetchDatabaseMetadata(database.name);
+  let schemaMetadata: SchemaMetadata | undefined = undefined;
+  if (parts.length === 2) {
+    // database -> table
+    schemaMetadata = databaseMetadata.schemas.find((s) => s.name === "");
+  }
+  if (parts.length === 3) {
+    // database -> schema -> table
+    const schema = parts[1];
+    schemaMetadata = databaseMetadata.schemas.find((s) => s.name === schema);
+  }
+  if (!schemaMetadata) {
+    return;
+  }
+  const table = parts[parts.length - 1];
+  const tableMetadata = schemaMetadata.tables.find((t) => t.name === table);
+  if (!tableMetadata) {
+    return;
+  }
+  selectedDatabaseSchema.value = {
+    schema: schemaMetadata,
+    table: tableMetadata,
+  };
+};
+
 const nodeProps = ({ option }: { option: TreeOption }) => {
   const atom = option as any as ConnectionAtom;
   return {
@@ -321,6 +379,9 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // And ignore the fold/unfold arrow.
         if (atom.type === "instance" || atom.type === "database") {
           setConnection(atom);
+        }
+        if (atom.type === "table") {
+          maybeSelectTable(atom);
         }
       }
     },
@@ -341,10 +402,17 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   };
 };
 
+const handleLoadSubTree = (node: TreeOption) => {
+  const atom = node as any as ConnectionAtom;
+  const type = atom.type;
+  if (type === "database") {
+    return fetchDatabaseSubTree(atom);
+  }
+  return Promise.resolve();
+};
+
 const updateExpandedKeys = (keys: string[]) => {
-  connectionTreeStore.expandedTreeNodeKeys = keys.filter(
-    (key) => !key.startsWith("database-")
-  );
+  connectionTreeStore.expandedTreeNodeKeys = keys;
 };
 
 // When switching tabs, scroll the matched node into view if needed.
