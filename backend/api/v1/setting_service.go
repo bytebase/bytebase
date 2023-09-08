@@ -171,7 +171,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
-		if payload.RefreshTokenDuration != nil && payload.RefreshTokenDuration.Seconds > 0 && payload.RefreshTokenDuration.AsDuration() < time.Hour {
+		if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
 			return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
 		}
 		storeSettingValue = string(bytes)
