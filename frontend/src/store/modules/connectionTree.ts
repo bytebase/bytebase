@@ -11,6 +11,10 @@ import {
 } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import {
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 import { Policy } from "@/types/proto/v1/org_policy_service";
 import { Project } from "@/types/proto/v1/project_service";
 import { emptyConnection } from "@/utils";
@@ -19,6 +23,9 @@ import {
   useInstanceV1Store,
   useDBSchemaV1Store,
 } from "./v1";
+
+export const ROOT_NODE_ID = "ROOT";
+export const CONNECTION_TREE_DELIMITER = "->";
 
 // Normalize value, fallback to ConnectionTreeMode.PROJECT
 const normalizeConnectionTreeMode = (raw: string) => {
@@ -49,7 +56,6 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
     state: ConnectionTreeState.UNSET,
   });
   const expandedTreeNodeKeys = ref<string[]>([]);
-  const selectedTableAtom = ref<ConnectionAtom>();
 
   // actions
   const fetchConnectionByInstanceIdAndDatabaseId = async (
@@ -89,14 +95,20 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
   };
   // utilities
   const mapAtom = (
-    item: Project | ComposedInstance | ComposedDatabase,
+    item:
+      | Project
+      | ComposedInstance
+      | ComposedDatabase
+      | SchemaMetadata
+      | TableMetadata,
     type: ConnectionAtomType,
-    parentId: string
+    parent: ConnectionAtom | undefined,
+    children?: ConnectionAtom[]
   ) => {
-    const id = item.uid;
+    const id = idForConnectionAtomItem(type, item, parent);
     const key = `${type}-${id}`;
     const connectionAtom: ConnectionAtom = {
-      parentId,
+      parentId: parent?.id ?? ROOT_NODE_ID,
       id,
       key,
       label:
@@ -106,9 +118,14 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
           ? (item as ComposedInstance).title
           : type === "database"
           ? (item as ComposedDatabase).databaseName
+          : type === "schema"
+          ? (item as SchemaMetadata).name
+          : type === "table"
+          ? (item as TableMetadata).name
           : "",
       type,
-      isLeaf: type === "database",
+      isLeaf: type === "table",
+      children,
     };
     return connectionAtom;
   };
@@ -125,7 +142,6 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
     accessControlPolicyList,
     tree,
     expandedTreeNodeKeys,
-    selectedTableAtom,
     fetchConnectionByInstanceIdAndDatabaseId,
     fetchConnectionByInstanceId,
     mapAtom,
@@ -198,4 +214,35 @@ export const isConnectableAtom = (atom: ConnectionAtom): boolean => {
     return engine === Engine.MYSQL || engine === Engine.TIDB;
   }
   return false;
+};
+
+export const idForConnectionAtomItem = (
+  type: ConnectionAtomType,
+  item:
+    | Project
+    | ComposedInstance
+    | ComposedDatabase
+    | SchemaMetadata
+    | TableMetadata,
+  parent: ConnectionAtom | undefined
+) => {
+  if (type === "project" || type === "instance" || type === "database") {
+    const target = item as Project | ComposedInstance | ComposedDatabase;
+    return target.uid;
+  }
+  if (type === "schema") {
+    const target = item as SchemaMetadata;
+    return [parent?.id ?? ROOT_NODE_ID, target.name].join(
+      CONNECTION_TREE_DELIMITER
+    );
+  }
+  if (type === "table") {
+    const target = item as TableMetadata;
+    return [parent?.id ?? ROOT_NODE_ID, target.name].join(
+      CONNECTION_TREE_DELIMITER
+    );
+  }
+
+  console.error("should never reach this line", type, item);
+  return "";
 };
