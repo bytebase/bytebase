@@ -1,10 +1,8 @@
-import axios from "axios";
 import Emittery from "emittery";
 import { computed, reactive, watch } from "vue";
 import { sqlServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import { useChangeHistoryStore, useDatabaseV1Store } from "@/store";
-import { engineToJSON } from "@/types/proto/v1/common";
 import {
   Task,
   TaskRun_Status,
@@ -82,12 +80,11 @@ export const useSDLState = () => {
     const expectedSDL = statement;
 
     const getSchemaDiff = async () => {
-      const { data } = await axios.post("/v1/sql/schema/diff", {
-        engineType: engineToJSON(database.instanceEntity.engine),
-        sourceSchema: previousSDL ?? "",
-        targetSchema: expectedSDL ?? "",
+      const { diff } = await databaseStore.diffSchema({
+        name: database.name,
+        schema: expectedSDL,
       });
-      return data ?? "";
+      return diff ?? "";
     };
     const diffDDL = await useSilentRequest(getSchemaDiff);
 
