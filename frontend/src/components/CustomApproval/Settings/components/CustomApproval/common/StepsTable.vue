@@ -10,7 +10,7 @@
         {{ row + 1 }}
       </div>
       <div class="bb-grid-cell">
-        <WorkspaceRoleSelect
+        <RoleSelect
           v-if="editable"
           v-model:value="step.nodes[0]"
           style="width: 80%"
@@ -76,7 +76,7 @@ import {
 import { approvalNodeText } from "@/utils";
 import { SpinnerButton } from "../../common";
 import { useCustomApprovalContext } from "../context";
-import WorkspaceRoleSelect from "./WorkspaceRoleSelect.vue";
+import RoleSelect from "./RoleSelect.vue";
 
 const props = defineProps<{
   flow: ApprovalFlow;
