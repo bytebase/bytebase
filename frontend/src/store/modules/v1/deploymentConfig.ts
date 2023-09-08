@@ -12,7 +12,7 @@ export const useDeploymentConfigV1Store = defineStore(
     );
 
     const fetchDeploymentConfigByProjectName = async (project: ResourceId) => {
-      const name = `${project}/deploymentConfig`;
+      const name = `${project}/deploymentConfigs/default`;
       try {
         const deploymentConfig = await projectServiceClient.getDeploymentConfig(
           {
