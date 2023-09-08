@@ -90,7 +90,6 @@
   
 - [store/issue.proto](#store_issue-proto)
     - [GrantRequest](#bytebase-store-GrantRequest)
-    - [Grouping](#bytebase-store-Grouping)
     - [IssuePayload](#bytebase-store-IssuePayload)
   
 - [store/plan.proto](#store_plan-proto)
@@ -1448,21 +1447,6 @@ InstanceOptions is the option for instances.
 
 
 
-<a name="bytebase-store-Grouping"></a>
-
-### Grouping
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database_group_name | [string](#string) |  | The group name, format projects/{project}/database_groups/{database_group} |
-
-
-
-
-
-
 <a name="bytebase-store-IssuePayload"></a>
 
 ### IssuePayload
@@ -1473,7 +1457,6 @@ InstanceOptions is the option for instances.
 | ----- | ---- | ----- | ----------- |
 | approval | [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval) |  |  |
 | grant_request | [GrantRequest](#bytebase-store-GrantRequest) |  |  |
-| grouping | [Grouping](#bytebase-store-Grouping) |  |  |
 
 
 
