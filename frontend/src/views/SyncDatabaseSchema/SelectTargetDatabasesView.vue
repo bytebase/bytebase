@@ -258,7 +258,6 @@
 
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import axios from "axios";
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
@@ -275,7 +274,7 @@ import {
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
-import { Engine, engineToJSON } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/v1/common";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
 import { changeHistoryLink, databaseV1Slug, projectV1Slug } from "@/utils";
 import DiffViewPanel from "./DiffViewPanel.vue";
@@ -539,13 +538,11 @@ watch(
       if (databaseDiffCache[id] && !skipCache) {
         continue;
       } else {
-        const schemaDiff = await getSchemaDiff(
-          engine.value,
-          /* the current schema of the database to be updated */
-          schema.schema,
-          /* the schema to be updated to */
-          sourceDatabaseSchema.value
-        );
+        const diffResp = await databaseStore.diffSchema({
+          name: db.name,
+          schema: sourceDatabaseSchema.value,
+        });
+        const schemaDiff = diffResp.diff ?? "";
         databaseDiffCache[id] = {
           raw: schemaDiff,
           edited: schemaDiff,
@@ -568,19 +565,6 @@ watch(
     }
   }
 );
-
-const getSchemaDiff = async (
-  engine: Engine,
-  sourceSchema: string,
-  targetSchema: string
-) => {
-  const { data } = await axios.post("/v1/sql/schema/diff", {
-    engineType: engineToJSON(engine), // TODO: use stronger types
-    sourceSchema,
-    targetSchema,
-  });
-  return data;
-};
 
 defineExpose({
   targetDatabaseList,
