@@ -78,7 +78,7 @@ func (mr *metadataDiffRootNode) applyDiffTo(target *v1pb.DatabaseMetadata) error
 	return nil
 }
 
-/* schema related */
+// Schema related.
 type metadataDiffSchemaNode struct {
 	metadataDiffBaseNode
 	name string
@@ -152,7 +152,7 @@ func (n *metadataDiffSchemaNode) applyDiffTo(target proto.Message) error {
 	return nil
 }
 
-/* table related */
+// Table related.
 type metadataDiffTableNode struct {
 	metadataDiffBaseNode
 	name string
@@ -243,7 +243,7 @@ func (n *metadataDiffTableNode) applyDiffTo(target proto.Message) error {
 	return nil
 }
 
-/* column related */
+// Column related.
 type metadataDiffColumnNode struct {
 	metadataDiffBaseNode
 	name string
@@ -297,7 +297,7 @@ func (n *metadataDiffColumnNode) applyDiffTo(target proto.Message) error {
 	return nil
 }
 
-/* foreignKey related */
+// Foreign Key related.
 type metadataDiffForeignKeyNode struct {
 	metadataDiffBaseNode
 	name string
