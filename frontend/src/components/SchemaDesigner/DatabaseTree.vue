@@ -61,6 +61,7 @@
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
     :schema-id="state.tableNameModalContext.schemaId"
+    :table-id="state.tableNameModalContext.tableId"
     @close="state.tableNameModalContext = undefined"
   />
 </template>
@@ -118,6 +119,7 @@ interface LocalState {
   };
   tableNameModalContext?: {
     schemaId: string;
+    tableId?: string;
   };
 }
 
@@ -247,6 +249,10 @@ const contextMenuOptions = computed(() => {
         label: t("schema-editor.actions.restore"),
       });
     } else {
+      options.push({
+        key: "rename",
+        label: t("schema-editor.actions.rename"),
+      });
       options.push({
         key: "drop",
         label: t("schema-editor.actions.drop-table"),
@@ -537,7 +543,12 @@ const handleContextMenuDropdownSelect = async (key: string) => {
       };
     }
   } else if (treeNode.type === "table") {
-    if (key === "drop") {
+    if (key === "rename") {
+      state.tableNameModalContext = {
+        schemaId: treeNode.schemaId,
+        tableId: treeNode.tableId,
+      };
+    } else if (key === "drop") {
       dropTable(treeNode.schemaId, treeNode.tableId);
     } else if (key === "restore") {
       const table = getTable(treeNode.schemaId, treeNode.tableId);
