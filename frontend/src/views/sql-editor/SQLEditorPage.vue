@@ -38,10 +38,10 @@
             </NDrawer>
           </teleport>
         </template>
-        <Pane class="relative">
+        <Pane class="relative flex flex-col">
           <TabList />
 
-          <div class="w-full h-full overflow-hidden">
+          <div class="w-full flex-1 overflow-hidden">
             <template v-if="allowAccess">
               <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
                 <Splitpanes
