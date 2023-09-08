@@ -44,11 +44,10 @@ const (
 	SchemaDesignPrefix           = "schemaDesigns/"
 	DeploymentConfigPrefix       = "deploymentConfigs/"
 
-	DeploymentConfigSuffix = "/deploymentConfig"
-	BackupSettingSuffix    = "/backupSetting"
-	SchemaSuffix           = "/schema"
-	MetadataSuffix         = "/metadata"
-	GitOpsInfoSuffix       = "/gitOpsInfo"
+	BackupSettingSuffix = "/backupSetting"
+	SchemaSuffix        = "/schema"
+	MetadataSuffix      = "/metadata"
+	GitOpsInfoSuffix    = "/gitOpsInfo"
 )
 
 // GetProjectID returns the project ID from a resource name.
@@ -476,4 +475,12 @@ func GetNameParentTokens(name string, tokenPrefixes ...string) ([]string, error)
 		tokens = append(tokens, parts[2*i+1])
 	}
 	return tokens, nil
+}
+
+func FormatProject(id string) string {
+	return fmt.Sprintf("%s%s", ProjectNamePrefix, id)
+}
+
+func FormatDeploymentConfig(parent string) string {
+	return fmt.Sprintf("%s/%s%s", parent, DeploymentConfigPrefix, "default")
 }

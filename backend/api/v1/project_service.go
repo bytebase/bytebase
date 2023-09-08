@@ -682,7 +682,7 @@ func (s *ProjectService) CreateIAMPolicyUpdateActivity(ctx context.Context, remo
 
 // GetDeploymentConfig returns the deployment config for a project.
 func (s *ProjectService) GetDeploymentConfig(ctx context.Context, request *v1pb.GetDeploymentConfigRequest) (*v1pb.DeploymentConfig, error) {
-	projectID, err := common.TrimSuffixAndGetProjectID(request.Name, common.DeploymentConfigSuffix)
+	projectID, _, err := common.GetProjectIDDeploymentConfigID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -712,7 +712,7 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 	if request.Config == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "deployment config is required")
 	}
-	projectID, err := common.TrimSuffixAndGetProjectID(request.Config.Name, common.DeploymentConfigSuffix)
+	projectID, _, err := common.GetProjectIDDeploymentConfigID(request.Config.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -2653,7 +2653,7 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 }
 
 func convertToDeploymentConfig(projectID string, deploymentConfig *store.DeploymentConfigMessage) *v1pb.DeploymentConfig {
-	resourceName := fmt.Sprintf("projects/%s/deploymentConfig", projectID)
+	resourceName := common.FormatDeploymentConfig(common.FormatProject(projectID))
 	return &v1pb.DeploymentConfig{
 		Name:     resourceName,
 		Title:    deploymentConfig.Name,

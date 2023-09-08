@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
@@ -111,7 +112,7 @@ func TestTenant(t *testing.T) {
 	// Create deployment configuration.
 	_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
 		Config: &v1pb.DeploymentConfig{
-			Name:     fmt.Sprintf("%s/deploymentConfig", project.Name),
+			Name:     common.FormatDeploymentConfig(project.Name),
 			Schedule: deploySchedule,
 		},
 	})
@@ -411,7 +412,7 @@ func TestTenantVCS(t *testing.T) {
 			// Create deployment configuration.
 			_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
 				Config: &v1pb.DeploymentConfig{
-					Name:     fmt.Sprintf("%s/deploymentConfig", project.Name),
+					Name:     common.FormatDeploymentConfig(project.Name),
 					Schedule: deploySchedule,
 				},
 			})
@@ -564,7 +565,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	// Create deployment configuration.
 	_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
 		Config: &v1pb.DeploymentConfig{
-			Name:     fmt.Sprintf("%s/deploymentConfig", project.Name),
+			Name:     common.FormatDeploymentConfig(project.Name),
 			Schedule: deploySchedule,
 		},
 	})
@@ -869,7 +870,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			// Create deployment configuration.
 			_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
 				Config: &v1pb.DeploymentConfig{
-					Name:     fmt.Sprintf("%s/deploymentConfig", project.Name),
+					Name:     common.FormatDeploymentConfig(project.Name),
 					Schedule: deploySchedule,
 				},
 			})
@@ -1148,7 +1149,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			// Create deployment configuration.
 			_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
 				Config: &v1pb.DeploymentConfig{
-					Name: fmt.Sprintf("%s/deploymentConfig", project.Name),
+					Name: common.FormatDeploymentConfig(project.Name),
 					Schedule: &v1pb.Schedule{
 						Deployments: []*v1pb.ScheduleDeployment{
 							{
@@ -1414,7 +1415,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			// Create deployment configuration.
 			_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
 				Config: &v1pb.DeploymentConfig{
-					Name: fmt.Sprintf("%s/deploymentConfig", project.Name),
+					Name: common.FormatDeploymentConfig(project.Name),
 					Schedule: &v1pb.Schedule{
 						Deployments: []*v1pb.ScheduleDeployment{
 							{
