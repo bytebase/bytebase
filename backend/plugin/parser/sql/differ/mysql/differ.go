@@ -807,11 +807,11 @@ func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 	// because other views only need to reference the column name.
 	//  Example: SELECT 1 AS colName1, 1 AS colName2.
 	// TODO(zp): support SDL for GitOps.
-	var selectFileds []*ast.SelectField
+	var selectFields []*ast.SelectField
 	// mysqldump always show field list
 	if len(stmt.Cols) > 0 {
 		for _, col := range stmt.Cols {
-			selectFileds = append(selectFileds, &ast.SelectField{
+			selectFields = append(selectFields, &ast.SelectField{
 				Expr: &driver.ValueExpr{
 					Datum: types.NewDatum(1),
 				},
@@ -820,16 +820,16 @@ func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 		}
 	} else {
 		//nolint
-		switch stmt.Select.(type) {
+		switch stmt := stmt.Select.(type) {
 		case *ast.SelectStmt:
-			for _, field := range stmt.Select.(*ast.SelectStmt).Fields.Fields {
+			for _, field := range stmt.Fields.Fields {
 				var fieldName string
 				if field.AsName.O != "" {
 					fieldName = field.AsName.O
 				} else {
 					fieldName = field.Expr.(*ast.ColumnNameExpr).Name.Name.O
 				}
-				selectFileds = append(selectFileds, &ast.SelectField{
+				selectFields = append(selectFields, &ast.SelectField{
 					Expr: &driver.ValueExpr{
 						Datum: types.NewDatum(1),
 					},
@@ -854,7 +854,7 @@ func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 				SQLCache: true,
 			},
 			Fields: &ast.FieldList{
-				Fields: selectFileds,
+				Fields: selectFields,
 			},
 		},
 		OrReplace: true,
