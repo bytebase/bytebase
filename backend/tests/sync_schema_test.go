@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -140,10 +139,11 @@ DROP SCHEMA "schema_a";
 	})
 	a.NoError(err)
 
-	diff, err := ctl.getSchemaDiff(schemaDiffRequest{
-		EngineType:   parser.Postgres,
-		SourceSchema: latest.Schema,
-		TargetSchema: newDatabaseSchema.Schema,
+	diff, err := ctl.getSchemaDiff(ctx, &v1pb.DiffSchemaRequest{
+		Name: latest.Name,
+		Target: &v1pb.DiffSchemaRequest_Schema{
+			Schema: newDatabaseSchema.Schema,
+		},
 	})
 
 	a.NoError(err)
