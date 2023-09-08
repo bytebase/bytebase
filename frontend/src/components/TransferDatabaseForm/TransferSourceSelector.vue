@@ -35,6 +35,7 @@
       <NInputGroup style="width: auto">
         <InstanceSelect
           v-if="state.transferSource == 'DEFAULT'"
+          class="!w-48"
           :instance="instanceFilter?.uid ?? String(UNKNOWN_ID)"
           :include-all="true"
           :filter="filterInstance"
