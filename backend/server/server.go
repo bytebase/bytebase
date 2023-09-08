@@ -286,12 +286,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir, "test")
 		slog.Info(fmt.Sprintf("Start test sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort, sampleDataDir))
 		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
-			return nil, err
+			slog.Error("failed to init test sample instance", log.BBError(err))
 		}
 		sampleDataDir = common.GetPostgresSampleDataDir(profile.DataDir, "prod")
 		slog.Info(fmt.Sprintf("Start prod sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort+1, sampleDataDir))
 		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort+1, profile.Mode); err != nil {
-			return nil, err
+			slog.Error("failed to init prod sample instance", log.BBError(err))
 		}
 		slog.Info("-----Sample Postgres Instance END-----")
 	}
