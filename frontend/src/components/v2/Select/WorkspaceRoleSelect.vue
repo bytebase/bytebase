@@ -2,6 +2,8 @@
   <NSelect
     :value="role"
     :options="roleOptions"
+    :filterable="true"
+    :filter="filterByTitle"
     :placeholder="$t('role.select-role')"
     @update:value="$emit('update:role', $event)"
   />
@@ -28,4 +30,10 @@ const roleOptions = computed(() => {
     value: role,
   }));
 });
+
+const filterByTitle = (pattern: string, option: SelectOption) => {
+  const { value } = option as SelectOption;
+  pattern = pattern.toLowerCase();
+  return String(value).toLowerCase().includes(pattern);
+};
 </script>

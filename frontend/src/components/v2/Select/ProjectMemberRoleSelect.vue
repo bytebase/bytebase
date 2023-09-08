@@ -4,6 +4,8 @@
     :value="role"
     :options="roleOptions"
     :max-tag-count="'responsive'"
+    :filterable="true"
+    :filter="filterByName"
     :placeholder="$t('role.select')"
     :render-label="renderLabel"
     @update:value="changeRole"
@@ -94,5 +96,11 @@ const changeRole = (value: string) => {
     }
   }
   emit("update:role", value);
+};
+
+const filterByName = (pattern: string, option: SelectOption) => {
+  const { role } = option as ProjectRoleSelectOption;
+  pattern = pattern.toLowerCase();
+  return role.name.toLowerCase().includes(pattern);
 };
 </script>

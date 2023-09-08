@@ -122,7 +122,7 @@
         <span v-if="changeRoleTooltip(user)" class="tooltip">{{
           changeRoleTooltip(user)
         }}</span>
-        <RoleSelect
+        <WorkspaceRoleSelect
           :role="user.userRole"
           :disabled="!allowChangeRole(user)"
           @update:role="changeRole(user, $event)"
@@ -177,7 +177,7 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlertDialog } from "@/bbkit";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import { RoleSelect } from "@/components/v2";
+import { WorkspaceRoleSelect } from "@/components/v2";
 import {
   featureToRef,
   useCurrentUserV1,
