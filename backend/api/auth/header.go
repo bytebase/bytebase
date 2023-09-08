@@ -13,8 +13,8 @@ import (
 
 // GatewayResponseModifier is the response modifier for grpc gateway.
 type GatewayResponseModifier struct {
-	ExternalURL          string
-	RefreshTokenDuration time.Duration
+	ExternalURL   string
+	TokenDuration time.Duration
 }
 
 // Modify is the mux option for modifying response header.
@@ -25,7 +25,6 @@ func (m *GatewayResponseModifier) Modify(ctx context.Context, response http.Resp
 	}
 	isHTTPS := strings.HasPrefix(m.ExternalURL, "https")
 	m.processMetadata(md, GatewayMetadataAccessTokenKey, AccessTokenCookieName, true /* httpOnly */, isHTTPS, response)
-	m.processMetadata(md, GatewayMetadataRefreshTokenKey, RefreshTokenCookieName, true /* httpOnly */, isHTTPS, response)
 	m.processMetadata(md, GatewayMetadataUserIDKey, UserIDCookieName, false /* httpOnly */, isHTTPS, response)
 	return nil
 }
@@ -58,7 +57,7 @@ func (m *GatewayResponseModifier) processMetadata(md runtime.ServerMetadata, met
 			// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
 			// 1. The access token is about to expire in <<refreshThresholdDuration>>
 			// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through.
-			Expires: time.Now().Add(m.RefreshTokenDuration - 1*time.Minute),
+			Expires: time.Now().Add(m.TokenDuration - 1*time.Second),
 			Path:    "/",
 			// Http-only helps mitigate the risk of client side script accessing the protected cookie.
 			HttpOnly: httpOnly,

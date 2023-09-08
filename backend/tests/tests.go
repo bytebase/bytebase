@@ -174,10 +174,9 @@ type controller struct {
 	evcsClient               v1pb.ExternalVersionControlServiceClient
 	sqlServiceClient         v1pb.SQLServiceClient
 
-	cookie             string
-	grpcMDAccessToken  string
-	grpcMDRefreshToken string
-	grpcMDUser         string
+	cookie            string
+	grpcMDAccessToken string
+	grpcMDUser        string
 
 	vcsProvider    fake.VCSProvider
 	feishuProvider *fake.Feishu
@@ -701,7 +700,6 @@ func (ctl *controller) Login() error {
 	ctl.cookie = cookie
 
 	ctl.grpcMDAccessToken = resp.Header.Get("grpc-metadata-bytebase-access-token")
-	ctl.grpcMDRefreshToken = resp.Header.Get("grpc-metadata-bytebase-refresh-token")
 	ctl.grpcMDUser = resp.Header.Get("grpc-metadata-bytebase-user")
 	return nil
 }
