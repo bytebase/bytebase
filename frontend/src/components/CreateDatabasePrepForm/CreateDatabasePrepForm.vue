@@ -25,6 +25,7 @@
           name="databaseName"
           type="text"
           class="mt-1 w-full"
+          :placeholder="$t('create-db.new-database-name')"
         />
         <span v-if="isReservedName" class="text-red-600">
           <i18n-t keypath="create-db.reserved-db-error">
