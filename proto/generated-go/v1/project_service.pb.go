@@ -1380,7 +1380,7 @@ type GetDeploymentConfigRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the resource.
-	// Format: projects/{project}/deploymentConfig
+	// Format: projects/{project}/deploymentConfigs/default.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -2239,7 +2239,7 @@ type DeploymentConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the resource.
-	// Format: projects/{project}/deploymentConfig
+	// Format: projects/{project}/deploymentConfigs/default.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The title of the deployment config.
 	Title    string    `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`

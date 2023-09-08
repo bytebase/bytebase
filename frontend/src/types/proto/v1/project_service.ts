@@ -487,7 +487,7 @@ export interface SetIamPolicyRequest {
 export interface GetDeploymentConfigRequest {
   /**
    * The name of the resource.
-   * Format: projects/{project}/deploymentConfig
+   * Format: projects/{project}/deploymentConfigs/default.
    */
   name: string;
 }
@@ -697,7 +697,7 @@ export function webhook_TypeToJSON(object: Webhook_Type): string {
 export interface DeploymentConfig {
   /**
    * The name of the resource.
-   * Format: projects/{project}/deploymentConfig
+   * Format: projects/{project}/deploymentConfigs/default.
    */
   name: string;
   /** The title of the deployment config. */
