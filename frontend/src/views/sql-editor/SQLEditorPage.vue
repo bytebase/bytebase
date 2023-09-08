@@ -50,7 +50,7 @@
                   class="default-theme"
                   :dbl-click-splitter="false"
                 >
-                  <Pane>
+                  <Pane class="flex flex-row overflow-hidden">
                     <Splitpanes
                       vertical
                       class="default-theme"
@@ -66,6 +66,13 @@
                         <SecondarySidebar @alter-schema="handleAlterSchema" />
                       </Pane>
                     </Splitpanes>
+
+                    <div
+                      v-if="windowWidth >= 1024"
+                      class="h-full border-l shrink-0"
+                    >
+                      <SecondaryGutterBar />
+                    </div>
                   </Pane>
                   <Pane v-if="!isDisconnected" :size="40">
                     <ResultPanel />
@@ -119,10 +126,6 @@
           </div>
         </Pane>
       </Splitpanes>
-
-      <div v-if="windowWidth >= 1024" class="h-full border-l shrink-0">
-        <SecondaryGutterBar />
-      </div>
     </div>
     <Quickstart />
 
