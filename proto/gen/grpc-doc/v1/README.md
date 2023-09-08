@@ -5961,7 +5961,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the resource. Format: projects/{project}/deploymentConfig |
+| name | [string](#string) |  | The name of the resource. Format: projects/{project}/deploymentConfigs/default. |
 | title | [string](#string) |  | The title of the deployment config. |
 | schedule | [Schedule](#bytebase-v1-Schedule) |  |  |
 
@@ -6009,7 +6009,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the resource. Format: projects/{project}/deploymentConfig |
+| name | [string](#string) |  | The name of the resource. Format: projects/{project}/deploymentConfigs/default. |
 
 
 
