@@ -1,26 +1,28 @@
 <template>
-  <div class="flex flex-col items-stretch justify-start text-sm gap-y-1">
-    <div
-      v-if="showInfoPane"
-      class="gutter-bar--tab"
-      :class="[activeTab === 'INFO' && 'gutter-bar--tab-active']"
-      @click="handleClickTab('INFO')"
-    >
-      {{ $t("common.info") }}
-    </div>
-    <div
-      class="gutter-bar--tab"
-      :class="[activeTab === 'SHEET' && 'gutter-bar--tab-active']"
-      @click="handleClickTab('SHEET')"
-    >
-      {{ $t("sheet.sheet") }}
-    </div>
-    <div
-      class="gutter-bar--tab"
-      :class="[activeTab === 'HISTORY' && 'gutter-bar--tab-active']"
-      @click="handleClickTab('HISTORY')"
-    >
-      {{ $t("common.history") }}
+  <div class="flex flex-col items-stretch justify-start text-sm space-y-2">
+    <div class="divide-y border-b">
+      <div
+        v-if="showInfoPane"
+        class="gutter-bar--tab"
+        :class="[activeTab === 'INFO' && 'gutter-bar--tab-active']"
+        @click="handleClickTab('INFO')"
+      >
+        {{ $t("common.info") }}
+      </div>
+      <div
+        class="gutter-bar--tab"
+        :class="[activeTab === 'SHEET' && 'gutter-bar--tab-active']"
+        @click="handleClickTab('SHEET')"
+      >
+        {{ $t("sheet.sheet") }}
+      </div>
+      <div
+        class="gutter-bar--tab"
+        :class="[activeTab === 'HISTORY' && 'gutter-bar--tab-active']"
+        @click="handleClickTab('HISTORY')"
+      >
+        {{ $t("common.history") }}
+      </div>
     </div>
 
     <OpenAIButton class="self-center" />
@@ -113,12 +115,9 @@ watch(
 
 <style lang="postcss" scoped>
 .gutter-bar--tab {
-  @apply writing-vertical-rl px-1 py-4 border-y bg-gray-50 cursor-pointer select-none;
-}
-.gutter-bar--tab:first-child {
-  @apply border-t-0;
+  @apply writing-vertical-rl px-1 py-4 bg-white cursor-pointer select-none;
 }
 .gutter-bar--tab.gutter-bar--tab-active {
-  @apply text-accent bg-white;
+  @apply bg-gray-100;
 }
 </style>

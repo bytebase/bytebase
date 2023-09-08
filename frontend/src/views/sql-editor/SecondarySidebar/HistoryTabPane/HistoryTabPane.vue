@@ -1,9 +1,9 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div
-    class="relative p-0.5 w-full h-full flex flex-col justify-start items-start"
+    class="relative py-0.5 w-full h-full flex flex-col justify-start items-start"
   >
-    <div class="w-full">
+    <div class="w-full px-2 pt-1.5">
       <NInput
         v-model:value="state.search"
         size="small"
