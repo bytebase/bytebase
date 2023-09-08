@@ -330,7 +330,7 @@ message SetIamPolicyRequest {
 
 message GetDeploymentConfigRequest {
   // The name of the resource.
-  // Format: projects/{project}/deploymentConfig
+  // Format: projects/{project}/deploymentConfigs/default.
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -507,7 +507,7 @@ message Webhook {
 
 message DeploymentConfig {
   // The name of the resource.
-  // Format: projects/{project}/deploymentConfig
+  // Format: projects/{project}/deploymentConfigs/default.
   string name = 1;
 
   // The title of the deployment config.
