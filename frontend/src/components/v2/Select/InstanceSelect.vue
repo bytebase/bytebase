@@ -1,5 +1,6 @@
 <template>
   <NSelect
+    v-bind="$attrs"
     :value="instance"
     :options="options"
     :placeholder="$t('instance.select')"
@@ -9,7 +10,6 @@
     :virtual-scroll="true"
     :fallback-option="false"
     class="bb-instance-select"
-    style="width: 12rem"
     @update:value="$emit('update:instance', $event)"
   />
 </template>

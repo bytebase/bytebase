@@ -19,6 +19,7 @@
           "
         />
         <InstanceSelect
+          class="!w-48"
           :instance="state.selectedInstanceUid"
           :include-all="true"
           :environment="environment?.uid"

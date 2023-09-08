@@ -34,6 +34,7 @@
         />
         <InstanceSelect
           v-if="filterTypes.includes('instance')"
+          class="!w-48"
           :instance="params.instance?.uid ?? String(UNKNOWN_ID)"
           :environment="params.environment?.uid"
           :include-all="true"
