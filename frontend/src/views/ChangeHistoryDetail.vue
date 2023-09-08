@@ -265,10 +265,10 @@
   </div>
 
   <TableDetailDrawer
-    v-if="selectedAffectedTable"
+    :show="!!selectedAffectedTable"
     :database-name="database.name"
-    :schema-name="selectedAffectedTable.schema"
-    :table-name="selectedAffectedTable.table"
+    :schema-name="selectedAffectedTable?.schema ?? ''"
+    :table-name="selectedAffectedTable?.table ?? ''"
     @dismiss="selectedAffectedTable = undefined"
   />
 </template>
