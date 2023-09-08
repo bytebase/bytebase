@@ -45,16 +45,16 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { FeatureType, defaultRefreshTokenDurationInHours } from "@/types";
+import { FeatureType, defaultTokenDurationInHours } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
-    inputValue: defaultRefreshTokenDurationInHours / 24,
+    inputValue: defaultTokenDurationInHours / 24,
     timeFormat: "DAYS",
   };
   const seconds =
-    settingV1Store.workspaceProfileSetting?.refreshTokenDuration?.seconds;
+    settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds;
   if (seconds && seconds > 0) {
     if (seconds < 60 * 60 * 24) {
       defaultState.inputValue = Math.floor(seconds / (60 * 60)) || 1;
@@ -103,7 +103,7 @@ const handleFrequencySettingChange = useDebounceFn(async () => {
       ? state.inputValue * 60 * 60
       : state.inputValue * 24 * 60 * 60;
   await settingV1Store.updateWorkspaceProfile({
-    refreshTokenDuration: { seconds: seconds, nanos: 0 },
+    tokenDuration: { seconds: seconds, nanos: 0 },
   });
   pushNotification({
     module: "bytebase",
