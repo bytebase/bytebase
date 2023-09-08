@@ -118,11 +118,11 @@
 }
 
 .btn-primary {
-  @apply select-none inline-flex border border-transparent rounded-md text-accent-text bg-accent hover:bg-accent-hover disabled:bg-accent disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply select-none inline-flex border border-transparent rounded text-accent-text bg-accent hover:bg-accent-hover disabled:bg-accent disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-normal {
-  @apply select-none inline-flex border border-control-border rounded-md text-control bg-white hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply select-none inline-flex border border-control-border rounded text-control bg-white hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-secondary {
@@ -130,15 +130,15 @@
 }
 
 .btn-small {
-  @apply select-none inline-flex border border-control-border rounded-md text-control bg-white hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply select-none inline-flex border border-control-border rounded text-control bg-white hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-select {
-  @apply text-sm select-none text-main bg-white border border-control-border disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed rounded-md shadow-sm text-left cursor-default focus:outline-none focus:ring-1 focus:ring-control focus:border-control;
+  @apply text-sm select-none text-main bg-white border border-control-border disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed rounded shadow-sm text-left cursor-default focus:outline-none focus:ring-1 focus:ring-control focus:border-control;
 }
 
 .btn-cancel {
-  @apply select-none inline-flex text-control rounded-md hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply select-none inline-flex text-control rounded hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-icon {
@@ -150,19 +150,19 @@
 }
 
 .btn-danger {
-  @apply select-none inline-flex border border-transparent rounded-md text-accent-text bg-error hover:bg-error-hover disabled:bg-error disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply select-none inline-flex border border-transparent rounded text-accent-text bg-error hover:bg-error-hover disabled:bg-error disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .btn-success {
-  @apply select-none inline-flex border border-transparent rounded-md text-accent-text bg-success hover:bg-success-hover disabled:bg-success disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply select-none inline-flex border border-transparent rounded text-accent-text bg-success hover:bg-success-hover disabled:bg-success disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .tab {
-  @apply rounded-md text-control font-normal text-sm focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
+  @apply rounded text-control font-normal text-sm focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
 }
 
 .control {
-  @apply focus:ring-control focus:border-control border-control-border rounded-md select-none;
+  @apply focus:ring-control focus:border-control border-control-border rounded select-none;
 }
 
 .textlabel {
@@ -178,7 +178,7 @@
 }
 
 .textfield {
-  @apply text-main disabled:text-control disabled:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-70 focus:ring-control focus:border-control sm:text-sm border-control-border rounded-md;
+  @apply text-main disabled:text-control disabled:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-70 focus:ring-control focus:border-control sm:text-sm border-control-border rounded;
 }
 
 .textarea {
