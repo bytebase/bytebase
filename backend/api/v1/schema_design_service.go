@@ -356,15 +356,29 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	baselineEtag := generateEtag([]byte(schemaDesign.BaselineSchema))
 	// Restrict merging only when the target schema design is not updated.
 	// Maybe we can support auto-merging in the future.
+	mergedTargetSchema := schemaDesign.Schema
 	if baselineEtag != targetSchemaDesign.Etag {
-		return nil, status.Errorf(codes.FailedPrecondition, "schema design has been updated")
+		mergedTarget, err := tryMerge(schemaDesign.BaselineSchemaMetadata, schemaDesign.SchemaMetadata, targetSchemaDesign.SchemaMetadata)
+		if err != nil {
+			return nil, status.Errorf(codes.FailedPrecondition, fmt.Sprintf("failed to merge schema design: %v", err))
+		}
+		if mergedTarget == nil {
+			return nil, status.Errorf(codes.FailedPrecondition, "failed to merge schema design: no change")
+		}
+		mergedTargetSchema, err = getMySQLDesignSchema(targetSchemaDesign.Schema, mergedTarget)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
+		}
 	}
+
+	// To merge from one schema design to another, we focus on the three schema string(map to database metadata):
+	// Head Schema, Baseline of Head Schema, and Target Schema.
 
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       targetSheetUID,
 		UpdaterID: currentPrincipalID,
-		Statement: &schemaDesign.Schema,
+		Statement: &mergedTargetSchema,
 	}
 	// Update main branch schema design.
 	targetSheet, err = s.store.PatchSheet(ctx, sheetUpdate)
