@@ -200,8 +200,8 @@ message WorkspaceProfileSetting {
   // The webhook URL for the GitOps workflow.
   string gitops_webhook_url = 5;
 
-  // The duration for refresh token.
-  google.protobuf.Duration refresh_token_duration = 6;
+  // The duration for token.
+  google.protobuf.Duration token_duration = 6;
 
   // The setting of custom announcement
   Announcement announcement = 7;

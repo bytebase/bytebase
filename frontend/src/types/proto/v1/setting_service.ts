@@ -289,8 +289,8 @@ export interface WorkspaceProfileSetting {
   outboundIpList: string[];
   /** The webhook URL for the GitOps workflow. */
   gitopsWebhookUrl: string;
-  /** The duration for refresh token. */
-  refreshTokenDuration?:
+  /** The duration for token. */
+  tokenDuration?:
     | Duration
     | undefined;
   /** The setting of custom announcement */
@@ -1588,7 +1588,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     require2fa: false,
     outboundIpList: [],
     gitopsWebhookUrl: "",
-    refreshTokenDuration: undefined,
+    tokenDuration: undefined,
     announcement: undefined,
   };
 }
@@ -1610,8 +1610,8 @@ export const WorkspaceProfileSetting = {
     if (message.gitopsWebhookUrl !== "") {
       writer.uint32(42).string(message.gitopsWebhookUrl);
     }
-    if (message.refreshTokenDuration !== undefined) {
-      Duration.encode(message.refreshTokenDuration, writer.uint32(50).fork()).ldelim();
+    if (message.tokenDuration !== undefined) {
+      Duration.encode(message.tokenDuration, writer.uint32(50).fork()).ldelim();
     }
     if (message.announcement !== undefined) {
       Announcement.encode(message.announcement, writer.uint32(58).fork()).ldelim();
@@ -1666,7 +1666,7 @@ export const WorkspaceProfileSetting = {
             break;
           }
 
-          message.refreshTokenDuration = Duration.decode(reader, reader.uint32());
+          message.tokenDuration = Duration.decode(reader, reader.uint32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -1691,9 +1691,7 @@ export const WorkspaceProfileSetting = {
       require2fa: isSet(object.require2fa) ? Boolean(object.require2fa) : false,
       outboundIpList: Array.isArray(object?.outboundIpList) ? object.outboundIpList.map((e: any) => String(e)) : [],
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? String(object.gitopsWebhookUrl) : "",
-      refreshTokenDuration: isSet(object.refreshTokenDuration)
-        ? Duration.fromJSON(object.refreshTokenDuration)
-        : undefined,
+      tokenDuration: isSet(object.tokenDuration) ? Duration.fromJSON(object.tokenDuration) : undefined,
       announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
     };
   },
@@ -1709,9 +1707,8 @@ export const WorkspaceProfileSetting = {
       obj.outboundIpList = [];
     }
     message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
-    message.refreshTokenDuration !== undefined && (obj.refreshTokenDuration = message.refreshTokenDuration
-      ? Duration.toJSON(message.refreshTokenDuration)
-      : undefined);
+    message.tokenDuration !== undefined &&
+      (obj.tokenDuration = message.tokenDuration ? Duration.toJSON(message.tokenDuration) : undefined);
     message.announcement !== undefined &&
       (obj.announcement = message.announcement ? Announcement.toJSON(message.announcement) : undefined);
     return obj;
@@ -1728,8 +1725,8 @@ export const WorkspaceProfileSetting = {
     message.require2fa = object.require2fa ?? false;
     message.outboundIpList = object.outboundIpList?.map((e) => e) || [];
     message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
-    message.refreshTokenDuration = (object.refreshTokenDuration !== undefined && object.refreshTokenDuration !== null)
-      ? Duration.fromPartial(object.refreshTokenDuration)
+    message.tokenDuration = (object.tokenDuration !== undefined && object.tokenDuration !== null)
+      ? Duration.fromPartial(object.tokenDuration)
       : undefined;
     message.announcement = (object.announcement !== undefined && object.announcement !== null)
       ? Announcement.fromPartial(object.announcement)
