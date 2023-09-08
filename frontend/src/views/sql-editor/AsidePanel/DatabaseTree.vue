@@ -201,6 +201,26 @@ const allowAdmin = computed(() =>
 
 const treeData = computed(() => connectionTreeStore.tree.data);
 
+const connect = (target: CoreTabInfo) => {
+  if (isSimilarTab(target, tabStore.currentTab)) {
+    // Don't go further if the connection doesn't change.
+    return;
+  }
+  if (tabStore.currentTab.isFreshNew) {
+    // If the current tab is "fresh new", update its connection directly.
+    tabStore.updateCurrentTab(target);
+  } else {
+    // Otherwise select or add a new tab and set its connection
+    const name = getSuggestedTabNameFromConnection(target.connection);
+    tabStore.selectOrAddSimilarTab(
+      target,
+      /* beside */ false,
+      /* defaultTabName */ name
+    );
+    tabStore.updateCurrentTab(target);
+  }
+};
+
 const setConnection = (
   option: ConnectionAtom,
   extra: { sheetName?: string; mode: TabMode } = {
@@ -232,26 +252,6 @@ const setConnection = (
     };
     const conn = target.connection;
 
-    const connect = () => {
-      if (isSimilarTab(target, tabStore.currentTab)) {
-        // Don't go further if the connection doesn't change.
-        return;
-      }
-      if (tabStore.currentTab.isFreshNew) {
-        // If the current tab is "fresh new", update its connection directly.
-        tabStore.updateCurrentTab(target);
-      } else {
-        // Otherwise select or add a new tab and set its connection
-        const name = getSuggestedTabNameFromConnection(target.connection);
-        tabStore.selectOrAddSimilarTab(
-          target,
-          /* beside */ false,
-          /* defaultTabName */ name
-        );
-        tabStore.updateCurrentTab(target);
-      }
-    };
-
     // If selected item is instance node
     if (option.type === "instance") {
       conn.instanceId = option.id;
@@ -262,7 +262,7 @@ const setConnection = (
       conn.databaseId = database.uid;
     }
 
-    connect();
+    connect(target);
   }
 };
 
@@ -327,12 +327,21 @@ const maybeSelectTable = async (atom: ConnectionAtom) => {
   if (parts.length < 2 || parts.length > 3) {
     return;
   }
-  const databaseUID = parts[0];
-  if (databaseUID !== tabStore.currentTab.connection.databaseId) {
-    // TODO: connect to database before going further
-    return;
-  }
   const database = databaseStore.getDatabaseByUID(parts[0]);
+  if (database.uid !== tabStore.currentTab.connection.databaseId) {
+    const target: CoreTabInfo = {
+      connection: {
+        instanceId: database.instanceEntity.uid,
+        databaseId: database.uid,
+      },
+      mode: TabMode.ReadOnly,
+    };
+    target.connection.instanceId = database.instanceEntity.uid;
+    target.connection.databaseId = database.uid;
+
+    connect(target);
+    await nextTick();
+  }
   const databaseMetadata =
     await useDBSchemaV1Store().getOrFetchDatabaseMetadata(database.name);
   let schemaMetadata: SchemaMetadata | undefined = undefined;
