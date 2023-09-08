@@ -2598,8 +2598,8 @@
       "statement-copied": "Statement copied to clipboard",
       "dont-show-again": "Don't show again",
       "chat-sql": "ChatSQL",
-      "disable-chat-sql": "Disable Chat SQL",
-      "enable-chat-sql": "Enable Chat SQL"
+      "disable-chat-sql": "Disable ChatSQL",
+      "enable-chat-sql": "Enable ChatSQL"
     }
   },
   "custom-approval": {

@@ -1,13 +1,13 @@
 <template>
   <div v-if="databaseMetadata" class="h-full overflow-hidden flex flex-col">
-    <div class="flex items-center justify-between p-2 border-b gap-x-1">
+    <div class="flex items-center justify-between px-2 py-1 border-b gap-x-1">
       <div
         class="flex items-center flex-1 truncate"
         :class="[headerClickable && 'cursor-pointer']"
         @click="handleClickHeader"
       >
         <heroicons-outline:database class="h-4 w-4 mr-1 flex-shrink-0" />
-        <span class="font-semibold">{{ databaseMetadata.name }}</span>
+        <span class="text-sm">{{ databaseMetadata.name }}</span>
       </div>
       <div class="flex justify-end gap-x-0.5">
         <SchemaDiagramButton
