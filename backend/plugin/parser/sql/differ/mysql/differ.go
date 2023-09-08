@@ -819,29 +819,17 @@ func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 			})
 		}
 	} else {
-		//nolint
-		switch stmt := stmt.Select.(type) {
-		case *ast.SelectStmt:
-			for _, field := range stmt.Fields.Fields {
-				var fieldName string
-				if field.AsName.O != "" {
-					fieldName = field.AsName.O
-				} else {
-					fieldName = field.Expr.(*ast.ColumnNameExpr).Name.Name.O
-				}
-				selectFields = append(selectFields, &ast.SelectField{
-					Expr: &driver.ValueExpr{
-						Datum: types.NewDatum(1),
-					},
-					AsName: model.NewCIStr(fieldName),
-				})
-			}
-		default:
-			stmtStr, err := toString(stmt)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to convert create view statement to string")
-			}
-			return nil, errors.Errorf("unsupported create view statement %q which select is not select ast node", stmtStr)
+		colName, err := extractColNameFromSelectListClauseOfCreateViewStmt(stmt.Select)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract column name from select list clause of create view statement")
+		}
+		for _, name := range colName {
+			selectFields = append(selectFields, &ast.SelectField{
+				Expr: &driver.ValueExpr{
+					Datum: types.NewDatum(1),
+				},
+				AsName: model.NewCIStr(name),
+			})
 		}
 	}
 
@@ -864,6 +852,47 @@ func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 		Security:    stmt.Security,
 		CheckOption: model.CheckOptionCascaded,
 	}, nil
+}
+
+// extractColNameFromCreateViewStmt extracts column names from create view statement.
+// For example, CREATE OR REPLACE VIEW `v` AS select `d` as `c` WILL return `c`.
+func extractColNameFromSelectListClauseOfCreateViewStmt(stmt ast.Node) ([]string, error) {
+	var result []string
+	switch stmt := (stmt).(type) {
+	case *ast.SelectStmt:
+		for _, field := range stmt.Fields.Fields {
+			if field.WildCard != nil {
+				return nil, errors.New("wildcard(*) is not supported now in select statement")
+			}
+			var fieldName string
+			if field.AsName.O != "" {
+				fieldName = field.AsName.O
+			} else {
+				fieldName = field.Expr.(*ast.ColumnNameExpr).Name.Name.O
+			}
+			result = append(result, fieldName)
+		}
+		return result, nil
+	case *ast.SetOprStmt:
+		// For SetOprStmt, we focus on the first select statement, for example:
+		// with `tt` as (select `t1`.`id` AS `id` from `t1` union select `t2`.`id2` AS `id2` from `t2`) select `tt`.`id` AS `id` from `tt` union select `t1`.`id` AS `id` from `t1`
+		// we just focus on select `tt`.`id` as `id` from `tt`.
+		if len(stmt.SelectList.Selects) == 0 {
+			return nil, errors.New("select list in SetOprStmt is empty")
+		}
+		return extractColNameFromSelectListClauseOfCreateViewStmt(stmt.SelectList.Selects[0])
+	case *ast.SetOprSelectList:
+		if len(stmt.Selects) == 0 {
+			return nil, errors.New("select list in SetOprSelectList is empty")
+		}
+		return extractColNameFromSelectListClauseOfCreateViewStmt(stmt.Selects[0])
+	default:
+		stmtStr, err := toString(stmt)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert create view statement to string")
+		}
+		return nil, errors.Errorf("unsupported create view statement %q which select is not supported node", stmtStr)
+	}
 }
 
 // buildColumnMap returns a map of column name to column definition on a given table.
