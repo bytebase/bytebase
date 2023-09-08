@@ -275,7 +275,7 @@ func (n *metadataDiffColumnNode) applyDiffTo(target proto.Message) error {
 		return errors.Errorf("target is not a table metadata, but %T", target)
 	}
 
-	//TODO(zp): handle the column position...
+	// TODO(zp): handle the column position...
 	switch n.action {
 	case diffActionCreate:
 		tableTarget.Columns = append(tableTarget.Columns, n.to)
