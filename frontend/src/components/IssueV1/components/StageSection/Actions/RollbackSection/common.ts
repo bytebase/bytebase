@@ -2,8 +2,8 @@ import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  batchPatchLegacyIssueTasks,
   databaseForTask,
-  notifyNotEditableLegacyIssue,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
@@ -146,7 +146,26 @@ export const useRollbackContext = () => {
       const planPatch = cloneDeep(issue.value.planEntity);
       const spec = specForTask(planPatch, task.value);
       if (!planPatch || !spec || !spec.changeDatabaseConfig) {
-        notifyNotEditableLegacyIssue();
+        try {
+          await batchPatchLegacyIssueTasks(issue.value, [task.value], () => ({
+            rollbackEnabled: on,
+          }));
+          const config = task.value.databaseDataUpdate;
+          if (config) {
+            // hack: make the UI indicates the switch faster.
+            config.rollbackEnabled = on;
+          }
+
+          events.emit("status-changed", { eager: true });
+          pushNotification({
+            module: "bytebase",
+            style: "SUCCESS",
+            title: t("common.updated"),
+          });
+        } finally {
+          // nothing
+        }
+
         return;
       }
       spec.changeDatabaseConfig.rollbackEnabled = on;
