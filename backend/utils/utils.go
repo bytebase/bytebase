@@ -301,13 +301,15 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 		for _, id := range matchedDatabaseList {
 			databaseList = append(databaseList, databaseMap[id])
 		}
-		// sort databases in stage based on IDs.
-		if len(databaseList) > 0 {
-			sort.Slice(databaseList, func(i, j int) bool {
-				return databaseList[i].UID < databaseList[j].UID
-			})
+
+		if len(databaseList) == 0 {
+			continue
 		}
 
+		// sort databases in stage based on IDs.
+		sort.Slice(databaseList, func(i, j int) bool {
+			return databaseList[i].UID < databaseList[j].UID
+		})
 		matrix = append(matrix, databaseList)
 	}
 
