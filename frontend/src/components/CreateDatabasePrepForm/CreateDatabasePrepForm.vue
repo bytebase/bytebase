@@ -83,7 +83,7 @@
         </label>
         <!-- It's default selected to the first env, so we don't need to set `required` here -->
         <EnvironmentSelect
-          class="mt-1 !w-full"
+          class="mt-1"
           required
           name="environment"
           :disabled="!allowEditEnvironment"

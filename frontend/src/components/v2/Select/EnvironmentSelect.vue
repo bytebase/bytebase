@@ -6,7 +6,6 @@
     :placeholder="$t('environment.select')"
     :filterable="true"
     :filter="filterByName"
-    style="width: 12rem"
     @update:value="$emit('update:environment', $event)"
   />
 </template>
