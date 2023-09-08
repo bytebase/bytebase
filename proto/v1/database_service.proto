@@ -252,7 +252,7 @@ message GetDatabaseSchemaRequest {
   bool sdl_format = 2;
 }
 
-message GetDatabaseSchemaDiffRequest {
+message DiffSchemaRequest {
   // The name of the database.
   // Format: instances/{instance}/databases/{database}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
@@ -267,7 +267,7 @@ message GetDatabaseSchemaDiffRequest {
   }
 }
 
-message DatabaseSchemaDiffResponse {
+message DiffSchemaResponse {
   string diff = 1;
 }
 
