@@ -75,12 +75,12 @@ service ProjectService {
   }
 
   rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (DeploymentConfig) {
-    option (google.api.http) = {get: "/v1/{name=projects/*/deploymentConfig}"};
+    option (google.api.http) = {get: "/v1/{name=projects/*/deploymentConfigs/*}"};
   }
 
   rpc UpdateDeploymentConfig(UpdateDeploymentConfigRequest) returns (DeploymentConfig) {
     option (google.api.http) = {
-      patch: "/v1/{config.name=projects/*/deploymentConfig}"
+      patch: "/v1/{config.name=projects/*/deploymentConfigs/*}"
       body: "config"
     };
   }
