@@ -360,7 +360,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	refreshTokenDuration := auth.DefaultRefreshTokenDuration
+	tokenDuration := auth.DefaultTokenDuration
 	externalURL := ""
 	if setting != nil {
 		settingValue := new(storepb.WorkspaceProfileSetting)
@@ -371,7 +371,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			externalURL = settingValue.ExternalUrl
 		}
 		if settingValue.RefreshTokenDuration != nil && settingValue.RefreshTokenDuration.Seconds > 0 {
-			refreshTokenDuration = settingValue.RefreshTokenDuration.AsDuration()
+			tokenDuration = settingValue.RefreshTokenDuration.AsDuration()
 		}
 	}
 
@@ -518,7 +518,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	apiGroup := e.Group(internalAPIPrefix)
 	// API JWT authentication middleware.
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(internalAPIPrefix, s.store, next, profile.Mode, config.secret, refreshTokenDuration)
+		return JWTMiddleware(internalAPIPrefix, s.store, next, profile.Mode, config.secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -544,7 +544,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	})
 
 	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, s.secret, refreshTokenDuration, s.licenseService, profile.Mode)
+	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, profile.Mode)
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
 	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing)
 	onPanic := func(p any) error {
@@ -575,7 +575,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			recoveryStreamInterceptor,
 		),
 	)
-	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, refreshTokenDuration, s.licenseService, s.metricReporter, &profile,
+	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, tokenDuration, s.licenseService, s.metricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
 			if s.profile.TestOnlySkipOnboardingData {
 				return nil
@@ -637,7 +637,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
 	// the user has to restart the server to take the latest value.
-	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL, RefreshTokenDuration: refreshTokenDuration}
+	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL, TokenDuration: tokenDuration}
 	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(gatewayModifier.Modify))
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
