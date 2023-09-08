@@ -3,15 +3,15 @@ import DatabaseSelect from "./DatabaseSelect.vue";
 import InstanceSelect from "./InstanceSelect.vue";
 import ProjectSelect from "./ProjectSelect.vue";
 import RoleRadioSelect from "./RoleRadioSelect.vue";
-import RoleSelect from "./RoleSelect.vue";
 import UserSelect from "./UserSelect.vue";
+import WorkspaceRoleSelect from "./WorkspaceRoleSelect.vue";
 
 export {
   AnnouncementLevelSelect,
   InstanceSelect,
   DatabaseSelect,
   ProjectSelect,
-  RoleSelect,
+  WorkspaceRoleSelect,
   RoleRadioSelect,
   UserSelect,
 };
