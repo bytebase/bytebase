@@ -103,6 +103,9 @@ const handleChange = (value: string) => {
   if (isSwitchingTab.value) {
     return;
   }
+  if (value === tabStore.currentTab.statement) {
+    return;
+  }
   tabStore.updateCurrentTab({
     statement: value,
     isSaved: false,
