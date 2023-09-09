@@ -288,6 +288,6 @@ useEmitteryEventListener(
 }
 
 .tab-list {
-  @apply flex flex-nowrap overflow-x-auto max-w-full hide-scrollbar;
+  @apply flex flex-nowrap overflow-x-auto max-w-full hide-scrollbar overscroll-none;
 }
 </style>
