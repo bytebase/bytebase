@@ -11,7 +11,7 @@ import { EngineIcon } from "@/components/Icon";
 import { useDatabaseV1Store } from "@/store";
 import { TabInfo } from "@/types";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { connectionForTab } from "@/utils";
+import { connectionForTab, extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{
   sheet?: Sheet;
@@ -22,8 +22,11 @@ const instance = computed(() => {
   const { sheet, tab } = props;
   if (sheet) {
     if (!sheet.database) return undefined;
-    return useDatabaseV1Store().getDatabaseByName(sheet.database)
-      .instanceEntity;
+    const { database: definedToBeDatabaseNameButActuallyUID } =
+      extractDatabaseResourceName(sheet.database);
+    return useDatabaseV1Store().getDatabaseByUID(
+      definedToBeDatabaseNameButActuallyUID
+    ).instanceEntity;
   }
   if (tab) {
     return connectionForTab(tab).instance;
