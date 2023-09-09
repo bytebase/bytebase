@@ -152,6 +152,8 @@
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
     - [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest)
     - [DependentColumn](#bytebase-v1-DependentColumn)
+    - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
+    - [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
@@ -2773,6 +2775,38 @@ DependentColumn is the metadata for dependent columns.
 
 
 
+<a name="bytebase-v1-DiffSchemaRequest"></a>
+
+### DiffSchemaRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  | The target schema. |
+| change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffSchemaResponse"></a>
+
+### DiffSchemaResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ExtensionMetadata"></a>
 
 ### ExtensionMetadata
@@ -3559,6 +3593,7 @@ The type of the backup.
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
+| DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | UpdateBackupSetting | [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | CreateBackup | [CreateBackupRequest](#bytebase-v1-CreateBackupRequest) | [Backup](#bytebase-v1-Backup) |  |

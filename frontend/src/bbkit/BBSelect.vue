@@ -51,7 +51,7 @@
         <div
           v-if="state.showMenu"
           ref="popup"
-          class="z-50 rounded-md bg-white shadow-lg mt-0.5"
+          class="z-50 rounded bg-white shadow-lg mt-0.5"
           :style="popupStyle"
         >
           <ul
@@ -59,7 +59,7 @@
             role="listbox"
             aria-labelledby="listbox-label"
             aria-activedescendant="listbox-item-3"
-            class="max-h-56 rounded-md py-1 ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
+            class="max-h-56 rounded py-1 ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
           >
             <!--
               Select option, manage highlight styles based on mouseenter/mouseleave and keyboard navigation.

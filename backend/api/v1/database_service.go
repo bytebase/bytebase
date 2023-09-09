@@ -33,6 +33,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -805,6 +806,120 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 		}
 	}
 	return converted, nil
+}
+
+// DiffSchema diff the database schema.
+func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (*v1pb.DiffSchemaResponse, error) {
+	source, err := s.getSourceSchema(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	target, err := s.getTargetSchema(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	engine, err := s.getParserEngine(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	diff, err := differ.SchemaDiff(engine, source, target, false /* ignoreCaseSensitive */)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
+	}
+
+	return &v1pb.DiffSchemaResponse{
+		Diff: diff,
+	}, nil
+}
+
+func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {
+	if strings.Contains(request.Name, common.ChangeHistoryPrefix) {
+		changeHistory, err := s.GetChangeHistory(ctx, &v1pb.GetChangeHistoryRequest{
+			Name:      request.Name,
+			View:      v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
+			SdlFormat: true,
+		})
+		if err != nil {
+			return "", err
+		}
+		return changeHistory.Schema, nil
+	}
+
+	databaseSchema, err := s.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+		Name:      fmt.Sprintf("%s/schema", request.Name),
+		SdlFormat: true,
+	})
+	if err != nil {
+		return "", err
+	}
+	return databaseSchema.Schema, nil
+}
+
+func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {
+	schema := request.GetSchema()
+	if schema != "" {
+		return schema, nil
+	}
+
+	changeHistoryID := request.GetChangeHistory()
+	if changeHistoryID == "" {
+		return "", status.Errorf(codes.InvalidArgument, "must set the schema or change history id as the target")
+	}
+
+	changeHistory, err := s.GetChangeHistory(ctx, &v1pb.GetChangeHistoryRequest{
+		Name:      request.Name,
+		View:      v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
+		SdlFormat: true,
+	})
+	if err != nil {
+		return "", err
+	}
+	return changeHistory.Schema, nil
+}
+
+func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (parser.EngineType, error) {
+	var instanceID string
+	var engine parser.EngineType
+
+	if strings.Contains(request.Name, common.ChangeHistoryPrefix) {
+		insID, _, _, err := common.GetInstanceDatabaseIDChangeHistory(request.Name)
+		if err != nil {
+			return engine, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		instanceID = insID
+	} else {
+		insID, _, err := common.GetInstanceDatabaseID(request.Name)
+		if err != nil {
+			return engine, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		instanceID = insID
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return engine, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
+	if instance == nil {
+		return engine, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+
+	switch instance.Engine {
+	case db.Postgres:
+		engine = parser.Postgres
+	case db.MySQL, db.MariaDB, db.OceanBase:
+		engine = parser.MySQL
+	case db.TiDB:
+		engine = parser.TiDB
+	case db.Oracle:
+		engine = parser.Oracle
+	default:
+		return engine, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid engine type %v", instance.Engine))
+	}
+
+	return engine, nil
 }
 
 func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.ChangeHistory, error) {

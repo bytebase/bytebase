@@ -62,6 +62,14 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
 
+  rpc DiffSchema(DiffSchemaRequest) returns (DiffSchemaResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*/databases/*}:diffSchema"
+      additional_bindings {post: "/v1/{name=instances/*/databases/*/changeHistories/*}:diffSchema"}
+      body: "*"
+    };
+  }
+
   rpc GetBackupSetting(GetBackupSettingRequest) returns (BackupSetting) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/backupSetting}"};
   }
@@ -242,6 +250,27 @@ message GetDatabaseSchemaRequest {
 
   // Format the schema dump into SDL format.
   bool sdl_format = 2;
+}
+
+message DiffSchemaRequest {
+  // The name of the database or change history.
+  // Format:
+  // databse: instances/{instance}/databases/{database}
+  // change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  oneof target {
+    // The target schema.
+    string schema = 2;
+
+    // The resource name of the change history
+    // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+    string change_history = 3;
+  }
+}
+
+message DiffSchemaResponse {
+  string diff = 1;
 }
 
 message GetBackupSettingRequest {

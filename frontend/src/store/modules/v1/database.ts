@@ -20,6 +20,7 @@ import {
   ListDatabasesRequest,
   SearchDatabasesRequest,
   UpdateDatabaseRequest,
+  DiffSchemaRequest,
 } from "@/types/proto/v1/database_service";
 import {
   extractDatabaseResourceName,
@@ -156,6 +157,10 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     });
     return schema;
   };
+  const diffSchema = async (request: DiffSchemaRequest) => {
+    const resp = await databaseServiceClient.diffSchema(request);
+    return resp;
+  };
 
   return {
     databaseList,
@@ -175,6 +180,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     updateDatabase,
     fetchDatabaseSchema,
     updateDatabaseInstance,
+    diffSchema,
   };
 });
 

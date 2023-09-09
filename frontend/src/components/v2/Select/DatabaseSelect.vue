@@ -2,7 +2,7 @@
   <NSelect
     :value="database"
     :options="options"
-    :placeholder="$t('database.select')"
+    :placeholder="placeholder ?? $t('database.select')"
     :virtual-scroll="true"
     :filter="filterByDatabaseName"
     :filterable="true"
@@ -34,22 +34,25 @@ interface DatabaseSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    database: string | undefined;
+    database?: string;
     environment?: string;
     instance?: string;
     project?: string;
     allowedEngineTypeList?: readonly Engine[];
     includeAll?: boolean;
     autoReset?: boolean;
+    placeholder?: string;
     filter?: (database: ComposedDatabase, index: number) => boolean;
   }>(),
   {
+    database: undefined,
     environment: undefined,
     instance: undefined,
     project: undefined,
     allowedEngineTypeList: () => supportedEngineV1List(),
     includeAll: false,
     autoReset: true,
+    placeholder: undefined,
     filter: undefined,
   }
 );
@@ -94,7 +97,7 @@ const combinedDatabaseList = computed(() => {
     list = list.filter(props.filter);
   }
 
-  if (props.database === String(UNKNOWN_ID) || props.includeAll) {
+  if (props.includeAll) {
     const dummyAll = {
       ...unknownDatabase(),
       databaseName: t("database.all"),
@@ -117,6 +120,10 @@ const options = computed(() => {
 
 const renderLabel: SelectRenderLabel = (option) => {
   const { database } = option as DatabaseSelectOption;
+  if (!database) {
+    return;
+  }
+
   const children = [h("div", {}, [database.databaseName])];
   if (database.uid !== String(UNKNOWN_ID)) {
     // prefix engine icon
@@ -165,7 +172,14 @@ const resetInvalidSelection = () => {
   }
 };
 
-watch([() => props.database, combinedDatabaseList], resetInvalidSelection, {
-  immediate: true,
-});
+watch(
+  [
+    () => [props.project, props.environment, props.database],
+    combinedDatabaseList,
+  ],
+  resetInvalidSelection,
+  {
+    immediate: true,
+  }
+);
 </script>
