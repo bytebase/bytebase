@@ -23,7 +23,7 @@
           @select-table="handleSelectTable"
           @alter-schema="emit('alter-schema', $event)"
         />
-        <Transition name="slide-up" appear>
+        <Transition name="slide-up">
           <TableSchema
             v-if="selected"
             class="absolute bottom-0 w-full h-[calc(100%-33px)] bg-white"
@@ -90,10 +90,12 @@ const handleSelectTable = (schema: SchemaMetadata, table: TableMetadata) => {
 
 watch(
   () => database.value.name,
-  async (name) => {
-    selected.value = undefined;
+  async (toName, fromName) => {
+    if (fromName !== undefined) {
+      selected.value = undefined;
+    }
     databaseMetadata.value = await dbSchemaStore.getOrFetchDatabaseMetadata(
-      name,
+      toName,
       /* !skipCache */ false
     );
   },
