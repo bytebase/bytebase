@@ -45,8 +45,6 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	project, err := ctl.createProject(ctx)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -54,7 +52,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
@@ -204,8 +202,6 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	project, err := ctl.createProject(ctx)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -213,7 +209,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       t.Name(),
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
@@ -374,8 +370,6 @@ func TestRollbackCanceled(t *testing.T) {
 	project, err := ctl.createProject(ctx)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -383,7 +377,7 @@ func TestRollbackCanceled(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       t.Name(),
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},

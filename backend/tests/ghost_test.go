@@ -105,15 +105,12 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	project, err := ctl.createProject(ctx)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
 		},
@@ -181,16 +178,9 @@ func TestGhostTenant(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.setLicense()
-	a.NoError(err)
 
 	// Create a project.
 	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
-	testEnvironment, err := ctl.getEnvironment(ctx, "test")
-	a.NoError(err)
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	// Provision instances.
@@ -205,7 +195,7 @@ func TestGhostTenant(t *testing.T) {
 			Instance: &v1pb.Instance{
 				Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 				Engine:      v1pb.Engine_MYSQL,
-				Environment: testEnvironment.Name,
+				Environment: "environments/test",
 				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(port), Username: "bytebase", Password: "bytebase"}},
 			},
@@ -222,7 +212,7 @@ func TestGhostTenant(t *testing.T) {
 			Instance: &v1pb.Instance{
 				Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 				Engine:      v1pb.Engine_MYSQL,
-				Environment: prodEnvironment.Name,
+				Environment: "environments/prod",
 				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(port), Username: "bytebase", Password: "bytebase"}},
 			},
