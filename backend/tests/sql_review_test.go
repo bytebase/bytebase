@@ -104,15 +104,9 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
 	a.NoError(err)
-
 	_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
 	a.NoError(err)
-
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
-	a.NoError(err)
-
-	// Create a project.
-	project, err := ctl.createProject(ctx)
 	a.NoError(err)
 
 	reviewPolicy, err := prodTemplateSQLReviewPolicyForPostgreSQL()
@@ -141,7 +135,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "bytebase", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -150,7 +144,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	for i, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
@@ -175,7 +169,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, statements[0], false)
 	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
 
 	// delete the SQL review policy
@@ -184,7 +178,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
+	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, statements[0], false)
 	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
 }
 
@@ -277,12 +271,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	_, err = mysqlDB.Exec("CREATE USER 'bytebase' IDENTIFIED WITH mysql_native_password BY 'bytebase'")
 	a.NoError(err)
-
 	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
-	a.NoError(err)
-
-	// Create a project.
-	project, err := ctl.createProject(ctx)
 	a.NoError(err)
 
 	reviewPolicy, err := prodTemplateSQLReviewPolicyForMySQL()
@@ -312,7 +301,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -321,7 +310,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	for i, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
@@ -352,7 +341,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		`INSERT INTO test(id, name) VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');`,
 	}
 	for _, stmt := range initialStmts {
-		createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, stmt, true /* wait */)
+		createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, stmt, true /* wait */)
 	}
 	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
@@ -364,7 +353,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	diff := cmp.Diff(wantQueryResult, originQueryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Equal("", diff)
 
-	createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, dmlSQL, false /* wait */)
+	createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, dmlSQL, false /* wait */)
 
 	finalQueryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
 		Name: instance.Name, ConnectionDatabase: databaseName, Statement: countSQL,
@@ -390,7 +379,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, project, database, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, statements[0], false)
 	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
 }
 

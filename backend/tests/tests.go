@@ -177,7 +177,7 @@ type controller struct {
 
 	cookie            string
 	grpcMDAccessToken string
-	grpcMDUser        string
+	project           *v1pb.Project
 
 	vcsProvider    fake.VCSProvider
 	feishuProvider *fake.Feishu
@@ -292,6 +292,19 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 			return nil, err
 		}
 	}
+
+	projectID := "test-project"
+	project, err := ctl.projectServiceClient.CreateProject(metaCtx, &v1pb.CreateProjectRequest{
+		Project: &v1pb.Project{
+			Title: projectID,
+			Key:   projectID,
+		},
+		ProjectId: projectID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	ctl.project = project
 
 	return metaCtx, nil
 }
@@ -702,6 +715,5 @@ func (ctl *controller) Login() error {
 	ctl.cookie = cookie
 
 	ctl.grpcMDAccessToken = resp.Header.Get("grpc-metadata-bytebase-access-token")
-	ctl.grpcMDUser = resp.Header.Get("grpc-metadata-bytebase-user")
 	return nil
 }
