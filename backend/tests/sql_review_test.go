@@ -117,18 +117,6 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
-	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: prodEnvironment.Name,
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
-			Policy: &v1pb.Policy_DeploymentApprovalPolicy{
-				DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
-					DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
-				},
-			},
-		},
-	})
-	a.NoError(err)
 
 	reviewPolicy, err := prodTemplateSQLReviewPolicyForPostgreSQL()
 	a.NoError(err)
@@ -313,18 +301,6 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: prodEnvironment.Name,
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
-			Policy: &v1pb.Policy_DeploymentApprovalPolicy{
-				DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
-					DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
-				},
-			},
-		},
-	})
 	a.NoError(err)
 
 	reviewPolicy, err := prodTemplateSQLReviewPolicyForMySQL()

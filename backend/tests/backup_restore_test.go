@@ -130,18 +130,6 @@ func TestPITRGeneral(t *testing.T) {
 	ctl := &controller{}
 	ctx, project, mysqlDB, _, database, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
-	_, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: "environments/prod",
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
-			Policy: &v1pb.Policy_DeploymentApprovalPolicy{
-				DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
-					DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
-				},
-			},
-		},
-	})
-	a.NoError(err)
 
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
@@ -150,7 +138,7 @@ func TestPITRGeneral(t *testing.T) {
 
 	dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
 	slog.Debug("mimics schema migration", slog.String("statement", dropColumnStmt))
-	_, err = mysqlDB.ExecContext(ctx, dropColumnStmt)
+	_, err := mysqlDB.ExecContext(ctx, dropColumnStmt)
 	a.NoError(err)
 
 	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
@@ -214,18 +202,6 @@ func TestPITRDropDatabase(t *testing.T) {
 	ctl := &controller{}
 	ctx, project, mysqlDB, _, database, databaseName, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
-	_, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: "environments/prod",
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
-			Policy: &v1pb.Policy_DeploymentApprovalPolicy{
-				DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
-					DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
-				},
-			},
-		},
-	})
-	a.NoError(err)
 
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
@@ -233,7 +209,7 @@ func TestPITRDropDatabase(t *testing.T) {
 	targetTs := time.Now()
 
 	dropStmt := fmt.Sprintf(`DROP DATABASE %s;`, databaseName)
-	_, err = mysqlDB.ExecContext(ctx, dropStmt)
+	_, err := mysqlDB.ExecContext(ctx, dropStmt)
 	a.NoError(err)
 
 	dbRows, err := mysqlDB.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, databaseName))
@@ -307,18 +283,6 @@ func TestPITRTwice(t *testing.T) {
 	ctl := &controller{}
 	ctx, project, mysqlDB, _, database, databaseName, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
-	_, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: "environments/prod",
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
-			Policy: &v1pb.Policy_DeploymentApprovalPolicy{
-				DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
-					DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
-				},
-			},
-		},
-	})
-	a.NoError(err)
 
 	slog.Debug("Creating issue for the first PITR.")
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
@@ -615,19 +579,6 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	a.NoError(err)
 
 	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-
-	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: prodEnvironment.Name,
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_BACKUP_PLAN,
-			Policy: &v1pb.Policy_BackupPlanPolicy{
-				BackupPlanPolicy: &v1pb.BackupPlanPolicy{
-					Schedule: v1pb.BackupPlanSchedule_UNSET,
-				},
-			},
-		},
-	})
 	a.NoError(err)
 
 	baseName := strings.ReplaceAll(t.Name(), "/", "_")

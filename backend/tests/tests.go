@@ -276,6 +276,22 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	if err := ctl.setLicense(); err != nil {
 		return nil, err
 	}
+	for _, environment := range []string{"test", "prod"} {
+		if _, err := ctl.orgPolicyServiceClient.CreatePolicy(metaCtx, &v1pb.CreatePolicyRequest{
+			Parent: fmt.Sprintf("environments/%s", environment),
+			Policy: &v1pb.Policy{
+				Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
+				Policy: &v1pb.Policy_DeploymentApprovalPolicy{
+					DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
+						DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
+					},
+				},
+			},
+		}); err != nil {
+			return nil, err
+		}
+	}
+
 	return metaCtx, nil
 }
 
