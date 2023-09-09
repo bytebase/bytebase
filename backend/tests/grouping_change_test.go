@@ -141,9 +141,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-
 			instanceResourceID2InstanceTitle := make(map[string]string)
 			for _, prepareInstance := range tc.prepareInstances {
 				instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), t.Name())
@@ -162,16 +159,16 @@ func TestCreateDatabaseGroup(t *testing.T) {
 				a.NoError(err)
 				instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
 				for preCreateDatabase := range prepareInstance.matchedDatabasesName {
-					err = ctl.createDatabaseV2(ctx, project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 				}
 				for preCreateDatabase := range prepareInstance.unmatchedDatabaseName {
-					err = ctl.createDatabaseV2(ctx, project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 				}
 			}
 			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
-				Parent:          project.Name,
+				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
 					DatabasePlaceholder: tc.databaseGroupPlaceholder,
@@ -386,9 +383,6 @@ func TestCreateTableGroup(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-
 			instanceResourceID2InstanceTitle := make(map[string]string)
 			for _, prepareInstance := range tc.prepareInstances {
 				instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), t.Name())
@@ -407,7 +401,7 @@ func TestCreateTableGroup(t *testing.T) {
 				a.NoError(err)
 				instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
 				for preCreateDatabase := range prepareInstance.matchDatabasesNameTableName {
-					err = ctl.createDatabaseV2(ctx, project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 					dbDriver, err := db.Open(ctx, db.SQLite, db.DriverConfig{}, db.ConnectionConfig{
 						Host:     instanceDir,
@@ -433,7 +427,7 @@ func TestCreateTableGroup(t *testing.T) {
 				}
 			}
 			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
-				Parent:          project.Name,
+				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
 					DatabasePlaceholder: tc.databaseGroupPlaceholder,
@@ -691,8 +685,6 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
 
 			instanceResourceID2InstanceTitle := make(map[string]string)
 			var stopInstances []func()
@@ -716,7 +708,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				instanceResourceID2InstanceTitle[prepareInstance.instanceID] = instance.Title
 
 				for preCreateDatabase := range prepareInstance.matchDatabasesNameTableName {
-					err = ctl.createDatabaseV2(ctx, project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 					dbDriver, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s", mysqlPort, preCreateDatabase))
 					a.NoError(err)
@@ -738,7 +730,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 					a.NoError(err)
 				}
 				for preCreateDatabase, preCreateTables := range prepareInstance.unmatchedDatabaseNameTableName {
-					err = ctl.createDatabaseV2(ctx, project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 					dbDriver, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s", mysqlPort, preCreateDatabase))
 					a.NoError(err)
@@ -764,7 +756,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			}()
 
 			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
-				Parent:          project.Name,
+				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
 					DatabasePlaceholder: tc.databaseGroupPlaceholder,
@@ -796,7 +788,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			}
 
 			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-				Parent: project.Name,
+				Parent: ctl.project.Name,
 				Sheet: &v1pb.Sheet{
 					Title:      "migration statement sheet",
 					Content:    []byte(tc.statement),
@@ -806,7 +798,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				},
 			})
 			a.NoError(err)
-			_, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+			_, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{

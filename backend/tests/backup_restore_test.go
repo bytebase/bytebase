@@ -571,9 +571,6 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	})
 	a.NoError(err)
 
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
 	baseName := strings.ReplaceAll(t.Name(), "/", "_")
 	databaseName := baseName + "_Database"
 
@@ -593,7 +590,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, project, instance, nil, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -620,7 +617,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	err = ctl.waitBackup(ctx, database.Name, backup.Name)
 	a.NoError(err)
 
-	return ctx, project, mysqlDB, instance, database, databaseName, backup, mysqlPort, func() {
+	return ctx, ctl.project, mysqlDB, instance, database, databaseName, backup, mysqlPort, func() {
 		a.NoError(ctl.Close(ctx))
 		stopInstance()
 		a.NoError(mysqlDB.Close())

@@ -74,10 +74,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
 	// Provision an instance.
 	instanceRootDir := t.TempDir()
 	instanceName := "testInstance1"
@@ -98,7 +94,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -107,7 +103,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:      "migration statement sheet",
 			Content:    []byte(migrationStatement),
@@ -119,7 +115,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
 	// Query schema.
@@ -128,7 +124,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(wantBookSchema, dbMetadata.Schema)
 
 	sheet, err = ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:      "dataUpdateStatement",
 			Content:    []byte(dataUpdateStatement),
@@ -140,7 +136,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that updates database data.
-	err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_DATA)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_DATA)
 	a.NoError(err)
 
 	// Get migration history.
@@ -193,7 +189,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	cloneDatabaseName := "testClone"
-	err = ctl.createDatabaseFromBackup(ctx, project, instance, cloneDatabaseName, "" /* owner */, nil /* labels */, backup)
+	err = ctl.createDatabaseFromBackup(ctx, ctl.project, instance, cloneDatabaseName, "" /* owner */, nil /* labels */, backup)
 	a.NoError(err)
 	cloneDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, cloneDatabaseName)})
 	a.NoError(err)
@@ -412,10 +408,7 @@ func TestVCS(t *testing.T) {
 			})
 			a.NoError(err)
 
-			// Create a project.
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
+			projectUID, err := strconv.Atoi(ctl.project.Uid)
 			a.NoError(err)
 
 			// Create a repository.
@@ -427,7 +420,7 @@ func TestVCS(t *testing.T) {
 
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
-					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
 					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -463,7 +456,7 @@ func TestVCS(t *testing.T) {
 
 			// Create an issue that creates a database.
 			databaseName := "testVCSSchemaUpdate"
-			err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -505,7 +498,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
@@ -514,7 +507,7 @@ func TestVCS(t *testing.T) {
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Alter schema: 😊create table book", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
-			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Query schema.
@@ -540,7 +533,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.Error(err)
 
 			// Simulate Git commits for a correct modified date update.
@@ -563,7 +556,7 @@ func TestVCS(t *testing.T) {
 
 			// TODO(d): waiting for approval finding to complete.
 			time.Sleep(2 * time.Second)
-			rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{Name: fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID)})
+			rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{Name: fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID)})
 			a.NoError(err)
 			a.Len(rollout.Stages, 1)
 			stage := rollout.Stages[0]
@@ -576,18 +569,18 @@ func TestVCS(t *testing.T) {
 			})
 			a.NoError(err)
 
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Change data: Insert data", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver4##data##insert_data.sql\n", issue.Description)
-			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-				Parent: project.Name,
+				Parent: ctl.project.Name,
 				Sheet: &v1pb.Sheet{
 					Title:      "migration statement 4 sheet",
 					Content:    []byte(migrationStatement4),
@@ -600,7 +593,7 @@ func TestVCS(t *testing.T) {
 
 			// Schema change from UI.
 			// Create an issue that updates database schema.
-			err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+			err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 			a.NoError(err)
 			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, "prod", databaseName)
 			files, err := ctl.vcsProvider.GetFiles(test.externalID, latestFileName)
@@ -799,10 +792,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			})
 			a.NoError(err)
 
-			// Create a project
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
+			projectUID, err := strconv.Atoi(ctl.project.Uid)
 			a.NoError(err)
 
 			// Create a repository
@@ -814,7 +804,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
-					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
 					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -844,7 +834,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database
-			err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "bytebase", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})
@@ -871,13 +861,13 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
 			a.Equal("Apply schema diff by file prod/.testVCSSchemaUpdate##LATEST.sql", issue.Description)
-			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
@@ -900,13 +890,13 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver2##data##insert_data.sql\n", issue.Description)
-			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Get migration history
@@ -1255,10 +1245,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			})
 			a.NoError(err)
 
-			// Create a project.
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
+			projectUID, err := strconv.Atoi(ctl.project.Uid)
 			a.NoError(err)
 
 			// Create a repository.
@@ -1270,7 +1257,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
-					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
 					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
 					Title:              "Test Repository",
 					FullPath:           repoFullPath,
@@ -1312,7 +1299,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database.
-			err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, dbName, "", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, dbName, "", nil /* labelMap */)
 			a.NoError(err)
 
 			a.Equal(len(test.expect), len(test.commitNewFileNames))
@@ -1340,9 +1327,9 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				if test.expect[idx] {
 					a.Len(issues, 1)
 					issue := issues[0]
-					err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+					err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
 					a.NoError(err)
-					err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
+					err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
 					a.NoError(err)
 				} else {
 					a.Len(issues, 0)
@@ -1495,10 +1482,6 @@ func TestVCS_SQL_Review(t *testing.T) {
 			})
 			a.NoError(err)
 
-			// Create a project.
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-
 			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 				InstanceId: generateRandomString("instance", 10),
 				Instance: &v1pb.Instance{
@@ -1512,7 +1495,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database.
-			err = ctl.createDatabaseV2(ctx, project, instance, nil, databaseName, "bytebase", nil)
+			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "bytebase", nil)
 			a.NoError(err)
 
 			// Create a repository.
@@ -1524,7 +1507,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 
 			gitOpsInfo, err := ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
-					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
 					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -1544,13 +1527,13 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.Equal(false, gitOpsInfo.EnableSqlReviewCi)
 
 			resp, err := ctl.projectServiceClient.SetupProjectSQLReviewCI(ctx, &v1pb.SetupSQLReviewCIRequest{
-				Name: fmt.Sprintf("%s/gitOpsInfo", project.Name),
+				Name: fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
 			})
 			a.NoError(err)
 			a.NotEmpty(resp.PullRequestUrl)
 
 			gitOpsInfo, err = ctl.projectServiceClient.GetProjectGitOpsInfo(ctx, &v1pb.GetProjectGitOpsInfoRequest{
-				Name: fmt.Sprintf("%s/gitOpsInfo", project.Name),
+				Name: fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
 			})
 			a.NoError(err)
 			a.Equal(true, gitOpsInfo.EnableSqlReviewCi)
@@ -1745,10 +1728,6 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			})
 			a.NoError(err)
 
-			// Create a project.
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-
 			for _, test := range vcsTest.caseList {
 				test := test
 				t.Run(test.name, func(t *testing.T) {
@@ -1764,7 +1743,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 					// Create a repository.
 					_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 						ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
-							Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+							Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
 							VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
 							Title:              "Test Repository",
 							FullPath:           vcsTest.repoFullPath,
@@ -1785,7 +1764,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 					} else {
 						a.NoError(err)
 						_, err = ctl.projectServiceClient.UnsetProjectGitOpsInfo(ctx, &v1pb.UnsetProjectGitOpsInfoRequest{
-							Name: fmt.Sprintf("%s/gitOpsInfo", project.Name),
+							Name: fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
 						})
 						a.NoError(err)
 					}
@@ -1995,8 +1974,6 @@ CREATE TABLE public.book (
 			default:
 				a.FailNow("unsupported db type")
 			}
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
 
 			// Add an instance.
 			var instance *v1pb.Instance
@@ -2028,7 +2005,7 @@ CREATE TABLE public.book (
 			}
 			a.NoError(err)
 
-			err = ctl.createDatabaseV2(ctx, project, instance, nil, test.databaseName, "root", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, test.databaseName, "root", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -2037,7 +2014,7 @@ CREATE TABLE public.book (
 			a.NoError(err)
 
 			ddlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-				Parent: project.Name,
+				Parent: ctl.project.Name,
 				Sheet: &v1pb.Sheet{
 					Title:      "test ddl",
 					Content:    []byte(test.ddl),
@@ -2049,7 +2026,7 @@ CREATE TABLE public.book (
 			a.NoError(err)
 
 			// Create an issue that updates database schema.
-			err = ctl.changeDatabase(ctx, project, database, ddlSheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+			err = ctl.changeDatabase(ctx, ctl.project, database, ddlSheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 			a.NoError(err)
 
 			latestSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
@@ -2088,10 +2065,6 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
 	// Provision an instance.
 	instanceRootDir := t.TempDir()
 	instanceName := "testInstance1"
@@ -2113,7 +2086,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabaseV2(ctx, project, instance, nil, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -2122,7 +2095,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a.NoError(err)
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:      "migration statement sheet",
 			Content:    []byte(migrationStatement),
@@ -2135,7 +2108,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Create an issue that updates database schema.
 	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Plan: &v1pb.Plan{
 			Steps: []*v1pb.Plan_Step{
 				{
@@ -2155,10 +2128,10 @@ func TestMarkTaskAsDone(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: ctl.project.Name, Plan: plan.Name})
 	a.NoError(err)
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Title:       fmt.Sprintf("change database %s", database.Name),
@@ -2408,7 +2381,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Name)
 			a.Equal(fmt.Sprintf("Apply schema diff by file prod/.%s##LATEST.sql", databaseName), issue.Description)
-			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, project, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
@@ -2437,7 +2410,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Change data: Insert data", databaseName), issue.Name)
 			a.Equal(fmt.Sprintf("By VCS files:\n\nprod/%s##ver2##data##insert_data.sql\n", databaseName), issue.Description)
-			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, project, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID))
 			a.NoError(err)
 
 			// Get migration history

@@ -9,14 +9,14 @@ import (
 	"github.com/pkg/errors"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (ctl *controller) closeIssue(ctx context.Context, projectName, issueName string) error {
-	if _, err := ctl.issueServiceClient.BatchUpdateIssuesStatus(ctx, &v1.BatchUpdateIssuesStatusRequest{
-		Parent: projectName,
+func (ctl *controller) closeIssue(ctx context.Context, project *v1pb.Project, issueName string) error {
+	if _, err := ctl.issueServiceClient.BatchUpdateIssuesStatus(ctx, &v1pb.BatchUpdateIssuesStatusRequest{
+		Parent: project.Name,
 		Issues: []string{issueName},
-		Status: v1.IssueStatus_DONE,
+		Status: v1pb.IssueStatus_DONE,
 	}); err != nil {
 		return err
 	}

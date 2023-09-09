@@ -129,10 +129,6 @@ func TestSensitiveData(t *testing.T) {
 	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
 	a.NoError(err)
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
@@ -145,7 +141,7 @@ func TestSensitiveData(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -154,7 +150,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:      "createTable",
 			Content:    []byte(createTable),
@@ -166,7 +162,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
 	// Create sensitive data policy.
@@ -197,7 +193,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 
 	insertDataSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:      "insertData",
 			Content:    []byte(insertData),
@@ -209,7 +205,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 
 	// Insert data into table tech_book.
-	err = ctl.changeDatabase(ctx, project, database, insertDataSheet, v1pb.Plan_ChangeDatabaseConfig_DATA)
+	err = ctl.changeDatabase(ctx, ctl.project, database, insertDataSheet, v1pb.Plan_ChangeDatabaseConfig_DATA)
 	a.NoError(err)
 
 	// Query masked data.

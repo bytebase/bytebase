@@ -67,10 +67,6 @@ func TestSheetVCS(t *testing.T) {
 			})
 			a.NoError(err)
 
-			// Create a project.
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
 
@@ -80,7 +76,7 @@ func TestSheetVCS(t *testing.T) {
 
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
-					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
 					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -116,7 +112,7 @@ func TestSheetVCS(t *testing.T) {
 			sheetsBefore := resp.Sheets
 			a.NoError(err)
 
-			_, err = ctl.sheetServiceClient.SyncSheets(ctx, &v1pb.SyncSheetsRequest{Parent: project.Name})
+			_, err = ctl.sheetServiceClient.SyncSheets(ctx, &v1pb.SyncSheetsRequest{Parent: ctl.project.Name})
 			a.NoError(err)
 
 			resp, err = ctl.sheetServiceClient.SearchSheets(ctx, &v1pb.SearchSheetsRequest{
