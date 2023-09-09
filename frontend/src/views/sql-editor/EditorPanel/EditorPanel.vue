@@ -1,13 +1,13 @@
 <template>
   <div class="flex h-full w-full flex-col justify-start items-start">
     <template v-if="tab.editMode === 'SQL-EDITOR'">
-      <EditorAction @execute="handleExecute" @save-sheet="trySaveSheet" />
+      <EditorAction @execute="handleExecute" />
 
       <ConnectionPathBar />
 
       <SheetForIssueTipsBar />
 
-      <SQLEditor @execute="handleExecute" @save-sheet="trySaveSheet" />
+      <SQLEditor @execute="handleExecute" />
     </template>
 
     <AIChatToSQL
@@ -18,12 +18,11 @@
 
     <ExecutingHintModal />
 
-    <SaveSheetModal ref="saveSheetModal" />
+    <SaveSheetModal />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
 import {
@@ -45,7 +44,6 @@ import SQLEditor from "./SQLEditor.vue";
 import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
 
 const tabStore = useTabStore();
-const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
 const tab = useCurrentTab();
 const sqlEditorStore = useSQLEditorStore();
 const { showAIChatBox } = useSQLEditorContext();
@@ -60,9 +58,9 @@ const handleExecute = (
   executeReadonly(query, config, option);
 };
 
-const trySaveSheet = (sheetName?: string) => {
-  saveSheetModal.value?.trySaveSheet(sheetName);
-};
+// const trySaveSheet = (sheetName?: string) => {
+//   saveSheetModal.value?.trySaveSheet(sheetName);
+// };
 
 const handleApplyStatement = async (
   statement: string,

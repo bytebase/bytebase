@@ -8,7 +8,7 @@ import {
 } from "@/types/proto/v1/database_service";
 
 type SQLEditorEvents = Emittery<{
-  // nothing by now
+  "save-sheet": { title: string };
 }>;
 
 export type SQLEditorContext = {
