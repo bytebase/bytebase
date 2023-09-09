@@ -102,6 +102,7 @@
 import { ColumnDef, Table } from "@tanstack/vue-table";
 import { computed, nextTick, PropType, ref, watch } from "vue";
 import { useSubscriptionV1Store } from "@/store";
+import { useSQLResultViewContext } from "../context";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
@@ -132,10 +133,6 @@ const props = defineProps({
     type: Object as PropType<Table<string[]>>,
     required: true,
   },
-  keyword: {
-    type: String,
-    default: "",
-  },
   setIndex: {
     type: Number,
     default: 0,
@@ -158,6 +155,7 @@ const tableResize = useTableColumnWidthLogic({
 });
 
 const data = computed(() => props.data);
+const { keyword } = useSQLResultViewContext();
 
 const hasSensitiveFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.sensitive-data");
