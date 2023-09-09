@@ -104,7 +104,7 @@ const connectionTreeCache: Record<"instance" | "project", ConnectionAtom[]> = {
 
 const initializeConnectionTree = async () => {
   const build = (mode: ConnectionTreeMode): ConnectionAtom[] => {
-    if (mode) {
+    if (mode === ConnectionTreeMode.INSTANCE) {
       const { databaseList } = connectionTreeStore.tree;
       const instanceList = uniqBy(
         databaseList.map((db) => db.instanceEntity),
