@@ -33,9 +33,9 @@ func TestSubscription(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	err = ctl.removeLicense()
+	err = ctl.removeLicense(ctx)
 	a.NoError(err)
-	subscription, err := ctl.getSubscription()
+	subscription, err := ctl.getSubscription(ctx)
 	a.NoError(err)
 	a.Equal(v1pb.PlanType_FREE, subscription.Plan)
 
@@ -51,14 +51,14 @@ func TestSubscription(t *testing.T) {
 	}
 
 	for _, trial := range trialList {
-		err = ctl.trialPlan(&v1pb.TrialSubscription{
+		err = ctl.trialPlan(ctx, &v1pb.TrialSubscription{
 			InstanceCount: trial.instanceCount,
 			Plan:          trial.plan,
 			Days:          trial.days,
 		})
 		a.NoError(err)
 
-		subscription, err = ctl.getSubscription()
+		subscription, err = ctl.getSubscription(ctx)
 		a.NoError(err)
 		a.Equal(trial.expectPlan, subscription.Plan)
 		a.Equal(trial.expectInstanceCount, subscription.InstanceCount)
