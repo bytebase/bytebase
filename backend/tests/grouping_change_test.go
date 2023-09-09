@@ -691,9 +691,6 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			project, err := ctl.createProject(ctx)
 			a.NoError(err)
 
