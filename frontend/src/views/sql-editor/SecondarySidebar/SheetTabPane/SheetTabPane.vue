@@ -4,7 +4,7 @@
     size="small"
     class="bb-sql-editor--sheet-tab-pane--tabs h-full pt-1.5 px-1"
     pane-style="height: calc(100% - 29px); padding: 0;"
-    :tabs-padding="4"
+    justify-content="space-between"
   >
     <NTabPane name="my" :tab="$t('sheet.mine')">
       <SheetList view="my" />
@@ -39,6 +39,10 @@ useEmitteryEventListener(sheetEvents, "add-sheet", () => {
   .n-tabs-nav-scroll-wrapper--shadow-start::before,
 .bb-sql-editor--sheet-tab-pane--tabs
   .n-tabs-nav-scroll-wrapper--shadow-end::after {
-  display: none;
+  @apply hidden;
+}
+
+.bb-sql-editor--sheet-tab-pane--tabs .n-tabs-wrapper {
+  @apply px-1;
 }
 </style>
