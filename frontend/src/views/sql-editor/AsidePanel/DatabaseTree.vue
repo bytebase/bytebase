@@ -484,12 +484,15 @@ watch(
 );
 </script>
 
-<style postcss>
+<style lang="postcss">
 .databases-tree .n-tree-node-content {
   @apply !pl-0 text-sm;
 }
 .databases-tree .n-tree-node-wrapper {
   padding: 0;
+}
+.databases-tree .n-tree-node-indent {
+  width: 0.25rem;
 }
 .databases-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;
