@@ -157,22 +157,23 @@ CREATE TABLE book4 (
 )
 
 type controller struct {
-	server                   *server.Server
-	profile                  componentConfig.Profile
-	client                   *http.Client
-	grpcConn                 *grpc.ClientConn
-	issueServiceClient       v1pb.IssueServiceClient
-	rolloutServiceClient     v1pb.RolloutServiceClient
-	orgPolicyServiceClient   v1pb.OrgPolicyServiceClient
-	projectServiceClient     v1pb.ProjectServiceClient
-	authServiceClient        v1pb.AuthServiceClient
-	settingServiceClient     v1pb.SettingServiceClient
-	environmentServiceClient v1pb.EnvironmentServiceClient
-	instanceServiceClient    v1pb.InstanceServiceClient
-	databaseServiceClient    v1pb.DatabaseServiceClient
-	sheetServiceClient       v1pb.SheetServiceClient
-	evcsClient               v1pb.ExternalVersionControlServiceClient
-	sqlServiceClient         v1pb.SQLServiceClient
+	server                    *server.Server
+	profile                   componentConfig.Profile
+	client                    *http.Client
+	grpcConn                  *grpc.ClientConn
+	issueServiceClient        v1pb.IssueServiceClient
+	rolloutServiceClient      v1pb.RolloutServiceClient
+	orgPolicyServiceClient    v1pb.OrgPolicyServiceClient
+	projectServiceClient      v1pb.ProjectServiceClient
+	authServiceClient         v1pb.AuthServiceClient
+	settingServiceClient      v1pb.SettingServiceClient
+	environmentServiceClient  v1pb.EnvironmentServiceClient
+	instanceServiceClient     v1pb.InstanceServiceClient
+	databaseServiceClient     v1pb.DatabaseServiceClient
+	sheetServiceClient        v1pb.SheetServiceClient
+	evcsClient                v1pb.ExternalVersionControlServiceClient
+	sqlServiceClient          v1pb.SQLServiceClient
+	subscriptionServiceClient v1pb.SubscriptionServiceClient
 
 	cookie            string
 	grpcMDAccessToken string
@@ -273,7 +274,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	if err := ctl.initWorkspaceProfile(metaCtx); err != nil {
 		return nil, err
 	}
-	if err := ctl.setLicense(); err != nil {
+	if err := ctl.setLicense(metaCtx); err != nil {
 		return nil, err
 	}
 	for _, environment := range []string{"test", "prod"} {
@@ -463,6 +464,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
 	ctl.evcsClient = v1pb.NewExternalVersionControlServiceClient(ctl.grpcConn)
 	ctl.sqlServiceClient = v1pb.NewSQLServiceClient(ctl.grpcConn)
+	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
@@ -614,27 +616,11 @@ func (ctl *controller) getOpenAPI(shortURL string, params map[string]string) (io
 	})
 }
 
-// postOpenAPI sends a openAPI POST request.
-func (ctl *controller) postOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
-	return ctl.request("POST", url, body, nil, map[string]string{
-		"Authorization": fmt.Sprintf("Bearer %s", strings.ReplaceAll(ctl.cookie, "access-token=", "")),
-	})
-}
-
 // post sends a POST client request.
 func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
 	return ctl.request("POST", url, body, nil, map[string]string{
 		"Cookie": ctl.cookie,
-	})
-}
-
-// patchOpenAPI sends a openAPI PATCH client request.
-func (ctl *controller) patchOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
-	return ctl.request("PATCH", url, body, nil, map[string]string{
-		"Authorization": fmt.Sprintf("Bearer %s", strings.ReplaceAll(ctl.cookie, "access-token=", "")),
 	})
 }
 
