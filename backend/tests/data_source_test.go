@@ -58,6 +58,9 @@ func TestDataSource(t *testing.T) {
 		},
 	})
 	a.ErrorContains(err, "Read replica connection is a ENTERPRISE feature")
+
+	err = ctl.setLicense()
+	a.NoError(err)
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
@@ -91,6 +94,8 @@ func TestDataSource(t *testing.T) {
 	})
 	a.ErrorContains(err, "Read replica connection is a ENTERPRISE feature")
 
+	err = ctl.setLicense()
+	a.NoError(err)
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
