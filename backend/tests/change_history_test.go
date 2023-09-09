@@ -89,10 +89,6 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
 	a.NoError(err)
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
@@ -106,7 +102,7 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that creates a database.
-	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "bytebase", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -116,7 +112,7 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 
 	for i, stmt := range statements {
 		sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-			Parent: project.Name,
+			Parent: ctl.project.Name,
 			Sheet: &v1pb.Sheet{
 				Title:      fmt.Sprintf("migration statement sheet %d", i+1),
 				Content:    []byte(stmt),
@@ -128,7 +124,7 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 		a.NoError(err)
 
 		// Create an issue that updates database schema.
-		err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 		a.NoError(err)
 	}
 

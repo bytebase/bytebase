@@ -102,9 +102,6 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
 	a.NoError(err)
 
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
@@ -117,7 +114,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -126,7 +123,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 
 	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:      "migration statement sheet 1",
 			Content:    []byte(mysqlMigrationStatement),
@@ -137,7 +134,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.changeDatabase(ctx, project, database, sheet1, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet1, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
 	dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
@@ -145,7 +142,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.Equal(wantDBSchema1, dbMetadata.Schema)
 
 	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:      "migration statement sheet 2",
 			Content:    []byte(mysqlGhostMigrationStatement),
@@ -156,7 +153,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.changeDatabase(ctx, project, database, sheet2, v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet2, v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST)
 	a.NoError(err)
 	dbMetadata, err = ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 	a.NoError(err)
@@ -178,10 +175,6 @@ func TestGhostTenant(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
 
 	// Provision instances.
 	var testInstances []*v1pb.Instance
@@ -224,7 +217,7 @@ func TestGhostTenant(t *testing.T) {
 	// Create deployment configuration.
 	_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
 		Config: &v1pb.DeploymentConfig{
-			Name:     common.FormatDeploymentConfig(project.Name),
+			Name:     common.FormatDeploymentConfig(ctl.project.Name),
 			Schedule: deploySchedule,
 		},
 	})
@@ -232,18 +225,18 @@ func TestGhostTenant(t *testing.T) {
 
 	// Create issues that create databases.
 	for i, testInstance := range testInstances {
-		err := ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabaseV2(ctx, ctl.project, testInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
-		err := ctl.createDatabaseV2(ctx, project, prodInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabaseV2(ctx, ctl.project, prodInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 
 	// Getting databases for each environment.
 	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
 		Parent: "instances/-",
-		Filter: fmt.Sprintf(`project == "%s"`, project.Name),
+		Filter: fmt.Sprintf(`project == "%s"`, ctl.project.Name),
 	})
 	a.NoError(err)
 	databases := resp.Databases
@@ -270,7 +263,7 @@ func TestGhostTenant(t *testing.T) {
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
 	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:      "migration statement sheet 1",
 			Content:    []byte(mysqlMigrationStatement),
@@ -304,7 +297,7 @@ func TestGhostTenant(t *testing.T) {
 			},
 		})
 	}
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{testStep, prodStep})
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{testStep, prodStep})
 	a.NoError(err)
 
 	// Query schema.
@@ -320,7 +313,7 @@ func TestGhostTenant(t *testing.T) {
 	}
 
 	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:      "migration statement sheet 2",
 			Content:    []byte(mysqlGhostMigrationStatement),
@@ -355,7 +348,7 @@ func TestGhostTenant(t *testing.T) {
 			},
 		})
 	}
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{testStep, prodStep})
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{testStep, prodStep})
 	a.NoError(err)
 
 	// Query schema.

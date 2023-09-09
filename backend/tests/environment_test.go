@@ -27,10 +27,6 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
 	instanceRootDir := t.TempDir()
 	instanceName := "testInstance1"
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
@@ -54,7 +50,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.NoError(err)
 
 	db0Name := "db0"
-	err = ctl.createDatabaseV2(ctx, project, instance, testEnvironment /* environment */, db0Name, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, testEnvironment /* environment */, db0Name, "", nil /* labelMap */)
 	a.NoError(err)
 	db0, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, db0Name),
@@ -63,7 +59,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.Equal(testEnvironment.Name, db0.Environment)
 	a.Equal(testEnvironment.Name, db0.EffectiveEnvironment)
 	db1Name := "db1"
-	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, db1Name, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, db1Name, "", nil /* labelMap */)
 	a.NoError(err)
 	db1, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, db1Name),
@@ -73,7 +69,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.Equal(prodEnvironment.Name, db1.EffectiveEnvironment)
 
 	db2Name := "db2"
-	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, db2Name, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, db2Name, "", nil /* labelMap */)
 	a.NoError(err)
 	db2, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, db2Name),
