@@ -507,7 +507,7 @@ func TestVCS(t *testing.T) {
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Alter schema: 😊create table book", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
-			err = ctl.closeIssue(ctx, ctl.project.Name, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Query schema.
@@ -576,7 +576,7 @@ func TestVCS(t *testing.T) {
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Change data: Insert data", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver4##data##insert_data.sql\n", issue.Description)
-			err = ctl.closeIssue(ctx, ctl.project.Name, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
@@ -867,7 +867,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
 			a.Equal("Apply schema diff by file prod/.testVCSSchemaUpdate##LATEST.sql", issue.Description)
-			err = ctl.closeIssue(ctx, ctl.project.Name, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
@@ -896,7 +896,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver2##data##insert_data.sql\n", issue.Description)
-			err = ctl.closeIssue(ctx, ctl.project.Name, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Get migration history
@@ -1329,7 +1329,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					issue := issues[0]
 					err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
 					a.NoError(err)
-					err = ctl.closeIssue(ctx, ctl.project.Name, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
+					err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
 					a.NoError(err)
 				} else {
 					a.Len(issues, 0)
@@ -2381,7 +2381,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Name)
 			a.Equal(fmt.Sprintf("Apply schema diff by file prod/.%s##LATEST.sql", databaseName), issue.Description)
-			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, project, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
@@ -2410,7 +2410,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 			a.Equal(fmt.Sprintf("[%s] Change data: Insert data", databaseName), issue.Name)
 			a.Equal(fmt.Sprintf("By VCS files:\n\nprod/%s##ver2##data##insert_data.sql\n", databaseName), issue.Description)
-			err = ctl.closeIssue(ctx, project.Name, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, project, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID))
 			a.NoError(err)
 
 			// Get migration history
