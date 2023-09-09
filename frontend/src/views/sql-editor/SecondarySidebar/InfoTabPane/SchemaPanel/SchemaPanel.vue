@@ -79,7 +79,13 @@ const { database } = useDatabaseV1ByUID(computed(() => conn.value.databaseId));
 const databaseMetadata = ref<DatabaseMetadata>();
 
 const handleSelectTable = (schema: SchemaMetadata, table: TableMetadata) => {
-  selected.value = { schema, table };
+  if (!databaseMetadata.value) return;
+  selected.value = {
+    db: database.value,
+    database: databaseMetadata.value,
+    schema,
+    table,
+  };
 };
 
 watch(

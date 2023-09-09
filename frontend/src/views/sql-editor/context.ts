@@ -1,6 +1,8 @@
 import Emittery from "emittery";
 import { InjectionKey, inject, provide, Ref, ref } from "vue";
+import { ComposedDatabase } from "@/types";
 import {
+  DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -12,7 +14,13 @@ type SQLEditorEvents = Emittery<{
 export type SQLEditorContext = {
   showAIChatBox: Ref<boolean>;
   selectedDatabaseSchema: Ref<
-    { schema: SchemaMetadata; table: TableMetadata } | undefined
+    | {
+        db: ComposedDatabase;
+        database: DatabaseMetadata;
+        schema: SchemaMetadata;
+        table: TableMetadata;
+      }
+    | undefined
   >;
 
   events: SQLEditorEvents;

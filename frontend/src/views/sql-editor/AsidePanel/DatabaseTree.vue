@@ -183,10 +183,24 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
 // Highlight the current tab's connection node.
 const selectedKeys = computed(() => {
   const { instanceId, databaseId } = tabStore.currentTab.connection;
+
   if (databaseId !== String(UNKNOWN_ID)) {
+    if (selectedDatabaseSchema.value) {
+      const { db, schema, table } = selectedDatabaseSchema.value;
+      if (schema.name) {
+        return [
+          `table-${[db.uid, schema.name, table.name].join(
+            CONNECTION_TREE_DELIMITER
+          )}`,
+        ];
+      } else {
+        return [
+          `table-${[db.uid, table.name].join(CONNECTION_TREE_DELIMITER)}`,
+        ];
+      }
+    }
     return [`database-${databaseId}`];
-  }
-  if (instanceId !== String(UNKNOWN_ID)) {
+  } else if (instanceId !== String(UNKNOWN_ID)) {
     return [`instance-${instanceId}`];
   }
   return [];
@@ -363,6 +377,8 @@ const maybeSelectTable = async (atom: ConnectionAtom) => {
     return;
   }
   selectedDatabaseSchema.value = {
+    db: database,
+    database: databaseMetadata,
     schema: schemaMetadata,
     table: tableMetadata,
   };
