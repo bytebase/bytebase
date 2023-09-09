@@ -89,13 +89,8 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
 	a.NoError(err)
 
-	err = ctl.setLicense()
-	a.NoError(err)
 	// Create a project.
 	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -103,7 +98,7 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "testFilterChangeHistoryInstance1",
 			Engine:      v1pb.Engine_POSTGRES,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 		},

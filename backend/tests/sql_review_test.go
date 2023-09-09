@@ -115,37 +115,10 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	project, err := ctl.createProject(ctx)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: prodEnvironment.Name,
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
-			Policy: &v1pb.Policy_DeploymentApprovalPolicy{
-				DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
-					DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
-				},
-			},
-		},
-	})
-	a.NoError(err)
-
 	reviewPolicy, err := prodTemplateSQLReviewPolicyForPostgreSQL()
 	a.NoError(err)
-
-	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: prodEnvironment.Name,
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_SQL_REVIEW,
-			Policy: &v1pb.Policy_SqlReviewPolicy{
-				SqlReviewPolicy: reviewPolicy,
-			},
-		},
-	})
-	a.NoError(err)
-
 	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: prodEnvironment.Name,
+		Parent: "environments/prod",
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_SQL_REVIEW,
 			Policy: &v1pb.Policy_SqlReviewPolicy{
@@ -161,7 +134,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "pgInstance",
 			Engine:      v1pb.Engine_POSTGRES,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 		},
@@ -207,7 +180,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	// delete the SQL review policy
 	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
-		Name: fmt.Sprintf("%s/policies/%s", prodEnvironment.Name, v1pb.PolicyType_SQL_REVIEW),
+		Name: policy.Name,
 	})
 	a.NoError(err)
 
@@ -312,37 +285,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	project, err := ctl.createProject(ctx)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: prodEnvironment.Name,
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
-			Policy: &v1pb.Policy_DeploymentApprovalPolicy{
-				DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
-					DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
-				},
-			},
-		},
-	})
-	a.NoError(err)
-
 	reviewPolicy, err := prodTemplateSQLReviewPolicyForMySQL()
 	a.NoError(err)
 
-	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: prodEnvironment.Name,
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_SQL_REVIEW,
-			Policy: &v1pb.Policy_SqlReviewPolicy{
-				SqlReviewPolicy: reviewPolicy,
-			},
-		},
-	})
-	a.NoError(err)
-
 	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: prodEnvironment.Name,
+		Parent: "environments/prod",
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_SQL_REVIEW,
 			Policy: &v1pb.Policy_SqlReviewPolicy{
@@ -358,7 +305,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
 		},
@@ -439,7 +386,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	// delete the SQL review policy
 	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
-		Name: fmt.Sprintf("%s/policies/%s", prodEnvironment.Name, v1pb.PolicyType_SQL_REVIEW),
+		Name: policy.Name,
 	})
 	a.NoError(err)
 

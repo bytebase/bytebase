@@ -41,8 +41,6 @@ func TestTenant(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.setLicense()
-	a.NoError(err)
 
 	// Create a project.
 	projectID := generateRandomString("project", 10)
@@ -72,10 +70,6 @@ func TestTenant(t *testing.T) {
 		a.NoError(err)
 		prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 	}
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-	testEnvironment, err := ctl.getEnvironment(ctx, "test")
-	a.NoError(err)
 
 	// Add the provisioned instances.
 	var testInstances []*v1pb.Instance
@@ -86,7 +80,7 @@ func TestTenant(t *testing.T) {
 			Instance: &v1pb.Instance{
 				Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 				Engine:      v1pb.Engine_SQLITE,
-				Environment: testEnvironment.Name,
+				Environment: "environments/test",
 				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 			},
@@ -100,7 +94,7 @@ func TestTenant(t *testing.T) {
 			Instance: &v1pb.Instance{
 				Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
 				Engine:      v1pb.Engine_SQLITE,
-				Environment: prodEnvironment.Name,
+				Environment: "environments/prod",
 				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 			},
@@ -300,9 +294,6 @@ func TestTenantVCS(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
 				ExternalVersionControl: &v1pb.ExternalVersionControl{
@@ -372,10 +363,6 @@ func TestTenantVCS(t *testing.T) {
 				a.NoError(err)
 				prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 			}
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-			testEnvironment, err := ctl.getEnvironment(ctx, "test")
-			a.NoError(err)
 
 			// Add the provisioned instances.
 			var testInstances []*v1pb.Instance
@@ -386,7 +373,7 @@ func TestTenantVCS(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: testEnvironment.Name,
+						Environment: "environments/test",
 						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 					},
@@ -400,7 +387,7 @@ func TestTenantVCS(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 					},
@@ -505,11 +492,8 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
-
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.setLicense()
-	a.NoError(err)
 
 	// Create a project.
 	projectID := generateRandomString("project", 10)
@@ -532,18 +516,13 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	prodInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, prodInstanceName)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-	testEnvironment, err := ctl.getEnvironment(ctx, "test")
-	a.NoError(err)
-
 	// Add the provisioned instances.
 	testInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       testInstanceName,
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: testEnvironment.Name,
+			Environment: "environments/test",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 		},
@@ -555,7 +534,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       testInstanceName,
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 		},
@@ -757,9 +736,6 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
 				ExternalVersionControl: &v1pb.ExternalVersionControl{
@@ -830,10 +806,6 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				a.NoError(err)
 				prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 			}
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-			testEnvironment, err := ctl.getEnvironment(ctx, "test")
-			a.NoError(err)
 
 			// Add the provisioned instances.
 			var testInstances []*v1pb.Instance
@@ -844,7 +816,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: testEnvironment.Name,
+						Environment: "environments/test",
 						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 					},
@@ -858,7 +830,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 					},
@@ -1058,9 +1030,6 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-
-			err = ctl.setLicense()
-			a.NoError(err)
 
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
@@ -1323,9 +1292,6 @@ func TestTenantVCS_YAML(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-
-			err = ctl.setLicense()
-			a.NoError(err)
 
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
