@@ -84,15 +84,12 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       instanceName,
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 		},
@@ -401,8 +398,6 @@ func TestVCS(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			err = ctl.setLicense()
-			a.NoError(err)
 
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
@@ -454,15 +449,12 @@ func TestVCS(t *testing.T) {
 			instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), instanceName)
 			a.NoError(err)
 
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
 			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 				InstanceId: generateRandomString("instance", 10),
 				Instance: &v1pb.Instance{
 					Title:       instanceName,
 					Engine:      v1pb.Engine_SQLITE,
-					Environment: prodEnvironment.Name,
+					Environment: "environments/prod",
 					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 				},
@@ -610,8 +602,7 @@ func TestVCS(t *testing.T) {
 			// Create an issue that updates database schema.
 			err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 			a.NoError(err)
-			environmentResourceID := strings.TrimPrefix(prodEnvironment.Name, "environments/")
-			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, environmentResourceID, databaseName)
+			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, "prod", databaseName)
 			files, err := ctl.vcsProvider.GetFiles(test.externalID, latestFileName)
 			a.NoError(err)
 			a.Len(files, 1)
@@ -840,15 +831,12 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			})
 			a.NoError(err)
 
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
 			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 				InstanceId: generateRandomString("instance", 10),
 				Instance: &v1pb.Instance{
 					Title:       "pgInstance",
 					Engine:      v1pb.Engine_POSTGRES,
-					Environment: prodEnvironment.Name,
+					Environment: "environments/prod",
 					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 				},
@@ -1254,10 +1242,6 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
 				ExternalVersionControl: &v1pb.ExternalVersionControl{
@@ -1476,10 +1460,6 @@ func TestVCS_SQL_Review(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
 			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
@@ -1519,15 +1499,12 @@ func TestVCS_SQL_Review(t *testing.T) {
 			project, err := ctl.createProject(ctx)
 			a.NoError(err)
 
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
 			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 				InstanceId: generateRandomString("instance", 10),
 				Instance: &v1pb.Instance{
 					Title:       "pgInstance",
 					Engine:      v1pb.Engine_POSTGRES,
-					Environment: prodEnvironment.Name,
+					Environment: "environments/prod",
 					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 				},
@@ -1615,7 +1592,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-				Parent: prodEnvironment.Name,
+				Parent: "environments/prod",
 				Policy: &v1pb.Policy{
 					Type: v1pb.PolicyType_SQL_REVIEW,
 					Policy: &v1pb.Policy_SqlReviewPolicy{
@@ -1997,8 +1974,6 @@ CREATE TABLE public.book (
 	defer func() {
 		_ = ctl.Close(ctx)
 	}()
-	err = ctl.setLicense()
-	a.NoError(err)
 	environmentName := t.Name()
 	environment, err := ctl.environmentServiceClient.CreateEnvironment(ctx,
 		&v1pb.CreateEnvironmentRequest{
@@ -2123,16 +2098,13 @@ func TestMarkTaskAsDone(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-
 	// Add an instance.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       instanceName,
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 		},
@@ -2389,16 +2361,13 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			})
 			a.NoError(err)
 
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
 			// Add an instance
 			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 				InstanceId: generateRandomString("instance", 10),
 				Instance: &v1pb.Instance{
 					Title:       "mysqlInstance",
 					Engine:      v1pb.Engine_MYSQL,
-					Environment: prodEnvironment.Name,
+					Environment: "environments/prod",
 					Activation:  true,
 					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
 				},

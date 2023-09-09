@@ -430,14 +430,12 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	defer dstStopFn()
 	dstConnCfg := getMySQLConnectionConfig(strconv.Itoa(dstPort), "")
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
 	dstInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: "destinationinstance",
 		Instance: &v1pb.Instance{
 			Title:       "DestinationInstance",
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: dstConnCfg.Host, Port: dstConnCfg.Port, Username: dstConnCfg.Username}},
 		},
@@ -572,13 +570,8 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
-	err = ctl.setLicense()
-	a.NoError(err)
 
 	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	baseName := strings.ReplaceAll(t.Name(), "/", "_")
@@ -593,7 +586,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 		Instance: &v1pb.Instance{
 			Title:       baseName + "_Instance",
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},

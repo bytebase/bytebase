@@ -140,11 +140,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			err = ctl.setLicense()
-			a.NoError(err)
-
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
 
 			project, err := ctl.createProject(ctx)
 			a.NoError(err)
@@ -159,7 +154,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       prepareInstance.instanceTitle,
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 						Activation:  true,
 					},
@@ -390,11 +385,6 @@ func TestCreateTableGroup(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			err = ctl.setLicense()
-			a.NoError(err)
-
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
 
 			project, err := ctl.createProject(ctx)
 			a.NoError(err)
@@ -409,7 +399,7 @@ func TestCreateTableGroup(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       prepareInstance.instanceTitle,
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 						Activation:  true,
 					},
@@ -704,9 +694,6 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			err = ctl.setLicense()
 			a.NoError(err)
 
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
 			project, err := ctl.createProject(ctx)
 			a.NoError(err)
 
@@ -723,7 +710,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 					Instance: &v1pb.Instance{
 						Title:       prepareInstance.instanceID,
 						Engine:      v1pb.Engine_MYSQL,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "root", Password: ""}},
 						Activation:  true,
 					},
