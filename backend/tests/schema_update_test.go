@@ -17,7 +17,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -407,13 +406,8 @@ func TestVCS(t *testing.T) {
 				},
 			})
 			a.NoError(err)
-
-			projectUID, err := strconv.Atoi(ctl.project.Uid)
-			a.NoError(err)
-
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
-
 			// Create the branch
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
@@ -494,20 +488,13 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, ctl.project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
-			issue, err = ctl.getIssue(issue.ID)
-			a.NoError(err)
-			// TODO(p0ny): expose task DAG list and check the dependency.
-			a.Equal(3, len(issue.Pipeline.StageList[0].TaskList))
-			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
-			a.Equal("[testVCSSchemaUpdate] Alter schema: 😊create table book", issue.Name)
+			a.Equal("[testVCSSchemaUpdate] Alter schema: 😊create table book", issue.Title)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
-			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, issue.Name)
 			a.NoError(err)
 
 			// Query schema.
@@ -529,11 +516,9 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get data update issue.
-			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err = ctl.getLastOpenIssue(ctx, ctl.project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue = issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.Error(err)
 
 			// Simulate Git commits for a correct modified date update.
@@ -548,15 +533,9 @@ func TestVCS(t *testing.T) {
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
 
-			// Get data update issue.
-			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
-			a.NoError(err)
-			a.Len(issues, 1)
-			issue = issues[0]
-
 			// TODO(d): waiting for approval finding to complete.
 			time.Sleep(2 * time.Second)
-			rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{Name: fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID)})
+			rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{Name: issue.Rollout})
 			a.NoError(err)
 			a.Len(rollout.Stages, 1)
 			stage := rollout.Stages[0]
@@ -569,14 +548,11 @@ func TestVCS(t *testing.T) {
 			})
 			a.NoError(err)
 
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
-			issue, err = ctl.getIssue(issue.ID)
-			a.NoError(err)
-			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
-			a.Equal("[testVCSSchemaUpdate] Change data: Insert data", issue.Name)
+			a.Equal("[testVCSSchemaUpdate] Change data: Insert data", issue.Title)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver4##data##insert_data.sql\n", issue.Description)
-			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, issue.Name)
 			a.NoError(err)
 
 			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
@@ -1559,7 +1535,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			// trigger SQL review with empty policy.
-			res, err := postVCSSQLReview(ctl, gitOpsInfo, &api.VCSSQLReviewRequest{
+			res, err := ctl.postVCSSQLReview(ctx, gitOpsInfo, &api.VCSSQLReviewRequest{
 				RepositoryID:  gitOpsInfo.ExternalId,
 				PullRequestID: fmt.Sprintf("%d", prID),
 				WebURL:        gitOpsInfo.WebUrl,
@@ -1585,7 +1561,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			})
 			a.NoError(err)
 
-			reviewResult, err := postVCSSQLReview(ctl, gitOpsInfo, &api.VCSSQLReviewRequest{
+			reviewResult, err := ctl.postVCSSQLReview(ctx, gitOpsInfo, &api.VCSSQLReviewRequest{
 				RepositoryID:  gitOpsInfo.ExternalId,
 				PullRequestID: fmt.Sprintf("%d", prID),
 				WebURL:        gitOpsInfo.WebUrl,
@@ -1774,24 +1750,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 	}
 }
 
-func getWorkspaceID(ctl *controller) (string, error) {
-	body, err := ctl.getOpenAPI("/actuator/info", nil)
-	if err != nil {
-		return "", err
-	}
-	bs, err := io.ReadAll(body)
-	if err != nil {
-		return "", err
-	}
-	actuatorInfo := new(v1pb.ActuatorInfo)
-	if err = protojson.Unmarshal(bs, actuatorInfo); err != nil {
-		return "", errors.Wrap(err, "fail to unmarshal get actuator response")
-	}
-	return actuatorInfo.WorkspaceId, nil
-}
-
 // postVCSSQLReview will create the VCS SQL review and get the response.
-func postVCSSQLReview(ctl *controller, gitOpsInfo *v1pb.ProjectGitOpsInfo, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
+func (ctl *controller) postVCSSQLReview(ctx context.Context, gitOpsInfo *v1pb.ProjectGitOpsInfo, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
 	url := fmt.Sprintf("%s/hook/sql-review/%s", ctl.rootURL, gitOpsInfo.WebhookEndpointId)
 
 	payload, err := json.Marshal(request)
@@ -1803,7 +1763,7 @@ func postVCSSQLReview(ctl *controller, gitOpsInfo *v1pb.ProjectGitOpsInfo, reque
 		return nil, errors.Wrapf(err, "failed to create a new POST request to %q", url)
 	}
 
-	workspaceID, err := getWorkspaceID(ctl)
+	workspaceID, err := ctl.getWorkspaceID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -2305,8 +2265,6 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 				ProjectId: projectID,
 			})
 			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
 
 			// Create a repository
 			ctl.vcsProvider.CreateRepository(test.externalID)
@@ -2371,17 +2329,13 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
-			issue, err = ctl.getIssue(issue.ID)
-			a.NoError(err)
-			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Name)
+			a.Equal(fmt.Sprintf("[%s] Alter schema", databaseName), issue.Title)
 			a.Equal(fmt.Sprintf("Apply schema diff by file prod/.%s##LATEST.sql", databaseName), issue.Description)
-			err = ctl.closeIssue(ctx, project, fmt.Sprintf("%s/issues/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, project, issue.Name)
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
@@ -2400,17 +2354,13 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Get data update issue
-			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err = ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue = issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
-			issue, err = ctl.getIssue(issue.ID)
-			a.NoError(err)
-			a.Equal(fmt.Sprintf("[%s] Change data: Insert data", databaseName), issue.Name)
+			a.Equal(fmt.Sprintf("[%s] Change data: Insert data", databaseName), issue.Title)
 			a.Equal(fmt.Sprintf("By VCS files:\n\nprod/%s##ver2##data##insert_data.sql\n", databaseName), issue.Description)
-			err = ctl.closeIssue(ctx, project, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID))
+			err = ctl.closeIssue(ctx, project, issue.Name)
 			a.NoError(err)
 
 			// Get migration history
