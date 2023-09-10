@@ -174,6 +174,7 @@ import {
   createEmptyLocalSheet,
   notifyNotEditableLegacyIssue,
   patchLegacyIssueTasksStatement,
+  isDeploymentConfigChangeTaskV1,
 } from "@/components/IssueV1/logic";
 import MonacoEditor from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
@@ -367,10 +368,8 @@ const beginEdit = () => {
 
 const saveEdit = async () => {
   try {
-    // TODO
     await updateStatement(state.statement);
     resetTempEditState();
-    await new Promise((r) => setTimeout(r, 500));
   } finally {
     state.isEditing = false;
   }
@@ -382,10 +381,11 @@ const cancelEdit = () => {
 };
 
 const chooseUpdateStatementTarget = () => {
-  type Target = "TASK" | "STAGE" | "ALL";
+  type Target = "CANCELED" | "TASK" | "STAGE" | "ALL";
   const d = defer<{ target: Target; tasks: Task[] }>();
 
   const targets: Record<Target, Task[]> = {
+    CANCELED: [],
     TASK: [selectedTask.value],
     STAGE: (stageForTask(issue.value, selectedTask.value)?.tasks ?? []).filter(
       (task) => {
@@ -402,6 +402,30 @@ const chooseUpdateStatementTarget = () => {
       );
     }),
   };
+
+  if (isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value)) {
+    dialog.info({
+      title: t("issue.update-statement.self", { type: statementTitle.value }),
+      content: t(
+        "issue.update-statement.current-change-will-apply-to-all-tasks-in-batch-mode"
+      ),
+      type: "info",
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
+      showIcon: false,
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      onPositiveClick: () => {
+        d.resolve({ target: "ALL", tasks: targets.ALL });
+      },
+      onNegativeClick: () => {
+        d.resolve({ target: "CANCELED", tasks: [] });
+      },
+    });
+    return d.promise;
+  }
 
   if (targets.STAGE.length === 1 && targets.ALL.length === 1) {
     d.resolve({ target: "TASK", tasks: targets.TASK });
@@ -423,6 +447,13 @@ const chooseUpdateStatementTarget = () => {
         $d.destroy();
       };
 
+      const CANCEL = h(
+        NButton,
+        { size: "small", onClick: () => finish("CANCELED") },
+        {
+          default: () => t("common.cancel"),
+        }
+      );
       const TASK = h(
         NButton,
         { size: "small", onClick: () => finish("TASK") },
@@ -430,7 +461,7 @@ const chooseUpdateStatementTarget = () => {
           default: () => t("issue.update-statement.target.selected-task"),
         }
       );
-      const buttons = [TASK];
+      const buttons = [CANCEL, TASK];
       if (targets.STAGE.length > 1) {
         // More than one editable tasks in stage
         // Add "Selected stage" option
@@ -461,6 +492,9 @@ const chooseUpdateStatementTarget = () => {
         { class: "flex items-center justify-end gap-x-2" },
         buttons
       );
+    },
+    onClose() {
+      d.resolve({ target: "CANCELED", tasks: [] });
     },
   });
 
@@ -547,7 +581,12 @@ const updateStatement = async (statement: string) => {
   // Find the target editing task(s)
   // default to selectedTask
   // also ask whether to apply the change to all tasks in the stage.
-  const { tasks } = await chooseUpdateStatementTarget();
+  const { target, tasks } = await chooseUpdateStatementTarget();
+
+  if (target === "CANCELED" || tasks.length === 0) {
+    cancelEdit();
+    return;
+  }
 
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {

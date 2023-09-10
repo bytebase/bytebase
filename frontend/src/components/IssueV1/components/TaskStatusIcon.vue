@@ -11,7 +11,12 @@
     >
       <heroicons:exclamation-triangle class="w-7 h-7 text-warning" />
     </template>
-    <template v-else-if="status === Task_Status.NOT_STARTED">
+    <template
+      v-else-if="
+        status === Task_Status.NOT_STARTED ||
+        status === Task_Status.STATUS_UNSPECIFIED
+      "
+    >
       <heroicons-outline:user class="w-4 h-4" />
     </template>
     <template v-else-if="status === Task_Status.PENDING">
@@ -97,6 +102,7 @@ const classes = computed((): string => {
 
   switch (props.status) {
     case Task_Status.NOT_STARTED:
+    case Task_Status.STATUS_UNSPECIFIED:
       if (!isCreating.value && props.active) {
         return "bg-white border-2 border-info text-info";
       }
