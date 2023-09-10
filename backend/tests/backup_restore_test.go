@@ -163,7 +163,7 @@ func TestPITRGeneral(t *testing.T) {
 	a.NoError(err)
 	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
-	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -177,7 +177,7 @@ func TestPITRGeneral(t *testing.T) {
 	a.NoError(err)
 
 	// Restore stage.
-	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
+	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	cancelUpdateRow()
@@ -185,7 +185,7 @@ func TestPITRGeneral(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
+	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
@@ -245,7 +245,7 @@ func TestPITRDropDatabase(t *testing.T) {
 	a.NoError(err)
 	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
-	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -259,14 +259,14 @@ func TestPITRDropDatabase(t *testing.T) {
 	a.NoError(err)
 
 	// Restore stage.
-	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
+	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	// We mimics the situation where the user waits for the target database idle before doing the cutover.
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
+	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
@@ -311,7 +311,7 @@ func TestPITRTwice(t *testing.T) {
 	a.NoError(err)
 	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
-	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -325,7 +325,7 @@ func TestPITRTwice(t *testing.T) {
 	a.NoError(err)
 
 	// Restore stage.
-	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
+	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	cancelUpdateRow()
@@ -333,7 +333,7 @@ func TestPITRTwice(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
+	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
@@ -383,7 +383,7 @@ func TestPITRTwice(t *testing.T) {
 	a.NoError(err)
 	rollout, err = ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
-	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issue, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -397,7 +397,7 @@ func TestPITRTwice(t *testing.T) {
 	a.NoError(err)
 
 	// Restore stage.
-	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
+	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	cancelUpdateRow()
@@ -405,7 +405,7 @@ func TestPITRTwice(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
+	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
 
 	// Second PITR
@@ -542,7 +542,7 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 	a.NoError(err)
 	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
-	_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -555,7 +555,7 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.rolloutAndWaitTask(ctx, rollout.Name)
+	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
 	a.Error(err)
 }
 

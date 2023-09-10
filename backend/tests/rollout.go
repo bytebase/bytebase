@@ -70,9 +70,6 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 
 // waitRollout waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName string) error {
-	// Wait for issue approval.
-	time.Sleep(time.Second)
-
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -166,12 +163,22 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 }
 
 // rolloutAndWaitTask rollouts one task in the rollout.
-func (ctl *controller) rolloutAndWaitTask(ctx context.Context, rolloutName string) error {
-	// Wait for issue approval.
-	time.Sleep(time.Second)
-
+func (ctl *controller) rolloutAndWaitTask(ctx context.Context, issueName, rolloutName string) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
+
+	for range ticker.C {
+		issue, err := ctl.issueServiceClient.GetIssue(ctx, &v1pb.GetIssueRequest{Name: issueName})
+		if err != nil {
+			return err
+		}
+		if issue.ApprovalFindingError != "" {
+			return errors.Errorf("approval finding error: %v", issue.ApprovalFindingError)
+		}
+		if issue.ApprovalFindingDone {
+			break
+		}
+	}
 
 	rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{
 		Name: rolloutName,
