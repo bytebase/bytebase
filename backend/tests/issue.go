@@ -26,14 +26,6 @@ func (ctl *controller) getLastOpenIssue(ctx context.Context, project *v1pb.Proje
 	return resp.Issues[0], nil
 }
 
-func (ctl *controller) getIssueByName(ctx context.Context, issue *v1pb.Issue) (*v1pb.Issue, error) {
-	issue, err := ctl.issueServiceClient.GetIssue(ctx, &v1pb.GetIssueRequest{Name: issue.Name})
-	if err != nil {
-		return nil, err
-	}
-	return issue, nil
-}
-
 func (ctl *controller) closeIssue(ctx context.Context, project *v1pb.Project, issueName string) error {
 	if _, err := ctl.issueServiceClient.BatchUpdateIssuesStatus(ctx, &v1pb.BatchUpdateIssuesStatusRequest{
 		Parent: project.Name,
