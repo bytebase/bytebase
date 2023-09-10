@@ -37,3 +37,11 @@ func (ctl *controller) trialPlan(ctx context.Context, trial *v1pb.TrialSubscript
 	}
 	return nil
 }
+
+func (ctl *controller) getWorkspaceID(ctx context.Context) (string, error) {
+	resp, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, &v1pb.GetActuatorInfoRequest{})
+	if err != nil {
+		return "", err
+	}
+	return resp.WorkspaceId, nil
+}

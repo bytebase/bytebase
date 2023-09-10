@@ -174,6 +174,7 @@ type controller struct {
 	evcsClient                v1pb.ExternalVersionControlServiceClient
 	sqlServiceClient          v1pb.SQLServiceClient
 	subscriptionServiceClient v1pb.SubscriptionServiceClient
+	actuatorServiceClient     v1pb.ActuatorServiceClient
 
 	cookie            string
 	grpcMDAccessToken string
@@ -478,6 +479,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.evcsClient = v1pb.NewExternalVersionControlServiceClient(ctl.grpcConn)
 	ctl.sqlServiceClient = v1pb.NewSQLServiceClient(ctl.grpcConn)
 	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
+	ctl.actuatorServiceClient = v1pb.NewActuatorServiceClient(ctl.grpcConn)
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
@@ -618,14 +620,6 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 	gURL := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
 	return ctl.request("GET", gURL, nil, params, map[string]string{
 		"Cookie": ctl.cookie,
-	})
-}
-
-// OpenAPI sends a GET OpenAPI client request.
-func (ctl *controller) getOpenAPI(shortURL string, params map[string]string) (io.ReadCloser, error) {
-	gURL := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
-	return ctl.request("GET", gURL, nil, params, map[string]string{
-		"Authorization": fmt.Sprintf("Bearer %s", strings.ReplaceAll(ctl.cookie, "access-token=", "")),
 	})
 }
 
