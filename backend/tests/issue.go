@@ -38,20 +38,6 @@ func (ctl *controller) closeIssue(ctx context.Context, project *v1pb.Project, is
 }
 
 // getIssue gets the issue with given ID.
-func (ctl *controller) getIssue(id int) (*api.Issue, error) {
-	body, err := ctl.get(fmt.Sprintf("/issue/%d", id), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	issue := new(api.Issue)
-	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal get issue response")
-	}
-	return issue, nil
-}
-
-// getIssue gets the issue with given ID.
 func (ctl *controller) getIssues(projectID *int, statusList ...api.IssueStatus) ([]*api.Issue, error) {
 	var ret []*api.Issue
 	// call getOnePageIssuesWithToken until no more issues.

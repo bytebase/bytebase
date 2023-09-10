@@ -839,8 +839,6 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			issue := issues[0]
 			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
 			a.NoError(err)
-			issue, err = ctl.getIssue(issue.ID)
-			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
 			a.Equal("Apply schema diff by file prod/.testVCSSchemaUpdate##LATEST.sql", issue.Description)
 			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
@@ -867,8 +865,6 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.Len(issues, 1)
 			issue = issues[0]
 			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
-			a.NoError(err)
-			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver2##data##insert_data.sql\n", issue.Description)
