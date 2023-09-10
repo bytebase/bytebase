@@ -21,7 +21,7 @@ import (
 
 var (
 	testTenantNumber = 1
-	prodTenantNumber = 3
+	prodTenantNumber = 2
 	testInstanceName = "testInstanceTest"
 	prodInstanceName = "testInstanceProd"
 )
@@ -165,30 +165,20 @@ func TestTenant(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	testStep, prodStep := &v1pb.Plan_Step{}, &v1pb.Plan_Step{}
-	for _, testDatabase := range testDatabases {
-		testStep.Specs = append(testStep.Specs, &v1pb.Plan_Spec{
-			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: testDatabase.Name,
-					Sheet:  sheet.Name,
-					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+	step := &v1pb.Plan_Step{
+		Specs: []*v1pb.Plan_Spec{
+			{
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Target: fmt.Sprintf("%s/deploymentConfigs/default", project.Name),
+						Sheet:  sheet.Name,
+						Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+					},
 				},
 			},
-		})
+		},
 	}
-	for _, prodDatabase := range prodDatabases {
-		prodStep.Specs = append(prodStep.Specs, &v1pb.Plan_Spec{
-			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: prodDatabase.Name,
-					Sheet:  sheet.Name,
-					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
-				},
-			},
-		})
-	}
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{testStep, prodStep})
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{step})
 	a.NoError(err)
 
 	// Query schema.
@@ -602,30 +592,20 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	testStep, prodStep := &v1pb.Plan_Step{}, &v1pb.Plan_Step{}
-	for _, testDatabase := range testDatabases {
-		testStep.Specs = append(testStep.Specs, &v1pb.Plan_Spec{
-			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: testDatabase.Name,
-					Sheet:  sheet.Name,
-					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+	step := &v1pb.Plan_Step{
+		Specs: []*v1pb.Plan_Spec{
+			{
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Target: fmt.Sprintf("%s/deploymentConfigs/default", project.Name),
+						Sheet:  sheet.Name,
+						Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+					},
 				},
 			},
-		})
+		},
 	}
-	for _, prodDatabase := range prodDatabases {
-		prodStep.Specs = append(prodStep.Specs, &v1pb.Plan_Spec{
-			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: prodDatabase.Name,
-					Sheet:  sheet.Name,
-					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
-				},
-			},
-		})
-	}
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{testStep, prodStep})
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{step})
 	a.NoError(err)
 
 	// Query schema.

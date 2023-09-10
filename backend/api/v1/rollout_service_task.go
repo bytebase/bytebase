@@ -33,6 +33,7 @@ func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store,
 	switch c.Type {
 	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
 	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
 	default:
