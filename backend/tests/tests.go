@@ -615,14 +615,6 @@ func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error)
 	return p, nil
 }
 
-// get sends a GET client request.
-func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCloser, error) {
-	gURL := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	return ctl.request("GET", gURL, nil, params, map[string]string{
-		"Cookie": ctl.cookie,
-	})
-}
-
 // post sends a POST client request.
 func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)

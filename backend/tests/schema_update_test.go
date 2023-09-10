@@ -767,13 +767,8 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 				},
 			})
 			a.NoError(err)
-
-			projectUID, err := strconv.Atoi(ctl.project.Uid)
-			a.NoError(err)
-
 			// Create a repository
 			ctl.vcsProvider.CreateRepository(test.externalID)
-
 			// Create the branch
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
@@ -833,17 +828,13 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, ctl.project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
-			issue, err = ctl.getIssue(issue.ID)
-			a.NoError(err)
-			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
+			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Title)
 			a.Equal("Apply schema diff by file prod/.testVCSSchemaUpdate##LATEST.sql", issue.Description)
-			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, issue.Name)
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
@@ -862,17 +853,13 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 
 			// Get data update issue
-			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err = ctl.getLastOpenIssue(ctx, ctl.project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue = issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
-			a.NoError(err)
-			issue, err = ctl.getIssue(issue.ID)
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver2##data##insert_data.sql\n", issue.Description)
-			err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
+			err = ctl.closeIssue(ctx, ctl.project, issue.Name)
 			a.NoError(err)
 
 			// Get migration history
@@ -1220,13 +1207,8 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				},
 			})
 			a.NoError(err)
-
-			projectUID, err := strconv.Atoi(ctl.project.Uid)
-			a.NoError(err)
-
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(externalID)
-
 			// Create the branch.
 			err = ctl.vcsProvider.CreateBranch(externalID, branchFilter)
 			a.NoError(err)
@@ -1298,17 +1280,16 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				a.NoError(err)
 
 				// Check for newly generated issues.
-				issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+				issue, err := ctl.getLastOpenIssue(ctx, ctl.project)
 				a.NoError(err)
 				if test.expect[idx] {
-					a.Len(issues, 1)
-					issue := issues[0]
-					err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", ctl.project.Name, issue.Pipeline.ID))
+					a.NotNil(issue)
+					err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 					a.NoError(err)
-					err = ctl.closeIssue(ctx, ctl.project, fmt.Sprintf("%s/issues/%d", ctl.project.Name, issue.Pipeline.ID))
+					err = ctl.closeIssue(ctx, ctl.project, issue.Name)
 					a.NoError(err)
 				} else {
-					a.Len(issues, 0)
+					a.Nil(issue)
 				}
 			}
 		})
