@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -319,8 +318,6 @@ func TestTenantVCS(t *testing.T) {
 				ProjectId: projectID,
 			})
 			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
@@ -460,11 +457,9 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 
 			// Query schema.
@@ -762,12 +757,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				ProjectId: projectID,
 			})
 			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
-
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
-
 			// Create the branch
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
@@ -908,11 +899,9 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 
 			// Query schema.
@@ -1056,12 +1045,8 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				ProjectId: projectID,
 			})
 			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
-
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
-
 			// Create the branch
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
@@ -1183,11 +1168,9 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issues.
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 
 			// Query schema.
@@ -1319,12 +1302,8 @@ func TestTenantVCS_YAML(t *testing.T) {
 				ProjectId: projectID,
 			})
 			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
-
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
-
 			// Create the branch
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
@@ -1446,10 +1425,9 @@ func TestTenantVCS_YAML(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issues.
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issues[0].ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issues[0].Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 
 			// Simulate Git commits for data update.
@@ -1479,9 +1457,9 @@ statement: |
 			a.NoError(err)
 
 			// Get data update issues.
-			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err = ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issues[0].ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issues[0].Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 		})
 	}

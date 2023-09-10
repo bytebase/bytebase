@@ -2,13 +2,7 @@ package tests
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
-	"github.com/google/jsonapi"
-	"github.com/pkg/errors"
-
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -35,50 +29,4 @@ func (ctl *controller) closeIssue(ctx context.Context, project *v1pb.Project, is
 		return err
 	}
 	return nil
-}
-
-// getIssue gets the issue with given ID.
-func (ctl *controller) getIssues(projectID *int, statusList ...api.IssueStatus) ([]*api.Issue, error) {
-	var ret []*api.Issue
-	// call getOnePageIssuesWithToken until no more issues.
-	token := ""
-	for {
-		issues, nextToken, err := ctl.getOnePageIssuesWithToken(projectID, statusList, token)
-		if err != nil {
-			return nil, err
-		}
-		if len(issues) == 0 {
-			break
-		}
-		ret = append(ret, issues...)
-		token = nextToken
-	}
-	return ret, nil
-}
-
-func (ctl *controller) getOnePageIssuesWithToken(projectID *int, statusList []api.IssueStatus, token string) ([]*api.Issue, string, error) {
-	params := make(map[string]string)
-	if projectID != nil {
-		params["project"] = fmt.Sprintf("%d", *projectID)
-	}
-	if len(statusList) > 0 {
-		var sl []string
-		for _, status := range statusList {
-			sl = append(sl, string(status))
-		}
-		params["status"] = strings.Join(sl, ",")
-	}
-	if token != "" {
-		params["token"] = token
-	}
-	body, err := ctl.get("/issue", params)
-	if err != nil {
-		return nil, "", err
-	}
-	issueResp := new(api.IssueResponse)
-	err = jsonapi.UnmarshalPayload(body, issueResp)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "fail to unmarshal get issue response")
-	}
-	return issueResp.Issues, issueResp.NextToken, nil
 }
