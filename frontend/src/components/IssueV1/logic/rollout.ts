@@ -10,6 +10,7 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import {
   extractDatabaseGroupName,
+  extractDeploymentConfigName,
   extractUserResourceName,
   flattenTaskV1List,
   hasWorkspacePermissionV1,
@@ -25,6 +26,20 @@ export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
     spec.changeDatabaseConfig?.target ?? ""
   );
   return databaseGroup !== "";
+};
+
+export const isDeploymentConfigChangeTaskV1 = (
+  issue: ComposedIssue,
+  task: Task
+) => {
+  const spec = specForTask(issue.planEntity, task);
+  if (!spec) {
+    return false;
+  }
+  const deploymentConfig = extractDeploymentConfigName(
+    spec.changeDatabaseConfig?.target ?? ""
+  );
+  return deploymentConfig !== "";
 };
 
 export const allowUserToEditStatementForTask = (
