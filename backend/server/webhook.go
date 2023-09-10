@@ -1531,42 +1531,22 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 	var steps []*v1pb.Plan_Step
 	if len(migrationDetailList) == 1 && migrationDetailList[0].DatabaseID == 0 {
 		migrationDetail := migrationDetailList[0]
-		deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, project.UID)
-		if err != nil {
-			return err
-		}
-		apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
-		if err != nil {
-			return err
-		}
-		deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
-		if err != nil {
-			return err
-		}
-		allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-		if err != nil {
-			return err
-		}
-		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, allDatabases)
-		if err != nil {
-			return err
-		}
 		changeType := getChangeType(migrationDetail.MigrationType)
-		for _, stage := range matrix {
-			step := &v1pb.Plan_Step{}
-			for _, database := range stage {
-				step.Specs = append(step.Specs, &v1pb.Plan_Spec{
-					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-							Type:          changeType,
-							Target:        fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
-							Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
-							SchemaVersion: migrationDetail.SchemaVersion,
+		steps = []*v1pb.Plan_Step{
+			{
+				Specs: []*v1pb.Plan_Spec{
+					{
+						Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+							ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+								Type:          changeType,
+								Target:        fmt.Sprintf("projects/%s/deploymentConfigs/default", project.ResourceID),
+								Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
+								SchemaVersion: migrationDetail.SchemaVersion,
+							},
 						},
 					},
-				})
-			}
-			steps = append(steps, step)
+				},
+			},
 		}
 	} else {
 		var specs []*v1pb.Plan_Spec
