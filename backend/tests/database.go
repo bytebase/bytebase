@@ -87,8 +87,6 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 	if err != nil {
 		return err
 	}
-	// Add a second sleep to avoid schema version conflict.
-	time.Sleep(time.Second)
 	return nil
 }
 
@@ -164,8 +162,6 @@ func (ctl *controller) createDatabaseFromBackup(ctx context.Context, project *v1
 	if err != nil {
 		return err
 	}
-	// Add a second sleep to avoid schema version conflict.
-	time.Sleep(time.Second)
 	return nil
 }
 
