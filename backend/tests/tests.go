@@ -176,26 +176,23 @@ type controller struct {
 	subscriptionServiceClient v1pb.SubscriptionServiceClient
 	actuatorServiceClient     v1pb.ActuatorServiceClient
 
-	cookie            string
-	grpcMDAccessToken string
-	project           *v1pb.Project
+	cookie    string
+	authToken string
+	project   *v1pb.Project
 
-	vcsProvider    fake.VCSProvider
-	feishuProvider *fake.Feishu
+	vcsProvider fake.VCSProvider
 
-	rootURL   string
-	apiURL    string
-	vcsURL    string
-	v1APIURL  string
-	feishuURL string
+	rootURL  string
+	apiURL   string
+	vcsURL   string
+	v1APIURL string
 }
 
 type config struct {
-	dataDir                 string
-	vcsProviderCreator      fake.VCSProviderCreator
-	feishuProverdierCreator fake.FeishuProviderCreator
-	readOnly                bool
-	skipOnboardingData      bool
+	dataDir            string
+	vcsProviderCreator fake.VCSProviderCreator
+	readOnly           bool
+	skipOnboardingData bool
 }
 
 var (
@@ -243,7 +240,7 @@ func getTestDatabaseString() string {
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) (context.Context, error) {
 	log.GLogLevel.Set(slog.LevelDebug)
-	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
+	if err := ctl.startMockServers(config.vcsProviderCreator); err != nil {
 		return nil, err
 	}
 
@@ -260,7 +257,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 
 	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
 	serverPort := getTestPort()
-	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL), config.skipOnboardingData)
+	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, externalPgUser, pgURL, config.skipOnboardingData)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -313,11 +310,11 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 // StartServer starts the main server with embed Postgres.
 func (ctl *controller) StartServer(ctx context.Context, config *config) (context.Context, error) {
 	log.GLogLevel.Set(slog.LevelDebug)
-	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
+	if err := ctl.startMockServers(config.vcsProviderCreator); err != nil {
 		return nil, err
 	}
 	serverPort := getTestPortForEmbeddedPg()
-	profile := getTestProfile(config.dataDir, resourceDir, serverPort, config.readOnly, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := getTestProfile(config.dataDir, resourceDir, serverPort, config.readOnly)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -347,7 +344,7 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 
 // GetTestProfile will return a profile for testing.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishuAPIURL string) componentConfig.Profile {
+func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) componentConfig.Profile {
 	return componentConfig.Profile{
 		Mode:                 testReleaseMode,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
@@ -361,14 +358,13 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool, feishu
 		AppRunnerInterval:    1 * time.Second,
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
-		FeishuAPIURL:         feishuAPIURL,
 	}
 }
 
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, feishuAPIURL string, skipOnboardingData bool) componentConfig.Profile {
+func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, skipOnboardingData bool) componentConfig.Profile {
 	return componentConfig.Profile{
 		Mode:                       testReleaseMode,
 		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
@@ -380,24 +376,16 @@ func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser 
 		AppRunnerInterval:          1 * time.Second,
 		BackupRunnerInterval:       10 * time.Second,
 		BackupStorageBackend:       api.BackupStorageBackendLocal,
-		FeishuAPIURL:               feishuAPIURL,
 		PgURL:                      pgURL,
 		TestOnlySkipOnboardingData: skipOnboardingData,
 	}
 }
 
-func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreator, feishuProviderCreator fake.FeishuProviderCreator) error {
+func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreator) error {
 	// Set up VCS provider.
 	vcsPort := getTestPort()
 	ctl.vcsProvider = vcsProviderCreator(vcsPort)
 	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
-
-	// Set up fake feishu server.
-	if feishuProviderCreator != nil {
-		feishuPort := getTestPort()
-		ctl.feishuProvider = feishuProviderCreator(feishuPort)
-		ctl.feishuURL = fmt.Sprintf("http://localhost:%d", feishuPort)
-	}
 
 	errChan := make(chan error, 1)
 
@@ -407,22 +395,8 @@ func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreat
 		}
 	}()
 
-	if feishuProviderCreator != nil {
-		go func() {
-			if err := ctl.feishuProvider.Run(); err != nil {
-				errChan <- errors.Wrap(err, "failed to run feishuProvider server")
-			}
-		}()
-	}
-
 	if err := waitForVCSStart(ctl.vcsProvider, errChan); err != nil {
 		return errors.Wrap(err, "failed to wait for vcsProvider to start")
-	}
-
-	if feishuProviderCreator != nil {
-		if err := waitForFeishuStart(ctl.feishuProvider, errChan); err != nil {
-			return errors.Wrap(err, "failed to wait for feishuProvider to start")
-		}
 	}
 
 	return nil
@@ -442,22 +416,11 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 		}
 	}()
 
-	if err := waitForServerStart(ctl.server, errChan); err != nil {
-		return nil, errors.Wrap(err, "failed to wait for server to start")
-	}
-
 	// initialize controller clients.
 	ctl.client = &http.Client{}
 
 	if err := ctl.waitForHealthz(); err != nil {
 		return nil, errors.Wrap(err, "failed to wait for healthz")
-	}
-
-	if err := ctl.Signup(); err != nil && !strings.Contains(err.Error(), "exist") {
-		return nil, err
-	}
-	if err := ctl.Login(); err != nil {
-		return nil, err
 	}
 
 	// initialize grpc connection.
@@ -481,37 +444,14 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
 	ctl.actuatorServiceClient = v1pb.NewActuatorServiceClient(ctl.grpcConn)
 
+	if err := ctl.signupAndLogin(ctx); err != nil {
+		return nil, err
+	}
+
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
-		fmt.Sprintf("Bearer %s", ctl.grpcMDAccessToken),
+		fmt.Sprintf("Bearer %s", ctl.authToken),
 	)), nil
-}
-
-func waitForServerStart(s *server.Server, errChan <-chan error) error {
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			if s == nil {
-				continue
-			}
-			e := s.GetEcho()
-			if e == nil {
-				continue
-			}
-			addr := e.ListenerAddr()
-			if addr != nil && strings.Contains(addr.String(), ":") {
-				return nil // was started
-			}
-		case err := <-errChan:
-			if err == http.ErrServerClosed {
-				return nil
-			}
-			return err
-		}
-	}
 }
 
 func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
@@ -522,26 +462,6 @@ func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
 		select {
 		case <-ticker.C:
 			addr := p.ListenerAddr()
-			if addr != nil && strings.Contains(addr.String(), ":") {
-				return nil // was started
-			}
-		case err := <-errChan:
-			if err == http.ErrServerClosed {
-				return nil
-			}
-			return err
-		}
-	}
-}
-
-func waitForFeishuStart(f *fake.Feishu, errChan <-chan error) error {
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			addr := f.ListenerAddr()
 			if addr != nil && strings.Contains(addr.String(), ":") {
 				return nil // was started
 			}
@@ -655,51 +575,26 @@ func (ctl *controller) request(method, fullURL string, body io.Reader, params, h
 	return resp.Body, nil
 }
 
-// Signup will signup user demo@example.com and caches its cookie.
-func (ctl *controller) Signup() error {
-	resp, err := ctl.client.Post(
-		fmt.Sprintf("%s/users", ctl.v1APIURL),
-		"",
-		strings.NewReader(`{"email":"demo@example.com","password":"1024","title":"demo","user_type":"USER"}`),
-	)
+// signupAndLogin will signup and login as user demo@example.com.
+func (ctl *controller) signupAndLogin(ctx context.Context) error {
+	if _, err := ctl.authServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
+		User: &v1pb.User{
+			Email:    "demo@example.com",
+			Password: "1024",
+			Title:    "demo",
+			UserType: v1pb.UserType_USER,
+		},
+	}); err != nil && !strings.Contains(err.Error(), "exist") {
+		return err
+	}
+	resp, err := ctl.authServiceClient.Login(ctx, &v1pb.LoginRequest{
+		Email:    "demo@example.com",
+		Password: "1024",
+	})
 	if err != nil {
-		return errors.Wrap(err, "fail to post login request")
+		return err
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return errors.Wrapf(err, "failed to read body")
-	}
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("failed to create user with status %v body %s", resp.Status, body)
-	}
-	return nil
-}
-
-// Login will login as user demo@example.com and caches its cookie.
-func (ctl *controller) Login() error {
-	resp, err := ctl.client.Post(
-		fmt.Sprintf("%s/auth/login", ctl.v1APIURL),
-		"",
-		strings.NewReader(`{"email":"demo@example.com","password":"1024","web": true}`))
-	if err != nil {
-		return errors.Wrap(err, "fail to post login request")
-	}
-	defer resp.Body.Close()
-	cookie := ""
-	h := resp.Header.Get("Set-Cookie")
-	parts := strings.Split(h, "; ")
-	for _, p := range parts {
-		if strings.HasPrefix(p, "access-token=") {
-			cookie = p
-			break
-		}
-	}
-	if cookie == "" {
-		return errors.Errorf("unable to find access token in the login response headers")
-	}
-	ctl.cookie = cookie
-
-	ctl.grpcMDAccessToken = resp.Header.Get("grpc-metadata-bytebase-access-token")
+	ctl.authToken = resp.Token
+	ctl.cookie = fmt.Sprintf("access-token=%s", ctl.authToken)
 	return nil
 }

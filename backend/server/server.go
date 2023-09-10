@@ -452,8 +452,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
 		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
-		// TODO(p0ny): enable Feishu provider only when it is needed.
-		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
 		s.backupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 
 		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.activityManager)
@@ -1039,11 +1037,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	slog.Info("Bytebase stopped properly")
 
 	return nil
-}
-
-// GetEcho returns the echo server.
-func (s *Server) GetEcho() *echo.Echo {
-	return s.e
 }
 
 // getSampleSQLReviewPolicy returns a sample SQL review policy for preparing onboardign data.
