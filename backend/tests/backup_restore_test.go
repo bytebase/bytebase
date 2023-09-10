@@ -114,8 +114,6 @@ func TestRetentionPolicy(t *testing.T) {
 	a.NoError(err)
 	err = ctl.waitBackupArchived(ctx, database.Name, backup.Name)
 	a.NoError(err)
-	// Wait for 1s to delete the file.
-	time.Sleep(1 * time.Second)
 	_, err = os.Stat(backupFilePath)
 	a.Equal(true, os.IsNotExist(err))
 }
