@@ -21,7 +21,7 @@ func (ctl *controller) getLastOpenIssue(ctx context.Context, project *v1pb.Proje
 		return nil, err
 	}
 	if len(resp.Issues) == 0 {
-		return nil, errors.Errorf("open issue not found")
+		return nil, nil
 	}
 	return resp.Issues[0], nil
 }
