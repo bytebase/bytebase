@@ -17,7 +17,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -1536,7 +1535,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			// trigger SQL review with empty policy.
-			res, err := postVCSSQLReview(ctl, gitOpsInfo, &api.VCSSQLReviewRequest{
+			res, err := ctl.postVCSSQLReview(ctx, gitOpsInfo, &api.VCSSQLReviewRequest{
 				RepositoryID:  gitOpsInfo.ExternalId,
 				PullRequestID: fmt.Sprintf("%d", prID),
 				WebURL:        gitOpsInfo.WebUrl,
@@ -1562,7 +1561,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			})
 			a.NoError(err)
 
-			reviewResult, err := postVCSSQLReview(ctl, gitOpsInfo, &api.VCSSQLReviewRequest{
+			reviewResult, err := ctl.postVCSSQLReview(ctx, gitOpsInfo, &api.VCSSQLReviewRequest{
 				RepositoryID:  gitOpsInfo.ExternalId,
 				PullRequestID: fmt.Sprintf("%d", prID),
 				WebURL:        gitOpsInfo.WebUrl,
@@ -1751,24 +1750,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 	}
 }
 
-func getWorkspaceID(ctl *controller) (string, error) {
-	body, err := ctl.getOpenAPI("/actuator/info", nil)
-	if err != nil {
-		return "", err
-	}
-	bs, err := io.ReadAll(body)
-	if err != nil {
-		return "", err
-	}
-	actuatorInfo := new(v1pb.ActuatorInfo)
-	if err = protojson.Unmarshal(bs, actuatorInfo); err != nil {
-		return "", errors.Wrap(err, "fail to unmarshal get actuator response")
-	}
-	return actuatorInfo.WorkspaceId, nil
-}
-
 // postVCSSQLReview will create the VCS SQL review and get the response.
-func postVCSSQLReview(ctl *controller, gitOpsInfo *v1pb.ProjectGitOpsInfo, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
+func (ctl *controller) postVCSSQLReview(ctx context.Context, gitOpsInfo *v1pb.ProjectGitOpsInfo, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
 	url := fmt.Sprintf("%s/hook/sql-review/%s", ctl.rootURL, gitOpsInfo.WebhookEndpointId)
 
 	payload, err := json.Marshal(request)
@@ -1780,7 +1763,7 @@ func postVCSSQLReview(ctl *controller, gitOpsInfo *v1pb.ProjectGitOpsInfo, reque
 		return nil, errors.Wrapf(err, "failed to create a new POST request to %q", url)
 	}
 
-	workspaceID, err := getWorkspaceID(ctl)
+	workspaceID, err := ctl.getWorkspaceID(ctx)
 	if err != nil {
 		return nil, err
 	}
