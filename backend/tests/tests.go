@@ -176,9 +176,9 @@ type controller struct {
 	subscriptionServiceClient v1pb.SubscriptionServiceClient
 	actuatorServiceClient     v1pb.ActuatorServiceClient
 
-	cookie            string
-	grpcMDAccessToken string
-	project           *v1pb.Project
+	cookie    string
+	authToken string
+	project   *v1pb.Project
 
 	vcsProvider    fake.VCSProvider
 	feishuProvider *fake.Feishu
@@ -453,13 +453,6 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 		return nil, errors.Wrap(err, "failed to wait for healthz")
 	}
 
-	if err := ctl.Signup(); err != nil && !strings.Contains(err.Error(), "exist") {
-		return nil, err
-	}
-	if err := ctl.Login(); err != nil {
-		return nil, err
-	}
-
 	// initialize grpc connection.
 	grpcConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", ctl.profile.GrpcPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -481,9 +474,13 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
 	ctl.actuatorServiceClient = v1pb.NewActuatorServiceClient(ctl.grpcConn)
 
+	if err := ctl.signupAndLogin(ctx); err != nil {
+		return nil, err
+	}
+
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
-		fmt.Sprintf("Bearer %s", ctl.grpcMDAccessToken),
+		fmt.Sprintf("Bearer %s", ctl.authToken),
 	)), nil
 }
 
@@ -655,51 +652,26 @@ func (ctl *controller) request(method, fullURL string, body io.Reader, params, h
 	return resp.Body, nil
 }
 
-// Signup will signup user demo@example.com and caches its cookie.
-func (ctl *controller) Signup() error {
-	resp, err := ctl.client.Post(
-		fmt.Sprintf("%s/users", ctl.v1APIURL),
-		"",
-		strings.NewReader(`{"email":"demo@example.com","password":"1024","title":"demo","user_type":"USER"}`),
-	)
+// signupAndLogin will signup and login as user demo@example.com.
+func (ctl *controller) signupAndLogin(ctx context.Context) error {
+	if _, err := ctl.authServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
+		User: &v1pb.User{
+			Email:    "demo@example.com",
+			Password: "1024",
+			Title:    "demo",
+			UserType: v1pb.UserType_USER,
+		},
+	}); err != nil && !strings.Contains(err.Error(), "exist") {
+		return err
+	}
+	resp, err := ctl.authServiceClient.Login(ctx, &v1pb.LoginRequest{
+		Email:    "demo@example.com",
+		Password: "1024",
+	})
 	if err != nil {
-		return errors.Wrap(err, "fail to post login request")
+		return err
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return errors.Wrapf(err, "failed to read body")
-	}
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("failed to create user with status %v body %s", resp.Status, body)
-	}
-	return nil
-}
-
-// Login will login as user demo@example.com and caches its cookie.
-func (ctl *controller) Login() error {
-	resp, err := ctl.client.Post(
-		fmt.Sprintf("%s/auth/login", ctl.v1APIURL),
-		"",
-		strings.NewReader(`{"email":"demo@example.com","password":"1024","web": true}`))
-	if err != nil {
-		return errors.Wrap(err, "fail to post login request")
-	}
-	defer resp.Body.Close()
-	cookie := ""
-	h := resp.Header.Get("Set-Cookie")
-	parts := strings.Split(h, "; ")
-	for _, p := range parts {
-		if strings.HasPrefix(p, "access-token=") {
-			cookie = p
-			break
-		}
-	}
-	if cookie == "" {
-		return errors.Errorf("unable to find access token in the login response headers")
-	}
-	ctl.cookie = cookie
-
-	ctl.grpcMDAccessToken = resp.Header.Get("grpc-metadata-bytebase-access-token")
+	ctl.authToken = resp.Token
+	ctl.cookie = fmt.Sprintf("access-token=%s", ctl.authToken)
 	return nil
 }
