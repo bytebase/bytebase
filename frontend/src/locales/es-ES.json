@@ -914,7 +914,8 @@
         "selected-task": "Tarea seleccionada",
         "selected-stage": "Etapa seleccionada",
         "all-tasks": "Todas las tareas"
-      }
+      },
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "En el modo por lotes, el cambio actual se aplicará a todas las tareas."
     },
     "not-editable-legacy-issue": "Este problema no es editable porque se creó en una versión anterior de Bytebase",
     "action-anyway": "{action} de todos modos"
