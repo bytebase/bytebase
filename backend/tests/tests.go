@@ -19,8 +19,10 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -176,9 +178,8 @@ type controller struct {
 	subscriptionServiceClient v1pb.SubscriptionServiceClient
 	actuatorServiceClient     v1pb.ActuatorServiceClient
 
-	cookie    string
-	authToken string
-	project   *v1pb.Project
+	cookie  string
+	project *v1pb.Project
 
 	vcsProvider fake.VCSProvider
 
@@ -210,21 +211,19 @@ var (
 	resourceDir string
 )
 
-// getTestPort reserves 3 ports, 1 for server, 2 for sample pg instance.
 func getTestPort() int {
 	mu.Lock()
 	defer mu.Unlock()
 	p := nextPort
-	nextPort += 4
+	nextPort += 2
 	return p
 }
 
-// getTestPortForEmbeddedPg reserves 4 ports, 1 for server, 2 for sample pg instance, 1 for embedded postgres server.
 func getTestPortForEmbeddedPg() int {
 	mu.Lock()
 	defer mu.Unlock()
 	p := nextPort
-	nextPort += 5
+	nextPort += 3
 	return p
 }
 
@@ -419,10 +418,6 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	// initialize controller clients.
 	ctl.client = &http.Client{}
 
-	if err := ctl.waitForHealthz(); err != nil {
-		return nil, errors.Wrap(err, "failed to wait for healthz")
-	}
-
 	// initialize grpc connection.
 	grpcConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", ctl.profile.GrpcPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -444,13 +439,17 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
 	ctl.actuatorServiceClient = v1pb.NewActuatorServiceClient(ctl.grpcConn)
 
-	if err := ctl.signupAndLogin(ctx); err != nil {
+	if err := ctl.waitForHealthz(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to wait for healthz")
+	}
+	authToken, err := ctl.signupAndLogin(ctx)
+	if err != nil {
 		return nil, err
 	}
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
-		fmt.Sprintf("Bearer %s", ctl.authToken),
+		fmt.Sprintf("Bearer %s", authToken),
 	)), nil
 }
 
@@ -474,28 +473,21 @@ func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
 	}
 }
 
-func (ctl *controller) waitForHealthz() error {
+func (ctl *controller) waitForHealthz(ctx context.Context) error {
 	begin := time.Now()
-	ticker := time.NewTicker(1 * time.Second)
-	timer := time.NewTimer(20 * time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
+	timer := time.NewTimer(30 * time.Second)
 	defer ticker.Stop()
 	defer timer.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			gURL := fmt.Sprintf("%s/auth/login", ctl.v1APIURL)
-			req, err := http.NewRequest(http.MethodPost, gURL, nil)
-			if err != nil {
-				slog.Error("Fail to create a new POST request", slog.String("URL", gURL), log.BBError(err))
+			_, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, &v1pb.GetActuatorInfoRequest{})
+			if err != nil && status.Code(err) == codes.Unavailable {
 				continue
 			}
-			resp, err := ctl.client.Do(req)
 			if err != nil {
-				slog.Error("Fail to send a POST request", slog.String("URL", gURL), log.BBError(err))
-				continue
-			}
-			if resp.StatusCode == http.StatusServiceUnavailable {
-				continue
+				return err
 			}
 			return nil
 		case end := <-timer.C:
@@ -576,7 +568,7 @@ func (ctl *controller) request(method, fullURL string, body io.Reader, params, h
 }
 
 // signupAndLogin will signup and login as user demo@example.com.
-func (ctl *controller) signupAndLogin(ctx context.Context) error {
+func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
 	if _, err := ctl.authServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Email:    "demo@example.com",
@@ -585,16 +577,15 @@ func (ctl *controller) signupAndLogin(ctx context.Context) error {
 			UserType: v1pb.UserType_USER,
 		},
 	}); err != nil && !strings.Contains(err.Error(), "exist") {
-		return err
+		return "", err
 	}
 	resp, err := ctl.authServiceClient.Login(ctx, &v1pb.LoginRequest{
 		Email:    "demo@example.com",
 		Password: "1024",
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
-	ctl.authToken = resp.Token
-	ctl.cookie = fmt.Sprintf("access-token=%s", ctl.authToken)
-	return nil
+	ctl.cookie = fmt.Sprintf("access-token=%s", resp.Token)
+	return resp.Token, nil
 }
