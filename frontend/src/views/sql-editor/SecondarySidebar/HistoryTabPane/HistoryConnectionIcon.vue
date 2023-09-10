@@ -3,6 +3,7 @@
     v-if="instance.uid !== String(UNKNOWN_ID)"
     :instance="instance"
     :tooltip="false"
+    class="!w-3.5"
   />
 </template>
 
