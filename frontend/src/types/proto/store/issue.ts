@@ -12,9 +12,15 @@ export interface IssuePayload {
 }
 
 export interface GrantRequest {
-  /** The requested role, e.g. roles/EXPORTER. */
+  /**
+   * The requested role.
+   * Format: roles/EXPORTER.
+   */
   role: string;
-  /** The requested user, e.g. users/hello@bytebase.com. */
+  /**
+   * The user to be granted.
+   * Format: users/hello@bytebase.com.
+   */
   user: string;
   condition?: Expr | undefined;
   expiration?: Duration | undefined;

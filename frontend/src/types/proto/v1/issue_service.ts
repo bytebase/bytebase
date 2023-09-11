@@ -1,8 +1,10 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { Duration } from "../google/protobuf/duration";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { Expr } from "../google/type/expr";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -270,6 +272,8 @@ export interface Issue {
    * Format: projects/{project}/rollouts/{rollout}
    */
   rollout: string;
+  /** Used if the issue type is GRANT_REQUEST. */
+  grantRequest?: GrantRequest | undefined;
 }
 
 export enum Issue_Type {
@@ -361,6 +365,21 @@ export function issue_Approver_StatusToJSON(object: Issue_Approver_Status): stri
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface GrantRequest {
+  /**
+   * The requested role.
+   * Format: roles/EXPORTER.
+   */
+  role: string;
+  /**
+   * The user to be granted.
+   * Format: users/hello@bytebase.com.
+   */
+  user: string;
+  condition?: Expr | undefined;
+  expiration?: Duration | undefined;
 }
 
 export interface ApprovalTemplate {
@@ -1513,6 +1532,7 @@ function createBaseIssue(): Issue {
     updateTime: undefined,
     plan: "",
     rollout: "",
+    grantRequest: undefined,
   };
 }
 
@@ -1571,6 +1591,9 @@ export const Issue = {
     }
     if (message.rollout !== "") {
       writer.uint32(146).string(message.rollout);
+    }
+    if (message.grantRequest !== undefined) {
+      GrantRequest.encode(message.grantRequest, writer.uint32(154).fork()).ldelim();
     }
     return writer;
   },
@@ -1708,6 +1731,13 @@ export const Issue = {
 
           message.rollout = reader.string();
           continue;
+        case 19:
+          if (tag !== 154) {
+            break;
+          }
+
+          message.grantRequest = GrantRequest.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1739,6 +1769,7 @@ export const Issue = {
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       plan: isSet(object.plan) ? String(object.plan) : "",
       rollout: isSet(object.rollout) ? String(object.rollout) : "",
+      grantRequest: isSet(object.grantRequest) ? GrantRequest.fromJSON(object.grantRequest) : undefined,
     };
   },
 
@@ -1774,6 +1805,8 @@ export const Issue = {
     message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
     message.plan !== undefined && (obj.plan = message.plan);
     message.rollout !== undefined && (obj.rollout = message.rollout);
+    message.grantRequest !== undefined &&
+      (obj.grantRequest = message.grantRequest ? GrantRequest.toJSON(message.grantRequest) : undefined);
     return obj;
   },
 
@@ -1801,6 +1834,9 @@ export const Issue = {
     message.updateTime = object.updateTime ?? undefined;
     message.plan = object.plan ?? "";
     message.rollout = object.rollout ?? "";
+    message.grantRequest = (object.grantRequest !== undefined && object.grantRequest !== null)
+      ? GrantRequest.fromPartial(object.grantRequest)
+      : undefined;
     return message;
   },
 };
@@ -1872,6 +1908,108 @@ export const Issue_Approver = {
     const message = createBaseIssue_Approver();
     message.status = object.status ?? 0;
     message.principal = object.principal ?? "";
+    return message;
+  },
+};
+
+function createBaseGrantRequest(): GrantRequest {
+  return { role: "", user: "", condition: undefined, expiration: undefined };
+}
+
+export const GrantRequest = {
+  encode(message: GrantRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.role !== "") {
+      writer.uint32(10).string(message.role);
+    }
+    if (message.user !== "") {
+      writer.uint32(18).string(message.user);
+    }
+    if (message.condition !== undefined) {
+      Expr.encode(message.condition, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.expiration !== undefined) {
+      Duration.encode(message.expiration, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GrantRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGrantRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.role = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.user = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.expiration = Duration.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GrantRequest {
+    return {
+      role: isSet(object.role) ? String(object.role) : "",
+      user: isSet(object.user) ? String(object.user) : "",
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+      expiration: isSet(object.expiration) ? Duration.fromJSON(object.expiration) : undefined,
+    };
+  },
+
+  toJSON(message: GrantRequest): unknown {
+    const obj: any = {};
+    message.role !== undefined && (obj.role = message.role);
+    message.user !== undefined && (obj.user = message.user);
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    message.expiration !== undefined &&
+      (obj.expiration = message.expiration ? Duration.toJSON(message.expiration) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<GrantRequest>): GrantRequest {
+    return GrantRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<GrantRequest>): GrantRequest {
+    const message = createBaseGrantRequest();
+    message.role = object.role ?? "";
+    message.user = object.user ?? "";
+    message.condition = (object.condition !== undefined && object.condition !== null)
+      ? Expr.fromPartial(object.condition)
+      : undefined;
+    message.expiration = (object.expiration !== undefined && object.expiration !== null)
+      ? Duration.fromPartial(object.expiration)
+      : undefined;
     return message;
   },
 };
