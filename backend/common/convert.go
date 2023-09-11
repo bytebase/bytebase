@@ -246,8 +246,6 @@ func findField(callExpr *v1alpha1.Expr_Call, factors *QueryExportFactors) {
 	}
 	for _, arg := range callExpr.Args {
 		callExpr := arg.GetCallExpr()
-		if callExpr != nil {
-			findField(callExpr, factors)
-		}
+		findField(callExpr, factors)
 	}
 }
