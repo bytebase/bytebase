@@ -4,7 +4,7 @@
     size="small"
     class="bb-sql-editor--sheet-tab-pane--tabs h-full pt-1.5 px-1"
     pane-style="height: calc(100% - 29px); padding: 0;"
-    justify-content="space-between"
+    justify-content="start"
   >
     <NTabPane name="my" :tab="$t('sheet.mine')">
       <SheetList view="my" />
