@@ -68,7 +68,7 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const { selectedDatabaseSchema: selected } = useSQLEditorContext();
+const { selectedDatabaseSchemaByDatabaseName } = useSQLEditorContext();
 
 const dbSchemaStore = useDBSchemaV1Store();
 const { currentTab } = storeToRefs(useTabStore());
@@ -77,6 +77,22 @@ const { keyword } = provideSchemaPanelContext();
 
 const { database } = useDatabaseV1ByUID(computed(() => conn.value.databaseId));
 const databaseMetadata = ref<DatabaseMetadata>();
+
+const selected = computed({
+  get() {
+    return selectedDatabaseSchemaByDatabaseName.value.get(database.value.name);
+  },
+  set(selected) {
+    if (!selected) {
+      selectedDatabaseSchemaByDatabaseName.value.delete(database.value.name);
+    } else {
+      selectedDatabaseSchemaByDatabaseName.value.set(
+        database.value.name,
+        selected
+      );
+    }
+  },
+});
 
 const handleSelectTable = (schema: SchemaMetadata, table: TableMetadata) => {
   if (!databaseMetadata.value) return;
@@ -90,12 +106,10 @@ const handleSelectTable = (schema: SchemaMetadata, table: TableMetadata) => {
 
 watch(
   () => database.value.name,
-  async (toName, fromName) => {
-    if (fromName !== undefined) {
-      selected.value = undefined;
-    }
+  async (name) => {
+    if (!name) return;
     databaseMetadata.value = await dbSchemaStore.getOrFetchDatabaseMetadata(
-      toName,
+      name,
       /* !skipCache */ false
     );
   },
