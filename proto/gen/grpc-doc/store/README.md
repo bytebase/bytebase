@@ -1438,7 +1438,7 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | role | [string](#string) |  | The requested role. Format: roles/EXPORTER. |
-| user | [string](#string) |  | The user to be granted. Format: users/hello@bytebase.com. |
+| user | [string](#string) |  | The user to be granted. Format: users/{userUID}. |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 | expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 
