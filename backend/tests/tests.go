@@ -345,7 +345,7 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
 func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) componentConfig.Profile {
 	return componentConfig.Profile{
-		Mode:                 testReleaseMode,
+		Mode:                 common.ReleaseModeDev,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:             port + 1,
 		DatastorePort:        port + 2,
@@ -365,7 +365,7 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) compon
 // pgURL for connect to Postgres.
 func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, skipOnboardingData bool) componentConfig.Profile {
 	return componentConfig.Profile{
-		Mode:                       testReleaseMode,
+		Mode:                       common.ReleaseModeDev,
 		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:                   port + 1,
 		SampleDatabasePort:         0,
