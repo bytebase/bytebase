@@ -153,7 +153,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   });
 };
 
-const renderLabel = ({ option }: { option: TreeNode }) => {
+const renderLabel = ({ option }: { option: TreeOption }) => {
   const node = option as any as TreeNode;
   return h("span", {
     innerHTML: getHighlightHTMLByKeyWords(node.label, state.searchText),

@@ -90,6 +90,7 @@
               class="flex"
             >
               <button
+                v-if="getColumnClassification(column)"
                 class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
                 @click.prevent="column.classification = ''"
               >
