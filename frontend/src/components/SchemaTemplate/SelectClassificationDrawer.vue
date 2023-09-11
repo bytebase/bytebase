@@ -19,6 +19,7 @@
           :show-irrelevant-nodes="false"
           :expand-on-click="true"
           :render-suffix="renderSuffix"
+          :render-label="renderLabel"
           :node-props="nodeProps"
           :virtual-scroll="true"
         />
@@ -42,6 +43,7 @@ import { NTree, TreeOption } from "naive-ui";
 import { computed, reactive, h } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import { getHighlightHTMLByKeyWords } from "@/utils";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 
 const props = defineProps<{
@@ -132,7 +134,7 @@ const getTreeNodeList = (classificationMap: ClassificationMap): TreeNode[] => {
       const children = getTreeNodeList(item.children);
       return {
         key: item.id,
-        label: item.label,
+        label: `${item.id} ${item.label}`,
         levelId: item.levelId,
         isLeaf: children.length === 0,
         children,
@@ -148,6 +150,13 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   return h(ClassificationLevelBadge, {
     levelId: node.levelId,
     classificationConfig: props.classificationConfig,
+  });
+};
+
+const renderLabel = ({ option }: { option: TreeOption }) => {
+  const node = option as any as TreeNode;
+  return h("span", {
+    innerHTML: getHighlightHTMLByKeyWords(node.label, state.searchText),
   });
 };
 </script>
