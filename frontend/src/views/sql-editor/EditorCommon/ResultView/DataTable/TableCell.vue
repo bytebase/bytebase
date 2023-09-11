@@ -25,13 +25,13 @@ import { useSQLResultViewContext } from "../context";
 
 const props = defineProps<{
   value: unknown;
-  keyword?: string;
   setIndex: number;
   rowIndex: number;
   colIndex: number;
 }>();
 
-const { dark, disallowCopyingData, detail } = useSQLResultViewContext();
+const { dark, disallowCopyingData, detail, keyword } =
+  useSQLResultViewContext();
 const wrapperRef = ref<HTMLDivElement>();
 const truncated = ref(false);
 
@@ -82,14 +82,14 @@ const html = computed(() => {
     return `<br style="min-width: 1rem; display: inline-flex;" />`;
   }
 
-  const { keyword } = props;
-  if (!keyword) {
+  const kw = keyword.value.trim();
+  if (!kw) {
     return escape(str);
   }
 
   return getHighlightHTMLByRegExp(
     escape(str),
-    escape(keyword),
+    escape(kw),
     false /* !caseSensitive */
   );
 });

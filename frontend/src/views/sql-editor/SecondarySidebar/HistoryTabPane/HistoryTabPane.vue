@@ -25,14 +25,17 @@
           <span class="text-xs text-gray-500">
             {{ titleOfQueryHistory(history) }}
           </span>
-          <span
-            class="rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200"
-          >
-            <heroicons-outline:clipboard-document
-              class="w-4 h-4"
-              @click.stop="handleCopy(history)"
-            />
-          </span>
+          <div class="flex items-start gap-x-2">
+            <HistoryConnectionIcon :query-history="history" />
+            <span
+              class="rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+            >
+              <heroicons-outline:clipboard-document
+                class="w-4 h-4"
+                @click.stop="handleCopy(history)"
+              />
+            </span>
+          </div>
         </div>
         <p
           class="max-w-full text-xs break-words font-mono line-clamp-3"
@@ -71,6 +74,7 @@ import {
 } from "@/store";
 import { QueryHistory } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
+import HistoryConnectionIcon from "./HistoryConnectionIcon.vue";
 
 interface State {
   search: string;
