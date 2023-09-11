@@ -163,7 +163,20 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractQueryExpression(ctx mysql.
 		return nil, nil
 	}
 
-	// TODO: support WITH
+	if ctx.WithClause() != nil {
+		cteOuterLength := len(extractor.cteOuterSchemaInfo)
+		defer func() {
+			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:cteOuterLength]
+		}()
+		recursive := ctx.WithClause().RECURSIVE_SYMBOL() != nil
+		for _, cte := range ctx.WithClause().AllCommonTableExpression() {
+			cteTable, err := extractor.mysqlExtractCommonTableExpression(cte, recursive)
+			if err != nil {
+				return nil, err
+			}
+			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
+		}
+	}
 
 	switch {
 	case ctx.QueryExpressionParens() != nil:
@@ -173,6 +186,315 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractQueryExpression(ctx mysql.
 	}
 
 	return nil, nil
+}
+
+func (extractor *sensitiveFieldExtractor) mysqlExtractCommonTableExpression(ctx mysql.ICommonTableExpressionContext, recursive bool) (db.TableSchema, error) {
+	if ctx == nil {
+		return db.TableSchema{}, nil
+	}
+
+	if recursive {
+		return extractor.mysqlExtractRecursiveCTE(ctx)
+	}
+	return extractor.mysqlExtractNonRecursiveCTE(ctx)
+}
+
+func (extractor *sensitiveFieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (db.TableSchema, error) {
+	cteName := parser.NormalizeMySQLIdentifier(ctx.Identifier())
+	l := &recursiveCTEListener{
+		extractor: extractor,
+		cteInfo: db.TableSchema{
+			Name: cteName,
+		},
+		selfName:                      cteName,
+		foundFirstQueryExpressionBody: false,
+		inCTE:                         false,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(l, ctx.Subquery())
+	if l.err != nil {
+		return db.TableSchema{}, l.err
+	}
+
+	return l.cteInfo, nil
+}
+
+type recursiveCTEListener struct {
+	*mysql.BaseMySQLParserListener
+
+	extractor                     *sensitiveFieldExtractor
+	cteInfo                       db.TableSchema
+	selfName                      string
+	outerCTEs                     []mysql.IWithClauseContext
+	foundFirstQueryExpressionBody bool
+	inCTE                         bool
+	err                           error
+}
+
+// EnterQueryExpression is called when production queryExpression is entered.
+func (l *recursiveCTEListener) EnterQueryExpression(ctx *mysql.QueryExpressionContext) {
+	if l.foundFirstQueryExpressionBody || l.inCTE || l.err != nil {
+		return
+	}
+	if ctx.WithClause() != nil {
+		l.outerCTEs = append(l.outerCTEs, ctx.WithClause())
+	}
+}
+
+// EnterCommonTableExpression is called when production commonTableExpression is entered.
+func (l *recursiveCTEListener) EnterWithClause(_ *mysql.WithClauseContext) {
+	l.inCTE = true
+}
+
+// ExitCommonTableExpression is called when production commonTableExpression is exited.
+func (l *recursiveCTEListener) ExitWithClause(_ *mysql.WithClauseContext) {
+	l.inCTE = false
+}
+
+// EnterQueryExpressionBody is called when production queryExpressionBody is entered.
+func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressionBodyContext) {
+	if l.err != nil {
+		return
+	}
+	if l.inCTE {
+		return
+	}
+	if l.foundFirstQueryExpressionBody {
+		return
+	}
+
+	l.foundFirstQueryExpressionBody = true
+
+	// Deal with outer CTEs.
+	cetOuterLength := len(l.extractor.cteOuterSchemaInfo)
+	defer func() {
+		l.extractor.cteOuterSchemaInfo = l.extractor.cteOuterSchemaInfo[:cetOuterLength]
+	}()
+	for _, outerCTE := range l.outerCTEs {
+		recursive := outerCTE.RECURSIVE_SYMBOL() != nil
+		for _, cte := range outerCTE.AllCommonTableExpression() {
+			cteTable, err := l.extractor.mysqlExtractCommonTableExpression(cte, recursive)
+			if err != nil {
+				l.err = err
+				return
+			}
+			l.extractor.cteOuterSchemaInfo = append(l.extractor.cteOuterSchemaInfo, cteTable)
+		}
+	}
+
+	var initialPart []fieldInfo
+	var recursivePart []antlr.ParserRuleContext
+
+	findRecursivePart := false
+	for _, child := range ctx.GetChildren() {
+		switch child := child.(type) {
+		case *mysql.QueryPrimaryContext:
+			if !findRecursivePart {
+				resource, err := parser.ExtractResourceList(parser.MySQL, "", "", child.GetParser().GetTokenStream().GetTextFromRuleContext(child))
+				if err != nil {
+					l.err = err
+					return
+				}
+
+				for _, item := range resource {
+					if item.Database == "" && item.Table == l.selfName {
+						findRecursivePart = true
+						break
+					}
+				}
+			}
+
+			if findRecursivePart {
+				recursivePart = append(recursivePart, child)
+			} else {
+				fieldList, err := l.extractor.mysqlExtractQueryPrimary(child)
+				if err != nil {
+					l.err = err
+					return
+				}
+				if len(initialPart) == 0 {
+					initialPart = fieldList
+				} else {
+					if len(initialPart) != len(fieldList) {
+						l.err = errors.Errorf("MySQL UNION field list should have the same length, but got %d and %d", len(initialPart), len(fieldList))
+						return
+					}
+					for i := range initialPart {
+						if cmp.Less[storepb.MaskingLevel](initialPart[i].maskingLevel, fieldList[i].maskingLevel) {
+							initialPart[i].maskingLevel = fieldList[i].maskingLevel
+						}
+					}
+				}
+			}
+		case *mysql.QueryExpressionParensContext:
+			queryExpression := extractQueryExpression(child)
+			if queryExpression == nil {
+				// Never happen.
+				l.err = errors.Errorf("MySQL query expression parens should have query expression, but got nil")
+				return
+			}
+
+			if !findRecursivePart {
+				resource, err := parser.ExtractResourceList(parser.MySQL, "", "", queryExpression.GetParser().GetTokenStream().GetTextFromRuleContext(queryExpression))
+				if err != nil {
+					l.err = err
+					return
+				}
+
+				for _, item := range resource {
+					if item.Database == "" && item.Table == l.selfName {
+						findRecursivePart = true
+						break
+					}
+				}
+			}
+
+			if findRecursivePart {
+				recursivePart = append(recursivePart, child)
+			} else {
+				fieldList, err := l.extractor.mysqlExtractQueryExpression(queryExpression)
+				if err != nil {
+					l.err = err
+					return
+				}
+				if len(initialPart) == 0 {
+					initialPart = fieldList
+				} else {
+					if len(initialPart) != len(fieldList) {
+						l.err = errors.Errorf("MySQL UNION field list should have the same length, but got %d and %d", len(initialPart), len(fieldList))
+						return
+					}
+					for i := range initialPart {
+						if cmp.Less[storepb.MaskingLevel](initialPart[i].maskingLevel, fieldList[i].maskingLevel) {
+							initialPart[i].maskingLevel = fieldList[i].maskingLevel
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Compute dependent closures.
+	// There are two ways to compute dependent closures:
+	//   1. find the all dependent edges, then use graph theory traversal to find the closure.
+	//   2. Iterate to simulate the CTE recursive process, each turn check whether the Sensitive state has changed, and stop if no change.
+	//
+	// Consider the option 2 can easy to implementation, because the simulate process has been written.
+	// On the other hand, the number of iterations of the entire algorithm will not exceed the length of fields.
+	// In actual use, the length of fields will not be more than 20 generally.
+	// So I think it's OK for now.
+	// If any performance issues in use, optimize here.
+	for _, field := range initialPart {
+		l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, db.ColumnInfo{
+			Name:         field.name,
+			MaskingLevel: field.maskingLevel,
+		})
+	}
+
+	if len(recursivePart) == 0 {
+		return
+	}
+
+	l.extractor.cteOuterSchemaInfo = append(l.extractor.cteOuterSchemaInfo, l.cteInfo)
+	defer func() {
+		l.extractor.cteOuterSchemaInfo = l.extractor.cteOuterSchemaInfo[:len(l.extractor.cteOuterSchemaInfo)-1]
+	}()
+	for {
+		var fieldList []fieldInfo
+		for _, item := range recursivePart {
+			var itemFields []fieldInfo
+			switch item := item.(type) {
+			case *mysql.QueryPrimaryContext:
+				var err error
+				itemFields, err = l.extractor.mysqlExtractQueryPrimary(item)
+				if err != nil {
+					l.err = err
+					return
+				}
+			case *mysql.QueryExpressionContext:
+				var err error
+				itemFields, err = l.extractor.mysqlExtractQueryExpression(item)
+				if err != nil {
+					l.err = err
+					return
+				}
+			}
+			if len(fieldList) == 0 {
+				fieldList = itemFields
+			} else {
+				if len(fieldList) != len(itemFields) {
+					l.err = errors.Errorf("MySQL UNION field list should have the same length, but got %d and %d", len(fieldList), len(itemFields))
+					return
+				}
+				for i := range fieldList {
+					if cmp.Less[storepb.MaskingLevel](fieldList[i].maskingLevel, itemFields[i].maskingLevel) {
+						fieldList[i].maskingLevel = itemFields[i].maskingLevel
+					}
+				}
+			}
+		}
+
+		if len(fieldList) != len(l.cteInfo.ColumnList) {
+			// The error content comes from MySQL.
+			l.err = errors.Errorf("The common table expression and column names list have different column counts")
+			return
+		}
+
+		changed := false
+		for i, field := range fieldList {
+			if cmp.Less[storepb.MaskingLevel](l.cteInfo.ColumnList[i].MaskingLevel, field.maskingLevel) {
+				l.cteInfo.ColumnList[i].MaskingLevel = field.maskingLevel
+				changed = true
+			}
+		}
+
+		if !changed {
+			break
+		}
+		l.extractor.cteOuterSchemaInfo[len(l.extractor.cteOuterSchemaInfo)-1] = l.cteInfo
+	}
+}
+
+func extractQueryExpression(ctx mysql.IQueryExpressionParensContext) mysql.IQueryExpressionContext {
+	if ctx == nil {
+		return nil
+	}
+
+	switch {
+	case ctx.QueryExpression() != nil:
+		return ctx.QueryExpression()
+	case ctx.QueryExpressionParens() != nil:
+		return extractQueryExpression(ctx.QueryExpressionParens())
+	}
+
+	return nil
+}
+
+func (extractor *sensitiveFieldExtractor) mysqlExtractNonRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (db.TableSchema, error) {
+	fieldList, err := extractor.mysqlExtractSubquery(ctx.Subquery())
+	if err != nil {
+		return db.TableSchema{}, err
+	}
+	if ctx.ColumnInternalRefList() != nil {
+		columnList := mysqlExtractColumnInternalRefList(ctx.ColumnInternalRefList())
+		if len(columnList) != len(fieldList) {
+			return db.TableSchema{}, errors.Errorf("MySQL CTE column list should have the same length, but got %d and %d", len(columnList), len(fieldList))
+		}
+		for i := range fieldList {
+			fieldList[i].name = columnList[i]
+		}
+	}
+	cteName := parser.NormalizeMySQLIdentifier(ctx.Identifier())
+	result := db.TableSchema{
+		Name:       cteName,
+		ColumnList: []db.ColumnInfo{},
+	}
+	for _, field := range fieldList {
+		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+			Name:         field.name,
+			MaskingLevel: field.maskingLevel,
+		})
+	}
+	return result, nil
 }
 
 func (extractor *sensitiveFieldExtractor) mysqlExtractQueryExpressionBody(ctx mysql.IQueryExpressionBodyContext) ([]fieldInfo, error) {
@@ -196,7 +518,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractQueryExpressionBody(ctx my
 					return nil, errors.Errorf("MySQL UNION field list should have the same length, but got %d and %d", len(result), len(fieldList))
 				}
 				for i := range result {
-					if result[i].maskingLevel < fieldList[i].maskingLevel {
+					if cmp.Less[storepb.MaskingLevel](result[i].maskingLevel, fieldList[i].maskingLevel) {
 						result[i].maskingLevel = fieldList[i].maskingLevel
 					}
 				}
@@ -213,7 +535,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractQueryExpressionBody(ctx my
 					return nil, errors.Errorf("MySQL UNION field list should have the same length, but got %d and %d", len(result), len(fieldList))
 				}
 				for i := range result {
-					if result[i].maskingLevel < fieldList[i].maskingLevel {
+					if cmp.Less[storepb.MaskingLevel](result[i].maskingLevel, fieldList[i].maskingLevel) {
 						result[i].maskingLevel = fieldList[i].maskingLevel
 					}
 				}
