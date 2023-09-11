@@ -616,7 +616,7 @@
           "description": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente.",
           "hours": "Horas",
           "days": "Días",
-          "config-updated": "La configuración se ha actualizado."
+          "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto."
         }
       }
     },
