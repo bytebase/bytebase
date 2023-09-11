@@ -920,7 +920,14 @@
       "current-change-will-apply-to-all-tasks-in-batch-mode": "In batch mode, current change will be applied to all tasks."
     },
     "not-editable-legacy-issue": "This issue is not editable because it was created in an old version of Bytebase",
-    "action-anyway": "{action} anyway"
+    "action-anyway": "{action} anyway",
+    "disallow-edit-reasons": {
+      "issue-is-done": "The issue is done",
+      "issue-is-canceled": "The issue is canceled",
+      "task-is-x-status": "The task is {status}",
+      "task-is-running-cancel-first": "The task is running, cancel task before changing this value"
+    },
+    "you-are-not-allowed-to-change-this-value": "You are not allowed to change this value"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
