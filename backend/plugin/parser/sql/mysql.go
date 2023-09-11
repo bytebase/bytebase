@@ -384,6 +384,10 @@ func parseInputStream(input *antlr.InputStream) ([]*MySQLParseResult, error) {
 			return nil, err
 		}
 
+		if isEmptyStatement(tokens) {
+			continue
+		}
+
 		result = append(result, &MySQLParseResult{
 			Tree:     tree,
 			Tokens:   tokens,
@@ -392,6 +396,15 @@ func parseInputStream(input *antlr.InputStream) ([]*MySQLParseResult, error) {
 	}
 
 	return result, nil
+}
+
+func isEmptyStatement(tokens *antlr.CommonTokenStream) bool {
+	for _, token := range tokens.GetAllTokens() {
+		if token.GetChannel() == antlr.TokenDefaultChannel && token.GetTokenType() != parser.MySQLParserSEMICOLON_SYMBOL && token.GetTokenType() != parser.MySQLParserEOF {
+			return false
+		}
+	}
+	return true
 }
 
 // MySQLValidateForEditor validates the given SQL statement for editor.
