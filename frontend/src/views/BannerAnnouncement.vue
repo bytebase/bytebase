@@ -26,7 +26,7 @@ import { urlfy } from "@/utils";
 const settingV1Store = useSettingV1Store();
 
 const showBanner = computed(() => {
-  return announcementText.value.length > 0;
+  return announcementText.value !== "";
 });
 
 const bgColor = computed(() => {

@@ -135,7 +135,7 @@ import {
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
-  originalAnnouncement?: Announcement;
+  originalAnnouncement?: Announcement | undefined;
   announcement: Announcement;
   showFeatureModal: boolean;
 }
@@ -179,6 +179,13 @@ const allowSave = computed((): boolean => {
     return false;
   }
 
+  if (
+    state.originalAnnouncement === undefined &&
+    state.announcement.text === ""
+  ) {
+    return false;
+  }
+
   return !isEqual(state.originalAnnouncement, state.announcement);
 });
 
@@ -199,7 +206,17 @@ const updateAnnouncementSetting = async () => {
   if (!allowSave.value) {
     return;
   }
-  const announcement = cloneDeep(state.announcement);
+
+  if (state.announcement.text === "" && state.announcement.link !== "") {
+    state.announcement.link = "";
+  }
+
+  // remove announcement setting from store if both text and link are empty regardless of level.
+  let announcement: Announcement | undefined = cloneDeep(state.announcement);
+  if (announcement.text === "" && announcement.link === "") {
+    announcement = undefined;
+  }
+
   await settingV1Store.updateWorkspaceProfile({
     announcement: announcement,
   });
@@ -209,10 +226,14 @@ const updateAnnouncementSetting = async () => {
     title: t("settings.general.workspace.announcement.update-success"),
   });
 
-  const currentSetting = cloneDeep(
+  const currentSetting: Announcement | undefined = cloneDeep(
     settingV1Store.workspaceProfileSetting?.announcement
   );
-  state.originalAnnouncement = cloneDeep(currentSetting!);
-  state.announcement = cloneDeep(currentSetting!);
+  state.originalAnnouncement = cloneDeep(currentSetting);
+  if (currentSetting === undefined) {
+    state.announcement = defaultAnnouncement();
+  } else {
+    state.announcement = cloneDeep(currentSetting);
+  }
 };
 </script>
