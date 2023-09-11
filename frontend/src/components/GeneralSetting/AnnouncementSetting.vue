@@ -135,7 +135,7 @@ import {
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
-  originalAnnouncement?: Announcement | undefined;
+  originalAnnouncement?: Announcement;
   announcement: Announcement;
   showFeatureModal: boolean;
 }
