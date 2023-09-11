@@ -213,7 +213,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractTableValueConstructor(ctx 
 	for _, child := range values.GetChildren() {
 		switch child := child.(type) {
 		case *mysql.ExprContext:
-			maskingLevel, err := extractor.mysqlEvalMaskingLevelInExpr(child)
+			_, maskingLevel, err := extractor.mysqlEvalMaskingLevelInExpr(child)
 			if err != nil {
 				return nil, err
 			}
@@ -372,14 +372,13 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractSelectItem(ctx mysql.ISele
 	case ctx.TableWild() != nil:
 		return extractor.mysqlExtractTableWild(ctx.TableWild())
 	case ctx.Expr() != nil:
-		sensitiveLevel, err := extractor.mysqlEvalMaskingLevelInExpr(ctx.Expr())
+		fieldName, sensitiveLevel, err := extractor.mysqlEvalMaskingLevelInExpr(ctx.Expr())
 		if err != nil {
 			return nil, err
 		}
-		var fieldName string
 		if ctx.SelectAlias() != nil {
 			fieldName = parser.NormalizeMySQLSelectAlias(ctx.SelectAlias())
-		} else {
+		} else if fieldName == "" {
 			fieldName = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 		}
 		return []fieldInfo{
@@ -463,8 +462,154 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractTableReference(ctx mysql.I
 		return nil, errors.Errorf("MySQL table reference should have table factor")
 	}
 
-	// TODO: support JOIN
-	return extractor.mysqlExtractTableFactor(ctx.TableFactor())
+	fieldList, err := extractor.mysqlExtractTableFactor(ctx.TableFactor())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ctx.AllJoinedTable()) == 0 {
+		return fieldList, nil
+	}
+
+	for _, joinedTable := range ctx.AllJoinedTable() {
+		fieldList, err = extractor.mysqlMergeJoin(fieldList, joinedTable)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return fieldList, nil
+}
+
+func (extractor *sensitiveFieldExtractor) mysqlMergeJoin(leftField []fieldInfo, joinedTable mysql.IJoinedTableContext) ([]fieldInfo, error) {
+	if joinedTable == nil {
+		return leftField, nil
+	}
+
+	leftFieldMap := make(map[string]fieldInfo)
+	for _, left := range leftField {
+		// Column name in MySQL is NOT case sensitive.
+		leftFieldMap[strings.ToLower(left.name)] = left
+	}
+
+	switch {
+	case joinedTable.InnerJoinType() != nil:
+		rightFiled, err := extractor.mysqlExtractTableReference(joinedTable.TableReference())
+		if err != nil {
+			return nil, err
+		}
+
+		if joinedTable.InnerJoinType().CROSS_SYMBOL() != nil || joinedTable.USING_SYMBOL() == nil {
+			return append(leftField, rightFiled...), nil
+		}
+
+		// ... JOIN ... USING (...) will merge the column in USING.
+		usingMap := make(map[string]bool)
+		for _, identifier := range parser.NormalizeMySQLIdentifierList(joinedTable.IdentifierListWithParentheses().IdentifierList()) {
+			// Column name in MySQL is NOT case sensitive.
+			usingMap[strings.ToLower(identifier)] = true
+		}
+
+		var result []fieldInfo
+
+		rightFieldMap := make(map[string]fieldInfo)
+		for _, right := range rightFiled {
+			// Column name in MySQL is NOT case sensitive.
+			rightFieldMap[strings.ToLower(right.name)] = right
+		}
+		for _, left := range leftField {
+			_, existsInUsingMap := usingMap[strings.ToLower(left.name)]
+			rField, existsInRightField := rightFieldMap[strings.ToLower(left.name)]
+			// Merge the sensitive attribute for the column in USING.
+			if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](rField.maskingLevel, left.maskingLevel) {
+				left.maskingLevel = rField.maskingLevel
+			}
+			result = append(result, left)
+		}
+
+		for _, right := range rightFiled {
+			_, existsInUsingMap := usingMap[strings.ToLower(right.name)]
+			_, existsInLeftField := leftFieldMap[strings.ToLower(right.name)]
+			if existsInUsingMap && existsInLeftField {
+				continue
+			}
+			result = append(result, right)
+		}
+		return result, nil
+	case joinedTable.OuterJoinType() != nil:
+		rightFiled, err := extractor.mysqlExtractTableReference(joinedTable.TableReference())
+		if err != nil {
+			return nil, err
+		}
+
+		if joinedTable.USING_SYMBOL() == nil {
+			return append(leftField, rightFiled...), nil
+		}
+
+		// ... JOIN ... USING (...) will merge the column in USING.
+		usingMap := make(map[string]bool)
+		for _, identifier := range parser.NormalizeMySQLIdentifierList(joinedTable.IdentifierListWithParentheses().IdentifierList()) {
+			// Column name in MySQL is NOT case sensitive.
+			usingMap[strings.ToLower(identifier)] = true
+		}
+
+		var result []fieldInfo
+
+		rightFieldMap := make(map[string]fieldInfo)
+		for _, right := range rightFiled {
+			// Column name in MySQL is NOT case sensitive.
+			rightFieldMap[strings.ToLower(right.name)] = right
+		}
+		for _, left := range leftField {
+			_, existsInUsingMap := usingMap[strings.ToLower(left.name)]
+			rField, existsInRightField := rightFieldMap[strings.ToLower(left.name)]
+			// Merge the sensitive attribute for the column in USING.
+			if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](rField.maskingLevel, left.maskingLevel) {
+				left.maskingLevel = rField.maskingLevel
+			}
+			result = append(result, left)
+		}
+
+		for _, right := range rightFiled {
+			_, existsInUsingMap := usingMap[strings.ToLower(right.name)]
+			_, existsInLeftField := leftFieldMap[strings.ToLower(right.name)]
+			if existsInUsingMap && existsInLeftField {
+				continue
+			}
+			result = append(result, right)
+		}
+		return result, nil
+	case joinedTable.NaturalJoinType() != nil:
+		var result []fieldInfo
+		rightFiled, err := extractor.mysqlExtractTableReference(joinedTable.TableReference())
+		if err != nil {
+			return nil, err
+		}
+		rightFieldMap := make(map[string]fieldInfo)
+		for _, right := range rightFiled {
+			// Column name in MySQL is NOT case sensitive.
+			rightFieldMap[strings.ToLower(right.name)] = right
+		}
+
+		// Natural join will merge the column with the same name.
+		for _, left := range leftField {
+			if rField, exists := rightFieldMap[strings.ToLower(left.name)]; exists && cmp.Less[storepb.MaskingLevel](left.maskingLevel, rField.maskingLevel) {
+				left.maskingLevel = rField.maskingLevel
+			}
+			result = append(result, left)
+		}
+
+		for _, right := range rightFiled {
+			if _, exists := leftFieldMap[strings.ToLower(right.name)]; exists {
+				continue
+			}
+			result = append(result, right)
+		}
+		return result, nil
+	}
+
+	// Never reach here.
+	return nil, errors.New("Unsupported join type")
 }
 
 func (extractor *sensitiveFieldExtractor) mysqlExtractTableFactor(ctx mysql.ITableFactorContext) ([]fieldInfo, error) {
@@ -620,17 +765,16 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractTableFunction(ctx mysql.IT
 		return nil, nil
 	}
 
-	sensitiveLevel, err := extractor.mysqlEvalMaskingLevelInExpr(ctx.Expr())
+	tableName, sensitiveLevel, err := extractor.mysqlEvalMaskingLevelInExpr(ctx.Expr())
 	if err != nil {
 		return nil, err
 	}
 
 	columnList := mysqlExtractColumnsClause(ctx.ColumnsClause())
 
-	var tableName string
 	if ctx.TableAlias() != nil {
 		tableName = parser.NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
-	} else {
+	} else if tableName == "" {
 		tableName = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Expr())
 	}
 
@@ -675,7 +819,7 @@ func mysqlExtractJtColumn(ctx mysql.IJtColumnContext) []string {
 
 func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
 	if ctx == nil {
-		return defaultMaskingLevel, nil
+		return "", defaultMaskingLevel, nil
 	}
 
 	switch ctx := ctx.(type) {
@@ -705,7 +849,9 @@ func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.
 		}
 		return "", finalLevel, nil
 	case mysql.IColumnRefContext:
-		level := extractor.mysqlCheckFieldMaskingLevel("", "", parser.NormalizeMySQLIdentifier(ctx.Identifier()))
+		databaseName, tableName, fieldName := parser.NormalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
+		level := extractor.mysqlCheckFieldMaskingLevel(databaseName, tableName, fieldName)
+		return fieldName, level, nil
 	}
 
 	var list []antlr.ParserRuleContext
@@ -756,24 +902,46 @@ func (extractor *sensitiveFieldExtractor) mysqlCheckFieldMaskingLevel(databaseNa
 	//
 	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
 	// This is the reason we loop the slice in reversed order.
-	// for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
-	// 	field := extractor.outerSchemaInfo[i]
-	// 	sameDatabase := (databaseName == field.database || (databaseName == "" && field.database == extractor.currentDatabase))
-	// 	sameTable := (tableName == field.table || tableName == "")
-	// 	sameField := (columnName == field.name)
-	// 	if sameDatabase && sameTable && sameField {
-	// 		return field.maskingLevel
-	// 	}
-	// }
+	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
+		field := extractor.outerSchemaInfo[i]
+		var sameDatabase, sameTable, sameField bool
+		if extractor.schemaInfo.IgnoreCaseSensitive {
+			sameDatabase = (strings.EqualFold(databaseName, field.database) ||
+				(databaseName == "" && strings.EqualFold(field.database, extractor.currentDatabase))) ||
+				(databaseName == "" && field.database == "")
+			sameTable = (strings.EqualFold(tableName, field.table) || tableName == "")
+		} else {
+			sameDatabase = (databaseName == field.database ||
+				(databaseName == "" && field.database == extractor.currentDatabase) ||
+				(databaseName == "" && field.database == ""))
+			sameTable = (tableName == field.table || tableName == "")
+		}
+		// Column name in MySQL is NOT case sensitive.
+		sameField = strings.EqualFold(columnName, field.name)
+		if sameDatabase && sameTable && sameField {
+			return field.maskingLevel
+		}
+	}
 
-	// for _, field := range extractor.fromFieldList {
-	// 	sameDatabase := (databaseName == field.database || (databaseName == "" && field.database == extractor.currentDatabase))
-	// 	sameTable := (tableName == field.table || tableName == "")
-	// 	sameField := (columnName == field.name)
-	// 	if sameDatabase && sameTable && sameField {
-	// 		return field.maskingLevel
-	// 	}
-	// }
+	for _, field := range extractor.fromFieldList {
+		var sameDatabase, sameTable, sameField bool
+		if extractor.schemaInfo.IgnoreCaseSensitive {
+			sameDatabase = (strings.EqualFold(databaseName, field.database) ||
+				(databaseName == "" && strings.EqualFold(field.database, extractor.currentDatabase)) ||
+				(databaseName == "" && field.database == ""))
+			sameTable = (strings.EqualFold(tableName, field.table) || tableName == "")
+		} else {
+			sameDatabase = (databaseName == field.database ||
+				(databaseName == "" && field.database == extractor.currentDatabase) ||
+				(databaseName == "" && field.database == ""))
+			sameTable = (tableName == field.table || tableName == "")
+		}
+		// Column name in MySQL is NOT case sensitive.
+		sameField = strings.EqualFold(columnName, field.name)
+		if sameDatabase && sameTable && sameField {
+			return field.maskingLevel
+		}
+	}
 
 	return defaultMaskingLevel
 }
