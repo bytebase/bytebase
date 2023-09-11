@@ -413,7 +413,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	case v1pb.Issue_TYPE_UNSPECIFIED:
 		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
 	case v1pb.Issue_GRANT_REQUEST:
-		return nil, status.Errorf(codes.Unimplemented, "issue type %q is not implemented yet", request.Issue.Type)
+		return s.createIssueGrantRequest(ctx, request)
 	case v1pb.Issue_DATABASE_CHANGE:
 		return s.createIssueDatabaseChange(ctx, request)
 	default:
@@ -538,6 +538,10 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	}
 
 	return converted, nil
+}
+
+func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
+	return nil, nil
 }
 
 // ApproveIssue approves the approval flow of the issue.
