@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
@@ -409,6 +410,19 @@ func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier strin
 
 // CreateIssue creates a issue.
 func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
+	switch request.Issue.Type {
+	case v1pb.Issue_TYPE_UNSPECIFIED:
+		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
+	case v1pb.Issue_GRANT_REQUEST:
+		return s.createIssueGrantRequest(ctx, request)
+	case v1pb.Issue_DATABASE_CHANGE:
+		return s.createIssueDatabaseChange(ctx, request)
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unknown issue type %q", request.Issue.Type)
+	}
+}
+
+func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
 	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
@@ -422,17 +436,6 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
-	}
-
-	switch request.Issue.Type {
-	case v1pb.Issue_TYPE_UNSPECIFIED:
-		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
-	case v1pb.Issue_GRANT_REQUEST:
-		return nil, status.Errorf(codes.Unimplemented, "issue type %q is not implemented yet", request.Issue.Type)
-	case v1pb.Issue_DATABASE_CHANGE:
-		// TODO(p0ny): refactor
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unknown issue type %q", request.Issue.Type)
 	}
 
 	if request.Issue.Plan == "" {
@@ -492,6 +495,111 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	}
 
 	issueCreatePayload := &storepb.IssuePayload{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: false,
+			ApprovalTemplates:   nil,
+			Approvers:           nil,
+		},
+	}
+	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
+	}
+	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
+
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
+	}
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+
+	createActivityPayload := api.ActivityIssueCreatePayload{
+		IssueName: issue.Title,
+	}
+	bytes, err := json.Marshal(createActivityPayload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   creatorID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueCreate,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
+	}
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: issue,
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+
+	converted, err := convertToIssue(ctx, s.store, issue)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+	}
+
+	return converted, nil
+}
+
+func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
+	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
+	}
+
+	assignee, err := s.store.GetUserByID(ctx, api.SystemBotID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get systemBot, error: %v", err)
+	}
+	if assignee == nil {
+		return nil, status.Errorf(codes.Internal, "systemBot not found")
+	}
+
+	if request.Issue.GrantRequest.GetRole() == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "expect grant request role")
+	}
+	if request.Issue.GrantRequest.GetUser() == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "expect grant request user")
+	}
+	if request.Issue.GrantRequest.GetCondition().GetExpression() == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "expect grant request condition expression")
+	}
+	e, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create cel environment, error: %v", err)
+	}
+	if _, issues := e.Compile(request.Issue.GrantRequest.GetCondition().GetExpression()); issues != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "found issues in grant request condition expression, issues: %v", issues.String())
+	}
+
+	issueCreateMessage := &store.IssueMessage{
+		Project:     project,
+		PlanUID:     nil,
+		PipelineUID: nil,
+		Title:       request.Issue.Title,
+		Status:      api.IssueOpen,
+		Type:        api.IssueGrantRequest,
+		Description: request.Issue.Description,
+		Assignee:    assignee,
+	}
+
+	convertedGrantRequest, err := convertGrantRequest(ctx, s.store, request.Issue.GrantRequest)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert GrantRequest, error: %v", err)
+	}
+
+	issueCreatePayload := &storepb.IssuePayload{
+		GrantRequest: convertedGrantRequest,
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
 			ApprovalTemplates:   nil,
@@ -1329,6 +1437,11 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		return nil, errors.Wrap(err, "failed to unmarshal issue payload")
 	}
 
+	convertedGrantRequest, err := convertToGrantRequest(ctx, s, issuePayload.GrantRequest)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert GrantRequest")
+	}
+
 	issueV1 := &v1pb.Issue{
 		Name:                 fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssuePrefix, issue.UID),
 		Uid:                  fmt.Sprintf("%d", issue.UID),
@@ -1347,6 +1460,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		UpdateTime:           timestamppb.New(issue.UpdatedTime),
 		Plan:                 "",
 		Rollout:              "",
+		GrantRequest:         convertedGrantRequest,
 	}
 
 	if issue.PlanUID != nil {
@@ -1480,4 +1594,50 @@ func convertToApprovalNodeGroupValue(v storepb.ApprovalNode_GroupValue) v1pb.App
 	default:
 		return v1pb.ApprovalNode_GROUP_VALUE_UNSPECIFILED
 	}
+}
+
+func convertToGrantRequest(ctx context.Context, s *store.Store, v *storepb.GrantRequest) (*v1pb.GrantRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	uid, err := common.GetUserID(v.User)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user uid from %q", v.User)
+	}
+	user, err := s.GetUserByID(ctx, uid)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user by uid %q", uid)
+	}
+	if user == nil {
+		return nil, errors.Errorf("user %q not found", v.User)
+	}
+	return &v1pb.GrantRequest{
+		Role:       v.Role,
+		User:       common.FormatUserEmail(user.Email),
+		Condition:  v.Condition,
+		Expiration: v.Expiration,
+	}, nil
+}
+
+func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantRequest) (*storepb.GrantRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	email, err := common.GetUserEmail(v.User)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user email from %q", v.User)
+	}
+	user, err := s.GetUser(ctx, &store.FindUserMessage{Email: &email})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user by email %q", email)
+	}
+	if user == nil {
+		return nil, errors.Errorf("user %q not found", v.User)
+	}
+	return &storepb.GrantRequest{
+		Role:       v.Role,
+		User:       common.FormatUserUID(user.ID),
+		Condition:  v.Condition,
+		Expiration: v.Expiration,
+	}, nil
 }

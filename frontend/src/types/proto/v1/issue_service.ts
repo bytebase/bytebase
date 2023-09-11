@@ -375,7 +375,7 @@ export interface GrantRequest {
   role: string;
   /**
    * The user to be granted.
-   * Format: users/hello@bytebase.com.
+   * Format: users/{email}.
    */
   user: string;
   condition?: Expr | undefined;
