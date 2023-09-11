@@ -80,6 +80,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register clickhouse driver.
+
 	// Register mysql driver.
 
 	// Register postgres driver.
