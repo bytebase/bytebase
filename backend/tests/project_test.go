@@ -32,16 +32,13 @@ func TestArchiveProject(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-
 	// Add an instance.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 		},
@@ -49,25 +46,19 @@ func TestArchiveProject(t *testing.T) {
 	a.NoError(err)
 
 	t.Run("ArchiveProjectWithDatbase", func(t *testing.T) {
-		project, err := ctl.createProject(ctx)
-		a.NoError(err)
-
 		databaseName := "db1"
-		err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "", nil)
+		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "", nil)
 		a.NoError(err)
 
 		_, err = ctl.projectServiceClient.DeleteProject(ctx, &v1pb.DeleteProjectRequest{
-			Name: project.Name,
+			Name: ctl.project.Name,
 		})
 		a.Error(err)
 	})
 
 	t.Run("ArchiveProjectWithOpenIssue", func(t *testing.T) {
-		project, err := ctl.createProject(ctx)
-		a.NoError(err)
-
 		plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
-			Parent: project.Name,
+			Parent: ctl.project.Name,
 			Plan: &v1pb.Plan{
 				Steps: []*v1pb.Plan_Step{
 					{
@@ -87,7 +78,7 @@ func TestArchiveProject(t *testing.T) {
 		})
 		a.NoError(err)
 		_, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
-			Parent: project.Name,
+			Parent: ctl.project.Name,
 			Issue: &v1pb.Issue{
 				Title:       "dummy issue",
 				Description: "dummy issue",
@@ -99,7 +90,7 @@ func TestArchiveProject(t *testing.T) {
 		a.NoError(err)
 
 		_, err = ctl.projectServiceClient.DeleteProject(ctx, &v1pb.DeleteProjectRequest{
-			Name: project.Name,
+			Name: ctl.project.Name,
 		})
 		a.ErrorContains(err, "resolve all open issues before deleting the project")
 	})

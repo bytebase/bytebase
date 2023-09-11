@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -22,7 +21,7 @@ import (
 
 var (
 	testTenantNumber = 1
-	prodTenantNumber = 3
+	prodTenantNumber = 2
 	testInstanceName = "testInstanceTest"
 	prodInstanceName = "testInstanceProd"
 )
@@ -41,8 +40,6 @@ func TestTenant(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.setLicense()
-	a.NoError(err)
 
 	// Create a project.
 	projectID := generateRandomString("project", 10)
@@ -72,10 +69,6 @@ func TestTenant(t *testing.T) {
 		a.NoError(err)
 		prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 	}
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-	testEnvironment, err := ctl.getEnvironment(ctx, "test")
-	a.NoError(err)
 
 	// Add the provisioned instances.
 	var testInstances []*v1pb.Instance
@@ -86,7 +79,7 @@ func TestTenant(t *testing.T) {
 			Instance: &v1pb.Instance{
 				Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 				Engine:      v1pb.Engine_SQLITE,
-				Environment: testEnvironment.Name,
+				Environment: "environments/test",
 				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 			},
@@ -100,7 +93,7 @@ func TestTenant(t *testing.T) {
 			Instance: &v1pb.Instance{
 				Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
 				Engine:      v1pb.Engine_SQLITE,
-				Environment: prodEnvironment.Name,
+				Environment: "environments/prod",
 				Activation:  true,
 				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 			},
@@ -172,30 +165,20 @@ func TestTenant(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	testStep, prodStep := &v1pb.Plan_Step{}, &v1pb.Plan_Step{}
-	for _, testDatabase := range testDatabases {
-		testStep.Specs = append(testStep.Specs, &v1pb.Plan_Spec{
-			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: testDatabase.Name,
-					Sheet:  sheet.Name,
-					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+	step := &v1pb.Plan_Step{
+		Specs: []*v1pb.Plan_Spec{
+			{
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Target: fmt.Sprintf("%s/deploymentConfigs/default", project.Name),
+						Sheet:  sheet.Name,
+						Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+					},
 				},
 			},
-		})
+		},
 	}
-	for _, prodDatabase := range prodDatabases {
-		prodStep.Specs = append(prodStep.Specs, &v1pb.Plan_Spec{
-			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: prodDatabase.Name,
-					Sheet:  sheet.Name,
-					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
-				},
-			},
-		})
-	}
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{testStep, prodStep})
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{step})
 	a.NoError(err)
 
 	// Query schema.
@@ -300,9 +283,6 @@ func TestTenantVCS(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
 				ExternalVersionControl: &v1pb.ExternalVersionControl{
@@ -327,8 +307,6 @@ func TestTenantVCS(t *testing.T) {
 				},
 				ProjectId: projectID,
 			})
-			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			// Create a repository.
@@ -372,10 +350,6 @@ func TestTenantVCS(t *testing.T) {
 				a.NoError(err)
 				prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 			}
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-			testEnvironment, err := ctl.getEnvironment(ctx, "test")
-			a.NoError(err)
 
 			// Add the provisioned instances.
 			var testInstances []*v1pb.Instance
@@ -386,7 +360,7 @@ func TestTenantVCS(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: testEnvironment.Name,
+						Environment: "environments/test",
 						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 					},
@@ -400,7 +374,7 @@ func TestTenantVCS(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 					},
@@ -473,11 +447,9 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 
 			// Query schema.
@@ -505,11 +477,8 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
-
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.setLicense()
-	a.NoError(err)
 
 	// Create a project.
 	projectID := generateRandomString("project", 10)
@@ -532,18 +501,13 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	prodInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, prodInstanceName)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-	testEnvironment, err := ctl.getEnvironment(ctx, "test")
-	a.NoError(err)
-
 	// Add the provisioned instances.
 	testInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       testInstanceName,
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: testEnvironment.Name,
+			Environment: "environments/test",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 		},
@@ -555,7 +519,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       testInstanceName,
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 		},
@@ -628,30 +592,20 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	testStep, prodStep := &v1pb.Plan_Step{}, &v1pb.Plan_Step{}
-	for _, testDatabase := range testDatabases {
-		testStep.Specs = append(testStep.Specs, &v1pb.Plan_Spec{
-			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: testDatabase.Name,
-					Sheet:  sheet.Name,
-					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+	step := &v1pb.Plan_Step{
+		Specs: []*v1pb.Plan_Spec{
+			{
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Target: fmt.Sprintf("%s/deploymentConfigs/default", project.Name),
+						Sheet:  sheet.Name,
+						Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+					},
 				},
 			},
-		})
+		},
 	}
-	for _, prodDatabase := range prodDatabases {
-		prodStep.Specs = append(prodStep.Specs, &v1pb.Plan_Spec{
-			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: prodDatabase.Name,
-					Sheet:  sheet.Name,
-					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
-				},
-			},
-		})
-	}
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{testStep, prodStep})
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{step})
 	a.NoError(err)
 
 	// Query schema.
@@ -757,9 +711,6 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
 				ExternalVersionControl: &v1pb.ExternalVersionControl{
@@ -786,12 +737,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				ProjectId: projectID,
 			})
 			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
-
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
-
 			// Create the branch
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
@@ -830,10 +777,6 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				a.NoError(err)
 				prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 			}
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-			testEnvironment, err := ctl.getEnvironment(ctx, "test")
-			a.NoError(err)
 
 			// Add the provisioned instances.
 			var testInstances []*v1pb.Instance
@@ -844,7 +787,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: testEnvironment.Name,
+						Environment: "environments/test",
 						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 					},
@@ -858,7 +801,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       fmt.Sprintf("%s-%d", prodInstanceName, i),
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 					},
@@ -936,11 +879,9 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 
 			// Query schema.
@@ -1059,9 +1000,6 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
 				ExternalVersionControl: &v1pb.ExternalVersionControl{
@@ -1087,12 +1025,8 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				ProjectId: projectID,
 			})
 			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
-
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
-
 			// Create the branch
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
@@ -1214,11 +1148,9 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issues.
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			issue := issues[0]
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issue.ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issue.Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 
 			// Query schema.
@@ -1324,9 +1256,6 @@ func TestTenantVCS_YAML(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
 				ExternalVersionControl: &v1pb.ExternalVersionControl{
@@ -1353,12 +1282,8 @@ func TestTenantVCS_YAML(t *testing.T) {
 				ProjectId: projectID,
 			})
 			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
-
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
-
 			// Create the branch
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
@@ -1480,10 +1405,9 @@ func TestTenantVCS_YAML(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issues.
-			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err := ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			a.Len(issues, 1)
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issues[0].ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issues[0].Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 
 			// Simulate Git commits for data update.
@@ -1513,9 +1437,9 @@ statement: |
 			a.NoError(err)
 
 			// Get data update issues.
-			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
+			issue, err = ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
-			err = ctl.waitRollout(ctx, fmt.Sprintf("%s/issues/%d", project.Name, issues[0].ID), fmt.Sprintf("%s/rollouts/%d", project.Name, issues[0].Pipeline.ID))
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
 		})
 	}

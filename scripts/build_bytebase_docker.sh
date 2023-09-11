@@ -1,7 +1,7 @@
 #!/bin/sh
 # ===========================================================================
-# File: build_docker.sh
-# Description: usage: ./build_docker.sh
+# File: build_bytebase_docker.sh
+# Description: usage: ./build_bytebase_docker.sh
 # ===========================================================================
 
 # exit when any command fails

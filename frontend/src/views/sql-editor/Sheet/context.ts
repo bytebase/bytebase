@@ -3,11 +3,10 @@ import { InjectionKey, Ref, inject, provide, ref, computed } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
-  useInstanceV1Store,
+  useDatabaseV1Store,
   useSheetV1Store,
   useTabStore,
 } from "@/store";
-import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
 import { AnyTabInfo, UNKNOWN_ID } from "@/types";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
@@ -143,12 +142,11 @@ export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
   let insId = String(UNKNOWN_ID);
   let dbId = String(UNKNOWN_ID);
   if (sheet.database) {
-    const [instanceName, databaseId] = getInstanceAndDatabaseId(sheet.database);
-    const ins = useInstanceV1Store().getInstanceByName(
-      `instances/${instanceName}`
+    const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
+      sheet.database
     );
-    insId = ins.uid;
-    dbId = databaseId;
+    insId = database.instanceEntity.uid;
+    dbId = database.uid;
   }
 
   tabStore.updateCurrentTab({

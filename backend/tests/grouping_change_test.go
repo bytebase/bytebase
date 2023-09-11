@@ -140,14 +140,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			err = ctl.setLicense()
-			a.NoError(err)
-
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
 
 			instanceResourceID2InstanceTitle := make(map[string]string)
 			for _, prepareInstance := range tc.prepareInstances {
@@ -159,7 +151,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       prepareInstance.instanceTitle,
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 						Activation:  true,
 					},
@@ -167,16 +159,16 @@ func TestCreateDatabaseGroup(t *testing.T) {
 				a.NoError(err)
 				instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
 				for preCreateDatabase := range prepareInstance.matchedDatabasesName {
-					err = ctl.createDatabaseV2(ctx, project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 				}
 				for preCreateDatabase := range prepareInstance.unmatchedDatabaseName {
-					err = ctl.createDatabaseV2(ctx, project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 				}
 			}
 			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
-				Parent:          project.Name,
+				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
 					DatabasePlaceholder: tc.databaseGroupPlaceholder,
@@ -390,14 +382,6 @@ func TestCreateTableGroup(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			err = ctl.setLicense()
-			a.NoError(err)
-
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
 
 			instanceResourceID2InstanceTitle := make(map[string]string)
 			for _, prepareInstance := range tc.prepareInstances {
@@ -409,7 +393,7 @@ func TestCreateTableGroup(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       prepareInstance.instanceTitle,
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 						Activation:  true,
 					},
@@ -417,7 +401,7 @@ func TestCreateTableGroup(t *testing.T) {
 				a.NoError(err)
 				instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
 				for preCreateDatabase := range prepareInstance.matchDatabasesNameTableName {
-					err = ctl.createDatabaseV2(ctx, project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 					dbDriver, err := db.Open(ctx, db.SQLite, db.DriverConfig{}, db.ConnectionConfig{
 						Host:     instanceDir,
@@ -443,7 +427,7 @@ func TestCreateTableGroup(t *testing.T) {
 				}
 			}
 			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
-				Parent:          project.Name,
+				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
 					DatabasePlaceholder: tc.databaseGroupPlaceholder,
@@ -701,14 +685,6 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			err = ctl.setLicense()
-			a.NoError(err)
-
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
 
 			instanceResourceID2InstanceTitle := make(map[string]string)
 			var stopInstances []func()
@@ -723,7 +699,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 					Instance: &v1pb.Instance{
 						Title:       prepareInstance.instanceID,
 						Engine:      v1pb.Engine_MYSQL,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "root", Password: ""}},
 						Activation:  true,
 					},
@@ -732,7 +708,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				instanceResourceID2InstanceTitle[prepareInstance.instanceID] = instance.Title
 
 				for preCreateDatabase := range prepareInstance.matchDatabasesNameTableName {
-					err = ctl.createDatabaseV2(ctx, project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 					dbDriver, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s", mysqlPort, preCreateDatabase))
 					a.NoError(err)
@@ -754,7 +730,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 					a.NoError(err)
 				}
 				for preCreateDatabase, preCreateTables := range prepareInstance.unmatchedDatabaseNameTableName {
-					err = ctl.createDatabaseV2(ctx, project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 					dbDriver, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s", mysqlPort, preCreateDatabase))
 					a.NoError(err)
@@ -780,7 +756,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			}()
 
 			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
-				Parent:          project.Name,
+				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
 					DatabasePlaceholder: tc.databaseGroupPlaceholder,
@@ -812,7 +788,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			}
 
 			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-				Parent: project.Name,
+				Parent: ctl.project.Name,
 				Sheet: &v1pb.Sheet{
 					Title:      "migration statement sheet",
 					Content:    []byte(tc.statement),
@@ -822,7 +798,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				},
 			})
 			a.NoError(err)
-			_, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+			_, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{

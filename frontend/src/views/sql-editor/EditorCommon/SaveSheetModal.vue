@@ -4,12 +4,13 @@
     :title="$t('sql-editor.save-sheet')"
     @close="close"
   >
-    <SaveSheetForm @close="close" @save-sheet="trySaveSheet" />
+    <SaveSheetForm @close="close" @confirm="doSaveSheet" />
   </BBModal>
 </template>
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useDatabaseV1Store, useSheetV1Store, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import {
@@ -18,12 +19,9 @@ import {
   Sheet_Type,
   Sheet,
 } from "@/types/proto/v1/sheet_service";
-import {
-  extractSheetUID,
-  getSuggestedTabNameFromConnection,
-  isSimilarDefaultTabName,
-} from "@/utils";
+import { extractSheetUID } from "@/utils";
 import { useSheetContext } from "../Sheet";
+import { useSQLEditorContext } from "../context";
 import SaveSheetForm from "./SaveSheetForm.vue";
 
 type LocalState = {
@@ -34,6 +32,7 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const sheetV1Store = useSheetV1Store();
 const { events: sheetEvents } = useSheetContext();
+const { events: editorEvents } = useSQLEditorContext();
 
 const state = reactive<LocalState>({
   showModal: false,
@@ -55,9 +54,9 @@ const allowSave = computed((): boolean => {
   return true;
 });
 
-const doSaveSheet = async (sheetTitle?: string) => {
+const doSaveSheet = async (title: string) => {
   const { name, statement, sheetName } = tabStore.currentTab;
-  sheetTitle = sheetTitle || name;
+  title = title || name;
 
   const sheetId = Number(extractSheetUID(sheetName ?? ""));
 
@@ -69,12 +68,12 @@ const doSaveSheet = async (sheetTitle?: string) => {
     sheet = await sheetV1Store.patchSheet({
       name: sheetName,
       database: database.name,
-      title: sheetTitle,
+      title: title,
       content: new TextEncoder().encode(statement),
     });
   } else {
     sheet = await sheetV1Store.createSheet(database.project, {
-      title: sheetTitle,
+      title: title,
       content: new TextEncoder().encode(statement),
       database: database.name,
       visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
@@ -88,52 +87,43 @@ const doSaveSheet = async (sheetTitle?: string) => {
     tabStore.updateCurrentTab({
       sheetName: sheet.name,
       isSaved: true,
-      name: sheetTitle,
+      name: title,
     });
 
     // Refresh "my" sheet list.
     sheetEvents.emit("refresh", { views: ["my"] });
   }
+  state.showModal = false;
 };
 
-const needSheetName = (sheetName: string | undefined) => {
+const needSheetTitle = (title: string) => {
   const tab = tabStore.currentTab;
   if (tab.sheetName) {
     // If the sheet is saved, we don't need to show the name popup.
     return false;
   }
-  if (!sheetName) {
-    const name = tab.name;
-    if (
-      name === getSuggestedTabNameFromConnection(tab.connection) ||
-      isSimilarDefaultTabName(name)
-    ) {
-      // The tab is unsaved and its name is still the default one.
-      return true;
-    }
-  }
-  return false;
+  return true;
 };
 
-const trySaveSheet = (sheetTitle?: string) => {
+const trySaveSheet = (title: string) => {
   if (!allowSave.value) {
     return;
   }
 
-  if (needSheetName(sheetTitle)) {
+  if (needSheetTitle(title)) {
     state.showModal = true;
     return;
   }
   state.showModal = false;
 
-  doSaveSheet(sheetTitle);
+  doSaveSheet(title);
 };
 
 const close = () => {
   state.showModal = false;
 };
 
-defineExpose({
-  trySaveSheet,
+useEmitteryEventListener(editorEvents, "save-sheet", ({ title }) => {
+  trySaveSheet(title);
 });
 </script>

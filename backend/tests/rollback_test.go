@@ -41,12 +41,6 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopInstance()
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -54,7 +48,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
@@ -63,7 +57,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabaseV2(ctx, project, instance, nil, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -82,7 +76,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	t.Log("Schema initialized.")
 
 	dmlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title: "migration statement sheet",
 			Content: []byte(`
@@ -97,7 +91,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 
 	// Run a DML issue.
-	_, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+	_, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{
@@ -139,7 +133,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 
 	// Run a rollback issue.
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{
@@ -200,12 +194,6 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopInstance()
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -213,7 +201,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       t.Name(),
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
@@ -222,7 +210,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabaseV2(ctx, project, instance, nil, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -241,7 +229,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	t.Log("Schema initialized.")
 
 	dmlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title: "migration statement sheet",
 			Content: []byte(`
@@ -256,7 +244,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 
 	// Run a DML issue with rollbackEnabled set to false.
-	plan, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+	plan, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{
@@ -309,7 +297,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 
 	// Run a rollback issue.
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{
@@ -370,12 +358,6 @@ func TestRollbackCanceled(t *testing.T) {
 	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopInstance()
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -383,7 +365,7 @@ func TestRollbackCanceled(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       t.Name(),
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
@@ -392,7 +374,7 @@ func TestRollbackCanceled(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabaseV2(ctx, project, instance, nil, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -411,7 +393,7 @@ func TestRollbackCanceled(t *testing.T) {
 	t.Log("Schema initialized.")
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title: "delete statement sheet",
 			Content: []byte(`
@@ -426,7 +408,7 @@ func TestRollbackCanceled(t *testing.T) {
 	a.NoError(err)
 
 	// Run a DML issue.
-	plan, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{
+	plan, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{

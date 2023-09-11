@@ -45,7 +45,12 @@ import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
 import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { extractSheetUID, getSheetStatement, setSheetStatement } from "@/utils";
+import {
+  extractDeploymentConfigName,
+  extractSheetUID,
+  getSheetStatement,
+  setSheetStatement,
+} from "@/utils";
 
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
@@ -140,6 +145,11 @@ const createSheets = async () => {
   const sheetNameMap = new Map<string, string>();
   for (let i = 0; i < pendingCreateSheetList.length; i++) {
     const sheet = pendingCreateSheetList[i];
+    if (extractDeploymentConfigName(sheet.database)) {
+      // If a sheet's target is a deploymentConfig, it should be unset
+      // since it actually doesn't belongs to any exact database.
+      sheet.database = "";
+    }
     sheet.title = issue.value.title;
     const createdSheet = await useSheetV1Store().createSheet(
       issue.value.project,

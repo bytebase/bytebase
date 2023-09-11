@@ -579,9 +579,10 @@
           "self": "Sign-in frequency",
           "description": "Sign-in frequency is the period before a user must sign in again.",
           "hours": "Hour(s)",
-          "days": "Day(s)"
+          "days": "Day(s)",
+          "config-updated": "Configuration is updated. Need to restart Bytebase and re-login to take effect."
         },
-        "config-updated": "Configuration is updated. Need to restart Bytebase and re-login to take effect.",
+        "config-updated": "Configuration is updated.",
         "plugin": {
           "openai": {
             "ai-augmentation": "AI Augmentation",
@@ -915,7 +916,8 @@
         "selected-task": "Selected task",
         "selected-stage": "Selected stage",
         "all-tasks": "All tasks"
-      }
+      },
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "In batch mode, current change will be applied to all tasks."
     },
     "not-editable-legacy-issue": "This issue is not editable because it was created in an old version of Bytebase",
     "action-anyway": "{action} anyway"

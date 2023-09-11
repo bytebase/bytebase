@@ -67,18 +67,9 @@ DROP SCHEMA "schema_a";
 
 	_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
 	a.NoError(err)
-
 	_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
 	a.NoError(err)
-
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
-	a.NoError(err)
-
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -86,14 +77,14 @@ DROP SCHEMA "schema_a";
 		Instance: &v1pb.Instance{
 			Title:       "pgTestSyncSchema",
 			Engine:      v1pb.Engine_POSTGRES,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, databaseName, "bytebase", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -102,7 +93,7 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:      "create schema",
 			Content:    []byte(createSchema),
@@ -114,7 +105,7 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
-	err = ctl.changeDatabase(ctx, project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
 	resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
@@ -126,7 +117,7 @@ DROP SCHEMA "schema_a";
 	a.Equal(1, len(histories))
 	latest := histories[0]
 
-	err = ctl.createDatabaseV2(ctx, project, instance, nil /* environment */, newDatabaseName, "bytebase", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, "bytebase", nil)
 	a.NoError(err)
 
 	newDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{

@@ -6,7 +6,6 @@ import { rolloutServiceClient } from "@/grpcweb";
 import { TemplateType } from "@/plugins";
 import {
   useDatabaseV1Store,
-  useDeploymentConfigV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
   useSheetV1Store,
@@ -30,9 +29,7 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import {
   extractSheetUID,
-  getPipelineFromDeploymentScheduleV1,
   getSheetStatement,
-  instanceV1HasAlterSchema,
   setSheetNameForTask,
   setSheetStatement,
   sheetNameOfTaskV1,
@@ -208,42 +205,16 @@ export const buildStepsViaDeploymentConfig = async (
   params: CreateIssueParams,
   sheetUID: string
 ) => {
-  const { route, project } = params;
-  const deploymentConfig =
-    await useDeploymentConfigV1Store().fetchDeploymentConfigByProjectName(
-      project.name
-    );
-  let databaseList = useDatabaseV1Store().databaseListByProject(project.name);
-  const template = route.query.template as TemplateType;
-
-  if (
-    template === "bb.issue.database.schema.update" ||
-    template === "bb.issue.database.schema.update.ghost"
-  ) {
-    databaseList = databaseList.filter((db) =>
-      instanceV1HasAlterSchema(db.instanceEntity)
-    );
-  }
-  const stages = getPipelineFromDeploymentScheduleV1(
-    databaseList,
-    deploymentConfig?.schedule
-  ).filter((stage) => stage.length > 0);
-  const steps: Plan_Step[] = [];
-  let index = 0;
-  for (let i = 0; i < stages.length; i++) {
-    const step = Plan_Step.fromJSON({});
-    const databases = stages[i];
-    for (let j = 0; j < databases.length; j++) {
-      const db = databases[j];
-      const spec = await buildSpecForTarget(db.name, params, sheetUID);
-      step.specs.push(spec);
-      maybeSetInitialSQLForSpec(spec, index, params);
-
-      index++;
-    }
-    steps.push(step);
-  }
-  return steps;
+  const { project } = params;
+  const spec = await buildSpecForTarget(
+    `${project.name}/deploymentConfigs/default`,
+    params,
+    sheetUID
+  );
+  const step = Plan_Step.fromPartial({
+    specs: [spec],
+  });
+  return [step];
 };
 
 export const buildSpecForTarget = async (
