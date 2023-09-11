@@ -3,7 +3,12 @@ import type { SelectOption } from "naive-ui";
 import { type Factor, SQLTypeList } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
 import { useEnvironmentV1Store, useProjectV1ListByCurrentUser } from "@/store";
-import { engineName, PresetRiskLevelList, SupportedSourceList } from "@/types";
+import {
+  engineName,
+  PresetRiskLevelList,
+  SupportedSourceList,
+  DEFAULT_PROJECT_V1_NAME,
+} from "@/types";
 import {
   Risk,
   Risk_Source,
@@ -132,10 +137,15 @@ const getEnvironmentIdOptions = () => {
 
 const getProjectIdOptions = () => {
   const { projectList } = useProjectV1ListByCurrentUser();
-  return projectList.value.map<SelectOption>((proj) => ({
-    label: proj.title,
-    value: extractProjectResourceName(proj.name),
-  }));
+  return projectList.value
+    .filter((proj) => proj.name != DEFAULT_PROJECT_V1_NAME)
+    .map<SelectOption>((proj) => {
+      const projectId = extractProjectResourceName(proj.name);
+      return {
+        label: projectId,
+        value: projectId,
+      };
+    });
 };
 
 const getDBEndingOptions = () => {

@@ -12,6 +12,7 @@ import {
   useProjectV1ListByCurrentUser,
   useSettingV1Store,
 } from "@/store";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,
@@ -40,9 +41,10 @@ export const getClassificationLevelOptions = () => {
 export const getEnvironmentIdOptions = () => {
   const environmentList = useEnvironmentV1Store().getEnvironmentList();
   return environmentList.map<SelectOption>((env) => {
+    const environmentId = extractEnvironmentResourceName(env.name);
     return {
-      label: env.title,
-      value: extractEnvironmentResourceName(env.name),
+      label: environmentId,
+      value: environmentId,
     };
   });
 };
@@ -50,19 +52,25 @@ export const getEnvironmentIdOptions = () => {
 export const getInstanceIdOptions = () => {
   const { instanceList } = useInstanceV1List(false);
   return instanceList.value.map<SelectOption>((ins) => {
+    const instanceId = extractInstanceResourceName(ins.name);
     return {
-      label: ins.title,
-      value: extractInstanceResourceName(ins.name),
+      label: instanceId,
+      value: instanceId,
     };
   });
 };
 
 export const getProjectIdOptions = () => {
   const { projectList } = useProjectV1ListByCurrentUser();
-  return projectList.value.map<SelectOption>((proj) => ({
-    label: proj.title,
-    value: extractProjectResourceName(proj.name),
-  }));
+  return projectList.value
+    .filter((proj) => proj.name != DEFAULT_PROJECT_V1_NAME)
+    .map<SelectOption>((proj) => {
+      const projectId = extractProjectResourceName(proj.name);
+      return {
+        label: projectId,
+        value: projectId,
+      };
+    });
 };
 
 export const factorSupportDropdown: Factor[] = [
