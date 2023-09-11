@@ -626,7 +626,7 @@
       "remove-sensitive-column-tips": "Expose this column?",
       "sensitive-column-list": "Sensitive Column List",
       "global-masking-rule": "Global Masking Rule",
-      "data-feature": "Data Feature",
+      "semantic-types": "Semantic Types",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
       "global-rules": {
