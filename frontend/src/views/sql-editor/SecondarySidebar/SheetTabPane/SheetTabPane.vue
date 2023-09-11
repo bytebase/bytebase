@@ -2,9 +2,9 @@
   <NTabs
     v-model:value="sheetTab"
     size="small"
-    class="h-full pt-1.5 px-1"
+    class="bb-sql-editor--sheet-tab-pane--tabs h-full pt-1.5 px-1"
     pane-style="height: calc(100% - 29px); padding: 0;"
-    :tabs-padding="4"
+    justify-content="space-between"
   >
     <NTabPane name="my" :tab="$t('sheet.mine')">
       <SheetList view="my" />
@@ -33,3 +33,16 @@ useEmitteryEventListener(sheetEvents, "add-sheet", () => {
   sheetTab.value = "my";
 });
 </script>
+
+<style lang="postcss">
+.bb-sql-editor--sheet-tab-pane--tabs
+  .n-tabs-nav-scroll-wrapper--shadow-start::before,
+.bb-sql-editor--sheet-tab-pane--tabs
+  .n-tabs-nav-scroll-wrapper--shadow-end::after {
+  @apply hidden;
+}
+
+.bb-sql-editor--sheet-tab-pane--tabs .n-tabs-wrapper {
+  @apply px-1;
+}
+</style>

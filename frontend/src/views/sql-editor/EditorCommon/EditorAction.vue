@@ -60,7 +60,7 @@
           type="primary"
           size="small"
           :disabled="!allowSave"
-          @click="() => emit('save-sheet')"
+          @click="handleClickSave"
         >
           <carbon:save class="-ml-1" />
           <span class="ml-1">{{ $t("common.save") }}</span>
@@ -120,6 +120,7 @@ import {
 import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import { formatEngineV1, keyboardShortcutStr } from "@/utils";
+import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import SharePopover from "./SharePopover.vue";
 
@@ -128,7 +129,6 @@ interface LocalState {
 }
 
 const emit = defineEmits<{
-  (e: "save-sheet", content?: string): void;
   (
     e: "execute",
     sql: string,
@@ -143,6 +143,7 @@ const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 const uiStateStore = useUIStateStore();
 const webTerminalStore = useWebTerminalStore();
+const { events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
@@ -239,6 +240,12 @@ const handleFormatSQL = () => {
 
 const handleClearScreen = () => {
   emit("clear-screen");
+};
+
+const handleClickSave = () => {
+  events.emit("save-sheet", {
+    title: tabStore.currentTab.name,
+  });
 };
 
 const handleShareButtonClick = () => {

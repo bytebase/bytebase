@@ -10,7 +10,6 @@
       :options="EDITOR_OPTIONS"
       @change="handleChange"
       @change-selection="handleChangeSelection"
-      @save="handleSaveSheet"
       @ready="handleEditorReady"
     />
   </div>
@@ -56,7 +55,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (e: "save-sheet", content?: string): void;
   (e: "update:sql", sql: string): void;
   (
     e: "execute",
@@ -152,10 +150,6 @@ const handleChangeSelection = (value: string) => {
   tabStore.updateCurrentTab({
     selectedStatement: value,
   });
-};
-
-const handleSaveSheet = () => {
-  emit("save-sheet");
 };
 
 const handleEditorReady = async () => {

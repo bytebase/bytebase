@@ -21,7 +21,7 @@ import { useTabStore } from "@/store";
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "save-sheet", content: string): void;
+  (e: "confirm", title: string): void;
 }>();
 
 const tabStore = useTabStore();
@@ -30,7 +30,7 @@ const sheetTitle = ref(tabStore.currentTab.name);
 const sheetNameInputRef = ref();
 
 const handleSaveSheet = () => {
-  emit("save-sheet", sheetTitle.value);
+  emit("confirm", sheetTitle.value);
 };
 
 nextTick(() => {

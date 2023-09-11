@@ -9,6 +9,10 @@
       },
       [sheetTypeForTab(tab).toLowerCase()],
     ]"
+    :data-is-fresh-new="tab.isFreshNew"
+    :data-is-saved="tab.isSaved"
+    :data-is-disconnected="isDisconnectedTab(tab)"
+    :data-sheet-type="sheetTypeForTab(tab)"
     @mousedown.left="$emit('select', tab, index)"
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
@@ -28,7 +32,7 @@ import { computed, PropType, reactive } from "vue";
 import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
-import { sheetTypeForTab } from "@/utils";
+import { isDisconnectedTab, sheetTypeForTab } from "@/utils";
 import AdminLabel from "./AdminLabel.vue";
 import Label from "./Label.vue";
 import Prefix from "./Prefix.vue";

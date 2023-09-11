@@ -61,7 +61,11 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import { useSQLEditorStore, useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
-import { defer, getSuggestedTabNameFromConnection } from "@/utils";
+import {
+  defer,
+  getSuggestedTabNameFromConnection,
+  sheetTypeForTab,
+} from "@/utils";
 import ProfileDropdown from "../ProfileDropdown";
 import { useSheetContext } from "../Sheet";
 import ContextMenu from "./ContextMenu.vue";
@@ -263,7 +267,7 @@ useEmitteryEventListener(
     if (action === "CLOSE_SAVED") {
       for (let i = max; i >= 0; i--) {
         const tab = tabList[i];
-        if (tab.isSaved) {
+        if (sheetTypeForTab(tab) === "CLEAN") {
           await remove(tab, i);
         }
       }
@@ -284,6 +288,6 @@ useEmitteryEventListener(
 }
 
 .tab-list {
-  @apply flex flex-nowrap overflow-x-auto max-w-full hide-scrollbar;
+  @apply flex flex-nowrap overflow-x-auto max-w-full hide-scrollbar overscroll-none;
 }
 </style>
