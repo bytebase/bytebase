@@ -12,6 +12,7 @@ func TestMySQLParser(t *testing.T) {
 	tests := []struct {
 		statement    string
 		errorMessage string
+		total        int
 	}{
 		{
 			statement:    "aaa",
@@ -19,15 +20,19 @@ func TestMySQLParser(t *testing.T) {
 		},
 		{
 			statement: "select * from t;\n -- comments",
+			total:     1,
 		},
 		{
 			statement: "SELECT count(t.a) as TID from t1 as t;",
+			total:     1,
 		},
 		{
-			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
+			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;   		",
+			total:     2,
 		},
 		{
 			statement: "CREATE TABLE t1 (c1 INT);",
+			total:     1,
 		},
 		{
 			statement: `
@@ -60,6 +65,7 @@ func TestMySQLParser(t *testing.T) {
 				CALL complex_procedure('MySQL', @output_value);
 				SELECT @output_value;
 			`,
+			total: 4,
 		},
 		{
 			statement: `CREATE TABLE IF NOT EXISTS test_table (
@@ -71,13 +77,15 @@ func TestMySQLParser(t *testing.T) {
 			REPLACE INTO test_table (id, name, description)
 			VALUES (1, 'Test', 'This is a test.');
 			`,
+			total: 2,
 		},
 	}
 
 	for i, test := range tests {
-		_, err := ParseMySQL(test.statement)
+		list, err := ParseMySQL(test.statement)
 		if test.errorMessage == "" {
 			require.NoError(t, err, i)
+			require.Equal(t, test.total, len(list), i)
 		} else {
 			require.EqualError(t, err, test.errorMessage)
 		}
