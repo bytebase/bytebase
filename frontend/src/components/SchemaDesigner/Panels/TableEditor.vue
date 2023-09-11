@@ -80,9 +80,8 @@
           <div
             class="table-body-item-container flex items-center gap-x-2 ml-3 text-sm"
           >
-            {{ getColumnClassification(column)?.title ?? "N/A" }}
             <ClassificationLevelBadge
-              :level-id="getColumnClassification(column)?.levelId"
+              :classification="column.classification"
               :classification-config="classificationConfig"
             />
             <div
@@ -90,7 +89,7 @@
               class="flex"
             >
               <button
-                v-if="getColumnClassification(column)"
+                v-if="column.classification"
                 class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
                 @click.prevent="column.classification = ''"
               >
@@ -672,17 +671,6 @@ const classificationConfig = computed(() => {
     project.value.dataClassificationConfigId
   );
 });
-
-const getColumnClassification = (column: Column) => {
-  if (!classificationConfig.value) {
-    return;
-  }
-  const { classification } = column;
-  if (!classification) {
-    return;
-  }
-  return classificationConfig.value.classification[classification];
-};
 
 const onClassificationSelect = (classificationId: string) => {
   if (!table.value.columnList[state.pendingUpdateColumnIndex]) {

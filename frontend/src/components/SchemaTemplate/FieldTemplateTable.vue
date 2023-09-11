@@ -12,11 +12,8 @@
         {{ item.column?.name }}
       </div>
       <div class="bb-grid-cell flex gap-x-1">
-        {{ getColumnClassification(item.column?.classification)?.title }}
         <ClassificationLevelBadge
-          :level-id="
-            getColumnClassification(item.column?.classification)?.levelId
-          "
+          :classification="item.column?.classification"
           :classification-config="classificationConfig"
         />
       </div>
@@ -124,11 +121,4 @@ const deleteTemplate = async (id: string) => {
 const classificationConfig = computed(() => {
   return settingStore.classification[0];
 });
-
-const getColumnClassification = (classificationId: string | undefined) => {
-  if (!classificationId || !classificationConfig.value) {
-    return;
-  }
-  return classificationConfig.value.classification[classificationId];
-};
 </script>
