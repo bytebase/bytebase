@@ -624,7 +624,7 @@
       "remove-sensitive-column-tips": "不再对此列数据脱敏？",
       "sensitive-column-list": "敏感数据列表",
       "global-masking-rule": "全局脱敏规则",
-      "data-feature": "数据特征",
+      "semantic-types": "语义类型",
       "grant-access": "授权访问",
       "never-expires": "无过期时间",
       "global-rules": {

@@ -4,6 +4,7 @@
       <div class="flex-1 space-y-2 py-4 overflow-x-hidden overflow-y-auto">
         <h3 class="font-medium text-sm text-control">
           {{ $t("custom-approval.security-rule.condition.self") }}
+          {{ index }}
         </h3>
         <ExprEditor
           :expr="state.expr"
@@ -75,6 +76,7 @@ import {
 import { factorSupportDropdown, factorOperatorOverrideMap } from "./utils";
 
 const props = defineProps<{
+  index: number;
   isCreate?: boolean;
   readonly: boolean;
   disabled: boolean;

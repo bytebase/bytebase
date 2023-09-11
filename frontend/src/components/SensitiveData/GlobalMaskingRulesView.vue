@@ -1,30 +1,6 @@
 <template>
   <div class="w-full mt-4 space-y-4">
-    <div class="flex items-center justify-between">
-      <!-- Filter -->
-      <div class="flex items-center gap-x-3">
-        <div class="textlabel">
-          {{ $t("settings.sensitive-data.masking-level.self") }}
-        </div>
-        <label
-          v-for="item in levelFilterItemList"
-          :key="item.value"
-          class="flex items-center gap-x-2 text-sm text-gray-600"
-        >
-          <NCheckbox
-            :checked="state.checkedLevel.has(item.value)"
-            @update:checked="toggleCheckLevel(item.value, $event)"
-          >
-            <BBBadge
-              class="whitespace-nowrap"
-              :text="item.label"
-              :can-remove="false"
-              :badge-style="item.style"
-              size="small"
-            />
-          </NCheckbox>
-        </label>
-      </div>
+    <div class="flex items-center justify-end">
       <div v-if="state.reorderRules" class="flex items-center space-x-3">
         <NButton
           :disabled="state.processing"
@@ -54,12 +30,7 @@
             !hasSensitiveDataFeature ||
             state.maskingRuleItemList.length <= 1
           "
-          @click="
-            () => {
-              state.checkedLevel.clear();
-              state.reorderRules = true;
-            }
-          "
+          @click="state.reorderRules = true"
         >
           {{ $t("settings.sensitive-data.global-rules.re-order") }}
         </NButton>
@@ -74,7 +45,7 @@
     </div>
     <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
       <div
-        v-if="filteredRuleList.length === 0"
+        v-if="state.maskingRuleItemList.length === 0"
         class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex justify-center items-center"
       >
         <div class="text-center flex flex-col justify-center items-center">
@@ -82,7 +53,7 @@
         </div>
       </div>
       <div
-        v-for="(item, index) in filteredRuleList"
+        v-for="(item, index) in state.maskingRuleItemList"
         :key="item.rule.id"
         class="flex items-start space-x-5"
       >
@@ -95,7 +66,7 @@
           </button>
           <button @click="onReorder(item, 1)">
             <heroicons-solid:arrow-circle-down
-              v-if="index !== filteredRuleList.length - 1"
+              v-if="index !== state.maskingRuleItemList.length - 1"
               class="w-6 h-6"
             />
           </button>
@@ -114,6 +85,7 @@
           </div>
         </NPopconfirm>
         <MaskingRuleConfig
+          :index="index + 1"
           :readonly="!hasPermission || state.reorderRules"
           :disabled="state.processing"
           :masking-rule="item.rule"
@@ -129,12 +101,11 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox, NPopconfirm } from "naive-ui";
+import { NPopconfirm } from "naive-ui";
 import type { SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import BBBadge, { type BBBadgeStyle } from "@/bbkit/BBBadge.vue";
 import { Factor } from "@/plugins/cel";
 import {
   featureToRef,
@@ -142,7 +113,7 @@ import {
   useCurrentUserV1,
   usePolicyV1Store,
 } from "@/store";
-import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
+import { MaskingLevel } from "@/types/proto/v1/common";
 import {
   Policy,
   PolicyType,
@@ -159,19 +130,12 @@ import {
 
 type MaskingRuleMode = "CREATE" | "EDIT";
 
-type LevelFilterItem = {
-  value: number;
-  label: string;
-  style: BBBadgeStyle;
-};
-
 interface MaskingRuleItem {
   mode: MaskingRuleMode;
   rule: MaskingRulePolicy_MaskingRule;
 }
 
 interface LocalState {
-  checkedLevel: Set<MaskingLevel>;
   maskingRuleItemList: MaskingRuleItem[];
   processing: boolean;
   reorderRules: boolean;
@@ -179,7 +143,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
-  checkedLevel: new Set<MaskingLevel>(),
   maskingRuleItemList: [],
   processing: false,
   reorderRules: false,
@@ -217,45 +180,6 @@ const updateList = async () => {
 onMounted(async () => {
   await updateList();
 });
-
-const levelFilterItemList = computed(() => {
-  return [
-    MaskingLevel.FULL,
-    MaskingLevel.PARTIAL,
-    MaskingLevel.NONE,
-  ].map<LevelFilterItem>((level) => {
-    return {
-      value: level,
-      label: t(
-        `settings.sensitive-data.masking-level.${maskingLevelToJSON(
-          level
-        ).toLowerCase()}`
-      ),
-      style:
-        level === MaskingLevel.FULL
-          ? "CRITICAL"
-          : level === MaskingLevel.PARTIAL
-          ? "WARN"
-          : level === MaskingLevel.NONE
-          ? "INFO"
-          : "DISABLED",
-    };
-  });
-});
-
-const filteredRuleList = computed(() => {
-  return state.maskingRuleItemList.filter((item) => {
-    return (
-      state.checkedLevel.size === 0 ||
-      state.checkedLevel.has(item.rule.maskingLevel)
-    );
-  });
-});
-
-const toggleCheckLevel = (level: number, checked: boolean) => {
-  if (checked) state.checkedLevel.add(level);
-  else state.checkedLevel.delete(level);
-};
 
 const addNewRule = () => {
   state.maskingRuleItemList.push({

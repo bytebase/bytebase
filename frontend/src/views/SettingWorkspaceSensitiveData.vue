@@ -64,8 +64,8 @@ const tabItemList = computed((): BBTabItem[] => {
   ];
   if (isDev()) {
     tabList.push({
-      title: t("settings.sensitive-data.data-feature"),
-      id: "data-feature",
+      title: t("settings.sensitive-data.semantic-types"),
+      id: "semantic-types",
     });
   }
   return tabList;
