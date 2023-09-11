@@ -2964,9 +2964,9 @@
   "cel": {
     "factor": {
       "affected_rows": "Affected rows",
-      "environment_id": "Environment ID",
-      "project_id": "Project ID",
-      "instance_id": "Instance ID",
+      "environment_id": "Environment",
+      "project_id": "Project",
+      "instance_id": "Instance",
       "database_name": "Database name",
       "db_engine": "DB engine",
       "sql_type": "SQL type",
