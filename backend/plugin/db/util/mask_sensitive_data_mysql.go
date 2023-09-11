@@ -204,11 +204,21 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICo
 	l := &recursiveCTEListener{
 		extractor: extractor,
 		cteInfo: db.TableSchema{
-			Name: cteName,
+			Name:       cteName,
+			ColumnList: []db.ColumnInfo{},
 		},
 		selfName:                      cteName,
 		foundFirstQueryExpressionBody: false,
 		inCTE:                         false,
+	}
+	if ctx.ColumnInternalRefList() != nil {
+		columnList := mysqlExtractColumnInternalRefList(ctx.ColumnInternalRefList())
+		for i := range columnList {
+			l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, db.ColumnInfo{
+				Name:         columnList[i],
+				MaskingLevel: defaultMaskingLevel,
+			})
+		}
 	}
 	antlr.ParseTreeWalkerDefault.Walk(l, ctx.Subquery())
 	if l.err != nil {
@@ -383,11 +393,23 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 	// In actual use, the length of fields will not be more than 20 generally.
 	// So I think it's OK for now.
 	// If any performance issues in use, optimize here.
-	for _, field := range initialPart {
-		l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, db.ColumnInfo{
-			Name:         field.name,
-			MaskingLevel: field.maskingLevel,
-		})
+	if len(l.cteInfo.ColumnList) == 0 {
+		for _, item := range initialPart {
+			l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, db.ColumnInfo{
+				Name:         item.name,
+				MaskingLevel: item.maskingLevel,
+			})
+		}
+	} else {
+		if len(initialPart) != len(l.cteInfo.ColumnList) {
+			l.err = errors.Errorf("The common table expression and column names list have different column counts")
+			return
+		}
+		for i := range initialPart {
+			if cmp.Less[storepb.MaskingLevel](l.cteInfo.ColumnList[i].MaskingLevel, initialPart[i].maskingLevel) {
+				l.cteInfo.ColumnList[i].MaskingLevel = initialPart[i].maskingLevel
+			}
+		}
 	}
 
 	if len(recursivePart) == 0 {
@@ -1301,7 +1323,14 @@ func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.
 		}
 	}
 
-	return extractor.mysqlEvalMaskingLevelInExprList(list)
+	fieldName, level, err := extractor.mysqlEvalMaskingLevelInExprList(list)
+	if err != nil {
+		return "", defaultMaskingLevel, err
+	}
+	if len(ctx.GetChildren()) > 1 {
+		fieldName = ""
+	}
+	return fieldName, level, nil
 }
 
 func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExprList(list []antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
