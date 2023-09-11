@@ -94,14 +94,13 @@
               {{ $t("schema-template.classification.self") }}
             </label>
             <div class="flex items-center gap-x-2">
-              {{ columnClassification?.title ?? "N/A" }}
               <ClassificationLevelBadge
-                :level-id="columnClassification?.levelId"
+                :classification="state.column?.classification"
                 :classification-config="classificationConfig"
               />
               <div class="flex">
                 <button
-                  v-if="columnClassification"
+                  v-if="state.column?.classification"
                   class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
                   @click.prevent="state.column!.classification = ''"
                 >
@@ -283,15 +282,6 @@ const allowEdit = computed(() => {
 const classificationConfig = computed(() => {
   // TODO(ed): it's a temporary solution
   return settingStore.classification[0];
-});
-
-const columnClassification = computed(() => {
-  if (!state.column?.classification || !classificationConfig.value) {
-    return;
-  }
-  return classificationConfig.value.classification[
-    state.column?.classification
-  ];
 });
 
 const dataTypeOptions = computed(() => {
