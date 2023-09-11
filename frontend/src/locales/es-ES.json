@@ -570,7 +570,7 @@
           "self": "URL externa",
           "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://. {viewDoc}"
         },
-        "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto.",
+        "config-updated": "La configuración se ha actualizado.",
         "plugin": {
           "openai": {
             "ai-augmentation": "Mejora IA",
@@ -615,7 +615,8 @@
           "self": "Frecuencia de inicio de sesión",
           "description": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente.",
           "hours": "Horas",
-          "days": "Días"
+          "days": "Días",
+          "config-updated": "La configuración se ha actualizado."
         }
       }
     },
