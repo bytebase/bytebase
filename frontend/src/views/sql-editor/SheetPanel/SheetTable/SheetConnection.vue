@@ -39,7 +39,6 @@ import {
 import { useDatabaseV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{
   sheet: Sheet;
@@ -49,9 +48,7 @@ const databaseStore = useDatabaseV1Store();
 const database = computed(() => {
   const { sheet } = props;
   if (!props.sheet.database) return undefined;
-  const db = databaseStore.getDatabaseByUID(
-    extractDatabaseResourceName(sheet.database).database
-  );
+  const db = databaseStore.getDatabaseByName(sheet.database);
   if (db.uid === String(UNKNOWN_ID)) return undefined;
   return db;
 });

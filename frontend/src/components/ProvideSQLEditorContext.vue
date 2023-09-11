@@ -20,7 +20,6 @@ import {
   useEnvironmentV1Store,
   useUserStore,
 } from "@/store";
-import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
@@ -257,12 +256,11 @@ const prepareSheet = async () => {
   let insId = String(UNKNOWN_ID);
   let dbId = String(UNKNOWN_ID);
   if (sheet.database) {
-    const [instanceName, databaseId] = getInstanceAndDatabaseId(sheet.database);
-    const ins = await useInstanceV1Store().getOrFetchInstanceByName(
-      `instances/${instanceName}`
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      sheet.database
     );
-    insId = ins.uid;
-    dbId = databaseId;
+    insId = database.instanceEntity.uid;
+    dbId = database.uid;
   }
 
   tabStore.updateCurrentTab({
