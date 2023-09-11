@@ -2379,7 +2379,8 @@
         "member-role-update": "Update Project Member Role",
         "database-transfer": "Transfer Database"
       },
-      "sql-editor-query": "SQL Editor Query"
+      "sql-editor-query": "SQL Editor Query",
+      "sql-export": "SQL Export"
     }
   },
   "onboarding-guide": {

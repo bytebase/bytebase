@@ -2375,7 +2375,8 @@
         "member-role-update": "更新项目成员角色",
         "database-transfer": "转移数据库"
       },
-      "sql-editor-query": "SQL 编辑器查询"
+      "sql-editor-query": "SQL 编辑器查询",
+      "sql-export": "SQL 导出"
     }
   },
   "onboarding-guide": {
