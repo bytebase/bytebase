@@ -318,7 +318,7 @@ message GrantRequest {
   // Format: roles/EXPORTER.
   string role = 1;
   // The user to be granted.
-  // Format: users/hello@bytebase.com.
+  // Format: users/{userUID}.
   string user = 2;
   google.type.Expr condition = 3;
   google.protobuf.Duration expiration = 4;
