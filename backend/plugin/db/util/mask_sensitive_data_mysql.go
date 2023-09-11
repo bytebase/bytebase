@@ -1353,7 +1353,6 @@ func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExprList(list [
 		if finalLevel == maxMaskingLevel {
 			return fieldName, finalLevel, nil
 		}
-
 	}
 	return fieldName, finalLevel, nil
 }
@@ -1412,6 +1411,5 @@ func (extractor *sensitiveFieldExtractor) mysqlCheckFieldMaskingLevel(databaseNa
 			return field.maskingLevel
 		}
 	}
-
 	return defaultMaskingLevel
 }
