@@ -1,5 +1,5 @@
 <template>
-  <Drawer :show="show" @close="onDismiss">
+  <Drawer :show="true" @close="onDismiss">
     <DrawerContent :title="$t('settings.sensitive-data.grant-access')">
       <div class="divide-block-border space-y-8 w-[60rem] h-full">
         <SensitiveColumnTable
@@ -110,7 +110,6 @@ import { SensitiveColumn } from "./types";
 import { getExpressionsForSensitiveColumn } from "./utils";
 
 const props = defineProps<{
-  show: boolean;
   columnList: SensitiveColumn[];
 }>();
 
