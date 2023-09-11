@@ -11,16 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestCreateRollbackIssueMySQL(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	t.Parallel()
 
 	a := require.New(t)
@@ -171,9 +167,6 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 }
 
 func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	t.Parallel()
 
 	a := require.New(t)
@@ -335,9 +328,6 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 }
 
 func TestRollbackCanceled(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	t.Parallel()
 
 	a := require.New(t)
