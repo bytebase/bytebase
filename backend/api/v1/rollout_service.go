@@ -795,7 +795,8 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 
 			// EarliestAllowedTs
 			if spec.EarliestAllowedTime.GetSeconds() != task.EarliestAllowedTs {
-				taskPatch.EarliestAllowedTs = &spec.EarliestAllowedTime.Seconds
+				seconds := spec.EarliestAllowedTime.GetSeconds()
+				taskPatch.EarliestAllowedTs = &seconds
 				doUpdate = true
 			}
 
