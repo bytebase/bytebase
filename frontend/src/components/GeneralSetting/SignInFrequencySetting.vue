@@ -108,7 +108,7 @@ const handleFrequencySettingChange = useDebounceFn(async () => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
+    title: t("settings.general.workspace.sign-in-frequency.config-updated"),
   });
 }, 2000);
 
