@@ -78,7 +78,7 @@
   />
 
   <GrantAccessDrawer
-    :show="
+    v-if="
       state.showGrantAccessDrawer &&
       state.pendingGrantAccessColumnIndex.length > 0
     "
@@ -100,8 +100,9 @@
       state.pendingGrantAccessColumnIndex.length === 1
     "
     :column="
-      filteredColumnList[state.pendingGrantAccessColumnIndex[0]] ??
-      filteredColumnList[0]
+      state.pendingGrantAccessColumnIndex.length
+        ? filteredColumnList[state.pendingGrantAccessColumnIndex[0]]
+        : filteredColumnList[0]
     "
     @dismiss="
       () => {

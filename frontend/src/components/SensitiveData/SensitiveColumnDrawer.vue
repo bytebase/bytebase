@@ -14,10 +14,10 @@
               {{ $t("settings.sensitive-data.masking-level.self") }}
             </h1>
             <MaskingLevelRadioGroup
-              :disabled="!hasPermission"
               :level-list="MASKING_LEVELS"
               :selected="state.maskingLevel"
-              @update="state.maskingLevel = $event"
+              :disabled="!hasPermission || state.processing"
+              @update="onMaskingLevelUpdate($event)"
             />
           </div>
           <div class="w-full">
@@ -100,7 +100,8 @@
                       MaskingExceptionPolicy_MaskingException_Action.EXPORT
                     )
                   "
-                  @toggle="(checked: boolean) => onUpdate(row, (item) => toggleAction(item, MaskingExceptionPolicy_MaskingException_Action.EXPORT, checked))"
+                  :disabled="!hasPermission || state.processing"
+                  @toggle="(checked: boolean) => onAccessControlUpdate(row, (item) => toggleAction(item, MaskingExceptionPolicy_MaskingException_Action.EXPORT, checked))"
                 />
               </BBTableCell>
               <BBTableCell class="bb-grid-cell">
@@ -110,15 +111,16 @@
                       MaskingExceptionPolicy_MaskingException_Action.QUERY
                     )
                   "
-                  @toggle="(checked: boolean) => onUpdate(row, (item) => toggleAction(item, MaskingExceptionPolicy_MaskingException_Action.QUERY, checked))"
+                  :disabled="!hasPermission || state.processing"
+                  @toggle="(checked: boolean) => onAccessControlUpdate(row, (item) => toggleAction(item, MaskingExceptionPolicy_MaskingException_Action.QUERY, checked))"
                 />
               </BBTableCell>
               <BBTableCell class="bb-grid-cell">
                 <MaskingLevelDropdown
-                  :disabled="!hasPermission"
+                  :disabled="!hasPermission || state.processing"
                   :selected="item.maskingLevel"
                   :level-list="[MaskingLevel.PARTIAL, MaskingLevel.NONE]"
-                  @update="(level: MaskingLevel) => onUpdate(row, (item) => item.maskingLevel = level)"
+                  @update="(level: MaskingLevel) => onAccessControlUpdate(row, (item) => item.maskingLevel = level)"
                 />
               </BBTableCell>
               <BBTableCell class="bb-grid-cell">
@@ -128,7 +130,8 @@
                   type="datetime"
                   :is-date-disabled="(date: number) => date < Date.now()"
                   clearable
-                  @update:value="(val: number | undefined) => onUpdate(row, (item) => item.expirationTimestamp = val)"
+                  :disabled="!hasPermission || state.processing"
+                  @update:value="(val: number | undefined) => onAccessControlUpdate(row, (item) => item.expirationTimestamp = val)"
                 />
               </BBTableCell>
               <BBTableCell v-if="hasPermission" class="bb-grid-cell">
@@ -136,6 +139,7 @@
                   <template #trigger>
                     <button
                       class="w-5 h-5 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                      :disabled="!hasPermission || state.processing"
                       @click.stop=""
                     >
                       <heroicons-outline:trash class="w-4 h-4" />
@@ -162,24 +166,13 @@
             <NButton @click.prevent="$emit('dismiss')">
               {{ $t("common.cancel") }}
             </NButton>
-            <NButton
-              :disabled="
-                !hasPermission ||
-                (!state.dirty && !maskingPolicyChanged) ||
-                state.processing
-              "
-              type="primary"
-              @click.prevent="onSubmit"
-            >
-              {{ $t("common.confirm") }}
-            </NButton>
           </div>
         </div>
       </template>
     </DrawerContent>
 
     <GrantAccessDrawer
-      :show="state.showGrantAccessDrawer"
+      v-if="state.showGrantAccessDrawer"
       :column-list="[props.column]"
       @dismiss="state.showGrantAccessDrawer = false"
     />
@@ -235,7 +228,7 @@ const props = defineProps<{
   column: SensitiveColumn;
 }>();
 
-const emit = defineEmits(["dismiss"]);
+defineEmits(["dismiss"]);
 
 const state = reactive<LocalState>({
   dirty: false,
@@ -276,6 +269,8 @@ const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
 const getAccessUsers = (
   exception: MaskingExceptionPolicy_MaskingException
 ): AccessUser => {
+  console.log("exception");
+  console.log(exception);
   let expirationTimestamp: number | undefined;
   const expression = exception.condition?.expression ?? "";
   const matches = expirationTimeRegex.exec(expression);
@@ -324,6 +319,8 @@ const updateAccessUserList = (policy: Policy | undefined) => {
   // - 2 cannot merge: user1, action:export, level:FULL, expires at 2023-09-04
   // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
   const userMap = new Map<string, AccessUser>();
+  console.log("policy.maskingExceptionPolicy.maskingExceptions");
+  console.log(policy.maskingExceptionPolicy.maskingExceptions);
   for (const exception of policy.maskingExceptionPolicy.maskingExceptions) {
     if (!isCurrentColumnException(exception, props.column)) {
       continue;
@@ -388,9 +385,10 @@ const tableHeaderList = computed(() => {
   return list;
 });
 
-const onRemove = (index: number) => {
+const onRemove = async (index: number) => {
   accessUserList.value.splice(index, 1);
   state.dirty = true;
+  await onSubmit();
 };
 
 const toggleAction = (
@@ -409,13 +407,22 @@ const maskingPolicyChanged = computed(() => {
   return state.maskingLevel !== props.column.maskData.maskingLevel;
 });
 
-const onUpdate = (index: number, callback: (item: AccessUser) => void) => {
+const onAccessControlUpdate = async (
+  index: number,
+  callback: (item: AccessUser) => void
+) => {
   const item = accessUserList.value[index];
   if (!item) {
     return;
   }
   callback(item);
   state.dirty = true;
+  await onSubmit();
+};
+
+const onMaskingLevelUpdate = async (level: MaskingLevel) => {
+  state.maskingLevel = level;
+  await onSubmit();
 };
 
 const onSubmit = async () => {
@@ -427,13 +434,13 @@ const onSubmit = async () => {
     }
     if (state.dirty) {
       await updateExceptionPolicy();
+      state.dirty = false;
     }
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.updated"),
     });
-    emit("dismiss");
   } finally {
     state.processing = false;
   }
