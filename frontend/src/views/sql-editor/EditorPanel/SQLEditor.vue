@@ -39,9 +39,9 @@ import {
 } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
+import { useSQLEditorContext } from "../context";
 
 const emit = defineEmits<{
-  (e: "save-sheet", content?: string): void;
   (
     e: "execute",
     sql: string,
@@ -56,6 +56,7 @@ const dbSchemaStore = useDBSchemaV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const sheetAndTabStore = useSheetAndTabStore();
 const uiStateStore = useUIStateStore();
+const { events: editorEvents } = useSQLEditorContext();
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -103,6 +104,9 @@ const handleChange = (value: string) => {
   if (isSwitchingTab.value) {
     return;
   }
+  if (value === tabStore.currentTab.statement) {
+    return;
+  }
   tabStore.updateCurrentTab({
     statement: value,
     isSaved: false,
@@ -116,7 +120,7 @@ const handleChangeSelection = (value: string) => {
 };
 
 const handleSaveSheet = () => {
-  emit("save-sheet");
+  editorEvents.emit("save-sheet", { title: tabStore.currentTab.name });
 };
 
 const handleEditorReady = async () => {
