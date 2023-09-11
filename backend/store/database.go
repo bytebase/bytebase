@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -163,6 +164,7 @@ type FindDatabaseMessage struct {
 	InstanceID             *string
 	DatabaseName           *string
 	UID                    *int
+	Engine                 *db.Type
 	// When this is used, we will return databases from archived instances or environments.
 	// This is used for existing tasks with archived databases.
 	ShowDeleted bool
@@ -606,6 +608,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Engine; v != nil {
+		where, args = append(where, fmt.Sprintf("instance.engine = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("COALESCE((SELECT environment.row_status AS instance_environment_status FROM environment JOIN instance ON environment.id = instance.environment_id WHERE instance.id = db.instance_id), $%d) = $%d", len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
