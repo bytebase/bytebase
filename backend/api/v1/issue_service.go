@@ -409,6 +409,19 @@ func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier strin
 
 // CreateIssue creates a issue.
 func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
+	switch request.Issue.Type {
+	case v1pb.Issue_TYPE_UNSPECIFIED:
+		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
+	case v1pb.Issue_GRANT_REQUEST:
+		return nil, status.Errorf(codes.Unimplemented, "issue type %q is not implemented yet", request.Issue.Type)
+	case v1pb.Issue_DATABASE_CHANGE:
+		return s.createIssueDatabaseChange(ctx, request)
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unknown issue type %q", request.Issue.Type)
+	}
+}
+
+func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
 	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
@@ -422,17 +435,6 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
-	}
-
-	switch request.Issue.Type {
-	case v1pb.Issue_TYPE_UNSPECIFIED:
-		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
-	case v1pb.Issue_GRANT_REQUEST:
-		return nil, status.Errorf(codes.Unimplemented, "issue type %q is not implemented yet", request.Issue.Type)
-	case v1pb.Issue_DATABASE_CHANGE:
-		// TODO(p0ny): refactor
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unknown issue type %q", request.Issue.Type)
 	}
 
 	if request.Issue.Plan == "" {
