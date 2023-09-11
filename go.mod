@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.70
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.35.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytebase/mongo-parser v0.0.0-20230726155532-29863b4ce95d
+	github.com/bytebase/mongo-parser v0.0.0-20230911083938-8f47f81da367
 	github.com/bytebase/mysql-parser v0.0.0-20230612050356-4592d9ba30da
 	github.com/bytebase/plsql-parser v0.0.0-20230706061841-c93470b91bee
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
@@ -69,11 +69,11 @@ require (
 	github.com/xuri/excelize/v2 v2.8.0
 	go.mongodb.org/mongo-driver v1.12.0
 	go.uber.org/multierr v1.11.0
-	golang.org/x/crypto v0.12.0
-	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
+	golang.org/x/crypto v0.13.0
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/oauth2 v0.9.0
-	golang.org/x/sys v0.11.0
-	golang.org/x/text v0.12.0
+	golang.org/x/sys v0.12.0
+	golang.org/x/text v0.13.0
 	google.golang.org/api v0.128.0
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d
@@ -132,8 +132,8 @@ require (
 	github.com/xuri/nfp v0.0.0-20230819163627-dc951e3ffe1a // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/mod v0.12.0 // indirect
+	golang.org/x/term v0.12.0 // indirect
 )
 
 require (
@@ -263,10 +263,10 @@ require (
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.10.0 // indirect
+	golang.org/x/tools v0.13.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
