@@ -238,7 +238,9 @@ const handleConfirm = async (
         .map((task) => {
           const taskRunList = taskRunListForTask(issue.value, task);
           const currentRunningTaskRun = taskRunList.find(
-            (taskRun) => taskRun.status === TaskRun_Status.RUNNING
+            (taskRun) =>
+              taskRun.status === TaskRun_Status.RUNNING ||
+              taskRun.status === TaskRun_Status.PENDING
           );
           return currentRunningTaskRun;
         })
