@@ -5454,7 +5454,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | role | [string](#string) |  | The requested role. Format: roles/EXPORTER. |
-| user | [string](#string) |  | The user to be granted. Format: users/{userUID}. |
+| user | [string](#string) |  | The user to be granted. Format: users/{email}. |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 | expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 
