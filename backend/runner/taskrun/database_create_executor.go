@@ -323,6 +323,7 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) (string, string, error) {
 	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &project.ResourceID,
+		Engine:    &instance.Engine,
 	})
 	if err != nil {
 		return "", "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
