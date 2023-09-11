@@ -541,7 +541,86 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 }
 
 func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
-	return nil, nil
+	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
+	}
+
+	assignee, err := s.store.GetUserByID(ctx, api.SystemBotID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get systemBot, error: %v", err)
+	}
+	if assignee == nil {
+		return nil, status.Errorf(codes.Internal, "systemBot not found")
+	}
+
+	issueCreateMessage := &store.IssueMessage{
+		Project:     project,
+		PlanUID:     nil,
+		PipelineUID: nil,
+		Title:       request.Issue.Title,
+		Status:      api.IssueOpen,
+		Type:        api.IssueGrantRequest,
+		Description: request.Issue.Description,
+		Assignee:    assignee,
+	}
+
+	issueCreatePayload := &storepb.IssuePayload{
+		GrantRequest: convertGrantRequest(request.Issue.GrantRequest),
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: false,
+			ApprovalTemplates:   nil,
+			Approvers:           nil,
+		},
+	}
+	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
+	}
+	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
+
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
+	}
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+
+	createActivityPayload := api.ActivityIssueCreatePayload{
+		IssueName: issue.Title,
+	}
+	bytes, err := json.Marshal(createActivityPayload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   creatorID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueCreate,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
+	}
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: issue,
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+
+	converted, err := convertToIssue(ctx, s.store, issue)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+	}
+
+	return converted, nil
 }
 
 // ApproveIssue approves the approval flow of the issue.
@@ -1353,6 +1432,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		UpdateTime:           timestamppb.New(issue.UpdatedTime),
 		Plan:                 "",
 		Rollout:              "",
+		GrantRequest:         convertToGrantRequest(issuePayload.GrantRequest),
 	}
 
 	if issue.PlanUID != nil {
@@ -1485,5 +1565,29 @@ func convertToApprovalNodeGroupValue(v storepb.ApprovalNode_GroupValue) v1pb.App
 		return v1pb.ApprovalNode_PROJECT_MEMBER
 	default:
 		return v1pb.ApprovalNode_GROUP_VALUE_UNSPECIFILED
+	}
+}
+
+func convertToGrantRequest(v *storepb.GrantRequest) *v1pb.GrantRequest {
+	if v == nil {
+		return nil
+	}
+	return &v1pb.GrantRequest{
+		Role:       v.Role,
+		User:       v.User,
+		Condition:  v.Condition,
+		Expiration: v.Expiration,
+	}
+}
+
+func convertGrantRequest(v *v1pb.GrantRequest) *storepb.GrantRequest {
+	if v == nil {
+		return nil
+	}
+	return &storepb.GrantRequest{
+		Role:       v.Role,
+		User:       v.User,
+		Condition:  v.Condition,
+		Expiration: v.Expiration,
 	}
 }
