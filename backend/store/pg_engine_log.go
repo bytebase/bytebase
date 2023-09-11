@@ -1,5 +1,4 @@
 //go:build store.db
-// +build store.db
 
 // Log SQL query hitting our metadata db. Useful to spot unnecessary SQLs.
 package store
