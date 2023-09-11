@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
@@ -562,6 +563,23 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	}
 	if assignee == nil {
 		return nil, status.Errorf(codes.Internal, "systemBot not found")
+	}
+
+	if request.Issue.GrantRequest.GetRole() == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "expect grant request role")
+	}
+	if request.Issue.GrantRequest.GetUser() == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "expect grant request user")
+	}
+	if request.Issue.GrantRequest.GetCondition().GetExpression() == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "expect grant request condition expression")
+	}
+	e, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create cel environment, error: %v", err)
+	}
+	if _, issues := e.Compile(request.Issue.GrantRequest.GetCondition().GetExpression()); issues != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "found issues in grant request condition expression, issues: %v", issues.String())
 	}
 
 	issueCreateMessage := &store.IssueMessage{
