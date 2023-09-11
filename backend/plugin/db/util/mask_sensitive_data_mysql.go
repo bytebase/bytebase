@@ -774,6 +774,7 @@ func (extractor *sensitiveFieldExtractor) mysqlBuildTableSchemaForView(viewName 
 		ColumnList: []db.ColumnInfo{},
 	}
 	for _, field := range listener.result {
+		// nolint:gosimple
 		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
