@@ -206,8 +206,10 @@ export interface GetDatabaseSchemaRequest {
 
 export interface DiffSchemaRequest {
   /**
-   * The name of the database.
-   * Format: instances/{instance}/databases/{database}
+   * The name of the database or change history.
+   * Format:
+   * databse: instances/{instance}/databases/{database}
+   * change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
    */
   name: string;
   /** The target schema. */
