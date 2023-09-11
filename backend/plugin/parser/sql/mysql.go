@@ -636,10 +636,11 @@ func NormalizeMySQLColumnName(ctx parser.IColumnNameContext) (string, string, st
 	if ctx.Identifier() != nil {
 		return "", "", NormalizeMySQLIdentifier(ctx.Identifier())
 	}
-	return normalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
+	return NormalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
 }
 
-func normalizeMySQLFieldIdentifier(ctx parser.IFieldIdentifierContext) (string, string, string) {
+// NormalizeMySQLFieldIdentifier normalizes the given field identifier.
+func NormalizeMySQLFieldIdentifier(ctx parser.IFieldIdentifierContext) (string, string, string) {
 	list := []string{}
 	if ctx.QualifiedIdentifier() != nil {
 		id1, id2 := normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
@@ -681,6 +682,24 @@ func NormalizeMySQLIdentifier(identifier parser.IIdentifierContext) string {
 		return text[1 : len(text)-1]
 	}
 	return identifier.GetText()
+}
+
+// NormalizeMySQLSelectAlias normalizes the given select alias.
+func NormalizeMySQLSelectAlias(selectAlias parser.ISelectAliasContext) string {
+	if selectAlias.Identifier() != nil {
+		return NormalizeMySQLIdentifier(selectAlias.Identifier())
+	}
+	textString := selectAlias.TextStringLiteral().GetText()
+	return textString[1 : len(textString)-1]
+}
+
+// NormalizeMySQLIdentifierList normalizes the given identifier list.
+func NormalizeMySQLIdentifierList(ctx parser.IIdentifierListContext) []string {
+	var result []string
+	for _, identifier := range ctx.AllIdentifier() {
+		result = append(result, NormalizeMySQLIdentifier(identifier))
+	}
+	return result
 }
 
 // IsMySQLAffectedRowsStatement returns true if the given statement is an affected rows statement.
