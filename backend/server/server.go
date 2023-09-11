@@ -85,30 +85,10 @@ import (
 
 	// Register postgres driver.
 
-	// Register snowflake driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/snowflake"
 	// Register sqlite driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/sqlite"
-	// Register mongodb driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mongodb"
-	// Register spanner driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/spanner"
-	// Register redis driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/redis"
-	// Register oracle driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
-	// Register mssql driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
-	// Register redshift driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/redshift"
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
-	// Register clickhouse driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
-	// Register dm driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/dm"
-	// Register risingwave driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/risingwave"
 
 	// Register fake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/fake"
@@ -116,19 +96,11 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	// Register postgresql advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
-	// Register oracle advisor.
-	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
-	// Register snowflake advisor.
-	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
-	// Register mssql advisor.
-	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 
 	// Register mysql differ driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/mysql"
 	// Register postgres differ driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/pg"
-	// Register oracle differ driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/plsql"
 	// Register mysql edit driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/edit/mysql"
 	// Register postgres edit driver.

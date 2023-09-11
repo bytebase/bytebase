@@ -5,6 +5,7 @@ tmp_dir = ".air"
 [build]
   bin = './.air/bytebase --port 8080 --data . --debug --disable-sample'
   ## Use --tags "store.db" to enable SQL query logging against our metadata db.
+  ## Use --tags "release" to enable ultimate driver package such as Oracle, MSSQL. The default drivers only include MySQL, PostgreSQL, SQLite.
   cmd = """
   go build \
   --tags "" \
