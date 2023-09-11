@@ -579,9 +579,10 @@
           "self": "Sign-in frequency",
           "description": "Sign-in frequency is the period before a user must sign in again.",
           "hours": "Hour(s)",
-          "days": "Day(s)"
+          "days": "Day(s)",
+          "config-updated": "Configuration is updated. Need to restart Bytebase and re-login to take effect."
         },
-        "config-updated": "Configuration is updated. Need to restart Bytebase and re-login to take effect.",
+        "config-updated": "Configuration is updated.",
         "plugin": {
           "openai": {
             "ai-augmentation": "AI Augmentation",
