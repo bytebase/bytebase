@@ -511,7 +511,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractQueryExpressionBody(ctx my
 			if err != nil {
 				return nil, err
 			}
-			if len(fieldList) == 0 {
+			if len(result) == 0 {
 				result = fieldList
 			} else {
 				if len(result) != len(fieldList) {
@@ -528,7 +528,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractQueryExpressionBody(ctx my
 			if err != nil {
 				return nil, err
 			}
-			if len(fieldList) == 0 {
+			if len(result) == 0 {
 				result = fieldList
 			} else {
 				if len(result) != len(fieldList) {
@@ -545,7 +545,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractQueryExpressionBody(ctx my
 		}
 	}
 
-	return nil, nil
+	return result, nil
 }
 
 func (extractor *sensitiveFieldExtractor) mysqlExtractQueryPrimary(ctx *mysql.QueryPrimaryContext) ([]fieldInfo, error) {
