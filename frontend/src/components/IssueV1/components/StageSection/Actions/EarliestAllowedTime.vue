@@ -21,13 +21,13 @@
       </div>
     </h2>
     <div class="w-[12rem]">
-      <NTooltip :disabled="allowEditEarliestAllowedTime">
+      <NTooltip :disabled="disallowEditReasons.length === 0">
         <template #trigger>
           <NDatePicker
             :value="earliestAllowedTime"
             :is-date-disabled="isDayPassed"
             :placeholder="$t('task.earliest-allowed-time-unset')"
-            :disabled="!allowEditEarliestAllowedTime || isUpdating"
+            :disabled="disallowEditReasons.length > 0 || isUpdating"
             :loading="isUpdating"
             :actions="['clear', 'confirm']"
             type="datetime"
@@ -36,9 +36,7 @@
           />
         </template>
         <template #default>
-          <div class="w-48">
-            {{ $t("task.earliest-allowed-time-no-modify") }}
-          </div>
+          <ErrorList :errors="disallowEditReasons" />
         </template>
       </NTooltip>
     </div>
@@ -62,6 +60,8 @@ import { useI18n } from "vue-i18n";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import {
+  isGroupingChangeTaskV1,
+  latestTaskRunForTask,
   notifyNotEditableLegacyIssue,
   specForTask,
   useIssueContext,
@@ -69,8 +69,13 @@ import {
 import { rolloutServiceClient } from "@/grpcweb";
 import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
+import {
+  TaskRun_Status,
+  Task_Status,
+  task_StatusToJSON,
+} from "@/types/proto/v1/rollout_service";
 import { extractUserResourceName } from "@/utils";
+import { ErrorList } from "../../common";
 
 dayjs.extend(isSameOrAfter);
 
@@ -85,6 +90,9 @@ const shouldShowEarliestAllowedTime = computed(() => {
   if (isTenantMode.value) {
     return false;
   }
+  if (isGroupingChangeTaskV1(issue.value, selectedTask.value)) {
+    return false;
+  }
   return true;
 });
 
@@ -94,26 +102,53 @@ const earliestAllowedTime = computed(() => {
   return spec?.earliestAllowedTime ? spec.earliestAllowedTime.getTime() : null;
 });
 
-const allowEditEarliestAllowedTime = computed(() => {
-  if (isTenantMode.value) {
-    return false;
-  }
+const disallowEditReasons = computed(() => {
   if (isCreating.value) {
-    return true;
+    return [];
   }
-  // only the assignee is allowed to modify EarliestAllowedTime
-  const task = selectedTask.value;
 
+  const errors: string[] = [];
   if (issue.value.status !== IssueStatus.OPEN) {
-    return false;
-  }
-  if (![Task_Status.NOT_STARTED, Task_Status.PENDING].includes(task.status)) {
-    return false;
+    if (issue.value.status === IssueStatus.DONE) {
+      errors.push(t("issue.disallow-edit-reasons.issue-is-done"));
+    }
+    if (issue.value.status === IssueStatus.CANCELED) {
+      errors.push(t("issue.disallow-edit-reasons.issue-is-canceled"));
+    }
+    return errors;
   }
 
-  return (
-    extractUserResourceName(issue.value.creator) === currentUser.value.email
-  );
+  if (
+    extractUserResourceName(issue.value.creator) !== currentUser.value.email
+  ) {
+    errors.push(t("issue.you-are-not-allowed-to-change-this-value"));
+  }
+
+  const task = selectedTask.value;
+  if (
+    task.status === Task_Status.RUNNING ||
+    task.status === Task_Status.PENDING
+  ) {
+    const latestTaskRun = latestTaskRunForTask(issue.value, selectedTask.value);
+    if (latestTaskRun) {
+      if (
+        latestTaskRun.status === TaskRun_Status.PENDING ||
+        latestTaskRun.status === TaskRun_Status.RUNNING
+      ) {
+        errors.push(
+          t("issue.disallow-edit-reasons.task-is-running-cancel-first")
+        );
+      }
+    }
+  } else if ([Task_Status.DONE, Task_Status.SKIPPED].includes(task.status)) {
+    errors.push(
+      t("issue.disallow-edit-reasons.task-is-x-status", {
+        status: task_StatusToJSON(task.status).toLowerCase(),
+      })
+    );
+  }
+
+  return errors;
 });
 
 const handleUpdateEarliestAllowedTime = async (timestampMS: number | null) => {
