@@ -65,6 +65,56 @@ func (l *mysqlSensitiveFieldListener) EnterSelectStatement(ctx *mysql.SelectStat
 	}
 }
 
+// EnterCreateView is called when production createView is entered.
+func (l *mysqlSensitiveFieldListener) EnterCreateView(ctx *mysql.CreateViewContext) {
+	fieldList, err := l.extractor.mysqlExtractCreateView(ctx)
+	if err != nil {
+		l.err = err
+		return
+	}
+
+	for _, field := range fieldList {
+		l.result = append(l.result, db.SensitiveField{
+			Name:         field.name,
+			MaskingLevel: field.maskingLevel,
+		})
+	}
+
+	if ctx.ViewTail().ColumnInternalRefList() != nil {
+		columnList := mysqlExtractColumnInternalRefList(ctx.ViewTail().ColumnInternalRefList())
+		if len(columnList) != len(l.result) {
+			l.err = errors.Errorf("MySQL view column list should have the same length, but got %d and %d", len(columnList), len(l.result))
+			return
+		}
+		for i := range l.result {
+			l.result[i].Name = columnList[i]
+		}
+	}
+}
+
+func (extractor *sensitiveFieldExtractor) mysqlExtractCreateView(ctx mysql.ICreateViewContext) ([]fieldInfo, error) {
+	if ctx == nil {
+		return nil, nil
+	}
+
+	return extractor.mysqlExtractQueryExpressionOrParens(ctx.ViewTail().ViewSelect().QueryExpressionOrParens())
+}
+
+func (extractor *sensitiveFieldExtractor) mysqlExtractQueryExpressionOrParens(ctx mysql.IQueryExpressionOrParensContext) ([]fieldInfo, error) {
+	if ctx == nil {
+		return nil, nil
+	}
+
+	switch {
+	case ctx.QueryExpression() != nil:
+		return extractor.mysqlExtractQueryExpression(ctx.QueryExpression())
+	case ctx.QueryExpressionParens() != nil:
+		return extractor.mysqlExtractQueryExpressionParens(ctx.QueryExpressionParens())
+	}
+
+	return nil, nil
+}
+
 func (extractor *sensitiveFieldExtractor) mysqlExtractContext(ctx antlr.ParserRuleContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
@@ -315,9 +365,77 @@ func (extractor *sensitiveFieldExtractor) mysqlFindTableSchema(databaseName, tab
 	return "", db.TableSchema{}, errors.Wrapf(err, "Table or view %q.%q not found", databaseName, tableName)
 }
 
-func (extractor *sensitiveFieldExtractor) mysqlFindViewSchema(databaseName, tableName string) (string, db.TableSchema, error) {
-	// TODO: support VIEW
-	return "", db.TableSchema{}, errors.Errorf("MySQL VIEW is not supported yet")
+func (extractor *sensitiveFieldExtractor) mysqlFindViewSchema(databaseName, viewName string) (string, db.TableSchema, error) {
+	for _, database := range extractor.schemaInfo.DatabaseList {
+		if len(database.SchemaList) == 0 {
+			continue
+		}
+		viewList := database.SchemaList[0].ViewList
+
+		if extractor.schemaInfo.IgnoreCaseSensitive {
+			lowerDatabase := strings.ToLower(database.Name)
+			lowerView := strings.ToLower(viewName)
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+				for _, view := range viewList {
+					if lowerView == strings.ToLower(view.Name) {
+						explicitDatabase := databaseName
+						if explicitDatabase == "" {
+							explicitDatabase = extractor.currentDatabase
+						}
+
+						table, err := extractor.mysqlBuildTableSchemaForView(view.Name, view.Definition)
+						return explicitDatabase, table, err
+					}
+				}
+			}
+		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
+			for _, view := range viewList {
+				if viewName == view.Name {
+					explicitDatabase := databaseName
+					if explicitDatabase == "" {
+						explicitDatabase = extractor.currentDatabase
+					}
+
+					table, err := extractor.mysqlBuildTableSchemaForView(view.Name, view.Definition)
+					return explicitDatabase, table, err
+				}
+			}
+		}
+	}
+	return "", db.TableSchema{}, errors.Errorf("View %q.%q not found", databaseName, viewName)
+}
+
+func (extractor *sensitiveFieldExtractor) mysqlBuildTableSchemaForView(viewName string, viewDefinition string) (db.TableSchema, error) {
+	list, err := parser.ParseMySQL(viewDefinition)
+	if err != nil {
+		return db.TableSchema{}, err
+	}
+	if len(list) == 0 {
+		return db.TableSchema{}, errors.Errorf("MySQL view definition should only have one statement, but got %d", len(list))
+	}
+	if len(list) != 1 {
+		return db.TableSchema{}, errors.Errorf("MySQL view definition should only have one statement, but got %d", len(list))
+	}
+
+	listener := &mysqlSensitiveFieldListener{
+		extractor: extractor,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, list[0].Tree)
+	if listener.err != nil {
+		return db.TableSchema{}, listener.err
+	}
+
+	result := db.TableSchema{
+		Name:       viewName,
+		ColumnList: []db.ColumnInfo{},
+	}
+	for _, field := range listener.result {
+		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+			Name:         field.Name,
+			MaskingLevel: field.MaskingLevel,
+		})
+	}
+	return result, nil
 }
 
 func (extractor *sensitiveFieldExtractor) mysqlExtractQuerySpecification(ctx mysql.IQuerySpecificationContext) ([]fieldInfo, error) {
