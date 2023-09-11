@@ -1,6 +1,7 @@
 <template>
   <div class="aside-panel h-full">
     <NTabs
+      v-if="hasInstanceView"
       v-model:value="databaseTab"
       type="segment"
       size="small"
@@ -14,11 +15,7 @@
           @alter-schema="$emit('alter-schema', $event)"
         />
       </NTabPane>
-      <NTabPane
-        v-if="hasInstanceView"
-        name="instances"
-        :tab="$t('common.instances')"
-      >
+      <NTabPane name="instances" :tab="$t('common.instances')">
         <DatabaseTree
           key="sql-editor-database-tree"
           v-model:search-pattern="searchPattern"
@@ -26,6 +23,13 @@
         />
       </NTabPane>
     </NTabs>
+    <div v-else class="primary-sidebar h-full">
+      <DatabaseTree
+        key="sql-editor-database-tree"
+        v-model:search-pattern="searchPattern"
+        @alter-schema="$emit('alter-schema', $event)"
+      />
+    </div>
   </div>
 </template>
 
