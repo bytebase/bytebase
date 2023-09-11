@@ -59,7 +59,6 @@ const databaseTab = ref<"projects" | "instances">(
 );
 
 const hasInstanceView = computed((): boolean => {
-  return false;
   return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-database",
     currentUserV1.value.userRole
