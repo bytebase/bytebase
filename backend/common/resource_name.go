@@ -484,3 +484,11 @@ func FormatProject(id string) string {
 func FormatDeploymentConfig(parent string) string {
 	return fmt.Sprintf("%s/%s%s", parent, DeploymentConfigPrefix, "default")
 }
+
+func FormatUserEmail(email string) string {
+	return fmt.Sprintf("%s%s", UserNamePrefix, email)
+}
+
+func FormatUserUID(UID int) string {
+	return fmt.Sprintf("%s%d", UserNamePrefix, UID)
+}

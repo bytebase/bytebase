@@ -593,8 +593,13 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		Assignee:    assignee,
 	}
 
+	convertedGrantRequest, err := convertGrantRequest(ctx, s.store, request.Issue.GrantRequest)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert GrantRequest, error: %v", err)
+	}
+
 	issueCreatePayload := &storepb.IssuePayload{
-		GrantRequest: convertGrantRequest(request.Issue.GrantRequest),
+		GrantRequest: convertedGrantRequest,
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
 			ApprovalTemplates:   nil,
@@ -1432,6 +1437,11 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		return nil, errors.Wrap(err, "failed to unmarshal issue payload")
 	}
 
+	convertedGrantRequest, err := convertToGrantRequest(ctx, s, issuePayload.GrantRequest)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert GrantRequest")
+	}
+
 	issueV1 := &v1pb.Issue{
 		Name:                 fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssuePrefix, issue.UID),
 		Uid:                  fmt.Sprintf("%d", issue.UID),
@@ -1450,7 +1460,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		UpdateTime:           timestamppb.New(issue.UpdatedTime),
 		Plan:                 "",
 		Rollout:              "",
-		GrantRequest:         convertToGrantRequest(issuePayload.GrantRequest),
+		GrantRequest:         convertedGrantRequest,
 	}
 
 	if issue.PlanUID != nil {
@@ -1586,26 +1596,48 @@ func convertToApprovalNodeGroupValue(v storepb.ApprovalNode_GroupValue) v1pb.App
 	}
 }
 
-func convertToGrantRequest(v *storepb.GrantRequest) *v1pb.GrantRequest {
+func convertToGrantRequest(ctx context.Context, s *store.Store, v *storepb.GrantRequest) (*v1pb.GrantRequest, error) {
 	if v == nil {
-		return nil
+		return nil, nil
+	}
+	uid, err := common.GetUserID(v.User)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user uid from %q", v.User)
+	}
+	user, err := s.GetUserByID(ctx, uid)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user by uid %q", uid)
+	}
+	if user == nil {
+		return nil, errors.Errorf("user %q not found", v.User)
 	}
 	return &v1pb.GrantRequest{
 		Role:       v.Role,
-		User:       v.User,
+		User:       common.FormatUserEmail(user.Email),
 		Condition:  v.Condition,
 		Expiration: v.Expiration,
-	}
+	}, nil
 }
 
-func convertGrantRequest(v *v1pb.GrantRequest) *storepb.GrantRequest {
+func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantRequest) (*storepb.GrantRequest, error) {
 	if v == nil {
-		return nil
+		return nil, nil
+	}
+	email, err := common.GetUserEmail(v.User)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user email from %q", v.User)
+	}
+	user, err := s.GetUser(ctx, &store.FindUserMessage{Email: &email})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user by email %q", email)
+	}
+	if user == nil {
+		return nil, errors.Errorf("user %q not found", v.User)
 	}
 	return &storepb.GrantRequest{
 		Role:       v.Role,
-		User:       v.User,
+		User:       common.FormatUserUID(user.ID),
 		Condition:  v.Condition,
 		Expiration: v.Expiration,
-	}
+	}, nil
 }
