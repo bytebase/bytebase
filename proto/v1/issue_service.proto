@@ -5,8 +5,11 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "google/type/expr.proto";
+import "store/approval.proto";
 
 option go_package = "generated-go/v1";
 
@@ -305,9 +308,21 @@ message Issue {
   // The rollout associated with the issue.
   // Can be empty.
   // Format: projects/{project}/rollouts/{rollout}
-  string rollout = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string rollout = 18;
 
-  // TODO(d): add issue payload for requesting grant.
+  // Used if the issue type is GRANT_REQUEST.
+  GrantRequest grant_request = 19;
+}
+
+message GrantRequest {
+  // The requested role.
+  // Format: roles/EXPORTER.
+  string role = 1;
+  // The user to be granted.
+  // Format: users/hello@bytebase.com.
+  string user = 2;
+  google.type.Expr condition = 3;
+  google.protobuf.Duration expiration = 4;
 }
 
 enum IssueStatus {
