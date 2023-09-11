@@ -557,7 +557,7 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 		return 0, store.RiskSourceUnknown, false, err
 	}
 
-	factors, err := common.GetQueryExportFactors(payload.GrantRequest.Condition.Expression)
+	factors, err := common.GetQueryExportFactors(payload.GetGrantRequest().GetCondition().GetExpression())
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get query export factors")
 	}

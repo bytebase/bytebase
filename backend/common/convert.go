@@ -223,6 +223,9 @@ func GetQueryExportFactors(expression string) (*QueryExportFactors, error) {
 }
 
 func findField(callExpr *v1alpha1.Expr_Call, factors *QueryExportFactors) {
+	if callExpr == nil {
+		return
+	}
 	if len(callExpr.Args) == 2 {
 		idExpr := callExpr.Args[0].GetIdentExpr()
 		if idExpr != nil {
