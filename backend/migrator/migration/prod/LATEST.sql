@@ -656,33 +656,6 @@ UPDATE
     ON task_run FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
--- task check run table stores the task check run
-CREATE TABLE task_check_run (
-    id SERIAL PRIMARY KEY,
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    task_id INTEGER NOT NULL REFERENCES task (id),
-    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.task-check.%'),
-    code INTEGER NOT NULL DEFAULT 0,
-    comment TEXT NOT NULL DEFAULT '',
-    -- result saves the task check run result in json format
-    result  JSONB NOT NULL DEFAULT '{}',
-    payload JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_task_check_run_task_id ON task_check_run(task_id);
-
-ALTER SEQUENCE task_check_run_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_task_check_run_updated_ts
-BEFORE
-UPDATE
-    ON task_check_run FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- Pipeline related END
 -----------------------
 -- Plan related BEGIN

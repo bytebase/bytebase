@@ -4,6 +4,12 @@ import {
   OperatorType,
 } from "@/types/proto/v1/project_service";
 
+export const extractDeploymentConfigName = (name: string) => {
+  const pattern = /(?:^|\/)deploymentConfigs\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
+
 export const validateDeploymentConfigV1 = (
   config: DeploymentConfig
 ): string | undefined => {
