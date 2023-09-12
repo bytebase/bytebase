@@ -23,7 +23,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -2139,20 +2138,12 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			if task.Status != api.TaskPendingApproval {
 				return nil
 			}
-			payload := &storepb.IssuePayload{}
-			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-				return errors.Wrapf(err, "failed to unmarshal original issue payload")
-			}
-			payload.Approval = &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-			}
-			payloadBytes, err := protojson.Marshal(payload)
-			if err != nil {
-				return errors.Wrapf(err, "failed to marshal issue payload")
-			}
-			payloadStr := string(payloadBytes)
 			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-				Payload: &payloadStr,
+				PayloadUpsert: &storepb.IssuePayload{
+					Approval: &storepb.IssuePayloadApproval{
+						ApprovalFindingDone: false,
+					},
+				},
 			}, api.SystemBotID)
 			if err != nil {
 				return errors.Wrap(err, "failed to update issue payload")
