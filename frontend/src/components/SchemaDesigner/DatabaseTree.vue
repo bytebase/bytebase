@@ -1,24 +1,21 @@
 <template>
-  <div class="w-full h-full px-2 relative overflow-y-hidden">
-    <div class="w-full flex flex-col sticky top-0 pt-2 h-20 bg-white z-10">
-      <p class="w-full flex flex-row justify-between items-center h-8 px-1">
-        <span class="text-sm">{{ $t("schema-designer.tables") }}</span>
-        <button
-          v-if="!readonly"
-          class="text-gray-400 hover:text-gray-500 disabled:cursor-not-allowed"
-          @click="handleCreateTable"
-        >
-          <heroicons-outline:plus class="w-4 h-auto" />
-        </button>
-      </p>
+  <div class="w-full h-full px-2 space-y-2 relative overflow-y-hidden">
+    <div class="w-full flex sticky top-0 pt-2 bg-white z-10 space-x-2">
       <NInput
         v-model:value="searchPattern"
         :placeholder="$t('schema-designer.search-tables')"
       >
         <template #prefix>
-          <heroicons-outline:search class="w-4 h-auto text-gray-300" />
+          <heroicons-outline:search class="h-auto text-gray-300" />
         </template>
       </NInput>
+      <button
+        v-if="!readonly"
+        class="text-gray-400 hover:text-gray-500 disabled:cursor-not-allowed"
+        @click="handleCreateTable"
+      >
+        <heroicons-outline:plus class="w-4 h-auto" />
+      </button>
     </div>
     <div
       class="schema-designer-database-tree pb-2 overflow-y-auto h-full text-sm"
@@ -31,6 +28,7 @@
         :block-line="true"
         :data="treeData"
         :pattern="searchPattern"
+        :show-irrelevant-nodes="false"
         :render-prefix="renderPrefix"
         :render-label="renderLabel"
         :render-suffix="renderSuffix"
