@@ -2,10 +2,16 @@
   <div class="gap-y-4 w-full">
     <div class="flex items-stretch gap-x-4 overflow-hidden">
       <div class="flex-1 space-y-2 py-4 overflow-x-hidden overflow-y-auto">
-        <h3 class="font-medium text-sm text-control">
-          {{ $t("custom-approval.security-rule.condition.self") }}
-          {{ index }}
-        </h3>
+        <input
+          v-model="state.title"
+          class="textfield w-64 ml-0.5"
+          :placeholder="`${t('custom-approval.security-rule.condition.self')} ${
+            props.index
+          }`"
+          type="text"
+          :disabled="readonly || disabled"
+          @input="state.dirty = true"
+        />
         <ExprEditor
           :expr="state.expr"
           :allow-admin="!readonly"
@@ -17,7 +23,7 @@
         />
       </div>
       <div class="space-y-2 py-4">
-        <h3 class="font-medium text-sm text-control">
+        <h3 class="font-medium text-sm text-main py-2">
           {{ $t("settings.sensitive-data.masking-level.self") }}
         </h3>
         <NSelect
@@ -91,6 +97,7 @@ const emit = defineEmits<{
 }>();
 
 type LocalState = {
+  title: string;
   expr: ConditionGroupExpr;
   maskingLevel: MaskingLevel;
   dirty: boolean;
@@ -98,6 +105,7 @@ type LocalState = {
 
 const { t } = useI18n();
 const state = ref<LocalState>({
+  title: "",
   expr: wrapAsGroup(resolveCELExpr(CELExpr.fromJSON({}))),
   maskingLevel: MaskingLevel.FULL,
   dirty: false,
@@ -133,8 +141,10 @@ const resetLocalState = async () => {
   const parsedExpr = await convertCELStringToParsedExpr(
     rule.condition?.expression ?? ""
   );
+
   state.value = {
     dirty: false,
+    title: rule.condition?.title ?? "",
     maskingLevel: rule.maskingLevel,
     expr: wrapAsGroup(resolveCELExpr(parsedExpr.expr ?? CELExpr.fromJSON({}))),
   };
@@ -157,6 +167,7 @@ const onConfirm = async () => {
     maskingLevel: state.value.maskingLevel,
     condition: Expr.fromJSON({
       expression,
+      title: state.value.title,
     }),
   });
   state.value.dirty = false;
