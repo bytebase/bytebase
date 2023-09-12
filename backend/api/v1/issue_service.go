@@ -577,15 +577,36 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	if request.Issue.GrantRequest.GetUser() == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "expect grant request user")
 	}
-	if request.Issue.GrantRequest.GetCondition().GetExpression() == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "expect grant request condition expression")
-	}
-	e, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create cel environment, error: %v", err)
-	}
-	if _, issues := e.Compile(request.Issue.GrantRequest.GetCondition().GetExpression()); issues != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "found issues in grant request condition expression, issues: %v", issues.String())
+	// Validate CEL expression if it's not empty.
+	if expression := request.Issue.GrantRequest.GetCondition().GetExpression(); expression != "" {
+		e, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create cel environment, error: %v", err)
+		}
+		if _, issues := e.Compile(expression); issues != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "found issues in grant request condition expression, issues: %v", issues.String())
+		}
+
+		factors, err := common.GetQueryExportFactors(expression)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to get query export factors, error: %v", err)
+		}
+		// Validate the statement if it's not empty.
+		if factors.Statement != "" {
+			for _, dbName := range factors.DatabaseNames {
+				instanceID, databaseName, err := common.GetInstanceDatabaseID(dbName)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid database name %q, error: %v", dbName, err)
+				}
+				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+				}
+				if err := validateQueryRequest(instance, databaseName, factors.Statement); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid statement, error: %v", err)
+				}
+			}
+		}
 	}
 
 	issueCreateMessage := &store.IssueMessage{
