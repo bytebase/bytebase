@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -13,52 +12,15 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
-	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
-	g.POST("/issue", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		issueCreate := &api.IssueCreate{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
-		}
-
-		if issueCreate.ProjectID == api.DefaultProjectUID {
-			return echo.NewHTTPError(http.StatusBadRequest, "Cannot create a new issue in the default project")
-		}
-		if issueCreate.Type != api.IssueGrantRequest {
-			return errors.Errorf("unsupported issue type %q", issueCreate.Type)
-		}
-		issue, err := s.createGrantRequestIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
-		if err != nil {
-			return err
-		}
-
-		s.metricReporter.Report(ctx, &metric.Metric{
-			Name:  metricAPI.IssueCreateMetricName,
-			Value: 1,
-			Labels: map[string]any{
-				"type": issue.Type,
-			},
-		})
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create issue response").SetInternal(err)
-		}
-		return nil
-	})
-
 	g.GET("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		issueFind := &store.FindIssueMessage{}
@@ -342,119 +304,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project %d not found", issueCreate.ProjectID))
-	}
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, err
-	}
-	var assignee *store.UserMessage
-	for _, binding := range policy.Bindings {
-		if binding.Role != api.Owner {
-			continue
-		}
-		if binding.Condition == nil || binding.Condition.Expression != "" {
-			continue
-		}
-		if len(binding.Members) == 0 {
-			continue
-		}
-		assignee = binding.Members[0]
-		break
-	}
-	if assignee == nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project owner %d not found", issueCreate.ProjectID))
-	}
-
-	var issuePayload storepb.IssuePayload
-	if err := protojson.Unmarshal([]byte(issueCreate.Payload), &issuePayload); err != nil {
-		return nil, err
-	}
-	issueCreatePayload := &storepb.IssuePayload{
-		GrantRequest: issuePayload.GrantRequest,
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone: false,
-		},
-	}
-	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
-	}
-	issueCreateMessage := &store.IssueMessage{
-		Project:     project,
-		Title:       issueCreate.Name,
-		Type:        issueCreate.Type,
-		Description: issueCreate.Description,
-		Assignee:    assignee,
-		Payload:     string(issueCreatePayloadBytes),
-	}
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
-	if err != nil {
-		return nil, err
-	}
-	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
-
-	createActivityPayload := api.ActivityIssueCreatePayload{
-		IssueName: issue.Title,
-	}
-
-	bytes, err := json.Marshal(createActivityPayload)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:   creatorID,
-		ContainerUID: issue.UID,
-		Type:         api.ActivityIssueCreate,
-		Level:        api.ActivityInfo,
-		Payload:      string(bytes),
-	}
-	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-		Issue: issue,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
-	}
-
-	// Composed the issue.
-	composedIssue := &api.Issue{
-		ID:          issue.UID,
-		CreatorID:   issue.Creator.ID,
-		CreatedTs:   issue.CreatedTime.Unix(),
-		UpdaterID:   issue.Updater.ID,
-		UpdatedTs:   issue.UpdatedTime.Unix(),
-		ProjectID:   issue.Project.UID,
-		PipelineID:  issue.PipelineUID,
-		Name:        issue.Title,
-		Status:      issue.Status,
-		Type:        issue.Type,
-		Description: issue.Description,
-		AssigneeID:  issue.Assignee.ID,
-		Payload:     issue.Payload,
-	}
-	composedCreator, err := s.store.GetPrincipalByID(ctx, issue.Creator.ID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Creator = composedCreator
-	composedUpdater, err := s.store.GetPrincipalByID(ctx, issue.Updater.ID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Updater = composedUpdater
-	composedAssignee, err := s.store.GetPrincipalByID(ctx, issue.Assignee.ID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Assignee = composedAssignee
-	return composedIssue, nil
 }
 
 func marshalPageToken(id int) (string, error) {

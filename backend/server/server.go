@@ -609,7 +609,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService(s.store, s.schemaSyncer, s.dbFactory, s.activityManager, s.licenseService))
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
-	s.issueService = v1.NewIssueService(s.store, s.activityManager, s.relayRunner, s.stateCfg, s.licenseService)
+	s.issueService = v1.NewIssueService(s.store, s.activityManager, s.relayRunner, s.stateCfg, s.licenseService, s.metricReporter)
 	v1pb.RegisterIssueServiceServer(s.grpcServer, s.issueService)
 	s.rolloutService = v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.planCheckScheduler, s.stateCfg, s.activityManager)
 	v1pb.RegisterRolloutServiceServer(s.grpcServer, s.rolloutService)
@@ -682,6 +682,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterIssueServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	if err := v1pb.RegisterLoggingServiceHandler(ctx, mux, grpcConn); err != nil {

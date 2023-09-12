@@ -2956,7 +2956,8 @@
     },
     "action": {
       "use-the-existing-branch": "Usar la rama existente",
-      "create-new-branch": "Crear nueva rama"
+      "create-new-branch": "Crear nueva rama",
+      "filter-by-name": "Filtrar por nombre"
     }
   },
   "cel": {
@@ -2971,6 +2972,7 @@
       "expiration_days": "Días de caducidad",
       "export_rows": "Exportar filas",
       "table_name": "Nombre de la tabla",
+      "column_name": "Nombre de columna",
       "classification_level": "Nivel de clasificación"
     }
   }

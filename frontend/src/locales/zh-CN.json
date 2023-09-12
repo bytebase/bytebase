@@ -2951,7 +2951,8 @@
     },
     "action": {
       "use-the-existing-branch": "使用已有分支",
-      "create-new-branch": "创建新分支"
+      "create-new-branch": "创建新分支",
+      "filter-by-name": "根据名称过滤"
     }
   },
   "cel": {
@@ -2966,6 +2967,7 @@
       "expiration_days": "过期天数",
       "export_rows": "导出行数",
       "table_name": "表名称",
+      "column_name": "字段名称",
       "classification_level": "数据分级"
     }
   }
