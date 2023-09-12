@@ -149,24 +149,26 @@ import {
   EnvironmentSelect,
   DatabaseSelect,
 } from "@/components/v2";
+import { issueServiceClient } from "@/grpcweb";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
-  useIssueStore,
   useProjectV1Store,
   pushNotification,
 } from "@/store";
 import {
   DatabaseResource,
-  IssueCreate,
   PresetRoleType,
   SQLDialect,
-  SYSTEM_BOT_ID,
+  SYSTEM_BOT_EMAIL,
   UNKNOWN_ID,
   dialectOfEngineV1,
 } from "@/types";
+import { Duration } from "@/types/proto/google/protobuf/duration";
+import { Expr } from "@/types/proto/google/type/expr";
 import { Engine } from "@/types/proto/v1/common";
-import { extractUserUID, issueSlug, memberListInProjectV1 } from "@/utils";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
+import { issueSlug, memberListInProjectV1 } from "@/utils";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 
@@ -301,15 +303,13 @@ const doCreateIssue = async () => {
     return;
   }
 
-  const newIssue: IssueCreate = {
-    name: generateIssueName(),
-    type: "bb.issue.grant.request",
+  const newIssue = Issue.fromPartial({
+    title: generateIssueName(),
     description: state.description,
-    projectId: Number(state.projectId),
-    assigneeId: SYSTEM_BOT_ID,
-    createContext: {},
-    payload: {},
-  };
+    type: Issue_Type.GRANT_REQUEST,
+    assignee: `users/${SYSTEM_BOT_EMAIL}`,
+    grantRequest: {},
+  });
 
   // update issue's assignee to first project owner.
   const project = await projectStore.getOrFetchProjectByUID(state.projectId!);
@@ -319,8 +319,7 @@ const doCreateIssue = async () => {
   );
   const projectOwner = head(ownerList);
   if (projectOwner) {
-    const userUID = extractUserUID(projectOwner.user.name);
-    newIssue.assigneeId = Number(userUID);
+    newIssue.assignee = `users/${projectOwner.user.email}`;
   }
 
   const expression: string[] = [];
@@ -353,20 +352,21 @@ const doCreateIssue = async () => {
   }
 
   const celExpressionString = expression.join(" && ");
-  newIssue.payload = {
-    grantRequest: {
-      role: "roles/EXPORTER",
-      user: currentUser.value.name,
-      condition: {
-        expression: celExpressionString,
-      },
-      // We need to pass a string type value to the expiration field because
-      // the type of Duration proto is string.
-      expiration: `${expireDays * 24 * 60 * 60}s`,
-    },
+  newIssue.grantRequest = {
+    role: "roles/EXPORTER",
+    user: `users/${currentUser.value.email}`,
+    condition: Expr.fromPartial({
+      expression: celExpressionString,
+    }),
+    expiration: Duration.fromPartial({
+      seconds: expireDays * 24 * 60 * 60,
+    }),
   };
 
-  const issue = await useIssueStore().createIssue(newIssue);
+  const createdIssue = await issueServiceClient.createIssue({
+    parent: project.name,
+    issue: newIssue,
+  });
 
   pushNotification({
     module: "bytebase",
@@ -376,7 +376,7 @@ const doCreateIssue = async () => {
 
   if (props.redirectToIssuePage) {
     const route = router.resolve({
-      path: `/issue/${issueSlug(issue.name, issue.id)}`,
+      path: `/issue/${issueSlug(createdIssue.title, createdIssue.uid)}`,
     });
     window.open(route.href, "_blank");
   }
