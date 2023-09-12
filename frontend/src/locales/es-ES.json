@@ -2971,6 +2971,7 @@
       "expiration_days": "Días de caducidad",
       "export_rows": "Exportar filas",
       "table_name": "Nombre de la tabla",
+      "column_name": "Nombre de columna",
       "classification_level": "Nivel de clasificación"
     }
   }
