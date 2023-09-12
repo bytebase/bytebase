@@ -347,9 +347,11 @@ const sourceDatabaseSchema = computed(() => {
     return props.databaseSourceSchema?.changeHistory.schema || "";
   } else if (props.sourceSchemaType === "SCHEMA_DESIGN") {
     const databaseId = state.selectedDatabaseId || "";
-    return schemaDesignPreviewCache[
-      databaseId + "|" + selectedSchemaDesign.value?.name
-    ];
+    return (
+      schemaDesignPreviewCache[
+        databaseId + "|" + selectedSchemaDesign.value?.name
+      ] || ""
+    );
   } else if (props.sourceSchemaType === "RAW_SQL") {
     let statement = props.rawSqlState?.statement || "";
     if (props.rawSqlState?.sheetId) {
@@ -520,6 +522,10 @@ watch(
 watch(
   () => [state.selectedDatabaseIdList, sourceDatabaseSchema.value],
   async (_, oldValue) => {
+    if (!sourceDatabaseSchema.value) {
+      return;
+    }
+
     // If source schema changed, we need to recompute the diff for all target databases.
     const skipCache = oldValue[1] !== sourceDatabaseSchema.value;
     const schedule = setTimeout(() => {
