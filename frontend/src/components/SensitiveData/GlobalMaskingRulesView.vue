@@ -309,6 +309,7 @@ const factorList = computed((): Factor[] => {
     "instance_id", // using `instance.resource_id`
     "database_name",
     "table_name",
+    "column_name",
   ];
 
   const classificationOptions = getClassificationLevelOptions();
