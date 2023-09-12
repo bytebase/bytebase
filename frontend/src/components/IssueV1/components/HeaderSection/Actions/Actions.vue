@@ -13,10 +13,13 @@
 </template>
 
 <script setup lang="ts">
+import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
+import { PresetRoleType } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { isGrantRequestIssue } from "@/utils";
+import { convertFromCELString } from "@/utils/issue/cel";
 import { useIssueContext } from "../../../logic";
 import { CreateButton } from "./create";
 import { ExportCenterButton, SQLEditorButton } from "./request";
@@ -39,28 +42,26 @@ const isFinishedGrantRequestIssueByCurrentUser = computed(() => {
   if (issue.value.status !== IssueStatus.DONE) return false;
   if (!isGrantRequestIssue(issue.value)) return false;
 
-  if (issue.value.creator !== currentUser.value.name) {
-    return false;
-  }
-  return true;
+  return issue.value.creatorEntity.name === currentUser.value.name;
 });
 
-const actionType = computed((): ActionType => {
+const actionType = asyncComputed(async (): Promise<ActionType | undefined> => {
   if (isCreating.value) {
     return "CREATE";
   }
   if (isGrantRequestIssue(issue.value)) {
     if (isFinishedGrantRequestIssueByCurrentUser.value) {
-      // eslint-disable-next-line
-      if (false) {
-        // TODO: check request export payload
-        // return issue.value.pa.payload.grantRequest?.role === PresetRoleType.EXPORTER;
-        return "EXPORT-CENTER";
+      const role = issue.value.grantRequest?.role;
+      if (role === PresetRoleType.EXPORTER) {
+        // Show the export button only when the grant request condition is based on the statement.
+        const expr = await convertFromCELString(
+          issue.value.grantRequest?.condition?.expression ?? ""
+        );
+        if (expr.statement) {
+          return "EXPORT-CENTER";
+        }
       }
-      // eslint-disable-next-line
-      if (false) {
-        // TODO: check request query payload
-        // return issue.value.payload.grantRequest?.role === PresetRoleType.QUERIER;
+      if (role === PresetRoleType.QUERIER) {
         return "SQL-EDITOR";
       }
     }
@@ -68,5 +69,5 @@ const actionType = computed((): ActionType => {
   }
 
   return reviewDone.value ? "ROLLOUT" : "REVIEW";
-});
+}, undefined);
 </script>

@@ -950,8 +950,7 @@ const routes: Array<RouteRecordRaw> = [
               overrideTitle: true,
             },
             components: {
-              content: () =>
-                import("../views/IssueDetailCompatibilityLayer.vue"),
+              content: () => import("../views/IssueDetailV1.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: { content: true },

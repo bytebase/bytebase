@@ -9,6 +9,7 @@ import TaskListSection from "./TaskListSection";
 import TaskRunSection from "./TaskRunSection";
 
 export * from "./Panel";
+export * from "./GrantRequest";
 export {
   BannerSection,
   HeaderSection,
