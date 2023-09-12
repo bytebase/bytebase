@@ -28,6 +28,7 @@ import (
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -37,6 +38,7 @@ import (
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -550,6 +552,44 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
+
+	interceptorLogger := func(l *slog.Logger) logging.Logger {
+		return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
+			var newFields []any
+			fieldsIter := logging.Fields(fields).Iterator()
+			for fieldsIter.Next() {
+				k, v := fieldsIter.At()
+				if slices.Contains(logging.SystemTag, k) || k == logging.ComponentFieldKey || k == logging.KindServerFieldValue || k == logging.MethodTypeFieldKey || k == "peer.address" {
+					continue
+				}
+				newFields = append(newFields, k, v)
+			}
+			l.Log(ctx, slog.Level(lvl), msg, newFields...)
+		})
+	}
+
+	loggingCodeToLevel := func(code codes.Code) logging.Level {
+		switch code {
+		case codes.OK:
+			return logging.LevelDebug
+		case codes.NotFound, codes.Canceled, codes.AlreadyExists, codes.InvalidArgument, codes.Unauthenticated:
+			return logging.LevelInfo
+		case codes.DeadlineExceeded, codes.PermissionDenied, codes.ResourceExhausted, codes.FailedPrecondition, codes.Aborted,
+			codes.OutOfRange, codes.Unavailable:
+			return logging.LevelWarn
+		case codes.Unknown, codes.Unimplemented, codes.Internal, codes.DataLoss:
+			return logging.LevelError
+		default:
+			return logging.LevelError
+		}
+	}
+
+	loggingOptions := []logging.Option{
+		logging.WithLevels(loggingCodeToLevel),
+		logging.WithCodes(logging.DefaultErrorToCode),
+		logging.WithLogOnEvents(logging.FinishCall),
+	}
+
 	grpc.EnableTracing = true
 	s.grpcServer = grpc.NewServer(
 		// Override the maximum receiving message size to 100M for uploading large sheets.
@@ -560,12 +600,14 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			debugProvider.DebugInterceptor,
 			authProvider.AuthenticationInterceptor,
 			aclProvider.ACLInterceptor,
+			logging.UnaryServerInterceptor(interceptorLogger(slog.Default()), loggingOptions...),
 			recoveryUnaryInterceptor,
 		),
 		grpc.ChainStreamInterceptor(
 			debugProvider.DebugStreamInterceptor,
 			authProvider.AuthenticationStreamInterceptor,
 			aclProvider.ACLStreamInterceptor,
+			logging.StreamServerInterceptor(interceptorLogger(slog.Default()), loggingOptions...),
 			recoveryStreamInterceptor,
 		),
 	)
