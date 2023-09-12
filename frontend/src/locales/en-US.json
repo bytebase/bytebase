@@ -625,14 +625,23 @@
       "description": "The query result of the following columns is displayed as \"******\". \nYou can mark more columns as sensitive data on the table details page.",
       "remove-sensitive-column-tips": "Expose this column?",
       "sensitive-column-list": "Sensitive Column List",
-      "global-masking-rule": "Global Masking Rule",
-      "semantic-types": "Semantic Types",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
       "global-rules": {
+        "self": "Global Masking Rule",
         "add-rule": "Add rule",
         "re-order": "Re-order",
         "delete-rule-tip": "Delete this rule?"
+      },
+      "semantic-types": {
+        "self": "Semantic Types",
+        "add-type": "Add type",
+        "table": {
+          "semantic-type": "Semantic type",
+          "description": "Description",
+          "full-masking-algorithm": "Full-masking algorithm",
+          "partial-masking-algorithm": "Partial-masking algorithm"
+        }
       },
       "column-detail": {
         "masking-setting-for-column": "Masking Setting for \"{column}\"",
