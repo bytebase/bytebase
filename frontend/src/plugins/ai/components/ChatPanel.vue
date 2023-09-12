@@ -73,6 +73,8 @@ const requestAI = async (query: string) => {
     const engine = context.engine.value;
     const databaseMetadata = context.databaseMetadata.value;
     const prompts: string[] = [];
+    prompts.push(`### You are a db and SQL expert.`);
+    prompts.push(`### Your responses should be informative and terse.`);
     if (engine) {
       if (databaseMetadata) {
         prompts.push(
