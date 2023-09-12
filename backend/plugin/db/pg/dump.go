@@ -273,7 +273,7 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 	return txn.Commit()
 }
 
-// split large sslCA to multi smaller sslCA.
+// split large sslCA to multiple smaller sslCAs.
 func splitSslCA(sslca string) []string {
 	if len(sslca) < sslCAThreshold {
 		return []string{sslca}
