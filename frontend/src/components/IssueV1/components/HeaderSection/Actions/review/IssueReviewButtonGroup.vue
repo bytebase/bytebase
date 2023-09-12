@@ -25,7 +25,10 @@ import {
   useIssueContext,
 } from "@/components/IssueV1";
 import { useCurrentUserV1 } from "@/store";
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import {
+  IssueStatus,
+  Issue_Approver_Status,
+} from "@/types/proto/v1/issue_service";
 import { extractUserResourceName } from "@/utils";
 import { IssueStatusActionButtonGroup } from "../common";
 import ReviewActionButton from "./ReviewActionButton.vue";
@@ -35,6 +38,13 @@ const { issue, phase, reviewContext, events } = useIssueContext();
 const { ready, status, done } = reviewContext;
 
 const shouldShowApproveOrReject = computed(() => {
+  if (
+    issue.value.status === IssueStatus.CANCELED ||
+    issue.value.status === IssueStatus.DONE
+  ) {
+    return false;
+  }
+
   if (phase.value !== "REVIEW") {
     return false;
   }
