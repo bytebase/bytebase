@@ -3,6 +3,7 @@
     <div class="w-full flex sticky top-0 pt-2 bg-white z-10 space-x-2">
       <NInput
         v-model:value="searchPattern"
+        size="small"
         :placeholder="$t('schema-designer.search-tables')"
       >
         <template #prefix>
