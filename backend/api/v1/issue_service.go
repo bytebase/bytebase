@@ -594,7 +594,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		// Validate the statement if it's not empty.
 		if factors.Statement != "" {
 			for _, dbName := range factors.DatabaseNames {
-				instanceID, databaseName, err := getInstanceDatabaseID(dbName)
+				instanceID, databaseName, err := common.GetInstanceDatabaseID(dbName)
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid database name %q, error: %v", dbName, err)
 				}
@@ -1675,37 +1675,4 @@ func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantReque
 		Condition:  v.Condition,
 		Expiration: v.Expiration,
 	}, nil
-}
-
-const (
-	instanceNamePrefix = "instances/"
-	databaseIDPrefix   = "databases/"
-)
-
-func getNameParentTokens(name string, tokenPrefixes ...string) ([]string, error) {
-	parts := strings.Split(name, "/")
-	if len(parts) != 2*len(tokenPrefixes) {
-		return nil, errors.Errorf("invalid request %q", name)
-	}
-
-	var tokens []string
-	for i, tokenPrefix := range tokenPrefixes {
-		if fmt.Sprintf("%s/", parts[2*i]) != tokenPrefix {
-			return nil, errors.Errorf("invalid prefix %q in request %q", tokenPrefix, name)
-		}
-		if parts[2*i+1] == "" {
-			return nil, errors.Errorf("invalid request %q with empty prefix %q", name, tokenPrefix)
-		}
-		tokens = append(tokens, parts[2*i+1])
-	}
-	return tokens, nil
-}
-
-func getInstanceDatabaseID(name string) (string, string, error) {
-	// the instance request should be instances/{instance-id}/databases/{database-id}
-	tokens, err := getNameParentTokens(name, instanceNamePrefix, databaseIDPrefix)
-	if err != nil {
-		return "", "", err
-	}
-	return tokens[0], tokens[1], nil
 }
