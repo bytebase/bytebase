@@ -3,6 +3,7 @@
     class="min-w-[calc(100%-10rem)] max-w-full"
     :show="true"
     :auto-focus="false"
+    :trap-focus="false"
     :close-on-esc="true"
     :native-scrollbar="true"
     resizable
