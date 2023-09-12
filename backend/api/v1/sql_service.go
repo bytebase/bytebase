@@ -1594,6 +1594,7 @@ func evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schema
 				"database_name":        databaseMessage.DatabaseName,
 				"schema_name":          schemaName,
 				"table_name":           tableName,
+				"column_name":          column.Name,
 				"classification_level": columnClassificationLevel,
 			}
 			pass, err := evaluateMaskingRulePolicyCondition(maskingRule.Condition.Expression, maskingRuleAttributes)
