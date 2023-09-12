@@ -2958,7 +2958,8 @@
     },
     "action": {
       "use-the-existing-branch": "Use the existing branch",
-      "create-new-branch": "Create new branch"
+      "create-new-branch": "Create new branch",
+      "filter-by-name": "Filter by name"
     }
   },
   "cel": {

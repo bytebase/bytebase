@@ -2951,7 +2951,8 @@
     },
     "action": {
       "use-the-existing-branch": "使用已有分支",
-      "create-new-branch": "创建新分支"
+      "create-new-branch": "创建新分支",
+      "filter-by-name": "根据名称过滤"
     }
   },
   "cel": {
