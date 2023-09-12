@@ -2842,13 +2842,13 @@
       "category-desc": "Select an existed category or create a new one",
       "unclassified": "Unclassified",
       "column-name": "Column name",
-      "column-type": "Column Type",
+      "column-type": "Column type",
       "default-value": "Default value",
       "comment": "Comment",
       "nullable": "Nullable"
     },
     "classification": {
-      "self": "Data Classification",
+      "self": "Data classification",
       "select": "Select classification",
       "search": "Search classification"
     }
