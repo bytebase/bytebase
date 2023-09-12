@@ -70,6 +70,11 @@ const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
+  column_name: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
+  ]),
   db_engine: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,

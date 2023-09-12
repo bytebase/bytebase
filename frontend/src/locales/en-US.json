@@ -2973,6 +2973,7 @@
       "expiration_days": "Expiration days",
       "export_rows": "Export rows",
       "table_name": "Table name",
+      "column_name": "Column name",
       "classification_level": "Classification level"
     }
   }

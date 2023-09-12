@@ -41,6 +41,7 @@ export const StringFactorList = [
   "resource.schema_name",
   // Masking rule
   "classification_level",
+  "column_name",
 ] as const;
 export type StringFactor = typeof StringFactorList[number];
 
