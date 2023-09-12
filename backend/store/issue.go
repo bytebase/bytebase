@@ -10,9 +10,11 @@ import (
 	"github.com/go-ego/gse"
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var getSegmenter func() *gse.Segmenter
@@ -372,14 +374,15 @@ type IssueMessage struct {
 	updatedTs      int64
 }
 
-// UpdateIssueMessage is the mssage for updating an issue.
+// UpdateIssueMessage is the message for updating an issue.
 type UpdateIssueMessage struct {
 	Title       *string
 	Status      *api.IssueStatus
 	Description *string
 	Assignee    *UserMessage
-	Payload     *string
-	Subscribers *[]*UserMessage
+	// PayloadUpsert upserts the presented top-level keys.
+	PayloadUpsert *storepb.IssuePayload
+	Subscribers   *[]*UserMessage
 
 	PipelineUID *int
 }
@@ -541,8 +544,12 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	if v := patch.Assignee; v != nil {
 		set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
 	}
-	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	if v := patch.PayloadUpsert; v != nil {
+		p, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal patch.PayloadUpsert")
+		}
+		set, args = append(set, fmt.Sprintf("payload = payload || $%d", len(args)+1)), append(args, p)
 	}
 	if patch.Title != nil || patch.Description != nil {
 		title := oldIssue.Title

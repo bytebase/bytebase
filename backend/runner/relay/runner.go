@@ -268,16 +268,12 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 	if err != nil {
 		return errors.Wrapf(err, "failed to handle incoming approval steps")
 	}
-
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal issue payload")
-	}
-	payloadStr := string(payloadBytes)
 
 	issue, err = r.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue")
@@ -483,14 +479,10 @@ func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) e
 		PrincipalId: int32(api.SystemBotID),
 	})
 
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal issue payload")
-	}
-	payloadStr := string(payloadBytes)
-
 	issue, err = r.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue")
