@@ -684,6 +684,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
+	if err := v1pb.RegisterIssueServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
 	if err := v1pb.RegisterLoggingServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
