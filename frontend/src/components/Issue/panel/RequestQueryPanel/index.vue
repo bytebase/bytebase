@@ -84,21 +84,23 @@ import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { ProjectSelect } from "@/components/v2";
+import { issueServiceClient } from "@/grpcweb";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
-  useIssueStore,
   useProjectV1Store,
 } from "@/store";
 import {
   ComposedDatabase,
   DatabaseResource,
-  IssueCreate,
   PresetRoleType,
-  SYSTEM_BOT_ID,
+  SYSTEM_BOT_EMAIL,
   UNKNOWN_ID,
 } from "@/types";
-import { extractUserUID, issueSlug, memberListInProjectV1 } from "@/utils";
+import { Duration } from "@/types/proto/google/protobuf/duration";
+import { Expr } from "@/types/proto/google/type/expr";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
+import { issueSlug, memberListInProjectV1 } from "@/utils";
 import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
 
 interface LocalState {
@@ -198,15 +200,22 @@ const doCreateIssue = async () => {
     return;
   }
 
-  const newIssue: IssueCreate = {
-    name: generateIssueName(),
-    type: "bb.issue.grant.request",
+  // const newIssue: IssueCreate = {
+  //   name: generateIssueName(),
+  //   type: "bb.issue.grant.request",
+  //   description: state.description,
+  //   projectId: Number(state.projectId),
+  //   assigneeId: SYSTEM_BOT_ID,
+  //   createContext: {},
+  //   payload: {},
+  // };
+  const newIssue = Issue.fromPartial({
+    title: generateIssueName(),
     description: state.description,
-    projectId: Number(state.projectId),
-    assigneeId: SYSTEM_BOT_ID,
-    createContext: {},
-    payload: {},
-  };
+    type: Issue_Type.GRANT_REQUEST,
+    assignee: `users/${SYSTEM_BOT_EMAIL}`,
+    grantRequest: {},
+  });
 
   // update issue's assignee to first project owner.
   const project = await useProjectV1Store().getOrFetchProjectByUID(
@@ -218,8 +227,7 @@ const doCreateIssue = async () => {
   );
   const projectOwner = head(ownerList);
   if (projectOwner) {
-    const userUID = extractUserUID(projectOwner.user.name);
-    newIssue.assigneeId = Number(userUID);
+    newIssue.assignee = `users/${projectOwner.user.email}`;
   }
 
   const expression: string[] = [];
@@ -234,19 +242,23 @@ const doCreateIssue = async () => {
   }
 
   const celExpressionString = expression.join(" && ");
-  newIssue.payload = {
-    grantRequest: {
-      role: "roles/QUERIER",
-      user: currentUser.value.name,
-      condition: {
-        expression: celExpressionString,
-      },
-      expiration: `${expireDays * 24 * 60 * 60}s`,
-    },
+  newIssue.grantRequest = {
+    role: "roles/QUERIER",
+    user: `users/${currentUser.value.email}`,
+    condition: Expr.fromPartial({
+      expression: celExpressionString,
+    }),
+    expiration: Duration.fromPartial({
+      seconds: expireDays * 24 * 60 * 60,
+    }),
   };
 
-  const issue = await useIssueStore().createIssue(newIssue);
-  router.push(`/issue/${issueSlug(issue.name, issue.id)}`);
+  const createdIssue = await issueServiceClient.createIssue({
+    parent: project.name,
+    issue: newIssue,
+  });
+
+  router.push(`/issue/${issueSlug(createdIssue.title, createdIssue.uid)}`);
 };
 
 const generateIssueName = () => {
