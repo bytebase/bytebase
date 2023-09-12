@@ -1588,7 +1588,7 @@ func evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schema
 		columnClassificationLevel := getClassificationLevelOfColumn(column.Classification, dataClassificationConfig)
 		for _, maskingRule := range maskingRulePolicy.Rules {
 			maskingRuleAttributes := map[string]any{
-				"environment_id":       databaseMessage.EnvironmentID,
+				"environment_id":       databaseMessage.EffectiveEnvironmentID,
 				"project_id":           databaseMessage.ProjectID,
 				"instance_id":          databaseMessage.InstanceID,
 				"database_name":        databaseMessage.DatabaseName,
