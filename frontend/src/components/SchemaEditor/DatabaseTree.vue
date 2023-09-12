@@ -637,6 +637,12 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
           }
         } else if (treeNode.type === "database") {
           await loadSubTree(treeNode);
+          const index = expandedKeysRef.value.findIndex(
+            (key) => key === treeNode.key
+          );
+          if (index < 0) {
+            expandedKeysRef.value.push(treeNode.key);
+          }
           editorStore.addTab({
             id: generateUniqueTabId(),
             type: SchemaEditorTabType.TabForDatabase,
