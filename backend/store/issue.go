@@ -374,7 +374,7 @@ type IssueMessage struct {
 	updatedTs      int64
 }
 
-// UpdateIssueMessage is the mssage for updating an issue.
+// UpdateIssueMessage is the message for updating an issue.
 type UpdateIssueMessage struct {
 	Title       *string
 	Status      *api.IssueStatus
