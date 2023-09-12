@@ -20,7 +20,7 @@
           />
         </BBTableHeaderCell>
         <BBTableHeaderCell class="w-8" :title="columnList[1].title" />
-        <BBTableHeaderCell class="w-24" :title="columnList[2].title" />
+        <BBTableHeaderCell class="w-12" :title="columnList[2].title" />
         <BBTableHeaderCell class="w-56" :title="columnList[3].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
         <BBTableHeaderCell :title="columnList[5].title" />
