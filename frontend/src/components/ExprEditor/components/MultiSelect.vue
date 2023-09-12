@@ -9,6 +9,9 @@
     max-tag-count="responsive"
     size="small"
     style="min-width: 12rem; width: auto; overflow-x: hidden"
+    :menu-props="{
+      style: 'width: 14rem',
+    }"
     @update:value="$emit('update:value', $event)"
   >
     <template #action>
