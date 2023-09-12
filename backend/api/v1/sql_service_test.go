@@ -266,10 +266,10 @@ func TestGetExcelColumnName(t *testing.T) {
 
 func TestEvalMaskingLevelOfColumn(t *testing.T) {
 	defaultDatabaseMessage := &store.DatabaseMessage{
-		EnvironmentID: "prod",
-		ProjectID:     "bytebase",
-		InstanceID:    "neon-host",
-		DatabaseName:  "bb",
+		EffectiveEnvironmentID: "prod",
+		ProjectID:              "bytebase",
+		InstanceID:             "neon-host",
+		DatabaseName:           "bb",
 	}
 
 	defaultClassificationConfig := &storepb.DataClassificationSetting_DataClassificationConfig{
