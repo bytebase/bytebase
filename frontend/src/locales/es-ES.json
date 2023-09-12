@@ -2956,7 +2956,8 @@
     },
     "action": {
       "use-the-existing-branch": "Usar la rama existente",
-      "create-new-branch": "Crear nueva rama"
+      "create-new-branch": "Crear nueva rama",
+      "filter-by-name": "Filtrar por nombre"
     }
   },
   "cel": {
