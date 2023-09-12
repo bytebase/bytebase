@@ -22,6 +22,11 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   const instanceMapByName = reactive(new Map<string, ComposedInstance>());
   const instanceRoleListMapByName = reactive(new Map<string, InstanceRole[]>());
 
+  const reset = () => {
+    instanceMapByName.clear();
+    instanceRoleListMapByName.clear();
+  };
+
   // Getters
   const instanceList = computed(() => {
     const list = Array.from(instanceMapByName.values());
@@ -202,6 +207,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   };
 
   return {
+    reset,
     instanceList,
     activeInstanceList,
     activateInstanceCount,

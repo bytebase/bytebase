@@ -35,6 +35,11 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
   const databaseMapByUID = reactive(new Map<string, ComposedDatabase>());
 
+  const reset = () => {
+    databaseMapByName.clear();
+    databaseMapByUID.clear();
+  };
+
   // Getters
   const databaseList = computed(() => {
     return Array.from(databaseMapByName.values());
@@ -163,6 +168,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
 
   return {
+    reset,
     databaseList,
     fetchDatabaseList,
     searchDatabaseList,
