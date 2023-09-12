@@ -902,7 +902,7 @@
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
       "manually-select": "Manually select",
-      "customize": "Customize",
+      "custom": "Custom",
       "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once.",
       "export-method": "Export method",
       "request-sent": "Request sent",
