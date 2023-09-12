@@ -1096,11 +1096,10 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			if !payload.Approval.ApprovalFindingDone {
 				return nil, status.Errorf(codes.FailedPrecondition, "approval template finding is not done")
 			}
-			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
-				Approval: &storepb.IssuePayloadApproval{
-					ApprovalFindingDone: false,
-				},
-			})
+			payload.Approval = &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			}
+			payloadBytes, err := protojson.Marshal(payload)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
 			}
