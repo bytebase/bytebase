@@ -80,7 +80,7 @@ const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  classification_level: uniq([...EqualityOperatorList]),
+  classification_level: uniq([...CollectionOperatorList]),
 
   // Database group related fields.
   "resource.environment_name": uniq(["_==_"]),
