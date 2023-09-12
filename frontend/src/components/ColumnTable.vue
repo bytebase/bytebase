@@ -25,9 +25,8 @@
       </BBTableCell>
       <BBTableCell v-if="showClassificationColumn" class="bb-grid-cell">
         <div class="flex items-center">
-          {{ getColumnClassification(column.classification)?.title ?? "N/A" }}
           <ClassificationLevelBadge
-            :level-id="getColumnClassification(column.classification)?.levelId"
+            :classification="column.classification"
             :classification-config="classificationConfig"
           />
         </div>
@@ -309,13 +308,6 @@ const openSensitiveDrawer = (column: ColumnMetadata) => {
   }
 
   state.activeColumn = column;
-};
-
-const getColumnClassification = (classificationId: string) => {
-  if (!classificationId || !props.classificationConfig) {
-    return;
-  }
-  return props.classificationConfig.classification[classificationId];
 };
 
 const getMaskingLevelText = (column: ColumnMetadata) => {
