@@ -3,9 +3,7 @@
     <template #header>
       <div class="flex flex-col gap-y-1">
         <span>{{
-          isAlterSchema
-            ? $t("database.edit-schema")
-            : $t("database.change-data")
+          isEditSchema ? $t("database.edit-schema") : $t("database.change-data")
         }}</span>
         <i18n-t
           v-if="projectId && isTenantProject"
@@ -32,8 +30,8 @@
     >
       <div v-if="ready">
         <template v-if="projectId">
+          <!-- tenant mode project -->
           <template v-if="isTenantProject">
-            <!-- tenant mode project -->
             <NTabs v-model:value="state.alterType">
               <NTabPane :tab="$t('alter-schema.alter-db-group')" name="TENANT">
                 <div>
@@ -45,7 +43,7 @@
                     @dismiss="cancel"
                   />
                   <SchemalessDatabaseTable
-                    v-if="isAlterSchema"
+                    v-if="isEditSchema"
                     mode="PROJECT"
                     :database-list="schemalessDatabaseList"
                   />
@@ -114,18 +112,19 @@
                     </template>
                   </DatabaseV1Table>
                   <SchemalessDatabaseTable
-                    v-if="isAlterSchema"
+                    v-if="isEditSchema"
                     mode="PROJECT"
                     :database-list="schemalessDatabaseList"
                   />
                 </div>
                 <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
                   <SelectDatabaseGroupTable
+                    :show-selection="true"
                     :database-group-list="databaseGroupList"
                     :selected-database-group-name="
                       state.selectedDatabaseGroupName
                     "
-                    @update="handleDatabaseGroupSelect"
+                    @update="selectDatabaseGroup"
                   />
                 </div>
               </NTabPane>
@@ -144,8 +143,8 @@
               </template>
             </NTabs>
           </template>
+          <!-- standard mode project, single/multiple databases ui -->
           <template v-else>
-            <!-- standard mode project, single/multiple databases ui -->
             <div>
               <ProjectStandardView
                 :state="state"
@@ -165,7 +164,7 @@
                 </template>
               </ProjectStandardView>
               <SchemalessDatabaseTable
-                v-if="isAlterSchema"
+                v-if="isEditSchema"
                 mode="PROJECT"
                 class="px-2"
                 :database-list="schemalessDatabaseList"
@@ -213,9 +212,8 @@
               :database-list="schemaDatabaseList"
               @select-database="selectDatabase"
             />
-
             <SchemalessDatabaseTable
-              v-if="isAlterSchema"
+              v-if="isEditSchema"
               mode="ALL"
               :database-list="schemalessDatabaseList"
             />
@@ -224,7 +222,7 @@
             <SelectDatabaseGroupTable
               :database-group-list="databaseGroupList"
               :selected-database-group-name="state.selectedDatabaseGroupName"
-              @update="handleDatabaseGroupSelect"
+              @update="(name) => selectDatabaseGroup(name, true)"
             />
           </div>
         </template>
@@ -237,7 +235,8 @@
       </div>
     </div>
 
-    <template #footer>
+    <!-- Only show footer in project mode -->
+    <template v-if="projectId" #footer>
       <div class="flex-1 flex items-center justify-between">
         <div>
           <div
@@ -264,7 +263,6 @@
           >
             {{ $t("common.next") }}
           </NButton>
-
           <NButton
             v-if="showGenerateTenant"
             type="primary"
@@ -408,7 +406,7 @@ const state = reactive<LocalState>({
 });
 
 // Returns true if alter schema, false if change data.
-const isAlterSchema = computed((): boolean => {
+const isEditSchema = computed((): boolean => {
   return props.type === "bb.issue.database.schema.update";
 });
 
@@ -473,7 +471,7 @@ const databaseList = computed(() => {
 });
 
 const schemaDatabaseList = computed(() => {
-  if (isAlterSchema.value) {
+  if (isEditSchema.value) {
     return databaseList.value.filter((db) =>
       instanceV1HasAlterSchema(db.instanceEntity)
     );
@@ -573,7 +571,7 @@ const generateMultiDb = async () => {
     (id) => schemaDatabaseList.value.find((db) => db.uid === id)!
   );
 
-  if (isAlterSchema.value && allowUsingSchemaEditorV1(selectedDatabaseList)) {
+  if (isEditSchema.value && allowUsingSchemaEditorV1(selectedDatabaseList)) {
     schemaEditorContext.value.databaseIdList = cloneDeep(
       flattenSelectedDatabaseUidList.value
     );
@@ -667,8 +665,18 @@ const toggleAllDatabasesSelection = (
   }
 };
 
-const handleDatabaseGroupSelect = (databaseGroupName: string) => {
+const selectDatabaseGroup = async (
+  databaseGroupName: string,
+  showModal = false
+) => {
   state.selectedDatabaseGroupName = databaseGroupName;
+
+  if (showModal) {
+    const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+      state.selectedDatabaseGroupName
+    );
+    state.selectedDatabaseGroup = databaseGroup;
+  }
 };
 
 const isDatabaseSelected = (database: ComposedDatabase): boolean => {
@@ -722,7 +730,7 @@ const generateTenant = async () => {
   };
   if (state.alterType === "TENANT") {
     const databaseList = databaseV1Store.databaseListByProject(project.name);
-    if (isAlterSchema.value && allowUsingSchemaEditorV1(databaseList)) {
+    if (isEditSchema.value && allowUsingSchemaEditorV1(databaseList)) {
       schemaEditorContext.value.databaseIdList = databaseList
         .filter((database) => database.syncState === State.ACTIVE)
         .map((database) => database.uid);
@@ -743,7 +751,7 @@ const generateTenant = async () => {
         databaseList.push(database);
       }
     }
-    if (isAlterSchema.value && allowUsingSchemaEditorV1(databaseList)) {
+    if (isEditSchema.value && allowUsingSchemaEditorV1(databaseList)) {
       schemaEditorContext.value.databaseIdList = Array.from(
         state.selectedDatabaseIdListForTenantMode.values()
       );
@@ -773,7 +781,7 @@ const generateTenant = async () => {
 
 const selectDatabase = async (database: ComposedDatabase) => {
   if (
-    isAlterSchema.value &&
+    isEditSchema.value &&
     database.syncState === State.ACTIVE &&
     allowUsingSchemaEditorV1([database])
   ) {
@@ -824,7 +832,7 @@ const generateIssueName = (
   if (isOnlineMode) {
     issueNameParts.push("Online schema change");
   } else {
-    issueNameParts.push(isAlterSchema.value ? `Alter schema` : `Change data`);
+    issueNameParts.push(isEditSchema.value ? `Edit schema` : `Change data`);
   }
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
