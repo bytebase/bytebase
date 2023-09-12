@@ -20,6 +20,8 @@ import (
 )
 
 // threshold of one sslCA size.
+// we use 120kb as the threshold to avoid argument list too long error.
+// https://stackoverflow.com/questions/46897008/why-am-i-getting-e2big-from-exec-when-im-accounting-for-the-arguments-and-the
 const sslCAThreshold = 120 * 1024
 
 // Dump dumps the database.
