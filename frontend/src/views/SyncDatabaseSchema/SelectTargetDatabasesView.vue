@@ -260,7 +260,7 @@
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
@@ -350,7 +350,9 @@ const sourceDatabaseSchema = computed(() => {
     return (
       schemaDesignPreviewCache[
         databaseId + "|" + selectedSchemaDesign.value?.name
-      ] || ""
+      ] ||
+      selectedSchemaDesign.value?.schema ||
+      ""
     );
   } else if (props.sourceSchemaType === "RAW_SQL") {
     let statement = props.rawSqlState?.statement || "";
@@ -559,16 +561,19 @@ watch(
     clearTimeout(schedule);
     state.isLoading = false;
 
-    if (
-      state.selectedDatabaseId &&
-      !state.selectedDatabaseIdList.includes(state.selectedDatabaseId)
-    ) {
-      state.selectedDatabaseId = undefined;
-    }
+    // Auto select the first target database to view diff.
+    nextTick(() => {
+      if (
+        state.selectedDatabaseId &&
+        !state.selectedDatabaseIdList.includes(state.selectedDatabaseId)
+      ) {
+        state.selectedDatabaseId = undefined;
+      }
 
-    if (state.selectedDatabaseId === undefined) {
-      state.selectedDatabaseId = head(databaseListWithDiff.value)?.uid;
-    }
+      if (state.selectedDatabaseId === undefined) {
+        state.selectedDatabaseId = head(databaseListWithDiff.value)?.uid;
+      }
+    });
   }
 );
 
