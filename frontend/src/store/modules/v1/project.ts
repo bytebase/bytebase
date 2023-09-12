@@ -23,6 +23,10 @@ import { useProjectIamPolicyStore } from "./projectIamPolicy";
 export const useProjectV1Store = defineStore("project_v1", () => {
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
 
+  const reset = () => {
+    projectMapByName.clear();
+  };
+
   // Getters
   const projectList = computed(() => {
     return Array.from(projectMapByName.values());
@@ -141,6 +145,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 
   return {
+    reset,
     projectMapByName,
     projectList,
     getProjectList,
