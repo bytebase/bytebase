@@ -812,17 +812,17 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (*v1pb.DiffSchemaResponse, error) {
 	source, err := s.getSourceSchema(ctx, request)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get source schema")
+		return nil, status.Errorf(codes.Internal, "failed to get source schema, error: %v", err)
 	}
 
 	target, err := s.getTargetSchema(ctx, request)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get target schema")
+		return nil, status.Errorf(codes.Internal, "failed to get target schema, error: %v", err)
 	}
 
 	engine, err := s.getParserEngine(ctx, request)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to get parser engine, error: %v", err)
 	}
 
 	diff, err := differ.SchemaDiff(engine, source, target, false /* ignoreCaseSensitive */)
