@@ -812,12 +812,12 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (*v1pb.DiffSchemaResponse, error) {
 	source, err := s.getSourceSchema(ctx, request)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get source schema")
 	}
 
 	target, err := s.getTargetSchema(ctx, request)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get target schema")
 	}
 
 	engine, err := s.getParserEngine(ctx, request)
@@ -860,24 +860,26 @@ func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.Dif
 
 func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {
 	schema := request.GetSchema()
-	if schema != "" {
-		return schema, nil
-	}
-
 	changeHistoryID := request.GetChangeHistory()
-	if changeHistoryID == "" {
+	// TODO: maybe we will support an empty schema as the target.
+	if schema == "" && changeHistoryID == "" {
 		return "", status.Errorf(codes.InvalidArgument, "must set the schema or change history id as the target")
 	}
 
-	changeHistory, err := s.GetChangeHistory(ctx, &v1pb.GetChangeHistoryRequest{
-		Name:      request.Name,
-		View:      v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
-		SdlFormat: true,
-	})
-	if err != nil {
-		return "", err
+	// If the change history id is set, use the schema of the change history as the target.
+	if changeHistoryID != "" {
+		changeHistory, err := s.GetChangeHistory(ctx, &v1pb.GetChangeHistoryRequest{
+			Name:      request.Name,
+			View:      v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
+			SdlFormat: true,
+		})
+		if err != nil {
+			return "", err
+		}
+		schema = changeHistory.Schema
 	}
-	return changeHistory.Schema, nil
+
+	return schema, nil
 }
 
 func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (parser.EngineType, error) {
