@@ -1219,7 +1219,7 @@
     "self": "变更历史",
     "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
     "workflow": "工作流",
-    "change-type": "变更类型",
+    "change-type": "类型",
     "commit-info": "由 {author} 于 {time}",
     "no-schema-change": "本次变更没有任何 Schema 的改动",
     "schema-drift": "Schema 偏差",

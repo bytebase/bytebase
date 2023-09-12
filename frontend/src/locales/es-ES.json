@@ -1221,7 +1221,7 @@
     "self": "Historial de cambios",
     "select": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase",
     "workflow": "Flujo de trabajo",
-    "change-type": "Tipo de cambio",
+    "change-type": "Tipo",
     "commit-info": "por {author} a las {time}",
     "no-schema-change": "esta migración no tiene cambios de esquema",
     "schema-drift": "Desviación de esquema",
