@@ -700,18 +700,10 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 }
 
 func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) error {
-	originalPayload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), originalPayload); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal original issue payload")
-	}
-	originalPayload.Approval = approval
-	payloadBytes, err := protojson.Marshal(originalPayload)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal payload")
-	}
-	payloadStr := string(payloadBytes)
 	if _, err := s.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: approval,
+		},
 	}, api.SystemBotID); err != nil {
 		return errors.Wrap(err, "failed to update issue payload")
 	}
