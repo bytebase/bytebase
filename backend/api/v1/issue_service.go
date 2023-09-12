@@ -747,16 +747,12 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
-
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	payloadStr := string(payloadBytes)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -921,20 +917,15 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 	if !canApprove {
 		return nil, status.Errorf(codes.PermissionDenied, "cannot reject because the user does not have the required permission")
 	}
-
 	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
 		Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
 		PrincipalId: int32(principalID),
 	})
 
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	payloadStr := string(payloadBytes)
-
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -1028,16 +1019,12 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
-
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	payloadStr := string(payloadBytes)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -1117,15 +1104,13 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			if !payload.Approval.ApprovalFindingDone {
 				return nil, status.Errorf(codes.FailedPrecondition, "approval template finding is not done")
 			}
-			payload.Approval = &storepb.IssuePayloadApproval{
+
+			if patch.PayloadUpsert == nil {
+				patch.PayloadUpsert = &storepb.IssuePayload{}
+			}
+			patch.PayloadUpsert.Approval = &storepb.IssuePayloadApproval{
 				ApprovalFindingDone: false,
 			}
-			payloadBytes, err := protojson.Marshal(payload)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-			}
-			payloadStr := string(payloadBytes)
-			patch.Payload = &payloadStr
 
 			if issue.PlanUID != nil {
 				plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})

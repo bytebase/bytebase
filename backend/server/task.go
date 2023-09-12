@@ -10,7 +10,6 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/activity"
@@ -79,20 +78,12 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		// dismiss stale review, re-find the approval template
 		if taskPatch.SheetID != nil && task.Status == api.TaskPendingApproval {
-			payload := &storepb.IssuePayload{}
-			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal").SetInternal(err)
-			}
-			payload.Approval = &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-			}
-			payloadBytes, err := protojson.Marshal(payload)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
-			}
-			payloadStr := string(payloadBytes)
 			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-				Payload: &payloadStr,
+				PayloadUpsert: &storepb.IssuePayload{
+					Approval: &storepb.IssuePayloadApproval{
+						ApprovalFindingDone: false,
+					},
+				},
 			}, api.SystemBotID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update issue").SetInternal(err)
