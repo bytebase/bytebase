@@ -57,7 +57,7 @@
         :key="item.rule.id"
         class="flex items-start space-x-5"
       >
-        <div v-if="state.reorderRules" class="mt-4">
+        <div v-if="state.reorderRules" class="mt-4 flex flex-col">
           <button @click="onReorder(item, -1)">
             <heroicons-solid:arrow-circle-up
               v-if="index !== 0"
@@ -309,6 +309,7 @@ const factorList = computed((): Factor[] => {
     "instance_id", // using `instance.resource_id`
     "database_name",
     "table_name",
+    "column_name",
   ];
 
   const classificationOptions = getClassificationLevelOptions();

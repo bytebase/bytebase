@@ -917,7 +917,14 @@
       "current-change-will-apply-to-all-tasks-in-batch-mode": "在批量模式下，当前更改将应用​​于所有任务。"
     },
     "not-editable-legacy-issue": "这个工单不可编辑，因为它是在旧版本的 Bytebase 中创建的。",
-    "action-anyway": "仍要{action}"
+    "action-anyway": "仍要{action}",
+    "disallow-edit-reasons": {
+      "issue-is-done": "工单已完成",
+      "issue-is-canceled": "工单已取消",
+      "task-is-x-status": "任务状态是{status}",
+      "task-is-running-cancel-first": "任务运行中，需要取消任务才能修改这项值"
+    },
+    "you-are-not-allowed-to-change-this-value": "您无权更改这项值"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -2944,7 +2951,8 @@
     },
     "action": {
       "use-the-existing-branch": "使用已有分支",
-      "create-new-branch": "创建新分支"
+      "create-new-branch": "创建新分支",
+      "filter-by-name": "根据名称过滤"
     }
   },
   "cel": {
@@ -2959,6 +2967,7 @@
       "expiration_days": "过期天数",
       "export_rows": "导出行数",
       "table_name": "表名称",
+      "column_name": "字段名称",
       "classification_level": "数据分级"
     }
   }

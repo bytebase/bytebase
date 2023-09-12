@@ -14,9 +14,11 @@ message IssuePayload {
 }
 
 message GrantRequest {
-  // The requested role, e.g. roles/EXPORTER.
+  // The requested role.
+  // Format: roles/EXPORTER.
   string role = 1;
-  // The requested user, e.g. users/hello@bytebase.com.
+  // The user to be granted.
+  // Format: users/{userUID}.
   string user = 2;
   google.type.Expr condition = 3;
   google.protobuf.Duration expiration = 4;

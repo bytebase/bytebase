@@ -122,7 +122,7 @@ const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUserV1 = useCurrentUserV1();
 const sqlEditorStore = useSQLEditorStore();
-const { selectedDatabaseSchema } = useSQLEditorContext();
+const { selectedDatabaseSchemaByDatabaseName } = useSQLEditorContext();
 
 const mounted = useMounted();
 const treeRef = ref<InstanceType<typeof NTree>>();
@@ -185,8 +185,10 @@ const selectedKeys = computed(() => {
   const { instanceId, databaseId } = tabStore.currentTab.connection;
 
   if (databaseId !== String(UNKNOWN_ID)) {
-    if (selectedDatabaseSchema.value) {
-      const { db, schema, table } = selectedDatabaseSchema.value;
+    const db = databaseStore.getDatabaseByUID(databaseId);
+    const selected = selectedDatabaseSchemaByDatabaseName.value.get(db.name);
+    if (selected) {
+      const { schema, table } = selected;
       if (schema.name) {
         return [
           `table-${[db.uid, schema.name, table.name].join(
@@ -376,12 +378,12 @@ const maybeSelectTable = async (atom: ConnectionAtom) => {
   if (!tableMetadata) {
     return;
   }
-  selectedDatabaseSchema.value = {
+  selectedDatabaseSchemaByDatabaseName.value.set(database.name, {
     db: database,
     database: databaseMetadata,
     schema: schemaMetadata,
     table: tableMetadata,
-  };
+  });
 };
 
 const nodeProps = ({ option }: { option: TreeOption }) => {

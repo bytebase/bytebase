@@ -11,16 +11,17 @@ type SQLEditorEvents = Emittery<{
   "save-sheet": { title: string };
 }>;
 
+export type SelectedDatabaseSchema = {
+  db: ComposedDatabase;
+  database: DatabaseMetadata;
+  schema: SchemaMetadata;
+  table: TableMetadata;
+};
+
 export type SQLEditorContext = {
   showAIChatBox: Ref<boolean>;
-  selectedDatabaseSchema: Ref<
-    | {
-        db: ComposedDatabase;
-        database: DatabaseMetadata;
-        schema: SchemaMetadata;
-        table: TableMetadata;
-      }
-    | undefined
+  selectedDatabaseSchemaByDatabaseName: Ref<
+    Map<string, SelectedDatabaseSchema>
   >;
 
   events: SQLEditorEvents;
@@ -37,7 +38,7 @@ export const useSQLEditorContext = () => {
 export const provideSQLEditorContext = () => {
   const context: SQLEditorContext = {
     showAIChatBox: ref(false),
-    selectedDatabaseSchema: ref(),
+    selectedDatabaseSchemaByDatabaseName: ref(new Map()),
     events: new Emittery(),
   };
 

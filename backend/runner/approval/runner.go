@@ -69,37 +69,50 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			if err := func() error {
-				risks, err := r.store.ListRisks(ctx)
-				if err != nil {
-					return errors.Wrap(err, "failed to list risks")
-				}
-				approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
-				if err != nil {
-					return errors.Wrap(err, "failed to get workspace approval setting")
-				}
-
-				var errs error
-				r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {
-					issue := value.(*store.IssueMessage)
-					done, err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting)
-					if err != nil {
-						errs = multierr.Append(errs, errors.Wrapf(err, "failed to find approval template for issue %v", issue.UID))
-					}
-					if err != nil || done {
-						r.stateCfg.ApprovalFinding.Delete(key)
-					}
-					return true
-				})
-
-				return errs
-			}(); err != nil {
-				slog.Error("approval runner", log.BBError(err))
-			}
-
+			r.runOnce(ctx)
 		case <-ctx.Done():
 			return
 		}
+	}
+}
+
+func (r *Runner) runOnce(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("%v", r)
+			}
+			slog.Error("Approval runner PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+		}
+	}()
+
+	if err := func() error {
+		risks, err := r.store.ListRisks(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to list risks")
+		}
+		approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to get workspace approval setting")
+		}
+
+		var errs error
+		r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {
+			issue := value.(*store.IssueMessage)
+			done, err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting)
+			if err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to find approval template for issue %v", issue.UID))
+			}
+			if err != nil || done {
+				r.stateCfg.ApprovalFinding.Delete(key)
+			}
+			return true
+		})
+
+		return errs
+	}(); err != nil {
+		slog.Error("approval runner", log.BBError(err))
 	}
 }
 
@@ -557,7 +570,7 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 		return 0, store.RiskSourceUnknown, false, err
 	}
 
-	factors, err := common.GetQueryExportFactors(payload.GrantRequest.Condition.Expression)
+	factors, err := common.GetQueryExportFactors(payload.GetGrantRequest().GetCondition().GetExpression())
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get query export factors")
 	}

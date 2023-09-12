@@ -919,7 +919,14 @@
       "current-change-will-apply-to-all-tasks-in-batch-mode": "En el modo por lotes, el cambio actual se aplicará a todas las tareas."
     },
     "not-editable-legacy-issue": "Este problema no es editable porque se creó en una versión anterior de Bytebase",
-    "action-anyway": "{action} de todos modos"
+    "action-anyway": "{action} de todos modos",
+    "disallow-edit-reasons": {
+      "issue-is-done": "La cuestión está hecha",
+      "issue-is-canceled": "La emisión está cancelada.",
+      "task-is-x-status": "La tarea es {status}",
+      "task-is-running-cancel-first": "La tarea se está ejecutando, cancele la tarea antes de cambiar este valor"
+    },
+    "you-are-not-allowed-to-change-this-value": "No tienes permitido cambiar este valor."
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -2949,7 +2956,8 @@
     },
     "action": {
       "use-the-existing-branch": "Usar la rama existente",
-      "create-new-branch": "Crear nueva rama"
+      "create-new-branch": "Crear nueva rama",
+      "filter-by-name": "Filtrar por nombre"
     }
   },
   "cel": {
@@ -2964,6 +2972,7 @@
       "expiration_days": "Días de caducidad",
       "export_rows": "Exportar filas",
       "table_name": "Nombre de la tabla",
+      "column_name": "Nombre de columna",
       "classification_level": "Nivel de clasificación"
     }
   }

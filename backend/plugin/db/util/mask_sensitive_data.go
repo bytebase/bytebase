@@ -39,7 +39,28 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 	}
 
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+	case db.TiDB:
+		for _, database := range schemaInfo.DatabaseList {
+			if len(database.SchemaList) == 0 {
+				continue
+			}
+			if len(database.SchemaList) > 1 {
+				return nil, errors.Errorf("TiDB schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
+			}
+			if database.SchemaList[0].Name != "" {
+				return nil, errors.Errorf("TiDB schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
+			}
+		}
+		extractor := &sensitiveFieldExtractor{
+			currentDatabase: currentDatabase,
+			schemaInfo:      schemaInfo,
+		}
+		result, err := extractor.extractTiDBSensitiveField(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
+	case db.MySQL, db.MariaDB, db.OceanBase:
 		for _, database := range schemaInfo.DatabaseList {
 			if len(database.SchemaList) == 0 {
 				continue
@@ -55,7 +76,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		result, err := extractor.extractTiDBSensitiveField(statement)
+		result, err := extractor.extractMySQLSensitiveField(statement)
 		if err != nil {
 			return nil, err
 		}
