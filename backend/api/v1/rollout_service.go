@@ -734,7 +734,6 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 }
 
 // UpdatePlan updates a plan.
-// Currently, only Spec.Config.Sheet can be updated.
 func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRequest) (*v1pb.Plan, error) {
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
@@ -886,6 +885,15 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			}
 
 			taskPatchList = append(taskPatchList, taskPatch)
+		}
+	}
+
+	for _, taskPatch := range taskPatchList {
+		if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTs != nil {
+			task := tasksMap[taskPatch.ID]
+			if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning {
+				return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %q is %s", task.Name, task.LatestTaskRunStatus)
+			}
 		}
 	}
 
