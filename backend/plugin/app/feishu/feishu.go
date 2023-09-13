@@ -344,6 +344,7 @@ func (p *Provider) tokenRefresher(tokenCtx TokenCtx) tokenRefresher {
 
 func (p *Provider) do(ctx context.Context, client *http.Client, method, url string, body []byte, tokenRefresher tokenRefresher) (code int, header http.Header, respBody string, err error) {
 	token := p.Token.Load().(string)
+	//nolint:bodyclose
 	return retry(ctx, client, &token, tokenRefresher, requester(ctx, client, method, url, &token, body))
 }
 

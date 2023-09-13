@@ -21,6 +21,7 @@ import (
 type TokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
 
 func requester(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader) func() (*http.Response, error) {
+	//nolint:bodyclose
 	return requesterWithHeader(ctx, client, method, url, token, body, nil)
 }
 
@@ -67,12 +68,14 @@ func Post(ctx context.Context, client *http.Client, url string, token *string, b
 // additional header. It refreshes token and retries the request in the case of
 // the token has expired.
 func PostWithHeader(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher, header map[string]string) (code int, _ http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requesterWithHeader(ctx, client, http.MethodPost, url, token, body, header))
 }
 
 // Get makes a HTTP GET request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Get(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodGet, url, token, nil))
 }
 
@@ -80,24 +83,28 @@ func Get(ctx context.Context, client *http.Client, url string, token *string, to
 // additional header. It refreshes token and retries the request in the case of
 // the token has expired.
 func GetWithHeader(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher, header map[string]string) (code int, _ http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requesterWithHeader(ctx, client, http.MethodGet, url, token, nil, header))
 }
 
 // Put makes a HTTP PUT request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Put(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPut, url, token, body))
 }
 
 // Patch makes a HTTP PATCH request to the given URL using the token. It
 // refreshes token and retries the request in the case of the token has expired.
 func Patch(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPatch, url, token, body))
 }
 
 // Delete makes a HTTP DELETE request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Delete(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodDelete, url, token, nil))
 }
 
