@@ -55,14 +55,19 @@ func (in *DebugInterceptor) DebugStreamInterceptor(request any, ss grpc.ServerSt
 
 func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any, fullMethod string, err error, startTime time.Time) {
 	st := status.Convert(err)
+	var logLevel slog.Level
+	var logMsg string
 	switch st.Code() {
 	case codes.Unauthenticated, codes.OutOfRange, codes.PermissionDenied, codes.NotFound:
-		slog.Debug("client error intercepted", "method", fullMethod, "request", request, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
+		logLevel = slog.LevelDebug
+		logMsg = "client error intercepted"
 	case codes.Internal, codes.Unknown, codes.DataLoss, codes.Unavailable, codes.DeadlineExceeded:
-		slog.Error("server error intercepted", "method", fullMethod, "request", request, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
+		logLevel = slog.LevelError
+		logMsg = "server error intercepted"
 	default:
-		slog.Error("unknown error", "method", fullMethod, "request", request, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
+		logMsg = "unknown error"
 	}
+	slog.Log(ctx, logLevel, logMsg, fullMethod, "request", request, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
 	if st.Code() == codes.Internal && slog.Default().Enabled(ctx, slog.LevelDebug) {
 		var role api.Role
 		if r, ok := ctx.Value(common.RoleContextKey).(api.Role); ok {
