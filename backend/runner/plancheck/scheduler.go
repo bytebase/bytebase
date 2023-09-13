@@ -50,6 +50,8 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-ticker.C:
 			s.runOnce(ctx)
+		case <-s.stateCfg.PlanCheckTickleChan:
+			s.runOnce(ctx)
 		case <-ctx.Done():
 			return
 		}

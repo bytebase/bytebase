@@ -66,6 +66,8 @@ func (s *SchedulerV2) Run(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-ticker.C:
 			s.runOnce(ctx)
+		case <-s.stateCfg.TaskRunTickleChan:
+			s.runOnce(ctx)
 		case <-ctx.Done():
 			return
 		}
