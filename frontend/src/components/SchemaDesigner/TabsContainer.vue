@@ -7,7 +7,7 @@
       <div
         v-for="tab in tabList"
         :key="tab.id"
-        class="relative px-1 pl-2 py-2 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer"
+        class="relative px-1 pl-2 py-1 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer"
         :class="[
           `tab-${tab.id}`,
           tab.id === currentTab?.id && 'bg-white border-gray-200',
