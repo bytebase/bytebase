@@ -57,51 +57,46 @@
         :key="item.rule.id"
         class="flex items-start space-x-5"
       >
-        <div v-if="state.reorderRules" class="mt-4 flex flex-col">
-          <button @click="onReorder(item, -1)">
-            <heroicons-solid:arrow-circle-up
-              v-if="index !== 0"
-              class="w-6 h-6"
-            />
-          </button>
-          <button @click="onReorder(item, 1)">
-            <heroicons-solid:arrow-circle-down
-              v-if="index !== state.maskingRuleItemList.length - 1"
-              class="w-6 h-6"
-            />
+        <div v-if="item.mode === 'NORMAL' && hasPermission">
+          <div v-if="state.reorderRules" class="mt-6 flex flex-col">
+            <button @click="onReorder(item, -1)">
+              <heroicons-solid:arrow-circle-up
+                v-if="index !== 0"
+                class="w-6 h-6"
+              />
+            </button>
+            <button @click="onReorder(item, 1)">
+              <heroicons-solid:arrow-circle-down
+                v-if="index !== state.maskingRuleItemList.length - 1"
+                class="w-6 h-6"
+              />
+            </button>
+          </div>
+          <button v-else class="mt-7" @click="onEdit(index)">
+            <heroicons-outline:pencil class="w-4 h-4" />
           </button>
         </div>
-        <NPopconfirm v-else @positive-click="onRuleDelete(item)">
-          <template #trigger>
-            <button
-              class="mt-4 w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-              @click.stop=""
-            >
-              <heroicons-outline:trash class="w-4 h-4" />
-            </button>
-          </template>
-          <div class="whitespace-nowrap">
-            {{ $t("settings.sensitive-data.global-rules.delete-rule-tip") }}
-          </div>
-        </NPopconfirm>
-        <MaskingRuleConfig
-          :index="index + 1"
-          :readonly="!hasPermission || state.reorderRules"
-          :disabled="state.processing"
-          :masking-rule="item.rule"
-          :is-create="item.mode === 'CREATE'"
-          :factor-list="factorList"
-          :factor-options-map="factorOptionsMap"
-          @cancel="onCancel(item.rule.id, item.mode)"
-          @confirm="(rule: MaskingRulePolicy_MaskingRule) => onConfirm(rule)"
-        />
+        <div :class="['w-full', item.mode === 'NORMAL' ? '' : 'ml-8']">
+          <MaskingRuleConfig
+            :key="`expr-${item.rule.id}`"
+            :index="index + 1"
+            :disabled="state.processing"
+            :masking-rule="item.rule"
+            :readonly="item.mode === 'NORMAL' || state.reorderRules"
+            :factor-list="factorList"
+            :factor-options-map="factorOptionsMap"
+            :allow-delete="item.mode === 'EDIT'"
+            @cancel="onCancel(index)"
+            @delete="onRuleDelete(index)"
+            @confirm="(rule: MaskingRulePolicy_MaskingRule) => onConfirm(rule)"
+          />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NPopconfirm } from "naive-ui";
 import type { SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, nextTick, onMounted } from "vue";
@@ -128,7 +123,7 @@ import {
   getProjectIdOptions,
 } from "./components/utils";
 
-type MaskingRuleMode = "CREATE" | "EDIT";
+type MaskingRuleMode = "NORMAL" | "EDIT" | "CREATE";
 
 interface MaskingRuleItem {
   mode: MaskingRuleMode;
@@ -170,7 +165,7 @@ const updateList = async () => {
   state.maskingRuleItemList = (policy.maskingRulePolicy?.rules ?? []).map(
     (rule) => {
       return {
-        mode: "EDIT",
+        mode: "NORMAL",
         rule,
       };
     }
@@ -198,17 +193,21 @@ const addNewRule = () => {
   });
 };
 
-const onCancel = (id: string, mode: MaskingRuleMode) => {
-  if (mode !== "CREATE") {
-    return;
+const onEdit = (index: number) => {
+  state.maskingRuleItemList[index].mode = "EDIT";
+};
+
+const onCancel = (index: number) => {
+  const item = state.maskingRuleItemList[index];
+
+  if (item.mode === "CREATE") {
+    state.maskingRuleItemList.splice(index, 1);
+  } else {
+    state.maskingRuleItemList[index] = {
+      ...item,
+      mode: "NORMAL",
+    };
   }
-  const index = state.maskingRuleItemList.findIndex(
-    (item) => item.rule.id === id
-  );
-  if (index < 0) {
-    return;
-  }
-  state.maskingRuleItemList.splice(index, 1);
 };
 
 const onConfirm = async (rule: MaskingRulePolicy_MaskingRule) => {
@@ -224,9 +223,10 @@ const onConfirm = async (rule: MaskingRulePolicy_MaskingRule) => {
   }
 
   state.processing = true;
+  const isCreate = state.maskingRuleItemList[index].mode === "CREATE";
 
   state.maskingRuleItemList[index] = {
-    mode: "EDIT",
+    mode: "NORMAL",
     rule,
   };
   try {
@@ -234,7 +234,7 @@ const onConfirm = async (rule: MaskingRulePolicy_MaskingRule) => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: t("common.updated"),
+      title: t(`common.${isCreate ? "created" : "updated"}`),
     });
   } finally {
     state.processing = false;
@@ -262,16 +262,11 @@ const onReorderSubmit = async () => {
   state.reorderRules = false;
 };
 
-const onRuleDelete = async (maskingRuleItem: MaskingRuleItem) => {
-  const index = state.maskingRuleItemList.findIndex(
-    (item) => item.rule.id === maskingRuleItem.rule.id
-  );
-  if (index < 0) {
-    return;
-  }
+const onRuleDelete = async (index: number) => {
+  const item = state.maskingRuleItemList[index];
 
   state.maskingRuleItemList.splice(index, 1);
-  if (maskingRuleItem.mode === "CREATE") {
+  if (item.mode === "CREATE") {
     return;
   }
 
@@ -279,7 +274,7 @@ const onRuleDelete = async (maskingRuleItem: MaskingRuleItem) => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("common.updated"),
+    title: t("common.deleted"),
   });
 };
 
@@ -290,7 +285,7 @@ const onPolicyUpsert = async () => {
     resourceUid: "1",
     maskingRulePolicy: {
       rules: state.maskingRuleItemList
-        .filter((item) => item.mode === "EDIT")
+        .filter((item) => item.mode === "NORMAL")
         .map((item) => item.rule),
     },
   };
