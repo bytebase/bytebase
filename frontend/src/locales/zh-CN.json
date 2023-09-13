@@ -628,6 +628,7 @@
       "grant-access": "授权访问",
       "never-expires": "无过期时间",
       "global-rules": {
+        "condition-order": "条件序列",
         "add-rule": "添加规则",
         "re-order": "排序",
         "delete-rule-tip": "删除这条规则？"
