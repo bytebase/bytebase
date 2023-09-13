@@ -292,7 +292,7 @@ func (s *LoggingService) GetLog(ctx context.Context, request *v1pb.GetLogRequest
 	return logEntity, nil
 }
 
-// GetLog gets the log.
+// ExportLogs exports logs.
 func (s *LoggingService) ExportLogs(ctx context.Context, request *v1pb.ExportLogsRequest) (*v1pb.ExportLogsResponse, error) {
 	activities, err := s.store.ListActivityV2(ctx, &store.FindActivityMessage{})
 	if err != nil {
