@@ -1673,6 +1673,7 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 	slog.Debug("final level of column", slog.String("column", column.Name), slog.Any("final level", finalLevel.String()))
 	return finalLevel, nil
 }
+
 func getClassificationLevelOfColumn(columnClassificationID string, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) string {
 	if columnClassificationID == "" || classificationConfig == nil {
 		return ""
