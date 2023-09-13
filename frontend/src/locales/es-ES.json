@@ -641,7 +641,7 @@
         "access-user-list-desc": "Usuarios autorizados a acceder a datos desenmascarados.",
         "remove-user-permission": "¿Quitar el permiso del usuario?",
         "remove-sensitive-warning": "Expondrá la columna.",
-        "column-effective-masking-tips": "Esta columna no configura su propio nivel de enmascaramiento.\nMostramos su nivel de enmascaramiento efectivo mediante reglas de enmascaramiento globales. {link}"
+        "column-effective-masking-tips": "Esta columna no configura su propio nivel de enmascaramiento.\nMostramos su nivel de enmascaramiento efectivo con reglas de enmascaramiento globales. {link}"
       },
       "algorithms": {
         "self": "Algoritmo de enmascaramiento",
