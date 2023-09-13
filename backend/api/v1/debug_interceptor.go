@@ -61,7 +61,7 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any,
 	case codes.Internal, codes.Unknown, codes.DataLoss, codes.Unavailable, codes.DeadlineExceeded:
 		slog.Error("server error intercepted", "method", fullMethod, "request", request, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
 	default:
-		slog.Error("unknown error")
+		slog.Error("unknown error", "method", fullMethod, "request", request, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
 	}
 	if st.Code() == codes.Internal && slog.Default().Enabled(ctx, slog.LevelDebug) {
 		var role api.Role
