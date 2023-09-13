@@ -294,8 +294,9 @@ export const useSheetAndTabStore = defineStore("sheet_and_tab", () => {
       return false;
     }
 
-    // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.
-    if (sheet.content.length !== sheet.contentSize) {
+    // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.、
+    const statement = getSheetStatement(sheet);
+    if (statement.length !== sheet.contentSize) {
       return true;
     }
 
