@@ -58,6 +58,9 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any,
 	var logLevel slog.Level
 	var logMsg string
 	switch st.Code() {
+	case codes.OK:
+		logLevel = slog.LevelDebug
+		logMsg = "OK"
 	case codes.Unauthenticated, codes.OutOfRange, codes.PermissionDenied, codes.NotFound:
 		logLevel = slog.LevelDebug
 		logMsg = "client error"
