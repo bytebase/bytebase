@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"reflect"
 	"sort"
 	"strconv"
@@ -479,7 +480,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 						// convert to string type otherwise cel-go will complain that db.Type is not string type.
 						"db_engine":     string(instance.Engine),
 						"sql_type":      "UNKNOWN",
-						"affected_rows": 0,
+						"affected_rows": math.MaxInt32,
 					}
 
 					res, _, err := prg.Eval(args)

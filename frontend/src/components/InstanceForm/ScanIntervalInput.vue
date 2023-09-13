@@ -113,8 +113,11 @@ const minutes = computed({
   },
 });
 
-const handleModeChange = (mode: Mode) => {
-  if (mode === "DEFAULT") {
+const handleModeChange = (targetMode: Mode) => {
+  if (targetMode === mode.value) {
+    return;
+  }
+  if (targetMode === "DEFAULT") {
     minutes.value = undefined;
   } else {
     minutes.value = state.minutes ?? 1440;

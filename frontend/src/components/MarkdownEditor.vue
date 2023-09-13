@@ -85,7 +85,7 @@
         <ul class="text-sm rounded divide-y divide-solid">
           <li
             v-for="issue in filterIssueList"
-            :key="issue.id"
+            :key="issue.uid"
             class="p-3 rounded hover:bg-blue-500 hover:text-white cursor-pointer flex items-center gap-x-2"
             @click="onIssueSelect(issue)"
           >
@@ -93,9 +93,9 @@
               :issue-status="issue.status"
               :task-status="issueTaskStatus(issue)"
             />
-            <span class="opacity-60">#{{ issue.id }}</span>
+            <span class="opacity-60">#{{ issue.uid }}</span>
             <div class="whitespace-nowrap">
-              {{ issue.name }}
+              {{ issue.title }}
             </div>
           </li>
         </ul>
@@ -111,10 +111,15 @@ import codeStyle from "highlight.js/styles/github.css";
 import MarkdownIt from "markdown-it";
 import { computed, nextTick, ref, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { Issue } from "@/types";
-import { sizeToFit } from "@/utils";
-import { activeTask, isDatabaseRelatedIssueType } from "@/utils";
+import { ComposedIssue } from "@/types";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
+import {
+  activeTaskInRollout,
+  isDatabaseRelatedIssue,
+  sizeToFit,
+} from "@/utils";
 import markdownStyle from "../assets/css/github-markdown-style.css";
+import IssueStatusIcon from "./IssueV1/components/IssueStatusIcon.vue";
 
 const md = new MarkdownIt({
   html: true,
@@ -149,7 +154,7 @@ type EditorMode = "editor" | "preview";
 const props = defineProps<{
   content: string;
   mode: EditorMode;
-  issueList: Issue[];
+  issueList: ComposedIssue[];
 }>();
 const emit = defineEmits<{
   (event: "change", value: string): void;
@@ -196,7 +201,7 @@ const markdownContent = computed(() => {
 const contentTextArea = ref<HTMLTextAreaElement>();
 const contentPreviewArea = ref<HTMLIFrameElement>();
 const issuePanel = ref<HTMLDivElement>();
-const filterIssueList = ref<Issue[]>([]);
+const filterIssueList = ref<ComposedIssue[]>([]);
 
 watch(
   () => state.content,
@@ -459,7 +464,7 @@ const clearIssuePanel = () => {
 // onIssueSelect will replace the input issue id with the selected issue id.
 // For example, if the text is "#12|" (| is the cursor position), and select the issue with id 1234,
 // we will replace the "#12|" with "#1234 |"
-const onIssueSelect = (issue: Issue) => {
+const onIssueSelect = (issue: ComposedIssue) => {
   if (!contentTextArea.value) {
     return false;
   }
@@ -479,7 +484,7 @@ const onIssueSelect = (issue: Issue) => {
   replaceStart++;
 
   const content = state.content.split("");
-  const issueId = `${issue.id} `;
+  const issueId = `${issue.uid} `;
   content.splice(replaceStart, start - replaceStart, issueId);
   state.content = content.join("");
 
@@ -500,13 +505,13 @@ const onIssueSelect = (issue: Issue) => {
   return;
 };
 
-const issueTaskStatus = (issue: Issue) => {
-  // For grant request issue, we always show the status as "PENDING_APPROVAL" as task status.
-  if (!isDatabaseRelatedIssueType(issue.type)) {
-    return "PENDING_APPROVAL";
+const issueTaskStatus = (issue: ComposedIssue) => {
+  // For grant request issue, we always show the status as "NOT_STARTED" as task status.
+  if (!isDatabaseRelatedIssue(issue)) {
+    return Task_Status.NOT_STARTED;
   }
 
-  return activeTask(issue.pipeline!).status;
+  return activeTaskInRollout(issue.rolloutEntity).status;
 };
 
 const adjustIssuePanelWithPosition = () => {
@@ -532,7 +537,7 @@ const adjustIssuePanelWithPosition = () => {
 
   const id = matches[0].slice(1).trimEnd();
   filterIssueList.value = props.issueList
-    .filter((issue) => `${issue.id}`.startsWith(id))
+    .filter((issue) => `${issue.uid}`.startsWith(id))
     .slice(0, 5);
 
   const position = getIssuePanelPosition(contentTextArea.value);

@@ -251,9 +251,12 @@
 import { isEqual } from "lodash-es";
 import { computed, reactive } from "vue";
 import { DrawerContent } from "@/components/v2";
-import { useSchemaEditorStore, useSettingV1Store } from "@/store";
+import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import {
+  SchemaTemplateSetting,
+  SchemaTemplateSetting_FieldTemplate,
+} from "@/types/proto/v1/setting_service";
 import {
   getDataTypeSuggestionList,
   engineNameV1,
@@ -281,12 +284,16 @@ const state = reactive<LocalState>({
   showClassificationDrawer: false,
 });
 const settingStore = useSettingV1Store();
-const store = useSchemaEditorStore();
 const allowEdit = computed(() => {
   return (
     useWorkspacePermissionV1("bb.permission.workspace.manage-general").value &&
     !props.readonly
   );
+});
+
+const schemaTemplateList = computed(() => {
+  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  return setting?.value?.schemaTemplateSettingValue?.fieldTemplates ?? [];
 });
 
 const classificationConfig = computed(() => {
@@ -306,7 +313,7 @@ const dataTypeOptions = computed(() => {
 const categoryOptions = computed(() => {
   const options = [];
   for (const category of new Set(
-    store.schemaTemplateList.map((template) => template.category)
+    schemaTemplateList.value.map((template) => template.category)
   ).values()) {
     if (!category) {
       continue;
@@ -350,7 +357,31 @@ const sumbitDisabled = computed(() => {
 });
 
 const sumbit = async () => {
-  await store.upsertSchemaTemplate(state);
+  const template = state;
+  const setting = await settingStore.fetchSettingByName(
+    "bb.workspace.schema-template"
+  );
+
+  const settingValue = SchemaTemplateSetting.fromJSON({});
+  if (setting?.value?.schemaTemplateSettingValue) {
+    Object.assign(settingValue, setting.value.schemaTemplateSettingValue);
+  }
+
+  const index = settingValue.fieldTemplates.findIndex(
+    (t) => t.id === template.id
+  );
+  if (index >= 0) {
+    settingValue.fieldTemplates[index] = template;
+  } else {
+    settingValue.fieldTemplates.push(template);
+  }
+
+  await settingStore.upsertSetting({
+    name: "bb.workspace.schema-template",
+    value: {
+      schemaTemplateSettingValue: settingValue,
+    },
+  });
   emit("dismiss");
 };
 
