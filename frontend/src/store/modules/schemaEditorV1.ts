@@ -15,7 +15,7 @@ export const generateUniqueTabId = () => {
 
 const getDefaultSchemaEditorState = (): SchemaEditorV1State => {
   return {
-    mode: "database",
+    resourceType: "database",
     resourceMap: {
       database: new Map(),
       branch: new Map(),
@@ -124,12 +124,12 @@ export const useSchemaEditorStore = defineStore("SchemaEditorV1", {
       return tab;
     },
     getSchema(parentName: string, schemaId: string) {
-      return this.resourceMap[this.mode]
+      return this.resourceMap[this.resourceType]
         .get(parentName)
         ?.schemaList.find((schema) => schema.id === schemaId);
     },
     getOriginSchema(parentName: string, schemaId: string) {
-      return this.resourceMap[this.mode]
+      return this.resourceMap[this.resourceType]
         .get(parentName)
         ?.originSchemaList.find((schema) => schema.id === schemaId);
     },
@@ -140,10 +140,10 @@ export const useSchemaEditorStore = defineStore("SchemaEditorV1", {
       }
 
       if (schema.status === "created") {
-        const resource = this.resourceMap[this.mode].get(parentName);
+        const resource = this.resourceMap[this.resourceType].get(parentName);
         if (resource) {
           resource.schemaList =
-            this.resourceMap[this.mode]
+            this.resourceMap[this.resourceType]
               .get(parentName)
               ?.schemaList.filter((schema) => schema.id !== schemaId) || [];
 
@@ -183,7 +183,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditorV1", {
       );
     },
     getTableWithTableTab(tab: TableTabContext) {
-      return this.resourceMap[this.mode]
+      return this.resourceMap[this.resourceType]
         .get(tab.parentName)
         ?.schemaList.find((schema) => schema.id === tab.schemaId)
         ?.tableList?.find((table) => table.id === tab.tableId);
@@ -196,7 +196,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditorV1", {
 
       // Remove table record and close tab for created table.
       if (table.status === "created") {
-        const tableList = this.resourceMap[this.mode]
+        const tableList = this.resourceMap[this.resourceType]
           .get(parentName)
           ?.schemaList.find((schema) => schema.id === schemaId)
           ?.tableList as Table[];

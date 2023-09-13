@@ -29,21 +29,19 @@ export interface TableTabContext {
 export type TabContext = DatabaseTabContext | TableTabContext;
 
 export interface DatabaseSchema {
-  type: "database";
   database: ComposedDatabase;
   schemaList: Schema[];
   originSchemaList: Schema[];
 }
 
 export interface BranchSchema {
-  type: "branch";
   branch: SchemaDesign;
   schemaList: Schema[];
   originSchemaList: Schema[];
 }
 
 export interface SchemaEditorV1State {
-  mode: "database" | "branch";
+  resourceType: "database" | "branch";
   resourceMap: {
     database: Map<string, DatabaseSchema>;
     branch: Map<string, BranchSchema>;
