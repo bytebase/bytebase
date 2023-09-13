@@ -51,8 +51,7 @@
     >
       <template #table="{ issueList, loading }">
         <IssueTableV1
-          :top-bordered="true"
-          :bottom-bordered="true"
+          class="border-x-0"
           :show-placeholder="!loading"
           :title="$t('issue.table.open')"
           :issue-list="issueList.filter(filter)"
@@ -74,9 +73,7 @@
     >
       <template #table="{ issueList, loading }">
         <IssueTableV1
-          class="-mt-px"
-          :top-bordered="true"
-          :bottom-bordered="true"
+          class="-mt-px border-x-0"
           :show-placeholder="!loading"
           :title="$t('issue.table.closed')"
           :issue-list="issueList.filter(filter)"
