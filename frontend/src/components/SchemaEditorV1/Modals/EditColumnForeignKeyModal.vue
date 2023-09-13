@@ -77,7 +77,7 @@ import { computed, onMounted, reactive, watch } from "vue";
 import { BBModal, BBSelect } from "@/bbkit";
 import { Column, ForeignKey } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { useSchemaDesignerContext } from "../common";
+import { useSchemaEditorContext } from "../common";
 
 interface LocalState {
   referencedSchemaId?: string;
@@ -104,7 +104,7 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const { engine, editableSchemas } = useSchemaDesignerContext();
+const { engine, editableSchemas } = useSchemaEditorContext();
 const state = reactive<LocalState>({
   referencedSchemaId: props.schemaId,
 });
