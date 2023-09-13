@@ -464,7 +464,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	for _, schema := range v1pbMetadata.Schemas {
 		for _, table := range schema.Tables {
 			for _, column := range table.Columns {
-				maskingLevel, err := evaluator.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, nil /*Exceptions*/)
+				maskingLevel, err := evaluator.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, nil /* Exceptions*/)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to evaluate masking level of column %q, error: %v", column.Name, err)
 				}

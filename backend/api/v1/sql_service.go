@@ -1576,9 +1576,7 @@ func (m *maskingLevelEvaluator) withMaskingRulePolicy(maskingRulePolicy *storepb
 	}
 
 	m.maskingRules = make([]*storepb.MaskingRulePolicy_MaskingRule, 0, len(maskingRulePolicy.Rules))
-	for _, maskingRule := range maskingRulePolicy.Rules {
-		m.maskingRules = append(m.maskingRules, maskingRule)
-	}
+	m.maskingRules = append(m.maskingRules, maskingRulePolicy.Rules...)
 
 	return m
 }
