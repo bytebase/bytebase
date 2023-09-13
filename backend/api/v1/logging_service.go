@@ -96,148 +96,8 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 		Offset: &offset,
 	}
 
-	filters, err := parseFilter(request.Filter)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	if request.OrderBy != "" {
-		orderByKeys, err := parseOrderBy(request.OrderBy)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		if len(orderByKeys) != 1 || orderByKeys[0].key != "create_time" {
-			return nil, status.Errorf(codes.InvalidArgument, `invalid order_by, only support order by "create_time" for now`)
-		}
-		order := api.DESC
-		if orderByKeys[0].isAscend {
-			order = api.ASC
-		}
-		activityFind.Order = &order
-	} else {
-		order := api.ASC
-		activityFind.Order = &order
-	}
-
-	for _, spec := range filters {
-		switch spec.key {
-		case "creator":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "creator" filter`)
-			}
-			creatorEmail := strings.TrimPrefix(spec.value, "users/")
-			if creatorEmail == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
-			}
-			user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-				Email:       &creatorEmail,
-				ShowDeleted: true,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, `failed to find user "%s" with error: %v`, creatorEmail, err.Error())
-			}
-			if user == nil {
-				return nil, errors.Errorf("cannot found user %s", creatorEmail)
-			}
-			activityFind.CreatorUID = &user.ID
-		case "resource":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "resource" filter`)
-			}
-			sections := strings.Split(spec.value, "/")
-			if len(sections) != 2 {
-				return nil, status.Errorf(codes.InvalidArgument, `invalid resource "%s" for filter`, spec.value)
-			}
-			typeList, ok := resourceActionTypeMap[sections[0]]
-			if !ok {
-				return nil, status.Errorf(codes.InvalidArgument, `unsupport resource %s`, spec.value)
-			}
-			activityFind.TypeList = append(activityFind.TypeList, typeList...)
-			switch fmt.Sprintf("%s/", sections[0]) {
-			case common.UserNamePrefix:
-				user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-					Email:       &sections[1],
-					ShowDeleted: true,
-				})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, err.Error())
-				}
-				if user == nil {
-					return nil, status.Errorf(codes.NotFound, "user %q not found", spec.value)
-				}
-				activityFind.ContainerUID = &user.ID
-			case common.InstanceNamePrefix:
-				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-					ResourceID:  &sections[1],
-					ShowDeleted: true,
-				})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, err.Error())
-				}
-				if instance == nil {
-					return nil, status.Errorf(codes.NotFound, "instance %q not found", spec.value)
-				}
-				activityFind.ContainerUID = &instance.UID
-			case common.ProjectNamePrefix:
-				project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-					ResourceID:  &sections[1],
-					ShowDeleted: true,
-				})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, err.Error())
-				}
-				if project == nil {
-					return nil, status.Errorf(codes.NotFound, "project %q not found", spec.value)
-				}
-				activityFind.ContainerUID = &project.UID
-			case common.PipelineNamePrefix, common.IssueNamePrefix:
-				uid, err := strconv.Atoi(sections[1])
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, `invalid resource id "%s"`, spec.value)
-				}
-				activityFind.ContainerUID = &uid
-			default:
-				return nil, status.Errorf(codes.InvalidArgument, `resource "%s" in filter is not support`, spec.value)
-			}
-		case "level":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
-			}
-			for _, level := range strings.Split(spec.value, " | ") {
-				activityLevel, err := convertToActivityLevel(v1pb.LogEntity_Level(v1pb.LogEntity_Level_value[level]))
-				if err != nil {
-					return nil, err
-				}
-				activityFind.LevelList = append(activityFind.LevelList, activityLevel)
-			}
-		case "action":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "action" filter`)
-			}
-			for _, action := range strings.Split(spec.value, " | ") {
-				activityType, err := convertToActivityType(v1pb.LogEntity_Action(v1pb.LogEntity_Action_value[action]))
-				if err != nil {
-					return nil, err
-				}
-				activityFind.TypeList = append(activityFind.TypeList, activityType)
-			}
-		case "create_time":
-			if spec.operator != comparatorTypeGreaterEqual && spec.operator != comparatorTypeLessEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "<=" or ">=" operation for "create_time" filter`)
-			}
-			t, err := time.Parse(time.RFC3339, spec.value)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", spec.value)
-			}
-			ts := t.Unix()
-			if spec.operator == comparatorTypeGreaterEqual {
-				activityFind.CreatedTsAfter = &ts
-			} else {
-				activityFind.CreatedTsBefore = &ts
-			}
-		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %s", spec.key)
-		}
+	if err := setActivityFindFilterAndOrder(ctx, s.store, activityFind, request.Filter, request.OrderBy); err != nil {
+		return nil, err
 	}
 
 	activityList, err := s.store.ListActivityV2(ctx, activityFind)
@@ -270,6 +130,153 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 	return resp, nil
 }
 
+func setActivityFindFilterAndOrder(ctx context.Context, stores *store.Store, activityFind *store.FindActivityMessage, filter, orderBy string) error {
+	filters, err := parseFilter(filter)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	if orderBy != "" {
+		orderByKeys, err := parseOrderBy(orderBy)
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		if len(orderByKeys) != 1 || orderByKeys[0].key != "create_time" {
+			return status.Errorf(codes.InvalidArgument, `invalid order_by, only support order by "create_time" for now`)
+		}
+		order := api.DESC
+		if orderByKeys[0].isAscend {
+			order = api.ASC
+		}
+		activityFind.Order = &order
+	} else {
+		order := api.ASC
+		activityFind.Order = &order
+	}
+
+	for _, spec := range filters {
+		switch spec.key {
+		case "creator":
+			if spec.operator != comparatorTypeEqual {
+				return status.Errorf(codes.InvalidArgument, `only support "=" operation for "creator" filter`)
+			}
+			creatorEmail := strings.TrimPrefix(spec.value, "users/")
+			if creatorEmail == "" {
+				return status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
+			}
+			user, err := stores.GetUser(ctx, &store.FindUserMessage{
+				Email:       &creatorEmail,
+				ShowDeleted: true,
+			})
+			if err != nil {
+				return status.Errorf(codes.Internal, `failed to find user "%s" with error: %v`, creatorEmail, err.Error())
+			}
+			if user == nil {
+				return errors.Errorf("cannot found user %s", creatorEmail)
+			}
+			activityFind.CreatorUID = &user.ID
+		case "resource":
+			if spec.operator != comparatorTypeEqual {
+				return status.Errorf(codes.InvalidArgument, `only support "=" operation for "resource" filter`)
+			}
+			sections := strings.Split(spec.value, "/")
+			if len(sections) != 2 {
+				return status.Errorf(codes.InvalidArgument, `invalid resource "%s" for filter`, spec.value)
+			}
+			typeList, ok := resourceActionTypeMap[sections[0]]
+			if !ok {
+				return status.Errorf(codes.InvalidArgument, `unsupport resource %s`, spec.value)
+			}
+			activityFind.TypeList = append(activityFind.TypeList, typeList...)
+			switch fmt.Sprintf("%s/", sections[0]) {
+			case common.UserNamePrefix:
+				user, err := stores.GetUser(ctx, &store.FindUserMessage{
+					Email:       &sections[1],
+					ShowDeleted: true,
+				})
+				if err != nil {
+					return status.Errorf(codes.Internal, err.Error())
+				}
+				if user == nil {
+					return status.Errorf(codes.NotFound, "user %q not found", spec.value)
+				}
+				activityFind.ContainerUID = &user.ID
+			case common.InstanceNamePrefix:
+				instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{
+					ResourceID:  &sections[1],
+					ShowDeleted: true,
+				})
+				if err != nil {
+					return status.Errorf(codes.Internal, err.Error())
+				}
+				if instance == nil {
+					return status.Errorf(codes.NotFound, "instance %q not found", spec.value)
+				}
+				activityFind.ContainerUID = &instance.UID
+			case common.ProjectNamePrefix:
+				project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
+					ResourceID:  &sections[1],
+					ShowDeleted: true,
+				})
+				if err != nil {
+					return status.Errorf(codes.Internal, err.Error())
+				}
+				if project == nil {
+					return status.Errorf(codes.NotFound, "project %q not found", spec.value)
+				}
+				activityFind.ContainerUID = &project.UID
+			case common.PipelineNamePrefix, common.IssueNamePrefix:
+				uid, err := strconv.Atoi(sections[1])
+				if err != nil {
+					return status.Errorf(codes.InvalidArgument, `invalid resource id "%s"`, spec.value)
+				}
+				activityFind.ContainerUID = &uid
+			default:
+				return status.Errorf(codes.InvalidArgument, `resource "%s" in filter is not support`, spec.value)
+			}
+		case "level":
+			if spec.operator != comparatorTypeEqual {
+				return status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+			}
+			for _, level := range strings.Split(spec.value, " | ") {
+				activityLevel, err := convertToActivityLevel(v1pb.LogEntity_Level(v1pb.LogEntity_Level_value[level]))
+				if err != nil {
+					return err
+				}
+				activityFind.LevelList = append(activityFind.LevelList, activityLevel)
+			}
+		case "action":
+			if spec.operator != comparatorTypeEqual {
+				return status.Errorf(codes.InvalidArgument, `only support "=" operation for "action" filter`)
+			}
+			for _, action := range strings.Split(spec.value, " | ") {
+				activityType, err := convertToActivityType(v1pb.LogEntity_Action(v1pb.LogEntity_Action_value[action]))
+				if err != nil {
+					return err
+				}
+				activityFind.TypeList = append(activityFind.TypeList, activityType)
+			}
+		case "create_time":
+			if spec.operator != comparatorTypeGreaterEqual && spec.operator != comparatorTypeLessEqual {
+				return status.Errorf(codes.InvalidArgument, `only support "<=" or ">=" operation for "create_time" filter`)
+			}
+			t, err := time.Parse(time.RFC3339, spec.value)
+			if err != nil {
+				return status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", spec.value)
+			}
+			ts := t.Unix()
+			if spec.operator == comparatorTypeGreaterEqual {
+				activityFind.CreatedTsAfter = &ts
+			} else {
+				activityFind.CreatedTsBefore = &ts
+			}
+		default:
+			return status.Errorf(codes.InvalidArgument, "invalid filter %s", spec.key)
+		}
+	}
+	return nil
+}
+
 // GetLog gets the log.
 func (s *LoggingService) GetLog(ctx context.Context, request *v1pb.GetLogRequest) (*v1pb.LogEntity, error) {
 	activityUID, err := common.GetUIDFromName(request.Name, common.LogNamePrefix)
@@ -294,7 +301,11 @@ func (s *LoggingService) GetLog(ctx context.Context, request *v1pb.GetLogRequest
 
 // ExportLogs exports logs.
 func (s *LoggingService) ExportLogs(ctx context.Context, request *v1pb.ExportLogsRequest) (*v1pb.ExportLogsResponse, error) {
-	activities, err := s.store.ListActivityV2(ctx, &store.FindActivityMessage{})
+	activityFind := &store.FindActivityMessage{}
+	if err := setActivityFindFilterAndOrder(ctx, s.store, activityFind, request.Filter, request.OrderBy); err != nil {
+		return nil, err
+	}
+	activities, err := s.store.ListActivityV2(ctx, activityFind)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list activity: %v", err.Error())
 	}

@@ -83,6 +83,33 @@ message GetLogRequest {
 }
 
 message ExportLogsRequest {
+  // Consistent with filter and order by in ListLogs.
+  // filter is the filter to apply on the list logs request,
+  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+  // The field only support in filter:
+  // - creator, example:
+  //    - creator = "users/{email}"
+  // - resource, example:
+  //    - resource = "projects/{project resource id}"
+  // - level, example:
+  //    - level = "INFO"
+  //    - level = "ERROR | WARN"
+  // - action, example:
+  //    - action = "ACTION_MEMBER_CREATE" | "ACTION_ISSUE_CREATE"
+  // - create_time, example:
+  //    - create_time <= "2022-01-01T12:00:00.000Z"
+  //    - create_time >= "2022-01-01T12:00:00.000Z"
+  // For example:
+  // List the logs of type 'ACTION_ISSUE_COMMENT_CREATE' in issue/123: 'action="ACTION_ISSUE_COMMENT_CREATE", resource="issue/123"'
+  string filter = 1;
+
+  // The order by of the log.
+  // Only support order by create_time.
+  // For example:
+  //  - order_by = "create_time asc"
+  //  - order_by = "create_time desc"
+  string order_by = 2;
+
   // The export format.
   ExportFormat format = 5;
 }
