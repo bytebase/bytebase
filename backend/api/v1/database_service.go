@@ -411,6 +411,12 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &database.ProjectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -428,7 +434,46 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		dbSchema = newDBSchema
 	}
-	return s.convertDatabaseMetadata(dbSchema.Metadata), nil
+	v1pbMetadata := s.convertDatabaseMetadata(dbSchema.Metadata)
+	// backfill the effective masking level.
+	dataClassificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get data classification setting, error: %v", err)
+	}
+	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get masking rule policy, error: %v", err)
+	}
+	// Convert the maskingPolicy to a map to reduce the time complexity of searching.
+	maskingPolicy, err := s.store.GetMaskingPolicyByDatabaseUID(ctx, database.UID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find masking policy for database %q", databaseName)
+	}
+	maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
+	if maskingPolicy != nil {
+		for _, maskData := range maskingPolicy.MaskData {
+			maskingPolicyMap[maskingPolicyKey{
+				schema: maskData.Schema,
+				table:  maskData.Table,
+				column: maskData.Column,
+			}] = maskData
+		}
+	}
+
+	evaluator := newEmptyMaskingLevelEvaluator().withDataClassificationSetting(dataClassificationSetting).withMaskingRulePolicy(maskingRulePolicy)
+	for _, schema := range v1pbMetadata.Schemas {
+		for _, table := range schema.Tables {
+			for _, column := range table.Columns {
+				maskingLevel, err := evaluator.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, nil /*Exceptions*/)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to evaluate masking level of column %q, error: %v", column.Name, err)
+				}
+				v1pbMaskingLevel := convertToV1PBMaskingLevel(maskingLevel)
+				column.EffectiveMaskingLevel = v1pbMaskingLevel
+			}
+		}
+	}
+	return v1pbMetadata, nil
 }
 
 // GetDatabaseSchema gets the schema of a database.

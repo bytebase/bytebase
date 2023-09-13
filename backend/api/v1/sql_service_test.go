@@ -306,7 +306,8 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		databaseProjectDatabaseClassificationID string
 		schemaName                              string
 		tableName                               string
-		column                                  *storepb.ColumnMetadata
+		columnName                              string
+		columnClassification                    string
 		maskingPolicyMap                        map[maskingPolicyKey]*storepb.MaskData
 		maskingRulePolicy                       *storepb.MaskingRulePolicy
 		filteredMaskingExceptions               []*storepb.MaskingExceptionPolicy_MaskingException
@@ -315,15 +316,13 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		want storepb.MaskingLevel
 	}{
 		{
-			description:     "Follow The Global Masking Rule If Column Masking Policy Is Default",
-			databaseMessage: defaultDatabaseMessage,
-			schemaName:      "hiring",
-			tableName:       "employees",
-			column: &storepb.ColumnMetadata{
-				Name:           "salary",
-				Classification: "1-1-1",
-			},
-			maskingPolicyMap: map[maskingPolicyKey]*storepb.MaskData{},
+			description:          "Follow The Global Masking Rule If Column Masking Policy Is Default",
+			databaseMessage:      defaultDatabaseMessage,
+			schemaName:           "hiring",
+			tableName:            "employees",
+			columnName:           "salary",
+			columnClassification: "1-1-1",
+			maskingPolicyMap:     map[maskingPolicyKey]*storepb.MaskData{},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
@@ -340,15 +339,13 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			want: storepb.MaskingLevel_FULL,
 		},
 		{
-			description:     "Follow The Global Masking Rule If Column Masking Policy Is Default And Respect The Exception",
-			databaseMessage: defaultDatabaseMessage,
-			schemaName:      "hiring",
-			tableName:       "employees",
-			column: &storepb.ColumnMetadata{
-				Name:           "salary",
-				Classification: "1-1-1",
-			},
-			maskingPolicyMap: map[maskingPolicyKey]*storepb.MaskData{},
+			description:          "Follow The Global Masking Rule If Column Masking Policy Is Default And Respect The Exception",
+			databaseMessage:      defaultDatabaseMessage,
+			schemaName:           "hiring",
+			tableName:            "employees",
+			columnName:           "salary",
+			columnClassification: "1-1-1",
+			maskingPolicyMap:     map[maskingPolicyKey]*storepb.MaskData{},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
@@ -374,15 +371,13 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			want: storepb.MaskingLevel_PARTIAL,
 		},
 		{
-			description:     "Only Find The Lower Level in Exception",
-			databaseMessage: defaultDatabaseMessage,
-			schemaName:      "hiring",
-			tableName:       "employees",
-			column: &storepb.ColumnMetadata{
-				Name:           "salary",
-				Classification: "1-1-1",
-			},
-			maskingPolicyMap: map[maskingPolicyKey]*storepb.MaskData{},
+			description:          "Only Find The Lower Level in Exception",
+			databaseMessage:      defaultDatabaseMessage,
+			schemaName:           "hiring",
+			tableName:            "employees",
+			columnName:           "salary",
+			columnClassification: "1-1-1",
+			maskingPolicyMap:     map[maskingPolicyKey]*storepb.MaskData{},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
@@ -409,14 +404,12 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			want: storepb.MaskingLevel_PARTIAL,
 		},
 		{
-			description:     "Respect The Column Masking Policy",
-			databaseMessage: defaultDatabaseMessage,
-			schemaName:      "hiring",
-			tableName:       "employees",
-			column: &storepb.ColumnMetadata{
-				Name:           "salary",
-				Classification: "1-1-1",
-			},
+			description:          "Respect The Column Masking Policy",
+			databaseMessage:      defaultDatabaseMessage,
+			schemaName:           "hiring",
+			tableName:            "employees",
+			columnName:           "salary",
+			columnClassification: "1-1-1",
 			maskingPolicyMap: map[maskingPolicyKey]*storepb.MaskData{
 				{
 					schema: "hiring",
@@ -452,7 +445,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 
 	for _, tc := range testCases {
 		m := newEmptyMaskingLevelEvaluator().withMaskingRulePolicy(tc.maskingRulePolicy).withDataClassificationSetting(tc.dataClassification)
-		result, err := m.evaluateMaskingLevelOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.column, tc.databaseProjectDatabaseClassificationID, tc.maskingPolicyMap, tc.filteredMaskingExceptions)
+		result, err := m.evaluateMaskingLevelOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.columnName, tc.columnClassification, tc.databaseProjectDatabaseClassificationID, tc.maskingPolicyMap, tc.filteredMaskingExceptions)
 		a.NoError(err, tc.description)
 		a.Equal(tc.want, result, tc.description)
 	}

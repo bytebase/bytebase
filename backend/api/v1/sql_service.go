@@ -1487,7 +1487,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					}
 					for _, column := range table.Columns {
 						slog.Debug("processing sensitive schema info", slog.String("schema", schema.Name), slog.String("table", table.Name))
-						maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+						maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
 						if err != nil {
 							return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
 						}
@@ -1524,7 +1524,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				}
 				for _, column := range table.Columns {
 					slog.Debug("processing sensitive schema info", slog.String("database", database.DatabaseName), slog.String("schema", schema.Name), slog.String("table", table.Name), slog.String("column", column.Name))
-					maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+					maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
 					if err != nil {
 						return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
 					}
@@ -1612,21 +1612,21 @@ func (m *maskingLevelEvaluator) getDataClassificationConfig(classificationID str
 // - maskingPolicyMap: the map of maskingPolicy for the database column belongs to.
 //
 // - filteredMaskingExceptions: the exceptions should apply for current principal.
-func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName string, column *storepb.ColumnMetadata, databaseProjectDataClassificationID string, maskingPolicyMap map[maskingPolicyKey]*storepb.MaskData, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException) (storepb.MaskingLevel, error) {
+func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName, columnName, columnClassification string, databaseProjectDataClassificationID string, maskingPolicyMap map[maskingPolicyKey]*storepb.MaskData, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException) (storepb.MaskingLevel, error) {
 	finalLevel := storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
 
 	key := maskingPolicyKey{
 		schema: schemaName,
 		table:  tableName,
-		column: column.Name,
+		column: columnName,
 	}
 	maskingData, ok := maskingPolicyMap[key]
 	if (!ok) || (maskingData.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED) {
-		slog.Debug("column set DEFAULT masking level in masking policy or masking policy not set yet", slog.String("column", column.Name), slog.Any("masking policy", maskingData))
+		slog.Debug("column set DEFAULT masking level in masking policy or masking policy not set yet", slog.String("column", columnName), slog.Any("masking policy", maskingData))
 		dataClassificationConfig := m.getDataClassificationConfig(databaseProjectDataClassificationID)
 		// If the column has DEFAULT masking level in maskingPolicy or not set yet,
 		// we will eval the maskingRulePolicy to get the maskingLevel.
-		columnClassificationLevel := getClassificationLevelOfColumn(column.Classification, dataClassificationConfig)
+		columnClassificationLevel := getClassificationLevelOfColumn(columnClassification, dataClassificationConfig)
 		for _, maskingRule := range m.maskingRules {
 			maskingRuleAttributes := map[string]any{
 				"environment_id":       databaseMessage.EffectiveEnvironmentID,
@@ -1635,7 +1635,7 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 				"database_name":        databaseMessage.DatabaseName,
 				"schema_name":          schemaName,
 				"table_name":           tableName,
-				"column_name":          column.Name,
+				"column_name":          columnName,
 				"classification_level": columnClassificationLevel,
 			}
 			pass, err := evaluateMaskingRulePolicyCondition(maskingRule.Condition.Expression, maskingRuleAttributes)
@@ -1644,12 +1644,12 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 			}
 			if pass {
 				finalLevel = maskingRule.MaskingLevel
-				slog.Debug("hit masking rule", slog.String("column", column.Name), slog.Any("masking rule", maskingRule), slog.Any("masking level", maskingRule.MaskingLevel.String()))
+				slog.Debug("hit masking rule", slog.String("column", columnName), slog.Any("masking rule", maskingRule), slog.Any("masking level", maskingRule.MaskingLevel.String()))
 				break
 			}
 		}
 	} else {
-		slog.Debug("column set specific masking level in masking policy", slog.String("column", column.Name), slog.Any("masking level", maskingData.MaskingLevel.String()))
+		slog.Debug("column set specific masking level in masking policy", slog.String("column", columnName), slog.Any("masking level", maskingData.MaskingLevel.String()))
 		finalLevel = maskingData.MaskingLevel
 	}
 
@@ -1670,7 +1670,7 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 				"database_name": databaseMessage.DatabaseName,
 				"schema_name":   schemaName,
 				"table_name":    tableName,
-				"column_name":   column.Name,
+				"column_name":   columnName,
 			},
 			"request": map[string]any{
 				"time": time.Now(),
@@ -1683,14 +1683,14 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 		if !hit {
 			continue
 		}
-		slog.Debug("hit masking exception", slog.String("column", column.Name), slog.Any("masking exception", filteredMaskingException), slog.Any("masking level", filteredMaskingException.MaskingLevel.String()))
+		slog.Debug("hit masking exception", slog.String("column", columnName), slog.Any("masking exception", filteredMaskingException), slog.Any("masking level", filteredMaskingException.MaskingLevel.String()))
 		// TODO(zp): Expectedly, a column should hit only one exception,
 		// but we can take the strictest level here to make the whole program more robust.
 		if cmp.Less[storepb.MaskingLevel](filteredMaskingException.MaskingLevel, finalLevel) {
 			finalLevel = filteredMaskingException.MaskingLevel
 		}
 	}
-	slog.Debug("final level of column", slog.String("column", column.Name), slog.Any("final level", finalLevel.String()))
+	slog.Debug("final level of column", slog.String("column", columnName), slog.Any("final level", finalLevel.String()))
 	return finalLevel, nil
 }
 
