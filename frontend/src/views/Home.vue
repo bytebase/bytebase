@@ -16,6 +16,7 @@
     >
       <template #table="{ issueList, loading }">
         <IssueTableV1
+          class="border-x-0"
           :show-placeholder="!loading"
           :title="$t('issue.waiting-approval')"
           :issue-list="issueList.filter(keywordFilter)"
@@ -37,7 +38,7 @@
     >
       <template #table="{ issueList, loading }">
         <IssueTableV1
-          class="-mt-px"
+          class="-mt-px border-x-0"
           :show-placeholder="!loading"
           :title="$t('issue.waiting-rollout')"
           :issue-list="issueList.filter(keywordFilter)"
@@ -59,7 +60,7 @@
     >
       <template #table="{ issueList, loading }">
         <IssueTableV1
-          class="-mt-px"
+          class="-mt-px border-x-0"
           :show-placeholder="!loading"
           :title="$t('common.created')"
           :issue-list="issueList.filter(keywordFilter)"
@@ -81,7 +82,7 @@
     >
       <template #table="{ issueList, loading }">
         <IssueTableV1
-          class="-mt-px"
+          class="-mt-px border-x-0"
           :show-placeholder="!loading"
           :title="$t('common.subscribed')"
           :issue-list="issueList.filter(keywordFilter)"
@@ -105,7 +106,7 @@
     >
       <template #table="{ issueList, loading }">
         <IssueTableV1
-          class="-mt-px"
+          class="-mt-px border-x-0"
           :show-placeholder="!loading"
           :title="$t('project.overview.recently-closed')"
           :issue-list="issueList.filter(keywordFilter)"

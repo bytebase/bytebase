@@ -4,142 +4,148 @@
   >
     {{ title }}
   </div>
-  <BBGrid
-    :column-list="columnList"
-    :data-source="issueList"
-    :row-clickable="true"
-    :show-placeholder="showPlaceholder"
-    :is-row-expanded="isIssueExpanded"
-    :is-row-clickable="(_: ComposedIssue) => true"
-    :custom-header="true"
-    class="border w-auto overflow-x-auto"
-    header-class="capitalize"
-    @click-row="clickIssue"
-  >
-    <template #header>
-      <div role="table-row" class="bb-grid-row bb-grid-header-row group">
-        <div
-          v-for="(column, index) in columnList"
-          :key="index"
-          role="table-cell"
-          class="bb-grid-header-cell"
-        >
-          <template v-if="index === 0">
-            <input
-              v-if="issueList.length > 0"
-              type="checkbox"
-              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-              :checked="allSelectionState.checked"
-              :indeterminate="allSelectionState.indeterminate"
-              @input="
-                setAllIssuesSelection(
-                  ($event.target as HTMLInputElement).checked
-                )
-              "
-            />
-          </template>
-          <template v-else>{{ column.title }}</template>
-        </div>
-      </div>
-    </template>
-    <template #item="{ item: issue }: { item: ComposedIssue }">
-      <div
-        class="bb-grid-cell"
-        @click.stop="setIssueSelection(issue, !isIssueSelected(issue))"
-      >
-        <!-- width: 1% means as narrow as possible -->
-        <input
-          type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          :checked="isIssueSelected(issue)"
-        />
-      </div>
-      <div class="bb-grid-cell w-12">
-        <IssueStatusIcon
-          :issue-status="issue.status"
-          :task-status="issueTaskStatus(issue)"
-        />
-      </div>
-      <div class="bb-grid-cell">
-        <div class="flex items-center">
-          <div class="whitespace-nowrap mr-2 text-control">
-            <template v-if="mode == 'ALL'">
-              {{ issue.projectEntity.key }}-{{ issue.uid }}
-            </template>
-            <template v-else> #{{ issue.uid }} </template>
-          </div>
+  <div ref="tableRef">
+    <BBGrid
+      :column-list="columnList"
+      :data-source="issueList"
+      :row-clickable="true"
+      :show-placeholder="showPlaceholder"
+      :is-row-expanded="isIssueExpanded"
+      :is-row-clickable="(_: ComposedIssue) => true"
+      :custom-header="true"
+      class="border w-auto overflow-x-auto"
+      header-class="capitalize"
+      v-bind="$attrs"
+      @click-row="clickIssue"
+    >
+      <template #header>
+        <div role="table-row" class="bb-grid-row bb-grid-header-row group">
           <div
-            class="flex truncate"
-            :class="{
-              'font-semibold': isAssigneeAttentionOn(issue),
-            }"
+            v-for="(column, index) in columnList"
+            :key="index"
+            role="table-cell"
+            class="bb-grid-header-cell"
           >
-            <span
-              v-for="(item, index) in issueHighlightSections(
-                issue.title,
-                highlights
-              )"
-              :key="index"
-              :class="['whitespace-pre', item.highlight ? 'bg-yellow-100' : '']"
+            <template v-if="index === 0">
+              <input
+                v-if="issueList.length > 0"
+                type="checkbox"
+                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                :checked="allSelectionState.checked"
+                :indeterminate="allSelectionState.indeterminate"
+                @input="
+                  setAllIssuesSelection(
+                    ($event.target as HTMLInputElement).checked
+                  )
+                "
+              />
+            </template>
+            <template v-else>{{ column.title }}</template>
+          </div>
+        </div>
+      </template>
+      <template #item="{ item: issue }: { item: ComposedIssue }">
+        <div
+          class="bb-grid-cell"
+          @click.stop="setIssueSelection(issue, !isIssueSelected(issue))"
+        >
+          <!-- width: 1% means as narrow as possible -->
+          <input
+            type="checkbox"
+            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            :checked="isIssueSelected(issue)"
+          />
+        </div>
+        <div class="bb-grid-cell w-12">
+          <IssueStatusIcon
+            :issue-status="issue.status"
+            :task-status="issueTaskStatus(issue)"
+          />
+        </div>
+        <div class="bb-grid-cell">
+          <div class="flex items-center">
+            <div class="whitespace-nowrap mr-2 text-control">
+              <template v-if="mode == 'ALL'">
+                {{ issue.projectEntity.key }}-{{ issue.uid }}
+              </template>
+              <template v-else> #{{ issue.uid }} </template>
+            </div>
+            <div
+              class="flex truncate"
+              :class="{
+                'font-semibold': isAssigneeAttentionOn(issue),
+              }"
             >
-              {{ item.text }}
+              <span
+                v-for="(item, index) in issueHighlightSections(
+                  issue.title,
+                  highlights
+                )"
+                :key="index"
+                :class="[
+                  'whitespace-pre',
+                  item.highlight ? 'bg-yellow-100' : '',
+                ]"
+              >
+                {{ item.text }}
+              </span>
+            </div>
+            <NTooltip v-if="isAssigneeAttentionOn(issue)">
+              <template #trigger>
+                <span>
+                  <heroicons-outline:bell-alert
+                    class="w-4 h-4 text-accent ml-1"
+                  />
+                </span>
+              </template>
+              <span class="whitespace-nowrap">
+                {{ $t("issue.assignee-attention.needs-attention") }}
+              </span>
+            </NTooltip>
+          </div>
+        </div>
+        <div class="hidden md:bb-grid-cell w-36">
+          {{ humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000) }}
+        </div>
+        <div class="hidden sm:bb-grid-cell w-36">
+          <CurrentApproverV1 :issue="issue" />
+        </div>
+        <div class="hidden sm:bb-grid-cell w-36">
+          <div class="flex flex-row items-center">
+            <BBAvatar
+              :size="'SMALL'"
+              :username="issue.assigneeEntity?.title ?? $t('common.unassigned')"
+            />
+            <span class="ml-2">
+              {{ issue.assigneeEntity?.title ?? $t("common.unassigned") }}
             </span>
           </div>
-          <NTooltip v-if="isAssigneeAttentionOn(issue)">
-            <template #trigger>
-              <span>
-                <heroicons-outline:bell-alert
-                  class="w-4 h-4 text-accent ml-1"
-                />
-              </span>
-            </template>
-            <span class="whitespace-nowrap">
-              {{ $t("issue.assignee-attention.needs-attention") }}
+        </div>
+        <div class="hidden sm:bb-grid-cell w-36">
+          <div class="flex flex-row items-center">
+            <BBAvatar :size="'SMALL'" :username="issue.creatorEntity.title" />
+            <span class="ml-2">
+              {{ issue.creatorEntity.title }}
             </span>
-          </NTooltip>
+          </div>
         </div>
-      </div>
-      <div class="hidden md:bb-grid-cell w-36">
-        {{ humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000) }}
-      </div>
-      <div class="hidden sm:bb-grid-cell w-36">
-        <CurrentApproverV1 :issue="issue" />
-      </div>
-      <div class="hidden sm:bb-grid-cell w-36">
-        <div class="flex flex-row items-center">
-          <BBAvatar
-            :size="'SMALL'"
-            :username="issue.assigneeEntity?.title ?? $t('common.unassigned')"
-          />
-          <span class="ml-2">
-            {{ issue.assigneeEntity?.title ?? $t("common.unassigned") }}
+      </template>
+      <template #expanded-item="{ item: issue }: { item: ComposedIssue }">
+        <div class="w-full max-h-[20rem] overflow-auto pl-2">
+          <span
+            v-for="(item, index) in issueHighlightSections(
+              issue.description,
+              highlights
+            )"
+            :key="index"
+            :class="['whitespace-pre', item.highlight ? 'bg-yellow-100' : '']"
+          >
+            {{ item.text }}
           </span>
         </div>
-      </div>
-      <div class="hidden sm:bb-grid-cell w-36">
-        <div class="flex flex-row items-center">
-          <BBAvatar :size="'SMALL'" :username="issue.creatorEntity.title" />
-          <span class="ml-2">
-            {{ issue.creatorEntity.title }}
-          </span>
-        </div>
-      </div>
-    </template>
-    <template #expanded-item="{ item: issue }: { item: ComposedIssue }">
-      <div class="w-full max-h-[20rem] overflow-auto pl-2">
-        <span
-          v-for="(item, index) in issueHighlightSections(
-            issue.description,
-            highlights
-          )"
-          :key="index"
-          :class="['whitespace-pre', item.highlight ? 'bg-yellow-100' : '']"
-        >
-          {{ item.text }}
-        </span>
-      </div>
-    </template>
-  </BBGrid>
+      </template>
+    </BBGrid>
+  </div>
 
   <div
     v-if="isTableInViewport && selectedIssueList.length > 0"
@@ -174,7 +180,7 @@ const columnList = computed((): BBGridColumn[] => {
   const resp = [
     {
       title: "",
-      width: "2rem",
+      width: "auto",
     },
     {
       title: "",
@@ -222,19 +228,11 @@ const props = withDefaults(
     title: string;
     issueList: ComposedIssue[];
     mode?: Mode;
-    leftBordered?: boolean;
-    rightBordered?: boolean;
-    topBordered?: boolean;
-    bottomBordered?: boolean;
     highlightText?: string;
     showPlaceholder?: boolean;
   }>(),
   {
     mode: "ALL",
-    leftBordered: false,
-    rightBordered: false,
-    topBordered: false,
-    bottomBordered: false,
     highlightText: "",
     showPlaceholder: false,
   }
@@ -248,7 +246,7 @@ const state = reactive<LocalState>({
 });
 const currentUserV1 = useCurrentUserV1();
 
-const tableRef = ref<HTMLTableElement>();
+const tableRef = ref<HTMLDivElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
 
 const selectedIssueList = computed(() => {
