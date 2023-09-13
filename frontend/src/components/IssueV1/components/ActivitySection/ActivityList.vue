@@ -122,18 +122,13 @@ import {
 } from "@/components/Issue/activity";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import { IssueBuiltinFieldId } from "@/plugins";
-import {
-  useActivityV1Store,
-  useCurrentUserV1,
-  useIssueV1Store,
-  useIssueStore,
-} from "@/store";
+import { useActivityV1Store, useCurrentUserV1, useIssueV1Store } from "@/store";
 import { getLogId } from "@/store/modules/v1/common";
 import {
   ActivityIssueCommentCreatePayload,
   ActivityIssueFieldUpdatePayload,
 } from "@/types";
-import type { Issue as LegacyIssue } from "@/types";
+import type { ComposedIssue } from "@/types";
 import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
 import { doSubscribeIssue, useIssueContext } from "../../logic";
@@ -150,7 +145,7 @@ const activityV1Store = useActivityV1Store();
 const route = useRoute();
 
 const { issue } = useIssueContext();
-const issueList = ref<LegacyIssue[]>([]);
+const issueList = ref<ComposedIssue[]>([]);
 
 const state = reactive<LocalState>({
   editCommentMode: false,
@@ -160,17 +155,18 @@ const state = reactive<LocalState>({
 
 const currentUser = useCurrentUserV1();
 const issueV1Store = useIssueV1Store();
-const issueLegacyStore = useIssueStore();
 
 const prepareActivityList = async () => {
   const [_, list] = await Promise.all([
     activityV1Store.fetchActivityListForIssueV1(issue.value),
-    // TODO: deprecate the legacy store.
-    issueLegacyStore.fetchIssueList({
-      projectId: issue.value.projectEntity.uid,
+    issueV1Store.listIssues({
+      find: {
+        project: issue.value.project,
+        query: "",
+      },
     }),
   ]);
-  issueList.value = list;
+  issueList.value = list.issues;
 };
 
 watchEffect(prepareActivityList);

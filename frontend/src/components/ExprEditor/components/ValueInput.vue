@@ -138,13 +138,13 @@ const setArrayValue = (values: string[] | number[]) => {
 
 // clean up value type when factor and operator changed
 watch(
-  [operator, () => props.expr.args[1]],
-  ([operator, value]) => {
+  [factor, operator, () => props.expr.args[1]],
+  ([factor, operator, value]) => {
     if (isEqualityOperator(operator)) {
-      if (isNumberFactor(factor.value) && !isNumber(value)) {
+      if (isNumberFactor(factor) && !isNumber(value)) {
         setNumberValue(0);
       }
-      if (isStringFactor(factor.value) && typeof value !== "string") {
+      if (isStringFactor(factor) && typeof value !== "string") {
         setStringValue("");
       }
     }
@@ -161,17 +161,5 @@ watch(
   {
     immediate: true,
   }
-);
-watch(
-  factor,
-  (factor) => {
-    if (isNumberFactor(factor)) {
-      setNumberValue(0);
-    }
-    if (isStringFactor(factor)) {
-      setStringValue("");
-    }
-  },
-  { immediate: true }
 );
 </script>

@@ -211,6 +211,7 @@ export const buildStepsViaDeploymentConfig = async (
     params,
     sheetUID
   );
+  maybeSetInitialSQLForSpec(spec, 0, params);
   const step = Plan_Step.fromPartial({
     specs: [spec],
   });

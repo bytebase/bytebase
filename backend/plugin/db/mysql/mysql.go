@@ -164,6 +164,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	if err != nil {
 		return 0, err
 	}
+	defer conn.Close()
 
 	if opts.BeginFunc != nil {
 		if err := opts.BeginFunc(ctx, conn); err != nil {

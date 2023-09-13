@@ -630,6 +630,7 @@
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
       "global-rules": {
+        "condition-order": "Condition order",
         "add-rule": "Add rule",
         "re-order": "Re-order",
         "delete-rule-tip": "Delete this rule?"

@@ -75,7 +75,7 @@ const itemClass = (step: WrappedReviewStep) => {
 };
 </script>
 
-<style>
+<style lang="postcss">
 .bb-approval-timeline-horizontal .n-timeline-item {
   padding-right: 20px !important;
 }
@@ -83,7 +83,7 @@ const itemClass = (step: WrappedReviewStep) => {
   padding-right: 0 !important;
 }
 .bb-approval-timeline-horizontal .n-timeline-item .n-timeline-item-timeline {
-  position: static;
+  position: static !important;
   height: calc(var(--n-icon-size)) !important;
 }
 .bb-approval-timeline-horizontal
