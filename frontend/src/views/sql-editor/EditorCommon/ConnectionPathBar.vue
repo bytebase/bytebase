@@ -1,10 +1,10 @@
 <template>
   <div
-    class="w-full flex flex-col sm:flex-row sm:flex-wrap xl:flex-nowrap lg:justify-between items-start bg-white"
+    class="w-full flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap lg:justify-between items-start bg-white overflow-hidden"
   >
     <div
       v-if="!tabStore.isDisconnected"
-      class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
+      class="flex justify-start items-center h-8 px-4 whitespace-nowrap shrink-0"
     >
       <NPopover v-if="showReadonlyDatasourceHint" trigger="hover">
         <template #trigger>
@@ -68,9 +68,11 @@
 
     <div
       v-if="isProductionEnvironment"
-      class="w-full xl:w-auto flex justify-start items-center py-1 sm:py-0 sm:h-8 px-4 text-white bg-error truncate"
+      class="w-full lg:w-auto flex justify-start items-center py-1 sm:py-0 sm:h-8 px-4 text-white bg-error"
     >
-      {{ $t("sql-editor.sql-execute-in-production-environment") }}
+      <EllipsisText>
+        {{ $t("sql-editor.sql-execute-in-production-environment") }}
+      </EllipsisText>
     </div>
 
     <div
@@ -88,6 +90,7 @@
 import { NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import EllipsisText from "@/components/EllipsisText.vue";
 import {
   InstanceV1EngineIcon,
   ProductionEnvironmentV1Icon,
