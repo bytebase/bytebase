@@ -6,29 +6,30 @@
           v-if="!readonly"
           class="w-full flex justify-between items-center space-x-2"
         >
-          <button
-            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+          <NButton
+            size="small"
             :disabled="disableChangeTable"
             @click="handleAddColumn"
           >
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
             {{ $t("schema-editor.actions.add-column") }}
-          </button>
-          <button
-            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+          </NButton>
+          <NButton
+            size="small"
             :disabled="disableChangeTable"
             @click="state.showSchemaTemplateDrawer = true"
           >
             <FeatureBadge feature="bb.feature.schema-template" />
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
             {{ $t("schema-editor.actions.add-from-template") }}
-          </button>
+          </NButton>
         </div>
       </div>
       <div class="flex justify-end items-center">
         <NInput
           v-model:value="searchPattern"
           class="!w-48"
+          size="small"
           :placeholder="$t('schema-editor.search-column')"
         >
           <template #prefix>
