@@ -1575,7 +1575,7 @@ func newMaskingLevelEvaluator() *maskingLevelEvaluator {
 //
 // - maskingPolicyMap: the map of maskingPolicy for the database column belongs to.
 //
-// - maskingRulePolicy: the  worksapce level policy ofmasking rule.
+// - maskingRulePolicy: the workspace level policy of masking rule.
 //
 // - filteredMaskingExceptions: the exceptions should apply for current principal.
 //
