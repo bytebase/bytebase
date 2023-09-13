@@ -26,7 +26,6 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import AsidePanel from "./AsidePanel.vue";
 import Designer from "./Designer.vue";
 import { provideSchemaEditorContext, SchemaEditorTabState } from "./common";
@@ -35,8 +34,9 @@ import { rebuildEditableSchemas } from "./utils";
 const props = defineProps<{
   readonly: boolean;
   engine: Engine;
-  schemaDesign: SchemaDesign;
   project: ComposedProject;
+  baselineSchemaMetadata?: DatabaseMetadata;
+  schemaMetadata?: DatabaseMetadata;
 }>();
 
 const settingStore = useSettingV1Store();
@@ -86,11 +86,10 @@ watch(
   () => props,
   () => {
     baselineMetadata.value =
-      cloneDeep(props.schemaDesign?.baselineSchemaMetadata) ||
+      cloneDeep(props.baselineSchemaMetadata) ||
       DatabaseMetadata.fromPartial({});
     metadata.value =
-      cloneDeep(props.schemaDesign?.schemaMetadata) ||
-      DatabaseMetadata.fromPartial({});
+      cloneDeep(props.schemaMetadata) || DatabaseMetadata.fromPartial({});
     readonly.value = props.readonly;
     engine.value = props.engine;
     project.value = props.project;
