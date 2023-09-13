@@ -440,7 +440,8 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 	a := require.New(t)
 
 	for _, tc := range testCases {
-		result, err := evaluateMaskingLevelOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.column, tc.maskingPolicyMap, tc.maskingRulePolicy, tc.filteredMaskingExceptions, tc.dataClassificationConfig)
+		m := newMaskingLevelEvaluator()
+		result, err := m.evaluateMaskingLevelOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.column, tc.maskingPolicyMap, tc.maskingRulePolicy, tc.filteredMaskingExceptions, tc.dataClassificationConfig)
 		a.NoError(err, tc.description)
 		a.Equal(tc.want, result, tc.description)
 	}
