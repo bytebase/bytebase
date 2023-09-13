@@ -422,8 +422,11 @@ export interface ColumnMetadata {
   classification: string;
   /** The user_comment is the user comment of a column parsed from the comment. */
   userComment: string;
-  /** The masking_level is the masking level of the column. */
-  maskingLevel: MaskingLevel;
+  /**
+   * The effective_masking_level is the effective masking level of the column, evaluate from the
+   * column masking data and global masking rules.
+   */
+  effectiveMaskingLevel: MaskingLevel;
 }
 
 /** ViewMetadata is the metadata for views. */
@@ -3421,7 +3424,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     comment: "",
     classification: "",
     userComment: "",
-    maskingLevel: 0,
+    effectiveMaskingLevel: 0,
   };
 }
 
@@ -3457,8 +3460,8 @@ export const ColumnMetadata = {
     if (message.userComment !== "") {
       writer.uint32(82).string(message.userComment);
     }
-    if (message.maskingLevel !== 0) {
-      writer.uint32(88).int32(message.maskingLevel);
+    if (message.effectiveMaskingLevel !== 0) {
+      writer.uint32(88).int32(message.effectiveMaskingLevel);
     }
     return writer;
   },
@@ -3545,7 +3548,7 @@ export const ColumnMetadata = {
             break;
           }
 
-          message.maskingLevel = reader.int32() as any;
+          message.effectiveMaskingLevel = reader.int32() as any;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3568,7 +3571,9 @@ export const ColumnMetadata = {
       comment: isSet(object.comment) ? String(object.comment) : "",
       classification: isSet(object.classification) ? String(object.classification) : "",
       userComment: isSet(object.userComment) ? String(object.userComment) : "",
-      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
+      effectiveMaskingLevel: isSet(object.effectiveMaskingLevel)
+        ? maskingLevelFromJSON(object.effectiveMaskingLevel)
+        : 0,
     };
   },
 
@@ -3584,7 +3589,8 @@ export const ColumnMetadata = {
     message.comment !== undefined && (obj.comment = message.comment);
     message.classification !== undefined && (obj.classification = message.classification);
     message.userComment !== undefined && (obj.userComment = message.userComment);
-    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
+    message.effectiveMaskingLevel !== undefined &&
+      (obj.effectiveMaskingLevel = maskingLevelToJSON(message.effectiveMaskingLevel));
     return obj;
   },
 
@@ -3604,7 +3610,7 @@ export const ColumnMetadata = {
     message.comment = object.comment ?? "";
     message.classification = object.classification ?? "";
     message.userComment = object.userComment ?? "";
-    message.maskingLevel = object.maskingLevel ?? 0;
+    message.effectiveMaskingLevel = object.effectiveMaskingLevel ?? 0;
     return message;
   },
 };
