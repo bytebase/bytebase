@@ -250,6 +250,7 @@ func executeMigration(ctx context.Context, driverCtx context.Context, stores *st
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to create connection")
 		}
+		defer conn.Close()
 		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, conn, task, stores, migrationID)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
