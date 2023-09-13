@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	taskSchedulerInterval = time.Duration(1) * time.Second
+	taskSchedulerInterval = 3 * time.Second
 )
 
 // SchedulerV2 is the V2 scheduler for task run.

@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	planCheckSchedulerInterval = time.Duration(1) * time.Second
+	planCheckSchedulerInterval = 3 * time.Second
 )
 
 // NewScheduler creates a new plan check scheduler.
