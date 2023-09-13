@@ -2,13 +2,14 @@
   <div class="gap-y-4 w-full">
     <div class="flex items-stretch gap-x-4 overflow-hidden">
       <div class="flex-1 space-y-2 py-4 overflow-x-hidden overflow-y-auto">
-        <input
-          v-model="state.title"
-          class="textfield w-64 ml-0.5"
-          :placeholder="`${t('custom-approval.security-rule.condition.self')} ${
-            props.index
-          }`"
+        <NInput
+          v-model:value="state.title"
+          class="!w-64 ml-0.5"
+          :placeholder="`${t(
+            'settings.sensitive-data.global-rules.condition-order'
+          )} ${props.index}`"
           type="text"
+          size="small"
           :disabled="readonly || disabled"
           @input="state.dirty = true"
         />
