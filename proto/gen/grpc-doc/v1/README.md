@@ -2649,6 +2649,7 @@ ColumnMetadata is the metadata for columns.
 | comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
 | classification | [string](#string) |  | The classification is the classification of a column parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a column parsed from the comment. |
+| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  | The masking_level is the masking level of the column. |
 
 
 
