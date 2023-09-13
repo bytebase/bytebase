@@ -424,6 +424,10 @@ func getMiddlePartOfString(stmt string) string {
 	if len(stmt) == 0 || len(stmt) == 1 {
 		return ""
 	}
+	if len(stmt) == 2 || len(stmt) == 3 {
+		return string(stmt[1])
+	}
+
 	s := []rune(stmt)
 	if len(s)%4 != 0 {
 		s = s[:len(s)/4*4]
