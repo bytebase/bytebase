@@ -151,7 +151,8 @@
           ref="schemaDesignerRef"
           :readonly="!state.isEditing"
           :engine="schemaDesign.engine"
-          :schema-design="schemaDesign"
+          :baseline-schema-metadata="schemaDesign.baselineSchemaMetadata"
+          :schema-metadata="schemaDesign.schemaMetadata"
           :project="project"
         />
         <!-- Don't show delete button in view mode. -->
