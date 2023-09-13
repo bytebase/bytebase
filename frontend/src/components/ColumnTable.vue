@@ -14,6 +14,25 @@
       <BBTableCell v-if="showSensitiveColumn" class="bb-grid-cell">
         <div class="flex items-center">
           {{ getMaskingLevelText(column) }}
+          <NTooltip v-if="!isColumnConfigMasking(column)">
+            <template #trigger>
+              <heroicons-outline:question-mark-circle class="h-4 w-4 mr-2" />
+            </template>
+            <i18n-t
+              tag="div"
+              keypath="settings.sensitive-data.column-detail.column-effective-masking-tips"
+              class="whitespace-pre-line"
+            >
+              <template #link>
+                <router-link
+                  class="flex items-center light-link text-sm"
+                  to="/setting/sensitive-data#global-masking-rule"
+                >
+                  {{ $t("settings.sensitive-data.global-rules.check-rules") }}
+                </router-link>
+              </template>
+            </i18n-t>
+          </NTooltip>
           <button
             v-if="allowAdmin"
             class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
@@ -85,12 +104,11 @@ import { useI18n } from "vue-i18n";
 import { BBTableColumn } from "@/bbkit/types";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
-import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
+import { Engine, maskingLevelToJSON } from "@/types/proto/v1/common";
 import {
-  Engine,
-  MaskingLevel,
-  maskingLevelToJSON,
-} from "@/types/proto/v1/common";
+  ColumnMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 import { MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
@@ -283,6 +301,16 @@ const columnNameList = computed(() => {
   }
 });
 
+const isColumnConfigMasking = (column: ColumnMetadata): boolean => {
+  return props.maskDataList.some((sensitiveData) => {
+    return (
+      sensitiveData.table === props.table.name &&
+      sensitiveData.column === column.name &&
+      sensitiveData.schema === props.schema
+    );
+  });
+};
+
 const getColumnMasking = (column: ColumnMetadata): MaskData => {
   return (
     props.maskDataList.find((sensitiveData) => {
@@ -296,7 +324,7 @@ const getColumnMasking = (column: ColumnMetadata): MaskData => {
       table: props.table.name,
       column: column.name,
       semanticCategoryId: "",
-      maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+      maskingLevel: column.effectiveMaskingLevel,
     }
   );
 };
