@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
@@ -17,6 +18,13 @@ service LoggingService {
   rpc GetLog(GetLogRequest) returns (LogEntity) {
     option (google.api.http) = {get: "/v1/{name=logs/*}"};
     option (google.api.method_signature) = "name";
+  }
+
+  rpc ExportLogs(ExportLogsRequest) returns (ExportLogsResponse) {
+    option (google.api.http) = {
+      post: "/v1/logs:export"
+      body: "*"
+    };
   }
 }
 
@@ -72,6 +80,15 @@ message GetLogRequest {
   // The name of the log to retrieve.
   // Format: logs/{uid}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ExportLogsRequest {
+  // The export format.
+  ExportFormat format = 5;
+}
+
+message ExportLogsResponse {
+  bytes content = 1;
 }
 
 message LogEntity {
