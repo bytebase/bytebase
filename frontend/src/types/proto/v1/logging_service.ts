@@ -69,6 +69,35 @@ export interface GetLogRequest {
 }
 
 export interface ExportLogsRequest {
+  /**
+   * Consistent with filter and order by in ListLogs.
+   * filter is the filter to apply on the list logs request,
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * The field only support in filter:
+   * - creator, example:
+   *    - creator = "users/{email}"
+   * - resource, example:
+   *    - resource = "projects/{project resource id}"
+   * - level, example:
+   *    - level = "INFO"
+   *    - level = "ERROR | WARN"
+   * - action, example:
+   *    - action = "ACTION_MEMBER_CREATE" | "ACTION_ISSUE_CREATE"
+   * - create_time, example:
+   *    - create_time <= "2022-01-01T12:00:00.000Z"
+   *    - create_time >= "2022-01-01T12:00:00.000Z"
+   * For example:
+   * List the logs of type 'ACTION_ISSUE_COMMENT_CREATE' in issue/123: 'action="ACTION_ISSUE_COMMENT_CREATE", resource="issue/123"'
+   */
+  filter: string;
+  /**
+   * The order by of the log.
+   * Only support order by create_time.
+   * For example:
+   *  - order_by = "create_time asc"
+   *  - order_by = "create_time desc"
+   */
+  orderBy: string;
   /** The export format. */
   format: ExportFormat;
 }
@@ -589,11 +618,17 @@ export const GetLogRequest = {
 };
 
 function createBaseExportLogsRequest(): ExportLogsRequest {
-  return { format: 0 };
+  return { filter: "", orderBy: "", format: 0 };
 }
 
 export const ExportLogsRequest = {
   encode(message: ExportLogsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.filter !== "") {
+      writer.uint32(10).string(message.filter);
+    }
+    if (message.orderBy !== "") {
+      writer.uint32(18).string(message.orderBy);
+    }
     if (message.format !== 0) {
       writer.uint32(40).int32(message.format);
     }
@@ -607,6 +642,20 @@ export const ExportLogsRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.orderBy = reader.string();
+          continue;
         case 5:
           if (tag !== 40) {
             break;
@@ -624,11 +673,17 @@ export const ExportLogsRequest = {
   },
 
   fromJSON(object: any): ExportLogsRequest {
-    return { format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0 };
+    return {
+      filter: isSet(object.filter) ? String(object.filter) : "",
+      orderBy: isSet(object.orderBy) ? String(object.orderBy) : "",
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+    };
   },
 
   toJSON(message: ExportLogsRequest): unknown {
     const obj: any = {};
+    message.filter !== undefined && (obj.filter = message.filter);
+    message.orderBy !== undefined && (obj.orderBy = message.orderBy);
     message.format !== undefined && (obj.format = exportFormatToJSON(message.format));
     return obj;
   },
@@ -639,6 +694,8 @@ export const ExportLogsRequest = {
 
   fromPartial(object: DeepPartial<ExportLogsRequest>): ExportLogsRequest {
     const message = createBaseExportLogsRequest();
+    message.filter = object.filter ?? "";
+    message.orderBy = object.orderBy ?? "";
     message.format = object.format ?? 0;
     return message;
   },
