@@ -292,6 +292,52 @@ func (s *LoggingService) GetLog(ctx context.Context, request *v1pb.GetLogRequest
 	return logEntity, nil
 }
 
+// ExportLogs exports logs.
+func (s *LoggingService) ExportLogs(ctx context.Context, request *v1pb.ExportLogsRequest) (*v1pb.ExportLogsResponse, error) {
+	activities, err := s.store.ListActivityV2(ctx, &store.FindActivityMessage{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list activity: %v", err.Error())
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames: []string{"time", "level", "action", "actor", "resource", "comment", "payload"},
+	}
+	for _, activity := range activities {
+		logEntity, err := convertToLogEntity(ctx, s.store, activity)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert log entity, error: %v", err)
+		}
+		result.Rows = append(result.Rows, &v1pb.QueryRow{Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: logEntity.CreateTime.AsTime().Format(time.RFC3339)}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: logEntity.Level.String()}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: logEntity.Action.String()}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: logEntity.Creator}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: logEntity.Resource}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: logEntity.Comment}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: logEntity.Payload}},
+		}})
+	}
+
+	var content []byte
+	switch request.Format {
+	case v1pb.ExportFormat_CSV:
+		if content, err = exportCSV(result); err != nil {
+			return nil, err
+		}
+	case v1pb.ExportFormat_JSON:
+		if content, err = exportJSON(result); err != nil {
+			return nil, err
+		}
+	case v1pb.ExportFormat_XLSX:
+		if content, err = exportXLSX(result); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
+	}
+
+	return &v1pb.ExportLogsResponse{Content: content}, nil
+}
+
 func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.ActivityMessage) (*v1pb.LogEntity, error) {
 	resource := ""
 	switch activity.Type {
