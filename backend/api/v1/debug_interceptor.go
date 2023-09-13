@@ -34,9 +34,7 @@ func NewDebugInterceptor(errorRecordRing *api.ErrorRecordRing) *DebugInterceptor
 func (in *DebugInterceptor) DebugInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	startTime := time.Now()
 	resp, err := handler(ctx, request)
-	if err != nil {
-		in.debugInterceptorDo(ctx, request, serverInfo.FullMethod, err, startTime)
-	}
+	in.debugInterceptorDo(ctx, request, serverInfo.FullMethod, err, startTime)
 
 	return resp, err
 }
@@ -46,9 +44,7 @@ func (in *DebugInterceptor) DebugStreamInterceptor(request any, ss grpc.ServerSt
 	startTime := time.Now()
 	err := handler(request, ss)
 	ctx := ss.Context()
-	if err != nil {
-		in.debugInterceptorDo(ctx, request, serverInfo.FullMethod, err, startTime)
-	}
+	in.debugInterceptorDo(ctx, request, serverInfo.FullMethod, err, startTime)
 
 	return err
 }
@@ -71,7 +67,7 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any,
 		logLevel = slog.LevelError
 		logMsg = "unknown error"
 	}
-	slog.Log(ctx, logLevel, logMsg, fullMethod, "request", request, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
+	slog.Log(ctx, logLevel, logMsg, "method", fullMethod, "request", request, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
 	if st.Code() == codes.Internal && slog.Default().Enabled(ctx, slog.LevelDebug) {
 		var role api.Role
 		if r, ok := ctx.Value(common.RoleContextKey).(api.Role); ok {
