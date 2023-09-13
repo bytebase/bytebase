@@ -269,8 +269,6 @@ const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
 const getAccessUsers = (
   exception: MaskingExceptionPolicy_MaskingException
 ): AccessUser => {
-  console.log("exception");
-  console.log(exception);
   let expirationTimestamp: number | undefined;
   const expression = exception.condition?.expression ?? "";
   const matches = expirationTimeRegex.exec(expression);
@@ -319,8 +317,6 @@ const updateAccessUserList = (policy: Policy | undefined) => {
   // - 2 cannot merge: user1, action:export, level:FULL, expires at 2023-09-04
   // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
   const userMap = new Map<string, AccessUser>();
-  console.log("policy.maskingExceptionPolicy.maskingExceptions");
-  console.log(policy.maskingExceptionPolicy.maskingExceptions);
   for (const exception of policy.maskingExceptionPolicy.maskingExceptions) {
     if (!isCurrentColumnException(exception, props.column)) {
       continue;
