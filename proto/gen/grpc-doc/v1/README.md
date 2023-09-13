@@ -16,6 +16,7 @@
   
 - [v1/common.proto](#v1_common-proto)
     - [Engine](#bytebase-v1-Engine)
+    - [ExportFormat](#bytebase-v1-ExportFormat)
     - [MaskingLevel](#bytebase-v1-MaskingLevel)
     - [State](#bytebase-v1-State)
   
@@ -264,6 +265,8 @@
     - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
   
 - [v1/logging_service.proto](#v1_logging_service-proto)
+    - [ExportLogsRequest](#bytebase-v1-ExportLogsRequest)
+    - [ExportLogsResponse](#bytebase-v1-ExportLogsResponse)
     - [GetLogRequest](#bytebase-v1-GetLogRequest)
     - [ListLogsRequest](#bytebase-v1-ListLogsRequest)
     - [ListLogsResponse](#bytebase-v1-ListLogsResponse)
@@ -602,7 +605,6 @@
     - [RowValue](#bytebase-v1-RowValue)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
-    - [ExportRequest.Format](#bytebase-v1-ExportRequest-Format)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -792,6 +794,21 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | OCEANBASE | 14 |  |
 | DM | 15 |  |
 | RISINGWAVE | 16 |  |
+
+
+
+<a name="bytebase-v1-ExportFormat"></a>
+
+### ExportFormat
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FORMAT_UNSPECIFIED | 0 |  |
+| CSV | 1 |  |
+| JSON | 2 |  |
+| SQL | 3 |  |
+| XLSX | 4 |  |
 
 
 
@@ -4500,6 +4517,36 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 
 
+<a name="bytebase-v1-ExportLogsRequest"></a>
+
+### ExportLogsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportLogsResponse"></a>
+
+### ExportLogsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetLogRequest"></a>
 
 ### GetLogRequest
@@ -4642,6 +4689,7 @@ ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
 | ----------- | ------------ | ------------- | ------------|
 | ListLogs | [ListLogsRequest](#bytebase-v1-ListLogsRequest) | [ListLogsResponse](#bytebase-v1-ListLogsResponse) |  |
 | GetLog | [GetLogRequest](#bytebase-v1-GetLogRequest) | [LogEntity](#bytebase-v1-LogEntity) |  |
+| ExportLogs | [ExportLogsRequest](#bytebase-v1-ExportLogsRequest) | [ExportLogsResponse](#bytebase-v1-ExportLogsResponse) |  |
 
  
 
@@ -9414,7 +9462,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
-| format | [ExportRequest.Format](#bytebase-v1-ExportRequest-Format) |  | The export format. |
+| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
 | admin | [bool](#bool) |  | The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode. The exported data is not masked. |
 
 
@@ -9581,21 +9629,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | SUCCESS | 1 |  |
 | WARNING | 2 |  |
 | ERROR | 3 |  |
-
-
-
-<a name="bytebase-v1-ExportRequest-Format"></a>
-
-### ExportRequest.Format
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| FORMAT_UNSPECIFIED | 0 |  |
-| CSV | 1 |  |
-| JSON | 2 |  |
-| SQL | 3 |  |
-| XLSX | 4 |  |
 
 
  

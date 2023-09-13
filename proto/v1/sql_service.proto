@@ -79,13 +79,6 @@ message AdminExecuteResponse {
 }
 
 message ExportRequest {
-  enum Format {
-    FORMAT_UNSPECIFIED = 0;
-    CSV = 1;
-    JSON = 2;
-    SQL = 3;
-    XLSX = 4;
-  }
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
@@ -102,7 +95,7 @@ message ExportRequest {
   int32 limit = 4;
 
   // The export format.
-  Format format = 5;
+  ExportFormat format = 5;
 
   // The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
   // The exported data is not masked.

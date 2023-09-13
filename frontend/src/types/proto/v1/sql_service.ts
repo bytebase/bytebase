@@ -4,7 +4,7 @@ import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
-import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { Engine, engineFromJSON, engineToJSON, ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
 import { DatabaseMetadata } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -61,63 +61,12 @@ export interface ExportRequest {
   /** The maximum number of rows to return. */
   limit: number;
   /** The export format. */
-  format: ExportRequest_Format;
+  format: ExportFormat;
   /**
    * The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
    * The exported data is not masked.
    */
   admin: boolean;
-}
-
-export enum ExportRequest_Format {
-  FORMAT_UNSPECIFIED = 0,
-  CSV = 1,
-  JSON = 2,
-  SQL = 3,
-  XLSX = 4,
-  UNRECOGNIZED = -1,
-}
-
-export function exportRequest_FormatFromJSON(object: any): ExportRequest_Format {
-  switch (object) {
-    case 0:
-    case "FORMAT_UNSPECIFIED":
-      return ExportRequest_Format.FORMAT_UNSPECIFIED;
-    case 1:
-    case "CSV":
-      return ExportRequest_Format.CSV;
-    case 2:
-    case "JSON":
-      return ExportRequest_Format.JSON;
-    case 3:
-    case "SQL":
-      return ExportRequest_Format.SQL;
-    case 4:
-    case "XLSX":
-      return ExportRequest_Format.XLSX;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ExportRequest_Format.UNRECOGNIZED;
-  }
-}
-
-export function exportRequest_FormatToJSON(object: ExportRequest_Format): string {
-  switch (object) {
-    case ExportRequest_Format.FORMAT_UNSPECIFIED:
-      return "FORMAT_UNSPECIFIED";
-    case ExportRequest_Format.CSV:
-      return "CSV";
-    case ExportRequest_Format.JSON:
-      return "JSON";
-    case ExportRequest_Format.SQL:
-      return "SQL";
-    case ExportRequest_Format.XLSX:
-      return "XLSX";
-    case ExportRequest_Format.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
 }
 
 export interface ExportResponse {
@@ -685,7 +634,7 @@ export const ExportRequest = {
       connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
       limit: isSet(object.limit) ? Number(object.limit) : 0,
-      format: isSet(object.format) ? exportRequest_FormatFromJSON(object.format) : 0,
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
       admin: isSet(object.admin) ? Boolean(object.admin) : false,
     };
   },
@@ -696,7 +645,7 @@ export const ExportRequest = {
     message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
     message.statement !== undefined && (obj.statement = message.statement);
     message.limit !== undefined && (obj.limit = Math.round(message.limit));
-    message.format !== undefined && (obj.format = exportRequest_FormatToJSON(message.format));
+    message.format !== undefined && (obj.format = exportFormatToJSON(message.format));
     message.admin !== undefined && (obj.admin = message.admin);
     return obj;
   },
