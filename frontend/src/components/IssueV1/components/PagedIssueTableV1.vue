@@ -27,7 +27,12 @@
 <script lang="ts" setup>
 import { useSessionStorage } from "@vueuse/core";
 import { computed, PropType, reactive, watch } from "vue";
-import { useIsLoggedIn, useIssueV1Store, useRefreshIssueList } from "@/store";
+import {
+  ListIssueParams,
+  useIsLoggedIn,
+  useIssueV1Store,
+  useRefreshIssueList,
+} from "@/store";
 import { IssueFilter, ComposedIssue } from "@/types";
 
 type LocalState = {
@@ -55,6 +60,10 @@ const MAX_PAGE_SIZE = 1000;
 const SESSION_LIFE = 1 * 60 * 1000; // 1 minute
 
 const props = defineProps({
+  method: {
+    type: String as PropType<"SEARCH" | "LIST">,
+    default: "SEARCH",
+  },
   // A unique key to identify the session state.
   sessionKey: {
     type: String,
@@ -111,12 +120,17 @@ const fetchData = (refresh = false) => {
     : // Always load one page if NOT the first fetch
       limit.value;
 
-  issueStore
-    .searchIssues({
-      find: props.issueFilter,
-      pageSize: props.pageSize,
-      pageToken: state.paginationToken,
-    })
+  const params: ListIssueParams = {
+    find: props.issueFilter,
+    pageSize: props.pageSize,
+    pageToken: state.paginationToken,
+  };
+  const request =
+    props.method === "SEARCH"
+      ? issueStore.searchIssues(params)
+      : issueStore.listIssues(params);
+
+  request
     .then(({ nextPageToken, issues }) => {
       if (refresh) {
         state.issueList = issues;
