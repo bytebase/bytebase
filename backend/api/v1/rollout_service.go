@@ -170,6 +170,9 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
 	}
 
+	// Tickle plan check scheduler.
+	s.stateCfg.PlanCheckTickleChan <- 0
+
 	return convertToPlan(plan), nil
 }
 
@@ -307,6 +310,10 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
 	}
+
+	// Tickle task run scheduler.
+	s.stateCfg.TaskRunTickleChan <- 0
+
 	return rolloutV1, nil
 }
 
@@ -354,6 +361,9 @@ func (s *RolloutService) RunPlanChecks(ctx context.Context, request *v1pb.RunPla
 	if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
 	}
+
+	// Tickle plan check scheduler.
+	s.stateCfg.PlanCheckTickleChan <- 0
 
 	return &v1pb.RunPlanChecksResponse{}, nil
 }
@@ -519,6 +529,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, tasksToRun, issue, request.Reason, user.ID); err != nil {
 		slog.Error("failed to batch create activities for running tasks", log.BBError(err))
 	}
+
+	// Tickle task run scheduler.
+	s.stateCfg.TaskRunTickleChan <- 0
 
 	return &v1pb.BatchRunTasksResponse{}, nil
 }
