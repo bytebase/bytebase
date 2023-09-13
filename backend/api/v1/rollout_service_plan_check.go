@@ -38,6 +38,9 @@ func getPlanCheckRunsFromSpec(ctx context.Context, s *store.Store, plan *store.P
 		if _, _, err := common.GetProjectIDDatabaseGroupID(config.ChangeDatabaseConfig.Target); err == nil {
 			return getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx, s, plan, config.ChangeDatabaseConfig)
 		}
+		if _, _, err := common.GetProjectIDDeploymentConfigID(config.ChangeDatabaseConfig.Target); err == nil {
+			return getPlanCheckRunsFromChangeDatabaseConfigDeploymentConfigTarget(ctx, s, plan, config.ChangeDatabaseConfig)
+		}
 
 	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
 		var planCheckRuns []*store.PlanCheckRunMessage
@@ -222,6 +225,73 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context,
 	}
 
 	return getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database, nil)
+}
+
+func getPlanCheckRunsFromChangeDatabaseConfigDeploymentConfigTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
+	switch config.Type {
+	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
+	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+	default:
+		return nil, nil
+	}
+
+	projectID, _, err := common.GetProjectIDDeploymentConfigID(config.Target)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project and deployment id from target %q", config.Target)
+	}
+	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project %q", projectID)
+	}
+	if project == nil {
+		return nil, errors.Errorf("project %q not found", projectID)
+	}
+
+	_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(config.Sheet)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
+	}
+	sheetUID, err := strconv.Atoi(sheetUIDStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert sheet id from %q", sheetUIDStr)
+	}
+
+	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get deployment config")
+	}
+	apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert deployment config to api deployment config")
+	}
+	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
+	}
+	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list databases")
+	}
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, allDatabases)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
+	}
+
+	var planCheckRuns []*store.PlanCheckRunMessage
+	for _, databases := range matrix {
+		for _, database := range databases {
+			runs, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database, nil)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get plan check runs from spec with change database config for database %q", database.DatabaseName)
+			}
+			planCheckRuns = append(planCheckRuns, runs...)
+		}
+	}
+
+	return planCheckRuns, nil
 }
 
 func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig, sheetUID int, database *store.DatabaseMessage, databaseGroupUID *int64) ([]*store.PlanCheckRunMessage, error) {
