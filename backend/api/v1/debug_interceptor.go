@@ -65,6 +65,7 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any,
 		logLevel = slog.LevelError
 		logMsg = "server error intercepted"
 	default:
+		logLevel = slog.LevelError
 		logMsg = "unknown error"
 	}
 	slog.Log(ctx, logLevel, logMsg, fullMethod, "request", request, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
