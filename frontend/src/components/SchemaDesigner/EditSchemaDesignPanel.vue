@@ -206,6 +206,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
+import SchemaDesigner from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -225,8 +226,7 @@ import {
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
   validateBranchName,
-} from "./common/util";
-import SchemaDesigner from "./index.vue";
+} from "./utils";
 
 interface LocalState {
   schemaDesignTitle: string;

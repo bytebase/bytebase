@@ -81,8 +81,8 @@ import { Engine } from "@/types/proto/v1/common";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "./Modals/SchemaNameModal.vue";
 import TableNameModal from "./Modals/TableNameModal.vue";
-import { useSchemaDesignerContext, SchemaDesignerTabType } from "./common";
-import { isTableChanged } from "./utils/table";
+import { useSchemaEditorContext, SchemaEditorTabType } from "./common";
+import { isTableChanged } from "./utils";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -132,7 +132,7 @@ const {
   getTable,
   getCurrentTab,
   dropTable,
-} = useSchemaDesignerContext();
+} = useSchemaEditorContext();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
@@ -284,7 +284,7 @@ watch(
       return;
     }
 
-    if (currentTab.type === SchemaDesignerTabType.TabForTable) {
+    if (currentTab.type === SchemaEditorTabType.TabForTable) {
       const schemaTreeNodeKey = `s-${currentTab.schemaId}`;
       if (!expandedKeysRef.value.includes(schemaTreeNodeKey)) {
         expandedKeysRef.value.push(schemaTreeNodeKey);
@@ -520,7 +520,7 @@ const openTabForTable = (treeNode: TreeNode, tableId: string) => {
   if (treeNode.type === "table") {
     addTab({
       id: generateUniqueTabId(),
-      type: SchemaDesignerTabType.TabForTable,
+      type: SchemaEditorTabType.TabForTable,
       schemaId: treeNode.schemaId,
       tableId: tableId,
     });

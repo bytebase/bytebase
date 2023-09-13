@@ -4,7 +4,7 @@
       <TabsContainer />
       <div :key="currentTab.id" class="w-full h-full relative overflow-y-auto">
         <TableEditor
-          v-if="currentTab.type === SchemaDesignerTabType.TabForTable"
+          v-if="currentTab.type === SchemaEditorTabType.TabForTable"
         />
       </div>
     </template>
@@ -16,8 +16,8 @@
 import { computed } from "vue";
 import TableEditor from "./Panels/TableEditor.vue";
 import TabsContainer from "./TabsContainer.vue";
-import { SchemaDesignerTabType, useSchemaDesignerContext } from "./common";
+import { SchemaEditorTabType, useSchemaEditorContext } from "./common";
 
-const { getCurrentTab } = useSchemaDesignerContext();
+const { getCurrentTab } = useSchemaEditorContext();
 const currentTab = computed(() => getCurrentTab());
 </script>
