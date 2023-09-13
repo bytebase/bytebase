@@ -1,22 +1,18 @@
 import { head, isUndefined } from "lodash-es";
 import { inject, InjectionKey, provide } from "vue";
-import {
-  SchemaDesignerContext,
-  SchemaDesignerTabType,
-  TabContext,
-} from "./type";
+import { SchemaEditorContext, SchemaEditorTabType, TabContext } from "./type";
 
 export const KEY = Symbol(
-  "bb.schema-designer"
-) as InjectionKey<SchemaDesignerContext>;
+  "bb.schema-editor"
+) as InjectionKey<SchemaEditorContext>;
 
-export const useSchemaDesignerContext = () => {
+export const useSchemaEditorContext = () => {
   return inject(KEY)!;
 };
 
-export const provideSchemaDesignerContext = (
+export const provideSchemaEditorContext = (
   context: Pick<
-    SchemaDesignerContext,
+    SchemaEditorContext,
     | "readonly"
     | "engine"
     | "baselineMetadata"
@@ -47,7 +43,7 @@ export const provideSchemaDesignerContext = (
           }
 
           if (
-            item.type === SchemaDesignerTabType.TabForTable &&
+            item.type === SchemaEditorTabType.TabForTable &&
             item.schemaId === tab.schemaId &&
             item.tableId === tab.tableId
           ) {
@@ -89,7 +85,7 @@ export const provideSchemaDesignerContext = (
       const tabList = Array.from(tabState.value.tabMap.values());
       for (const tab of tabList) {
         if (
-          tab.type === SchemaDesignerTabType.TabForTable &&
+          tab.type === SchemaEditorTabType.TabForTable &&
           tab.schemaId === schemaId &&
           tab.tableId === tableId
         ) {

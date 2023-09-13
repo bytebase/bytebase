@@ -85,6 +85,7 @@ import { cloneDeep, uniqueId } from "lodash-es";
 import { NButton, NDrawer, NDrawerContent, NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import SchemaDesigner from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -108,8 +109,7 @@ import {
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
-import { mergeSchemaEditToMetadata, validateBranchName } from "./common/util";
-import SchemaDesigner from "./index.vue";
+import { mergeSchemaEditToMetadata, validateBranchName } from "./utils";
 
 interface BaselineSchema {
   // The uid of database.
