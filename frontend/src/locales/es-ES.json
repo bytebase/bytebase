@@ -629,6 +629,7 @@
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
       "global-rules": {
+        "condition-order": "Orden de condición",
         "add-rule": "Agregar regla",
         "re-order": "Reordenar",
         "delete-rule-tip": "¿Eliminar esta regla?"
