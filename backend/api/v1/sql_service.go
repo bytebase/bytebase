@@ -372,11 +372,11 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 	var content []byte
 	switch request.Format {
 	case v1pb.ExportFormat_CSV:
-		if content, err = s.exportCSV(result[0]); err != nil {
+		if content, err = exportCSV(result[0]); err != nil {
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_JSON:
-		if content, err = s.exportJSON(result[0]); err != nil {
+		if content, err = exportJSON(result[0]); err != nil {
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_SQL:
@@ -392,7 +392,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_XLSX:
-		if content, err = s.exportXLSX(result[0]); err != nil {
+		if content, err = exportXLSX(result[0]); err != nil {
 			return nil, durationNs, err
 		}
 	default:
@@ -401,7 +401,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 	return content, durationNs, nil
 }
 
-func (*SQLService) exportCSV(result *v1pb.QueryResult) ([]byte, error) {
+func exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 	var buf bytes.Buffer
 	if _, err := buf.WriteString(strings.Join(result.ColumnNames, ",")); err != nil {
 		return nil, err
@@ -639,7 +639,7 @@ func convertValueValueToBytes(value *structpb.Value) []byte {
 	}
 }
 
-func (*SQLService) exportJSON(result *v1pb.QueryResult) ([]byte, error) {
+func exportJSON(result *v1pb.QueryResult) ([]byte, error) {
 	var results []map[string]any
 	for _, row := range result.Rows {
 		m := make(map[string]any)
@@ -687,7 +687,7 @@ const (
 	excelMaxColumn = 18278
 )
 
-func (*SQLService) exportXLSX(result *v1pb.QueryResult) ([]byte, error) {
+func exportXLSX(result *v1pb.QueryResult) ([]byte, error) {
 	f := excelize.NewFile()
 	defer f.Close()
 	index, err := f.NewSheet("Sheet1")
