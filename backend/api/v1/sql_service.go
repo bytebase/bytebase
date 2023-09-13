@@ -1607,11 +1607,11 @@ func (m *maskingLevelEvaluator) getDataClassificationConfig(classificationID str
 //
 // - column: the column metadata.
 //
+// - databaseProjectDataClassificationID: the data classification id of the project the database belongs to.
+//
 // - maskingPolicyMap: the map of maskingPolicy for the database column belongs to.
 //
 // - filteredMaskingExceptions: the exceptions should apply for current principal.
-//
-// - dataClassificationConfig: the data classification config of the project that the database belongs to. It can be nil if the project do not set any data classification config.
 func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName string, column *storepb.ColumnMetadata, databaseProjectDataClassificationID string, maskingPolicyMap map[maskingPolicyKey]*storepb.MaskData, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException) (storepb.MaskingLevel, error) {
 	finalLevel := storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
 
