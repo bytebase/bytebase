@@ -168,7 +168,7 @@ func TestSQLExport(t *testing.T) {
 			export, err := ctl.sqlServiceClient.Export(ctx, &v1pb.ExportRequest{
 				Admin:              true,
 				ConnectionDatabase: databaseNameQuery,
-				Format:             v1pb.ExportRequest_SQL,
+				Format:             v1pb.ExportFormat_SQL,
 				Limit:              1,
 				Name:               instance.Name,
 				Statement:          tt.export,
