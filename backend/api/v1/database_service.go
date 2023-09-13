@@ -434,7 +434,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		dbSchema = newDBSchema
 	}
-	v1pbMetadata := s.convertDatabaseMetadata(dbSchema.Metadata)
+	v1pbMetadata := convertDatabaseMetadata(dbSchema.Metadata)
 	// backfill the effective masking level.
 	dataClassificationSetting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
@@ -1729,7 +1729,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	}
 }
 
-func (s *DatabaseService) convertDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *v1pb.DatabaseMetadata {
+func convertDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *v1pb.DatabaseMetadata {
 	m := &v1pb.DatabaseMetadata{
 		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,
