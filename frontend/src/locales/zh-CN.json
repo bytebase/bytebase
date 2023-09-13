@@ -638,7 +638,8 @@
           "semantic-type": "语义类型",
           "description": "描述",
           "full-masking-algorithm": "全脱敏算法",
-          "partial-masking-algorithm": "半脱敏算法"
+          "partial-masking-algorithm": "半脱敏算法",
+          "delete": "删除这个类型？"
         }
       },
       "column-detail": {

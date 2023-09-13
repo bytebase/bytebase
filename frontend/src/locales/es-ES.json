@@ -639,7 +639,8 @@
           "semantic-type": "Tipo semántico",
           "description": "Descripción",
           "full-masking-algorithm": "Algoritmo de enmascaramiento completo",
-          "partial-masking-algorithm": "Algoritmo de enmascaramiento parcial"
+          "partial-masking-algorithm": "Algoritmo de enmascaramiento parcial",
+          "delete": "¿Eliminar este tipo?"
         }
       },
       "column-detail": {
