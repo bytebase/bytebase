@@ -734,7 +734,6 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 }
 
 // UpdatePlan updates a plan.
-// Currently, only Spec.Config.Sheet can be updated.
 func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRequest) (*v1pb.Plan, error) {
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
@@ -780,7 +779,8 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		updatedByID[spec.Id] = spec
 	}
 
-	var doUpdateSheet bool
+	tasksMap := map[int]*store.TaskMessage{}
+	var taskPatchList []*api.TaskPatch
 	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if oldPlan.PipelineUID != nil {
 		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
@@ -793,6 +793,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				ID:        task.ID,
 				UpdaterID: updaterID,
 			}
+			tasksMap[task.ID] = task
 
 			var taskSpecID struct {
 				SpecID string `json:"specId"`
@@ -871,7 +872,6 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 						return status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
 					}
 					doUpdate = true
-					doUpdateSheet = true
 					// TODO(p0ny): update schema version
 					taskPatch.SheetID = &sheet.UID
 				}
@@ -884,26 +884,48 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				continue
 			}
 
-			if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
-			}
+			taskPatchList = append(taskPatchList, taskPatch)
+		}
+	}
 
-			taskPatched, err := s.store.GetTaskV2ByID(ctx, task.ID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get updated task %q: %v", task.Name, err)
+	for _, taskPatch := range taskPatchList {
+		if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTs != nil {
+			task := tasksMap[taskPatch.ID]
+			if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning {
+				return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %q is %s", task.Name, task.LatestTaskRunStatus)
 			}
+		}
+	}
 
-			// enqueue or cancel after it's written to the database.
-			if taskPatch.RollbackEnabled != nil {
-				// Enqueue the rollback sql generation if the task done.
-				if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus == api.TaskRunDone {
-					s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
-				} else if !*taskPatch.RollbackEnabled {
-					// Cancel running rollback sql generation.
-					if v, ok := s.stateCfg.RollbackCancel.Load(taskPatched.ID); ok {
-						if cancel, ok := v.(context.CancelFunc); ok {
-							cancel()
-						}
+	var doUpdateSheet bool
+	for _, taskPatch := range taskPatchList {
+		if taskPatch.SheetID != nil {
+			doUpdateSheet = true
+			break
+		}
+	}
+
+	for _, taskPatch := range taskPatchList {
+		task := tasksMap[taskPatch.ID]
+		if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
+		}
+
+		taskPatched, err := s.store.GetTaskV2ByID(ctx, task.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get updated task %q: %v", task.Name, err)
+		}
+
+		// enqueue or cancel after it's written to the database.
+		if taskPatch.RollbackEnabled != nil {
+			// Enqueue the rollback sql generation if the task done.
+			if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus == api.TaskRunDone {
+				s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
+			} else if !*taskPatch.RollbackEnabled {
+				// Cancel running rollback sql generation.
+				if v, ok := s.stateCfg.RollbackCancel.Load(taskPatched.ID); ok {
+					if cancel, ok := v.(context.CancelFunc); ok {
+						cancel()
 					}
 					// We don't erase the keys for RollbackCancel and RollbackGenerate here because they will eventually be erased by the rollback runner.
 				}

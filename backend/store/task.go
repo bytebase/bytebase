@@ -33,7 +33,8 @@ type TaskMessage struct {
 	TaskRunRawList []*TaskRunMessage
 
 	// Domain specific fields
-	Name              string
+	Name string
+	// Deprecated: use LatestTaskRunStatus instead.
 	Status            api.TaskStatus
 	Type              api.TaskType
 	Payload           string
