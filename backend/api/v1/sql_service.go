@@ -1362,7 +1362,8 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 	// we store the projectResourceID - maskingExceptionPolicy in a map.
 	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
 
-	m := newMaskingLevelEvaluator()
+	m := newEmptyMaskingLevelEvaluator().withMaskingRulePolicy(maskingRulePolicy)
+
 	for _, name := range databaseList {
 		databaseName := name
 		if name == "" {
@@ -1484,7 +1485,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					}
 					for _, column := range table.Columns {
 						slog.Debug("processing sensitive schema info", slog.String("schema", schema.Name), slog.String("table", table.Name))
-						maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column, maskingPolicyMap, maskingRulePolicy, maskingExceptionContainsCurrentPrincipal, dataClassificationConfig)
+						maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal, dataClassificationConfig)
 						if err != nil {
 							return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
 						}
@@ -1521,7 +1522,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				}
 				for _, column := range table.Columns {
 					slog.Debug("processing sensitive schema info", slog.String("database", database.DatabaseName), slog.String("schema", schema.Name), slog.String("table", table.Name), slog.String("column", column.Name))
-					maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column, maskingPolicyMap, maskingRulePolicy, maskingExceptionContainsCurrentPrincipal, dataClassificationConfig)
+					maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal, dataClassificationConfig)
 					if err != nil {
 						return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
 					}
@@ -1557,10 +1558,24 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 }
 
 type maskingLevelEvaluator struct {
+	maskingRules []*storepb.MaskingRulePolicy_MaskingRule
 }
 
-func newMaskingLevelEvaluator() *maskingLevelEvaluator {
+func newEmptyMaskingLevelEvaluator() *maskingLevelEvaluator {
 	return &maskingLevelEvaluator{}
+}
+
+func (m *maskingLevelEvaluator) withMaskingRulePolicy(maskingRulePolicy *storepb.MaskingRulePolicy) *maskingLevelEvaluator {
+	if maskingRulePolicy == nil {
+		return m
+	}
+
+	m.maskingRules = make([]*storepb.MaskingRulePolicy_MaskingRule, 0, len(maskingRulePolicy.Rules))
+	for _, maskingRule := range maskingRulePolicy.Rules {
+		m.maskingRules = append(m.maskingRules, maskingRule)
+	}
+
+	return m
 }
 
 // evaluateMaskingLevelOfColumn evaluates the masking level of the given column.
@@ -1575,12 +1590,10 @@ func newMaskingLevelEvaluator() *maskingLevelEvaluator {
 //
 // - maskingPolicyMap: the map of maskingPolicy for the database column belongs to.
 //
-// - maskingRulePolicy: the workspace level policy of masking rule.
-//
 // - filteredMaskingExceptions: the exceptions should apply for current principal.
 //
 // - dataClassificationConfig: the data classification config of the project that the database belongs to. It can be nil if the project do not set any data classification config.
-func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName string, column *storepb.ColumnMetadata, maskingPolicyMap map[maskingPolicyKey]*storepb.MaskData, maskingRulePolicy *storepb.MaskingRulePolicy, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException, dataClassificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) (storepb.MaskingLevel, error) {
+func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName string, column *storepb.ColumnMetadata, maskingPolicyMap map[maskingPolicyKey]*storepb.MaskData, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException, dataClassificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) (storepb.MaskingLevel, error) {
 	finalLevel := storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
 
 	key := maskingPolicyKey{
@@ -1594,7 +1607,7 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 		// If the column has DEFAULT masking level in maskingPolicy or not set yet,
 		// we will eval the maskingRulePolicy to get the maskingLevel.
 		columnClassificationLevel := getClassificationLevelOfColumn(column.Classification, dataClassificationConfig)
-		for _, maskingRule := range maskingRulePolicy.Rules {
+		for _, maskingRule := range m.maskingRules {
 			maskingRuleAttributes := map[string]any{
 				"environment_id":       databaseMessage.EffectiveEnvironmentID,
 				"project_id":           databaseMessage.ProjectID,
