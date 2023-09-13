@@ -6,29 +6,30 @@
           v-if="!readonly"
           class="w-full flex justify-between items-center space-x-2"
         >
-          <button
-            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+          <NButton
+            size="small"
             :disabled="disableChangeTable"
             @click="handleAddColumn"
           >
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
             {{ $t("schema-editor.actions.add-column") }}
-          </button>
-          <button
-            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+          </NButton>
+          <NButton
+            size="small"
             :disabled="disableChangeTable"
             @click="state.showSchemaTemplateDrawer = true"
           >
             <FeatureBadge feature="bb.feature.schema-template" />
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
             {{ $t("schema-editor.actions.add-from-template") }}
-          </button>
+          </NButton>
         </div>
       </div>
       <div class="flex justify-end items-center">
         <NInput
           v-model:value="searchPattern"
           class="!w-48"
+          size="small"
           :placeholder="$t('schema-editor.search-column')"
         >
           <template #prefix>
@@ -252,7 +253,11 @@
   >
     <DrawerContent :title="$t('schema-template.field-template.self')">
       <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
-        <FieldTemplates :engine="engine" @apply="handleApplyColumnTemplate" />
+        <FieldTemplates
+          :engine="engine"
+          :readonly="true"
+          @apply="handleApplyColumnTemplate"
+        />
       </div>
     </DrawerContent>
   </Drawer>
@@ -298,11 +303,11 @@ import { getDataTypeSuggestionList } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import {
-  SchemaDesignerTabType,
+  SchemaEditorTabType,
   TableTabContext,
-  useSchemaDesignerContext,
+  useSchemaEditorContext,
 } from "../common";
-import { isColumnChanged } from "../utils/column";
+import { isColumnChanged } from "../utils";
 
 interface LocalState {
   isFetchingDDL: boolean;
@@ -315,8 +320,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const { readonly, engine, project, editableSchemas, getCurrentTab, addTab } =
-  useSchemaDesignerContext();
-useSchemaDesignerContext();
+  useSchemaEditorContext();
 const settingStore = useSettingV1Store();
 const currentTab = computed(() => getCurrentTab() as TableTabContext);
 const state = reactive<LocalState>({
@@ -606,7 +610,7 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
 
   addTab({
     id: generateUniqueTabId(),
-    type: SchemaDesignerTabType.TabForTable,
+    type: SchemaEditorTabType.TabForTable,
     schemaId: referencedSchema.id,
     tableId: referencedTable.id,
   });

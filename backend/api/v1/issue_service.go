@@ -577,15 +577,36 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	if request.Issue.GrantRequest.GetUser() == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "expect grant request user")
 	}
-	if request.Issue.GrantRequest.GetCondition().GetExpression() == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "expect grant request condition expression")
-	}
-	e, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create cel environment, error: %v", err)
-	}
-	if _, issues := e.Compile(request.Issue.GrantRequest.GetCondition().GetExpression()); issues != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "found issues in grant request condition expression, issues: %v", issues.String())
+	// Validate CEL expression if it's not empty.
+	if expression := request.Issue.GrantRequest.GetCondition().GetExpression(); expression != "" {
+		e, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create cel environment, error: %v", err)
+		}
+		if _, issues := e.Compile(expression); issues != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "found issues in grant request condition expression, issues: %v", issues.String())
+		}
+
+		factors, err := common.GetQueryExportFactors(expression)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to get query export factors, error: %v", err)
+		}
+		// Validate the statement if it's not empty.
+		if factors.Statement != "" {
+			for _, dbName := range factors.DatabaseNames {
+				instanceID, databaseName, err := common.GetInstanceDatabaseID(dbName)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid database name %q, error: %v", dbName, err)
+				}
+				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+				}
+				if err := validateQueryRequest(instance, databaseName, factors.Statement); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid statement, error: %v", err)
+				}
+			}
+		}
 	}
 
 	issueCreateMessage := &store.IssueMessage{
@@ -726,16 +747,12 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
-
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	payloadStr := string(payloadBytes)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -900,20 +917,15 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 	if !canApprove {
 		return nil, status.Errorf(codes.PermissionDenied, "cannot reject because the user does not have the required permission")
 	}
-
 	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
 		Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
 		PrincipalId: int32(principalID),
 	})
 
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	payloadStr := string(payloadBytes)
-
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -1007,16 +1019,12 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
-
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	payloadStr := string(payloadBytes)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -1096,16 +1104,13 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			if !payload.Approval.ApprovalFindingDone {
 				return nil, status.Errorf(codes.FailedPrecondition, "approval template finding is not done")
 			}
-			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
-				Approval: &storepb.IssuePayloadApproval{
-					ApprovalFindingDone: false,
-				},
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
+
+			if patch.PayloadUpsert == nil {
+				patch.PayloadUpsert = &storepb.IssuePayload{}
 			}
-			payloadStr := string(payloadBytes)
-			patch.Payload = &payloadStr
+			patch.PayloadUpsert.Approval = &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			}
 
 			if issue.PlanUID != nil {
 				plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})

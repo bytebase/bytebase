@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -171,6 +170,9 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
 	}
 
+	// Tickle plan check scheduler.
+	s.stateCfg.PlanCheckTickleChan <- 0
+
 	return convertToPlan(plan), nil
 }
 
@@ -308,6 +310,10 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
 	}
+
+	// Tickle task run scheduler.
+	s.stateCfg.TaskRunTickleChan <- 0
+
 	return rolloutV1, nil
 }
 
@@ -355,6 +361,9 @@ func (s *RolloutService) RunPlanChecks(ctx context.Context, request *v1pb.RunPla
 	if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
 	}
+
+	// Tickle plan check scheduler.
+	s.stateCfg.PlanCheckTickleChan <- 0
 
 	return &v1pb.RunPlanChecksResponse{}, nil
 }
@@ -520,6 +529,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, tasksToRun, issue, request.Reason, user.ID); err != nil {
 		slog.Error("failed to batch create activities for running tasks", log.BBError(err))
 	}
+
+	// Tickle task run scheduler.
+	s.stateCfg.TaskRunTickleChan <- 0
 
 	return &v1pb.BatchRunTasksResponse{}, nil
 }
@@ -722,7 +734,6 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 }
 
 // UpdatePlan updates a plan.
-// Currently, only Spec.Config.Sheet can be updated.
 func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRequest) (*v1pb.Plan, error) {
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
@@ -768,7 +779,8 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		updatedByID[spec.Id] = spec
 	}
 
-	var doUpdateSheet bool
+	tasksMap := map[int]*store.TaskMessage{}
+	var taskPatchList []*api.TaskPatch
 	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if oldPlan.PipelineUID != nil {
 		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
@@ -781,6 +793,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				ID:        task.ID,
 				UpdaterID: updaterID,
 			}
+			tasksMap[task.ID] = task
 
 			var taskSpecID struct {
 				SpecID string `json:"specId"`
@@ -859,7 +872,6 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 						return status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
 					}
 					doUpdate = true
-					doUpdateSheet = true
 					// TODO(p0ny): update schema version
 					taskPatch.SheetID = &sheet.UID
 				}
@@ -872,26 +884,48 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				continue
 			}
 
-			if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
-			}
+			taskPatchList = append(taskPatchList, taskPatch)
+		}
+	}
 
-			taskPatched, err := s.store.GetTaskV2ByID(ctx, task.ID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get updated task %q: %v", task.Name, err)
+	for _, taskPatch := range taskPatchList {
+		if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTs != nil {
+			task := tasksMap[taskPatch.ID]
+			if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning {
+				return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %q is %s", task.Name, task.LatestTaskRunStatus)
 			}
+		}
+	}
 
-			// enqueue or cancel after it's written to the database.
-			if taskPatch.RollbackEnabled != nil {
-				// Enqueue the rollback sql generation if the task done.
-				if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus == api.TaskRunDone {
-					s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
-				} else if !*taskPatch.RollbackEnabled {
-					// Cancel running rollback sql generation.
-					if v, ok := s.stateCfg.RollbackCancel.Load(taskPatched.ID); ok {
-						if cancel, ok := v.(context.CancelFunc); ok {
-							cancel()
-						}
+	var doUpdateSheet bool
+	for _, taskPatch := range taskPatchList {
+		if taskPatch.SheetID != nil {
+			doUpdateSheet = true
+			break
+		}
+	}
+
+	for _, taskPatch := range taskPatchList {
+		task := tasksMap[taskPatch.ID]
+		if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
+		}
+
+		taskPatched, err := s.store.GetTaskV2ByID(ctx, task.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get updated task %q: %v", task.Name, err)
+		}
+
+		// enqueue or cancel after it's written to the database.
+		if taskPatch.RollbackEnabled != nil {
+			// Enqueue the rollback sql generation if the task done.
+			if *taskPatch.RollbackEnabled && taskPatched.LatestTaskRunStatus == api.TaskRunDone {
+				s.stateCfg.RollbackGenerate.Store(taskPatched.ID, taskPatched)
+			} else if !*taskPatch.RollbackEnabled {
+				// Cancel running rollback sql generation.
+				if v, ok := s.stateCfg.RollbackCancel.Load(taskPatched.ID); ok {
+					if cancel, ok := v.(context.CancelFunc); ok {
+						cancel()
 					}
 					// We don't erase the keys for RollbackCancel and RollbackGenerate here because they will eventually be erased by the rollback runner.
 				}
@@ -929,20 +963,12 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 
 	if issue != nil && doUpdateSheet {
 		if err := func() error {
-			payload := &storepb.IssuePayload{}
-			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-				return errors.Errorf("failed to unmarshal issue payload: %v", err)
-			}
-			payload.Approval = &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-			}
-			payloadBytes, err := protojson.Marshal(payload)
-			if err != nil {
-				return errors.Errorf("failed to marshal issue payload: %v", err)
-			}
-			payloadStr := string(payloadBytes)
 			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-				Payload: &payloadStr,
+				PayloadUpsert: &storepb.IssuePayload{
+					Approval: &storepb.IssuePayloadApproval{
+						ApprovalFindingDone: false,
+					},
+				},
 			}, api.SystemBotID)
 			if err != nil {
 				return errors.Errorf("failed to update issue: %v", err)

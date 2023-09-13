@@ -1,6 +1,7 @@
 <template>
   <!-- it is recommended by naive-ui that we leave the local to null when the language is en -->
   <NConfigProvider
+    :key="key"
     :locale="generalLang"
     :date-locale="dateLang"
     :theme-overrides="themeOverrides"
@@ -35,6 +36,7 @@ import HelpDrawer from "@/components/HelpDrawer";
 import Watermark from "@/components/misc/Watermark.vue";
 import { RouteMapList } from "@/types";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
+import { provideAppRootContext } from "./AppRootContext";
 import BBModalStack from "./bbkit/BBModalStack.vue";
 import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
@@ -63,6 +65,7 @@ interface LocalState {
   RouteMapList: RouteMapList | null;
 }
 
+const { key } = provideAppRootContext();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const route = useRoute();

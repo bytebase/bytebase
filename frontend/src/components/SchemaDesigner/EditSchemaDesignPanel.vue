@@ -3,6 +3,7 @@
     class="min-w-[calc(100%-10rem)] max-w-full"
     :show="true"
     :auto-focus="false"
+    :trap-focus="false"
     :close-on-esc="true"
     :native-scrollbar="true"
     resizable
@@ -150,7 +151,8 @@
           ref="schemaDesignerRef"
           :readonly="!state.isEditing"
           :engine="schemaDesign.engine"
-          :schema-design="schemaDesign"
+          :baseline-schema-metadata="schemaDesign.baselineSchemaMetadata"
+          :schema-metadata="schemaDesign.schemaMetadata"
           :project="project"
         />
         <!-- Don't show delete button in view mode. -->
@@ -205,6 +207,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
+import SchemaDesigner from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -224,8 +227,7 @@ import {
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
   validateBranchName,
-} from "./common/util";
-import SchemaDesigner from "./index.vue";
+} from "./utils";
 
 interface LocalState {
   schemaDesignTitle: string;

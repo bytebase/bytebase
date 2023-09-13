@@ -54,6 +54,11 @@ type State struct {
 	// TaskSkippedOrDoneChan is the channel for notifying the task is skipped or done.
 	TaskSkippedOrDoneChan chan int
 
+	// PlanCheckTickleChan is the tickler for plan check scheduler.
+	PlanCheckTickleChan chan int
+	// TaskRunTickleChan is the tickler for task run scheduler.
+	TaskRunTickleChan chan int
+
 	sync.Mutex
 }
 

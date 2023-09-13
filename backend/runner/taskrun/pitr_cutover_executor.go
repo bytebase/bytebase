@@ -78,7 +78,7 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, _ context.Context,
 
 	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
 		TaskID:    task.ID,
-		OldStatus: task.Status,
+		OldStatus: api.TaskRunning,
 		NewStatus: api.TaskDone,
 		IssueName: issue.Title,
 		TaskName:  task.Name,

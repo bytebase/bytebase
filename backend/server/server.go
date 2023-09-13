@@ -331,6 +331,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		InstanceOutstandingConnections:       make(map[int]int),
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 		TaskSkippedOrDoneChan:                make(chan int, 1000),
+		PlanCheckTickleChan:                  make(chan int, 1000),
+		TaskRunTickleChan:                    make(chan int, 1000),
 	}
 	s.store = storeInstance
 

@@ -371,15 +371,15 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 
 	var content []byte
 	switch request.Format {
-	case v1pb.ExportRequest_CSV:
+	case v1pb.ExportFormat_CSV:
 		if content, err = s.exportCSV(result[0]); err != nil {
 			return nil, durationNs, err
 		}
-	case v1pb.ExportRequest_JSON:
+	case v1pb.ExportFormat_JSON:
 		if content, err = s.exportJSON(result[0]); err != nil {
 			return nil, durationNs, err
 		}
-	case v1pb.ExportRequest_SQL:
+	case v1pb.ExportFormat_SQL:
 		resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), request.ConnectionDatabase, request.Statement, instance)
 		if err != nil {
 			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
@@ -391,7 +391,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		if content, err = exportSQL(instance.Engine, statementPrefix, result[0]); err != nil {
 			return nil, durationNs, err
 		}
-	case v1pb.ExportRequest_XLSX:
+	case v1pb.ExportFormat_XLSX:
 		if content, err = s.exportXLSX(result[0]); err != nil {
 			return nil, durationNs, err
 		}
@@ -776,7 +776,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	}
 
 	// Validate the request.
-	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
+	if err := validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
 		return nil, nil, nil, nil, err
 	}
 
@@ -1137,7 +1137,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	}
 
 	// Validate the request.
-	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
+	if err := validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
 		return nil, nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
@@ -1904,7 +1904,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 // 2. Check connection_database if the instance is postgres.
 // 3. Parse statement for Postgres, MySQL, TiDB, Oracle.
 // 4. Check if all statements are (EXPLAIN) SELECT statements.
-func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databaseName string, statement string) error {
+func validateQueryRequest(instance *store.InstanceMessage, databaseName string, statement string) error {
 	if instance.Engine == db.Postgres {
 		if databaseName == "" {
 			return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")

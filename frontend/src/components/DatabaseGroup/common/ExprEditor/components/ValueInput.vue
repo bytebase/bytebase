@@ -55,14 +55,25 @@ const setStringValue = (value: string) => {
 
 // clean up value type when factor and operator changed
 watch(
-  [factor, operator, () => props.expr.args[1]],
-  ([factor, operator, value]) => {
+  [operator, () => props.expr.args[1]],
+  ([operator, value]) => {
     if (isEqualityOperator(operator)) {
-      if (isStringFactor(factor) && typeof value !== "string") {
+      if (isStringFactor(factor.value) && typeof value !== "string") {
         setStringValue("");
       }
     }
     if (isStringOperator(operator) && typeof value !== "string") {
+      setStringValue("");
+    }
+  },
+  {
+    immediate: true,
+  }
+);
+watch(
+  factor,
+  (factor) => {
+    if (isStringFactor(factor)) {
       setStringValue("");
     }
   },

@@ -23,61 +23,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ExportRequest_Format int32
-
-const (
-	ExportRequest_FORMAT_UNSPECIFIED ExportRequest_Format = 0
-	ExportRequest_CSV                ExportRequest_Format = 1
-	ExportRequest_JSON               ExportRequest_Format = 2
-	ExportRequest_SQL                ExportRequest_Format = 3
-	ExportRequest_XLSX               ExportRequest_Format = 4
-)
-
-// Enum value maps for ExportRequest_Format.
-var (
-	ExportRequest_Format_name = map[int32]string{
-		0: "FORMAT_UNSPECIFIED",
-		1: "CSV",
-		2: "JSON",
-		3: "SQL",
-		4: "XLSX",
-	}
-	ExportRequest_Format_value = map[string]int32{
-		"FORMAT_UNSPECIFIED": 0,
-		"CSV":                1,
-		"JSON":               2,
-		"SQL":                3,
-		"XLSX":               4,
-	}
-)
-
-func (x ExportRequest_Format) Enum() *ExportRequest_Format {
-	p := new(ExportRequest_Format)
-	*p = x
-	return p
-}
-
-func (x ExportRequest_Format) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ExportRequest_Format) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_sql_service_proto_enumTypes[0].Descriptor()
-}
-
-func (ExportRequest_Format) Type() protoreflect.EnumType {
-	return &file_v1_sql_service_proto_enumTypes[0]
-}
-
-func (x ExportRequest_Format) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ExportRequest_Format.Descriptor instead.
-func (ExportRequest_Format) EnumDescriptor() ([]byte, []int) {
-	return file_v1_sql_service_proto_rawDescGZIP(), []int{4, 0}
-}
-
 type Advice_Status int32
 
 const (
@@ -115,11 +60,11 @@ func (x Advice_Status) String() string {
 }
 
 func (Advice_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_sql_service_proto_enumTypes[1].Descriptor()
+	return file_v1_sql_service_proto_enumTypes[0].Descriptor()
 }
 
 func (Advice_Status) Type() protoreflect.EnumType {
-	return &file_v1_sql_service_proto_enumTypes[1]
+	return &file_v1_sql_service_proto_enumTypes[0]
 }
 
 func (x Advice_Status) Number() protoreflect.EnumNumber {
@@ -393,7 +338,7 @@ type ExportRequest struct {
 	// The maximum number of rows to return.
 	Limit int32 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
 	// The export format.
-	Format ExportRequest_Format `protobuf:"varint,5,opt,name=format,proto3,enum=bytebase.v1.ExportRequest_Format" json:"format,omitempty"`
+	Format ExportFormat `protobuf:"varint,5,opt,name=format,proto3,enum=bytebase.v1.ExportFormat" json:"format,omitempty"`
 	// The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
 	// The exported data is not masked.
 	Admin bool `protobuf:"varint,6,opt,name=admin,proto3" json:"admin,omitempty"`
@@ -459,11 +404,11 @@ func (x *ExportRequest) GetLimit() int32 {
 	return 0
 }
 
-func (x *ExportRequest) GetFormat() ExportRequest_Format {
+func (x *ExportRequest) GetFormat() ExportFormat {
 	if x != nil {
 		return x.Format
 	}
-	return ExportRequest_FORMAT_UNSPECIFIED
+	return ExportFormat_FORMAT_UNSPECIFIED
 }
 
 func (x *ExportRequest) GetAdmin() bool {
@@ -1304,7 +1249,7 @@ var file_v1_sql_service_proto_rawDesc = []byte{
 	0x73, 0x65, 0x12, 0x32, 0x0a, 0x07, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x18, 0x01, 0x20,
 	0x03, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
 	0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x07, 0x72,
-	0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x22, 0xa6, 0x02, 0x0a, 0x0d, 0x45, 0x78, 0x70, 0x6f, 0x72,
+	0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x22, 0xd6, 0x01, 0x0a, 0x0d, 0x45, 0x78, 0x70, 0x6f, 0x72,
 	0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x02, 0x52, 0x04, 0x6e, 0x61, 0x6d,
 	0x65, 0x12, 0x2f, 0x0a, 0x13, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x5f,
@@ -1313,16 +1258,11 @@ var file_v1_sql_service_proto_rawDesc = []byte{
 	0x73, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x73, 0x74, 0x61, 0x74, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x18,
 	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x73, 0x74, 0x61, 0x74, 0x65, 0x6d, 0x65, 0x6e, 0x74,
 	0x12, 0x14, 0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x05, 0x52,
-	0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x12, 0x39, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74,
-	0x18, 0x05, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x2e, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x52, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61,
-	0x74, 0x12, 0x14, 0x0a, 0x05, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08,
-	0x52, 0x05, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x22, 0x46, 0x0a, 0x06, 0x46, 0x6f, 0x72, 0x6d, 0x61,
-	0x74, 0x12, 0x16, 0x0a, 0x12, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x55, 0x4e, 0x53, 0x50,
-	0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x03, 0x43, 0x53, 0x56,
-	0x10, 0x01, 0x12, 0x08, 0x0a, 0x04, 0x4a, 0x53, 0x4f, 0x4e, 0x10, 0x02, 0x12, 0x07, 0x0a, 0x03,
-	0x53, 0x51, 0x4c, 0x10, 0x03, 0x12, 0x08, 0x0a, 0x04, 0x58, 0x4c, 0x53, 0x58, 0x10, 0x04, 0x22,
+	0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x12, 0x31, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74,
+	0x18, 0x05, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x19, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x46, 0x6f, 0x72, 0x6d, 0x61,
+	0x74, 0x52, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x61, 0x64, 0x6d,
+	0x69, 0x6e, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x05, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x22,
 	0x2a, 0x0a, 0x0e, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
 	0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0c, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x22, 0xc1, 0x01, 0x0a, 0x0c,
@@ -1480,57 +1420,57 @@ func file_v1_sql_service_proto_rawDescGZIP() []byte {
 	return file_v1_sql_service_proto_rawDescData
 }
 
-var file_v1_sql_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_v1_sql_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_v1_sql_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_v1_sql_service_proto_goTypes = []interface{}{
-	(ExportRequest_Format)(0),     // 0: bytebase.v1.ExportRequest.Format
-	(Advice_Status)(0),            // 1: bytebase.v1.Advice.Status
-	(*DifferPreviewRequest)(nil),  // 2: bytebase.v1.DifferPreviewRequest
-	(*DifferPreviewResponse)(nil), // 3: bytebase.v1.DifferPreviewResponse
-	(*AdminExecuteRequest)(nil),   // 4: bytebase.v1.AdminExecuteRequest
-	(*AdminExecuteResponse)(nil),  // 5: bytebase.v1.AdminExecuteResponse
-	(*ExportRequest)(nil),         // 6: bytebase.v1.ExportRequest
-	(*ExportResponse)(nil),        // 7: bytebase.v1.ExportResponse
-	(*QueryRequest)(nil),          // 8: bytebase.v1.QueryRequest
-	(*QueryResponse)(nil),         // 9: bytebase.v1.QueryResponse
-	(*QueryResult)(nil),           // 10: bytebase.v1.QueryResult
-	(*QueryRow)(nil),              // 11: bytebase.v1.QueryRow
-	(*RowValue)(nil),              // 12: bytebase.v1.RowValue
-	(*Advice)(nil),                // 13: bytebase.v1.Advice
-	(*PrettyRequest)(nil),         // 14: bytebase.v1.PrettyRequest
-	(*PrettyResponse)(nil),        // 15: bytebase.v1.PrettyResponse
-	(Engine)(0),                   // 16: bytebase.v1.Engine
-	(*DatabaseMetadata)(nil),      // 17: bytebase.v1.DatabaseMetadata
-	(*durationpb.Duration)(nil),   // 18: google.protobuf.Duration
+	(Advice_Status)(0),            // 0: bytebase.v1.Advice.Status
+	(*DifferPreviewRequest)(nil),  // 1: bytebase.v1.DifferPreviewRequest
+	(*DifferPreviewResponse)(nil), // 2: bytebase.v1.DifferPreviewResponse
+	(*AdminExecuteRequest)(nil),   // 3: bytebase.v1.AdminExecuteRequest
+	(*AdminExecuteResponse)(nil),  // 4: bytebase.v1.AdminExecuteResponse
+	(*ExportRequest)(nil),         // 5: bytebase.v1.ExportRequest
+	(*ExportResponse)(nil),        // 6: bytebase.v1.ExportResponse
+	(*QueryRequest)(nil),          // 7: bytebase.v1.QueryRequest
+	(*QueryResponse)(nil),         // 8: bytebase.v1.QueryResponse
+	(*QueryResult)(nil),           // 9: bytebase.v1.QueryResult
+	(*QueryRow)(nil),              // 10: bytebase.v1.QueryRow
+	(*RowValue)(nil),              // 11: bytebase.v1.RowValue
+	(*Advice)(nil),                // 12: bytebase.v1.Advice
+	(*PrettyRequest)(nil),         // 13: bytebase.v1.PrettyRequest
+	(*PrettyResponse)(nil),        // 14: bytebase.v1.PrettyResponse
+	(Engine)(0),                   // 15: bytebase.v1.Engine
+	(*DatabaseMetadata)(nil),      // 16: bytebase.v1.DatabaseMetadata
+	(*durationpb.Duration)(nil),   // 17: google.protobuf.Duration
+	(ExportFormat)(0),             // 18: bytebase.v1.ExportFormat
 	(structpb.NullValue)(0),       // 19: google.protobuf.NullValue
 	(*structpb.Value)(nil),        // 20: google.protobuf.Value
 }
 var file_v1_sql_service_proto_depIdxs = []int32{
-	16, // 0: bytebase.v1.DifferPreviewRequest.engine:type_name -> bytebase.v1.Engine
-	17, // 1: bytebase.v1.DifferPreviewRequest.new_metadata:type_name -> bytebase.v1.DatabaseMetadata
-	18, // 2: bytebase.v1.AdminExecuteRequest.timeout:type_name -> google.protobuf.Duration
-	10, // 3: bytebase.v1.AdminExecuteResponse.results:type_name -> bytebase.v1.QueryResult
-	0,  // 4: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportRequest.Format
-	18, // 5: bytebase.v1.QueryRequest.timeout:type_name -> google.protobuf.Duration
-	10, // 6: bytebase.v1.QueryResponse.results:type_name -> bytebase.v1.QueryResult
-	13, // 7: bytebase.v1.QueryResponse.advices:type_name -> bytebase.v1.Advice
-	11, // 8: bytebase.v1.QueryResult.rows:type_name -> bytebase.v1.QueryRow
-	18, // 9: bytebase.v1.QueryResult.latency:type_name -> google.protobuf.Duration
-	12, // 10: bytebase.v1.QueryRow.values:type_name -> bytebase.v1.RowValue
+	15, // 0: bytebase.v1.DifferPreviewRequest.engine:type_name -> bytebase.v1.Engine
+	16, // 1: bytebase.v1.DifferPreviewRequest.new_metadata:type_name -> bytebase.v1.DatabaseMetadata
+	17, // 2: bytebase.v1.AdminExecuteRequest.timeout:type_name -> google.protobuf.Duration
+	9,  // 3: bytebase.v1.AdminExecuteResponse.results:type_name -> bytebase.v1.QueryResult
+	18, // 4: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
+	17, // 5: bytebase.v1.QueryRequest.timeout:type_name -> google.protobuf.Duration
+	9,  // 6: bytebase.v1.QueryResponse.results:type_name -> bytebase.v1.QueryResult
+	12, // 7: bytebase.v1.QueryResponse.advices:type_name -> bytebase.v1.Advice
+	10, // 8: bytebase.v1.QueryResult.rows:type_name -> bytebase.v1.QueryRow
+	17, // 9: bytebase.v1.QueryResult.latency:type_name -> google.protobuf.Duration
+	11, // 10: bytebase.v1.QueryRow.values:type_name -> bytebase.v1.RowValue
 	19, // 11: bytebase.v1.RowValue.null_value:type_name -> google.protobuf.NullValue
 	20, // 12: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value
-	1,  // 13: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Status
-	16, // 14: bytebase.v1.PrettyRequest.engine:type_name -> bytebase.v1.Engine
-	14, // 15: bytebase.v1.SQLService.Pretty:input_type -> bytebase.v1.PrettyRequest
-	8,  // 16: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
-	6,  // 17: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
-	4,  // 18: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
-	2,  // 19: bytebase.v1.SQLService.DifferPreview:input_type -> bytebase.v1.DifferPreviewRequest
-	15, // 20: bytebase.v1.SQLService.Pretty:output_type -> bytebase.v1.PrettyResponse
-	9,  // 21: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
-	7,  // 22: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
-	5,  // 23: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
-	3,  // 24: bytebase.v1.SQLService.DifferPreview:output_type -> bytebase.v1.DifferPreviewResponse
+	0,  // 13: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Status
+	15, // 14: bytebase.v1.PrettyRequest.engine:type_name -> bytebase.v1.Engine
+	13, // 15: bytebase.v1.SQLService.Pretty:input_type -> bytebase.v1.PrettyRequest
+	7,  // 16: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
+	5,  // 17: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
+	3,  // 18: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
+	1,  // 19: bytebase.v1.SQLService.DifferPreview:input_type -> bytebase.v1.DifferPreviewRequest
+	14, // 20: bytebase.v1.SQLService.Pretty:output_type -> bytebase.v1.PrettyResponse
+	8,  // 21: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
+	6,  // 22: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
+	4,  // 23: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
+	2,  // 24: bytebase.v1.SQLService.DifferPreview:output_type -> bytebase.v1.DifferPreviewResponse
 	20, // [20:25] is the sub-list for method output_type
 	15, // [15:20] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
@@ -1733,7 +1673,7 @@ func file_v1_sql_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_sql_service_proto_rawDesc,
-			NumEnums:      2,
+			NumEnums:      1,
 			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,

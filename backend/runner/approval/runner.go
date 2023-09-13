@@ -586,7 +586,7 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 		databases = list
 	} else {
 		for _, dbName := range factors.DatabaseNames {
-			instanceID, databaseName, err := getInstanceDatabaseID(dbName)
+			instanceID, databaseName, err := common.GetInstanceDatabaseID(dbName)
 			if err != nil {
 				return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get instance database id")
 			}
@@ -700,18 +700,10 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 }
 
 func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) error {
-	originalPayload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), originalPayload); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal original issue payload")
-	}
-	originalPayload.Approval = approval
-	payloadBytes, err := protojson.Marshal(originalPayload)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal payload")
-	}
-	payloadStr := string(payloadBytes)
 	if _, err := s.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: approval,
+		},
 	}, api.SystemBotID); err != nil {
 		return errors.Wrap(err, "failed to update issue payload")
 	}
@@ -732,37 +724,4 @@ func convertToSource(source store.RiskSource) v1pb.Risk_Source {
 		return v1pb.Risk_EXPORT
 	}
 	return v1pb.Risk_SOURCE_UNSPECIFIED
-}
-
-const (
-	instanceNamePrefix = "instances/"
-	databaseIDPrefix   = "databases/"
-)
-
-func getNameParentTokens(name string, tokenPrefixes ...string) ([]string, error) {
-	parts := strings.Split(name, "/")
-	if len(parts) != 2*len(tokenPrefixes) {
-		return nil, errors.Errorf("invalid request %q", name)
-	}
-
-	var tokens []string
-	for i, tokenPrefix := range tokenPrefixes {
-		if fmt.Sprintf("%s/", parts[2*i]) != tokenPrefix {
-			return nil, errors.Errorf("invalid prefix %q in request %q", tokenPrefix, name)
-		}
-		if parts[2*i+1] == "" {
-			return nil, errors.Errorf("invalid request %q with empty prefix %q", name, tokenPrefix)
-		}
-		tokens = append(tokens, parts[2*i+1])
-	}
-	return tokens, nil
-}
-
-func getInstanceDatabaseID(name string) (string, string, error) {
-	// the instance request should be instances/{instance-id}/databases/{database-id}
-	tokens, err := getNameParentTokens(name, instanceNamePrefix, databaseIDPrefix)
-	if err != nil {
-		return "", "", err
-	}
-	return tokens[0], tokens[1], nil
 }

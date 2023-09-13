@@ -26,18 +26,17 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import AsidePanel from "./AsidePanel.vue";
 import Designer from "./Designer.vue";
-import { provideSchemaDesignerContext } from "./common";
-import { SchemaDesignerTabState } from "./common/type";
-import { rebuildEditableSchemas } from "./common/util";
+import { provideSchemaEditorContext, SchemaEditorTabState } from "./common";
+import { rebuildEditableSchemas } from "./utils";
 
 const props = defineProps<{
   readonly: boolean;
   engine: Engine;
-  schemaDesign: SchemaDesign;
   project: ComposedProject;
+  baselineSchemaMetadata?: DatabaseMetadata;
+  schemaMetadata?: DatabaseMetadata;
 }>();
 
 const settingStore = useSettingV1Store();
@@ -50,7 +49,7 @@ const project = ref<ComposedProject>(unknownProject());
 const baselineMetadata = ref<DatabaseMetadata>(
   DatabaseMetadata.fromPartial({})
 );
-const tabState = ref<SchemaDesignerTabState>({
+const tabState = ref<SchemaEditorTabState>({
   tabMap: new Map(),
 });
 
@@ -72,7 +71,7 @@ const rebuildEditingState = () => {
   };
 };
 
-provideSchemaDesignerContext({
+provideSchemaEditorContext({
   readonly: readonly,
   baselineMetadata: baselineMetadata,
   engine: engine,
@@ -87,11 +86,10 @@ watch(
   () => props,
   () => {
     baselineMetadata.value =
-      cloneDeep(props.schemaDesign?.baselineSchemaMetadata) ||
+      cloneDeep(props.baselineSchemaMetadata) ||
       DatabaseMetadata.fromPartial({});
     metadata.value =
-      cloneDeep(props.schemaDesign?.schemaMetadata) ||
-      DatabaseMetadata.fromPartial({});
+      cloneDeep(props.schemaMetadata) || DatabaseMetadata.fromPartial({});
     readonly.value = props.readonly;
     engine.value = props.engine;
     project.value = props.project;

@@ -2,6 +2,7 @@
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -65,6 +66,15 @@ export interface GetLogRequest {
    * Format: logs/{uid}
    */
   name: string;
+}
+
+export interface ExportLogsRequest {
+  /** The export format. */
+  format: ExportFormat;
+}
+
+export interface ExportLogsResponse {
+  content: Uint8Array;
 }
 
 export interface LogEntity {
@@ -578,6 +588,119 @@ export const GetLogRequest = {
   },
 };
 
+function createBaseExportLogsRequest(): ExportLogsRequest {
+  return { format: 0 };
+}
+
+export const ExportLogsRequest = {
+  encode(message: ExportLogsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.format !== 0) {
+      writer.uint32(40).int32(message.format);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExportLogsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportLogsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.format = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportLogsRequest {
+    return { format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0 };
+  },
+
+  toJSON(message: ExportLogsRequest): unknown {
+    const obj: any = {};
+    message.format !== undefined && (obj.format = exportFormatToJSON(message.format));
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportLogsRequest>): ExportLogsRequest {
+    return ExportLogsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ExportLogsRequest>): ExportLogsRequest {
+    const message = createBaseExportLogsRequest();
+    message.format = object.format ?? 0;
+    return message;
+  },
+};
+
+function createBaseExportLogsResponse(): ExportLogsResponse {
+  return { content: new Uint8Array(0) };
+}
+
+export const ExportLogsResponse = {
+  encode(message: ExportLogsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.content.length !== 0) {
+      writer.uint32(10).bytes(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExportLogsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportLogsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.content = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportLogsResponse {
+    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0) };
+  },
+
+  toJSON(message: ExportLogsResponse): unknown {
+    const obj: any = {};
+    message.content !== undefined &&
+      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportLogsResponse>): ExportLogsResponse {
+    return ExportLogsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ExportLogsResponse>): ExportLogsResponse {
+    const message = createBaseExportLogsResponse();
+    message.content = object.content ?? new Uint8Array(0);
+    return message;
+  },
+};
+
 function createBaseLogEntity(): LogEntity {
   return {
     name: "",
@@ -784,17 +907,105 @@ export const LoggingServiceDefinition = {
         },
       },
     },
+    exportLogs: {
+      name: "ExportLogs",
+      requestType: ExportLogsRequest,
+      requestStream: false,
+      responseType: ExportLogsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              20,
+              58,
+              1,
+              42,
+              34,
+              15,
+              47,
+              118,
+              49,
+              47,
+              108,
+              111,
+              103,
+              115,
+              58,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
 export interface LoggingServiceImplementation<CallContextExt = {}> {
   listLogs(request: ListLogsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListLogsResponse>>;
   getLog(request: GetLogRequest, context: CallContext & CallContextExt): Promise<DeepPartial<LogEntity>>;
+  exportLogs(
+    request: ExportLogsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ExportLogsResponse>>;
 }
 
 export interface LoggingServiceClient<CallOptionsExt = {}> {
   listLogs(request: DeepPartial<ListLogsRequest>, options?: CallOptions & CallOptionsExt): Promise<ListLogsResponse>;
   getLog(request: DeepPartial<GetLogRequest>, options?: CallOptions & CallOptionsExt): Promise<LogEntity>;
+  exportLogs(
+    request: DeepPartial<ExportLogsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ExportLogsResponse>;
+}
+
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
+  }
+  if (typeof self !== "undefined") {
+    return self;
+  }
+  if (typeof window !== "undefined") {
+    return window;
+  }
+  if (typeof global !== "undefined") {
+    return global;
+  }
+  throw "Unable to locate global object";
+})();
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if (tsProtoGlobalThis.Buffer) {
+    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = tsProtoGlobalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if (tsProtoGlobalThis.Buffer) {
+    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(String.fromCharCode(byte));
+    });
+    return tsProtoGlobalThis.btoa(bin.join(""));
+  }
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

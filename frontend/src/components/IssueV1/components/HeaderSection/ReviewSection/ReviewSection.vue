@@ -13,7 +13,7 @@
       </template>
     </NTooltip>
 
-    <div class="flex-1 min-w-[14rem]">
+    <div class="flex-1" :class="showApprovalTooltip && 'min-w-[14rem]'">
       <div
         v-if="!ready"
         class="flex items-center gap-x-2 text-sm text-control-placeholder"
@@ -48,6 +48,7 @@
       >
         {{ $t("custom-approval.approval-flow.skip") }}
         <FeatureBadgeForInstanceLicense
+          v-if="!isGrantRequestIssue(issue)"
           feature="bb.feature.custom-approval"
           :instance="selectedDatabase.instanceEntity"
         />
