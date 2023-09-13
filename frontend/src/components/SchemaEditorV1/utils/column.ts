@@ -1,12 +1,12 @@
 import { isEqual, isUndefined } from "lodash-es";
-import { useSchemaDesignerContext } from "../common";
+import { useSchemaEditorContext } from "../common";
 
 export const isColumnChanged = (
   schemaId: string,
   tableId: string,
   columnId: string
 ): boolean => {
-  const { originalSchemas, editableSchemas } = useSchemaDesignerContext();
+  const { originalSchemas, editableSchemas } = useSchemaEditorContext();
   const originSchema = originalSchemas.value.find(
     (schema) => schema.id === schemaId
   );

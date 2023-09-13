@@ -303,11 +303,11 @@ import { getDataTypeSuggestionList } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import {
-  SchemaDesignerTabType,
+  SchemaEditorTabType,
   TableTabContext,
-  useSchemaDesignerContext,
+  useSchemaEditorContext,
 } from "../common";
-import { isColumnChanged } from "../utils/column";
+import { isColumnChanged } from "../utils";
 
 interface LocalState {
   isFetchingDDL: boolean;
@@ -320,8 +320,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const { readonly, engine, project, editableSchemas, getCurrentTab, addTab } =
-  useSchemaDesignerContext();
-useSchemaDesignerContext();
+  useSchemaEditorContext();
 const settingStore = useSettingV1Store();
 const currentTab = computed(() => getCurrentTab() as TableTabContext);
 const state = reactive<LocalState>({
@@ -611,7 +610,7 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
 
   addTab({
     id: generateUniqueTabId(),
-    type: SchemaDesignerTabType.TabForTable,
+    type: SchemaEditorTabType.TabForTable,
     schemaId: referencedSchema.id,
     tableId: referencedTable.id,
   });

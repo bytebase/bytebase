@@ -30,7 +30,7 @@ import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useNotificationStore } from "@/store";
 import { SchemaMetadata } from "@/types/proto/store/database";
-import { useSchemaDesignerContext } from "../common";
+import { useSchemaEditorContext } from "../common";
 
 const schemaNameFieldRegexp = /^\S+$/;
 
@@ -43,7 +43,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { metadata } = useSchemaDesignerContext();
+const { metadata } = useSchemaEditorContext();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   schemaName: "",

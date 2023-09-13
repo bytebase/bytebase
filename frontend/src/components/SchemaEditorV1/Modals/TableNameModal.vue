@@ -39,7 +39,7 @@ import {
 } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
-import { SchemaDesignerTabType, useSchemaDesignerContext } from "../common";
+import { SchemaEditorTabType, useSchemaEditorContext } from "../common";
 
 const tableNameFieldRegexp = /^\S+$/;
 
@@ -57,7 +57,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { engine, editableSchemas, addTab } = useSchemaDesignerContext();
+const { engine, editableSchemas, addTab } = useSchemaEditorContext();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   tableName: "",
@@ -122,7 +122,7 @@ const handleConfirmButtonClick = async () => {
     schema.tableList.push(tableEdit);
     addTab({
       id: generateUniqueTabId(),
-      type: SchemaDesignerTabType.TabForTable,
+      type: SchemaEditorTabType.TabForTable,
       schemaId: props.schemaId,
       tableId: tableEdit.id,
     });
