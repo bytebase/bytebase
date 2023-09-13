@@ -99,26 +99,6 @@
           </NTooltip>
         </div>
       </div>
-      <div class="bb-grid-cell">
-        <div v-if="isDatabaseRelatedIssue(issue)" class="flex items-center">
-          {{ activeEnvironmentForIssue(issue)?.title }}
-          <ProductionEnvironmentV1Icon
-            class="ml-1"
-            :environment="activeEnvironmentForIssue(issue)"
-          />
-        </div>
-        <div v-else>-</div>
-      </div>
-      <div class="hidden sm:bb-grid-cell">
-        <BBStepBar
-          :step-list="taskStepList(issue)"
-          @click-step="
-            (step: any) => {
-              clickIssueStep(issue, step);
-            }
-          "
-        />
-      </div>
       <div class="hidden md:bb-grid-cell w-36">
         {{ humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000) }}
       </div>
@@ -174,25 +154,16 @@ import { reactive, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit";
-import type { BBStep, BBStepStatus } from "@/bbkit/types";
 import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActionsV1.vue";
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import IssueStatusIcon from "@/components/IssueV1/components/IssueStatusIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
-import { useCurrentUserV1, useEnvironmentV1Store } from "@/store";
-import type { Task, ComposedIssue } from "@/types";
-import { IssueStatus, issueStatusToJSON } from "@/types/proto/v1/issue_service";
+import { useCurrentUserV1 } from "@/store";
+import type { ComposedIssue } from "@/types";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Workflow } from "@/types/proto/v1/project_service";
-import {
-  Task_Status,
-  task_StatusToJSON,
-} from "@/types/proto/v1/rollout_service";
-import {
-  issueSlug,
-  stageSlug,
-  activeTaskInStageV1,
-  activeEnvironmentInRollout,
-} from "@/utils";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { issueSlug } from "@/utils";
 import { isDatabaseRelatedIssue, activeTaskInRollout } from "@/utils";
 
 type Mode = "ALL" | "PROJECT";
@@ -212,14 +183,6 @@ const columnList = computed((): BBGridColumn[] => {
     {
       title: t("issue.table.name"),
       width: "minmax(auto, 1fr)",
-    },
-    {
-      title: t("issue.table.environment"),
-      width: "minmax(auto, 10rem)",
-    },
-    {
-      title: t("issue.table.progress"),
-      width: "minmax(auto, 10rem)",
     },
     {
       title: t("issue.table.updated"),
@@ -259,16 +222,21 @@ const props = withDefaults(
     title: string;
     issueList: ComposedIssue[];
     mode?: Mode;
-    leftBordered: boolean;
-    rightBordered: boolean;
-    topBordered: boolean;
-    bottomBordered: boolean;
-    highlightText: string;
-    showPlaceholder: boolean;
+    leftBordered?: boolean;
+    rightBordered?: boolean;
+    topBordered?: boolean;
+    bottomBordered?: boolean;
+    highlightText?: string;
+    showPlaceholder?: boolean;
   }>(),
   {
     mode: "ALL",
+    leftBordered: false,
+    rightBordered: false,
+    topBordered: false,
+    bottomBordered: false,
     highlightText: "",
+    showPlaceholder: false,
   }
 );
 
@@ -279,7 +247,6 @@ const state = reactive<LocalState>({
   selectedIssueIdList: new Set(),
 });
 const currentUserV1 = useCurrentUserV1();
-const environmentStore = useEnvironmentV1Store();
 
 const tableRef = ref<HTMLTableElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
@@ -297,44 +264,6 @@ const issueTaskStatus = (issue: ComposedIssue) => {
   }
 
   return activeTaskInRollout(issue.rolloutEntity).status;
-};
-
-const activeEnvironmentForIssue = (issue: ComposedIssue) => {
-  const environmentName = activeEnvironmentInRollout(issue.rolloutEntity);
-  return environmentStore.getEnvironmentByName(environmentName);
-};
-
-const taskStepList = function (issue: ComposedIssue): BBStep[] {
-  if (!isDatabaseRelatedIssue(issue)) {
-    return [
-      {
-        status:
-          issue.status === IssueStatus.OPEN
-            ? "PENDING_APPROVAL_ACTIVE"
-            : (issueStatusToJSON(issue.status) as BBStepStatus),
-        payload: undefined,
-      },
-    ];
-  }
-
-  const res = issue.rolloutEntity.stages.map((stage) => {
-    const task = activeTaskInStageV1(stage);
-    let status = task_StatusToJSON(task.status) as BBStepStatus;
-    if (status == "PENDING" || status == "NOT_STARTED") {
-      if (activeTaskInRollout(issue.rolloutEntity).uid == task.uid) {
-        status =
-          status == "PENDING" ? "PENDING_ACTIVE" : "PENDING_APPROVAL_ACTIVE";
-      } else {
-        status = "PENDING_APPROVAL";
-      }
-    }
-    return {
-      status,
-      payload: task,
-    };
-  });
-
-  return res;
 };
 
 const isIssueSelected = (issue: ComposedIssue): boolean => {
@@ -402,31 +331,6 @@ const clickIssue = (
   } else {
     router.push(url);
   }
-};
-
-const clickIssueStep = (issue: ComposedIssue, step: BBStep) => {
-  if (!isDatabaseRelatedIssue(issue)) {
-    router.push({
-      name: "workspace.issue.detail",
-      params: {
-        issueSlug: issueSlug(issue.name, issue.uid),
-      },
-    });
-    return;
-  }
-
-  const task = step.payload as Task;
-  const stageIndex = issue.rolloutEntity.stages.findIndex((item) => {
-    return item.uid === `${task.stage.id}`;
-  });
-
-  router.push({
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: issueSlug(issue.name, issue.uid),
-    },
-    query: { stage: stageSlug(task.stage.name, stageIndex) },
-  });
 };
 
 watch(
