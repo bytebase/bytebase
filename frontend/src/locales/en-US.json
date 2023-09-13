@@ -633,14 +633,16 @@
         "condition-order": "Condition order",
         "add-rule": "Add rule",
         "re-order": "Re-order",
-        "delete-rule-tip": "Delete this rule?"
+        "delete-rule-tip": "Delete this rule?",
+        "check-rules": "Check global rules"
       },
       "column-detail": {
         "masking-setting-for-column": "Masking Setting for \"{column}\"",
         "access-user-list": "Access User List",
         "access-user-list-desc": "Users granted to access de-masked data.",
         "remove-user-permission": "Remove user permission?",
-        "remove-sensitive-warning": "The will expose the column."
+        "remove-sensitive-warning": "The will expose the column.",
+        "column-effective-masking-tips": "This column doesn't configure its own masking level.\nWe're showing its effective masking level by global masking rules. {link}"
       },
       "algorithms": {
         "self": "Masking Algorithm",

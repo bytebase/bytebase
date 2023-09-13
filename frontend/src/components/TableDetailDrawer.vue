@@ -202,8 +202,8 @@ import {
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
 import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
-import { TableMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
+import { TableMetadata } from "@/types/proto/v1/database_service";
 import { PolicyType, MaskData } from "@/types/proto/v1/org_policy_service";
 import {
   bytesToString,
