@@ -48,12 +48,16 @@
 </template>
 
 <script lang="ts" setup>
+import { pullAt } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn } from "@/bbkit";
-import { useSchemaEditorStore, useSettingV1Store } from "@/store";
+import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import {
+  SchemaTemplateSetting,
+  SchemaTemplateSetting_FieldTemplate,
+} from "@/types/proto/v1/setting_service";
 import { getDefaultValue } from "./utils";
 
 const props = defineProps<{
@@ -68,7 +72,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const store = useSchemaEditorStore();
 const settingStore = useSettingV1Store();
 
 const columnList = computed((): BBGridColumn[] => {
@@ -115,7 +118,26 @@ const isRowClickable = (template: SchemaTemplateSetting_FieldTemplate) => {
 };
 
 const deleteTemplate = async (id: string) => {
-  await store.deleteSchemaTemplate(id);
+  const setting = await settingStore.fetchSettingByName(
+    "bb.workspace.schema-template"
+  );
+
+  const settingValue = SchemaTemplateSetting.fromJSON({});
+  if (setting?.value?.schemaTemplateSettingValue) {
+    Object.assign(settingValue, setting.value.schemaTemplateSettingValue);
+  }
+
+  const index = settingValue.fieldTemplates.findIndex((t) => t.id === id);
+  if (index >= 0) {
+    pullAt(settingValue.fieldTemplates, index);
+
+    await settingStore.upsertSetting({
+      name: "bb.workspace.schema-template",
+      value: {
+        schemaTemplateSettingValue: settingValue,
+      },
+    });
+  }
 };
 
 const classificationConfig = computed(() => {
