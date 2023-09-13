@@ -77,7 +77,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		// dismiss stale review, re-find the approval template
-		if taskPatch.SheetID != nil && task.Status == api.TaskPendingApproval {
+		if taskPatch.SheetID != nil {
 			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 				PayloadUpsert: &storepb.IssuePayload{
 					Approval: &storepb.IssuePayloadApproval{

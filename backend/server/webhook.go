@@ -2135,9 +2135,6 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		// dismiss stale review, re-find the approval template
 		// it's ok if we failed
 		if err := func() error {
-			if task.Status != api.TaskPendingApproval {
-				return nil
-			}
 			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 				PayloadUpsert: &storepb.IssuePayload{
 					Approval: &storepb.IssuePayloadApproval{
