@@ -60,7 +60,7 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any,
 	switch st.Code() {
 	case codes.Unauthenticated, codes.OutOfRange, codes.PermissionDenied, codes.NotFound:
 		logLevel = slog.LevelDebug
-		logMsg = "client error intercepted"
+		logMsg = "client error"
 	case codes.Internal, codes.Unknown, codes.DataLoss, codes.Unavailable, codes.DeadlineExceeded:
 		logLevel = slog.LevelError
 		logMsg = "server error intercepted"
