@@ -4,7 +4,7 @@
       feature="bb.feature.schema-template"
       custom-class="my-4"
     />
-    <div class="space-y-4">
+    <div v-if="!readonly" class="space-y-4">
       <div class="flex items-center justify-between gap-x-6">
         <div class="flex-1 textinfolabel">
           {{ $t("schema-template.field-template.description") }}
@@ -44,14 +44,14 @@
       </template>
       <BBTableSearch
         ref="searchField"
-        class="ml-auto"
+        class="ml-auto w-72"
         :placeholder="$t('schema-template.search-by-name-or-comment')"
         @change-text="(val: string) => state.searchText = val"
       />
     </div>
     <FieldTemplateView
       :engine="engine"
-      :readonly="!hasPermission"
+      :readonly="!hasPermission || readonly"
       :template-list="filteredTemplateList"
       @view="editSchemaTemplate"
       @apply="(template: SchemaTemplateSetting_FieldTemplate) => $emit('apply', template)"
@@ -93,6 +93,7 @@ interface LocalState {
 
 const props = defineProps<{
   engine?: Engine;
+  readonly?: boolean;
   showEngineFilter?: boolean;
 }>();
 

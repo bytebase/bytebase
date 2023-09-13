@@ -899,7 +899,7 @@
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "manually-select": "手动选择",
-      "customize": "自定义",
+      "custom": "自定义",
       "data-export-attention": "数据将被导出到一个文件并自动下载。而且您只能完成一次导出操作。",
       "export-method": "导出方式",
       "request-sent": "导出请求已发送",
@@ -1219,7 +1219,7 @@
     "self": "变更历史",
     "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
     "workflow": "工作流",
-    "change-type": "变更类型",
+    "change-type": "类型",
     "commit-info": "由 {author} 于 {time}",
     "no-schema-change": "本次变更没有任何 Schema 的改动",
     "schema-drift": "Schema 偏差",
@@ -2951,7 +2951,8 @@
     },
     "action": {
       "use-the-existing-branch": "使用已有分支",
-      "create-new-branch": "创建新分支"
+      "create-new-branch": "创建新分支",
+      "filter-by-name": "根据名称过滤"
     }
   },
   "cel": {
@@ -2966,6 +2967,7 @@
       "expiration_days": "过期天数",
       "export_rows": "导出行数",
       "table_name": "表名称",
+      "column_name": "字段名称",
       "classification_level": "数据分级"
     }
   }

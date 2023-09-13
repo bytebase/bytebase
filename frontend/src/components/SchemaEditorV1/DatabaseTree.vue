@@ -1,24 +1,22 @@
 <template>
-  <div class="w-full h-full px-2 relative overflow-y-hidden">
-    <div class="w-full flex flex-col sticky top-0 pt-2 h-20 bg-white z-10">
-      <p class="w-full flex flex-row justify-between items-center h-8 px-1">
-        <span class="text-sm">{{ $t("schema-designer.tables") }}</span>
-        <button
-          v-if="!readonly"
-          class="text-gray-400 hover:text-gray-500 disabled:cursor-not-allowed"
-          @click="handleCreateTable"
-        >
-          <heroicons-outline:plus class="w-4 h-auto" />
-        </button>
-      </p>
+  <div class="w-full h-full px-2 space-y-2 relative overflow-y-hidden">
+    <div class="w-full flex sticky top-0 pt-2 bg-white z-10 space-x-2">
       <NInput
         v-model:value="searchPattern"
+        size="small"
         :placeholder="$t('schema-designer.search-tables')"
       >
         <template #prefix>
-          <heroicons-outline:search class="w-4 h-auto text-gray-300" />
+          <heroicons-outline:search class="h-auto text-gray-300" />
         </template>
       </NInput>
+      <button
+        v-if="!readonly"
+        class="text-gray-400 hover:text-gray-500 disabled:cursor-not-allowed"
+        @click="handleCreateTable"
+      >
+        <heroicons-outline:plus class="w-4 h-auto" />
+      </button>
     </div>
     <div
       class="schema-designer-database-tree pb-2 overflow-y-auto h-full text-sm"
@@ -31,6 +29,7 @@
         :block-line="true"
         :data="treeData"
         :pattern="searchPattern"
+        :show-irrelevant-nodes="false"
         :render-prefix="renderPrefix"
         :render-label="renderLabel"
         :render-suffix="renderSuffix"
@@ -82,8 +81,8 @@ import { Engine } from "@/types/proto/v1/common";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "./Modals/SchemaNameModal.vue";
 import TableNameModal from "./Modals/TableNameModal.vue";
-import { useSchemaDesignerContext, SchemaDesignerTabType } from "./common";
-import { isTableChanged } from "./utils/table";
+import { useSchemaEditorContext, SchemaEditorTabType } from "./common";
+import { isTableChanged } from "./utils";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -133,7 +132,7 @@ const {
   getTable,
   getCurrentTab,
   dropTable,
-} = useSchemaDesignerContext();
+} = useSchemaEditorContext();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
@@ -285,7 +284,7 @@ watch(
       return;
     }
 
-    if (currentTab.type === SchemaDesignerTabType.TabForTable) {
+    if (currentTab.type === SchemaEditorTabType.TabForTable) {
       const schemaTreeNodeKey = `s-${currentTab.schemaId}`;
       if (!expandedKeysRef.value.includes(schemaTreeNodeKey)) {
         expandedKeysRef.value.push(schemaTreeNodeKey);
@@ -521,7 +520,7 @@ const openTabForTable = (treeNode: TreeNode, tableId: string) => {
   if (treeNode.type === "table") {
     addTab({
       id: generateUniqueTabId(),
-      type: SchemaDesignerTabType.TabForTable,
+      type: SchemaEditorTabType.TabForTable,
       schemaId: treeNode.schemaId,
       tableId: tableId,
     });

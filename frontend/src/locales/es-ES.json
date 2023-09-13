@@ -901,7 +901,7 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
-      "customize": "personalice",
+      "custom": "personalice",
       "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez.",
       "export-method": "Método de exportación",
       "request-sent": "Solicitud enviada",
@@ -1221,7 +1221,7 @@
     "self": "Historial de cambios",
     "select": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase",
     "workflow": "Flujo de trabajo",
-    "change-type": "Tipo de cambio",
+    "change-type": "Tipo",
     "commit-info": "por {author} a las {time}",
     "no-schema-change": "esta migración no tiene cambios de esquema",
     "schema-drift": "Desviación de esquema",
@@ -2956,7 +2956,8 @@
     },
     "action": {
       "use-the-existing-branch": "Usar la rama existente",
-      "create-new-branch": "Crear nueva rama"
+      "create-new-branch": "Crear nueva rama",
+      "filter-by-name": "Filtrar por nombre"
     }
   },
   "cel": {
@@ -2971,6 +2972,7 @@
       "expiration_days": "Días de caducidad",
       "export_rows": "Exportar filas",
       "table_name": "Nombre de la tabla",
+      "column_name": "Nombre de columna",
       "classification_level": "Nivel de clasificación"
     }
   }

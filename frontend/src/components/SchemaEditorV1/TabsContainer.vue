@@ -7,7 +7,7 @@
       <div
         v-for="tab in tabList"
         :key="tab.id"
-        class="relative px-1 pl-2 py-2 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer"
+        class="relative px-1 pl-2 py-1 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer"
         :class="[
           `tab-${tab.id}`,
           tab.id === currentTab?.id && 'bg-white border-gray-200',
@@ -17,7 +17,7 @@
         <div class="flex flex-row justify-start items-center mr-1">
           <span class="mr-1">
             <heroicons-outline:table-cells
-              v-if="tab.type === SchemaDesignerTabType.TabForTable"
+              v-if="tab.type === SchemaEditorTabType.TabForTable"
               class="rounded w-4 h-auto text-gray-400"
             />
           </span>
@@ -48,13 +48,13 @@ import { NEllipsis } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, ref, watch } from "vue";
 import {
-  useSchemaDesignerContext,
+  useSchemaEditorContext,
   TabContext,
-  SchemaDesignerTabType,
+  SchemaEditorTabType,
 } from "./common";
-import { isTableChanged } from "./utils/table";
+import { isTableChanged } from "./utils";
 
-const { tabState, getCurrentTab, getTable } = useSchemaDesignerContext();
+const { tabState, getCurrentTab, getTable } = useSchemaEditorContext();
 const tabsContainerRef = ref();
 const tabList = computed(() => {
   return Array.from(tabState.value.tabMap.values());
@@ -80,7 +80,7 @@ watch(
 );
 
 const getTabComputedClassList = (tab: TabContext) => {
-  if (tab.type === SchemaDesignerTabType.TabForTable) {
+  if (tab.type === SchemaEditorTabType.TabForTable) {
     const table = getTable(tab.schemaId, tab.tableId);
     if (!table) {
       return [];
@@ -100,7 +100,7 @@ const getTabComputedClassList = (tab: TabContext) => {
 };
 
 const getTabName = (tab: TabContext) => {
-  if (tab.type === SchemaDesignerTabType.TabForTable) {
+  if (tab.type === SchemaEditorTabType.TabForTable) {
     const table = getTable(tab.schemaId, tab.tableId);
     return table.name || "Uknown tab";
   } else {

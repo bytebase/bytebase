@@ -13,7 +13,7 @@
       <NRadio :value="option.value" :label="option.label" />
     </div>
     <div class="col-span-2 flex flex-row justify-start items-center">
-      <NRadio :value="-1" :label="$t('issue.grant-request.customize')" />
+      <NRadio :value="-1" :label="$t('issue.grant-request.custom')" />
       <NInputNumber
         v-model:value="state.customValue"
         class="!w-24 ml-2"

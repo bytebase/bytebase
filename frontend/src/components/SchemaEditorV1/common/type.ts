@@ -3,14 +3,14 @@ import { Schema, Table, ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 
-export enum SchemaDesignerTabType {
+export enum SchemaEditorTabType {
   TabForTable = "table",
 }
 
 // Tab context for editing table.
 export interface TableTabContext {
   id: string;
-  type: SchemaDesignerTabType.TabForTable;
+  type: SchemaEditorTabType.TabForTable;
   schemaId: string;
   tableId: string;
   selectedSubtab?: string;
@@ -18,17 +18,17 @@ export interface TableTabContext {
 
 export type TabContext = TableTabContext;
 
-export interface SchemaDesignerTabState {
+export interface SchemaEditorTabState {
   tabMap: Map<string, TabContext>;
   currentTabId?: string;
 }
 
-export interface SchemaDesignerContext {
+export interface SchemaEditorContext {
   readonly: Ref<boolean>;
   baselineMetadata: Ref<DatabaseMetadata>;
   engine: Ref<Engine>;
   metadata: Ref<DatabaseMetadata>;
-  tabState: Ref<SchemaDesignerTabState>;
+  tabState: Ref<SchemaEditorTabState>;
   originalSchemas: Ref<Schema[]>;
   editableSchemas: Ref<Schema[]>;
   project: Ref<ComposedProject>;

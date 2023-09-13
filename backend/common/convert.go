@@ -1,6 +1,8 @@
 package common
 
 import (
+	"encoding/base64"
+
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	v1alpha1 "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
@@ -38,12 +40,12 @@ var ApprovalFactors = []cel.EnvOption{
 // QueryExportPolicyCELAttributes are the variables when evaluating query and export permissions.
 var QueryExportPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("resource.environment_name", cel.StringType),
-	cel.Variable("request.time", cel.TimestampType),
-	cel.Variable("request.statement", cel.StringType),
-	cel.Variable("request.row_limit", cel.IntType),
 	cel.Variable("resource.database", cel.StringType),
 	cel.Variable("resource.schema", cel.StringType),
 	cel.Variable("resource.table", cel.StringType),
+	cel.Variable("request.statement", cel.StringType),
+	cel.Variable("request.row_limit", cel.IntType),
+	cel.Variable("request.time", cel.TimestampType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
@@ -55,6 +57,7 @@ var MaskingRulePolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("database_name", cel.StringType),
 	cel.Variable("schema_name", cel.StringType),
 	cel.Variable("table_name", cel.StringType),
+	cel.Variable("column_name", cel.StringType),
 	cel.Variable("classification_level", cel.StringType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
@@ -203,6 +206,7 @@ func ValidateMaskingExceptionCELExpr(expr string) (cel.Program, error) {
 type QueryExportFactors struct {
 	DatabaseNames []string
 	ExportRows    int64
+	Statement     string
 }
 
 // GetQueryExportFactors is used to get risk factors from query and export expressions.
@@ -240,6 +244,14 @@ func findField(callExpr *v1alpha1.Expr_Call, factors *QueryExportFactors) {
 				for _, element := range list.Elements {
 					factors.DatabaseNames = append(factors.DatabaseNames, element.GetConstExpr().GetStringValue())
 				}
+			}
+			if idExpr.Name == "request.statement" && callExpr.Function == "_==_" {
+				encodedStatment := callExpr.Args[1].GetConstExpr().GetStringValue()
+				statement, err := base64.StdEncoding.DecodeString(encodedStatment)
+				if err != nil {
+					return
+				}
+				factors.Statement = string(statement)
 			}
 			return
 		}

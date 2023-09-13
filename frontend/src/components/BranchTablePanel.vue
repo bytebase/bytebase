@@ -1,10 +1,16 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto">
+  <div class="space-y-3 pt-1 w-full overflow-x-auto">
     <div
       class="w-full border-b pb-2 mb-2 flex flex-row justify-between items-center"
     >
       <div class="flex flex-row justify-start items-center space-x-2"></div>
-      <div>
+      <div class="flex flex-row justify-end items-center gap-x-2">
+        <NInput
+          v-model:value="state.searchKeyword"
+          class="!w-36"
+          clearable
+          :placeholder="$t('schema-designer.action.filter-by-name')"
+        />
         <NButton type="primary" @click="state.showCreatePanel = true">
           <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
           <span>{{ $t("database.new-branch") }}</span>
@@ -14,7 +20,7 @@
 
     <BranchTable
       v-if="ready"
-      :branches="sortedBranches"
+      :branches="filteredBranches"
       :hide-project-column="hideProjectColumn"
       @click="handleBranchClick"
     />
@@ -44,7 +50,7 @@
 
 <script lang="ts" setup>
 import { orderBy } from "lodash-es";
-import { NButton } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import BranchTable from "@/components/SchemaDesigner/BranchTable.vue";
 import CreateSchemaDesignPanel from "@/components/SchemaDesigner/CreateSchemaDesignPanel.vue";
@@ -59,6 +65,7 @@ const props = defineProps<{
 }>();
 
 interface LocalState {
+  searchKeyword: string;
   showCreatePanel: boolean;
   selectedSchemaDesignName?: string;
 }
@@ -66,6 +73,7 @@ interface LocalState {
 const projectV1Store = useProjectV1Store();
 const { schemaDesignList, ready } = useSchemaDesignList();
 const state = reactive<LocalState>({
+  searchKeyword: "",
   showCreatePanel: false,
 });
 
@@ -73,7 +81,7 @@ const project = computed(() =>
   projectV1Store.getProjectByUID(props.projectId || "")
 );
 
-const sortedBranches = computed(() => {
+const filteredBranches = computed(() => {
   return orderBy(
     props.projectId
       ? schemaDesignList.value.filter((schemaDesign) =>
@@ -82,7 +90,11 @@ const sortedBranches = computed(() => {
       : schemaDesignList.value,
     "updateTime",
     "desc"
-  );
+  ).filter((branch) => {
+    return state.searchKeyword
+      ? branch.title.includes(state.searchKeyword)
+      : true;
+  });
 });
 
 const handleBranchClick = async (schemaDesign: SchemaDesign) => {

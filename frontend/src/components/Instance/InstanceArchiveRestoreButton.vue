@@ -54,6 +54,7 @@
 import { NCheckbox } from "naive-ui";
 import { computed, ref, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { restartAppRoot } from "@/AppRootContext";
 import {
   useCurrentUserV1,
   useInstanceV1Store,
@@ -115,5 +116,7 @@ const archiveOrRestoreInstance = async (archive: boolean) => {
       ]),
     });
   }
+
+  restartAppRoot();
 };
 </script>

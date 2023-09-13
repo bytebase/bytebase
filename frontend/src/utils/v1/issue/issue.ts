@@ -1,5 +1,6 @@
 import slug from "slug";
-import { ComposedIssue, EMPTY_ROLLOUT_NAME } from "@/types";
+import { ComposedIssue } from "@/types";
+import { Issue_Type } from "@/types/proto/v1/issue_service";
 import { Plan, Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
 
 export const issueV1Slug = (issue: ComposedIssue) => {
@@ -13,8 +14,7 @@ export const extractIssueUID = (name: string) => {
 };
 
 export const isGrantRequestIssue = (issue: ComposedIssue): boolean => {
-  return !issue.rollout || issue.rollout === EMPTY_ROLLOUT_NAME; // TODO
-  // return issueType === "bb.issue.grant.request";
+  return issue.type === Issue_Type.GRANT_REQUEST;
 };
 
 export const flattenTaskV1List = (rollout: Rollout) => {

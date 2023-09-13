@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	planCheckSchedulerInterval = time.Duration(1) * time.Second
+	planCheckSchedulerInterval = 5 * time.Second
 )
 
 // NewScheduler creates a new plan check scheduler.
@@ -49,6 +49,8 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
+			s.runOnce(ctx)
+		case <-s.stateCfg.PlanCheckTickleChan:
 			s.runOnce(ctx)
 		case <-ctx.Done():
 			return

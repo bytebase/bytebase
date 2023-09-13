@@ -93,25 +93,35 @@
             <label for="column-name" class="textlabel">
               {{ $t("schema-template.classification.self") }}
             </label>
-            <div class="flex items-center gap-x-2">
+            <div class="flex items-center gap-x-2 mt-1">
               <ClassificationLevelBadge
                 :classification="state.column?.classification"
                 :classification-config="classificationConfig"
               />
               <div class="flex">
-                <button
-                  v-if="state.column?.classification"
-                  class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-                  @click.prevent="state.column!.classification = ''"
-                >
-                  <heroicons-outline:x class="w-4 h-4" />
-                </button>
-                <button
-                  class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-                  @click.prevent="state.showClassificationDrawer = true"
-                >
-                  <heroicons-outline:pencil class="w-4 h-4" />
-                </button>
+                <template v-if="allowEdit">
+                  <button
+                    v-if="state.column?.classification"
+                    class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                    @click.prevent="state.column!.classification = ''"
+                  >
+                    <heroicons-outline:x class="w-4 h-4" />
+                  </button>
+                  <button
+                    class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                    @click.prevent="state.showClassificationDrawer = true"
+                  >
+                    <heroicons-outline:pencil class="w-4 h-4" />
+                  </button>
+                </template>
+                <template v-else>
+                  <input
+                    name="classification"
+                    type="text"
+                    class="textfield w-full"
+                    :disabled="true"
+                  />
+                </template>
               </div>
             </div>
           </div>

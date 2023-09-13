@@ -902,7 +902,7 @@
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
       "manually-select": "Manually select",
-      "customize": "Customize",
+      "custom": "Custom",
       "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once.",
       "export-method": "Export method",
       "request-sent": "Request sent",
@@ -1222,7 +1222,7 @@
     "self": "Change History",
     "select": "Schema version is recorded each time a schema change is applied via Bytebase",
     "workflow": "Workflow",
-    "change-type": "Change Type",
+    "change-type": "Type",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
     "schema-drift": "Schema drift",
@@ -2842,13 +2842,13 @@
       "category-desc": "Select an existed category or create a new one",
       "unclassified": "Unclassified",
       "column-name": "Column name",
-      "column-type": "Column Type",
+      "column-type": "Column type",
       "default-value": "Default value",
       "comment": "Comment",
       "nullable": "Nullable"
     },
     "classification": {
-      "self": "Data Classification",
+      "self": "Data classification",
       "select": "Select classification",
       "search": "Search classification"
     }
@@ -2958,7 +2958,8 @@
     },
     "action": {
       "use-the-existing-branch": "Use the existing branch",
-      "create-new-branch": "Create new branch"
+      "create-new-branch": "Create new branch",
+      "filter-by-name": "Filter by name"
     }
   },
   "cel": {
@@ -2973,6 +2974,7 @@
       "expiration_days": "Expiration days",
       "export_rows": "Export rows",
       "table_name": "Table name",
+      "column_name": "Column name",
       "classification_level": "Classification level"
     }
   }
