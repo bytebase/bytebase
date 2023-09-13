@@ -474,6 +474,10 @@ message ColumnMetadata {
 
   // The user_comment is the user comment of a column parsed from the comment.
   string user_comment = 10;
+
+  // The effective_masking_level is the effective masking level of the column, evaluate from the
+  // column masking data and global masking rules.
+  MaskingLevel effective_masking_level = 11;
 }
 
 // ViewMetadata is the metadata for views.

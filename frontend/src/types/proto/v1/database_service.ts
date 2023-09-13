@@ -7,7 +7,7 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
-import { State, stateFromJSON, stateToJSON } from "./common";
+import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON, State, stateFromJSON, stateToJSON } from "./common";
 import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.v1";
@@ -422,6 +422,8 @@ export interface ColumnMetadata {
   classification: string;
   /** The user_comment is the user comment of a column parsed from the comment. */
   userComment: string;
+  /** The masking_level is the masking level of the column. */
+  maskingLevel: MaskingLevel;
 }
 
 /** ViewMetadata is the metadata for views. */
@@ -3419,6 +3421,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     comment: "",
     classification: "",
     userComment: "",
+    maskingLevel: 0,
   };
 }
 
@@ -3453,6 +3456,9 @@ export const ColumnMetadata = {
     }
     if (message.userComment !== "") {
       writer.uint32(82).string(message.userComment);
+    }
+    if (message.maskingLevel !== 0) {
+      writer.uint32(88).int32(message.maskingLevel);
     }
     return writer;
   },
@@ -3534,6 +3540,13 @@ export const ColumnMetadata = {
 
           message.userComment = reader.string();
           continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.maskingLevel = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3555,6 +3568,7 @@ export const ColumnMetadata = {
       comment: isSet(object.comment) ? String(object.comment) : "",
       classification: isSet(object.classification) ? String(object.classification) : "",
       userComment: isSet(object.userComment) ? String(object.userComment) : "",
+      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
     };
   },
 
@@ -3570,6 +3584,7 @@ export const ColumnMetadata = {
     message.comment !== undefined && (obj.comment = message.comment);
     message.classification !== undefined && (obj.classification = message.classification);
     message.userComment !== undefined && (obj.userComment = message.userComment);
+    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
     return obj;
   },
 
@@ -3589,6 +3604,7 @@ export const ColumnMetadata = {
     message.comment = object.comment ?? "";
     message.classification = object.classification ?? "";
     message.userComment = object.userComment ?? "";
+    message.maskingLevel = object.maskingLevel ?? 0;
     return message;
   },
 };
