@@ -23,7 +23,7 @@ import { useProjectV1Store } from ".";
 import { useUserStore } from "../user";
 import { useActivityV1Store } from "./activity";
 import { projectNamePrefix, issueNamePrefix } from "./common";
-import { composeIssue } from "./experimental-issue";
+import { shallowComposeIssue } from "./experimental-issue";
 
 const issueName = (legacyIssue: LegacyIssue) => {
   return `projects/${legacyIssue.project.id}/issues/${legacyIssue.id}`;
@@ -34,6 +34,12 @@ const emptyIssue = (legacyIssue: LegacyIssue) => {
     name: issueName(legacyIssue),
     approvalFindingDone: false,
   });
+};
+
+export type ListIssueParams = {
+  find: IssueFilter;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export const buildIssueFilter = (find: IssueFilter): string => {
@@ -174,15 +180,28 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     await useActivityV1Store().fetchActivityListByIssueId(issueId);
   };
 
+  const listIssues = async ({ find, pageSize, pageToken }: ListIssueParams) => {
+    const resp = await issueServiceClient.listIssues({
+      parent: find.project,
+      filter: buildIssueFilter(find),
+      pageSize,
+      pageToken,
+    });
+
+    const composedIssues = await Promise.all(
+      resp.issues.map((issue) => shallowComposeIssue(issue))
+    );
+    return {
+      nextPageToken: resp.nextPageToken,
+      issues: composedIssues,
+    };
+  };
+
   const searchIssues = async ({
     find,
     pageSize,
     pageToken,
-  }: {
-    find: IssueFilter;
-    pageSize?: number;
-    pageToken?: string;
-  }) => {
+  }: ListIssueParams) => {
     const resp = await issueServiceClient.searchIssues({
       parent: find.project,
       query: find.query,
@@ -192,7 +211,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     });
 
     const composedIssues = await Promise.all(
-      resp.issues.map((issue) => composeIssue(issue))
+      resp.issues.map((issue) => shallowComposeIssue(issue))
     );
     return {
       nextPageToken: resp.nextPageToken,
@@ -206,6 +225,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     approveIssue,
     rejectIssue,
     requestIssue,
+    listIssues,
     searchIssues,
     regenerateReview,
     regenerateReviewV1,
