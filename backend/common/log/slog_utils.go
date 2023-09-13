@@ -39,7 +39,7 @@ func init() {
 func BBError(err error) slog.Attr {
 	var value string
 	if err == nil {
-		value = "no-op"
+		value = ""
 	} else {
 		value = err.Error()
 	}
