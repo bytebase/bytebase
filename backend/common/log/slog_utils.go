@@ -37,7 +37,13 @@ func init() {
 }
 
 func BBError(err error) slog.Attr {
-	return slog.String("error", err.Error())
+	var value string
+	if err == nil {
+		value = ""
+	} else {
+		value = err.Error()
+	}
+	return slog.String("error", value)
 }
 
 func BBStack(key string) slog.Attr {
