@@ -53,7 +53,8 @@
           class="!mt-6"
           :readonly="true"
           :engine="state.schemaDesign.engine"
-          :schema-design="state.schemaDesign"
+          :baseline-schema-metadata="state.schemaDesign.baselineSchemaMetadata"
+          :schema-metadata="state.schemaDesign.schemaMetadata"
           :project="project"
         />
       </div>
