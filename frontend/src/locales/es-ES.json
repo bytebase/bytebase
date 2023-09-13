@@ -632,14 +632,16 @@
         "condition-order": "Orden de condición",
         "add-rule": "Agregar regla",
         "re-order": "Reordenar",
-        "delete-rule-tip": "¿Eliminar esta regla?"
+        "delete-rule-tip": "¿Eliminar esta regla?",
+        "check-rules": "Check global rules"
       },
       "column-detail": {
         "masking-setting-for-column": "Configuración de enmascaramiento para \"{columna}\"",
         "access-user-list": "Acceder a la lista de usuarios",
         "access-user-list-desc": "Usuarios autorizados a acceder a datos desenmascarados.",
         "remove-user-permission": "¿Quitar el permiso del usuario?",
-        "remove-sensitive-warning": "Expondrá la columna."
+        "remove-sensitive-warning": "Expondrá la columna.",
+        "column-effective-masking-tips": "Esta columna no configura su propio nivel de enmascaramiento.\nMostramos su nivel de enmascaramiento efectivo con reglas de enmascaramiento globales. {link}"
       },
       "algorithms": {
         "self": "Algoritmo de enmascaramiento",
