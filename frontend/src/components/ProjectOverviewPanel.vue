@@ -63,35 +63,37 @@
       </div>
 
       <div>
-        <WaitingForMyApprovalIssueTable
+        <WaitingForMyApprovalIssueTableV1
           v-if="hasCustomApprovalFeature"
           session-key="project-waiting-approval"
-          :issue-find="{
-            statusList: ['OPEN'],
-            projectId: project.uid,
+          method="LIST"
+          :issue-filter="{
+            ...commonIssueFilter,
+            statusList: [IssueStatus.OPEN],
           }"
         >
           <template #table="{ issueList, loading }">
-            <IssueTable
+            <IssueTableV1
               :mode="'PROJECT'"
               :show-placeholder="!loading"
               :title="$t('issue.waiting-approval')"
               :issue-list="issueList"
             />
           </template>
-        </WaitingForMyApprovalIssueTable>
+        </WaitingForMyApprovalIssueTableV1>
 
         <!-- show OPEN issues with pageSize=10 -->
-        <PagedIssueTable
+        <PagedIssueTableV1
           session-key="project-open"
-          :issue-find="{
-            statusList: ['OPEN'],
-            projectId: project.uid,
+          method="LIST"
+          :issue-filter="{
+            ...commonIssueFilter,
+            statusList: [IssueStatus.OPEN],
           }"
           :page-size="10"
         >
           <template #table="{ issueList, loading }">
-            <IssueTable
+            <IssueTableV1
               class="-mt-px"
               :mode="'PROJECT'"
               :title="$t('project.overview.in-progress')"
@@ -99,21 +101,22 @@
               :show-placeholder="!loading"
             />
           </template>
-        </PagedIssueTable>
+        </PagedIssueTableV1>
 
         <!-- show the first 5 DONE or CANCELED issues -->
         <!-- But won't show "Load more", since we have a "View all closed" link below -->
-        <PagedIssueTable
+        <PagedIssueTableV1
           session-key="project-closed"
-          :issue-find="{
-            statusList: ['DONE', 'CANCELED'],
-            projectId: project.uid,
+          method="LIST"
+          :issue-filter="{
+            ...commonIssueFilter,
+            statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
           }"
           :page-size="5"
           :hide-load-more="true"
         >
           <template #table="{ issueList, loading }">
-            <IssueTable
+            <IssueTableV1
               class="-mt-px"
               :mode="'PROJECT'"
               :title="$t('project.overview.recently-closed')"
@@ -121,7 +124,7 @@
               :show-placeholder="!loading"
             />
           </template>
-        </PagedIssueTable>
+        </PagedIssueTableV1>
 
         <div class="w-full flex justify-end mt-2 px-4">
           <router-link
@@ -137,21 +140,21 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType } from "vue";
+import { reactive, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
-import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
 import { featureToRef } from "@/store";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Project } from "@/types/proto/v1/project_service";
-import { IssueTable } from "../components/Issue";
-import { Issue } from "../types";
+import { IssueFilter } from "../types";
+import IssueTableV1 from "./IssueV1/components/IssueTableV1.vue";
+import PagedIssueTableV1 from "./IssueV1/components/PagedIssueTableV1.vue";
+import WaitingForMyApprovalIssueTableV1 from "./IssueV1/components/WaitingForMyApprovalIssueTableV1.vue";
 
 interface LocalState {
   isFetchingActivityList: boolean;
-  progressIssueList: Issue[];
-  closedIssueList: Issue[];
 }
 
-defineProps({
+const props = defineProps({
   project: {
     required: true,
     type: Object as PropType<Project>,
@@ -160,10 +163,15 @@ defineProps({
 
 const state = reactive<LocalState>({
   isFetchingActivityList: false,
-  progressIssueList: [],
-  closedIssueList: [],
 });
 const router = useRouter();
 
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
+
+const commonIssueFilter = computed((): IssueFilter => {
+  return {
+    project: props.project.name,
+    query: "",
+  };
+});
 </script>
