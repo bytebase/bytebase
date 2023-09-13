@@ -51,22 +51,25 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 						Name: "TFK",
 						Columns: []*v1pb.ColumnMetadata{
 							{
-								Name:     "a",
-								Position: 1,
-								Nullable: true,
-								Type:     "integer",
+								Name:                  "a",
+								Position:              1,
+								Nullable:              true,
+								Type:                  "integer",
+								EffectiveMaskingLevel: v1pb.MaskingLevel_NONE,
 							},
 							{
-								Name:     "b",
-								Position: 2,
-								Nullable: true,
-								Type:     "integer",
+								Name:                  "b",
+								Position:              2,
+								Nullable:              true,
+								Type:                  "integer",
+								EffectiveMaskingLevel: v1pb.MaskingLevel_NONE,
 							},
 							{
-								Name:     "c",
-								Position: 3,
-								Nullable: true,
-								Type:     "integer",
+								Name:                  "c",
+								Position:              3,
+								Nullable:              true,
+								Type:                  "integer",
+								EffectiveMaskingLevel: v1pb.MaskingLevel_NONE,
 							},
 						},
 						ForeignKeys: []*v1pb.ForeignKeyMetadata{
@@ -119,22 +122,25 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 						Name: "trd",
 						Columns: []*v1pb.ColumnMetadata{
 							{
-								Name:     "A",
-								Position: 1,
-								Nullable: true,
-								Type:     "integer",
+								Name:                  "A",
+								Position:              1,
+								Nullable:              true,
+								Type:                  "integer",
+								EffectiveMaskingLevel: v1pb.MaskingLevel_NONE,
 							},
 							{
-								Name:     "B",
-								Position: 2,
-								Nullable: true,
-								Type:     "integer",
+								Name:                  "B",
+								Position:              2,
+								Nullable:              true,
+								Type:                  "integer",
+								EffectiveMaskingLevel: v1pb.MaskingLevel_NONE,
 							},
 							{
-								Name:     "c",
-								Position: 3,
-								Nullable: true,
-								Type:     "integer",
+								Name:                  "c",
+								Position:              3,
+								Nullable:              true,
+								Type:                  "integer",
+								EffectiveMaskingLevel: v1pb.MaskingLevel_NONE,
 							},
 						},
 						Indexes: []*v1pb.IndexMetadata{
@@ -261,7 +267,8 @@ func TestSyncerForMySQL(t *testing.T) {
 						   {
 							  "name":"id",
 							  "position":1,
-							  "type":"int"
+							  "type":"int",
+							  "effectiveMaskingLevel": "NONE"
 						   }
 						],
 						"indexes":[
@@ -287,19 +294,22 @@ func TestSyncerForMySQL(t *testing.T) {
 							  "name":"a",
 							  "position":1,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "effectiveMaskingLevel": "NONE"
 						   },
 						   {
 							  "name":"b",
 							  "position":2,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "effectiveMaskingLevel": "NONE"
 						   },
 						   {
 							  "name":"c",
 							  "position":3,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "effectiveMaskingLevel": "NONE"
 						   }
 						],
 						"indexes":[
@@ -358,19 +368,22 @@ func TestSyncerForMySQL(t *testing.T) {
 							  "name":"a",
 							  "position":1,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "effectiveMaskingLevel": "NONE"
 						   },
 						   {
 							  "name":"b",
 							  "position":2,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "effectiveMaskingLevel": "NONE"
 						   },
 						   {
 							  "name":"c",
 							  "position":3,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "effectiveMaskingLevel": "NONE"
 						   }
 						],
 						"indexes":[

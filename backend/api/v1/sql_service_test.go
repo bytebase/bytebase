@@ -272,51 +272,57 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		DatabaseName:           "bb",
 	}
 
-	defaultClassificationConfig := &storepb.DataClassificationSetting_DataClassificationConfig{
-		Id: "2b599739-41da-4c35-a9ff-4a73c6cfe32c",
-		Levels: []*storepb.DataClassificationSetting_DataClassificationConfig_Level{
+	defaultProjectDatabaseDataClassificationID := "2b599739-41da-4c35-a9ff-4a73c6cfe32c"
+
+	defaultClassification := &storepb.DataClassificationSetting{
+		Configs: []*storepb.DataClassificationSetting_DataClassificationConfig{
 			{
-				Id: "S1",
-			},
-			{
-				Id: "S2",
-			},
-		},
-		Classification: map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification{
-			"1-1-1": {
-				Id:    "1-1-1",
-				Title: "personal",
-				LevelId: func() *string {
-					a := "S2"
-					return &a
-				}(),
+				Id: defaultProjectDatabaseDataClassificationID,
+				Levels: []*storepb.DataClassificationSetting_DataClassificationConfig_Level{
+					{
+						Id: "S1",
+					},
+					{
+						Id: "S2",
+					},
+				},
+				Classification: map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification{
+					"1-1-1": {
+						Id:    "1-1-1",
+						Title: "personal",
+						LevelId: func() *string {
+							a := "S2"
+							return &a
+						}(),
+					},
+				},
 			},
 		},
 	}
 
 	testCases := []struct {
-		description               string
-		databaseMessage           *store.DatabaseMessage
-		schemaName                string
-		tableName                 string
-		column                    *storepb.ColumnMetadata
-		maskingPolicyMap          map[maskingPolicyKey]*storepb.MaskData
-		maskingRulePolicy         *storepb.MaskingRulePolicy
-		filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException
-		dataClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
+		description                             string
+		databaseMessage                         *store.DatabaseMessage
+		databaseProjectDatabaseClassificationID string
+		schemaName                              string
+		tableName                               string
+		columnName                              string
+		columnClassification                    string
+		maskingPolicyMap                        map[maskingPolicyKey]*storepb.MaskData
+		maskingRulePolicy                       *storepb.MaskingRulePolicy
+		filteredMaskingExceptions               []*storepb.MaskingExceptionPolicy_MaskingException
+		dataClassification                      *storepb.DataClassificationSetting
 
 		want storepb.MaskingLevel
 	}{
 		{
-			description:     "Follow The Global Masking Rule If Column Masking Policy Is Default",
-			databaseMessage: defaultDatabaseMessage,
-			schemaName:      "hiring",
-			tableName:       "employees",
-			column: &storepb.ColumnMetadata{
-				Name:           "salary",
-				Classification: "1-1-1",
-			},
-			maskingPolicyMap: map[maskingPolicyKey]*storepb.MaskData{},
+			description:          "Follow The Global Masking Rule If Column Masking Policy Is Default",
+			databaseMessage:      defaultDatabaseMessage,
+			schemaName:           "hiring",
+			tableName:            "employees",
+			columnName:           "salary",
+			columnClassification: "1-1-1",
+			maskingPolicyMap:     map[maskingPolicyKey]*storepb.MaskData{},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
@@ -326,21 +332,20 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					},
 				},
 			},
-			filteredMaskingExceptions: []*storepb.MaskingExceptionPolicy_MaskingException{},
-			dataClassificationConfig:  defaultClassificationConfig,
+			filteredMaskingExceptions:               []*storepb.MaskingExceptionPolicy_MaskingException{},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
 			want: storepb.MaskingLevel_FULL,
 		},
 		{
-			description:     "Follow The Global Masking Rule If Column Masking Policy Is Default And Respect The Exception",
-			databaseMessage: defaultDatabaseMessage,
-			schemaName:      "hiring",
-			tableName:       "employees",
-			column: &storepb.ColumnMetadata{
-				Name:           "salary",
-				Classification: "1-1-1",
-			},
-			maskingPolicyMap: map[maskingPolicyKey]*storepb.MaskData{},
+			description:          "Follow The Global Masking Rule If Column Masking Policy Is Default And Respect The Exception",
+			databaseMessage:      defaultDatabaseMessage,
+			schemaName:           "hiring",
+			tableName:            "employees",
+			columnName:           "salary",
+			columnClassification: "1-1-1",
+			maskingPolicyMap:     map[maskingPolicyKey]*storepb.MaskData{},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
@@ -360,20 +365,19 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
-			dataClassificationConfig: defaultClassificationConfig,
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
 			want: storepb.MaskingLevel_PARTIAL,
 		},
 		{
-			description:     "Only Find The Lower Level in Exception",
-			databaseMessage: defaultDatabaseMessage,
-			schemaName:      "hiring",
-			tableName:       "employees",
-			column: &storepb.ColumnMetadata{
-				Name:           "salary",
-				Classification: "1-1-1",
-			},
-			maskingPolicyMap: map[maskingPolicyKey]*storepb.MaskData{},
+			description:          "Only Find The Lower Level in Exception",
+			databaseMessage:      defaultDatabaseMessage,
+			schemaName:           "hiring",
+			tableName:            "employees",
+			columnName:           "salary",
+			columnClassification: "1-1-1",
+			maskingPolicyMap:     map[maskingPolicyKey]*storepb.MaskData{},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
@@ -394,19 +398,18 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					MaskingLevel: storepb.MaskingLevel_FULL,
 				},
 			},
-			dataClassificationConfig: defaultClassificationConfig,
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
 			want: storepb.MaskingLevel_PARTIAL,
 		},
 		{
-			description:     "Respect The Column Masking Policy",
-			databaseMessage: defaultDatabaseMessage,
-			schemaName:      "hiring",
-			tableName:       "employees",
-			column: &storepb.ColumnMetadata{
-				Name:           "salary",
-				Classification: "1-1-1",
-			},
+			description:          "Respect The Column Masking Policy",
+			databaseMessage:      defaultDatabaseMessage,
+			schemaName:           "hiring",
+			tableName:            "employees",
+			columnName:           "salary",
+			columnClassification: "1-1-1",
 			maskingPolicyMap: map[maskingPolicyKey]*storepb.MaskData{
 				{
 					schema: "hiring",
@@ -431,7 +434,8 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					MaskingLevel: storepb.MaskingLevel_PARTIAL,
 				},
 			},
-			dataClassificationConfig: defaultClassificationConfig,
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
 			want: storepb.MaskingLevel_PARTIAL,
 		},
@@ -440,7 +444,8 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 	a := require.New(t)
 
 	for _, tc := range testCases {
-		result, err := evaluateMaskingLevelOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.column, tc.maskingPolicyMap, tc.maskingRulePolicy, tc.filteredMaskingExceptions, tc.dataClassificationConfig)
+		m := newEmptyMaskingLevelEvaluator().withMaskingRulePolicy(tc.maskingRulePolicy).withDataClassificationSetting(tc.dataClassification)
+		result, err := m.evaluateMaskingLevelOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.columnName, tc.columnClassification, tc.databaseProjectDatabaseClassificationID, tc.maskingPolicyMap, tc.filteredMaskingExceptions)
 		a.NoError(err, tc.description)
 		a.Equal(tc.want, result, tc.description)
 	}
