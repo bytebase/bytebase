@@ -7,7 +7,7 @@
         <AsidePanel />
       </Pane>
       <Pane min-size="60" size="75">
-        <Designer />
+        <Editor />
       </Pane>
     </Splitpanes>
   </div>
@@ -27,7 +27,7 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import AsidePanel from "./AsidePanel.vue";
-import Designer from "./Designer.vue";
+import Editor from "./Editor.vue";
 import { provideSchemaEditorContext, SchemaEditorTabState } from "./common";
 import { rebuildEditableSchemas } from "./utils";
 

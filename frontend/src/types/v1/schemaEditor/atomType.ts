@@ -4,7 +4,7 @@ import {
   SchemaMetadata,
   TableMetadata,
   ColumnMetadata,
-} from "../proto/v1/database_service";
+} from "../../proto/v1/database_service";
 
 type Status = "normal" | "created" | "dropped";
 

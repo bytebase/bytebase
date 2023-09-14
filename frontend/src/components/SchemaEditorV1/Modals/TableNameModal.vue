@@ -37,8 +37,11 @@ import {
   convertColumnMetadataToColumn,
   convertTableMetadataToTable,
 } from "@/types";
-import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
+import {
+  ColumnMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 import { SchemaEditorTabType, useSchemaEditorContext } from "../common";
 
 const tableNameFieldRegexp = /^\S+$/;

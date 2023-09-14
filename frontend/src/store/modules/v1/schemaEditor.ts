@@ -1,13 +1,14 @@
 import { isUndefined, uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
-import { ComposedDatabase } from "@/types";
+import { ComposedDatabase, emptyProject } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
   SchemaEditorV1State,
   Table,
   TabContext,
   SchemaEditorTabType,
   TableTabContext,
-} from "@/types/schemaEditorV1";
+} from "@/types/v1/schemaEditor";
 
 export const generateUniqueTabId = () => {
   return uniqueId();
@@ -15,6 +16,9 @@ export const generateUniqueTabId = () => {
 
 const getDefaultSchemaEditorState = (): SchemaEditorV1State => {
   return {
+    engine: Engine.MYSQL,
+    project: emptyProject(),
+    readonly: false,
     resourceType: "database",
     resourceMap: {
       database: new Map(),
@@ -27,7 +31,7 @@ const getDefaultSchemaEditorState = (): SchemaEditorV1State => {
   };
 };
 
-export const useSchemaEditorStore = defineStore("SchemaEditorV1", {
+export const useSchemaEditorV1Store = defineStore("SchemaEditorV1", {
   state: (): SchemaEditorV1State => {
     return getDefaultSchemaEditorState();
   },
@@ -48,6 +52,9 @@ export const useSchemaEditorStore = defineStore("SchemaEditorV1", {
     },
   },
   actions: {
+    setState(state: Partial<SchemaEditorV1State>) {
+      Object.assign(this, state);
+    },
     addTab(tab: TabContext, setAsCurrentTab = true) {
       const tabCache = this.tabList.find((item) => {
         if (
