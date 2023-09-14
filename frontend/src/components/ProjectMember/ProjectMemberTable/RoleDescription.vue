@@ -7,13 +7,14 @@
     class="normal-link"
     @click="gotoIssuePage"
   >
-    {{ `#${issueId}` }}
+    {{ `#${issueUID}` }}
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, defineProps, onMounted, ref } from "vue";
-import { pushNotification, useIssueStore } from "@/store";
+import { issueServiceClient } from "@/grpcweb";
+import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { issueSlug } from "@/utils";
 
@@ -28,7 +29,7 @@ const props = defineProps({
   },
 });
 
-const issueId = ref(UNKNOWN_ID);
+const issueUID = ref(String(UNKNOWN_ID));
 
 const descriptionType = computed<DescriptionType>(() => {
   if (issueDescriptionRegexp.test(props.description)) {
@@ -38,24 +39,26 @@ const descriptionType = computed<DescriptionType>(() => {
 });
 
 const gotoIssuePage = async () => {
-  const issue = await useIssueStore().getOrFetchIssueById(issueId.value);
-  if (issue.id === UNKNOWN_ID) {
+  const issue = await issueServiceClient.getIssue({
+    name: `projects/-/issues/${issueUID.value}`,
+  });
+  if (issue.uid === String(UNKNOWN_ID)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: `Issue #${issueId.value} not found`,
+      title: `Issue #${issueUID.value} not found`,
     });
     return;
   }
 
-  window.open(`/issue/${issueSlug(issue.name, issue.id)}`, "_blank");
+  window.open(`/issue/${issueSlug(issue.title, issue.uid)}`, "_blank");
 };
 
 onMounted(() => {
   if (descriptionType.value === "ISSUE") {
     const match = props.description.match(issueDescriptionRegexp);
     if (match) {
-      issueId.value = Number(match[1]);
+      issueUID.value = match[1];
     }
   }
 });
