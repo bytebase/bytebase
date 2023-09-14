@@ -1,8 +1,9 @@
-import { getExportRequestFormat, useSQLStore } from "@/store";
+import { useSQLStore } from "@/store";
+import { ExportFormat } from "@/types/proto/v1/common";
 import { extractDatabaseResourceName } from "@/utils";
 
 export type ExportDataParams = {
-  format: "CSV" | "JSON" | "SQL" | "XLSX";
+  format: ExportFormat;
   statement: string;
   limit: number;
   database: string; // instances/{instance}/databases/{database}
@@ -23,7 +24,7 @@ export const useExportData = () => {
       connectionDatabase,
       statement: params.statement,
       limit: params.limit,
-      format: getExportRequestFormat(params.format),
+      format: params.format,
       admin: params.admin ?? false,
     });
 
