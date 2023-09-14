@@ -75,17 +75,17 @@ type diffNode struct {
 
 func (diff *diffNode) diffUnsupportedStatement(oldUnsupportedStmtList, newUnsupportedStmtList []string) error {
 	// We compare the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statements based on strcmp.
-	oldUnsupportMap, err := buildUnsupportObjectMap(oldUnsupportedStmtList)
+	oldUnsupportedMap, err := buildUnsupportedObjectMap(oldUnsupportedStmtList)
 	if err != nil {
 		return err
 	}
-	newUnsupportMap, err := buildUnsupportObjectMap(newUnsupportedStmtList)
+	newUnsupportedMap, err := buildUnsupportedObjectMap(newUnsupportedStmtList)
 	if err != nil {
 		return err
 	}
-	for tp, objs := range newUnsupportMap {
-		for newName, newStmt := range objs {
-			if oldStmt, ok := oldUnsupportMap[tp][newName]; ok {
+	for tp, objects := range newUnsupportedMap {
+		for newName, newStmt := range objects {
+			if oldStmt, ok := oldUnsupportedMap[tp][newName]; ok {
 				if strings.Compare(oldStmt, newStmt) != 0 {
 					// We should drop the old function and create the new function.
 					// https://dev.mysql.com/doc/refman/8.0/en/drop-procedure.html
@@ -93,7 +93,7 @@ func (diff *diffNode) diffUnsupportedStatement(oldUnsupportedStmtList, newUnsupp
 					diff.inPlaceDropUnsupportedStatement = append(diff.inPlaceDropUnsupportedStatement, fmt.Sprintf("DROP %s IF EXISTS `%s`;", tp, newName))
 					diff.inPlaceAddUnsupportedStatement = append(diff.inPlaceAddUnsupportedStatement, newStmt)
 				}
-				delete(oldUnsupportMap[tp], newName)
+				delete(oldUnsupportedMap[tp], newName)
 				continue
 			}
 			// Now, the input of differ comes from the our mysqldump, mysqldump use ;; to separate the CREATE TRIGGER/FUNCTION/PROCEDURE/EVENT statements;
@@ -103,8 +103,8 @@ func (diff *diffNode) diffUnsupportedStatement(oldUnsupportedStmtList, newUnsupp
 		}
 	}
 	// drop remaining TiDB unsupported objects
-	for tp, objs := range oldUnsupportMap {
-		for name := range objs {
+	for tp, objects := range oldUnsupportedMap {
+		for name := range objects {
 			diff.dropUnsupportedStatement = append(diff.dropUnsupportedStatement, fmt.Sprintf("DROP %s IF EXISTS `%s`;", tp, name))
 		}
 	}
@@ -780,15 +780,15 @@ func (diff *diffNode) buildSchemaInfo(nodes []ast.StmtNode) (*schemaInfo, error)
 	return result, nil
 }
 
-// buildUnsupportObjectMap builds map for trigger, function, procedure, event to correspond create object string statements.
-func buildUnsupportObjectMap(stmts []string) (map[objectType]map[string]string, error) {
+// buildUnsupportedObjectMap builds map for trigger, function, procedure, event to correspond create object string statements.
+func buildUnsupportedObjectMap(stmts []string) (map[objectType]map[string]string, error) {
 	m := make(map[objectType]map[string]string)
 	m[trigger] = make(map[string]string)
 	m[function] = make(map[string]string)
 	m[procedure] = make(map[string]string)
 	m[event] = make(map[string]string)
 	for _, stmt := range stmts {
-		objName, objType, err := extractUnsupportObjNameAndType(stmt)
+		objName, objType, err := extractUnsupportedObjectNameAndType(stmt)
 		if err != nil {
 			return nil, err
 		}
