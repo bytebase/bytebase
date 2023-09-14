@@ -28,6 +28,21 @@
           )
         }}
       </span>
+      <span
+        v-if="
+          effectiveMaskingLevel &&
+          maskLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED
+        "
+        class="text-sm font-medium text-main whitespace-nowrap"
+      >
+        ({{
+          $t(
+            `settings.sensitive-data.masking-level.${maskingLevelToJSON(
+              effectiveMaskingLevel
+            ).toLowerCase()}`
+          )
+        }})
+      </span>
     </label>
   </div>
 </template>
@@ -39,6 +54,7 @@ defineProps<{
   disabled: boolean;
   selected: MaskingLevel;
   levelList: MaskingLevel[];
+  effectiveMaskingLevel?: MaskingLevel;
 }>();
 
 defineEmits<{
