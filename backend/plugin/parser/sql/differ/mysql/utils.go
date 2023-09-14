@@ -21,8 +21,8 @@ const (
 	trigger   objectType = "TRIGGER"
 )
 
-// extractUnsupportObjNameAndType extract the object name from the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statement and returns the object name and type.
-func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
+// extractUnsupportedObjectNameAndType extract the object name from the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statement and returns the object name and type.
+func extractUnsupportedObjectNameAndType(stmt string) (string, objectType, error) {
 	fs := []objectType{
 		function,
 		procedure,
