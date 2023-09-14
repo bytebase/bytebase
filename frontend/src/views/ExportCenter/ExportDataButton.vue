@@ -1,16 +1,21 @@
 <template>
   <DataExportButton
     size="tiny"
-    :support-formats="['CSV', 'JSON', 'SQL', 'XLSX']"
+    :support-formats="[
+      ExportFormat.CSV,
+      ExportFormat.JSON,
+      ExportFormat.SQL,
+      ExportFormat.XLSX,
+    ]"
     @export="handleExportData"
   />
 </template>
 
 <script lang="ts" setup>
 import { BinaryLike } from "node:crypto";
-import { ExportFormat } from "@/components/DataExportButton.vue";
 import { useProjectIamPolicyStore } from "@/store";
 import { useExportData } from "@/store/modules/export";
+import { ExportFormat } from "@/types/proto/v1/common";
 import { ExportRecord } from "./types";
 
 const props = defineProps<{
