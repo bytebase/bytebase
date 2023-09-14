@@ -1,5 +1,4 @@
 import { cloneDeep, isEqual, uniq } from "lodash-es";
-import { useCurrentUserV1 } from "@/store";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -8,7 +7,6 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import {
   Column,
   ForeignKey,
@@ -52,7 +50,6 @@ export const mergeSchemaEditToMetadata = (
             (item) => item.name !== tableEdit.name
           );
           schema.tables.push(transformTableEditToMetadata(tableEdit));
-          continue;
         } else if (tableEdit.status === "dropped") {
           schema.tables = schema.tables.filter(
             (item) => item.name !== tableEdit.name
@@ -128,8 +125,8 @@ export const mergeSchemaEditToMetadata = (
       continue;
     }
 
+    // Build foreign keys.
     for (const tableEdit of schemaEdit.tableList) {
-      // Build foreign keys.
       for (const foreignKey of tableEdit.foreignKeyList) {
         const schema = metadata.schemas.find(
           (schema) => schema.name === schemaEdit.name
@@ -513,17 +510,4 @@ export const validateDatabaseMetadata = (
   }
 
   return uniq(messages);
-};
-
-export const generateForkedBranchName = (branch: SchemaDesign): string => {
-  const currentUser = useCurrentUserV1();
-  const parentBranchName = branch.title;
-  const branchName =
-    `${currentUser.value.title}/${parentBranchName}-draft`.replaceAll(" ", "-");
-  return branchName;
-};
-
-export const validateBranchName = (branchName: string): boolean => {
-  const regex = /^[a-zA-Z][a-zA-Z0-9-_/]+$/;
-  return regex.test(branchName);
 };
