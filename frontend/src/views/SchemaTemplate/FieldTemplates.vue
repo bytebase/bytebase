@@ -77,7 +77,7 @@ import { v1 as uuidv1 } from "uuid";
 import { reactive, computed, onMounted } from "vue";
 import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer } from "@/components/v2";
-import { featureToRef, useSchemaEditorStore } from "@/store";
+import { featureToRef, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
@@ -123,7 +123,6 @@ const state = reactive<LocalState>({
   searchText: "",
   selectedEngine: new Set<Engine>(),
 });
-const store = useSchemaEditorStore();
 
 onMounted(() => {
   if (props.engine) {
@@ -158,17 +157,24 @@ const toggleEngineCheck = (engine: Engine) => {
   }
 };
 
+const settingStore = useSettingV1Store();
+
+const schemaTemplateList = computed(() => {
+  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
+  return setting?.value?.schemaTemplateSettingValue?.fieldTemplates ?? [];
+});
+
 const countTemplateByEngine = (engine: Engine) => {
-  return store.schemaTemplateList.filter(
+  return schemaTemplateList.value.filter(
     (template) => template.engine === engine
   ).length;
 };
 
 const filteredTemplateList = computed(() => {
   if (state.selectedEngine.size === 0) {
-    return store.schemaTemplateList.filter(filterTemplateByKeyword);
+    return schemaTemplateList.value.filter(filterTemplateByKeyword);
   }
-  return store.schemaTemplateList.filter(
+  return schemaTemplateList.value.filter(
     (template) =>
       state.selectedEngine.has(template.engine) &&
       filterTemplateByKeyword(template)
