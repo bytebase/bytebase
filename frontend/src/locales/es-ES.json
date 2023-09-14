@@ -629,6 +629,7 @@
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
       "global-rules": {
+        "description": "Utilice la regla global para aplicar niveles de enmascaramiento por lotes, p. Todas las columnas denominadas \"correo electrónico\" se enmascararán con el nivel \"Parcial\".",
         "condition-order": "Orden de condición",
         "add-rule": "Agregar regla",
         "re-order": "Reordenar",
