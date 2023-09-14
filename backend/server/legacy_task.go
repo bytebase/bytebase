@@ -29,7 +29,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		taskPatch := &api.TaskPatch{
 			ID:        taskID,
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+			UpdaterID: api.SystemBotID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
