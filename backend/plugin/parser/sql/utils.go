@@ -656,9 +656,9 @@ func SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
 	return newTokenizer(node.Text()).setLineForMySQLCreateTableStmt(node, firstLine)
 }
 
-// ExtractTiDBUnsupportStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
+// ExtractTiDBUnsupportedStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
 // and returns the remaining statements supported by TiDB from `stmts`.
-func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
+func ExtractTiDBUnsupportedStmts(stmts string) ([]string, string, error) {
 	var unsupportStmts []string
 	var supportedStmts bytes.Buffer
 	// We use our bb tokenizer to help us split the multi-statements into statement list.

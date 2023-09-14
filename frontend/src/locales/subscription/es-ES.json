@@ -33,7 +33,7 @@
     "title": "Plan",
     "try": "Empezar la prueba gratuita",
     "free": {
-      "title": "Plan gratuito",
+      "title": "Plan comunitario",
       "label": "",
       "desc": "Elementos esenciales del equipo para centralizar la gestión del ciclo de vida de la base de datos."
     },
@@ -175,7 +175,7 @@
     "database-backup-restore": "Copia de seguridad / restauración de la base de datos",
     "webhook-integration": "Integración IM (Slack, Discord, etc)",
     "email-support": "Soporte por correo electrónico",
-    "everything-in-free-plan": "Todo en el plan gratuito",
+    "everything-in-free-plan": "Todo en el plan comunitario",
     "rbac": "Roles de Propietario, DBA y desarrollador",
     "gitlab-login": "GitLab login",
     "online-schema-migration": "Migración de esquema en línea para tablas grandes",

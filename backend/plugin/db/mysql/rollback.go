@@ -150,7 +150,7 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit i
 // GetTableColumns parses the schema to get the table columns map.
 // This is used to generate rollback SQL from the binlog events.
 func GetTableColumns(schema string) (map[string][]string, error) {
-	_, supportStmts, err := bbparser.ExtractTiDBUnsupportStmts(schema)
+	_, supportStmts, err := bbparser.ExtractTiDBUnsupportedStmts(schema)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract TiDB unsupported statements from old statements %q", schema)
 	}

@@ -8,7 +8,7 @@
       <p class="mb-2">{{ $t("schema-editor.select-reference-schema") }}</p>
       <BBSelect
         :selected-item="selectedSchema"
-        :item-list="editableSchemas"
+        :item-list="schemas"
         :placeholder="$t('schema-editor.schema.select')"
         :show-prefix-item="true"
         @select-item="(schema) => (state.referencedSchemaId = schema.id)"
@@ -75,9 +75,9 @@
 import { isUndefined } from "lodash-es";
 import { computed, onMounted, reactive, watch } from "vue";
 import { BBModal, BBSelect } from "@/bbkit";
+import { useSchemaEditorV1Store } from "@/store";
 import { Column, ForeignKey } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { useSchemaEditorContext } from "../common";
 
 interface LocalState {
   referencedSchemaId?: string;
@@ -85,32 +85,36 @@ interface LocalState {
   referencedColumnId?: string;
 }
 
-const props = defineProps({
-  schemaId: {
-    type: String,
-    default: "",
-  },
-  tableId: {
-    type: String,
-    default: "",
-  },
-  columnId: {
-    type: String,
-    default: "",
-  },
-});
+const props = defineProps<{
+  parentName: string;
+  schemaId: string;
+  tableId: string;
+  columnId: string;
+}>();
 
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const { engine, editableSchemas } = useSchemaEditorContext();
+const schemaEditorV1Store = useSchemaEditorV1Store();
 const state = reactive<LocalState>({
   referencedSchemaId: props.schemaId,
 });
 
+const engine = computed(() => schemaEditorV1Store.engine);
+
+const parentResource = computed(() => {
+  return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
+    props.parentName
+  );
+});
+
+const schemas = computed(() => {
+  return parentResource.value?.schemaList || [];
+});
+
 const schema = computed(() => {
-  return editableSchemas.value.find((item) => item.id === props.schemaId);
+  return schemaEditorV1Store.getSchema(props.parentName, props.schemaId);
 });
 
 const table = computed(() => {
@@ -122,7 +126,7 @@ const propsColumn = computed(() => {
 });
 
 const foreignKeyList = computed(() => {
-  return schema.value?.foreignKeyList || [];
+  return table.value?.foreignKeyList || [];
 });
 
 const shouldShowSchemaSelector = computed(() => {
@@ -130,7 +134,7 @@ const shouldShowSchemaSelector = computed(() => {
 });
 
 const selectedSchema = computed(() => {
-  return editableSchemas.value.find(
+  return parentResource.value?.schemaList.find(
     (schema) => schema.id === state.referencedSchemaId
   );
 });
@@ -232,7 +236,7 @@ const handleConfirmButtonClick = async () => {
       referencedTableId: state.referencedTableId,
       referencedColumnIdList: [state.referencedColumnId],
     };
-    schema.value?.foreignKeyList.push(fk);
+    table.value?.foreignKeyList.push(fk);
   } else {
     const index = foreignKey.value.columnIdList.findIndex(
       (id) => id === column.id

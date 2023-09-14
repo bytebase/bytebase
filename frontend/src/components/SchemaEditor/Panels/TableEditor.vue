@@ -319,8 +319,8 @@ import {
   useSettingV1Store,
 } from "@/store/modules";
 import { TableTabContext } from "@/types";
-import { ColumnMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
+import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import { DatabaseEdit, SchemaEditorTabType } from "@/types/schemaEditor";
 import {

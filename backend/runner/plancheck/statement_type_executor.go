@@ -485,7 +485,7 @@ func mysqlCreateAndDropDatabaseCheck(nodeList []tidbast.StmtNode) []*storepb.Pla
 func mysqlStatementTypeCheck(statement string, charset string, collation string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
 	// Due to the limitation of TiDB parser, we should split the multi-statement into single statements, and extract
 	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
-	unsupportStmt, supportStmt, err := parser.ExtractTiDBUnsupportStmts(statement)
+	unsupportStmt, supportStmt, err := parser.ExtractTiDBUnsupportedStmts(statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{

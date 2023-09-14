@@ -14,10 +14,11 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { useSchemaEditorV1Store } from "@/store/modules/v1/schemaEditor";
+import { SchemaEditorTabType } from "@/types/v1/schemaEditor";
 import TableEditor from "./Panels/TableEditor.vue";
 import TabsContainer from "./TabsContainer.vue";
-import { SchemaEditorTabType, useSchemaEditorContext } from "./common";
 
-const { getCurrentTab } = useSchemaEditorContext();
-const currentTab = computed(() => getCurrentTab());
+const schemaEditorV1Store = useSchemaEditorV1Store();
+const currentTab = computed(() => schemaEditorV1Store.currentTab);
 </script>
