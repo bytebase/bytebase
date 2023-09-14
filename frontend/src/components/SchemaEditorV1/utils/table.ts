@@ -1,23 +1,21 @@
 import { isEqual } from "lodash-es";
-import { useSchemaEditorContext } from "../common";
+import { useSchemaEditorV1Store } from "@/store";
 
-export const isTableChanged = (schemaId: string, tableId: string): boolean => {
-  const { originalSchemas, editableSchemas } = useSchemaEditorContext();
-  const originSchema = originalSchemas.value.find(
-    (schema) => schema.id === schemaId
+export const isTableChanged = (
+  parentName: string,
+  schemaId: string,
+  tableId: string
+): boolean => {
+  const schemaEditorV1Store = useSchemaEditorV1Store();
+  const editorTable = schemaEditorV1Store.getTable(
+    parentName,
+    schemaId,
+    tableId
   );
-  const schema = editableSchemas.value.find((schema) => schema.id === schemaId);
-  const originTable = originSchema?.tableList.find(
-    (table) => table.id === tableId
+  const originTable = schemaEditorV1Store.getOriginTable(
+    parentName,
+    schemaId,
+    tableId
   );
-  const table = schema?.tableList.find((table) => table.id === tableId);
-  const originForeignKeyList =
-    originSchema?.foreignKeyList.filter((fk) => fk.tableId === table?.id) || [];
-  const foreignKeyList =
-    schema?.foreignKeyList.filter((fk) => fk.tableId === table?.id) || [];
-
-  return (
-    !isEqual(originTable, table) ||
-    !isEqual(originForeignKeyList, foreignKeyList)
-  );
+  return !isEqual(originTable, editorTable);
 };

@@ -21,11 +21,11 @@ const getDefaultSchemaEditorState = (): SchemaEditorV1State => {
     readonly: false,
     resourceType: "database",
     resourceMap: {
-      database: new Map(),
-      branch: new Map(),
+      database: new Map([]),
+      branch: new Map([]),
     },
     tabState: {
-      tabMap: new Map<string, TabContext>(),
+      tabMap: new Map<string, TabContext>([]),
       currentTabId: "",
     },
   };
@@ -172,20 +172,20 @@ export const useSchemaEditorV1Store = defineStore("SchemaEditorV1", {
         schema.status = "dropped";
       }
     },
-    restoreSchema(databaseId: string, schemaId: string) {
-      const schema = this.getSchema(databaseId, schemaId);
+    restoreSchema(parentName: string, schemaId: string) {
+      const schema = this.getSchema(parentName, schemaId);
       if (!schema) {
         return;
       }
       schema.status = "normal";
     },
-    getTable(databaseId: string, schemaId: string, tableId: string) {
-      return this.getSchema(databaseId, schemaId)?.tableList.find(
+    getTable(parentName: string, schemaId: string, tableId: string) {
+      return this.getSchema(parentName, schemaId)?.tableList.find(
         (table) => table.id === tableId
       );
     },
-    getOriginTable(databaseId: string, schemaId: string, tableId: string) {
-      return this.getOriginSchema(databaseId, schemaId)?.tableList.find(
+    getOriginTable(parentName: string, schemaId: string, tableId: string) {
+      return this.getOriginSchema(parentName, schemaId)?.tableList.find(
         (table) => table.id === tableId
       );
     },

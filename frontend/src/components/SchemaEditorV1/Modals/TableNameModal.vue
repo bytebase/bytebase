@@ -32,17 +32,21 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { generateUniqueTabId, useNotificationStore } from "@/store";
 import {
-  convertColumnMetadataToColumn,
-  convertTableMetadataToTable,
-} from "@/types";
+  generateUniqueTabId,
+  useNotificationStore,
+  useSchemaEditorV1Store,
+} from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { SchemaEditorTabType, useSchemaEditorContext } from "../common";
+import {
+  SchemaEditorTabType,
+  convertColumnMetadataToColumn,
+  convertTableMetadataToTable,
+} from "@/types/v1/schemaEditor";
 
 const tableNameFieldRegexp = /^\S+$/;
 
@@ -51,6 +55,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
+  parentName: string;
   schemaId: string;
   tableId?: string;
 }>();
@@ -60,11 +65,13 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { engine, editableSchemas, addTab } = useSchemaEditorContext();
+const schemaEditorV1Store = useSchemaEditorV1Store();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   tableName: "",
 });
+
+const engine = computed(() => schemaEditorV1Store.engine);
 
 const isCreatingTable = computed(() => {
   return props.tableId === undefined;
@@ -84,8 +91,9 @@ const handleConfirmButtonClick = async () => {
     return;
   }
 
-  const schema = editableSchemas.value.find(
-    (schema) => schema.id === props.schemaId
+  const schema = schemaEditorV1Store.getSchema(
+    props.parentName,
+    props.schemaId
   );
   if (!schema) {
     notificationStore.pushNotification({
@@ -123,9 +131,10 @@ const handleConfirmButtonClick = async () => {
     tableEdit.columnList.push(columnEdit);
     tableEdit.primaryKey.columnIdList.push(columnEdit.id);
     schema.tableList.push(tableEdit);
-    addTab({
+    schemaEditorV1Store.addTab({
       id: generateUniqueTabId(),
       type: SchemaEditorTabType.TabForTable,
+      parentName: props.parentName,
       schemaId: props.schemaId,
       tableId: tableEdit.id,
     });

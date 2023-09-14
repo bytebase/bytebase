@@ -241,6 +241,7 @@
 
   <EditColumnForeignKeyModal
     v-if="state.showEditColumnForeignKeyModal && editForeignKeyColumn"
+    :parent-name="currentTab.parentName"
     :schema-id="schema.id"
     :table-id="table.id"
     :column-id="editForeignKeyColumn.id"
@@ -288,6 +289,7 @@ import {
   hasFeature,
   generateUniqueTabId,
   useSettingV1Store,
+  useSchemaEditorV1Store,
 } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
@@ -298,20 +300,15 @@ import {
   Schema,
   convertColumnMetadataToColumn,
   ForeignKey,
-} from "@/types/schemaEditor/atomType";
+  SchemaEditorTabType,
+} from "@/types/v1/schemaEditor";
+import { TableTabContext } from "@/types/v1/schemaEditor";
 import { getDataTypeSuggestionList } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
-import {
-  SchemaEditorTabType,
-  TableTabContext,
-  useSchemaEditorContext,
-} from "../common";
 import { isColumnChanged } from "../utils";
 
 interface LocalState {
-  isFetchingDDL: boolean;
-  statement: string;
   showEditColumnForeignKeyModal: boolean;
   showSchemaTemplateDrawer: boolean;
   showFeatureModal: boolean;
@@ -319,13 +316,20 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const { readonly, engine, project, editableSchemas, getCurrentTab, addTab } =
-  useSchemaEditorContext();
+const schemaEditorV1Store = useSchemaEditorV1Store();
 const settingStore = useSettingV1Store();
-const currentTab = computed(() => getCurrentTab() as TableTabContext);
+const currentTab = computed(
+  () => schemaEditorV1Store.currentTab as TableTabContext
+);
+const parentResouce = computed(() => {
+  return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
+    currentTab.value.parentName
+  )!;
+});
+const engine = computed(() => schemaEditorV1Store.engine);
+const readonly = computed(() => schemaEditorV1Store.readonly);
+const project = computed(() => schemaEditorV1Store.project);
 const state = reactive<LocalState>({
-  isFetchingDDL: false,
-  statement: "",
   showEditColumnForeignKeyModal: false,
   showSchemaTemplateDrawer: false,
   showFeatureModal: false,
@@ -333,8 +337,9 @@ const state = reactive<LocalState>({
 });
 
 const schema = computed(() => {
-  return editableSchemas.value.find(
-    (schema) => schema.id === currentTab.value.schemaId
+  return schemaEditorV1Store.getSchema(
+    currentTab.value.parentName,
+    currentTab.value.schemaId
   ) as Schema;
 });
 const table = computed(
@@ -344,7 +349,7 @@ const table = computed(
     ) as Table
 );
 const foreignKeyList = computed(() => {
-  return schema.value.foreignKeyList.filter(
+  return table.value.foreignKeyList.filter(
     (pk) => pk.tableId === currentTab.value.tableId
   ) as ForeignKey[];
 });
@@ -442,6 +447,7 @@ const getColumnItemComputedClassList = (column: Column) => {
     return ["text-green-700", "!bg-green-50"];
   } else if (
     isColumnChanged(
+      currentTab.value.parentName,
       currentTab.value.schemaId,
       currentTab.value.tableId,
       column.id
@@ -489,7 +495,7 @@ const getReferencedForeignKeyName = (column: Column) => {
   if (isUndefined(fk) || isUndefined(index) || index < 0) {
     return;
   }
-  const referencedSchema = editableSchemas.value.find(
+  const referencedSchema = parentResouce.value.schemaList.find(
     (schema) => schema.id === fk.referencedSchemaId
   );
   const referencedTable = referencedSchema?.tableList.find(
@@ -592,7 +598,7 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
     return;
   }
 
-  const referencedSchema = editableSchemas.value.find(
+  const referencedSchema = parentResouce.value.schemaList.find(
     (schema) => schema.id === fk.referencedSchemaId
   );
   const referencedTable = referencedSchema?.tableList.find(
@@ -608,9 +614,10 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
     return;
   }
 
-  addTab({
+  schemaEditorV1Store.addTab({
     id: generateUniqueTabId(),
     type: SchemaEditorTabType.TabForTable,
+    parentName: currentTab.value.parentName,
     schemaId: referencedSchema.id,
     tableId: referencedTable.id,
   });
@@ -642,7 +649,7 @@ const handleDropColumn = (column: Column) => {
         (columnId) => columnId !== column.id
       );
 
-    const foreignKeyList = schema.value.foreignKeyList.filter(
+    const foreignKeyList = table.value.foreignKeyList.filter(
       (fk) => fk.tableId === currentTab.value.tableId
     );
     for (const foreignKey of foreignKeyList) {
@@ -663,7 +670,6 @@ const handleRestoreColumn = (column: Column) => {
   if (column.status === "created") {
     return;
   }
-
   column.status = "normal";
 };
 
