@@ -53,6 +53,7 @@ const updateSchemaEditorState = () => {
     project: props.project,
     readonly: props.readonly,
     resourceType: props.resourceType,
+    // NOTE: this will clear all tabs. We will restore tabs as needed later.
     tabState: {
       tabMap: new Map(),
     },
