@@ -621,9 +621,9 @@
       }
     },
     "sensitive-data": {
-      "description": "El resultado de la consulta de las siguientes columnas se muestra como \"******\". \nPuede marcar más columnas como datos sensibles en la página de detalles de la tabla.",
+      "description": "A las siguientes columnas se les asignan niveles de enmascaramiento explícitamente y tienen prioridad sobre la regla de enmascaramiento global.",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
-      "sensitive-column-list": "Lista de columnas confidenciales",
+      "sensitive-column-list": "Lista de columnas enmascaradas explícitas",
       "global-masking-rule": "Regla de enmascaramiento global",
       "semantic-types": "Tipos semánticos",
       "grant-access": "Autorizará el acceso",
