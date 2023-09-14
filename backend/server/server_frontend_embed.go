@@ -9,6 +9,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 //go:embed dist/assets/*
@@ -28,7 +30,7 @@ func embedFrontend(e *echo.Echo) {
 	// Use echo static middleware to serve the built dist folder
 	// refer: https://github.com/labstack/echo/blob/master/middleware/static.go
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-		Skipper:    DefaultAPIRequestSkipper,
+		Skipper:    defaultAPIRequestSkipper,
 		HTML5:      true,
 		Filesystem: getFileSystem("dist"),
 	}))
@@ -41,8 +43,14 @@ func embedFrontend(e *echo.Echo) {
 		}
 	})
 	g.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-		Skipper:    DefaultAPIRequestSkipper,
+		Skipper:    defaultAPIRequestSkipper,
 		HTML5:      true,
 		Filesystem: getFileSystem("dist/assets"),
 	}))
+}
+
+// defaultAPIRequestSkipper is echo skipper for api requests.
+func defaultAPIRequestSkipper(c echo.Context) bool {
+	path := c.Path()
+	return common.HasPrefixes(path, "/api", "/v1", "/hook")
 }
