@@ -31,26 +31,20 @@
       </div>
       <DataExportButton
         size="large"
-        :support-formats="['CSV', 'JSON']"
-        :disabled="auditLogList.length === 0"
+        :support-formats="[
+          ExportFormat.CSV,
+          ExportFormat.JSON,
+          ExportFormat.XLSX,
+        ]"
+        :disabled="!hasAuditLogFeature"
         @export="handleExport"
       />
     </div>
     <PagedActivityTable
       v-if="hasAuditLogFeature"
-      :activity-find="{
-        action:
-          selectedAuditTypeList.length > 0
-            ? selectedAuditTypeList
-            : AuditActivityTypeList,
-        creatorEmail: selectedUserEmail,
-        order: 'desc',
-        createdTsAfter: selectedTimeRange ? selectedTimeRange[0] : undefined,
-        createdTsBefore: selectedTimeRange ? selectedTimeRange[1] : undefined,
-      }"
+      :activity-find="activityFind"
       session-key="bb.page-audit-log-table.settings-audit-log-table"
       :page-size="10"
-      @list:update="(list: LogEntity[]) => auditLogList = list"
     >
       <template #table="{ list }">
         <AuditLogTable :audit-log-list="list" @view-detail="handleViewDetail" />
@@ -108,18 +102,17 @@ import { reactive, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBDialog } from "@/bbkit";
-import { ExportFormat } from "@/components/DataExportButton.vue";
-import { featureToRef, useUserStore } from "@/store";
+import { featureToRef, useUserStore, useActivityV1Store } from "@/store";
 import {
   AuditActivityTypeList,
   UNKNOWN_ID,
   AuditActivityTypeI18nNameMap,
+  FindActivityMessage,
 } from "@/types";
+import { ExportFormat } from "@/types/proto/v1/common";
 import {
   LogEntity,
   LogEntity_Action,
-  logEntity_ActionToJSON,
-  LogEntity_Level,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
 
@@ -129,12 +122,11 @@ const state = reactive({
   modalContent: {},
 });
 
-const auditLogList = ref<LogEntity[]>([]);
-
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
+const activityV1Store = useActivityV1Store();
 
 const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
 
@@ -269,79 +261,31 @@ const clearDatePicker = () => {
   });
 };
 
-const handleExport = (
+const activityFind = computed((): FindActivityMessage => {
+  return {
+    action:
+      selectedAuditTypeList.value.length > 0
+        ? selectedAuditTypeList.value
+        : AuditActivityTypeList,
+    creatorEmail: selectedUserEmail.value,
+    order: "desc",
+    createdTsAfter: selectedTimeRange.value
+      ? selectedTimeRange.value[0]
+      : undefined,
+    createdTsBefore: selectedTimeRange.value
+      ? selectedTimeRange.value[1]
+      : undefined,
+  };
+});
+
+const handleExport = async (
   format: ExportFormat,
   callback: (content: BinaryLike | Blob, format: ExportFormat) => void
 ) => {
-  const content = formatExport(format);
+  const content = await activityV1Store.exportData({
+    find: activityFind.value,
+    format,
+  });
   callback(content, format);
-};
-
-function escapeCSVString(s: string) {
-  // Escape double quotes
-  s = s.replace(/"/g, '""');
-  // Escape commas
-  s = s.replace(/,/g, "\\,");
-  // Escape new lines
-  s = s.replace(/\n/g, "\\n");
-  // Escape carriage returns
-  s = s.replace(/\r/g, "\\r");
-  return s;
-}
-
-function formatLevel(level: LogEntity_Level) {
-  switch (level) {
-    case LogEntity_Level.LEVEL_INFO:
-      return "INFO";
-    case LogEntity_Level.LEVEL_WARNING:
-      return "WARNING";
-    case LogEntity_Level.LEVEL_ERROR:
-      return "ERROR";
-  }
-  return "UNKNOWN_LEVEL";
-}
-
-const formatExport = (format: ExportFormat): BinaryLike => {
-  switch (format) {
-    case "CSV":
-      return auditLogList.value
-        .reduce(
-          (list, auditLog) => {
-            list.push(
-              [
-                dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
-                formatLevel(auditLog.level),
-                logEntity_ActionToJSON(auditLog.action),
-                auditLog.creator,
-                auditLog.resource,
-                auditLog.comment,
-                escapeCSVString(auditLog.payload),
-              ].join(",")
-            );
-            return list;
-          },
-          ["time,level,action,actor,resource,comment,payload"]
-        )
-        .join("\n");
-    case "JSON":
-      return JSON.stringify(
-        auditLogList.value.map((auditLog) => {
-          return {
-            time: dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
-            level: formatLevel(auditLog.level),
-            action: logEntity_ActionToJSON(auditLog.action),
-            actor: auditLog.creator,
-            resource: auditLog.resource,
-            comment: auditLog.comment,
-            payload: auditLog.payload,
-          };
-        }),
-        null,
-        2
-      );
-    default:
-      // Should never reach this line.
-      return "";
-  }
 };
 </script>

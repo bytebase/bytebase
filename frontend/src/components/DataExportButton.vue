@@ -26,9 +26,8 @@ import { NButton, NDropdown } from "naive-ui";
 import { BinaryLike } from "node:crypto";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { getExportFileType, pushNotification } from "@/store";
-
-export type ExportFormat = "CSV" | "JSON" | "SQL" | "XLSX";
+import { pushNotification } from "@/store";
+import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
 
 interface LocalState {
   isRequesting: boolean;
@@ -61,7 +60,9 @@ const state = reactive<LocalState>({
 
 const exportDropdownOptions = computed(() => {
   return props.supportFormats.map((format) => ({
-    label: t("sql-editor.download-as-file", { file: format }),
+    label: t("sql-editor.download-as-file", {
+      file: exportFormatToJSON(format),
+    }),
     key: format,
   }));
 });
@@ -87,13 +88,26 @@ const doExport = async (format: ExportFormat) => {
   }
 };
 
+const getExportFileType = (format: ExportFormat) => {
+  switch (format) {
+    case ExportFormat.CSV:
+      return "text/csv";
+    case ExportFormat.JSON:
+      return "application/json";
+    case ExportFormat.SQL:
+      return "application/sql";
+    case ExportFormat.XLSX:
+      return "application/vnd.ms-excel";
+  }
+};
+
 const doDownload = (content: BinaryLike | Blob, format: ExportFormat) => {
   const blob = new Blob([content], {
     type: getExportFileType(format),
   });
   const url = window.URL.createObjectURL(blob);
 
-  const fileFormat = format.toLowerCase();
+  const fileFormat = exportFormatToJSON(format).toLowerCase();
   const formattedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
   const filename = `export-data-${formattedDateString}`;
   const link = document.createElement("a");
