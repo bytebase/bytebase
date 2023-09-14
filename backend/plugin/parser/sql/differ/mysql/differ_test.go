@@ -77,7 +77,7 @@ func TestExtractUnsupportObjNameAndType(t *testing.T) {
 
 	a := require.New(t)
 	for _, test := range tests {
-		gotName, gotTp, err := extractUnsupportObjNameAndType(test.stmt)
+		gotName, gotTp, err := extractUnsupportedObjectNameAndType(test.stmt)
 		a.NoError(err)
 		a.Equal(test.wantTp, gotTp)
 		a.Equal(test.wantName, gotName)
