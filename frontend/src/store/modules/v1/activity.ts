@@ -11,6 +11,7 @@ import {
   EMPTY_ID,
   ComposedIssue,
 } from "@/types";
+import { ExportFormat } from "@/types/proto/v1/common";
 import {
   LogEntity,
   LogEntity_Action,
@@ -184,6 +185,21 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     return activity.resource.split("/").slice(-1)[0];
   };
 
+  const exportData = async ({
+    find,
+    format,
+  }: {
+    find: FindActivityMessage;
+    format: ExportFormat;
+  }) => {
+    const resp = await loggingServiceClient.exportLogs({
+      orderBy: find.order ? `create_time ${find.order}` : "",
+      filter: buildFilter(find),
+      format,
+    });
+    return resp.content;
+  };
+
   return {
     fetchActivityList,
     fetchActivityListForIssue,
@@ -194,5 +210,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     getActivityListByIssue,
     getActivityListByIssueV1,
     getResourceId,
+    exportData,
   };
 });
