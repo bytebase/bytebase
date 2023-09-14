@@ -7,7 +7,7 @@
       class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
     />
     <span class="text-yellow-800 text-sm">
-      {{ $t("instance.no-read-only-data-source-warn") }}
+      {{ $t("instance.no-read-only-data-source-warn-for-owner-dba") }}
     </span>
     <button
       type="button"
