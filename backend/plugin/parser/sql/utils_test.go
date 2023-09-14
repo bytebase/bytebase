@@ -15,7 +15,7 @@ func TestExtractTiDBUnsupportStmts(t *testing.T) {
 	}{
 		{
 			stmts:       "CREATE TABLE `actor` (\n  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `first_name` varchar(45) NOT NULL,\n  `last_name` varchar(45) NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`actor_id`),\n  KEY `idx_actor_last_name` (`last_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;",
-			wantSupport: "CREATE TABLE `actor` (\n  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `first_name` varchar(45) NOT NULL,\n  `last_name` varchar(45) NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`actor_id`),\n  KEY `idx_actor_last_name` (`last_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;",
+			wantSupport: "CREATE TABLE `actor` (\n  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `first_name` varchar(45) NOT NULL,\n  `last_name` varchar(45) NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`actor_id`),\n  KEY `idx_actor_last_name` (`last_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3\n;\n",
 			wantErr:     false,
 		},
 		{
