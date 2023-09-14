@@ -169,7 +169,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 			if err != nil {
 				return nil, err
 			}
-			issueFind.AssigneeID = &user.ID
+			issueFind.CreatorID = &user.ID
 		case "assignee":
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
@@ -308,7 +308,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			if err != nil {
 				return nil, err
 			}
-			issueFind.AssigneeID = &user.ID
+			issueFind.CreatorID = &user.ID
 		case "assignee":
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)

@@ -16,7 +16,11 @@ import { Issue } from "@/types/proto/v1/issue_service";
 import { Plan, Rollout } from "@/types/proto/v1/rollout_service";
 import { extractProjectResourceName, extractUserResourceName } from "@/utils";
 
-export const composeIssue = async (rawIssue: Issue): Promise<ComposedIssue> => {
+export const composeIssue = async (
+  rawIssue: Issue,
+  withPlan = true,
+  withRollout = true
+): Promise<ComposedIssue> => {
   const userStore = useUserStore();
 
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
@@ -39,7 +43,19 @@ export const composeIssue = async (rawIssue: Issue): Promise<ComposedIssue> => {
     creatorEntity,
   };
 
-  if (issue.rollout) {
+  if (withPlan && issue.plan) {
+    if (issue.plan) {
+      const plan = await rolloutServiceClient.getPlan({
+        name: issue.plan,
+      });
+      issue.planEntity = plan;
+      const { planCheckRuns } = await rolloutServiceClient.listPlanCheckRuns({
+        parent: plan.name,
+      });
+      issue.planCheckRunList = planCheckRuns;
+    }
+  }
+  if (withRollout && issue.rollout) {
     issue.rolloutEntity = await rolloutServiceClient.getRollout({
       name: issue.rollout,
     });
@@ -48,16 +64,6 @@ export const composeIssue = async (rawIssue: Issue): Promise<ComposedIssue> => {
       pageSize: 1000, // MAX
     });
     issue.rolloutTaskRunList = taskRuns;
-  }
-  if (issue.plan) {
-    const plan = await rolloutServiceClient.getPlan({
-      name: issue.plan,
-    });
-    issue.planEntity = plan;
-    const { planCheckRuns } = await rolloutServiceClient.listPlanCheckRuns({
-      parent: plan.name,
-    });
-    issue.planCheckRunList = planCheckRuns;
   }
 
   if (issue.assignee) {
@@ -70,6 +76,12 @@ export const composeIssue = async (rawIssue: Issue): Promise<ComposedIssue> => {
   await new Promise((r) => setTimeout(r, 500));
 
   return issue;
+};
+
+export const shallowComposeIssue = async (
+  rawIssue: Issue
+): Promise<ComposedIssue> => {
+  return composeIssue(rawIssue, false, false);
 };
 
 export const experimentalFetchIssueByUID = async (uid: string) => {

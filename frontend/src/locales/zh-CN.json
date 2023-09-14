@@ -627,9 +627,11 @@
       "never-expires": "无过期时间",
       "global-rules": {
         "self": "全局脱敏规则",
+        "condition-order": "条件序列",
         "add-rule": "添加规则",
         "re-order": "排序",
-        "delete-rule-tip": "删除这条规则？"
+        "delete-rule-tip": "删除这条规则？",
+        "check-rules": "查看全局配置"
       },
       "semantic-types": {
         "self": "语义类型",
@@ -647,7 +649,8 @@
         "access-user-list": "用户访问列表",
         "access-user-list-desc": "被授权的用户可以访问非脱敏的原始数据。",
         "remove-user-permission": "删除该用户权限？",
-        "remove-sensitive-warning": "该数据会被设置为明文，不再脱敏。"
+        "remove-sensitive-warning": "该数据会被设置为明文，不再脱敏。",
+        "column-effective-masking-tips": "该字段没有配置自己的脱敏等级。\n在此展示它基于全局规则下的脱敏等级。{link}"
       },
       "algorithms": {
         "self": "脱敏算法",

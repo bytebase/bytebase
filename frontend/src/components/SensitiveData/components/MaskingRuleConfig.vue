@@ -2,16 +2,19 @@
   <div class="gap-y-4 w-full">
     <div class="flex items-stretch gap-x-4 overflow-hidden">
       <div class="flex-1 space-y-2 py-4 overflow-x-hidden overflow-y-auto">
-        <input
-          v-model="state.title"
-          class="textfield w-64 ml-0.5"
-          :placeholder="`${t('custom-approval.security-rule.condition.self')} ${
-            props.index
-          }`"
+        <NInput
+          v-if="!readonly"
+          v-model:value="state.title"
+          class="!w-64 ml-0.5"
+          :placeholder="defaultTitle"
           type="text"
-          :disabled="readonly || disabled"
+          size="small"
+          :disabled="disabled"
           @input="state.dirty = true"
         />
+        <h3 v-else class="font-medium text-sm text-main py-2">
+          {{ state.title || defaultTitle }}
+        </h3>
         <ExprEditor
           :expr="state.expr"
           :allow-admin="!readonly"
@@ -32,33 +35,46 @@
           :options="options"
           :placeholder="$t('settings.sensitive-data.masking-level.selet-level')"
           :consistent-menu-width="false"
-          :disabled="readonly || disabled"
+          :disabled="disabled || readonly"
           @update:value="state.dirty = true"
         />
       </div>
     </div>
-    <div
-      v-if="(state.dirty || isCreate) && !readonly"
-      class="flex justify-end gap-x-3"
-    >
-      <NButton :disabled="disabled" @click="onCancel">
-        {{ $t("common.cancel") }}
-      </NButton>
-      <NButton
-        type="primary"
-        :disabled="!isValid || disabled"
-        @click="onConfirm"
-      >
-        {{ $t("common.confirm") }}
-      </NButton>
+    <div v-if="!readonly" class="flex justify-between items-center">
+      <NPopconfirm v-if="allowDelete" @positive-click="$emit('delete')">
+        <template #trigger>
+          <button
+            class="flex items-center space-x-1 py-1 px-2 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+            :disabled="disabled"
+            @click.stop=""
+          >
+            <heroicons-outline:trash class="w-4 h-4" />
+            <span class="text-sm textlabel">{{ $t("common.delete") }}</span>
+          </button>
+        </template>
+        <div class="whitespace-nowrap">
+          {{ $t("settings.sensitive-data.global-rules.delete-rule-tip") }}
+        </div>
+      </NPopconfirm>
+      <div class="flex justify-end gap-x-3 ml-auto">
+        <NButton :disabled="disabled" @click="onCancel">
+          {{ $t("common.cancel") }}
+        </NButton>
+        <NButton
+          type="primary"
+          :disabled="!isValid || disabled || !state.dirty"
+          @click="onConfirm"
+        >
+          {{ $t("common.confirm") }}
+        </NButton>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
-import { NSelect, SelectOption } from "naive-ui";
-import { computed, ref, onMounted, nextTick } from "vue";
+import { NSelect, SelectOption, NPopconfirm } from "naive-ui";
+import { computed, reactive, onMounted, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr, Factor } from "@/plugins/cel";
@@ -83,9 +99,9 @@ import { factorSupportDropdown, factorOperatorOverrideMap } from "./utils";
 
 const props = defineProps<{
   index: number;
-  isCreate?: boolean;
   readonly: boolean;
   disabled: boolean;
+  allowDelete: boolean;
   factorList: Factor[];
   factorOptionsMap: Map<Factor, SelectOption[]>;
   maskingRule: MaskingRulePolicy_MaskingRule;
@@ -93,6 +109,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "cancel"): void;
+  (event: "delete"): void;
   (event: "confirm", rule: MaskingRulePolicy_MaskingRule): void;
 }>();
 
@@ -104,15 +121,34 @@ type LocalState = {
 };
 
 const { t } = useI18n();
-const state = ref<LocalState>({
+const state = reactive<LocalState>({
   title: "",
   expr: wrapAsGroup(resolveCELExpr(CELExpr.fromJSON({}))),
   maskingLevel: MaskingLevel.FULL,
   dirty: false,
 });
 
+const resetLocalState = async (rule: MaskingRulePolicy_MaskingRule) => {
+  const parsedExpr = await convertCELStringToParsedExpr(
+    rule.condition?.expression ?? ""
+  );
+
+  state.dirty = false;
+  state.title = rule.condition?.title ?? "";
+  state.expr = wrapAsGroup(
+    resolveCELExpr(parsedExpr.expr ?? CELExpr.fromJSON({}))
+  );
+  state.maskingLevel = rule.maskingLevel;
+};
+
 onMounted(async () => {
-  await resetLocalState();
+  await resetLocalState(props.maskingRule);
+});
+
+const defaultTitle = computed(() => {
+  return `${t("settings.sensitive-data.global-rules.condition-order")} ${
+    props.index
+  }`;
 });
 
 const options = computed(() => {
@@ -131,27 +167,13 @@ const options = computed(() => {
 });
 
 const onCancel = async () => {
-  await resetLocalState();
+  await resetLocalState(props.maskingRule);
   emit("cancel");
-  nextTick(() => (state.value.dirty = false));
-};
-
-const resetLocalState = async () => {
-  const rule = cloneDeep(props.maskingRule);
-  const parsedExpr = await convertCELStringToParsedExpr(
-    rule.condition?.expression ?? ""
-  );
-
-  state.value = {
-    dirty: false,
-    title: rule.condition?.title ?? "",
-    maskingLevel: rule.maskingLevel,
-    expr: wrapAsGroup(resolveCELExpr(parsedExpr.expr ?? CELExpr.fromJSON({}))),
-  };
+  nextTick(() => (state.dirty = false));
 };
 
 const isValid = computed(() => {
-  const { expr } = state.value;
+  const { expr } = state;
   if (!expr) return false;
   return validateSimpleExpr(expr);
 });
@@ -159,17 +181,17 @@ const isValid = computed(() => {
 const onConfirm = async () => {
   const expression = await convertParsedExprToCELString(
     ParsedExpr.fromJSON({
-      expr: buildCELExpr(state.value.expr),
+      expr: buildCELExpr(state.expr),
     })
   );
   emit("confirm", {
     ...props.maskingRule,
-    maskingLevel: state.value.maskingLevel,
+    maskingLevel: state.maskingLevel,
     condition: Expr.fromJSON({
       expression,
-      title: state.value.title,
+      title: state.title,
     }),
   });
-  state.value.dirty = false;
+  state.dirty = false;
 };
 </script>

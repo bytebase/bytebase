@@ -65,7 +65,12 @@
           v-if="showExportButton"
           size="small"
           :disabled="props.result === null || isEmpty(props.result)"
-          :support-formats="['CSV', 'JSON', 'SQL', 'XLSX']"
+          :support-formats="[
+            ExportFormat.CSV,
+            ExportFormat.JSON,
+            ExportFormat.SQL,
+            ExportFormat.XLSX,
+          ]"
           @export="handleExportBtnClick"
         />
         <NButton v-else @click="state.showRequestExportPanel = true">
@@ -139,7 +144,6 @@ import { NInput, NPagination, NTooltip } from "naive-ui";
 import { BinaryLike } from "node:crypto";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ExportFormat } from "@/components/DataExportButton.vue";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
@@ -159,6 +163,7 @@ import {
   TabMode,
   UNKNOWN_ID,
 } from "@/types";
+import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
 import { QueryResult } from "@/types/proto/v1/sql_service";
 import {

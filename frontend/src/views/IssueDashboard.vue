@@ -14,11 +14,7 @@
     />
 
     <div class="px-4 py-2 flex justify-between items-center">
-      <EnvironmentTabFilter
-        :include-all="true"
-        :environment="selectedEnvironment?.name"
-        @update:environment="changeEnvironment($event)"
-      />
+      <div><!-- empty --></div>
       <div class="flex flex-row space-x-4">
         <NButton v-if="project" @click="goProject">
           {{ project.key }}
@@ -46,6 +42,7 @@
     <PagedIssueTableV1
       v-if="showOpen"
       session-key="dashboard-open"
+      method="SEARCH"
       :issue-filter="{
         ...issueFilter,
         statusList: [IssueStatus.OPEN],
@@ -54,10 +51,7 @@
     >
       <template #table="{ issueList, loading }">
         <IssueTableV1
-          :left-bordered="false"
-          :right-bordered="false"
-          :top-bordered="true"
-          :bottom-bordered="true"
+          class="border-x-0"
           :show-placeholder="!loading"
           :title="$t('issue.table.open')"
           :issue-list="issueList.filter(filter)"
@@ -70,6 +64,7 @@
     <PagedIssueTableV1
       v-if="showClosed"
       session-key="dashboard-closed"
+      method="SEARCH"
       :issue-filter="{
         ...issueFilter,
         statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
@@ -78,11 +73,7 @@
     >
       <template #table="{ issueList, loading }">
         <IssueTableV1
-          class="-mt-px"
-          :left-bordered="false"
-          :right-bordered="false"
-          :top-bordered="true"
-          :bottom-bordered="true"
+          class="-mt-px border-x-0"
           :show-placeholder="!loading"
           :title="$t('issue.table.closed')"
           :issue-list="issueList.filter(filter)"
@@ -97,25 +88,17 @@
 import { NInputGroup, NButton } from "naive-ui";
 import { reactive, computed, watchEffect, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { SearchParams } from "@/components/AdvancedSearch.vue";
+import AdvancedSearch, { SearchParams } from "@/components/AdvancedSearch.vue";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
-import { EnvironmentTabFilter, UserSelect, SearchBox } from "@/components/v2";
-import {
-  useCurrentUserV1,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-  useUserStore,
-} from "@/store";
+import { UserSelect, SearchBox } from "@/components/v2";
+import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_ID, IssueFilter, ComposedIssue } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   extractUserUID,
   hasWorkspacePermissionV1,
-  isDatabaseRelatedIssue,
-  activeEnvironmentInRollout,
   projectV1Slug,
 } from "@/utils";
 
@@ -129,7 +112,6 @@ const route = useRoute();
 
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
-const environmentV1Store = useEnvironmentV1Store();
 
 const statusList = computed((): string[] =>
   route.query.status ? (route.query.status as string).split(",") : []
@@ -224,30 +206,12 @@ const selectedUser = computed(() => {
   return useUserStore().getUserById(uid);
 });
 
-const selectedEnvironment = computed((): Environment | undefined => {
-  const { environment } = route.query;
-  return environment
-    ? environmentV1Store.getEnvironmentByName(environment as string)
-    : undefined;
-});
-
 const selectedProjectId = computed((): string | undefined => {
   const { project } = route.query;
   return project ? (project as string) : undefined;
 });
 
 const filter = (issue: ComposedIssue) => {
-  if (selectedEnvironment.value) {
-    if (!isDatabaseRelatedIssue(issue)) {
-      return false;
-    }
-    if (
-      activeEnvironmentInRollout(issue.rolloutEntity) !==
-      selectedEnvironment.value.name
-    ) {
-      return false;
-    }
-  }
   const keyword = state.filterText.trim().toLowerCase();
   if (keyword) {
     if (!issue.title.toLowerCase().includes(keyword)) {
@@ -255,26 +219,6 @@ const filter = (issue: ComposedIssue) => {
     }
   }
   return true;
-};
-
-const changeEnvironment = (environment: string | undefined) => {
-  if (environment && environment !== String(UNKNOWN_ID)) {
-    router.replace({
-      name: "workspace.issue",
-      query: {
-        ...route.query,
-        environment,
-      },
-    });
-  } else {
-    router.replace({
-      name: "workspace.issue",
-      query: {
-        ...route.query,
-        environment: undefined,
-      },
-    });
-  }
 };
 
 const changeUserUID = (user: string | undefined) => {

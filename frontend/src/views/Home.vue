@@ -1,11 +1,7 @@
 <template>
   <div class="flex flex-col">
     <div class="px-4 py-2 flex justify-between items-center">
-      <EnvironmentTabFilter
-        :include-all="true"
-        :environment="selectedEnvironment?.name"
-        @update:environment="changeEnvironment"
-      />
+      <div><!-- empty --></div>
       <SearchBox
         :value="state.searchText"
         :placeholder="$t('issue.search-issue-name')"
@@ -14,109 +10,110 @@
       />
     </div>
 
-    <WaitingForMyApprovalIssueTable
+    <WaitingForMyApprovalIssueTableV1
       v-if="hasCustomApprovalFeature"
       session-key="home-waiting-approval"
-      :issue-find="{
-        statusList: ['OPEN'],
-      }"
     >
       <template #table="{ issueList, loading }">
-        <IssueTable
-          :left-bordered="false"
-          :right-bordered="false"
+        <IssueTableV1
+          class="border-x-0"
           :show-placeholder="!loading"
           :title="$t('issue.waiting-approval')"
-          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
+          :issue-list="issueList.filter(keywordFilter)"
+          :highlight-text="state.searchText"
         />
       </template>
-    </WaitingForMyApprovalIssueTable>
+    </WaitingForMyApprovalIssueTableV1>
 
     <!-- show OPEN Assigned issues with pageSize=10 -->
-    <PagedIssueTable
+    <PagedIssueTableV1
+      method="LIST"
       session-key="home-assigned"
-      :issue-find="{
-        statusList: ['OPEN'],
-        assigneeId: Number(currentUserUID),
+      :issue-filter="{
+        ...commonIssueFilter,
+        statusList: [IssueStatus.OPEN],
+        assignee: `users/${currentUserV1.email}`,
       }"
       :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
     >
       <template #table="{ issueList, loading }">
-        <IssueTable
-          class="-mt-px"
-          :left-bordered="false"
-          :right-bordered="false"
+        <IssueTableV1
+          class="-mt-px border-x-0"
           :show-placeholder="!loading"
           :title="$t('issue.waiting-rollout')"
-          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
+          :issue-list="issueList.filter(keywordFilter)"
+          :highlight-text="state.searchText"
         />
       </template>
-    </PagedIssueTable>
+    </PagedIssueTableV1>
 
     <!-- show OPEN Created issues with pageSize=10 -->
-    <PagedIssueTable
+    <PagedIssueTableV1
       session-key="home-created"
-      :issue-find="{
-        statusList: ['OPEN'],
-        creatorId: Number(currentUserUID),
+      method="LIST"
+      :issue-filter="{
+        ...commonIssueFilter,
+        statusList: [IssueStatus.OPEN],
+        creator: `users/${currentUserV1.email}`,
       }"
       :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
     >
       <template #table="{ issueList, loading }">
-        <IssueTable
-          class="-mt-px"
-          :left-bordered="false"
-          :right-bordered="false"
+        <IssueTableV1
+          class="-mt-px border-x-0"
           :show-placeholder="!loading"
           :title="$t('common.created')"
-          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
+          :issue-list="issueList.filter(keywordFilter)"
+          :highlight-text="state.searchText"
         />
       </template>
-    </PagedIssueTable>
+    </PagedIssueTableV1>
 
     <!-- show OPEN Subscribed issues with pageSize=10 -->
-    <PagedIssueTable
+    <PagedIssueTableV1
       session-key="home-subscribed"
-      :issue-find="{
-        statusList: ['OPEN'],
-        subscriberId: Number(currentUserUID),
+      method="LIST"
+      :issue-filter="{
+        ...commonIssueFilter,
+        statusList: [IssueStatus.OPEN],
+        subscriber: `users/${currentUserV1.email}`,
       }"
       :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
     >
       <template #table="{ issueList, loading }">
-        <IssueTable
-          class="-mt-px"
-          :left-bordered="false"
-          :right-bordered="false"
+        <IssueTableV1
+          class="-mt-px border-x-0"
           :show-placeholder="!loading"
           :title="$t('common.subscribed')"
-          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
+          :issue-list="issueList.filter(keywordFilter)"
+          :highlight-text="state.searchText"
         />
       </template>
-    </PagedIssueTable>
+    </PagedIssueTableV1>
 
     <!-- show the first 5 DONE or CANCELED issues -->
     <!-- But won't show "Load more", since we have a "View all closed" link below -->
-    <PagedIssueTable
+    <PagedIssueTableV1
       session-key="home-closed"
-      :issue-find="{
-        statusList: ['DONE', 'CANCELED'],
-        principalId: Number(currentUserUID),
+      method="LIST"
+      :issue-filter="{
+        ...commonIssueFilter,
+        statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
+        principal: `users/${currentUserV1.email}`,
       }"
       :page-size="MAX_CLOSED_ISSUE"
       :hide-load-more="true"
     >
       <template #table="{ issueList, loading }">
-        <IssueTable
-          class="-mt-px"
-          :left-bordered="false"
-          :right-bordered="false"
+        <IssueTableV1
+          class="-mt-px border-x-0"
           :show-placeholder="!loading"
           :title="$t('project.overview.recently-closed')"
-          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
+          :issue-list="issueList.filter(keywordFilter)"
+          :highlight-text="state.searchText"
         />
       </template>
-    </PagedIssueTable>
+    </PagedIssueTableV1>
   </div>
   <div class="w-full flex justify-end mt-2 px-4">
     <router-link
@@ -192,31 +189,19 @@
 
 <script lang="ts" setup>
 import { reactive, computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
+import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
+import WaitingForMyApprovalIssueTableV1 from "@/components/IssueV1/components/WaitingForMyApprovalIssueTableV1.vue";
+import { SearchBox } from "@/components/v2";
 import {
-  IssueTable,
-  PagedIssueTable,
-  WaitingForMyApprovalIssueTable,
-} from "@/components/Issue/table";
-import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
-import {
-  useEnvironmentV1Store,
   useSubscriptionV1Store,
   useOnboardingStateStore,
   featureToRef,
   useCurrentUserV1,
 } from "@/store";
-import {
-  UNKNOWN_ID,
-  UNKNOWN_ENVIRONMENT_NAME,
-  Issue,
-  planTypeToString,
-} from "../types";
-import {
-  activeEnvironment,
-  extractUserUID,
-  isDatabaseRelatedIssueType,
-} from "../utils";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { ComposedIssue, IssueFilter, planTypeToString } from "../types";
+import { extractUserUID } from "../utils";
 
 interface LocalState {
   searchText: string;
@@ -226,11 +211,8 @@ interface LocalState {
 const OPEN_ISSUE_LIST_PAGE_SIZE = 10;
 const MAX_CLOSED_ISSUE = 5;
 
-const environmentV1Store = useEnvironmentV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const onboardingStateStore = useOnboardingStateStore();
-const router = useRouter();
-const route = useRoute();
 
 const state = reactive<LocalState>({
   searchText: "",
@@ -255,55 +237,21 @@ const planImage = computed(() => {
   ).href;
 });
 
-const selectedEnvironment = computed(() => {
-  const { environment } = route.query;
-  return environment
-    ? environmentV1Store.getEnvironmentByName(environment as string)
-    : undefined;
+const commonIssueFilter = computed((): IssueFilter => {
+  return {
+    project: "projects/-",
+    query: "",
+  };
 });
 
-const keywordAndEnvironmentFilter = (issue: Issue) => {
-  if (
-    selectedEnvironment.value &&
-    selectedEnvironment.value.uid !== String(UNKNOWN_ID)
-  ) {
-    if (!isDatabaseRelatedIssueType(issue.type)) {
-      return false;
-    }
-    if (
-      String(activeEnvironment(issue.pipeline).id) !==
-      selectedEnvironment.value.uid
-    ) {
-      return false;
-    }
-  }
+const keywordFilter = (issue: ComposedIssue) => {
   const keyword = state.searchText.trim().toLowerCase();
   if (keyword) {
-    if (!issue.name.toLowerCase().includes(keyword)) {
+    if (!issue.title.toLowerCase().includes(keyword)) {
       return false;
     }
   }
   return true;
-};
-
-const changeEnvironment = (environment: string | undefined) => {
-  if (environment && environment !== UNKNOWN_ENVIRONMENT_NAME) {
-    router.replace({
-      name: "workspace.home",
-      query: {
-        ...route.query,
-        environment,
-      },
-    });
-  } else {
-    router.replace({
-      name: "workspace.home",
-      query: {
-        ...route.query,
-        environment: undefined,
-      },
-    });
-  }
 };
 
 const changeSearchText = (searchText: string) => {
