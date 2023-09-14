@@ -15,8 +15,6 @@ import (
 	// embed will embeds the acl policy.
 	_ "embed"
 
-	"github.com/casbin/casbin/v2"
-	"github.com/casbin/casbin/v2/model"
 	"github.com/google/uuid"
 	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -25,8 +23,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
-	scas "github.com/qiangmzsx/string-adapter/v2"
-	echoSwagger "github.com/swaggo/echo-swagger"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -56,7 +52,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
-	metricPlugin "github.com/bytebase/bytebase/backend/plugin/metric"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
@@ -139,9 +134,7 @@ const (
 	// internalAPIPrefix is the API prefix for Bytebase internal, used by the UX.
 	internalAPIPrefix = "/api"
 	// webhookAPIPrefix is the API prefix for Bytebase webhook.
-	webhookAPIPrefix = "/hook"
-	// openAPIPrefix is the API prefix for Bytebase OpenAPI.
-	openAPIPrefix          = "/v1"
+	webhookAPIPrefix       = "/hook"
 	maxStacksize           = 8 * 1024
 	gracefulShutdownPeriod = 10 * time.Second
 )
@@ -195,37 +188,6 @@ type Server struct {
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
 }
-
-//go:embed acl_casbin_model.conf
-var casbinModel string
-
-//go:embed acl_casbin_policy_owner.csv
-var casbinOwnerPolicy string
-
-//go:embed acl_casbin_policy_dba.csv
-var casbinDBAPolicy string
-
-//go:embed acl_casbin_policy_developer.csv
-var casbinDeveloperPolicy string
-
-// Use following cmd to generate swagger doc
-// swag init -g ./backend/server.go -d ./backend/server --output docs/openapi --parseDependency
-
-// @title Bytebase OpenAPI
-// @version 1.0
-// @description The OpenAPI for bytebase.
-// @termsOfService https://www.bytebase.com/terms
-
-// @contact.name API Support
-// @contact.url https://github.com/bytebase/bytebase/
-// @contact.email support@bytebase.com
-
-// @license.name MIT
-// @license.url https://github.com/bytebase/bytebase/blob/main/LICENSE
-
-// @host localhost:8080
-// @BasePath /v1/
-// @schemes http
 
 // NewServer creates a server.
 func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
@@ -379,6 +341,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	e.Debug = profile.Debug
 	e.HideBanner = true
 	e.HidePort = true
+	e.Use(recoverMiddleware)
 	grpcSkipper := func(c echo.Context) bool {
 		// Skip grpc and webhook calls.
 		return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
@@ -405,31 +368,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			return context.JSON(http.StatusTooManyRequests, nil)
 		},
 	}))
-
-	// MetricReporter middleware.
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			defer func() {
-				// only update for authorized request
-				id, ok := c.Get(getPrincipalIDContextKey()).(int)
-				if !ok || id <= 0 {
-					return
-				}
-				s.profile.LastActiveTs = time.Now().Unix()
-				ctx := c.Request().Context()
-
-				s.metricReporter.Report(ctx, &metricPlugin.Metric{
-					Name:  metric.APIRequestMetricName,
-					Value: 1,
-					Labels: map[string]any{
-						"path":   c.Request().URL.Path,
-						"method": c.Request().Method,
-					},
-				})
-			}()
-			return next(c)
-		}
-	})
 
 	embedFrontend(e)
 	s.e = e
@@ -490,45 +428,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.initMetricReporter()
 	}
 
-	// Middleware
-	//
-	// API slogger middleware.
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Skipper: func(c echo.Context) bool {
-			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {
-				return true
-			}
-			return !common.HasPrefixes(c.Path(), internalAPIPrefix, openAPIPrefix, webhookAPIPrefix)
-		},
-		Format: `{"time":"${time_rfc3339}",` +
-			`"method":"${method}","uri":"${uri}",` +
-			`"status":${status},"error":"${error}"}` + "\n",
-	}))
-	// Panic recovery middleware.
-	e.Use(recoverMiddleware)
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
-
 	webhookGroup := e.Group(webhookAPIPrefix)
 	s.registerWebhookRoutes(webhookGroup)
 
 	apiGroup := e.Group(internalAPIPrefix)
-	// API JWT authentication middleware.
-	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(internalAPIPrefix, s.store, next, profile.Mode, config.secret)
-	})
-
-	m, err := model.NewModelFromString(casbinModel)
-	if err != nil {
-		return nil, err
-	}
-	sa := scas.NewAdapter(strings.Join([]string{casbinOwnerPolicy, casbinDBAPolicy, casbinDeveloperPolicy}, "\n"))
-	ce, err := casbin.NewEnforcer(m, sa)
-	if err != nil {
-		return nil, err
-	}
-	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(s, internalAPIPrefix, ce, next, profile.Readonly)
-	})
 	s.registerDatabaseRoutes(apiGroup)
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
@@ -542,7 +445,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, profile.Mode)
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
-	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing)
+	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
 		stack := make([]byte, maxStacksize)
 		stack = stack[:runtime.Stack(stack, true)]

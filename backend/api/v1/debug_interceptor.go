@@ -14,19 +14,27 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/metric"
+	metricPlugin "github.com/bytebase/bytebase/backend/plugin/metric"
+	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // DebugInterceptor is the v1 debug interceptor for gRPC server.
 type DebugInterceptor struct {
 	errorRecordRing *api.ErrorRecordRing
+	profile         *config.Profile
+	metricReporter  *metricreport.Reporter
 }
 
 // NewDebugInterceptor returns a new v1 API debug interceptor.
-func NewDebugInterceptor(errorRecordRing *api.ErrorRecordRing) *DebugInterceptor {
+func NewDebugInterceptor(errorRecordRing *api.ErrorRecordRing, profile *config.Profile, metricReporter *metricreport.Reporter) *DebugInterceptor {
 	return &DebugInterceptor{
 		errorRecordRing: errorRecordRing,
+		profile:         profile,
+		metricReporter:  metricReporter,
 	}
 }
 
@@ -85,4 +93,12 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any,
 		}
 		in.errorRecordRing.Ring = in.errorRecordRing.Ring.Next()
 	}
+	in.profile.LastActiveTs = time.Now().Unix()
+	in.metricReporter.Report(ctx, &metricPlugin.Metric{
+		Name:  metric.APIRequestMetricName,
+		Value: 1,
+		Labels: map[string]any{
+			"method": fullMethod,
+		},
+	})
 }
