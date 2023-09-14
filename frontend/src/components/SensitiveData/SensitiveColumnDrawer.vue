@@ -17,6 +17,7 @@
               :level-list="MASKING_LEVELS"
               :selected="state.maskingLevel"
               :disabled="!hasPermission || state.processing"
+              :effective-masking-level="columnMetadata?.effectiveMaskingLevel"
               @update="onMaskingLevelUpdate($event)"
             />
           </div>
@@ -191,6 +192,7 @@ import {
   useUserStore,
   pushNotification,
   useCurrentUserV1,
+  useDBSchemaV1Store,
 } from "@/store";
 import { getUserId } from "@/store/modules/v1/common";
 import { unknownUser } from "@/types";
@@ -249,6 +251,7 @@ const userStore = useUserStore();
 const currentUserV1 = useCurrentUserV1();
 const accessUserList = ref<AccessUser[]>([]);
 const policyStore = usePolicyV1Store();
+const dbSchemaStore = useDBSchemaV1Store();
 
 const policy = usePolicyByParentAndType(
   computed(() => ({
@@ -399,10 +402,6 @@ const toggleAction = (
   }
 };
 
-const maskingPolicyChanged = computed(() => {
-  return state.maskingLevel !== props.column.maskData.maskingLevel;
-});
-
 const onAccessControlUpdate = async (
   index: number,
   callback: (item: AccessUser) => void
@@ -418,16 +417,32 @@ const onAccessControlUpdate = async (
 
 const onMaskingLevelUpdate = async (level: MaskingLevel) => {
   state.maskingLevel = level;
-  await onSubmit();
+  await onColumnMaskingUpdate();
+  await dbSchemaStore.getOrFetchDatabaseMetadata(
+    props.column.database.name,
+    true
+  );
+};
+
+const onColumnMaskingUpdate = async () => {
+  state.processing = true;
+
+  try {
+    await upsertMaskingPolicy();
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  } finally {
+    state.processing = false;
+  }
 };
 
 const onSubmit = async () => {
   state.processing = true;
 
   try {
-    if (maskingPolicyChanged.value) {
-      await upsertMaskingPolicy();
-    }
     if (state.dirty) {
       await updateExceptionPolicy();
       state.dirty = false;
@@ -527,4 +542,30 @@ const updateExceptionPolicy = async () => {
   };
   await policyStore.updatePolicy(["payload"], policy);
 };
+
+const columnMetadata = computed(() => {
+  if (
+    props.column.maskData.maskingLevel !==
+    MaskingLevel.MASKING_LEVEL_UNSPECIFIED
+  ) {
+    return;
+  }
+  const schemaList = dbSchemaStore.getSchemaList(props.column.database.name);
+  const schema = schemaList.find(
+    (schema) => schema.name === props.column.maskData.schema
+  );
+  if (!schema) {
+    return;
+  }
+  const table = schema.tables.find(
+    (table) => table.name === props.column.maskData.table
+  );
+  if (!table) {
+    return;
+  }
+
+  return table.columns.find(
+    (column) => column.name === props.column.maskData.column
+  );
+});
 </script>
