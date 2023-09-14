@@ -45,6 +45,7 @@ const engine = ref(props.engine);
 const metadata = ref<DatabaseMetadata>(DatabaseMetadata.fromPartial({}));
 const originalSchemas = ref<Schema[]>([]);
 const editableSchemas = ref<Schema[]>([]);
+// eslint-disable-next-line vue/no-dupe-keys
 const project = ref<ComposedProject>(unknownProject());
 const baselineMetadata = ref<DatabaseMetadata>(
   DatabaseMetadata.fromPartial({})
