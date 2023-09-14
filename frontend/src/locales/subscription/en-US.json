@@ -30,10 +30,10 @@
   "trialing": "trialing",
   "expired": "expired",
   "plan": {
-    "title": "Plan",
+    "title": "Community",
     "try": "Start free trial",
     "free": {
-      "title": "Free Plan",
+      "title": "Community Plan",
       "label": "",
       "desc": "Team essentials to manage database development lifecycle."
     },
@@ -175,7 +175,7 @@
     "database-backup-restore": "Database backup / restore",
     "webhook-integration": "IM integration (Slack, Discord, etc)",
     "email-support": "Email support",
-    "everything-in-free-plan": "Everything in free plan",
+    "everything-in-free-plan": "Everything in community plan",
     "rbac": "Owner, DBA and Developer roles",
     "gitlab-login": "GitLab login",
     "online-schema-migration": "Large table online schema migration",
