@@ -35,7 +35,7 @@
       <NButton
         type="primary"
         :disabled="
-          state.pendingGrantAccessColumnIndex.length === 0 ||
+          state.pendingGrantAccessColumn.length === 0 ||
           !hasPermission ||
           !hasSensitiveDataFeature
         "
@@ -55,9 +55,9 @@
       :row-selectable="true"
       :show-operation="hasPermission && hasSensitiveDataFeature"
       :column-list="filteredColumnList"
-      :checked-column-index-list="state.pendingGrantAccessColumnIndex"
+      :checked-column-index-list="checkedColumnIndexList"
       @click="onRowClick"
-      @checked:update="state.pendingGrantAccessColumnIndex = $event"
+      @checked:update="updateCheckedColumnList($event)"
     />
 
     <template v-else>
@@ -79,16 +79,13 @@
 
   <GrantAccessDrawer
     v-if="
-      state.showGrantAccessDrawer &&
-      state.pendingGrantAccessColumnIndex.length > 0
+      state.showGrantAccessDrawer && state.pendingGrantAccessColumn.length > 0
     "
-    :column-list="
-      state.pendingGrantAccessColumnIndex.map((i) => filteredColumnList[i])
-    "
+    :column-list="state.pendingGrantAccessColumn"
     @dismiss="
       () => {
         state.showGrantAccessDrawer = false;
-        state.pendingGrantAccessColumnIndex = [];
+        state.pendingGrantAccessColumn = [];
       }
     "
   />
@@ -97,17 +94,17 @@
     v-if="filteredColumnList.length > 0"
     :show="
       state.showSensitiveColumnDrawer &&
-      state.pendingGrantAccessColumnIndex.length === 1
+      state.pendingGrantAccessColumn.length === 1
     "
     :column="
-      state.pendingGrantAccessColumnIndex.length
-        ? filteredColumnList[state.pendingGrantAccessColumnIndex[0]]
+      state.pendingGrantAccessColumn.length === 1
+        ? state.pendingGrantAccessColumn[0]
         : filteredColumnList[0]
     "
     @dismiss="
       () => {
         state.showSensitiveColumnDrawer = false;
-        state.pendingGrantAccessColumnIndex = [];
+        state.pendingGrantAccessColumn = [];
       }
     "
   />
@@ -138,6 +135,7 @@ import {
   UNKNOWN_ENVIRONMENT_NAME,
   ComposedInstance,
 } from "@/types";
+import { MaskingLevel } from "@/types/proto/v1/common";
 import {
   PolicyType,
   PolicyResourceType,
@@ -154,7 +152,7 @@ interface LocalState {
   showFeatureModal: boolean;
   isLoading: boolean;
   sensitiveColumnList: SensitiveColumn[];
-  pendingGrantAccessColumnIndex: number[];
+  pendingGrantAccessColumn: SensitiveColumn[];
   showGrantAccessDrawer: boolean;
   showSensitiveColumnDrawer: boolean;
 }
@@ -169,7 +167,7 @@ const state = reactive<LocalState>({
   selectedProjectUid: String(UNKNOWN_ID),
   selectedInstanceUid: String(UNKNOWN_ID),
   selectedDatabaseUid: String(UNKNOWN_ID),
-  pendingGrantAccessColumnIndex: [],
+  pendingGrantAccessColumn: [],
   showGrantAccessDrawer: false,
   showSensitiveColumnDrawer: false,
 });
@@ -315,7 +313,7 @@ const onRowClick = async (
       await onColumnRemove(item);
       break;
     case "EDIT":
-      state.pendingGrantAccessColumnIndex = [row];
+      state.pendingGrantAccessColumn = [item];
       if (isMissingLicenseForInstance(item.database.instanceEntity)) {
         state.showFeatureModal = true;
         return;
@@ -327,6 +325,12 @@ const onRowClick = async (
 
 const filteredColumnList = computed(() => {
   return state.sensitiveColumnList.filter((column) => {
+    if (
+      column.maskData.maskingLevel === MaskingLevel.NONE ||
+      column.maskData.maskingLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED
+    ) {
+      return false;
+    }
     if (
       state.selectedEnvironmentName !== UNKNOWN_ENVIRONMENT_NAME &&
       column.database.effectiveEnvironmentEntity.name !==
@@ -357,8 +361,8 @@ const filteredColumnList = computed(() => {
 });
 
 const findInstanceWithoutLicense = () => {
-  for (const index of state.pendingGrantAccessColumnIndex) {
-    const instance = filteredColumnList.value[index]?.database?.instanceEntity;
+  for (const column of state.pendingGrantAccessColumn) {
+    const instance = column?.database?.instanceEntity;
     const missingLicense = isMissingLicenseForInstance(instance);
     if (missingLicense) {
       return instance;
@@ -393,5 +397,32 @@ const onGrantAccessButtonClick = () => {
     return;
   }
   state.showGrantAccessDrawer = true;
+};
+
+const checkedColumnIndexList = computed(() => {
+  const resp = [];
+  for (const column of state.pendingGrantAccessColumn) {
+    const index = filteredColumnList.value.findIndex((col) => {
+      return (
+        col.database.name === column.database.name &&
+        col.maskData.table === column.maskData.table &&
+        col.maskData.schema === column.maskData.schema &&
+        col.maskData.column === column.maskData.column
+      );
+    });
+    if (index >= 0) {
+      resp.push(index);
+    }
+  }
+  return resp;
+});
+
+const updateCheckedColumnList = (indexes: number[]) => {
+  for (const index of indexes) {
+    const col = filteredColumnList.value[index];
+    if (col) {
+      state.pendingGrantAccessColumn.push(col);
+    }
+  }
 };
 </script>
