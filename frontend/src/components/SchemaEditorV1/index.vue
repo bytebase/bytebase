@@ -15,8 +15,7 @@
 
 <script lang="ts" setup>
 import { Splitpanes, Pane } from "splitpanes";
-import { onMounted, watch } from "vue";
-import { reactive } from "vue";
+import { onMounted, watch, reactive } from "vue";
 import { useSchemaEditorV1Store, useSettingV1Store } from "@/store";
 import { ComposedProject, ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
