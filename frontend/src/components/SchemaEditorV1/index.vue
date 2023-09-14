@@ -54,6 +54,9 @@ const updateSchemaEditorState = () => {
     project: props.project,
     readonly: props.readonly,
     resourceType: props.resourceType,
+    tabState: {
+      tabMap: new Map(),
+    },
   });
 
   if (props.resourceType === "database") {
