@@ -620,9 +620,9 @@
       }
     },
     "sensitive-data": {
-      "description": "以下列的查询结果将会被显示为 \"******\"。在表详情页，您可以将多个列标记为敏感数据。",
+      "description": "以下脱敏列被显示地标记了脱敏等级，优先级高于全局脱敏规则。",
       "remove-sensitive-column-tips": "不再对此列数据脱敏？",
-      "sensitive-column-list": "敏感数据列表",
+      "sensitive-column-list": "被显式标记的脱敏列",
       "global-masking-rule": "全局脱敏规则",
       "semantic-types": "语义类型",
       "grant-access": "授权访问",
