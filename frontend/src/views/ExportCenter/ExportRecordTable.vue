@@ -67,7 +67,8 @@ import { computed, shallowRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
 import { InstanceV1Name } from "@/components/v2";
-import { pushNotification, useIssueStore } from "@/store";
+import { issueServiceClient } from "@/grpcweb";
+import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { issueSlug } from "@/utils";
 import ExportDataButton from "./ExportDataButton.vue";
@@ -132,19 +133,22 @@ const toggleExpandRow = (item: ExportRecord) => {
 };
 
 const gotoIssuePage = async (item: ExportRecord) => {
-  if (item.issueId === `${UNKNOWN_ID}`) {
+  const issueUID = String(item.issueId);
+  if (issueUID === `${UNKNOWN_ID}`) {
     return;
   }
-  const issue = await useIssueStore().getOrFetchIssueById(item.issueId);
-  if (issue.id === UNKNOWN_ID) {
+  const issue = await issueServiceClient.getIssue({
+    name: `projects/-/issues/${issueUID}`,
+  });
+  if (issue.uid === String(UNKNOWN_ID)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: `Issue #${issue.id} not found`,
+      title: `Issue #${issueUID} not found`,
     });
     return;
   }
 
-  window.open(`/issue/${issueSlug(issue.name, issue.id)}`, "_blank");
+  window.open(`/issue/${issueSlug(issue.title, issue.uid)}`, "_blank");
 };
 </script>
