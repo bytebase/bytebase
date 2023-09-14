@@ -27,7 +27,11 @@
           #body="{ rowData, row }: { rowData: SemanticItem, row: number }"
         >
           <BBTableCell class="bb-grid-cell">
+            <h3 v-if="rowData.mode === 'NORMAL'">
+              {{ rowData.item.title }}
+            </h3>
             <NInput
+              v-else
               :value="rowData.item.title"
               class=""
               type="text"
@@ -35,11 +39,14 @@
                 $t('settings.sensitive-data.semantic-types.table.semantic-type')
               "
               @input="(val: string) => onInput(row, (data) => data.item.title = val)"
-              @blur="onBlur(rowData)"
             />
           </BBTableCell>
           <BBTableCell class="bb-grid-cell">
+            <h3 v-if="rowData.mode === 'NORMAL'">
+              {{ rowData.item.description }}
+            </h3>
             <NInput
+              v-else
               :value="rowData.item.description"
               class=""
               type="text"
@@ -47,28 +54,19 @@
                 $t('settings.sensitive-data.semantic-types.table.description')
               "
               @input="(val: string) => onInput(row, (data) => data.item.description = val)"
-              @blur="onBlur(rowData)"
             />
           </BBTableCell>
           <BBTableCell class="bb-grid-cell"> FULL MASKING </BBTableCell>
           <BBTableCell class="bb-grid-cell"> HALF MASKING </BBTableCell>
           <BBTableCell v-if="hasPermission" class="bb-grid-cell w-6">
-            <div class="flex items-center">
-              <NButton
-                v-if="rowData.mode === 'CREATE'"
-                type="primary"
-                @click.stop="onConfirm(row)"
-                :disabled="isConfirmDisabled(rowData) || !hasPermission"
-              >
-                {{ $t("common.confirm") }}
-              </NButton>
+            <div class="flex justify-end items-center space-x-2">
               <NPopconfirm
                 v-if="rowData.mode === 'EDIT'"
                 @positive-click="onRemove(row)"
               >
                 <template #trigger>
                   <button
-                    class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                    class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
                     @click.stop=""
                     :disabled="!hasPermission"
                   >
@@ -82,6 +80,32 @@
                   }}
                 </div>
               </NPopconfirm>
+
+              <NButton
+                v-if="rowData.mode !== 'NORMAL'"
+                size="small"
+                @click="onCancel(row)"
+              >
+                {{ $t("common.cancel") }}
+              </NButton>
+              <NButton
+                v-if="rowData.mode !== 'NORMAL'"
+                type="primary"
+                :disabled="isConfirmDisabled(rowData) || !hasPermission"
+                size="small"
+                @click.stop="onConfirm(row)"
+              >
+                {{ $t("common.confirm") }}
+              </NButton>
+
+              <button
+                v-if="rowData.mode === 'NORMAL'"
+                class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                @click.stop="rowData.mode = 'EDIT'"
+                :disabled="!hasPermission"
+              >
+                <heroicons-outline:pencil class="w-4 h-4" />
+              </button>
             </div>
           </BBTableCell>
         </template>
@@ -112,7 +136,7 @@ import {
 import { SemanticCategorySetting_SemanticCategory } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
-type SemanticItemMode = "CREATE" | "EDIT";
+type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
 
 interface SemanticItem {
   mode: SemanticItemMode;
@@ -200,14 +224,10 @@ const onRemove = async (index: number) => {
 
 const onConfirm = async (index: number) => {
   const item = state.semanticItemList[index];
-  if (!item || item.mode !== "CREATE") {
-    return;
-  }
-
   state.semanticItemList[index] = {
     ...item,
     dirty: false,
-    mode: "EDIT",
+    mode: "NORMAL",
   };
 
   // TODO: call api
@@ -217,6 +237,17 @@ const onConfirm = async (index: number) => {
     style: "SUCCESS",
     title: t("common.created"),
   });
+};
+
+const onCancel = (index: number) => {
+  const item = state.semanticItemList[index];
+
+  if (item.mode === "CREATE") {
+    state.semanticItemList.splice(index, 1);
+  } else {
+    // TODO: reset row
+    state.semanticItemList[index].mode = "NORMAL";
+  }
 };
 
 const onInput = (index: number, callback: (item: SemanticItem) => void) => {
@@ -249,24 +280,8 @@ const onDropdownChange = async (
   });
 };
 
-const onBlur = async (item: SemanticItem) => {
-  if (!item.dirty) {
-    return;
-  }
-  if (item.mode === "CREATE") {
-    return;
-  }
-  // TODO: call api
-
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
-};
-
 const isConfirmDisabled = (data: SemanticItem): boolean => {
-  if (!data.item.title || !data.item.description) {
+  if (!data.item.title) {
     return true;
   }
   return false;
