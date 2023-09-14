@@ -42,7 +42,7 @@ func NewDebugInterceptor(errorRecordRing *api.ErrorRecordRing, profile *config.P
 func (in *DebugInterceptor) DebugInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	startTime := time.Now()
 	resp, err := handler(ctx, request)
-	in.debugInterceptorDo(ctx, request, serverInfo.FullMethod, err, startTime)
+	in.debugInterceptorDo(ctx, serverInfo.FullMethod, err, startTime)
 
 	return resp, err
 }
@@ -52,12 +52,12 @@ func (in *DebugInterceptor) DebugStreamInterceptor(request any, ss grpc.ServerSt
 	startTime := time.Now()
 	err := handler(request, ss)
 	ctx := ss.Context()
-	in.debugInterceptorDo(ctx, request, serverInfo.FullMethod, err, startTime)
+	in.debugInterceptorDo(ctx, serverInfo.FullMethod, err, startTime)
 
 	return err
 }
 
-func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any, fullMethod string, err error, startTime time.Time) {
+func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, fullMethod string, err error, startTime time.Time) {
 	st := status.Convert(err)
 	var logLevel slog.Level
 	var logMsg string
