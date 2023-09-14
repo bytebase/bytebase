@@ -1,5 +1,6 @@
-import { SchemaDesign } from "../proto/v1/schema_design_service";
-import { ComposedDatabase } from "../v1";
+import { ComposedDatabase, ComposedProject } from "..";
+import { Engine } from "../../proto/v1/common";
+import { SchemaDesign } from "../../proto/v1/schema_design_service";
 import { Schema } from "./atomType";
 
 export enum SchemaEditorTabType {
@@ -41,6 +42,9 @@ export interface BranchSchema {
 }
 
 export interface SchemaEditorV1State {
+  engine: Engine;
+  project: ComposedProject;
+  readonly: boolean;
   resourceType: "database" | "branch";
   resourceMap: {
     database: Map<string, DatabaseSchema>;

@@ -10,4 +10,4 @@ title: 什么是「数据库」？
 
 #### 了解更多
 
-- [建立一个项目](https://www.bytebase.com/docs/get-started/work-with-a-project/create-a-project)
+- [建立一个项目](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)

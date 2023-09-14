@@ -33,7 +33,7 @@
     "title": "版本",
     "try": "免费试用",
     "free": {
-      "title": "免费版",
+      "title": "社区版",
       "label": "",
       "desc": "团队中心化管理数据库生命周期的核心能力。"
     },
@@ -175,7 +175,7 @@
     "database-backup-restore": "数据库备份和恢复",
     "webhook-integration": "IM 集成 (Slack, Discord 等)",
     "email-support": "邮件支持",
-    "everything-in-free-plan": "所有免费版的功能",
+    "everything-in-free-plan": "所有社区版的功能",
     "rbac": "RBAC 权限管理",
     "gitlab-login": "通过 GitLab 登录",
     "online-schema-migration": "在线大表结构变更",

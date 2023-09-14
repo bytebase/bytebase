@@ -1,35 +1,29 @@
 <template>
-  <div class="w-full h-[32rem] border rounded-lg">
+  <div v-if="state.initialized" class="w-full h-[32rem] border rounded-lg">
     <Splitpanes
       class="default-theme w-full h-full flex flex-row overflow-hidden"
     >
       <Pane min-size="15" size="25">
-        <AsidePanel />
+        <Aside />
       </Pane>
       <Pane min-size="60" size="75">
-        <Designer />
+        <Editor />
       </Pane>
     </Splitpanes>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
-import { onMounted, ref, watch } from "vue";
-import { useSettingV1Store } from "@/store";
-import {
-  Schema,
-  convertSchemaMetadataList,
-  ComposedProject,
-  unknownProject,
-} from "@/types";
+import { onMounted, watch, reactive } from "vue";
+import { useSchemaEditorV1Store, useSettingV1Store } from "@/store";
+import { ComposedProject, ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import AsidePanel from "./AsidePanel.vue";
-import Designer from "./Designer.vue";
-import { provideSchemaEditorContext, SchemaEditorTabState } from "./common";
-import { rebuildEditableSchemas } from "./utils";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import Aside from "./Aside/index.vue";
+import Editor from "./Editor.vue";
+import { convertBranchToBranchSchema } from "./utils/branch";
 
 const props = defineProps<{
   readonly: boolean;
@@ -37,92 +31,83 @@ const props = defineProps<{
   project: ComposedProject;
   baselineSchemaMetadata?: DatabaseMetadata;
   schemaMetadata?: DatabaseMetadata;
+  resourceType: "database" | "branch";
+  databases?: ComposedDatabase[];
+  // NOTE: we only support editing one branch for now.
+  branches?: SchemaDesign[];
 }>();
 
+interface LocalState {
+  initialized: boolean;
+}
+
 const settingStore = useSettingV1Store();
-const readonly = ref(props.readonly);
-const engine = ref(props.engine);
-const metadata = ref<DatabaseMetadata>(DatabaseMetadata.fromPartial({}));
-const originalSchemas = ref<Schema[]>([]);
-const editableSchemas = ref<Schema[]>([]);
-// eslint-disable-next-line vue/no-dupe-keys
-const project = ref<ComposedProject>(unknownProject());
-const baselineMetadata = ref<DatabaseMetadata>(
-  DatabaseMetadata.fromPartial({})
-);
-const tabState = ref<SchemaEditorTabState>({
-  tabMap: new Map(),
+
+const schemaEditorV1Store = useSchemaEditorV1Store();
+const state = reactive<LocalState>({
+  initialized: false,
 });
+
+const updateSchemaEditorState = () => {
+  schemaEditorV1Store.setState({
+    engine: props.engine,
+    project: props.project,
+    readonly: props.readonly,
+    resourceType: props.resourceType,
+    // NOTE: this will clear all tabs. We will restore tabs as needed later.
+    tabState: {
+      tabMap: new Map(),
+    },
+  });
+
+  if (props.resourceType === "database") {
+    schemaEditorV1Store.setState({
+      resourceMap: {
+        // NOTE: we will dynamically fetch schema list for each database in database tree view.
+        database: new Map(
+          (props.databases || []).map((database) => [
+            database.name,
+            {
+              database,
+              schemaList: [],
+              originSchemaList: [],
+            },
+          ])
+        ),
+        branch: new Map(),
+      },
+    });
+  } else {
+    schemaEditorV1Store.setState({
+      resourceMap: {
+        database: new Map(),
+        branch: new Map(
+          (props.branches || []).map((branch) => [
+            branch.name,
+            convertBranchToBranchSchema(branch),
+          ])
+        ),
+      },
+    });
+  }
+};
 
 // Prepare schema template contexts.
 onMounted(async () => {
   await settingStore.getOrFetchSettingByName("bb.workspace.schema-template");
-});
-
-const rebuildEditingState = () => {
-  originalSchemas.value = convertSchemaMetadataList(
-    baselineMetadata.value.schemas
-  );
-  editableSchemas.value = rebuildEditableSchemas(
-    originalSchemas.value,
-    metadata.value.schemas
-  );
-  tabState.value = {
-    tabMap: new Map(),
-  };
-};
-
-provideSchemaEditorContext({
-  readonly: readonly,
-  baselineMetadata: baselineMetadata,
-  engine: engine,
-  metadata: metadata,
-  tabState: tabState,
-  originalSchemas: originalSchemas,
-  editableSchemas: editableSchemas,
-  project,
+  updateSchemaEditorState();
+  state.initialized = true;
 });
 
 watch(
   () => props,
   () => {
-    baselineMetadata.value =
-      cloneDeep(props.baselineSchemaMetadata) ||
-      DatabaseMetadata.fromPartial({});
-    metadata.value =
-      cloneDeep(props.schemaMetadata) || DatabaseMetadata.fromPartial({});
-    readonly.value = props.readonly;
-    engine.value = props.engine;
-    project.value = props.project;
+    updateSchemaEditorState();
   },
   {
-    immediate: true,
     deep: true,
   }
 );
-
-watch(
-  () => metadata.value,
-  (value, oldValue) => {
-    // NOTE: regenerate editing state in the following cases:
-    // * change baseline schema.
-    // * change selected schema design.
-    if (!isEqual(value, oldValue)) {
-      rebuildEditingState();
-    }
-  },
-  {
-    immediate: true,
-    deep: true,
-  }
-);
-
-defineExpose({
-  metadata,
-  baselineMetadata,
-  editableSchemas,
-  rebuildEditingState,
-});
 </script>
 
 <style>

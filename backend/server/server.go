@@ -49,8 +49,6 @@ import (
 	"github.com/bytebase/bytebase/backend/metric"
 	metricCollector "github.com/bytebase/bytebase/backend/metric/collector"
 	"github.com/bytebase/bytebase/backend/migrator"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
@@ -941,46 +939,4 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	slog.Info("Bytebase stopped properly")
 
 	return nil
-}
-
-// getSampleSQLReviewPolicy returns a sample SQL review policy for preparing onboardign data.
-func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
-	policy := &advisor.SQLReviewPolicy{
-		Name: "SQL Review Sample Policy",
-	}
-
-	ruleList := []*advisor.SQLReviewRule{}
-
-	// Add DropEmptyDatabase rule for MySQL, TiDB, MariaDB.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB} {
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    advisor.SchemaRuleDropEmptyDatabase,
-			Level:   advisor.SchemaRuleLevelError,
-			Engine:  e,
-			Payload: "{}",
-		})
-	}
-
-	// Add ColumnNotNull rule for MySQL, TiDB, MariaDB, Postgres.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    advisor.SchemaRuleColumnNotNull,
-			Level:   advisor.SchemaRuleLevelWarning,
-			Engine:  e,
-			Payload: "{}",
-		})
-	}
-
-	// Add TableDropNamingConvention rule for MySQL, TiDB, MariaDB Postgres.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    advisor.SchemaRuleTableDropNamingConvention,
-			Level:   advisor.SchemaRuleLevelError,
-			Engine:  e,
-			Payload: "{\"format\":\"_del$\"}",
-		})
-	}
-
-	policy.RuleList = ruleList
-	return policy
 }

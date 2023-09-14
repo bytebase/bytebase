@@ -24,6 +24,7 @@ const (
 	SQLService_Export_FullMethodName        = "/bytebase.v1.SQLService/Export"
 	SQLService_AdminExecute_FullMethodName  = "/bytebase.v1.SQLService/AdminExecute"
 	SQLService_DifferPreview_FullMethodName = "/bytebase.v1.SQLService/DifferPreview"
+	SQLService_Check_FullMethodName         = "/bytebase.v1.SQLService/Check"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -35,6 +36,7 @@ type SQLServiceClient interface {
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (SQLService_AdminExecuteClient, error)
 	DifferPreview(ctx context.Context, in *DifferPreviewRequest, opts ...grpc.CallOption) (*DifferPreviewResponse, error)
+	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
 }
 
 type sQLServiceClient struct {
@@ -112,6 +114,15 @@ func (c *sQLServiceClient) DifferPreview(ctx context.Context, in *DifferPreviewR
 	return out, nil
 }
 
+func (c *sQLServiceClient) Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error) {
+	out := new(CheckResponse)
+	err := c.cc.Invoke(ctx, SQLService_Check_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility
@@ -121,6 +132,7 @@ type SQLServiceServer interface {
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	AdminExecute(SQLService_AdminExecuteServer) error
 	DifferPreview(context.Context, *DifferPreviewRequest) (*DifferPreviewResponse, error)
+	Check(context.Context, *CheckRequest) (*CheckResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -142,6 +154,9 @@ func (UnimplementedSQLServiceServer) AdminExecute(SQLService_AdminExecuteServer)
 }
 func (UnimplementedSQLServiceServer) DifferPreview(context.Context, *DifferPreviewRequest) (*DifferPreviewResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DifferPreview not implemented")
+}
+func (UnimplementedSQLServiceServer) Check(context.Context, *CheckRequest) (*CheckResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Check not implemented")
 }
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 
@@ -254,6 +269,24 @@ func _SQLService_DifferPreview_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SQLService_Check_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).Check(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_Check_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).Check(ctx, req.(*CheckRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -276,6 +309,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DifferPreview",
 			Handler:    _SQLService_DifferPreview_Handler,
+		},
+		{
+			MethodName: "Check",
+			Handler:    _SQLService_Check_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

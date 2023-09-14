@@ -43,24 +43,20 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, ref, watch } from "vue";
-import {
-  useSchemaEditorContext,
-  TabContext,
-  SchemaEditorTabType,
-} from "./common";
+import { useSchemaEditorV1Store } from "@/store";
+import { SchemaEditorTabType, TabContext } from "@/types/v1/schemaEditor";
 import { isTableChanged } from "./utils";
 
-const { tabState, getCurrentTab, getTable } = useSchemaEditorContext();
+const schemaEditorV1Store = useSchemaEditorV1Store();
 const tabsContainerRef = ref();
 const tabList = computed(() => {
-  return Array.from(tabState.value.tabMap.values());
+  return schemaEditorV1Store.tabList;
 });
 const currentTab = computed(() => {
-  return getCurrentTab();
+  return schemaEditorV1Store.currentTab;
 });
 
 watch(
@@ -81,7 +77,7 @@ watch(
 
 const getTabComputedClassList = (tab: TabContext) => {
   if (tab.type === SchemaEditorTabType.TabForTable) {
-    const table = getTable(tab.schemaId, tab.tableId);
+    const table = schemaEditorV1Store.getTableWithTableTab(tab);
     if (!table) {
       return [];
     }
@@ -92,7 +88,7 @@ const getTabComputedClassList = (tab: TabContext) => {
     if (table.status === "created") {
       return ["text-green-700"];
     }
-    if (isTableChanged(tab.schemaId, tab.tableId)) {
+    if (isTableChanged(tab.parentName, tab.schemaId, tab.tableId)) {
       return ["text-yellow-700"];
     }
   }
@@ -101,8 +97,8 @@ const getTabComputedClassList = (tab: TabContext) => {
 
 const getTabName = (tab: TabContext) => {
   if (tab.type === SchemaEditorTabType.TabForTable) {
-    const table = getTable(tab.schemaId, tab.tableId);
-    return table.name || "Uknown tab";
+    const table = schemaEditorV1Store.getTableWithTableTab(tab);
+    return table?.name || "Uknown tab";
   } else {
     // Should never reach here.
     return "unknown structure";
@@ -110,17 +106,10 @@ const getTabName = (tab: TabContext) => {
 };
 
 const handleSelectTab = (tab: TabContext) => {
-  tabState.value.currentTabId = tab.id;
+  schemaEditorV1Store.setCurrentTab(tab.id);
 };
 
 const handleCloseTab = (tab: TabContext) => {
-  tabState.value.tabMap.delete(tab.id);
-  if (tab.id === currentTab.value?.id) {
-    tabState.value.currentTabId = undefined;
-  } else {
-    tabState.value.currentTabId = head(
-      Array.from(tabState.value.tabMap.values())
-    )?.id;
-  }
+  schemaEditorV1Store.closeTab(tab.id);
 };
 </script>

@@ -622,14 +622,15 @@
       }
     },
     "sensitive-data": {
-      "description": "The query result of the following columns is displayed as \"******\". \nYou can mark more columns as sensitive data on the table details page.",
+      "description": "Following columns are explicitly assigned masking levels and take predence over the global masking rule.",
       "remove-sensitive-column-tips": "Expose this column?",
-      "sensitive-column-list": "Sensitive Column List",
+      "sensitive-column-list": "Explict masked column list",
       "global-masking-rule": "Global Masking Rule",
       "semantic-types": "Semantic Types",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
       "global-rules": {
+        "description": "Use global rule to apply masking levels in batch, e.g. all columns named as \"email\" will be masked with \"Partial\" level.",
         "condition-order": "Condition order",
         "add-rule": "Add rule",
         "re-order": "Re-order",
