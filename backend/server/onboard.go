@@ -11,6 +11,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
@@ -328,4 +330,46 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 
 	return nil
+}
+
+// getSampleSQLReviewPolicy returns a sample SQL review policy for preparing onboardign data.
+func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
+	policy := &advisor.SQLReviewPolicy{
+		Name: "SQL Review Sample Policy",
+	}
+
+	ruleList := []*advisor.SQLReviewRule{}
+
+	// Add DropEmptyDatabase rule for MySQL, TiDB, MariaDB.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB} {
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Type:    advisor.SchemaRuleDropEmptyDatabase,
+			Level:   advisor.SchemaRuleLevelError,
+			Engine:  e,
+			Payload: "{}",
+		})
+	}
+
+	// Add ColumnNotNull rule for MySQL, TiDB, MariaDB, Postgres.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Type:    advisor.SchemaRuleColumnNotNull,
+			Level:   advisor.SchemaRuleLevelWarning,
+			Engine:  e,
+			Payload: "{}",
+		})
+	}
+
+	// Add TableDropNamingConvention rule for MySQL, TiDB, MariaDB Postgres.
+	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Type:    advisor.SchemaRuleTableDropNamingConvention,
+			Level:   advisor.SchemaRuleLevelError,
+			Engine:  e,
+			Payload: "{\"format\":\"_del$\"}",
+		})
+	}
+
+	policy.RuleList = ruleList
+	return policy
 }
