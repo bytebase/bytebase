@@ -75,7 +75,7 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any,
 		logLevel = slog.LevelError
 		logMsg = "unknown error"
 	}
-	slog.Log(ctx, logLevel, logMsg, "method", fullMethod, "request", request, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
+	slog.Log(ctx, logLevel, logMsg, "method", fullMethod, log.BBError(err), "latency", fmt.Sprintf("%vms", time.Since(startTime).Milliseconds()))
 	if st.Code() == codes.Internal && slog.Default().Enabled(ctx, slog.LevelDebug) {
 		var role api.Role
 		if r, ok := ctx.Value(common.RoleContextKey).(api.Role); ok {
