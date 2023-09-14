@@ -17,7 +17,6 @@ require (
 	github.com/bytebase/mysql-parser v0.0.0-20230612050356-4592d9ba30da
 	github.com/bytebase/plsql-parser v0.0.0-20230706061841-c93470b91bee
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
-	github.com/casbin/casbin/v2 v2.71.1
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/dgraph-io/ristretto v0.1.1-0.20220403145359-8e850b710d6d
@@ -51,7 +50,6 @@ require (
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
 	github.com/pingcap/tidb/parser v0.0.0-20221101143359-5b0be9af540e
 	github.com/pkg/errors v0.9.1
-	github.com/qiangmzsx/string-adapter/v2 v2.2.0
 	github.com/redis/go-redis/v9 v9.0.5
 	github.com/sashabaranov/go-openai v1.9.0
 	github.com/segmentio/analytics-go v3.1.0+incompatible
@@ -144,7 +142,6 @@ require (
 	cloud.google.com/go/longrunning v0.5.1 // indirect
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/ClickHouse/ch-go v0.57.0 // indirect
-	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
