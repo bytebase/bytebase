@@ -47,6 +47,14 @@
 
     <div class="textinfolabel">
       {{ $t("settings.sensitive-data.description") }}
+      <a
+        href="https://www.bytebase.com/docs/security/mask-data?source=console"
+        class="normal-link inline-flex flex-row items-center"
+        target="_blank"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4" />
+      </a>
     </div>
 
     <SensitiveColumnTable
