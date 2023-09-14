@@ -8,4 +8,4 @@ title: What is 'Database' ?
 
 #### Learn more
 
-- [Create a Project](https://www.bytebase.com/docs/get-started/work-with-a-project/create-a-project)
+- [Create a Project](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)
