@@ -289,6 +289,92 @@ func TestTryMerge(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "add different column in the same table",
+			base:        defaultBase,
+			head: &v1pb.DatabaseMetadata{
+				Schemas: []*v1pb.SchemaMetadata{
+					{
+						Name: "",
+						Tables: []*v1pb.TableMetadata{
+							{
+								Name: "employees",
+								Columns: []*v1pb.ColumnMetadata{
+									{
+										Name: "id",
+										Type: "int",
+									},
+									{
+										Name: "name",
+										Type: "text",
+									},
+									{
+										Name: "salary",
+										Type: "int",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			target: &v1pb.DatabaseMetadata{
+				Schemas: []*v1pb.SchemaMetadata{
+					{
+						Name: "",
+						Tables: []*v1pb.TableMetadata{
+							{
+								Name: "employees",
+								Columns: []*v1pb.ColumnMetadata{
+									{
+										Name: "id",
+										Type: "int",
+									},
+									{
+										Name: "name",
+										Type: "text",
+									},
+									{
+										Name: "phone",
+										Type: "text",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &v1pb.DatabaseMetadata{
+				Schemas: []*v1pb.SchemaMetadata{
+					{
+						Name: "",
+						Tables: []*v1pb.TableMetadata{
+							{
+								Name: "employees",
+								Columns: []*v1pb.ColumnMetadata{
+									{
+										Name: "id",
+										Type: "int",
+									},
+									{
+										Name: "name",
+										Type: "text",
+									},
+									{
+										Name: "phone",
+										Type: "text",
+									},
+									{
+										Name: "salary",
+										Type: "int",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	a := require.New(t)
@@ -296,7 +382,7 @@ func TestTryMerge(t *testing.T) {
 		got, err := tryMerge(tc.base, tc.head, tc.target)
 		a.NoError(err, tc.description)
 		a.NotNil(got, tc.description)
-		equql := proto.Equal(tc.want, got)
-		a.True(equql, tc.description)
+		equal := proto.Equal(tc.want, got)
+		a.True(equal, tc.description)
 	}
 }
