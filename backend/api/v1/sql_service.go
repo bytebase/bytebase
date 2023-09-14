@@ -1981,8 +1981,13 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
 		for _, stmt := range stmtList {
-			switch stmt.(type) {
-			case *tidbast.SelectStmt, *tidbast.ExplainStmt:
+			switch stmt := stmt.(type) {
+			case *tidbast.SelectStmt:
+			case *tidbast.ExplainStmt:
+				// Disable DESC command.
+				if _, ok := stmt.Stmt.(*tidbast.ShowStmt); ok {
+					return nonSelectSQLError.Err()
+				}
 			default:
 				return nonSelectSQLError.Err()
 			}
