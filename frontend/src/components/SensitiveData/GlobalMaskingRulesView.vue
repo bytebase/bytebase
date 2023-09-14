@@ -1,46 +1,59 @@
 <template>
   <div class="w-full mt-4 space-y-4">
-    <div class="flex items-center justify-end">
-      <div v-if="state.reorderRules" class="flex items-center space-x-3">
-        <NButton
-          :disabled="state.processing"
-          @click="
-            () => {
-              state.reorderRules = false;
-              updateList();
-            }
-          "
+    <div class="flex items-center justify-between">
+      <div class="textinfolabel">
+        {{ $t("settings.sensitive-data.global-rules.description") }}
+        <a
+          href="https://www.bytebase.com/docs/security/mask-data?source=console"
+          class="normal-link inline-flex flex-row items-center"
+          target="_blank"
         >
-          {{ $t("common.cancel") }}
-        </NButton>
-        <NButton
-          type="primary"
-          :disabled="state.processing"
-          @click="onReorderSubmit"
-        >
-          {{ $t("common.confirm") }}
-        </NButton>
+          {{ $t("common.learn-more") }}
+          <heroicons-outline:external-link class="w-4 h-4" />
+        </a>
       </div>
-      <div v-else class="flex items-center space-x-3">
-        <NButton
-          secondary
-          type="primary"
-          :disabled="
-            !hasPermission ||
-            !hasSensitiveDataFeature ||
-            state.maskingRuleItemList.length <= 1
-          "
-          @click="state.reorderRules = true"
-        >
-          {{ $t("settings.sensitive-data.global-rules.re-order") }}
-        </NButton>
-        <NButton
-          type="primary"
-          :disabled="!hasPermission || !hasSensitiveDataFeature"
-          @click="addNewRule"
-        >
-          {{ $t("settings.sensitive-data.global-rules.add-rule") }}
-        </NButton>
+      <div>
+        <div v-if="state.reorderRules" class="flex items-center space-x-3">
+          <NButton
+            :disabled="state.processing"
+            @click="
+              () => {
+                state.reorderRules = false;
+                updateList();
+              }
+            "
+          >
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton
+            type="primary"
+            :disabled="state.processing"
+            @click="onReorderSubmit"
+          >
+            {{ $t("common.confirm") }}
+          </NButton>
+        </div>
+        <div v-else class="flex items-center space-x-3">
+          <NButton
+            secondary
+            type="primary"
+            :disabled="
+              !hasPermission ||
+              !hasSensitiveDataFeature ||
+              state.maskingRuleItemList.length <= 1
+            "
+            @click="state.reorderRules = true"
+          >
+            {{ $t("settings.sensitive-data.global-rules.re-order") }}
+          </NButton>
+          <NButton
+            type="primary"
+            :disabled="!hasPermission || !hasSensitiveDataFeature"
+            @click="addNewRule"
+          >
+            {{ $t("settings.sensitive-data.global-rules.add-rule") }}
+          </NButton>
+        </div>
       </div>
     </div>
     <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
