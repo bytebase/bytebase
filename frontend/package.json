@@ -76,8 +76,6 @@
     "vscode-languageserver-textdocument": "1.0.8",
     "vscode-languageserver-types": "3.17.3",
     "vue": "3.2.47",
-    "vue-i18n": "9.2.2",
-    "vue-router": "4.1.6",
     "vuedraggable": "^4.1.0",
     "vueuc": "0.4.51"
   },
@@ -140,6 +138,8 @@
     "vitest": "0.34.4",
     "vscode-oniguruma": "1.6.2",
     "vscode-textmate": "7.0.4",
+    "vue-i18n": "9.4.0",
+    "vue-router": "4.2.4",
     "vue-tsc": "1.8.11",
     "ws": "^8.14.0"
   },
