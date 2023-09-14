@@ -14,6 +14,15 @@
       <BBTableCell v-if="showSensitiveColumn" class="bb-grid-cell">
         <div class="flex items-center">
           {{ getMaskingLevelText(column) }}
+          <span v-if="!isColumnConfigMasking(column)">
+            ({{
+              $t(
+                `settings.sensitive-data.masking-level.${maskingLevelToJSON(
+                  column.effectiveMaskingLevel
+                ).toLowerCase()}`
+              )
+            }})
+          </span>
           <NTooltip v-if="!isColumnConfigMasking(column)">
             <template #trigger>
               <heroicons-outline:question-mark-circle class="h-4 w-4 mr-2" />
@@ -104,7 +113,11 @@ import { useI18n } from "vue-i18n";
 import { BBTableColumn } from "@/bbkit/types";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
-import { Engine, maskingLevelToJSON } from "@/types/proto/v1/common";
+import {
+  Engine,
+  MaskingLevel,
+  maskingLevelToJSON,
+} from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
   TableMetadata,
@@ -302,13 +315,10 @@ const columnNameList = computed(() => {
 });
 
 const isColumnConfigMasking = (column: ColumnMetadata): boolean => {
-  return props.maskDataList.some((sensitiveData) => {
-    return (
-      sensitiveData.table === props.table.name &&
-      sensitiveData.column === column.name &&
-      sensitiveData.schema === props.schema
-    );
-  });
+  return (
+    getColumnMasking(column).maskingLevel !==
+    MaskingLevel.MASKING_LEVEL_UNSPECIFIED
+  );
 };
 
 const getColumnMasking = (column: ColumnMetadata): MaskData => {
@@ -324,7 +334,7 @@ const getColumnMasking = (column: ColumnMetadata): MaskData => {
       table: props.table.name,
       column: column.name,
       semanticCategoryId: "",
-      maskingLevel: column.effectiveMaskingLevel,
+      maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     }
   );
 };

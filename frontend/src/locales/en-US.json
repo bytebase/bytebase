@@ -622,9 +622,9 @@
       }
     },
     "sensitive-data": {
-      "description": "The query result of the following columns is displayed as \"******\". \nYou can mark more columns as sensitive data on the table details page.",
+      "description": "Following columns are explicitly assigned masking levels and take predence over the global masking rule.",
       "remove-sensitive-column-tips": "Expose this column?",
-      "sensitive-column-list": "Sensitive Column List",
+      "sensitive-column-list": "Explict masked column list",
       "global-masking-rule": "Global Masking Rule",
       "semantic-types": "Semantic Types",
       "grant-access": "Grant Access",
