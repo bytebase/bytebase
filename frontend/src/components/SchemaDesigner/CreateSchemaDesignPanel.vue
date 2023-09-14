@@ -47,15 +47,15 @@
           :baseline-schema="state.baselineSchema"
           @update="handleBaselineSchemaChange"
         />
-        <SchemaDesigner
-          ref="schemaDesignerRef"
+        <SchemaEditorV1
+          ref="schemaEditorRef"
           :key="refreshId"
           class="!mt-6"
           :readonly="true"
           :engine="state.schemaDesign.engine"
-          :baseline-schema-metadata="state.schemaDesign.baselineSchemaMetadata"
-          :schema-metadata="state.schemaDesign.schemaMetadata"
           :project="project"
+          :resource-type="'branch'"
+          :branches="[state.schemaDesign]"
         />
       </div>
 
@@ -86,11 +86,12 @@ import { cloneDeep, uniqueId } from "lodash-es";
 import { NButton, NDrawer, NDrawerContent, NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import SchemaDesigner from "@/components/SchemaEditorV1/index.vue";
+import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
   useDatabaseV1Store,
   useProjectV1Store,
+  useSchemaEditorV1Store,
   useSheetV1Store,
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
@@ -137,7 +138,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
+const schemaEditorRef = ref<InstanceType<typeof SchemaEditorV1>>();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
@@ -229,7 +230,7 @@ const handleConfirm = async () => {
     return;
   }
 
-  const designerState = schemaDesignerRef.value;
+  const designerState = schemaEditorRef.value;
   if (!designerState) {
     // Should not happen.
     throw new Error("schema designer is undefined");
@@ -246,9 +247,16 @@ const handleConfirm = async () => {
   const database = useDatabaseV1Store().getDatabaseByUID(
     state.baselineSchema.databaseId || ""
   );
+  const schemaEditorV1Store = useSchemaEditorV1Store();
+  const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
+    state.schemaDesign.name
+  );
+  if (!branchSchema) {
+    return;
+  }
 
   const metadata = mergeSchemaEditToMetadata(
-    designerState.editableSchemas,
+    branchSchema.schemaList,
     cloneDeep(
       state.schemaDesign.baselineSchemaMetadata ||
         DatabaseMetadata.fromPartial({})

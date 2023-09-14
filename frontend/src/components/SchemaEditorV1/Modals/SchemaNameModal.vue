@@ -28,9 +28,9 @@
 <script lang="ts" setup>
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore } from "@/store";
-import { SchemaMetadata } from "@/types/proto/store/database";
-import { useSchemaEditorContext } from "../common";
+import { useNotificationStore, useSchemaEditorV1Store } from "@/store";
+import { SchemaMetadata } from "@/types/proto/v1/database_service";
+import { convertSchemaMetadataToSchema } from "@/types/v1/schemaEditor";
 
 const schemaNameFieldRegexp = /^\S+$/;
 
@@ -38,12 +38,16 @@ interface LocalState {
   schemaName: string;
 }
 
+const props = defineProps<{
+  parentName: string;
+}>();
+
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
 const { t } = useI18n();
-const { metadata } = useSchemaEditorContext();
+const schemaEditorV1Store = useSchemaEditorV1Store();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   schemaName: "",
@@ -63,8 +67,22 @@ const handleConfirmButtonClick = async () => {
     return;
   }
 
-  const schema = SchemaMetadata.fromPartial({});
-  metadata.value.schemas.push(schema);
+  const parentResource = schemaEditorV1Store.resourceMap[
+    schemaEditorV1Store.resourceType
+  ].get(props.parentName);
+  if (!parentResource) {
+    throw new Error(
+      `Failed to find parent resource ${props.parentName} of type ${schemaEditorV1Store.resourceType}`
+    );
+  }
+
+  const schema = convertSchemaMetadataToSchema(
+    SchemaMetadata.fromPartial({
+      name: state.schemaName,
+    })
+  );
+  schema.status = "created";
+  parentResource.schemaList.push(schema);
   // TODO(steven): Open the schema tab.
   dismissModal();
 };

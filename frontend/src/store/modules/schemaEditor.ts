@@ -1,5 +1,5 @@
 import axios from "axios";
-import { cloneDeep, isUndefined, uniqueId } from "lodash-es";
+import { cloneDeep, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import {
   ComposedDatabase,
@@ -19,10 +19,6 @@ import {
   Table,
 } from "@/types/schemaEditor/atomType";
 import { useDatabaseV1Store, useDBSchemaV1Store } from ".";
-
-export const generateUniqueTabId = () => {
-  return uniqueId();
-};
 
 const getDefaultSchemaEditorState = (): SchemaEditorState => {
   return {

@@ -53,12 +53,13 @@
 
   <SchemaNameModal
     v-if="state.schemaNameModalContext !== undefined"
-    :database-id="state.schemaNameModalContext.databaseId"
+    :parent-name="state.schemaNameModalContext.parentName"
     @close="state.schemaNameModalContext = undefined"
   />
 
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
+    :parent-name="state.tableNameModalContext.parentName"
     :schema-id="state.tableNameModalContext.schemaId"
     :table-id="state.tableNameModalContext.tableId"
     @close="state.tableNameModalContext = undefined"
@@ -66,23 +67,23 @@
 </template>
 
 <script lang="ts" setup>
-import { escape, isUndefined } from "lodash-es";
+import { escape, head, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
-import { computed, watch, ref, h, reactive, nextTick } from "vue";
+import { computed, watch, ref, h, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import DuplicateIcon from "~icons/heroicons-outline/document-duplicate";
 import TableIcon from "~icons/heroicons-outline/table-cells";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
-import { generateUniqueTabId } from "@/store";
-import { Table } from "@/types";
+import { generateUniqueTabId, useSchemaEditorV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
+import { Table } from "@/types/v1/schemaEditor";
+import { BranchSchema, SchemaEditorTabType } from "@/types/v1/schemaEditor";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
-import SchemaNameModal from "./Modals/SchemaNameModal.vue";
-import TableNameModal from "./Modals/TableNameModal.vue";
-import { useSchemaEditorContext, SchemaEditorTabType } from "./common";
-import { isTableChanged } from "./utils";
+import SchemaNameModal from "../Modals/SchemaNameModal.vue";
+import TableNameModal from "../Modals/TableNameModal.vue";
+import { isTableChanged } from "../utils";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -114,41 +115,49 @@ interface TreeContextMenu {
 interface LocalState {
   shouldRelocateTreeNode: boolean;
   schemaNameModalContext?: {
-    databaseId: string;
+    parentName: string;
   };
   tableNameModalContext?: {
+    parentName: string;
     schemaId: string;
     tableId?: string;
   };
 }
 
 const { t } = useI18n();
-const {
-  readonly,
-  engine,
-  editableSchemas,
-  tabState,
-  addTab,
-  getTable,
-  getCurrentTab,
-  dropTable,
-} = useSchemaEditorContext();
+const schemaEditorV1Store = useSchemaEditorV1Store();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
-const contextMenu = reactive<TreeContextMenu>({
-  showDropdown: false,
-  clientX: 0,
-  clientY: 0,
-  treeNode: undefined,
-});
+const engine = computed(() => schemaEditorV1Store.engine);
+const readonly = computed(() => schemaEditorV1Store.readonly);
+const currentTab = computed(() => schemaEditorV1Store.currentTab);
+
 const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
 const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
 // Trigger re-render when the tree data is changed.
 const treeKeyRef = ref<string>("");
+const contextMenu = reactive<TreeContextMenu>({
+  showDropdown: false,
+  clientX: 0,
+  clientY: 0,
+  treeNode: undefined,
+});
 
+// NOTE: we only support editing one branch for now.
+const branchSchema = computed(
+  () =>
+    head(
+      Array.from(schemaEditorV1Store.resourceMap.branch.values())
+    ) as BranchSchema
+);
+
+const schemaList = computed(() => branchSchema.value.schemaList);
+const tableList = computed(() =>
+  schemaList.value.map((schema) => schema.tableList).flat()
+);
 const treeData = computed(() => {
   const treeNodeList: TreeNode[] = [];
   if (engine.value === Engine.MYSQL) {
@@ -193,10 +202,6 @@ const treeData = computed(() => {
 
   return treeNodeList;
 });
-const schemaList = computed(() => editableSchemas.value);
-const tableList = computed(() =>
-  schemaList.value.map((schema) => schema.tableList).flat()
-);
 const contextMenuOptions = computed(() => {
   const treeNode = contextMenu.treeNode;
   if (isUndefined(treeNode)) {
@@ -264,6 +269,12 @@ const contextMenuOptions = computed(() => {
   return [];
 });
 
+onMounted(() => {
+  if (!branchSchema.value) {
+    throw new Error("branch should not be empty");
+  }
+});
+
 watch(
   () => treeData.value,
   () => {
@@ -276,20 +287,19 @@ watch(
 );
 
 watch(
-  () => tabState.value.currentTabId,
+  () => currentTab.value,
   () => {
-    const currentTab = getCurrentTab();
-    if (!currentTab) {
+    if (!currentTab.value) {
       selectedKeysRef.value = [];
       return;
     }
 
-    if (currentTab.type === SchemaEditorTabType.TabForTable) {
-      const schemaTreeNodeKey = `s-${currentTab.schemaId}`;
+    if (currentTab.value.type === SchemaEditorTabType.TabForTable) {
+      const schemaTreeNodeKey = `s-${currentTab.value.schemaId}`;
       if (!expandedKeysRef.value.includes(schemaTreeNodeKey)) {
         expandedKeysRef.value.push(schemaTreeNodeKey);
       }
-      const tableTreeNodeKey = `t-${currentTab.schemaId}-${currentTab.tableId}`;
+      const tableTreeNodeKey = `t-${currentTab.value.schemaId}-${currentTab.value.tableId}`;
       selectedKeysRef.value = [tableTreeNodeKey];
     }
 
@@ -304,7 +314,8 @@ watch(
 );
 
 // Render prefix icons before label text.
-const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
+const renderPrefix = ({ option }: { option: TreeOption }) => {
+  const treeNode = option as TreeNode;
   if (treeNode.type === "schema") {
     return h(SchemaIcon, {
       class: "w-4 h-auto text-gray-400",
@@ -318,7 +329,8 @@ const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
 };
 
 // Render label text.
-const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
+const renderLabel = ({ option }: { option: TreeOption }) => {
+  const treeNode = option as TreeNode;
   const additionalClassList: string[] = ["select-none"];
 
   if (treeNode.type === "schema") {
@@ -333,7 +345,13 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
         additionalClassList.push("text-green-700");
       } else if (table.status === "dropped") {
         additionalClassList.push("text-red-700 line-through");
-      } else if (isTableChanged(treeNode.schemaId, treeNode.tableId)) {
+      } else if (
+        isTableChanged(
+          branchSchema.value.branch.name,
+          treeNode.schemaId,
+          treeNode.tableId
+        )
+      ) {
         additionalClassList.push("text-yellow-700");
       }
     }
@@ -356,11 +374,12 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
 };
 
 // Render a 'menu' icon in the right of the node
-const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
+const renderSuffix = ({ option }: { option: TreeOption }) => {
   if (readonly.value) {
     return null;
   }
 
+  const treeNode = option as TreeNode;
   const menuIcon = h(EllipsisIcon, {
     class: "w-4 h-auto text-gray-600",
     onClick: (e) => {
@@ -432,8 +451,7 @@ const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
       }
 
       schema.tableList.push(newTable);
-
-      openTabForTable(treeNode, newTable.id);
+      openTabForTable(treeNode);
     },
   });
   if (treeNode.type === "schema") {
@@ -447,7 +465,7 @@ const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
     }
     return icons;
   }
-  return null;
+  throw new Error(`Unknown tree node type`);
 };
 
 const getOriginalName = (name: string): string => {
@@ -487,21 +505,23 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
 
 const handleCreateTable = () => {
   if (engine.value === Engine.MYSQL) {
-    const schema = editableSchemas.value[0];
+    const schema = schemaList.value[0];
     state.tableNameModalContext = {
+      parentName: branchSchema.value.branch.name,
       schemaId: schema.id,
     };
   }
 };
 
 // Set event handler to tree nodes.
-const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
+const nodeProps = ({ option }: { option: TreeOption }) => {
+  const treeNode = option as TreeNode;
   return {
     onClick(e: MouseEvent) {
       // Check if clicked on the content part.
       // And ignore the fold/unfold arrow.
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
-        openTabForTable(treeNode, treeNode.tableId as string);
+        openTabForTable(treeNode);
       } else {
         nextTick(() => {
           selectedKeysRef.value = [];
@@ -514,15 +534,16 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
   };
 };
 
-const openTabForTable = (treeNode: TreeNode, tableId: string) => {
+const openTabForTable = (treeNode: TreeNode) => {
   state.shouldRelocateTreeNode = false;
 
   if (treeNode.type === "table") {
-    addTab({
+    schemaEditorV1Store.addTab({
       id: generateUniqueTabId(),
       type: SchemaEditorTabType.TabForTable,
+      parentName: branchSchema.value.branch.name,
       schemaId: treeNode.schemaId,
-      tableId: tableId,
+      tableId: treeNode.tableId,
     });
   }
 
@@ -538,19 +559,29 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   if (treeNode.type === "schema") {
     if (key === "create-table") {
       state.tableNameModalContext = {
+        parentName: branchSchema.value.branch.name,
         schemaId: treeNode.schemaId,
       };
     }
   } else if (treeNode.type === "table") {
     if (key === "rename") {
       state.tableNameModalContext = {
+        parentName: branchSchema.value.branch.name,
         schemaId: treeNode.schemaId,
         tableId: treeNode.tableId,
       };
     } else if (key === "drop") {
-      dropTable(treeNode.schemaId, treeNode.tableId);
+      schemaEditorV1Store.dropTable(
+        branchSchema.value.branch.name,
+        treeNode.schemaId,
+        treeNode.tableId
+      );
     } else if (key === "restore") {
-      const table = getTable(treeNode.schemaId, treeNode.tableId);
+      const table = schemaEditorV1Store.getTable(
+        branchSchema.value.branch.name,
+        treeNode.schemaId,
+        treeNode.tableId
+      );
       if (!table) {
         return;
       }

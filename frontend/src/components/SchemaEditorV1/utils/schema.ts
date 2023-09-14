@@ -1,11 +1,15 @@
 import { isEqual } from "lodash-es";
-import { useSchemaEditorContext } from "../common";
+import { useSchemaEditorV1Store } from "@/store";
 
-export const isSchemaChanged = (schemaId: string): boolean => {
-  const { originalSchemas, editableSchemas } = useSchemaEditorContext();
-  const originSchema = originalSchemas.value.find(
-    (schema) => schema.id === schemaId
+export const isSchemaChanged = (
+  parentName: string,
+  schemaId: string
+): boolean => {
+  const schemaEditorV1Store = useSchemaEditorV1Store();
+  const editorSchema = schemaEditorV1Store.getSchema(parentName, schemaId);
+  const originSchema = schemaEditorV1Store.getOriginSchema(
+    parentName,
+    schemaId
   );
-  const schema = editableSchemas.value.find((schema) => schema.id === schemaId);
-  return !isEqual(originSchema, schema);
+  return !isEqual(originSchema, editorSchema);
 };
