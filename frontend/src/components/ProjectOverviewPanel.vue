@@ -39,27 +39,36 @@
     </div>
 
     <div class="space-y-2">
-      <div class="flex items-center gap-x-1">
-        <p class="text-lg font-medium leading-7 text-main">
-          {{ $t("common.issue") }}
-        </p>
-        <button
-          type="button"
-          class="p-1 rounded hover:bg-gray-200"
-          @click="
-            () => {
-              router.replace({
-                name: 'workspace.issue',
-                query: {
-                  project: project.uid,
-                  autofocus: 1,
-                },
-              });
-            }
-          "
-        >
-          <heroicons-outline:search class="h-4 w-4 text-control" />
-        </button>
+      <div class="flex justify-between">
+        <div class="flex items-center gap-x-1">
+          <p class="text-lg font-medium leading-7 text-main">
+            {{ $t("common.issue") }}
+          </p>
+          <button
+            type="button"
+            class="p-1 rounded bg-gray-200 hover:bg-gray-300 border border-gray-300"
+            @click="
+              () => {
+                router.replace({
+                  name: 'workspace.issue',
+                  query: {
+                    project: project.uid,
+                    autofocus: 1,
+                  },
+                });
+              }
+            "
+          >
+            <heroicons-outline:search class="h-3.5 w-3.5 text-control" />
+          </button>
+        </div>
+
+        <SearchBox
+          :value="state.searchText"
+          :placeholder="$t('issue.filter-issue-by-name')"
+          :autofocus="true"
+          @update:value="changeSearchText($event)"
+        />
       </div>
 
       <div>
@@ -77,7 +86,7 @@
               :mode="'PROJECT'"
               :show-placeholder="!loading"
               :title="$t('issue.waiting-approval')"
-              :issue-list="issueList"
+              :issue-list="issueList.filter(keywordFilter)"
             />
           </template>
         </WaitingForMyApprovalIssueTableV1>
@@ -97,7 +106,7 @@
               class="-mt-px"
               :mode="'PROJECT'"
               :title="$t('project.overview.in-progress')"
-              :issue-list="issueList"
+              :issue-list="issueList.filter(keywordFilter)"
               :show-placeholder="!loading"
             />
           </template>
@@ -120,7 +129,7 @@
               class="-mt-px"
               :mode="'PROJECT'"
               :title="$t('project.overview.recently-closed')"
-              :issue-list="issueList"
+              :issue-list="issueList.filter(keywordFilter)"
               :show-placeholder="!loading"
             />
           </template>
@@ -145,12 +154,13 @@ import { useRouter } from "vue-router";
 import { featureToRef } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Project } from "@/types/proto/v1/project_service";
-import { IssueFilter } from "../types";
+import { ComposedIssue, IssueFilter } from "../types";
 import IssueTableV1 from "./IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "./IssueV1/components/PagedIssueTableV1.vue";
 import WaitingForMyApprovalIssueTableV1 from "./IssueV1/components/WaitingForMyApprovalIssueTableV1.vue";
 
 interface LocalState {
+  searchText: string;
   isFetchingActivityList: boolean;
 }
 
@@ -162,6 +172,7 @@ const props = defineProps({
 });
 
 const state = reactive<LocalState>({
+  searchText: "",
   isFetchingActivityList: false,
 });
 const router = useRouter();
@@ -174,4 +185,18 @@ const commonIssueFilter = computed((): IssueFilter => {
     query: "",
   };
 });
+
+const keywordFilter = (issue: ComposedIssue) => {
+  const keyword = state.searchText.trim().toLowerCase();
+  if (keyword) {
+    if (!issue.title.toLowerCase().includes(keyword)) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const changeSearchText = (searchText: string) => {
+  state.searchText = searchText;
+};
 </script>
