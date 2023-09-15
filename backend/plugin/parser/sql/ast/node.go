@@ -18,8 +18,9 @@ type Node interface {
 
 // node is the base struct for all Node.
 type node struct {
-	text          string
-	lastline      int
+	text     string
+	lastline int
+	*pgquery.ParseResult
 }
 
 // Text implements the Node interface.
