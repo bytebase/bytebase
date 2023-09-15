@@ -107,7 +107,7 @@
 <script lang="ts" setup>
 import DOMPurify from "dompurify";
 import hljs from "highlight.js/lib/core";
-import codeStyle from "highlight.js/styles/github.css";
+import codeStyle from "highlight.js/styles/github.css?raw";
 import MarkdownIt from "markdown-it";
 import { computed, nextTick, ref, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -118,7 +118,7 @@ import {
   isDatabaseRelatedIssue,
   sizeToFit,
 } from "@/utils";
-import markdownStyle from "../assets/css/github-markdown-style.css";
+import markdownStyle from "../assets/css/github-markdown-style.css?raw";
 import IssueStatusIcon from "./IssueV1/components/IssueStatusIcon.vue";
 
 const md = new MarkdownIt({
