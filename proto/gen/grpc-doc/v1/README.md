@@ -594,7 +594,6 @@
     - [Advice](#bytebase-v1-Advice)
     - [CheckRequest](#bytebase-v1-CheckRequest)
     - [CheckResponse](#bytebase-v1-CheckResponse)
-    - [CheckResponse.Run](#bytebase-v1-CheckResponse-Run)
     - [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest)
     - [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
@@ -9450,24 +9449,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| runs | [CheckResponse.Run](#bytebase-v1-CheckResponse-Run) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CheckResponse-Run"></a>
-
-### CheckResponse.Run
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
-| results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
-| error | [string](#string) |  |  |
+| advices | [Advice](#bytebase-v1-Advice) | repeated |  |
 
 
 
