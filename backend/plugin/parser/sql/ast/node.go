@@ -1,5 +1,9 @@
 package ast
 
+import (
+	pgquery "github.com/pganalyze/pg_query_go/v4"
+)
+
 var (
 	_ Node = (*node)(nil)
 )
@@ -16,6 +20,7 @@ type Node interface {
 type node struct {
 	text     string
 	lastline int
+	*pgquery.ParseResult
 }
 
 // Text implements the Node interface.
