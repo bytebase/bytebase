@@ -8,11 +8,10 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func runExecutorOnce(ctx context.Context, exec Executor, planCheckRun *store.PlanCheckRunMessage) (results []*storepb.PlanCheckRunResult_Result, err error) {
+func runExecutorOnce(ctx context.Context, exec Executor, config *storepb.PlanCheckRunConfig) (results []*storepb.PlanCheckRunResult_Result, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -24,13 +23,13 @@ func runExecutorOnce(ctx context.Context, exec Executor, planCheckRun *store.Pla
 		}
 	}()
 
-	return exec.Run(ctx, planCheckRun)
+	return exec.Run(ctx, config)
 }
 
 // Executor is the plan check executor.
 type Executor interface {
 	// Run will be called periodically by the plan check scheduler
-	Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) (results []*storepb.PlanCheckRunResult_Result, err error)
+	Run(ctx context.Context, config *storepb.PlanCheckRunConfig) (results []*storepb.PlanCheckRunResult_Result, err error)
 }
 
 func isStatementTypeCheckSupported(dbType db.Type) bool {

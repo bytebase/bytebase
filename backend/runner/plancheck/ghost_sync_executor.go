@@ -2,6 +2,7 @@ package plancheck
 
 import (
 	"context"
+	"math/rand"
 
 	"github.com/github/gh-ost/go/logic"
 	"github.com/pkg/errors"
@@ -28,7 +29,7 @@ type GhostSyncExecutor struct {
 }
 
 // Run runs the gh-ost sync check executor.
-func (e *GhostSyncExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) (results []*storepb.PlanCheckRunResult_Result, err error) {
+func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) (results []*storepb.PlanCheckRunResult_Result, err error) {
 	// gh-ost dry run could panic.
 	// It may be bytebase who panicked, but that's rare. So
 	// capture the error and send it into the result list.
@@ -52,11 +53,11 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 		}
 	}()
 
-	if planCheckRun.Config.DatabaseGroupUid != nil {
+	if config.DatabaseGroupUid != nil {
 		return nil, errors.Errorf("database group is not supported")
 	}
 
-	instanceUID := int(planCheckRun.Config.InstanceUid)
+	instanceUID := int(config.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
@@ -65,12 +66,12 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 		return nil, errors.Errorf("instance not found UID %v", instanceUID)
 	}
 
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &planCheckRun.Config.DatabaseName})
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", planCheckRun.Config.DatabaseName)
+		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
 	}
 	if database == nil {
-		return nil, errors.Errorf("database not found %q", planCheckRun.Config.DatabaseName)
+		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
@@ -83,7 +84,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 		return nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", instance.UID)
 	}
 
-	sheetUID := int(planCheckRun.Config.SheetUid)
+	sheetUID := int(config.SheetUid)
 	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
@@ -105,12 +106,12 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, planCheckRun *store.PlanChe
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", statement)
 	}
 
-	config, err := utils.GetGhostConfig(planCheckRun.UID, database, adminDataSource, e.secret, instanceUsers, tableName, renderedStatement, true, 20000000)
+	ghostConfig, err := utils.GetGhostConfig(rand.Intn(10000000), database, adminDataSource, e.secret, instanceUsers, tableName, renderedStatement, true, 20000000)
 	if err != nil {
 		return nil, err
 	}
 
-	migrationContext, err := utils.NewMigrationContext(config)
+	migrationContext, err := utils.NewMigrationContext(ghostConfig)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}

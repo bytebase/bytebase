@@ -29,8 +29,7 @@ type DatabaseConnectExecutor struct {
 }
 
 // Run runs the executor.
-func (e *DatabaseConnectExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
-	config := planCheckRun.Config
+func (e *DatabaseConnectExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
 	instanceUID := int(config.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
