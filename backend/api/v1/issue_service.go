@@ -352,8 +352,6 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			} else {
 				issueFind.CreatedTsBefore = &ts
 			}
-		case "instance":
-		case "type":
 		}
 	}
 
