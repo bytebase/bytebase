@@ -179,6 +179,9 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 		migrationContext.AssumeRBR = true
 	}
 	// set defaults
+	if err := migrationContext.SetConnectionConfig(""); err != nil {
+		return nil, err
+	}
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
