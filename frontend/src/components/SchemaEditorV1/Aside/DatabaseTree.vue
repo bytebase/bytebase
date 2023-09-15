@@ -633,7 +633,6 @@ const fetchSchemaListByDatabaseId = async (
 // Dynamic fetching table list when database tree node clicking.
 const loadSubTree = async (option: TreeOption) => {
   const treeNode = option as TreeNode;
-  console.log("here", treeNode);
   if (treeNode.type === "database") {
     const databaseName = treeNode.database;
     if (databaseDataLoadedSet.value.has(databaseName)) {

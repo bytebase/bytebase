@@ -316,7 +316,6 @@ watch(
     } else {
       state.selectedSchemaId = head(schemaIdList) || "";
     }
-    console.log("state.selectedSchemaId", state.selectedSchemaId);
   },
   {
     immediate: true,
@@ -346,12 +345,6 @@ const handleCreateNewTable = () => {
 };
 
 const handleTableItemClick = (table: Table) => {
-  console.log("asd", {
-    type: SchemaEditorTabType.TabForTable,
-    parentName: database.value.name,
-    schemaId: state.selectedSchemaId,
-    tableId: table.id,
-  });
   editorStore.addTab({
     id: generateUniqueTabId(),
     type: SchemaEditorTabType.TabForTable,
