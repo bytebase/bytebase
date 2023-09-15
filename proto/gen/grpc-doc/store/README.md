@@ -1835,7 +1835,9 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | schema | [string](#string) |  |  |
 | table | [string](#string) |  |  |
 | column | [string](#string) |  |  |
-| semantic_category_id | [string](#string) |  |  |
+| semantic_type_id | [string](#string) |  |  |
+| full_masking_algorithm_id | [string](#string) |  | The full masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
+| partial_masking_algorithm_id | [string](#string) |  | The partial masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
 
 
@@ -2204,9 +2206,9 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | id is the uuid for semantic type. |
 | title | [string](#string) |  | the title of the semantic type, it should not be empty. |
-| description | [string](#string) |  | the description of the semantic type, it can be empty.
-
-We do not support custom algorithm by now, we only support the default algorithm, so we do not add the algorithm field right now. |
+| description | [string](#string) |  | the description of the semantic type, it can be empty. |
+| partial_mask_algorithm_id | [string](#string) |  | the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm. |
+| full_mask_algorithm_id | [string](#string) |  | the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm. |
 
 
 
