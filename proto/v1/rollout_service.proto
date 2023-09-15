@@ -393,8 +393,6 @@ message PlanCheckRun {
 
   // Format: instances/{instance}/databases/{database}
   string target = 5;
-  // Format: projects/{project}/sheets/{sheet}
-  string sheet = 6;
 
   repeated Result results = 7;
   // error is set if the Status is FAILED.
