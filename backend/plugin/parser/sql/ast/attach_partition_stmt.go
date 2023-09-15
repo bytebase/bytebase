@@ -4,6 +4,7 @@ package ast
 type AttachPartitionStmt struct {
 	node
 
-	Table *TableDef
+	Table     *TableDef
+	Partition *TableDef
 	// TODO(rebelice): convert more attach partition statement fields.
 }
