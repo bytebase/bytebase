@@ -33,9 +33,12 @@
       </button>
     </div>
     <div class="w-full h-full max-h-full overflow-auto border-b mb-4">
-      <SchemaEditor
+      <SchemaEditorV1
         v-show="state.selectedTab === 'schema-editor'"
-        :database-id-list="props.databaseIdList"
+        :engine="databaseEngine"
+        :project="project"
+        :resource-type="'database'"
+        :databases="databaseList"
       />
       <div
         v-show="state.selectedTab === 'raw-sql'"
@@ -123,6 +126,7 @@
 </template>
 
 <script lang="ts" setup>
+import axios from "axios";
 import dayjs from "dayjs";
 import { head, uniq } from "lodash-es";
 import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
@@ -130,15 +134,16 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
-import SchemaEditor from "@/components/SchemaEditor/SchemaEditor.vue";
+import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import {
   useDatabaseV1Store,
   useNotificationStore,
-  useSchemaEditorStore,
+  useSchemaEditorV1Store,
 } from "@/store";
 import {
   ComposedDatabase,
   DatabaseEdit,
+  DatabaseEditResult,
   dialectOfEngineV1,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
@@ -191,7 +196,7 @@ const state = reactive<LocalState>({
   editStatement: "",
   showActionConfirmModal: false,
 });
-const editorStore = useSchemaEditorStore();
+const schemaEditorV1Store = useSchemaEditorV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
 const statementFromSchemaEditor = ref<string>();
@@ -299,17 +304,19 @@ const handleSyncSQLFromSchemaEditor = async () => {
 
 const getDatabaseEditListWithSchemaEditor = () => {
   const databaseEditList: DatabaseEdit[] = [];
-  for (const database of editorStore.databaseList) {
-    const databaseSchema = editorStore.databaseSchemaById.get(database.uid);
-    if (!databaseSchema) {
-      continue;
-    }
-
+  for (const databaseSchema of Array.from(
+    schemaEditorV1Store.resourceMap["database"].values()
+  )) {
+    const database = databaseSchema.database;
     for (const schema of databaseSchema.schemaList) {
       const originSchema = databaseSchema.originSchemaList.find(
         (originSchema) => originSchema.id === schema.id
       );
-      const diffSchemaResult = diffSchema(database.uid, originSchema, schema);
+      if (!originSchema) {
+        continue;
+      }
+
+      const diffSchemaResult = diffSchema(database.name, originSchema, schema);
       if (checkHasSchemaChanges(diffSchemaResult)) {
         const index = databaseEditList.findIndex(
           (edit) => String(edit.databaseId) === database.uid
@@ -336,9 +343,7 @@ const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
   const databaseEditMap: Map<string, string> = new Map();
   if (databaseEditList.length > 0) {
     for (const databaseEdit of databaseEditList) {
-      const databaseEditResult = await editorStore.postDatabaseEdit(
-        databaseEdit
-      );
+      const databaseEditResult = await postDatabaseEdit(databaseEdit);
       if (databaseEditResult.validateResultList.length > 0) {
         notificationStore.pushNotification({
           module: "bytebase",
@@ -536,6 +541,17 @@ const generateIssueName = (
   issueNameParts.push(`${datetime} ${tz}`);
 
   return issueNameParts.join(" ");
+};
+
+const postDatabaseEdit = async (databaseEdit: DatabaseEdit) => {
+  const resData = (
+    await axios.post(
+      `/api/database/${databaseEdit.databaseId}/edit`,
+      databaseEdit
+    )
+  ).data;
+  const databaseEditResult = resData.data.attributes as DatabaseEditResult;
+  return databaseEditResult;
 };
 
 watch(
