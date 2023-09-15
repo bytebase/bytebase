@@ -77,9 +77,9 @@ import {
   useNotificationStore,
   useSchemaEditorV1Store,
 } from "@/store";
-import { SchemaEditorTabType } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { SchemaMetadata } from "@/types/proto/v1/database_service";
+import { SchemaEditorTabType } from "@/types/v1/schemaEditor";
 import {
   Schema,
   Table,

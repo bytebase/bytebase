@@ -1,5 +1,9 @@
 <template>
-  <div v-if="state.initialized" class="w-full h-[32rem] border rounded-lg">
+  <div
+    v-if="state.initialized"
+    class="w-full h-full border rounded-lg overflow-hidden"
+    v-bind="$attrs"
+  >
     <Splitpanes
       class="default-theme w-full h-full flex flex-row overflow-hidden"
     >
