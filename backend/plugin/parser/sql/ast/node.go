@@ -20,7 +20,6 @@ type Node interface {
 type node struct {
 	text          string
 	lastline      int
-	pgQueryResult *pgquery.ParseResult
 }
 
 // Text implements the Node interface.
