@@ -38,21 +38,19 @@ type StatementTypeExecutor struct {
 }
 
 // Run runs the statement type executor.
-func (e *StatementTypeExecutor) Run(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
-	changeType := planCheckRun.Config.ChangeDatabaseType
-	if changeType == storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
+func (e *StatementTypeExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
+	if config.ChangeDatabaseType == storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
 		return nil, errors.Errorf("change database type is unspecified")
 	}
 
-	if planCheckRun.Config.DatabaseGroupUid != nil {
-		return e.runForDatabaseGroupTarget(ctx, planCheckRun, *planCheckRun.Config.DatabaseGroupUid)
+	if config.DatabaseGroupUid != nil {
+		return e.runForDatabaseGroupTarget(ctx, config, *config.DatabaseGroupUid)
 	}
-	return e.runForDatabaseTarget(ctx, planCheckRun)
+	return e.runForDatabaseTarget(ctx, config)
 }
 
-func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
-	changeType := planCheckRun.Config.ChangeDatabaseType
-	config := planCheckRun.Config
+func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
+	changeType := config.ChangeDatabaseType
 
 	instanceUID := int(config.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
@@ -90,7 +88,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, planCh
 		return nil, errors.Errorf("database schema not found: %d", database.UID)
 	}
 
-	sheetUID := int(planCheckRun.Config.SheetUid)
+	sheetUID := int(config.SheetUid)
 	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
@@ -158,9 +156,8 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, planCh
 	return results, nil
 }
 
-func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, databaseGroupUID int64) ([]*storepb.PlanCheckRunResult_Result, error) {
-	changeType := planCheckRun.Config.ChangeDatabaseType
-	config := planCheckRun.Config
+func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, config *storepb.PlanCheckRunConfig, databaseGroupUID int64) ([]*storepb.PlanCheckRunResult_Result, error) {
+	changeType := config.ChangeDatabaseType
 
 	databaseGroup, err := e.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		UID: &databaseGroupUID,
@@ -199,7 +196,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, p
 		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroup.ResourceID)
 	}
 
-	sheetUID := int(planCheckRun.Config.SheetUid)
+	sheetUID := int(config.SheetUid)
 	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
