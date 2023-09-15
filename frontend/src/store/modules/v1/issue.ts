@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { uniq, uniqBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref } from "vue";
@@ -62,6 +63,19 @@ export const buildIssueFilter = (find: IssueFilter): string => {
         .map((s) => issueStatusToJSON(s))
         .join(" | ")}"`
     );
+  }
+  if (find.createdTsAfter) {
+    filter.push(
+      `create_time >= "${dayjs(find.createdTsAfter).utc().format()}"`
+    );
+  }
+  if (find.createdTsBefore) {
+    filter.push(
+      `create_time <= "${dayjs(find.createdTsBefore).utc().format()}"`
+    );
+  }
+  if (find.type) {
+    filter.push(`type = "${find.type}"`);
   }
   return filter.join(" && ");
 };

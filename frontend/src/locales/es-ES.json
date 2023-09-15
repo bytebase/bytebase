@@ -815,6 +815,14 @@
         "project": {
           "title": "Proyecto",
           "description": "Incluir solo ediciones de este proyecto"
+        },
+        "instance": {
+          "title": "Instancia",
+          "description": "Incluir solo problemas relacionados con la instancia"
+        },
+        "type": {
+          "title": "Tipo de cambio",
+          "description": "El tipo de cambio de base de datos para problemas"
         }
       }
     },

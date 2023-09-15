@@ -813,6 +813,14 @@
         "project": {
           "title": "项目",
           "description": "仅搜索某个项目下的工单"
+        },
+        "instance": {
+          "title": "实例",
+          "description": "仅搜索与某个实例关联的工单"
+        },
+        "type": {
+          "title": "变更类型",
+          "description": "根据数据库变更类型搜索"
         }
       }
     },
