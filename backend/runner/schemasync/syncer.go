@@ -333,10 +333,21 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
-func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, force bool) error {
+func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, force bool) (retErr error) {
 	if s.profile.Readonly {
 		return nil
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("%v", r)
+			}
+			slog.Error("SyncDatabaseSchema PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+			retErr = err
+		}
+	}()
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
