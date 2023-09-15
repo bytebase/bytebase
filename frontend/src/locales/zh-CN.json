@@ -806,7 +806,6 @@
       }
     },
     "view-commit": "查看提交",
-    "search-issue-name": "搜索工单名称",
     "advanced-search": {
       "self": "高级搜素",
       "scope": {
