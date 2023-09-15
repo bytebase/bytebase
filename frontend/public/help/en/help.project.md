@@ -10,6 +10,6 @@ title: What is 'project' ?
 
 #### Learn more
 
-- [Create a Project](https://www.bytebase.com/docs/get-started/work-with-a-project/create-a-project)
+- [Create a Project](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)
 - [Use UI Workflow](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)
 - [Use GitOps workflow](https://www.bytebase.com/docs/vcs-integration/enable-gitops-workflow)

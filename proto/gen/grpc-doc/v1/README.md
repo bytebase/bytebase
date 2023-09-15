@@ -592,6 +592,9 @@
     - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
     - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
     - [Advice](#bytebase-v1-Advice)
+    - [CheckRequest](#bytebase-v1-CheckRequest)
+    - [CheckResponse](#bytebase-v1-CheckResponse)
+    - [CheckResponse.Run](#bytebase-v1-CheckResponse-Run)
     - [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest)
     - [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
@@ -605,6 +608,7 @@
     - [RowValue](#bytebase-v1-RowValue)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
+    - [CheckRequest.ChangeDatabaseType](#bytebase-v1-CheckRequest-ChangeDatabaseType)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -7594,7 +7598,6 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
 | status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
 | target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
 | error | [string](#string) |  | error is set if the Status is FAILED. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -9421,6 +9424,56 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
 
+<a name="bytebase-v1-CheckRequest"></a>
+
+### CheckRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| statement | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| change_database_type | [CheckRequest.ChangeDatabaseType](#bytebase-v1-CheckRequest-ChangeDatabaseType) |  |  |
+| database | [string](#string) |  | Format: instances/{instance}/databases/{databaseName} |
+
+
+
+
+
+
+<a name="bytebase-v1-CheckResponse"></a>
+
+### CheckResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| runs | [CheckResponse.Run](#bytebase-v1-CheckResponse-Run) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CheckResponse-Run"></a>
+
+### CheckResponse.Run
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
+| results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-DifferPreviewRequest"></a>
 
 ### DifferPreviewRequest
@@ -9634,6 +9687,20 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | ERROR | 3 |  |
 
 
+
+<a name="bytebase-v1-CheckRequest-ChangeDatabaseType"></a>
+
+### CheckRequest.ChangeDatabaseType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DML | 2 |  |
+| SDL | 3 |  |
+
+
  
 
  
@@ -9651,6 +9718,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 | DifferPreview | [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest) | [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse) |  |
+| Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
 
  
 

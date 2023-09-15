@@ -8,6 +8,7 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
+import "v1/rollout_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -36,6 +37,12 @@ service SQLService {
   rpc DifferPreview(DifferPreviewRequest) returns (DifferPreviewResponse) {
     option (google.api.http) = {
       post: "/v1/sql/differPreview"
+      body: "*"
+    };
+  }
+  rpc Check(CheckRequest) returns (CheckResponse) {
+    option (google.api.http) = {
+      post: "/v1/sql/check"
       body: "*"
     };
   }
@@ -231,4 +238,31 @@ message PrettyResponse {
 
   // The expected SDL schema after normalizing.
   string expected_schema = 2;
+}
+
+message CheckRequest {
+  string statement = 1;
+
+  Engine engine = 2;
+
+  enum ChangeDatabaseType {
+    CHANGE_DATABASE_TYPE_UNSPECIFIED = 0;
+    DDL = 1;
+    DML = 2;
+    SDL = 3;
+  }
+  ChangeDatabaseType change_database_type = 3;
+
+  // Format: instances/{instance}/databases/{databaseName}
+  string database = 4;
+}
+
+message CheckResponse {
+  message Run {
+    PlanCheckRun.Type type = 1;
+    repeated PlanCheckRun.Result results = 2;
+    string error = 3;
+  }
+
+  repeated Run runs = 1;
 }

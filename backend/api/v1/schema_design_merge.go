@@ -542,7 +542,7 @@ func diffTableMetadata(from, to *v1pb.TableMetadata) (*metadataDiffTableNode, er
 		}
 	}
 
-	if len(tableNode.columns) > 0 && len(tableNode.foreignKeys) > 0 {
+	if len(tableNode.columns) > 0 || len(tableNode.foreignKeys) > 0 {
 		tableNode.action = diffActionUpdate
 		return tableNode, nil
 	}

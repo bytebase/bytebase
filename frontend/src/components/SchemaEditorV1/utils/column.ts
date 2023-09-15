@@ -1,19 +1,18 @@
 import { isEqual, isUndefined } from "lodash-es";
-import { useSchemaEditorContext } from "../common";
+import { useSchemaEditorV1Store } from "@/store";
 
 export const isColumnChanged = (
+  parentName: string,
   schemaId: string,
   tableId: string,
   columnId: string
 ): boolean => {
-  const { originalSchemas, editableSchemas } = useSchemaEditorContext();
-  const originSchema = originalSchemas.value.find(
-    (schema) => schema.id === schemaId
-  );
-  const schema = editableSchemas.value.find((schema) => schema.id === schemaId);
-  const table = schema?.tableList.find((table) => table.id === tableId);
-  const originTable = originSchema?.tableList.find(
-    (table) => table.id === tableId
+  const schemaEditorV1Store = useSchemaEditorV1Store();
+  const table = schemaEditorV1Store.getTable(parentName, schemaId, tableId);
+  const originTable = schemaEditorV1Store.getOriginTable(
+    parentName,
+    schemaId,
+    tableId
   );
   const column = table?.columnList.find((column) => column.id === columnId);
   const originColumn = originTable?.columnList.find(
@@ -24,10 +23,10 @@ export const isColumnChanged = (
   const isPrimaryKeyOrigin =
     originTable?.primaryKey.columnIdList.includes(columnId);
 
-  const originForeignKey = originSchema?.foreignKeyList.find(
+  const originForeignKey = originTable?.foreignKeyList.find(
     (fk) => fk.tableId === table?.id && fk.columnIdList.includes(columnId)
   );
-  const foreignKey = schema?.foreignKeyList.find(
+  const foreignKey = table?.foreignKeyList.find(
     (fk) => fk.tableId === table?.id && fk.columnIdList.includes(columnId)
   );
   const originIndex = originForeignKey?.columnIdList.findIndex(

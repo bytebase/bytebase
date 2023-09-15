@@ -147,13 +147,12 @@
           </template>
         </div>
 
-        <SchemaDesigner
-          ref="schemaDesignerRef"
+        <SchemaEditorV1
+          :key="schemaEditorKey"
           :readonly="!state.isEditing"
-          :engine="schemaDesign.engine"
-          :baseline-schema-metadata="schemaDesign.baselineSchemaMetadata"
-          :schema-metadata="schemaDesign.schemaMetadata"
           :project="project"
+          :resource-type="'branch'"
+          :branches="[schemaDesign]"
         />
         <!-- Don't show delete button in view mode. -->
         <div v-if="!viewMode">
@@ -191,7 +190,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep, isEqual, uniqueId } from "lodash-es";
 import { Pen, X, Check } from "lucide-vue-next";
 import {
   NButton,
@@ -207,12 +206,13 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
-import SchemaDesigner from "@/components/SchemaEditorV1/index.vue";
+import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
   useChangeHistoryStore,
   useCurrentUserV1,
   useDatabaseV1Store,
+  useSchemaEditorV1Store,
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
@@ -260,7 +260,7 @@ const state = reactive<LocalState>({
   showDiffEditor: false,
 });
 const createdBranchName = ref<string>("");
-const schemaDesignerRef = ref<InstanceType<typeof SchemaDesigner>>();
+const schemaEditorKey = ref<string>(uniqueId());
 
 const schemaDesign = computed(() => {
   return schemaDesignStore.getSchemaDesignByName(state.schemaDesignName || "");
@@ -423,8 +423,17 @@ const handleEdit = async () => {
 };
 
 const handleCancelEdit = async () => {
+  const schemaEditorV1Store = useSchemaEditorV1Store();
+  const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
+    schemaDesign.value.name
+  );
+  if (!branchSchema) {
+    return;
+  }
+
+  const editableSchemas = branchSchema.schemaList;
   const metadata = mergeSchemaEditToMetadata(
-    schemaDesignerRef.value?.editableSchemas || [],
+    editableSchemas,
     cloneDeep(
       schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
     )
@@ -464,9 +473,9 @@ const handleCancelEdit = async () => {
     }
   }
 
-  // If the metadata is changed, we need to rebuild the editing state.
   if (!isEqual(metadata, schemaDesign.value.schemaMetadata)) {
-    schemaDesignerRef.value?.rebuildEditingState();
+    // If the metadata is changed, we need to rebuild the editing state.
+    schemaEditorKey.value = uniqueId();
   }
   state.isEditing = false;
 };
@@ -476,10 +485,6 @@ const handleSaveSchemaDesignDraft = async () => {
     return;
   }
 
-  const designerState = schemaDesignerRef.value;
-  if (!designerState) {
-    throw new Error("schema designer is undefined");
-  }
   if (state.schemaDesignTitle === "") {
     pushNotification({
       module: "bytebase",
@@ -496,8 +501,16 @@ const handleSaveSchemaDesignDraft = async () => {
       updateMask.push("title");
     }
   }
+
+  const schemaEditorV1Store = useSchemaEditorV1Store();
+  const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
+    schemaDesign.value.name
+  );
+  if (!branchSchema) {
+    return;
+  }
   const mergedMetadata = mergeSchemaEditToMetadata(
-    designerState.editableSchemas,
+    branchSchema.schemaList,
     cloneDeep(
       schemaDesign.value.baselineSchemaMetadata ||
         DatabaseMetadata.fromPartial({})

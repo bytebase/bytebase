@@ -6,6 +6,12 @@ import { Duration } from "../google/protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
 import { Engine, engineFromJSON, engineToJSON, ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
 import { DatabaseMetadata } from "./database_service";
+import {
+  PlanCheckRun_Result,
+  PlanCheckRun_Type,
+  planCheckRun_TypeFromJSON,
+  planCheckRun_TypeToJSON,
+} from "./rollout_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -226,6 +232,69 @@ export interface PrettyResponse {
   currentSchema: string;
   /** The expected SDL schema after normalizing. */
   expectedSchema: string;
+}
+
+export interface CheckRequest {
+  statement: string;
+  engine: Engine;
+  changeDatabaseType: CheckRequest_ChangeDatabaseType;
+  /** Format: instances/{instance}/databases/{databaseName} */
+  database: string;
+}
+
+export enum CheckRequest_ChangeDatabaseType {
+  CHANGE_DATABASE_TYPE_UNSPECIFIED = 0,
+  DDL = 1,
+  DML = 2,
+  SDL = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function checkRequest_ChangeDatabaseTypeFromJSON(object: any): CheckRequest_ChangeDatabaseType {
+  switch (object) {
+    case 0:
+    case "CHANGE_DATABASE_TYPE_UNSPECIFIED":
+      return CheckRequest_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED;
+    case 1:
+    case "DDL":
+      return CheckRequest_ChangeDatabaseType.DDL;
+    case 2:
+    case "DML":
+      return CheckRequest_ChangeDatabaseType.DML;
+    case 3:
+    case "SDL":
+      return CheckRequest_ChangeDatabaseType.SDL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CheckRequest_ChangeDatabaseType.UNRECOGNIZED;
+  }
+}
+
+export function checkRequest_ChangeDatabaseTypeToJSON(object: CheckRequest_ChangeDatabaseType): string {
+  switch (object) {
+    case CheckRequest_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED:
+      return "CHANGE_DATABASE_TYPE_UNSPECIFIED";
+    case CheckRequest_ChangeDatabaseType.DDL:
+      return "DDL";
+    case CheckRequest_ChangeDatabaseType.DML:
+      return "DML";
+    case CheckRequest_ChangeDatabaseType.SDL:
+      return "SDL";
+    case CheckRequest_ChangeDatabaseType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface CheckResponse {
+  runs: CheckResponse_Run[];
+}
+
+export interface CheckResponse_Run {
+  type: PlanCheckRun_Type;
+  results: PlanCheckRun_Result[];
+  error: string;
 }
 
 function createBaseDifferPreviewRequest(): DifferPreviewRequest {
@@ -1671,6 +1740,254 @@ export const PrettyResponse = {
   },
 };
 
+function createBaseCheckRequest(): CheckRequest {
+  return { statement: "", engine: 0, changeDatabaseType: 0, database: "" };
+}
+
+export const CheckRequest = {
+  encode(message: CheckRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.statement !== "") {
+      writer.uint32(10).string(message.statement);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
+    }
+    if (message.changeDatabaseType !== 0) {
+      writer.uint32(24).int32(message.changeDatabaseType);
+    }
+    if (message.database !== "") {
+      writer.uint32(34).string(message.database);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CheckRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.changeDatabaseType = reader.int32() as any;
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckRequest {
+    return {
+      statement: isSet(object.statement) ? String(object.statement) : "",
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      changeDatabaseType: isSet(object.changeDatabaseType)
+        ? checkRequest_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
+        : 0,
+      database: isSet(object.database) ? String(object.database) : "",
+    };
+  },
+
+  toJSON(message: CheckRequest): unknown {
+    const obj: any = {};
+    message.statement !== undefined && (obj.statement = message.statement);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.changeDatabaseType !== undefined &&
+      (obj.changeDatabaseType = checkRequest_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
+    message.database !== undefined && (obj.database = message.database);
+    return obj;
+  },
+
+  create(base?: DeepPartial<CheckRequest>): CheckRequest {
+    return CheckRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<CheckRequest>): CheckRequest {
+    const message = createBaseCheckRequest();
+    message.statement = object.statement ?? "";
+    message.engine = object.engine ?? 0;
+    message.changeDatabaseType = object.changeDatabaseType ?? 0;
+    message.database = object.database ?? "";
+    return message;
+  },
+};
+
+function createBaseCheckResponse(): CheckResponse {
+  return { runs: [] };
+}
+
+export const CheckResponse = {
+  encode(message: CheckResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.runs) {
+      CheckResponse_Run.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CheckResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.runs.push(CheckResponse_Run.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckResponse {
+    return { runs: Array.isArray(object?.runs) ? object.runs.map((e: any) => CheckResponse_Run.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: CheckResponse): unknown {
+    const obj: any = {};
+    if (message.runs) {
+      obj.runs = message.runs.map((e) => e ? CheckResponse_Run.toJSON(e) : undefined);
+    } else {
+      obj.runs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CheckResponse>): CheckResponse {
+    return CheckResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<CheckResponse>): CheckResponse {
+    const message = createBaseCheckResponse();
+    message.runs = object.runs?.map((e) => CheckResponse_Run.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseCheckResponse_Run(): CheckResponse_Run {
+  return { type: 0, results: [], error: "" };
+}
+
+export const CheckResponse_Run = {
+  encode(message: CheckResponse_Run, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== 0) {
+      writer.uint32(8).int32(message.type);
+    }
+    for (const v of message.results) {
+      PlanCheckRun_Result.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.error !== "") {
+      writer.uint32(26).string(message.error);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CheckResponse_Run {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckResponse_Run();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.results.push(PlanCheckRun_Result.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckResponse_Run {
+    return {
+      type: isSet(object.type) ? planCheckRun_TypeFromJSON(object.type) : 0,
+      results: Array.isArray(object?.results) ? object.results.map((e: any) => PlanCheckRun_Result.fromJSON(e)) : [],
+      error: isSet(object.error) ? String(object.error) : "",
+    };
+  },
+
+  toJSON(message: CheckResponse_Run): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = planCheckRun_TypeToJSON(message.type));
+    if (message.results) {
+      obj.results = message.results.map((e) => e ? PlanCheckRun_Result.toJSON(e) : undefined);
+    } else {
+      obj.results = [];
+    }
+    message.error !== undefined && (obj.error = message.error);
+    return obj;
+  },
+
+  create(base?: DeepPartial<CheckResponse_Run>): CheckResponse_Run {
+    return CheckResponse_Run.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<CheckResponse_Run>): CheckResponse_Run {
+    const message = createBaseCheckResponse_Run();
+    message.type = object.type ?? 0;
+    message.results = object.results?.map((e) => PlanCheckRun_Result.fromPartial(e)) || [];
+    message.error = object.error ?? "";
+    return message;
+  },
+};
+
 export type SQLServiceDefinition = typeof SQLServiceDefinition;
 export const SQLServiceDefinition = {
   name: "SQLService",
@@ -1845,6 +2162,20 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    check: {
+      name: "Check",
+      requestType: CheckRequest,
+      requestStream: false,
+      responseType: CheckResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([18, 58, 1, 42, 34, 13, 47, 118, 49, 47, 115, 113, 108, 47, 99, 104, 101, 99, 107]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -1860,6 +2191,7 @@ export interface SQLServiceImplementation<CallContextExt = {}> {
     request: DifferPreviewRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<DifferPreviewResponse>>;
+  check(request: CheckRequest, context: CallContext & CallContextExt): Promise<DeepPartial<CheckResponse>>;
 }
 
 export interface SQLServiceClient<CallOptionsExt = {}> {
@@ -1874,6 +2206,7 @@ export interface SQLServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<DifferPreviewRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<DifferPreviewResponse>;
+  check(request: DeepPartial<CheckRequest>, options?: CallOptions & CallOptionsExt): Promise<CheckResponse>;
 }
 
 declare const self: any | undefined;
