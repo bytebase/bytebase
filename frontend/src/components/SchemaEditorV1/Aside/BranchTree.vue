@@ -78,6 +78,7 @@ import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 import { generateUniqueTabId, useSchemaEditorV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { Table } from "@/types/v1/schemaEditor";
 import { BranchSchema, SchemaEditorTabType } from "@/types/v1/schemaEditor";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
@@ -129,7 +130,6 @@ const schemaEditorV1Store = useSchemaEditorV1Store();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
-const engine = computed(() => schemaEditorV1Store.engine);
 const readonly = computed(() => schemaEditorV1Store.readonly);
 const currentTab = computed(() => schemaEditorV1Store.currentTab);
 
@@ -153,6 +153,9 @@ const branchSchema = computed(
       Array.from(schemaEditorV1Store.resourceMap.branch.values())
     ) as BranchSchema
 );
+const engine = computed(() => {
+  return (branchSchema.value.branch as any as SchemaDesign).engine;
+});
 
 const schemaList = computed(() => branchSchema.value.schemaList);
 const tableList = computed(() =>

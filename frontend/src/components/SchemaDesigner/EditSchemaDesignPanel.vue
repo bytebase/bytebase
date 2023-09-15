@@ -149,9 +149,7 @@
 
         <SchemaEditorV1
           :key="schemaEditorKey"
-          ref="schemaEditorRef"
           :readonly="!state.isEditing"
-          :engine="schemaDesign.engine"
           :project="project"
           :resource-type="'branch'"
           :branches="[schemaDesign]"
@@ -262,7 +260,6 @@ const state = reactive<LocalState>({
   showDiffEditor: false,
 });
 const createdBranchName = ref<string>("");
-const schemaEditorRef = ref<InstanceType<typeof SchemaEditorV1>>();
 const schemaEditorKey = ref<string>(uniqueId());
 
 const schemaDesign = computed(() => {
@@ -488,10 +485,6 @@ const handleSaveSchemaDesignDraft = async () => {
     return;
   }
 
-  const designerState = schemaEditorRef.value;
-  if (!designerState) {
-    throw new Error("schema designer is undefined");
-  }
   if (state.schemaDesignTitle === "") {
     pushNotification({
       module: "bytebase",
