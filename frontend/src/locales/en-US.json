@@ -815,6 +815,14 @@
         "project": {
           "title": "Project",
           "description": "Include only issues from this project"
+        },
+        "instance": {
+          "title": "Instance",
+          "description": "Include only issues related with the instance"
+        },
+        "type": {
+          "title": "Change Type",
+          "description": "The database change type for issues"
         }
       }
     },
