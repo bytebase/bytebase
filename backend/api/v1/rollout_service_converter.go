@@ -324,7 +324,6 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, r
 		Type:       convertToPlanCheckRunType(run.Type),
 		Status:     convertToPlanCheckRunStatus(run.Status),
 		Target:     "",
-		Sheet:      "",
 		Results:    convertToPlanCheckRunResults(run.Result.Results),
 		Error:      run.Result.Error,
 	}
@@ -337,18 +336,6 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, r
 	}
 	converted.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instance.ResourceID, common.DatabaseIDPrefix, databaseName)
 
-	if run.Config.SheetUid != 0 {
-		sheetUID := int(run.Config.SheetUid)
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet")
-		}
-		sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet project")
-		}
-		converted.Sheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, sheetProject.ResourceID, common.SheetIDPrefix, sheet.UID)
-	}
 	return converted, nil
 }
 
