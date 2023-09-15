@@ -338,7 +338,7 @@ message SemanticTypesSetting {
 message MaskingAlgorithmSetting {
   message MaskingAlgorithm {
     // id is the uuid for semantic type.
-    string id = 1;  
+    string id = 1;
     // the title of the masking algorithm, it should not be empty.
     string title = 2;
     // the description of the masking algorithm, it can be empty.
