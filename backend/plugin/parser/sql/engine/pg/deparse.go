@@ -861,7 +861,7 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 	return nil
 }
 
-func deparsePartitionDef(context parser.DeparseContext, in *ast.PartitionDef, buf *strings.Builder) error {
+func deparsePartitionDef(_ parser.DeparseContext, in *ast.PartitionDef, buf *strings.Builder) error {
 	if _, err := buf.WriteString("PARTITION BY "); err != nil {
 		return err
 	}
