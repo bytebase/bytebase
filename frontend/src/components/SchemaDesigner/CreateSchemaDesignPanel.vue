@@ -48,14 +48,12 @@
           @update="handleBaselineSchemaChange"
         />
         <SchemaEditorV1
-          ref="schemaEditorRef"
           :key="refreshId"
           class="!mt-6"
-          :readonly="true"
-          :engine="state.schemaDesign.engine"
           :project="project"
           :resource-type="'branch'"
           :branches="[state.schemaDesign]"
+          :readonly="true"
         />
       </div>
 
@@ -138,7 +136,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const schemaEditorRef = ref<InstanceType<typeof SchemaEditorV1>>();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
@@ -230,11 +227,6 @@ const handleConfirm = async () => {
     return;
   }
 
-  const designerState = schemaEditorRef.value;
-  if (!designerState) {
-    // Should not happen.
-    throw new Error("schema designer is undefined");
-  }
   if (!validateBranchName(state.schemaDesignTitle)) {
     pushNotification({
       module: "bytebase",

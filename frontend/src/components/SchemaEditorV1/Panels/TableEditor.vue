@@ -82,6 +82,7 @@
             class="table-body-item-container flex items-center gap-x-2 ml-3 text-sm"
           >
             <ClassificationLevelBadge
+              v-if="column.classification && classificationConfig"
               :classification="column.classification"
               :classification-config="classificationConfig"
             />
@@ -291,8 +292,10 @@ import {
   useSettingV1Store,
   useSchemaEditorV1Store,
 } from "@/store/modules";
+import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   Column,
@@ -326,7 +329,16 @@ const parentResouce = computed(() => {
     currentTab.value.parentName
   )!;
 });
-const engine = computed(() => schemaEditorV1Store.engine);
+const engine = computed(() => {
+  if (schemaEditorV1Store.resourceType === "branch") {
+    return (parentResouce.value as any as SchemaDesign).engine;
+  } else if (schemaEditorV1Store.resourceType === "database") {
+    return (parentResouce.value as any as ComposedDatabase).instanceEntity
+      .engine;
+  } else {
+    return Engine.MYSQL;
+  }
+});
 const readonly = computed(() => schemaEditorV1Store.readonly);
 const project = computed(() => schemaEditorV1Store.project);
 const state = reactive<LocalState>({

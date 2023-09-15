@@ -18,20 +18,15 @@ import { Splitpanes, Pane } from "splitpanes";
 import { onMounted, watch, reactive } from "vue";
 import { useSchemaEditorV1Store, useSettingV1Store } from "@/store";
 import { ComposedProject, ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import Aside from "./Aside/index.vue";
 import Editor from "./Editor.vue";
 import { convertBranchToBranchSchema } from "./utils/branch";
 
 const props = defineProps<{
-  readonly: boolean;
-  engine: Engine;
   project: ComposedProject;
-  baselineSchemaMetadata?: DatabaseMetadata;
-  schemaMetadata?: DatabaseMetadata;
   resourceType: "database" | "branch";
+  readonly?: boolean;
   databases?: ComposedDatabase[];
   // NOTE: we only support editing one branch for now.
   branches?: SchemaDesign[];
@@ -50,14 +45,13 @@ const state = reactive<LocalState>({
 
 const updateSchemaEditorState = () => {
   schemaEditorV1Store.setState({
-    engine: props.engine,
     project: props.project,
-    readonly: props.readonly,
     resourceType: props.resourceType,
     // NOTE: this will clear all tabs. We will restore tabs as needed later.
     tabState: {
       tabMap: new Map(),
     },
+    readonly: props.readonly || false,
   });
 
   if (props.resourceType === "database") {
