@@ -1185,7 +1185,6 @@ func convertCreateStmt(in *pgquery.CreateStmt) (*ast.CreateTableStmt, error) {
 			Strategy: in.Partspec.Strategy,
 		}
 		for _, item := range in.Partspec.PartParams {
-			fmt.Println(item)
 			partElem, ok := item.Node.(*pgquery.Node_PartitionElem)
 			if !ok {
 				return nil, parser.NewConvertErrorf("expected PartitionElem but found %t", item.Node)
