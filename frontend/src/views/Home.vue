@@ -4,7 +4,7 @@
       <div><!-- empty --></div>
       <SearchBox
         :value="state.searchText"
-        :placeholder="$t('issue.search-issue-name')"
+        :placeholder="$t('issue.filter-issue-by-name')"
         :autofocus="true"
         @update:value="changeSearchText($event)"
       />

@@ -808,7 +808,6 @@
       }
     },
     "view-commit": "Ver commit",
-    "search-issue-name": "Buscar nombre de la incidencia",
     "advanced-search": {
       "self": "Búsqueda Avanzada",
       "scope": {

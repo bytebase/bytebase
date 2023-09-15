@@ -809,7 +809,6 @@
       }
     },
     "view-commit": "View commit",
-    "search-issue-name": "Search issue name",
     "advanced-search": {
       "self": "Advanced search",
       "scope": {

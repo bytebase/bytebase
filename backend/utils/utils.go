@@ -151,7 +151,7 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 		dmlBatchSize                        = 10
 		maxLagMillisecondsThrottleThreshold = 1500
 		defaultNumRetries                   = 60
-		cutoverLockTimeoutSeconds           = 10
+		cutoverLockTimeoutSeconds           = 60
 		exponentialBackoffMaxInterval       = 64
 		throttleHTTPIntervalMillis          = 100
 		throttleHTTPTimeoutMillis           = 1000
@@ -179,6 +179,9 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 		migrationContext.AssumeRBR = true
 	}
 	// set defaults
+	if err := migrationContext.SetConnectionConfig(""); err != nil {
+		return nil, err
+	}
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec

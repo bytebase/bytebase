@@ -6,7 +6,6 @@
       <div class="hidden md:block">
         <div class="flex items-baseline space-x-1 whitespace-nowrap">
           <router-link
-            v-if="shouldShowIssueEntry"
             to="/issue"
             class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/issue')"
@@ -261,13 +260,6 @@ export default defineComponent({
       return classes;
     };
 
-    const shouldShowIssueEntry = computed((): boolean => {
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-issue",
-        currentUserV1.value.userRole
-      );
-    });
-
     const shouldShowInstanceEntry = computed(() => {
       return hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-instance",
@@ -408,7 +400,6 @@ export default defineComponent({
       state,
       getRouteLinkClass,
       shouldShowInstanceEntry,
-      shouldShowIssueEntry,
       currentPlan,
       PlanType,
       isDevFeatures,

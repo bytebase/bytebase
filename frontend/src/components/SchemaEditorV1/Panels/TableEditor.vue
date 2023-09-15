@@ -292,10 +292,8 @@ import {
   useSettingV1Store,
   useSchemaEditorV1Store,
 } from "@/store/modules";
-import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   Column,
@@ -324,6 +322,7 @@ const settingStore = useSettingV1Store();
 const currentTab = computed(
   () => schemaEditorV1Store.currentTab as TableTabContext
 );
+
 const parentResouce = computed(() => {
   return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
     currentTab.value.parentName
@@ -331,10 +330,9 @@ const parentResouce = computed(() => {
 });
 const engine = computed(() => {
   if (schemaEditorV1Store.resourceType === "branch") {
-    return (parentResouce.value as any as SchemaDesign).engine;
+    return (parentResouce.value as any).branch.engine;
   } else if (schemaEditorV1Store.resourceType === "database") {
-    return (parentResouce.value as any as ComposedDatabase).instanceEntity
-      .engine;
+    return (parentResouce.value as any).database.instanceEntity.engine;
   } else {
     return Engine.MYSQL;
   }
