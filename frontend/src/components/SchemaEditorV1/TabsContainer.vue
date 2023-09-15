@@ -96,12 +96,17 @@ const getTabComputedClassList = (tab: TabContext) => {
 };
 
 const getTabName = (tab: TabContext) => {
-  if (tab.type === SchemaEditorTabType.TabForTable) {
+  if (tab.type === SchemaEditorTabType.TabForDatabase) {
+    const database = schemaEditorV1Store.databaseList.find(
+      (database) => database.name === tab.parentName
+    );
+    return database?.databaseName || "Uknown database";
+  } else if (tab.type === SchemaEditorTabType.TabForTable) {
     const table = schemaEditorV1Store.getTableWithTableTab(tab);
-    return table?.name || "Uknown tab";
+    return table?.name || "Uknown table";
   } else {
     // Should never reach here.
-    return "unknown structure";
+    return "unknown tab";
   }
 };
 
