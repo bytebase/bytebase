@@ -3,8 +3,11 @@
     <template v-if="currentTab">
       <TabsContainer />
       <div :key="currentTab.id" class="w-full h-full relative overflow-y-auto">
+        <DatabaseEditor
+          v-if="currentTab.type === SchemaEditorTabType.TabForDatabase"
+        />
         <TableEditor
-          v-if="currentTab.type === SchemaEditorTabType.TabForTable"
+          v-else-if="currentTab.type === SchemaEditorTabType.TabForTable"
         />
       </div>
     </template>
@@ -16,6 +19,7 @@
 import { computed } from "vue";
 import { useSchemaEditorV1Store } from "@/store/modules/v1/schemaEditor";
 import { SchemaEditorTabType } from "@/types/v1/schemaEditor";
+import DatabaseEditor from "./Panels/DatabaseEditor.vue";
 import TableEditor from "./Panels/TableEditor.vue";
 import TabsContainer from "./TabsContainer.vue";
 
