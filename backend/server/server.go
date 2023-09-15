@@ -133,7 +133,7 @@ const (
 	internalAPIPrefix = "/api"
 	// webhookAPIPrefix is the API prefix for Bytebase webhook.
 	webhookAPIPrefix       = "/hook"
-	maxStacksize           = 8 * 1024
+	maxStacksize           = 1024 * 10240
 	gracefulShutdownPeriod = 10 * time.Second
 )
 
@@ -449,7 +449,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		stack = stack[:runtime.Stack(stack, true)]
 		// keep a multiline stack
 		slog.Error("v1 server panic error", log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
-		return status.Errorf(codes.Unknown, "error: %v", p)
+		return status.Errorf(codes.Internal, "error: %v\n%s", p, stack)
 	}
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
