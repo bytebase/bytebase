@@ -198,18 +198,3 @@ message SemanticTypesSetting {
 
   repeated SemanticType types = 1;
 }
-
-message MaskingAlgorithmSetting {
-  message MaskingAlgorithm {
-    // id is the uuid for semantic type.
-    string id = 1;  
-    // the title of the masking algorithm, it should not be empty.
-    string title = 2;
-    // the description of the masking algorithm, it can be empty.
-    string description = 3;
-    // If we need to support the custom masking algorithm, we need to define the payload to store
-    // the algorithm likes javascript code, python code, etc.
-  }
-
-  repeated MaskingAlgorithm algorithms = 1;
-}
