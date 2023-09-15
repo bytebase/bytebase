@@ -8,7 +8,7 @@ import {
   DropTableContext,
   RenameSchemaContext,
   RenameTableContext,
-} from "@/types";
+} from "@/types/schemaEditor";
 import { Schema } from "@/types/v1/schemaEditor";
 import { diffColumnList } from "./diffColumn";
 import { transformTableToCreateTableContext } from "./transform";

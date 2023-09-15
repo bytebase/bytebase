@@ -4,8 +4,8 @@ import type {
   DropColumnContext,
   ChangeColumnContext,
   AlterColumnContext,
-} from "@/types";
-import { Column } from "@/types/schemaEditor/atomType";
+} from "@/types/schemaEditor";
+import { Column } from "@/types/v1/schemaEditor";
 import {
   transformColumnToAddColumnContext,
   transformColumnToChangeColumnContext,

@@ -24,7 +24,6 @@ export * from "./uistate";
 export * from "./sqlReview";
 export * from "./onboardingState";
 export * from "./onboardingGuide";
-export * from "./schemaEditor";
 export * from "./idp";
 export * from "./user";
 export * from "./risk";

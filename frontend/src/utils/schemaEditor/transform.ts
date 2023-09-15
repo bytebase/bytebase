@@ -4,7 +4,7 @@ import {
   CreateTableContext,
   ChangeColumnContext,
 } from "@/types";
-import { Column, Table } from "@/types/schemaEditor/atomType";
+import { Column, Table } from "@/types/v1/schemaEditor";
 
 export const transformColumnToAddColumnContext = (
   column: Column

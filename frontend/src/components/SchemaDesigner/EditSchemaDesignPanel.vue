@@ -147,13 +147,15 @@
           </template>
         </div>
 
-        <SchemaEditorV1
-          :key="schemaEditorKey"
-          :readonly="!state.isEditing"
-          :project="project"
-          :resource-type="'branch'"
-          :branches="[schemaDesign]"
-        />
+        <div class="w-full h-[32rem]">
+          <SchemaEditorV1
+            :key="schemaEditorKey"
+            :readonly="!state.isEditing"
+            :project="project"
+            :resource-type="'branch'"
+            :branches="[schemaDesign]"
+          />
+        </div>
         <!-- Don't show delete button in view mode. -->
         <div v-if="!viewMode">
           <BBButtonConfirm
