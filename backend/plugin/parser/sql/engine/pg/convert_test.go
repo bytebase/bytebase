@@ -69,7 +69,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					b int,
 					c text COLLATE public."de_DE"
 				)
-				PARTITION BY RANGE (a)
+				PARTITION BY RANGE (a, (a+1))
 			`,
 			want: []ast.Node{
 				&ast.CreateTableStmt{
@@ -96,7 +96,19 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 							},
 						},
 					},
-					PartitionDef: &ast.UnconvertedStmt{},
+					PartitionDef: &ast.PartitionDef{
+						Strategy: "range",
+						KeyList: []*ast.PartitionKeyDef{
+							{
+								Type: ast.PartitionKeyTypeColumn,
+								Key:  "a",
+							},
+							{
+								Type: ast.PartitionKeyTypeExpression,
+								Key:  "a + 1",
+							},
+						},
+					},
 				},
 			},
 			statementList: []parser.SingleSQL{
@@ -106,7 +118,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					b int,
 					c text COLLATE public."de_DE"
 				)
-				PARTITION BY RANGE (a)`,
+				PARTITION BY RANGE (a, (a+1))`,
 					LastLine: 7,
 				},
 			},
@@ -3118,6 +3130,10 @@ func TestAttachPartition(t *testing.T) {
 							Table: &ast.TableDef{
 								Type: ast.TableTypeBaseTable,
 								Name: "tech_book",
+							},
+							Partition: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "p1",
 							},
 						},
 					},
