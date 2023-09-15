@@ -47,14 +47,15 @@
           :baseline-schema="state.baselineSchema"
           @update="handleBaselineSchemaChange"
         />
-        <SchemaEditorV1
-          :key="refreshId"
-          class="!mt-6"
-          :project="project"
-          :resource-type="'branch'"
-          :branches="[state.schemaDesign]"
-          :readonly="true"
-        />
+        <div class="!mt-6 w-full h-[32rem]">
+          <SchemaEditorV1
+            :key="refreshId"
+            :project="project"
+            :resource-type="'branch'"
+            :branches="[state.schemaDesign]"
+            :readonly="true"
+          />
+        </div>
       </div>
 
       <template #footer>

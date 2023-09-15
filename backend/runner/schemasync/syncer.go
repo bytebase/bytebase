@@ -333,7 +333,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
-func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, force bool) error {
+func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, force bool) (retErr error) {
 	if s.profile.Readonly {
 		return nil
 	}

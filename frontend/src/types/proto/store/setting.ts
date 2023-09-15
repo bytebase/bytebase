@@ -307,6 +307,10 @@ export interface SemanticTypesSetting_SemanticType {
   title: string;
   /** the description of the semantic type, it can be empty. */
   description: string;
+  /** the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm. */
+  partialMaskAlgorithmId: string;
+  /** the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm. */
+  fullMaskAlgorithmId: string;
 }
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
@@ -1956,7 +1960,7 @@ export const SemanticTypesSetting = {
 };
 
 function createBaseSemanticTypesSetting_SemanticType(): SemanticTypesSetting_SemanticType {
-  return { id: "", title: "", description: "" };
+  return { id: "", title: "", description: "", partialMaskAlgorithmId: "", fullMaskAlgorithmId: "" };
 }
 
 export const SemanticTypesSetting_SemanticType = {
@@ -1969,6 +1973,12 @@ export const SemanticTypesSetting_SemanticType = {
     }
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
+    }
+    if (message.partialMaskAlgorithmId !== "") {
+      writer.uint32(34).string(message.partialMaskAlgorithmId);
+    }
+    if (message.fullMaskAlgorithmId !== "") {
+      writer.uint32(42).string(message.fullMaskAlgorithmId);
     }
     return writer;
   },
@@ -2001,6 +2011,20 @@ export const SemanticTypesSetting_SemanticType = {
 
           message.description = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.partialMaskAlgorithmId = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.fullMaskAlgorithmId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2015,6 +2039,8 @@ export const SemanticTypesSetting_SemanticType = {
       id: isSet(object.id) ? String(object.id) : "",
       title: isSet(object.title) ? String(object.title) : "",
       description: isSet(object.description) ? String(object.description) : "",
+      partialMaskAlgorithmId: isSet(object.partialMaskAlgorithmId) ? String(object.partialMaskAlgorithmId) : "",
+      fullMaskAlgorithmId: isSet(object.fullMaskAlgorithmId) ? String(object.fullMaskAlgorithmId) : "",
     };
   },
 
@@ -2023,6 +2049,8 @@ export const SemanticTypesSetting_SemanticType = {
     message.id !== undefined && (obj.id = message.id);
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined && (obj.description = message.description);
+    message.partialMaskAlgorithmId !== undefined && (obj.partialMaskAlgorithmId = message.partialMaskAlgorithmId);
+    message.fullMaskAlgorithmId !== undefined && (obj.fullMaskAlgorithmId = message.fullMaskAlgorithmId);
     return obj;
   },
 
@@ -2035,6 +2063,8 @@ export const SemanticTypesSetting_SemanticType = {
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
+    message.partialMaskAlgorithmId = object.partialMaskAlgorithmId ?? "";
+    message.fullMaskAlgorithmId = object.fullMaskAlgorithmId ?? "";
     return message;
   },
 };

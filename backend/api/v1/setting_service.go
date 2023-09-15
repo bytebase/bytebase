@@ -73,6 +73,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingSchemaTemplate,
 	api.SettingDataClassification,
 	api.SettingSemanticTypes,
+	api.SettingMaskingAlgorithms,
 }
 
 //go:embed mail_templates/testmail/template.html
@@ -144,8 +145,12 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	if s.profile.IsFeatureUnavailable(settingName) {
 		return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 	}
-
 	apiSettingName := api.SettingName(settingName)
+	// TODO(zp): remove the following hard code when we persist the algorithm setting.
+	if apiSettingName == api.SettingMaskingAlgorithms {
+		return nil, status.Errorf(codes.InvalidArgument, "setting masking algorithm is not available")
+	}
+
 	var storeSettingValue string
 	switch apiSettingName {
 	case api.SettingWorkspaceProfile:
@@ -712,6 +717,20 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
+	case api.SettingMaskingAlgorithms:
+		v1Value := new(v1pb.MaskingAlgorithmSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_MaskingAlgorithmSettingValue{
+					MaskingAlgorithmSettingValue: v1Value,
+				},
+			},
+		}, nil
+
 	default:
 		return &v1pb.Setting{
 			Name: settingName,

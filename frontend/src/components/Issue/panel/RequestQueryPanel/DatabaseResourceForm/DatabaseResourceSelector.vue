@@ -60,6 +60,7 @@ const selectedValueList = ref<string[]>(
     }
   })
 );
+const defaultExpandedKeys = ref<string[]>([]);
 const databaseResourceMap = ref<Map<string, DatabaseResource>>(new Map());
 const loading = ref(false);
 
@@ -100,6 +101,21 @@ watch(
         }
       }
     }
+
+    // Only initalized defaultExpandedKeys when projectId changed.
+    defaultExpandedKeys.value = selectedValueList.value
+      .map((key) => {
+        if (key.startsWith("t-")) {
+          const [_, database, schema] = key.split("-");
+          return [`d-${database}`, `s-${database}-${schema}`];
+        } else if (key.startsWith("s-")) {
+          const [_, database] = key.split("-");
+          return [`d-${database}`];
+        } else {
+          return [];
+        }
+      })
+      .flat();
     loading.value = false;
   },
   {
@@ -147,21 +163,9 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
       });
     },
     pattern,
-    checkedKeys: selectedValueList.value,
-    defaultExpandedKeys: selectedValueList.value
-      .map((key) => {
-        if (key.startsWith("t-")) {
-          const [_, database, schema] = key.split("-");
-          return [`d-${database}`, `s-${database}-${schema}`];
-        } else if (key.startsWith("s-")) {
-          const [_, database] = key.split("-");
-          return [`d-${database}`];
-        } else {
-          return [];
-        }
-      })
-      .flat(),
     showIrrelevantNodes: false,
+    defaultExpandedKeys: defaultExpandedKeys.value,
+    checkedKeys: selectedValueList.value,
     onUpdateCheckedKeys: (checkedKeys: string[]) => {
       onCheck(checkedKeys);
     },
@@ -186,8 +190,8 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
         option: option as DatabaseTreeOption,
       });
     },
-    checkedKeys: selectedValueList.value,
     showIrrelevantNodes: false,
+    checkedKeys: selectedValueList.value,
     onUpdateCheckedKeys: (checkedKeys: string[]) => {
       onCheck(checkedKeys);
     },

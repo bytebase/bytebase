@@ -1,14 +1,5 @@
 import { cloneDeep, isEqual, uniq } from "lodash-es";
 import {
-  Column,
-  ForeignKey,
-  Schema,
-  Table,
-  convertColumnMetadataToColumn,
-  convertSchemaMetadataToSchema,
-  convertTableMetadataToTable,
-} from "@/types";
-import {
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
@@ -16,6 +7,15 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import {
+  Column,
+  ForeignKey,
+  Schema,
+  Table,
+  convertColumnMetadataToColumn,
+  convertSchemaMetadataToSchema,
+  convertTableMetadataToTable,
+} from "@/types/v1/schemaEditor";
 import { randomString } from "@/utils";
 
 export const mergeSchemaEditToMetadata = (
@@ -116,86 +116,92 @@ export const mergeSchemaEditToMetadata = (
         }
       }
     }
-
-    // Build foreign keys.
-    for (const foreignKey of schemaEdit.foreignKeyList) {
-      const schema = metadata.schemas.find(
-        (schema) => schema.name === schemaEdit.name
-      );
-      if (!schema) {
-        continue;
-      }
-      const tableEdit = schemaEdit.tableList.find(
-        (table) => table.id === foreignKey.tableId
-      );
-      const table = schema.tables.find(
-        (table) => table.name === tableEdit?.name
-      );
-      if (!tableEdit || !table) {
-        continue;
-      }
-      const referencedSchema = metadata.schemas.find(
-        (schema) =>
-          schema.name ===
-          schemaEdits.find(
-            (schemaEdit) => schemaEdit.id === foreignKey.referencedSchemaId
-          )?.name
-      );
-      if (!referencedSchema) {
-        continue;
-      }
-      const referencedTableEdit = schemaEdits
-        .find((schemaEdit) => schemaEdit.id === foreignKey.referencedSchemaId)
-        ?.tableList.find((table) => table.id === foreignKey.referencedTableId);
-      const referencedTable = referencedSchema.tables.find(
-        (table) => table.name === referencedTableEdit?.name
-      );
-      if (!referencedTableEdit || !referencedTable) {
-        continue;
-      }
-
-      const foreignKeyName = foreignKey.name
-        ? foreignKey.name
-        : `${table.name}-fk-${randomString(8).toLowerCase()}`;
-      const fk = ForeignKeyMetadata.fromPartial({
-        name: foreignKeyName,
-        referencedSchema: referencedSchema.name,
-        referencedTable: referencedTable.name,
-      });
-      if (table.foreignKeys.find((fk) => fk.name === foreignKeyName)) {
-        continue;
-      }
-      if (
-        foreignKey.columnIdList.length !==
-        foreignKey.referencedColumnIdList.length
-      ) {
-        continue;
-      }
-      for (const columnId of foreignKey.columnIdList) {
-        const column = tableEdit.columnList.find(
-          (column) => column.id === columnId
-        );
-        if (column) {
-          fk.columns.push(column.name);
-        }
-      }
-      for (const columnId of foreignKey.referencedColumnIdList) {
-        const column = referencedTableEdit.columnList.find(
-          (column) => column.id === columnId
-        );
-        if (column) {
-          fk.referencedColumns.push(column.name);
-        }
-      }
-      table.foreignKeys.push(fk);
-    }
   }
+
   for (const schema of metadata.schemas) {
     const schemaEdit = schemaEdits.find((item) => item.name === schema.name);
     if (!schemaEdit) {
       metadata.schemas = metadata.schemas.filter(
         (item) => item.name !== schema.name
       );
+      continue;
+    }
+
+    // Build foreign keys.
+    for (const tableEdit of schemaEdit?.tableList ?? []) {
+      for (const foreignKey of tableEdit.foreignKeyList) {
+        const schema = metadata.schemas.find(
+          (schema) => schema.name === schemaEdit.name
+        );
+        if (!schema) {
+          continue;
+        }
+        const tableEdit = schemaEdit.tableList.find(
+          (table) => table.id === foreignKey.tableId
+        );
+        const table = schema.tables.find(
+          (table) => table.name === tableEdit?.name
+        );
+        if (!tableEdit || !table) {
+          continue;
+        }
+        const referencedSchema = metadata.schemas.find(
+          (schema) =>
+            schema.name ===
+            schemaEdits.find(
+              (schemaEdit) => schemaEdit.id === foreignKey.referencedSchemaId
+            )?.name
+        );
+        if (!referencedSchema) {
+          continue;
+        }
+        const referencedTableEdit = schemaEdits
+          .find((schemaEdit) => schemaEdit.id === foreignKey.referencedSchemaId)
+          ?.tableList.find(
+            (table) => table.id === foreignKey.referencedTableId
+          );
+        const referencedTable = referencedSchema.tables.find(
+          (table) => table.name === referencedTableEdit?.name
+        );
+        if (!referencedTableEdit || !referencedTable) {
+          continue;
+        }
+
+        const foreignKeyName = foreignKey.name
+          ? foreignKey.name
+          : `${table.name}-fk-${randomString(8).toLowerCase()}`;
+        const fk = ForeignKeyMetadata.fromPartial({
+          name: foreignKeyName,
+          referencedSchema: referencedSchema.name,
+          referencedTable: referencedTable.name,
+        });
+        if (table.foreignKeys.find((fk) => fk.name === foreignKeyName)) {
+          continue;
+        }
+        if (
+          foreignKey.columnIdList.length !==
+          foreignKey.referencedColumnIdList.length
+        ) {
+          continue;
+        }
+        for (const columnId of foreignKey.columnIdList) {
+          const column = tableEdit.columnList.find(
+            (column) => column.id === columnId
+          );
+          if (column) {
+            fk.columns.push(column.name);
+          }
+        }
+        for (const columnId of foreignKey.referencedColumnIdList) {
+          const column = referencedTableEdit.columnList.find(
+            (column) => column.id === columnId
+          );
+          if (column) {
+            fk.referencedColumns.push(column.name);
+          }
+        }
+        table.foreignKeys.push(fk);
+      }
     }
   }
 
@@ -427,7 +433,6 @@ export const rebuildEditableSchemas = (
       continue;
     }
 
-    const foreignKeyList: ForeignKey[] = [];
     for (const table of schema.tables) {
       const editableTable = editableSchema.tableList.find(
         (item) => item.name === table.name
@@ -436,6 +441,7 @@ export const rebuildEditableSchemas = (
         continue;
       }
 
+      const foreignKeyList: ForeignKey[] = [];
       for (const foreignKeyMetadata of table.foreignKeys) {
         const referencedSchema = editableSchemas.find(
           (schema) => schema.name === foreignKeyMetadata.referencedSchema
@@ -474,8 +480,8 @@ export const rebuildEditableSchemas = (
 
         foreignKeyList.push(fk);
       }
+      editableTable.foreignKeyList = foreignKeyList;
     }
-    editableSchema.foreignKeyList = foreignKeyList;
   }
 
   return editableSchemas;
