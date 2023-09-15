@@ -75,7 +75,7 @@
 import { computed, onMounted, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
+import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
 import { useDBGroupStore, useNotificationStore } from "@/store";
 import { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
