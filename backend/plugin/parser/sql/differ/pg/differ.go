@@ -509,7 +509,6 @@ func mergeDefaultIntoColumn(nodeList []ast.Node) ([]ast.Node, error) {
 			retNodesIdx, ok := schemaTableNameToRetNodesIdx[schemaTableName]
 			if !ok {
 				// For pg_dump, this will never happen.
-				fmt.Printf("cannot find table %s\n", schemaTableName)
 				return nil, errors.Errorf("cannot find table %s", schemaTableName)
 			}
 			for _, alterItem := range node.AlterItemList {
