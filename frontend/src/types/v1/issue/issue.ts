@@ -78,10 +78,14 @@ export const unknownIssue = (): ComposedIssue => {
 
 export interface IssueFilter {
   project: string;
+  instance?: string;
   query: string;
   principal?: string;
   creator?: string;
   assignee?: string;
   subscriber?: string;
   statusList?: IssueStatus[];
+  createdTsAfter?: number;
+  createdTsBefore?: number;
+  type?: string;
 }

@@ -164,6 +164,10 @@ export interface SearchIssuesRequest {
    * - create_time, example:
    *    - create_time <= "2022-01-01T12:00:00.000Z"
    *    - create_time >= "2022-01-01T12:00:00.000Z"
+   * - instance, example:
+   *    - instance = "instancs/{resource id}"
+   * - type, only support "DDL" or "DML", example:
+   *    - type = "DDL"
    */
   filter: string;
 }

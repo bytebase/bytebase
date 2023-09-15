@@ -49,7 +49,7 @@ const emit = defineEmits<{
   (
     event: "export",
     format: ExportFormat,
-    download: (content: string, format: ExportFormat) => void
+    download: (content: BinaryLike | Blob, format: ExportFormat) => void
   ): Promise<void>;
 }>();
 
