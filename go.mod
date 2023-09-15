@@ -275,7 +275,7 @@ require (
 // fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
 replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
 
-replace github.com/github/gh-ost => github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651
+replace github.com/github/gh-ost => github.com/bytebase/gh-ost v1.1.3-0.20230915044519-b37a6525f8f9
 
 replace github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-20230914094316-ec1081216cfb
 
