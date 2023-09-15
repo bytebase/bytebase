@@ -190,8 +190,10 @@ message SemanticTypesSetting {
     string title = 2;
     // the description of the semantic type, it can be empty.
     string description = 3;
-    // We do not support custom algorithm by now, we only support the default algorithm, so we do not
-    // add the algorithm field right now.
+    // the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm.
+    string partial_mask_algorithm_id = 4;
+    // the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm.
+    string full_mask_algorithm_id = 5;
   }
 
   repeated SemanticType types = 1;
