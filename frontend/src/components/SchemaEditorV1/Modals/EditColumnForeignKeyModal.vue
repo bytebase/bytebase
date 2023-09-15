@@ -76,8 +76,9 @@ import { isUndefined } from "lodash-es";
 import { computed, onMounted, reactive, watch } from "vue";
 import { BBModal, BBSelect } from "@/bbkit";
 import { useSchemaEditorV1Store } from "@/store";
-import { Column, ForeignKey } from "@/types";
+import { Column, ComposedDatabase, ForeignKey } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 
 interface LocalState {
   referencedSchemaId?: string;
@@ -101,7 +102,21 @@ const state = reactive<LocalState>({
   referencedSchemaId: props.schemaId,
 });
 
-const engine = computed(() => schemaEditorV1Store.engine);
+const parentResouce = computed(() => {
+  return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
+    props.parentName
+  )!;
+});
+const engine = computed(() => {
+  if (schemaEditorV1Store.resourceType === "branch") {
+    return (parentResouce.value as any as SchemaDesign).engine;
+  } else if (schemaEditorV1Store.resourceType === "database") {
+    return (parentResouce.value as any as ComposedDatabase).instanceEntity
+      .engine;
+  } else {
+    return Engine.MYSQL;
+  }
+});
 
 const parentResource = computed(() => {
   return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(

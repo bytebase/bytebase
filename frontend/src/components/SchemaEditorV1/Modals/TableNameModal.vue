@@ -37,11 +37,13 @@ import {
   useNotificationStore,
   useSchemaEditorV1Store,
 } from "@/store";
+import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import {
   SchemaEditorTabType,
   convertColumnMetadataToColumn,
@@ -71,7 +73,21 @@ const state = reactive<LocalState>({
   tableName: "",
 });
 
-const engine = computed(() => schemaEditorV1Store.engine);
+const parentResouce = computed(() => {
+  return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
+    props.parentName
+  )!;
+});
+const engine = computed(() => {
+  if (schemaEditorV1Store.resourceType === "branch") {
+    return (parentResouce.value as any as SchemaDesign).engine;
+  } else if (schemaEditorV1Store.resourceType === "database") {
+    return (parentResouce.value as any as ComposedDatabase).instanceEntity
+      .engine;
+  } else {
+    return Engine.MYSQL;
+  }
+});
 
 const isCreatingTable = computed(() => {
   return props.tableId === undefined;
