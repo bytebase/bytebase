@@ -140,8 +140,8 @@
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
-    - [SemanticCategorySetting](#bytebase-store-SemanticCategorySetting)
-    - [SemanticCategorySetting.SemanticCategory](#bytebase-store-SemanticCategorySetting-SemanticCategory)
+    - [SemanticTypesSetting](#bytebase-store-SemanticTypesSetting)
+    - [SemanticTypesSetting.SemanticType](#bytebase-store-SemanticTypesSetting-SemanticType)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
@@ -2179,32 +2179,32 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 
 
-<a name="bytebase-store-SemanticCategorySetting"></a>
+<a name="bytebase-store-SemanticTypesSetting"></a>
 
-### SemanticCategorySetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| categories | [SemanticCategorySetting.SemanticCategory](#bytebase-store-SemanticCategorySetting-SemanticCategory) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-SemanticCategorySetting-SemanticCategory"></a>
-
-### SemanticCategorySetting.SemanticCategory
+### SemanticTypesSetting
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for category item. |
-| title | [string](#string) |  | the title of the category item, it should not be empty. |
-| description | [string](#string) |  | the description of the category item, it can be empty.
+| types | [SemanticTypesSetting.SemanticType](#bytebase-store-SemanticTypesSetting-SemanticType) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-SemanticTypesSetting-SemanticType"></a>
+
+### SemanticTypesSetting.SemanticType
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for semantic type. |
+| title | [string](#string) |  | the title of the semantic type, it should not be empty. |
+| description | [string](#string) |  | the description of the semantic type, it can be empty.
 
 We do not support custom algorithm by now, we only support the default algorithm, so we do not add the algorithm field right now. |
 
