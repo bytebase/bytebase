@@ -1,6 +1,7 @@
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import yaml from "@rollup/plugin-yaml";
 import vue from "@vitejs/plugin-vue";
+import { CodeInspectorPlugin } from "code-inspector-plugin";
 import { resolve } from "path";
 import IconsResolver from "unplugin-icons/resolver";
 import Icons from "unplugin-icons/vite";
@@ -89,8 +90,3 @@ export default defineConfig(() => {
     envPrefix: "BB_",
   };
 });
-function CodeInspectorPlugin(arg0: {
-  bundler: string;
-}): import("vite").PluginOption {
-  throw new Error("Function not implemented.");
-}
