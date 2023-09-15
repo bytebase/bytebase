@@ -549,6 +549,8 @@
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
+    - [MaskingAlgorithmSetting](#bytebase-v1-MaskingAlgorithmSetting)
+    - [MaskingAlgorithmSetting.MaskingAlgorithm](#bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm)
     - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
@@ -1097,7 +1099,9 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | schema | [string](#string) |  |  |
 | table | [string](#string) |  |  |
 | column | [string](#string) |  |  |
-| semantic_category_id | [string](#string) |  |  |
+| semantic_type_id | [string](#string) |  |  |
+| full_masking_algorithm_id | [string](#string) |  | The full masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
+| partial_masking_algorithm_id | [string](#string) |  | The partial masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
 | masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
 
 
@@ -8789,6 +8793,40 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 
 
+<a name="bytebase-v1-MaskingAlgorithmSetting"></a>
+
+### MaskingAlgorithmSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| algorithms | [MaskingAlgorithmSetting.MaskingAlgorithm](#bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm"></a>
+
+### MaskingAlgorithmSetting.MaskingAlgorithm
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for semantic type. |
+| title | [string](#string) |  | the title of the masking algorithm, it should not be empty. |
+| description | [string](#string) |  | the description of the masking algorithm, it can be empty.
+
+If we need to support the custom masking algorithm, we need to define the payload to store the algorithm likes javascript code, python code, etc. |
+
+
+
+
+
+
 <a name="bytebase-v1-SMTPMailDeliverySettingValue"></a>
 
 ### SMTPMailDeliverySettingValue
@@ -8890,9 +8928,9 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | id is the uuid for semantic type. |
 | title | [string](#string) |  | the title of the semantic type, it should not be empty. |
-| description | [string](#string) |  | the description of the semantic type, it can be empty.
-
-We do not support custom algorithm by now, we only support the default algorithm, so we do not add the algorithm field right now. |
+| description | [string](#string) |  | the description of the semantic type, it can be empty. |
+| partial_mask_algorithm_id | [string](#string) |  | the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm. |
+| full_mask_algorithm_id | [string](#string) |  | the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm. |
 
 
 
@@ -8952,6 +8990,7 @@ The data in setting value.
 | schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
 | data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
 | semantic_types_setting_value | [SemanticTypesSetting](#bytebase-v1-SemanticTypesSetting) |  |  |
+| masking_algorithm_setting_value | [MaskingAlgorithmSetting](#bytebase-v1-MaskingAlgorithmSetting) |  |  |
 
 
 
