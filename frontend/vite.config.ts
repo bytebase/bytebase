@@ -36,6 +36,9 @@ export default defineConfig(() => {
       }),
       Icons(),
       yaml(),
+      CodeInspectorPlugin({
+        bundler: "vite",
+      }),
     ],
     build: {
       rollupOptions: {
@@ -86,3 +89,8 @@ export default defineConfig(() => {
     envPrefix: "BB_",
   };
 });
+function CodeInspectorPlugin(arg0: {
+  bundler: string;
+}): import("vite").PluginOption {
+  throw new Error("Function not implemented.");
+}
