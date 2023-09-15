@@ -31,6 +31,10 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 	}()
 	switch in := node.Node.(type) {
 	case *pgquery.Node_AlterTableStmt:
+		if in.AlterTableStmt.Objtype != pgquery.ObjectType_OBJECT_TABLE {
+			// We only support ALTER TABLE.
+			return nil, nil
+		}
 		alterTable := &ast.AlterTableStmt{
 			Table:         convertRangeVarToTableName(in.AlterTableStmt.Relation, ast.TableTypeBaseTable),
 			AlterItemList: []ast.Node{},
@@ -154,9 +158,15 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 						alterTable.AlterItemList = append(alterTable.AlterItemList, setDefault)
 					}
 				case pgquery.AlterTableType_AT_AttachPartition:
-					alterTable.AlterItemList = append(alterTable.AlterItemList, &ast.AttachPartitionStmt{
+					attachPartition := &ast.AttachPartitionStmt{
 						Table: alterTable.Table,
-					})
+					}
+					if alterCmd.Def != nil {
+						if partitionCmd, ok := alterCmd.Def.Node.(*pgquery.Node_PartitionCmd); ok {
+							attachPartition.Partition = convertRangeVarToTableName(partitionCmd.PartitionCmd.Name, ast.TableTypeBaseTable)
+						}
+					}
+					alterTable.AlterItemList = append(alterTable.AlterItemList, attachPartition)
 				}
 			}
 		}
@@ -1171,8 +1181,31 @@ func convertCreateStmt(in *pgquery.CreateStmt) (*ast.CreateTableStmt, error) {
 	}
 
 	if in.Partspec != nil {
-		// TODO(rebelice): convert the partition definition.
-		table.PartitionDef = &ast.UnconvertedStmt{}
+		table.PartitionDef = &ast.PartitionDef{
+			Strategy: in.Partspec.Strategy,
+		}
+		for _, item := range in.Partspec.PartParams {
+			fmt.Println(item)
+			partElem, ok := item.Node.(*pgquery.Node_PartitionElem)
+			if !ok {
+				return nil, parser.NewConvertErrorf("expected PartitionElem but found %t", item.Node)
+			}
+			if partElem.PartitionElem.Name != "" {
+				table.PartitionDef.KeyList = append(table.PartitionDef.KeyList, &ast.PartitionKeyDef{
+					Type: ast.PartitionKeyTypeColumn,
+					Key:  partElem.PartitionElem.Name,
+				})
+			} else if partElem.PartitionElem.Expr != nil {
+				expr, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, partElem.PartitionElem.Expr)
+				if err != nil {
+					return nil, err
+				}
+				table.PartitionDef.KeyList = append(table.PartitionDef.KeyList, &ast.PartitionKeyDef{
+					Type: ast.PartitionKeyTypeExpression,
+					Key:  expr,
+				})
+			}
+		}
 	}
 	return table, nil
 }

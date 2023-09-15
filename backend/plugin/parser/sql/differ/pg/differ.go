@@ -3,6 +3,7 @@ package pg
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"sort"
 
@@ -453,12 +454,40 @@ func (m schemaMap) addSequenceOwnedBy(id int, alterStmt *ast.AlterSequenceStmt) 
 	return nil
 }
 
-func parseAndPreprocessStatment(statement string) ([]ast.Node, error) {
+func parseAndPreprocessStatement(statement string) ([]ast.Node, []string, error) {
 	nodeList, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse statement %q", statement)
+		return nil, nil, errors.Wrapf(err, "failed to parse statement %q", statement)
 	}
-	return mergeDefaultIntoColumn(nodeList)
+	nodes, err := mergeDefaultIntoColumn(nodeList)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to merge default into column for statement %q", statement)
+	}
+
+	partitions := extractPartitions(nodes)
+	return nodes, partitions, nil
+}
+
+func extractPartitions(nodes []ast.Node) []string {
+	var partitions []string
+	for _, node := range nodes {
+		switch node := node.(type) {
+		case *ast.AlterTableStmt:
+			for _, alterItem := range node.AlterItemList {
+				switch item := alterItem.(type) {
+				case *ast.AttachPartitionStmt:
+					if item.Partition != nil {
+						partitions = append(partitions, fmt.Sprintf("%s.%s", item.Partition.Schema, item.Partition.Name))
+					}
+				default:
+					continue
+				}
+			}
+		default:
+			continue
+		}
+	}
+	return partitions
 }
 
 // mergeDefaultIntoColumn merges some statements into one statement, for example, merge
@@ -480,6 +509,7 @@ func mergeDefaultIntoColumn(nodeList []ast.Node) ([]ast.Node, error) {
 			retNodesIdx, ok := schemaTableNameToRetNodesIdx[schemaTableName]
 			if !ok {
 				// For pg_dump, this will never happen.
+				fmt.Printf("cannot find table %s\n", schemaTableName)
 				return nil, errors.Errorf("cannot find table %s", schemaTableName)
 			}
 			for _, alterItem := range node.AlterItemList {
@@ -511,11 +541,11 @@ func mergeDefaultIntoColumn(nodeList []ast.Node) ([]ast.Node, error) {
 
 // SchemaDiff computes the schema differences between old and new schema.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error) {
-	oldNodes, err := parseAndPreprocessStatment(oldStmt)
+	oldNodes, oldPartitions, err := parseAndPreprocessStatement(oldStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse and preprocess old statements %q", oldStmt)
 	}
-	newNodes, err := parseAndPreprocessStatment(newStmt)
+	newNodes, newPartitions, err := parseAndPreprocessStatement(newStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to and preprocess new statements %q", newStmt)
 	}
@@ -526,15 +556,27 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 	oldSchemaMap := make(schemaMap)
 	oldSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
 	oldSchemaMap["public"].existsInNew = true
+	oldPartitionMap := make(map[string]bool)
+	for _, partition := range oldPartitions {
+		oldPartitionMap[partition] = true
+	}
 	for i, node := range oldNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateSchemaStmt:
 			oldSchemaMap[stmt.Name] = newSchemaInfo(i, stmt)
 		case *ast.CreateTableStmt:
+			if _, exists := oldPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
+				// ignore partition table
+				continue
+			}
 			if err := oldSchemaMap.addTable(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.AlterTableStmt:
+			// ignore partition table
+			if _, exists := oldPartitionMap[fmt.Sprintf("%s.%s", stmt.Table.Schema, stmt.Table.Name)]; exists {
+				continue
+			}
 			for _, alterItem := range stmt.AlterItemList {
 				switch item := alterItem.(type) {
 				case *ast.AddConstraintStmt:
@@ -546,11 +588,18 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 					default:
 						return "", errors.Errorf("unsupported constraint type %d", item.Constraint.Type)
 					}
+				case *ast.AttachPartitionStmt:
+					// ignore attach partition
+					continue
 				default:
 					return "", errors.Errorf("unsupported alter table item type %T", item)
 				}
 			}
 		case *ast.CreateIndexStmt:
+			// ignore partition index
+			if _, exists := oldPartitionMap[fmt.Sprintf("%s.%s", stmt.Index.Table.Schema, stmt.Index.Table.Name)]; exists {
+				continue
+			}
 			if err := oldSchemaMap.addIndex(i, stmt); err != nil {
 				return "", err
 			}
@@ -585,9 +634,17 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 	}
 
 	diff := &diffNode{}
+	newPartitionMap := make(map[string]bool)
+	for _, partition := range newPartitions {
+		newPartitionMap[partition] = true
+	}
 	for _, node := range newNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
+			// ignore partition table
+			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
+				continue
+			}
 			if _, exists := systemSchemas[stmt.Name.Schema]; exists {
 				continue
 			}
@@ -613,6 +670,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 			}
 			schema.existsInNew = true
 		case *ast.AlterTableStmt:
+			// ignore partition table
+			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Table.Schema, stmt.Table.Name)]; exists {
+				continue
+			}
 			if _, exists := systemSchemas[stmt.Table.Schema]; exists {
 				continue
 			}
@@ -641,11 +702,18 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 					default:
 						return "", errors.Errorf("unsupported constraint type %d", item.Constraint.Type)
 					}
+				case *ast.AttachPartitionStmt:
+					// ignore attach partition
+					continue
 				default:
 					return "", errors.Errorf("unsupported alter table item type %T", item)
 				}
 			}
 		case *ast.CreateIndexStmt:
+			// ignore partition index
+			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Index.Table.Schema, stmt.Index.Table.Name)]; exists {
+				continue
+			}
 			if _, exists := systemSchemas[stmt.Index.Table.Schema]; exists {
 				continue
 			}

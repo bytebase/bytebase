@@ -849,6 +849,54 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 			return err
 		}
 	}
+	if in.PartitionDef != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := deparsePartitionDef(columnContext, in.PartitionDef, buf); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func deparsePartitionDef(context parser.DeparseContext, in *ast.PartitionDef, buf *strings.Builder) error {
+	if _, err := buf.WriteString("PARTITION BY "); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(strings.ToUpper(in.Strategy)); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" ("); err != nil {
+		return err
+	}
+	for i, key := range in.KeyList {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		switch key.Type {
+		case ast.PartitionKeyTypeColumn:
+			if err := writeSurrounding(buf, key.Key, `"`); err != nil {
+				return err
+			}
+		case ast.PartitionKeyTypeExpression:
+			if _, err := buf.WriteString("("); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString(key.Key); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString(")"); err != nil {
+				return err
+			}
+		}
+	}
+	if _, err := buf.WriteString(")"); err != nil {
+		return err
+	}
 
 	return nil
 }
