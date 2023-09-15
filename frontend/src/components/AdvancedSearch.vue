@@ -300,17 +300,10 @@ const onKeydown = (e: KeyboardEvent) => {
 
   const start = inputRef.value.inputElRef.selectionStart ?? -1;
   const end = inputRef.value.inputElRef.selectionEnd ?? -1;
-  console.log(`start: ${start}, end: ${end}`);
   if (start !== end) {
     onClear();
     return;
   }
-
-  // const params = getSearchParamsByText(state.searchText);
-  // if (params.scopes.length < searchOptions.value.length) {
-  //   state.showSearchScopes = true;
-  //   return;
-  // }
 
   // Try to find the active section the cursor in.
   // For example, the searchText is (the | is the current cursor):
