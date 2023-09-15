@@ -1,7 +1,6 @@
 import { isUndefined, uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { ComposedDatabase, emptyProject } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import {
   SchemaEditorV1State,
   Table,
@@ -16,7 +15,6 @@ export const generateUniqueTabId = () => {
 
 const getDefaultSchemaEditorState = (): SchemaEditorV1State => {
   return {
-    engine: Engine.MYSQL,
     project: emptyProject(),
     readonly: false,
     resourceType: "database",
