@@ -174,16 +174,16 @@ func TestSensitiveData(t *testing.T) {
 				MaskingPolicy: &v1pb.MaskingPolicy{
 					MaskData: []*v1pb.MaskData{
 						{
-							Table:              tableName,
-							Column:             "id",
-							SemanticCategoryId: "",
-							MaskingLevel:       v1pb.MaskingLevel_FULL,
+							Table:          tableName,
+							Column:         "id",
+							SemanticTypeId: "",
+							MaskingLevel:   v1pb.MaskingLevel_FULL,
 						},
 						{
-							Table:              tableName,
-							Column:             "author",
-							SemanticCategoryId: "",
-							MaskingLevel:       v1pb.MaskingLevel_FULL,
+							Table:          tableName,
+							Column:         "author",
+							SemanticTypeId: "",
+							MaskingLevel:   v1pb.MaskingLevel_FULL,
 						},
 					},
 				},
