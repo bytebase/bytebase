@@ -42,6 +42,7 @@ interface LocalState {
 }
 
 const settingStore = useSettingV1Store();
+
 const schemaEditorV1Store = useSchemaEditorV1Store();
 const state = reactive<LocalState>({
   initialized: false,

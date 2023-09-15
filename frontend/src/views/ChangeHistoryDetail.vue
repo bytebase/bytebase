@@ -325,6 +325,7 @@ const v1Instance = computed(() => {
   return instanceStore.getInstanceByName(`instances/${props.instance}`);
 });
 
+// eslint-disable-next-line vue/no-dupe-keys
 const database = computed(() => {
   return databaseStore.getDatabaseByName(changeHistoryParent.value);
 });
