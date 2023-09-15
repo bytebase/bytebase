@@ -33,13 +33,17 @@
       </button>
     </div>
     <div class="w-full h-full max-h-full overflow-auto border-b mb-4">
-      <SchemaEditorV1
+      <div
         v-show="state.selectedTab === 'schema-editor'"
-        :engine="databaseEngine"
-        :project="project"
-        :resource-type="'database'"
-        :databases="databaseList"
-      />
+        class="w-full h-full py-2"
+      >
+        <SchemaEditorV1
+          :engine="databaseEngine"
+          :project="project"
+          :resource-type="'database'"
+          :databases="databaseList"
+        />
+      </div>
       <div
         v-show="state.selectedTab === 'raw-sql'"
         class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto"
@@ -133,7 +137,7 @@ import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
-import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
+import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import {
   useDatabaseV1Store,
@@ -539,7 +543,6 @@ const generateIssueName = (
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
-
   return issueNameParts.join(" ");
 };
 
