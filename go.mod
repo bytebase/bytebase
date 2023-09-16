@@ -44,7 +44,7 @@ require (
 	github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/microsoft/go-mssqldb v1.1.0
-	github.com/nyaruka/phonenumbers v1.1.7
+	github.com/nyaruka/phonenumbers v1.1.8
 	github.com/paulmach/orb v0.10.0
 	github.com/pganalyze/pg_query_go/v4 v4.0.0-00010101000000-000000000000
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
