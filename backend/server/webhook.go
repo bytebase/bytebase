@@ -1591,14 +1591,14 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 		},
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create plan for sample project")
+		return errors.Wrapf(err, "failed to create plan")
 	}
 	rollout, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
 		Plan:   plan.Name,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create rollout for sample project")
+		return errors.Wrapf(err, "failed to create rollout")
 	}
 	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
@@ -1612,7 +1612,7 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 		},
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create issue for sample project")
+		return errors.Wrapf(err, "failed to create issue")
 	}
 	issueUID, err := strconv.Atoi(issue.Uid)
 	if err != nil {
