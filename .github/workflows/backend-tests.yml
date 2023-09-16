@@ -7,6 +7,7 @@ on:
       - "release/*.*.*"
     paths:
       - "backend/**"
+      - "go.mod"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
