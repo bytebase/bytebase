@@ -28,7 +28,7 @@
     "canvas-confetti": "1.6.0",
     "d3-shape": "^3.2.0",
     "dayjs": "1.11.9",
-    "dompurify": "2.4.5",
+    "dompurify": "2.4.7",
     "downloadjs": "1.4.7",
     "elkjs": "^0.8.2",
     "emittery": "^1.0.1",

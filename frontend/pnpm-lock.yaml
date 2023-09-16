@@ -48,8 +48,8 @@ dependencies:
     specifier: 1.11.9
     version: 1.11.9
   dompurify:
-    specifier: 2.4.5
-    version: 2.4.5
+    specifier: 2.4.7
+    version: 2.4.7
   downloadjs:
     specifier: 1.4.7
     version: 1.4.7
@@ -3007,8 +3007,8 @@ packages:
       esutils: 2.0.3
     dev: true
 
-  /dompurify@2.4.5:
-    resolution: {integrity: sha512-jggCCd+8Iqp4Tsz0nIvpcb22InKEBrGz5dw3EQJMs8HPJDsKbFIO3STYtAvCfDx26Muevn1MHVI0XxjgFfmiSA==}
+  /dompurify@2.4.7:
+    resolution: {integrity: sha512-kxxKlPEDa6Nc5WJi+qRgPbOAbgTpSULL+vI3NUXsZMlkJxTqYI9wg5ZTay2sFrdZRWHPWNi+EdAhcJf81WtoMQ==}
     dev: false
 
   /double-ended-queue@2.1.0-0:
