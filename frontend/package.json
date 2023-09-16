@@ -75,7 +75,7 @@
     "vscode-languageserver-protocol": "3.17.3",
     "vscode-languageserver-textdocument": "1.0.8",
     "vscode-languageserver-types": "3.17.3",
-    "vue": "3.2.47",
+    "vue": "3.3.4",
     "vuedraggable": "^4.1.0",
     "vueuc": "0.4.51"
   },
