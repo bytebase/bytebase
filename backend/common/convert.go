@@ -221,7 +221,11 @@ func GetQueryExportFactors(expression string) (*QueryExportFactors, error) {
 	if issues != nil {
 		return nil, errors.Errorf("found issue %v", issues)
 	}
-	callExpr := ast.Expr().GetCallExpr()
+	parsedExpr, err := cel.AstToParsedExpr(ast)
+	if err != nil {
+		return nil, err
+	}
+	callExpr := parsedExpr.Expr.GetCallExpr()
 	findField(callExpr, factors)
 	return factors, nil
 }
