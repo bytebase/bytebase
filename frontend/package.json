@@ -62,7 +62,7 @@
     "qrcode": "^1.5.3",
     "qs": "6.11.2",
     "rxjs": "^7.8.1",
-    "scroll-into-view-if-needed": "^2.2.31",
+    "scroll-into-view-if-needed": "^3.0.0",
     "scrollparent": "^2.1.0",
     "semver": "7.5.2",
     "slug": "8.2.2",
