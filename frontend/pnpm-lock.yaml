@@ -144,8 +144,8 @@ dependencies:
     specifier: ^1.5.3
     version: 1.5.3
   qs:
-    specifier: 6.11.1
-    version: 6.11.1
+    specifier: 6.11.2
+    version: 6.11.2
   rxjs:
     specifier: ^7.8.1
     version: 7.8.1
@@ -269,8 +269,8 @@ devDependencies:
     specifier: ^1.5.2
     version: 1.5.2
   '@types/qs':
-    specifier: 6.9.7
-    version: 6.9.7
+    specifier: 6.9.8
+    version: 6.9.8
   '@types/scrollparent':
     specifier: ^2.0.1
     version: 2.0.1
@@ -1613,8 +1613,8 @@ packages:
       '@types/node': 18.11.18
     dev: true
 
-  /@types/qs@6.9.7:
-    resolution: {integrity: sha512-FGa1F62FT09qcrueBA6qYTrJPVDzah9a+493+o2PCXsesWHIn27G98TsSMs3WPNbZIEj4+VJf6saSFpvD+3Zsw==}
+  /@types/qs@6.9.8:
+    resolution: {integrity: sha512-u95svzDlTysU5xecFNTgfFG5RUWu1A9P0VzgpcIiGZA9iraHOdSzcxMxQ55DyeRaGCSxQi7LxXDI4rzq/MYfdg==}
     dev: true
 
   /@types/scrollparent@2.0.1:
@@ -4795,8 +4795,8 @@ packages:
       yargs: 15.4.1
     dev: false
 
-  /qs@6.11.1:
-    resolution: {integrity: sha512-0wsrzgTz/kAVIeuxSjnpGC56rzYtr6JT/2BwEvMaPhFIoYa1aGO8LbzuU1R0uUYQkLpWBTOj0l/CLAJB64J6nQ==}
+  /qs@6.11.2:
+    resolution: {integrity: sha512-tDNIz22aBzCDxLtVH++VnTfzxlfeK5CbqohpSqpJgj1Wg/cQbStNAz3NuqCs5vV+pjBsK4x4pN9HlVh7rcYRiA==}
     engines: {node: '>=0.6'}
     dependencies:
       side-channel: 1.0.4
