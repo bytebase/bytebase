@@ -21,8 +21,8 @@ dependencies:
     specifier: 0.1.2
     version: 0.1.2
   '@tanstack/table-core':
-    specifier: 8.5.22
-    version: 8.5.22
+    specifier: 8.9.11
+    version: 8.9.11
   '@tanstack/vue-table':
     specifier: 8.5.22
     version: 8.5.22(vue@3.2.47)
@@ -1161,6 +1161,11 @@ packages:
 
   /@tanstack/table-core@8.5.22:
     resolution: {integrity: sha512-D3wDbVXl3Bi5PdGfle6DijhLzZxrvMyZsE1dSHH0xBsqEbu7Pkxn5EEd6CA9tGsCgXIEP1s4Yfy1cZ9xnMz1sQ==}
+    engines: {node: '>=12'}
+    dev: false
+
+  /@tanstack/table-core@8.9.11:
+    resolution: {integrity: sha512-TkMu0xA4ZxDXwFQUt9GAna3RGPH+yRJ7YqpeJAhUzSjaJNQjIsypG/s6t4EW6t5Q8cQJIZ9CzusqrQ0dXayGRQ==}
     engines: {node: '>=12'}
     dev: false
 
