@@ -70,7 +70,7 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 
 // waitRollout waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName string) error {
-	ticker := time.NewTicker(100 * time.Millisecond)
+	ticker := time.NewTicker(300 * time.Millisecond)
 	defer ticker.Stop()
 
 	for range ticker.C {

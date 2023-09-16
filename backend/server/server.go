@@ -6,24 +6,14 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"net/http"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
 
-	// embed will embeds the acl policy.
-	_ "embed"
-
 	"github.com/google/uuid"
 	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/labstack/echo-contrib/pprof"
-	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
-	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -201,7 +191,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	slog.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
 	slog.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
 	slog.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
-	slog.Info(fmt.Sprintf("debug=%t", profile.Debug))
 	slog.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
 	slog.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
 	slog.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
@@ -284,6 +273,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			return nil, err
 		}
 	}
+	s.store = storeInstance
 
 	s.stateCfg = &state.State{
 		InstanceDatabaseSyncChan:             make(chan *store.InstanceMessage, 100),
@@ -294,7 +284,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		PlanCheckTickleChan:                  make(chan int, 1000),
 		TaskRunTickleChan:                    make(chan int, 1000),
 	}
-	s.store = storeInstance
 
 	if err := s.store.BackfillIssueTsVector(ctx); err != nil {
 		slog.Warn("failed to backfill issue ts vector", log.BBError(err))
@@ -335,40 +324,20 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	s.activityManager = activity.NewManager(storeInstance)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
-	e := echo.New()
-	e.Debug = profile.Debug
-	e.HideBanner = true
-	e.HidePort = true
-	e.Use(recoverMiddleware)
-	grpcSkipper := func(c echo.Context) bool {
-		// Skip grpc and webhook calls.
-		return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
-			strings.HasPrefix(c.Request().URL.Path, "/v1:adminExecute") ||
-			strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix)
-	}
-	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-		Skipper: grpcSkipper,
-		Timeout: 30 * time.Second,
-	}))
-	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
-		Skipper: grpcSkipper,
-		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
-			middleware.RateLimiterMemoryStoreConfig{Rate: 30, Burst: 60, ExpiresIn: 3 * time.Minute},
-		),
-		IdentifierExtractor: func(ctx echo.Context) (string, error) {
-			id := ctx.RealIP()
-			return id, nil
-		},
-		ErrorHandler: func(context echo.Context, err error) error {
-			return context.JSON(http.StatusForbidden, nil)
-		},
-		DenyHandler: func(context echo.Context, identifier string, err error) error {
-			return context.JSON(http.StatusTooManyRequests, nil)
-		},
-	}))
 
-	embedFrontend(e)
-	s.e = e
+	// Configure echo server.
+	s.e = echo.New()
+
+	webhookGroup := s.e.Group(webhookAPIPrefix)
+	s.registerWebhookRoutes(webhookGroup)
+	apiGroup := s.e.Group(internalAPIPrefix)
+	s.registerDatabaseRoutes(apiGroup)
+	s.registerIssueRoutes(apiGroup)
+
+	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
+	// the user has to restart the server to take the latest value.
+	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL, TokenDuration: tokenDuration}
+	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(gatewayModifier.Modify))
 
 	if profile.BackupBucket != "" {
 		credentials, err := bbs3.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
@@ -426,20 +395,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.initMetricReporter()
 	}
 
-	webhookGroup := e.Group(webhookAPIPrefix)
-	s.registerWebhookRoutes(webhookGroup)
-
-	apiGroup := e.Group(internalAPIPrefix)
-	s.registerDatabaseRoutes(apiGroup)
-	s.registerIssueRoutes(apiGroup)
-	s.registerIssueSubscriberRoutes(apiGroup)
-	s.registerTaskRoutes(apiGroup)
-
-	// Register healthz endpoint.
-	e.GET("/healthz", func(c echo.Context) error {
-		return c.String(http.StatusOK, "OK")
-	})
-
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, profile.Mode)
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
@@ -472,6 +427,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			recoveryStreamInterceptor,
 		),
 	)
+	configureEchoRouters(s.e, s.grpcServer, mux)
+
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, tokenDuration, s.licenseService, s.metricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
 			if s.profile.TestOnlySkipOnboardingData {
@@ -532,10 +489,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 
-	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
-	// the user has to restart the server to take the latest value.
-	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL, TokenDuration: tokenDuration}
-	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(gatewayModifier.Modify))
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
@@ -599,32 +552,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	e.GET("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(
-		mux,
-		wsproxy.WithTokenCookieName("access-token"),
-		// 10M.
-		wsproxy.WithMaxRespBodyBufferSize(10*1024*1024),
-	)))
-	e.Any("/v1/*", echo.WrapHandler(mux))
-	// GRPC web proxy.
-	options := []grpcweb.Option{
-		grpcweb.WithCorsForRegisteredEndpointsOnly(false),
-		grpcweb.WithOriginFunc(func(origin string) bool {
-			return true
-		}),
-		grpcweb.WithWebsockets(true),
-		grpcweb.WithWebsocketOriginFunc(func(req *http.Request) bool {
-			return true
-		}),
-	}
-	wrappedGrpc := grpcweb.WrapServer(s.grpcServer, options...)
-	e.Any("/bytebase.v1.*", echo.WrapHandler(wrappedGrpc))
-
-	// Register pprof endpoints.
-	pprof.Register(e)
-	// Register prometheus metrics endpoint.
-	p := prometheus.NewPrometheus("api", nil)
-	p.Use(e)
 
 	serverStarted = true
 	return s, nil
