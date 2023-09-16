@@ -12,7 +12,6 @@ func activeProfile() server.Profile {
 		Mode:                common.ReleaseModeDev,
 		BackendHost:         flags.host,
 		BackendPort:         flags.port,
-		Debug:               flags.debug,
 		Version:             version,
 		GitCommit:           gitcommit,
 		MetricConnectionKey: "",
