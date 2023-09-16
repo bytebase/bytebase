@@ -209,8 +209,8 @@ devDependencies:
     specifier: 2.11.8
     version: 2.11.8
   '@rollup/plugin-yaml':
-    specifier: 4.0.1
-    version: 4.0.1(rollup@3.29.2)
+    specifier: 4.1.1
+    version: 4.1.1(rollup@3.29.2)
   '@tailwindcss/forms':
     specifier: 0.5.3
     version: 0.5.3(tailwindcss@3.2.1)
@@ -1090,8 +1090,8 @@ packages:
     resolution: {integrity: sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==}
     dev: true
 
-  /@rollup/plugin-yaml@4.0.1(rollup@3.29.2):
-    resolution: {integrity: sha512-eyftkLWrwaGhgad+gXmisPYXeW3hP1s+lz63mgbur+F/8aKZhPG1Bf8RFNnz0Vhnf3uBimFebZBDwwz6X4KqUQ==}
+  /@rollup/plugin-yaml@4.1.1(rollup@3.29.2):
+    resolution: {integrity: sha512-firWc3X2Ea5CWx2tOh/MzrsdxoX8ZUtG8RC+NQ7T04/cOereC64tDo4v1L+adTIJlmNko/Oaqn+uCol/t0qvbw==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       rollup: ^1.20.0||^2.0.0||^3.0.0
