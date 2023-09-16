@@ -156,8 +156,8 @@ dependencies:
     specifier: ^2.1.0
     version: 2.1.0
   semver:
-    specifier: 7.5.2
-    version: 7.5.2
+    specifier: 7.5.4
+    version: 7.5.4
   slug:
     specifier: 8.2.3
     version: 8.2.3
@@ -275,8 +275,8 @@ devDependencies:
     specifier: ^2.0.1
     version: 2.0.1
   '@types/semver':
-    specifier: 7.3.13
-    version: 7.3.13
+    specifier: 7.5.2
+    version: 7.5.2
   '@types/slug':
     specifier: 5.0.4
     version: 5.0.4
@@ -1621,12 +1621,8 @@ packages:
     resolution: {integrity: sha512-LcvYdxOG83yL0IoJOmdeoCVlJUgf5WA+cxrBPh2mfYy3bsMoY72fOe87vneW4W/NWuqsdGjoK7fVldUkD1xVSw==}
     dev: true
 
-  /@types/semver@7.3.13:
-    resolution: {integrity: sha512-21cFJr9z3g5dW8B0CVI9g2O9beqaThGQ6ZFBqHfwhzLDKUxaqTIy3vnfah/UPkfOiF2pLq+tGz+W8RyCskuslw==}
-    dev: true
-
-  /@types/semver@7.5.1:
-    resolution: {integrity: sha512-cJRQXpObxfNKkFAZbJl2yjWtJCqELQIdShsogr1d2MilP8dKD9TE/nEKHkJgUNHdGKCQaf9HbIynuV2csLGVLg==}
+  /@types/semver@7.5.2:
+    resolution: {integrity: sha512-7aqorHYgdNO4DM36stTiGO3DvKoex9TQRwsJU6vMaFGyqpBA1MNZkz+PG3gaNUPpTAOYhT1WR7M1JyA3fbS9Cw==}
     dev: true
 
   /@types/slug@5.0.4:
@@ -1763,7 +1759,7 @@ packages:
     dependencies:
       '@eslint-community/eslint-utils': 4.4.0(eslint@8.49.0)
       '@types/json-schema': 7.0.12
-      '@types/semver': 7.5.1
+      '@types/semver': 7.5.2
       '@typescript-eslint/scope-manager': 6.7.0
       '@typescript-eslint/types': 6.7.0
       '@typescript-eslint/typescript-estree': 6.7.0(typescript@5.2.2)
@@ -3756,7 +3752,7 @@ packages:
       acorn: 8.10.0
       eslint-visitor-keys: 3.4.3
       espree: 9.6.1
-      semver: 7.5.2
+      semver: 7.5.4
     dev: true
 
   /jsonc-parser@3.2.0:
@@ -4949,20 +4945,12 @@ packages:
     resolution: {integrity: sha512-OwpTSOfy6xSs1+pwcNrv0RBMOzI39Lp3qQKUTPVVPRjCdNa5JH/oPRiqsesIskK8TVgmRiHwO4KXlV2Li9dANA==}
     dev: false
 
-  /semver@7.5.2:
-    resolution: {integrity: sha512-SoftuTROv/cRjCze/scjGyiDtcUyxw1rgYQSZY7XTmtR5hX+dm76iDbTH8TkLPHCQmlbQVSSbNZCPM2hb0knnQ==}
-    engines: {node: '>=10'}
-    hasBin: true
-    dependencies:
-      lru-cache: 6.0.0
-
   /semver@7.5.4:
     resolution: {integrity: sha512-1bCSESV6Pv+i21Hvpxp3Dx+pSD8lIPt8uVjRrxAUt/nbswYc+tK6Y2btiULjd4+fnq15PX+nqQDC7Oft7WkwcA==}
     engines: {node: '>=10'}
     hasBin: true
     dependencies:
       lru-cache: 6.0.0
-    dev: true
 
   /set-blocking@2.0.0:
     resolution: {integrity: sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==}
@@ -5596,7 +5584,7 @@ packages:
     engines: {vscode: ^1.67.0}
     dependencies:
       minimatch: 3.1.2
-      semver: 7.5.2
+      semver: 7.5.4
       vscode-languageserver-protocol: 3.17.2
     dev: false
 
@@ -5688,7 +5676,7 @@ packages:
       espree: 9.6.1
       esquery: 1.5.0
       lodash: 4.17.21
-      semver: 7.5.2
+      semver: 7.5.4
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -5737,7 +5725,7 @@ packages:
     dependencies:
       '@vue/language-core': 1.8.11(typescript@5.2.2)
       '@vue/typescript': 1.8.11(typescript@5.2.2)
-      semver: 7.5.2
+      semver: 7.5.4
       typescript: 5.2.2
     dev: true
 
