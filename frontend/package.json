@@ -125,7 +125,7 @@
     "jquery": "3.7.1",
     "long": "^5.2.3",
     "popper.js": "1.16.1",
-    "postcss": "8.4.21",
+    "postcss": "8.4.29",
     "prettier": "2.7.1",
     "protobufjs": "^7.2.5",
     "rollup": "3.29.2",
