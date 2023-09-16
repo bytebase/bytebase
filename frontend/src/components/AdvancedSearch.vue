@@ -71,7 +71,6 @@ import { InstanceV1Name } from "@/components/v2";
 import { useProjectV1ListByCurrentUser, useInstanceV1List } from "@/store";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
-  isDev,
   projectV1Name,
   extractProjectResourceName,
   extractInstanceResourceName,
@@ -165,37 +164,33 @@ const searchScopes = computed((): SearchScope[] => {
         };
       }),
     },
+    {
+      id: "instance",
+      title: t("issue.advanced-search.scope.instance.title"),
+      description: t("issue.advanced-search.scope.instance.description"),
+      options: instanceList.value.map((ins) => {
+        return {
+          id: extractInstanceResourceName(ins.name),
+          label: h(InstanceV1Name, { instance: ins }),
+        };
+      }),
+    },
+    {
+      id: "type",
+      title: t("issue.advanced-search.scope.type.title"),
+      description: t("issue.advanced-search.scope.type.description"),
+      options: [
+        {
+          id: "DDL",
+          label: h("span", { innerHTML: "Data Definition Language" }),
+        },
+        {
+          id: "DML",
+          label: h("span", { innerHTML: "Data Manipulation Language" }),
+        },
+      ],
+    },
   ];
-  if (isDev()) {
-    scopes.push(
-      {
-        id: "instance",
-        title: t("issue.advanced-search.scope.instance.title"),
-        description: t("issue.advanced-search.scope.instance.description"),
-        options: instanceList.value.map((ins) => {
-          return {
-            id: extractInstanceResourceName(ins.name),
-            label: h(InstanceV1Name, { instance: ins }),
-          };
-        }),
-      },
-      {
-        id: "type",
-        title: t("issue.advanced-search.scope.type.title"),
-        description: t("issue.advanced-search.scope.type.description"),
-        options: [
-          {
-            id: "DDL",
-            label: h("span", { innerHTML: "Data Definition Language" }),
-          },
-          {
-            id: "DML",
-            label: h("span", { innerHTML: "Data Manipulation Language" }),
-          },
-        ],
-      }
-    );
-  }
   return scopes;
 });
 
