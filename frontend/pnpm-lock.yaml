@@ -242,8 +242,8 @@ devDependencies:
     specifier: 4.0.6
     version: 4.0.6
   '@types/lodash-es':
-    specifier: 4.17.7
-    version: 4.17.7
+    specifier: 4.17.9
+    version: 4.17.9
   '@types/markdown-it':
     specifier: ^13.0.0
     version: 13.0.1
@@ -1429,8 +1429,8 @@ packages:
   /@types/linkify-it@3.0.3:
     resolution: {integrity: sha512-pTjcqY9E4nOI55Wgpz7eiI8+LzdYnw3qxXCfHyBDdPbYvbyLgWLJGh8EdPvqawwMK1Uo1794AUkkR38Fr0g+2g==}
 
-  /@types/lodash-es@4.17.7:
-    resolution: {integrity: sha512-z0ptr6UI10VlU6l5MYhGwS4mC8DZyYer2mCoyysZtSF7p26zOX8UpbrV0YpNYLGS8K4PUFIyEr62IMFFjveSiQ==}
+  /@types/lodash-es@4.17.9:
+    resolution: {integrity: sha512-ZTcmhiI3NNU7dEvWLZJkzG6ao49zOIjEgIE0RgV7wbPxU0f2xT3VSAHw2gmst8swH6V0YkLRGp4qPlX/6I90MQ==}
     dependencies:
       '@types/lodash': 4.14.198
 
@@ -4179,7 +4179,7 @@ packages:
       '@css-render/vue3-ssr': 0.15.12(vue@3.2.47)
       '@types/katex': 0.14.0
       '@types/lodash': 4.14.198
-      '@types/lodash-es': 4.17.7
+      '@types/lodash-es': 4.17.9
       async-validator: 4.2.5
       css-render: 0.15.12
       date-fns: 2.30.0
