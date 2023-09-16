@@ -432,7 +432,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	apiGroup := e.Group(internalAPIPrefix)
 	s.registerDatabaseRoutes(apiGroup)
 	s.registerIssueRoutes(apiGroup)
-	s.registerTaskRoutes(apiGroup)
 
 	// Register healthz endpoint.
 	e.GET("/healthz", func(c echo.Context) error {
