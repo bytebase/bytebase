@@ -73,10 +73,11 @@ func getProjectFilter(filter string) (string, error) {
 	if issues != nil {
 		return "", status.Errorf(codes.InvalidArgument, issues.String())
 	}
-	expr := ast.Expr()
-	if expr == nil {
+	parsedExpr, err := cel.AstToParsedExpr(ast)
+	if err != nil {
 		return "", retErr
 	}
+	expr := parsedExpr.Expr
 	callExpr := expr.GetCallExpr()
 	if callExpr == nil {
 		return "", retErr
