@@ -200,8 +200,8 @@ dependencies:
 
 devDependencies:
   '@iconify/json':
-    specifier: 2.2.109
-    version: 2.2.109
+    specifier: 2.2.116
+    version: 2.2.116
   '@intlify/unplugin-vue-i18n':
     specifier: 1.2.0
     version: 1.2.0(rollup@3.29.2)(vue-i18n@9.4.1)
@@ -870,8 +870,8 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
-  /@iconify/json@2.2.109:
-    resolution: {integrity: sha512-Hi5InevdpLbDOjaJ1a0e5wQq8x8lDcNh3xyCq7yMyH/N/wniKa2vGUzzLQWLwENYcMm81b50jCAt7R4cOkx1BQ==}
+  /@iconify/json@2.2.116:
+    resolution: {integrity: sha512-CdvzR/yg3dYENV7F6Hi85ubpEWe0noUspNyLkhyyNihs4hrhCj0iJ0q2T9FB3qeJyxFxL6v//Wy7H4pR/CCZFA==}
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 1.1.1
