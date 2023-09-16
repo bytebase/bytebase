@@ -215,8 +215,8 @@ devDependencies:
     specifier: 0.5.6
     version: 0.5.6(tailwindcss@3.2.1)
   '@tailwindcss/line-clamp':
-    specifier: 0.4.2
-    version: 0.4.2(tailwindcss@3.2.1)
+    specifier: 0.4.4
+    version: 0.4.4(tailwindcss@3.2.1)
   '@tailwindcss/typography':
     specifier: 0.5.10
     version: 0.5.10(tailwindcss@3.2.1)
@@ -1139,8 +1139,8 @@ packages:
       tailwindcss: 3.2.1(postcss@8.4.21)
     dev: true
 
-  /@tailwindcss/line-clamp@0.4.2(tailwindcss@3.2.1):
-    resolution: {integrity: sha512-HFzAQuqYCjyy/SX9sLGB1lroPzmcnWv1FHkIpmypte10hptf4oPUfucryMKovZh2u0uiS9U5Ty3GghWfEJGwVw==}
+  /@tailwindcss/line-clamp@0.4.4(tailwindcss@3.2.1):
+    resolution: {integrity: sha512-5U6SY5z8N42VtrCrKlsTAA35gy2VSyYtHWCsg1H87NU1SXnEfekTVlrga9fzUDrrHcGi2Lb5KenUWb4lRQT5/g==}
     peerDependencies:
       tailwindcss: '>=2.0.0 || >=3.0.0 || >=3.0.0-alpha.1'
     dependencies:
