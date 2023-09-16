@@ -29,7 +29,6 @@ func getBaseProfile(dataDir string) config.Profile {
 		SaaS:                 flags.saas,
 		DataDir:              dataDir,
 		ResourceDir:          common.GetResourceDir(dataDir),
-		Debug:                flags.debug,
 		DemoName:             flags.demoName,
 		Version:              version,
 		GitCommit:            gitcommit,

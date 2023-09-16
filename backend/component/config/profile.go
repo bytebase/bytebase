@@ -36,8 +36,6 @@ type Profile struct {
 	DataDir string
 	// ResourceDir is the directory stores the resources including embedded postgres, mysqlutil, mongoutil and etc.
 	ResourceDir string
-	// Debug decides the log level
-	Debug bool
 	// DemoName specifies the demo name. Empty string means no demo.
 	DemoName string
 	// AppRunnerInterval is the interval for application runner.
