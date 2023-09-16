@@ -13,7 +13,7 @@ func TestGetTemporaryView(t *testing.T) {
 	a.Equal(want, got)
 }
 
-func TestExcludeSchemaAutoIncrementValue(t *testing.T) {
+func TestExcludeSchemaAutoValue(t *testing.T) {
 	tests := []struct {
 		stmt string
 		want string
@@ -32,6 +32,16 @@ func TestExcludeSchemaAutoIncrementValue(t *testing.T) {
 			`CREATE TABLE world (
 				id int NOT NULL AUTO_INCREMENT,
 				PRIMARY KEY (id)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci /*T![auto_rand_base] AUTO_RANDOM_BASE=39456621 */;`,
+			`CREATE TABLE world (
+				id int NOT NULL AUTO_INCREMENT,
+				PRIMARY KEY (id)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci /*T![auto_rand_base] */;`,
+		},
+		{
+			`CREATE TABLE world (
+				id int NOT NULL AUTO_INCREMENT,
+				PRIMARY KEY (id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci AUTO_INCREMENT=12345;`,
 			`CREATE TABLE world (
 				id int NOT NULL AUTO_INCREMENT,
@@ -41,7 +51,7 @@ func TestExcludeSchemaAutoIncrementValue(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got := excludeSchemaAutoIncrementValue(test.stmt)
+		got := excludeSchemaAutoValues(test.stmt)
 		require.Equal(t, test.want, got)
 	}
 }
