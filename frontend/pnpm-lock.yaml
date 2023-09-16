@@ -21,8 +21,8 @@ dependencies:
     specifier: 0.1.2
     version: 0.1.2
   '@tanstack/table-core':
-    specifier: 8.5.22
-    version: 8.5.22
+    specifier: 8.9.11
+    version: 8.9.11
   '@tanstack/vue-table':
     specifier: 8.5.22
     version: 8.5.22(vue@3.2.47)
@@ -96,8 +96,8 @@ dependencies:
     specifier: 4.17.21
     version: 4.17.21
   lucide-vue-next:
-    specifier: ^0.277.0
-    version: 0.277.0(vue@3.2.47)
+    specifier: ^0.279.0
+    version: 0.279.0(vue@3.2.47)
   markdown-it:
     specifier: ^13.0.1
     version: 13.0.1
@@ -120,8 +120,8 @@ dependencies:
     specifier: ^3.3.1
     version: 3.3.1(ws@8.14.0)
   node-sql-parser:
-    specifier: 4.7.0
-    version: 4.7.0
+    specifier: 4.10.0
+    version: 4.10.0
   normalize-wheel:
     specifier: ^1.0.1
     version: 1.0.1
@@ -150,8 +150,8 @@ dependencies:
     specifier: ^7.8.1
     version: 7.8.1
   scroll-into-view-if-needed:
-    specifier: ^2.2.31
-    version: 2.2.31
+    specifier: ^3.0.0
+    version: 3.1.0
   scrollparent:
     specifier: ^2.1.0
     version: 2.1.0
@@ -171,8 +171,8 @@ dependencies:
     specifier: 9.0.0
     version: 9.0.0
   v-code-diff:
-    specifier: 0.3.12
-    version: 0.3.12(vue@3.2.47)
+    specifier: 1.7.1
+    version: 1.7.1(vue@3.2.47)
   vdirs:
     specifier: ^0.1.8
     version: 0.1.8(vue@3.2.47)
@@ -1164,6 +1164,11 @@ packages:
     engines: {node: '>=12'}
     dev: false
 
+  /@tanstack/table-core@8.9.11:
+    resolution: {integrity: sha512-TkMu0xA4ZxDXwFQUt9GAna3RGPH+yRJ7YqpeJAhUzSjaJNQjIsypG/s6t4EW6t5Q8cQJIZ9CzusqrQ0dXayGRQ==}
+    engines: {node: '>=12'}
+    dev: false
+
   /@tanstack/vue-table@8.5.22(vue@3.2.47):
     resolution: {integrity: sha512-0s/Bb4WUJ1SrKuKRHImGI0TY1xB2b58u69Trz3W/3fHRwSFTROYarvRLEK9z/27TKFSaMJdlwbDM8UD9IYenvQ==}
     engines: {node: '>=12'}
@@ -2100,10 +2105,6 @@ packages:
       - vue
     dev: false
 
-  /abbrev@1.1.1:
-    resolution: {integrity: sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==}
-    dev: false
-
   /abort-controller-x@0.4.3:
     resolution: {integrity: sha512-VtUwTNU8fpMwvWGn4xE93ywbogTYsuT+AUxAXOeelbXuQVIwNmC5YLeho9sH4vZ4ITW8414TTAOG1nW6uIVHCA==}
     dev: false
@@ -2539,8 +2540,8 @@ packages:
     engines: {node: '>= 10'}
     dev: false
 
-  /compute-scroll-into-view@1.0.20:
-    resolution: {integrity: sha512-UCB0ioiyj8CRjtrvaceBLqqhZCVP+1B8+NWQhmdsm0VXOJtobBCf1dBQmebCCo34qZmUwZfIH2MZLqNHazrfjg==}
+  /compute-scroll-into-view@3.0.3:
+    resolution: {integrity: sha512-nadqwNxghAGTamwIqQSG433W6OADZx2vCo3UXHNrzTRHK/htu+7+L0zhjEoaeaQVNAi3YgqWDv8+tzf0hRfR+A==}
     dev: false
 
   /concat-map@0.0.1:
@@ -2961,20 +2962,14 @@ packages:
     resolution: {integrity: sha512-gxtyfqMg7GKyhQmb056K7M3xszy/myH8w+B4RT+QXBQsvAOdc3XymqDDPHx1BgPgsdAA5SIifona89YtRATDzw==}
     dev: true
 
+  /diff-match-patch@1.0.5:
+    resolution: {integrity: sha512-IayShXAgj/QMXgB0IWmKx+rOPuGMhqm5w6jvFxmVenXKIzRqTAAsbBPT3kWQeGANj3jGgvcvv4yK6SxqYmikgw==}
+    dev: false
+
   /diff-sequences@29.6.3:
     resolution: {integrity: sha512-EjePK1srD3P08o2j4f0ExnylqRs5B9tJjcp9t1krH2qRi8CCdsYfwe9JgSLurFBWwq4uOlipzfk5fHNvwFKr8Q==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     dev: true
-
-  /diff2html@3.4.42:
-    resolution: {integrity: sha512-ja12y3PsOutadumdb/f3SUV+9+kgLBjUe6qY74amONUE0JD5aMBjkzrrxKg/6fxfJIQ8U03S3Niau0uBAz6iHQ==}
-    engines: {node: '>=12'}
-    dependencies:
-      diff: 5.1.0
-      hogan.js: 3.0.2
-    optionalDependencies:
-      highlight.js: 11.8.0
-    dev: false
 
   /diff@5.1.0:
     resolution: {integrity: sha512-D+mk+qE8VC/PAUrlAU34N+VfXev0ghe5ywmpqrawphmVZc1bEfn56uo9qpyGp1p4xpzOHkSW4ztBd6L7Xx4ACw==}
@@ -3571,21 +3566,9 @@ packages:
     hasBin: true
     dev: true
 
-  /highlight.js@10.7.3:
-    resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
-    dev: false
-
   /highlight.js@11.8.0:
     resolution: {integrity: sha512-MedQhoqVdr0U6SSnWPzfiadUcDHfN/Wzq25AkXiQv9oiOO/sG0S7XkvpFIqWBl9Yq1UYyYOOVORs5UW2XlPyzg==}
     engines: {node: '>=12.0.0'}
-    dev: false
-
-  /hogan.js@3.0.2:
-    resolution: {integrity: sha512-RqGs4wavGYJWE07t35JQccByczmNUXQT0E12ZYV1VKYu5UiAU9lsos/yBAcf840+zrUQQxgVduCR5/B8nNtibg==}
-    hasBin: true
-    dependencies:
-      mkdirp: 0.3.0
-      nopt: 1.0.10
     dev: false
 
   /html-to-image@1.11.11:
@@ -3979,8 +3962,8 @@ packages:
     resolution: {integrity: sha512-AI2r85+4MquTw9ZYqabu4nMwy9Oftlfa/e/52t9IjtfG+mGBbTNdAoZ3RQKLHR6r0wQnwZnPIEh/Ya6XTWAKNA==}
     dev: false
 
-  /lucide-vue-next@0.277.0(vue@3.2.47):
-    resolution: {integrity: sha512-Lb2TbRd8yAGCWZ021K8x7/fAocrJ30v7RAfMO0ZSfE36MToJLP+PJ83G/U76iUnRA128mob5gfEUCSB8R9PBAA==}
+  /lucide-vue-next@0.279.0(vue@3.2.47):
+    resolution: {integrity: sha512-zsFptHEGB9Epm9MZUoiqNyvw2ddq/MLOUVy1BXT4TCNJ2hW9gcuKB2oZnMk8J1Yl94gjsX/vVFynY39i9ICLkw==}
     peerDependencies:
       vue: '>=3.0.1'
     dependencies:
@@ -4112,11 +4095,6 @@ packages:
   /minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
     dev: true
-
-  /mkdirp@0.3.0:
-    resolution: {integrity: sha512-OHsdUcVAQ6pOtg5JYWpCBo9W/GySVuwvP9hueRMW7UqshC0tbfzLv8wjySTPm3tfUZ/21CE9E1pJagOA91Pxew==}
-    deprecated: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
-    dev: false
 
   /mkdirp@0.5.6:
     resolution: {integrity: sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw==}
@@ -4257,18 +4235,11 @@ packages:
     resolution: {integrity: sha512-uYr7J37ae/ORWdZeQ1xxMJe3NtdmqMC/JZK+geofDrkLUApKRHPd18/TxtBOJ4A0/+uUIliorNrfYV6s1b02eQ==}
     dev: true
 
-  /node-sql-parser@4.7.0:
-    resolution: {integrity: sha512-6pKgpQ15gwzDdIZVSDYH/5rVOOEWXzIrVOcq7FLCtoo+AVXTFIDmJjgRZOhTW+mDjj9trSHELXv+2AOK4C2dlQ==}
+  /node-sql-parser@4.10.0:
+    resolution: {integrity: sha512-P4LZNX8drf+0X5zPtcE5o1SV7Wn4VpTGSYOnN8uY+TswtHrg3ymb193tYpF8EMp2LhGqqDUqTAnCr8hqjN3uQw==}
     engines: {node: '>=8'}
     dependencies:
       big-integer: 1.6.51
-    dev: false
-
-  /nopt@1.0.10:
-    resolution: {integrity: sha512-NWmpvLSqUrgrAC9HCuxEvb+PSloHpqVu+FqcO4eeF2h5qYRhA7ev6KvelyQAKtegUbC6RypJnlEOhd8vloNKYg==}
-    hasBin: true
-    dependencies:
-      abbrev: 1.1.1
     dev: false
 
   /normalize-path@3.0.0:
@@ -4965,10 +4936,10 @@ packages:
       source-map-js: 1.0.2
     dev: false
 
-  /scroll-into-view-if-needed@2.2.31:
-    resolution: {integrity: sha512-dGCXy99wZQivjmjIqihaBQNjryrz5rueJY7eHfTdyWEiR4ttYpsajb14rn9s5d4DY4EcY6+4+U/maARBXJedkA==}
+  /scroll-into-view-if-needed@3.1.0:
+    resolution: {integrity: sha512-49oNpRjWRvnU8NyGVmUaYG4jtTkNonFZI86MmGRDqBphEK2EXT9gdEUoQPZhuBM8yWHxCWbobltqYO5M4XrUvQ==}
     dependencies:
-      compute-scroll-into-view: 1.0.20
+      compute-scroll-into-view: 3.0.3
     dev: false
 
   /scrollparent@2.1.0:
@@ -5449,18 +5420,19 @@ packages:
     hasBin: true
     dev: false
 
-  /v-code-diff@0.3.12(vue@3.2.47):
-    resolution: {integrity: sha512-i77+Yn2EbJ0KAZYns2RDxYzQN1OByvlU2VTtMY7MepgdxHxcpxyA63kLxgHJS2rE7TtaC8amIIDFuaa2gFqHug==}
+  /v-code-diff@1.7.1(vue@3.2.47):
+    resolution: {integrity: sha512-2O34z6DcVw3LygR9Xl07A28115nsps56dCH6zxFMLoW1jyEnWFPN7Kwh0GAYAeWzDiltbqsMWgvfqJYjBEZPgw==}
+    requiresBuild: true
     peerDependencies:
-      '@vue/composition-api': ^1.0.0-beta.1
-      vue: ^2.0.0 || >=3.0.0-rc.0
+      '@vue/composition-api': ^1.4.9
+      vue: ^2.6.0 || >=3.0.0
     peerDependenciesMeta:
       '@vue/composition-api':
         optional: true
     dependencies:
       diff: 5.1.0
-      diff2html: 3.4.42
-      highlight.js: 10.7.3
+      diff-match-patch: 1.0.5
+      highlight.js: 11.8.0
       vue: 3.2.47
       vue-demi: 0.13.11(vue@3.2.47)
     dev: false
