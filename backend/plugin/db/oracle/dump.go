@@ -29,9 +29,9 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 
 	var list []string
 	if driver.schemaTenantMode {
-		list = append(list, driver.databaseName)
-	} else {
 		list = append(list, schemas...)
+	} else {
+		list = append(list, driver.databaseName)
 	}
 	if err := dumpTxn(ctx, txn, list, out); err != nil {
 		return "", err
@@ -1725,34 +1725,43 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 	}
 	defer fieldRows.Close()
 	for fieldRows.Next() {
-		fields := fieldMeta{}
+		field := fieldMeta{}
 		// (help-wanted) Sadly, go-ora with struct tag does not work.
 		if err := fieldRows.Scan(
-			&fields.IotType,
-			&fields.ExtTableName,
-			&fields.TableName,
-			&fields.ColumnName,
-			&fields.DataType,
-			&fields.DataTypeOwner,
-			&fields.DataLength,
-			&fields.DataPrecision,
-			&fields.DataScale,
-			&fields.Nullable,
-			&fields.ColumnID,
-			&fields.DataDefault,
-			&fields.CharLength,
-			&fields.CharUsed,
-			&fields.Collation,
-			&fields.DefaultOnNull,
-			&fields.IsInvisible,
-			&fields.Comments,
+			&field.IotType,
+			&field.ExtTableName,
+			&field.TableName,
+			&field.ColumnName,
+			&field.DataType,
+			&field.DataTypeOwner,
+			&field.DataLength,
+			&field.DataPrecision,
+			&field.DataScale,
+			&field.Nullable,
+			&field.ColumnID,
+			&field.DataDefault,
+			&field.CharLength,
+			&field.CharUsed,
+			&field.Collation,
+			&field.DefaultOnNull,
+			&field.IsInvisible,
+			&field.Comments,
 		); err != nil {
 			return err
 		}
-		if !fields.TableName.Valid {
+		if !field.TableName.Valid {
+			slog.Warn("column table name null", slog.String("schema", schema))
 			continue
 		}
-		tableMap[fields.TableName.String].fields = append(tableMap[fields.TableName.String].fields, &fields)
+		if !field.ColumnName.Valid {
+			slog.Warn("column name null", slog.String("schema", schema), slog.String("table", field.TableName.String))
+			continue
+		}
+		if _, ok := tableMap[field.TableName.String]; !ok {
+			slog.Warn("column table not found", slog.String("schema", schema), slog.String("table", field.TableName.String), slog.String("column", field.ColumnName.String))
+			continue
+		}
+		tableMap[field.TableName.String].fields = append(tableMap[field.TableName.String].fields, &field)
 	}
 	if err := fieldRows.Err(); err != nil {
 		return err
@@ -1788,6 +1797,11 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 			return err
 		}
 		if !constraint.TableName.Valid {
+			slog.Warn("constraint table name null", slog.String("schema", schema))
+			continue
+		}
+		if !constraint.ConstraintName.Valid {
+			slog.Warn("constraint name null", slog.String("schema", schema), slog.String("table", constraint.TableName.String))
 			continue
 		}
 		constraintList = append(constraintList, &constraint)
@@ -1825,6 +1839,10 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 	}
 
 	for _, constraint := range mergedConstraintList {
+		if _, ok := tableMap[constraint.TableName.String]; !ok {
+			slog.Warn("constraint table not found", slog.String("schema", schema), slog.String("table", constraint.TableName.String), slog.String("constraint", constraint.ConstraintName.String))
+			continue
+		}
 		tableMap[constraint.TableName.String].constraints = append(tableMap[constraint.TableName.String].constraints, constraint)
 	}
 
