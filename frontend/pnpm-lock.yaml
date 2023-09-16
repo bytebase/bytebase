@@ -69,8 +69,8 @@ dependencies:
     specifier: ^3.21.2
     version: 3.21.2
   highlight.js:
-    specifier: 11.6.0
-    version: 11.6.0
+    specifier: 11.8.0
+    version: 11.8.0
   html-to-image:
     specifier: ^1.11.11
     version: 1.11.11
@@ -3575,11 +3575,6 @@ packages:
     resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
     dev: false
 
-  /highlight.js@11.6.0:
-    resolution: {integrity: sha512-ig1eqDzJaB0pqEvlPVIpSSyMaO92bH1N2rJpLMN/nX396wTpDA4Eq0uK+7I/2XG17pFaaKE0kjV/XPeGt7Evjw==}
-    engines: {node: '>=12.0.0'}
-    dev: false
-
   /highlight.js@11.8.0:
     resolution: {integrity: sha512-MedQhoqVdr0U6SSnWPzfiadUcDHfN/Wzq25AkXiQv9oiOO/sG0S7XkvpFIqWBl9Yq1UYyYOOVORs5UW2XlPyzg==}
     engines: {node: '>=12.0.0'}
@@ -4190,7 +4185,7 @@ packages:
       date-fns: 2.30.0
       date-fns-tz: 1.3.8(date-fns@2.30.0)
       evtd: 0.2.4
-      highlight.js: 11.6.0
+      highlight.js: 11.8.0
       lodash: 4.17.21
       lodash-es: 4.17.21
       seemly: 0.3.6
