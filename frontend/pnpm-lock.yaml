@@ -9,8 +9,8 @@ dependencies:
     specifier: 0.1.8
     version: 0.1.8(vue@3.2.47)
   '@codingame/monaco-vscode-api':
-    specifier: 1.69.12
-    version: 1.69.12(vscode-oniguruma@2.0.1)(vscode-textmate@9.0.0)
+    specifier: 1.81.7
+    version: 1.81.7(@vscode/vscode-languagedetection@1.0.22)(monaco-editor@0.34.1)(vscode-oniguruma@2.0.1)(vscode-textmate@9.0.0)(xterm-addon-canvas@0.4.0)(xterm-addon-image@0.4.1)(xterm-addon-search@0.12.0)(xterm-addon-serialize@0.10.0)(xterm-addon-unicode11@0.5.0)(xterm-addon-webgl@0.15.0)(xterm@5.2.1)(yauzl@2.10.0)
   '@joe-re/sql-parser':
     specifier: ^1.7.0
     version: 1.7.0
@@ -550,6 +550,37 @@ packages:
       monaco-editor: 0.34.1
       vscode-oniguruma: 2.0.1
       vscode-textmate: 9.0.0
+    dev: false
+
+  /@codingame/monaco-vscode-api@1.81.7(@vscode/vscode-languagedetection@1.0.22)(monaco-editor@0.34.1)(vscode-oniguruma@2.0.1)(vscode-textmate@9.0.0)(xterm-addon-canvas@0.4.0)(xterm-addon-image@0.4.1)(xterm-addon-search@0.12.0)(xterm-addon-serialize@0.10.0)(xterm-addon-unicode11@0.5.0)(xterm-addon-webgl@0.15.0)(xterm@5.2.1)(yauzl@2.10.0):
+    resolution: {integrity: sha512-PX9kEKUoZAP6Qs5253D4koeT5crJGExQ7Sg8RJRLLss9l9sxJNN8me2oVYu+T8Cp54xf/UrdGucV2uIYAfYc+g==}
+    hasBin: true
+    peerDependencies:
+      '@vscode/vscode-languagedetection': ^1.0.22
+      monaco-editor: 0.41.0
+      vscode-oniguruma: ^1.7.0
+      vscode-textmate: ^9.0.0
+      xterm: 5.2.1
+      xterm-addon-canvas: 0.4.0
+      xterm-addon-image: 0.4.1
+      xterm-addon-search: 0.12.0
+      xterm-addon-serialize: 0.10.0
+      xterm-addon-unicode11: 0.5.0
+      xterm-addon-webgl: 0.15.0
+      yauzl: ^2.10.0
+    dependencies:
+      '@vscode/vscode-languagedetection': 1.0.22
+      monaco-editor: 0.34.1
+      vscode-oniguruma: 2.0.1
+      vscode-textmate: 9.0.0
+      xterm: 5.2.1
+      xterm-addon-canvas: 0.4.0(xterm@5.2.1)
+      xterm-addon-image: 0.4.1(xterm@5.2.1)
+      xterm-addon-search: 0.12.0(xterm@5.2.1)
+      xterm-addon-serialize: 0.10.0(xterm@5.2.1)
+      xterm-addon-unicode11: 0.5.0(xterm@5.2.1)
+      xterm-addon-webgl: 0.15.0(xterm@5.2.1)
+      yauzl: 2.10.0
     dev: false
 
   /@css-render/plugin-bem@0.15.12(css-render@0.15.12):
@@ -1880,6 +1911,11 @@ packages:
       '@volar/language-core': 1.10.1
     dev: true
 
+  /@vscode/vscode-languagedetection@1.0.22:
+    resolution: {integrity: sha512-rQ/BgMyLuIXSmbA0MSkIPHtcOw14QkeDbAq19sjvaS9LTRr905yij0S8lsyqN5JgOsbtIx7pAcyOxFMzPmqhZQ==}
+    hasBin: true
+    dev: false
+
   /@vue/compiler-core@3.2.47:
     resolution: {integrity: sha512-p4D7FDnQb7+YJmO2iPEv0SQNeNzcbHdGByJDsT4lynf63AFkOTFN07HsiRSvjGo0QrxR/o3d0hUyNCUnBU2Tig==}
     dependencies:
@@ -2352,6 +2388,10 @@ packages:
       node-releases: 2.0.13
       update-browserslist-db: 1.0.11(browserslist@4.21.10)
     dev: true
+
+  /buffer-crc32@0.2.13:
+    resolution: {integrity: sha512-VO9Ht/+p3SN7SKWqcrgEzjGbRSJYTx+Q1pTQC0wrWqHx0vpJraQ6GtHx8tvcg1rlK1byhU5gccxgOgj7B0TDkQ==}
+    dev: false
 
   /buffer-from@1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
@@ -3352,6 +3392,12 @@ packages:
     dependencies:
       reusify: 1.0.4
     dev: true
+
+  /fd-slicer@1.1.0:
+    resolution: {integrity: sha512-cE1qsB/VwyQozZ+q1dGxR8LBYNZeofhEdUNGSMbQD3Gw2lAzX9Zb3uIU6Ebc/Fmyjo9AWWfnn0AUCHqtevs/8g==}
+    dependencies:
+      pend: 1.2.0
+    dev: false
 
   /fetch-cookie@0.11.0:
     resolution: {integrity: sha512-BQm7iZLFhMWFy5CZ/162sAGjBfdNWb7a8LEqqnzsHFhxT/X/SVj/z2t2nu3aJvjlbQkrAlTUApplPRjWyH4mhA==}
@@ -4426,6 +4472,10 @@ packages:
     dependencies:
       commander: 10.0.1
       source-map-generator: 0.8.0
+    dev: false
+
+  /pend@1.2.0:
+    resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
     dev: false
 
   /pev2@1.8.0(jquery@3.7.1)(popper.js@1.16.1):
@@ -5931,6 +5981,58 @@ packages:
     engines: {node: '>=0.4'}
     dev: false
 
+  /xterm-addon-canvas@0.4.0(xterm@5.2.1):
+    resolution: {integrity: sha512-iTC8CdjX9+hGX7jiEuiDMXzHsY/FKJdVnbjep5xjRXNu7RKOk15xuecIkJ7HZORqMVPpr4DGS3jyd9XUoBuxqw==}
+    peerDependencies:
+      xterm: ^5.0.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm-addon-image@0.4.1(xterm@5.2.1):
+    resolution: {integrity: sha512-iJpYyvtbHg4oXSv+D6J73ZfCjnboZpbZ567MLplXDBlYSUknv3kvPTfVMPJATV7Zsx7+bDgyXboCh9vsDf/m/w==}
+    peerDependencies:
+      xterm: ~5.2.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm-addon-search@0.12.0(xterm@5.2.1):
+    resolution: {integrity: sha512-hXAuO7Ts2+Jf9K8mZrUx8IFd7c/Flgks/jyqA1L4reymyfmXtcsd+WDLel8R9Tgy2CLyKABVBP09/Ua/FmXcvg==}
+    peerDependencies:
+      xterm: ^5.0.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm-addon-serialize@0.10.0(xterm@5.2.1):
+    resolution: {integrity: sha512-Syp9eSBypn70iAczcJ+kAi0foQIepAvFS6x53JwI4XylTBHn87Ep9fovslhwmUV3rwH2yMnpdDjXH5W/whx2lA==}
+    peerDependencies:
+      xterm: ^5.0.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm-addon-unicode11@0.5.0(xterm@5.2.1):
+    resolution: {integrity: sha512-Jm4/g4QiTxiKiTbYICQgC791ubhIZyoIwxAIgOW8z8HWFNY+lwk+dwaKEaEeGBfM48Vk8fklsUW9u/PlenYEBg==}
+    peerDependencies:
+      xterm: ^5.0.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm-addon-webgl@0.15.0(xterm@5.2.1):
+    resolution: {integrity: sha512-ZLcqogMFHr4g/YRhcCh3xE8tTklnyut/M+O/XhVsFBRB/YCvYhPdLQ5/AQk54V0wjWAQpa8CF3W8DVR9OqyMCg==}
+    peerDependencies:
+      xterm: ^5.0.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm@5.2.1:
+    resolution: {integrity: sha512-cs5Y1fFevgcdoh2hJROMVIWwoBHD80P1fIP79gopLHJIE4kTzzblanoivxTiQ4+92YM9IxS36H1q0MxIJXQBcA==}
+    dev: false
+
   /y18n@4.0.3:
     resolution: {integrity: sha512-JKhqTOwSrqNA1NY5lSztJ1GrBiUodLMmIZuLiDaMRJ+itFd+ABVE8XBjOvIWL+rSqNDC74LCSFmlb/U4UZ4hJQ==}
     dev: false
@@ -5975,6 +6077,13 @@ packages:
       which-module: 2.0.1
       y18n: 4.0.3
       yargs-parser: 18.1.3
+    dev: false
+
+  /yauzl@2.10.0:
+    resolution: {integrity: sha512-p4a9I6X6nu6IhoGmBqAcbJy1mlC4j27vEPZX9F4L4/vZT3Lyq1VkFHw/V/PUcB9Buo+DG3iHkT0x3Qya58zc3g==}
+    dependencies:
+      buffer-crc32: 0.2.13
+      fd-slicer: 1.1.0
     dev: false
 
   /yocto-queue@0.1.0:
