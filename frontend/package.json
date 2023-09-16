@@ -106,7 +106,7 @@
     "@types/qs": "6.9.8",
     "@types/scrollparent": "^2.0.1",
     "@types/semver": "7.3.13",
-    "@types/slug": "5.0.3",
+    "@types/slug": "5.0.4",
     "@types/splitpanes": "2.2.1",
     "@types/uuid": "9.0.1",
     "@typescript-eslint/eslint-plugin": "6.7.0",
