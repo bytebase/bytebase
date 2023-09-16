@@ -93,7 +93,10 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, fullMethod s
 		}
 		in.errorRecordRing.Ring = in.errorRecordRing.Ring.Next()
 	}
-	in.profile.LastActiveTs = time.Now().Unix()
+	if _, ok := ctx.Value(common.PrincipalIDContextKey).(int); ok {
+		// Only update for authorized request.
+		in.profile.LastActiveTs = time.Now().Unix()
+	}
 	in.metricReporter.Report(ctx, &metricPlugin.Metric{
 		Name:  metric.APIRequestMetricName,
 		Value: 1,
