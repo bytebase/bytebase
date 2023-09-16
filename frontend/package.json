@@ -69,7 +69,7 @@
     "splitpanes": "3.1.5",
     "sql-formatter": "13.0.0",
     "uuid": "9.0.0",
-    "v-code-diff": "0.3.12",
+    "v-code-diff": "1.7.1",
     "vdirs": "^0.1.8",
     "vscode-languageserver": "8.0.2",
     "vscode-languageserver-protocol": "3.17.3",
