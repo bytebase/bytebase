@@ -26,7 +26,7 @@ jobs:
       - run: pnpm release
         working-directory: frontend
       - name: Build
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v5
         with:
           args: release --skip-publish --config scripts/.goreleaser-for-linux.yaml
         env:
@@ -56,7 +56,7 @@ jobs:
       - run: pnpm release
         working-directory: frontend
       - name: Build
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v5
         with:
           args: release --skip-publish --config scripts/.goreleaser-for-darwin.yaml
         env:
@@ -108,7 +108,7 @@ jobs:
           rm ./darwin/bytebase*checksums.txt
           rm ./linux/bytebase*checksums.txt
       - name: Release
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v5
         with:
           args: release --config scripts/.goreleaser-release.yaml
         env:
