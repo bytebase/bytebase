@@ -58,7 +58,7 @@ require (
 	github.com/snowflakedb/gosnowflake v1.6.24
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
-	github.com/swaggo/echo-swagger v1.4.0
+	github.com/swaggo/echo-swagger v1.4.1
 	github.com/swaggo/swag v1.16.2
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
 	github.com/vjeantet/ldapserver v1.0.1
@@ -96,6 +96,7 @@ require (
 	github.com/danieljoos/wincred v1.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.5 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
@@ -132,6 +133,7 @@ require (
 	go.uber.org/zap v1.25.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/term v0.12.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
 require (
