@@ -17,7 +17,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 
@@ -49,7 +48,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register clickhouse driver.
 
@@ -288,32 +286,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	config, err := s.getInitSetting(ctx, storeInstance)
+	secret, externalURL, tokenDuration, err := s.getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
-	s.secret = config.secret
-
-	workspaceProfileSettingName := api.SettingWorkspaceProfile
-	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &workspaceProfileSettingName})
-	if err != nil {
-		return nil, err
-	}
-	tokenDuration := auth.DefaultTokenDuration
-	externalURL := ""
-	if setting != nil {
-		settingValue := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
-			return nil, err
-		}
-		if settingValue.ExternalUrl != "" {
-			externalURL = settingValue.ExternalUrl
-		}
-		if settingValue.TokenDuration != nil && settingValue.TokenDuration.Seconds > 0 {
-			tokenDuration = settingValue.TokenDuration.AsDuration()
-		}
-	}
-
+	s.secret = secret
 	s.activityManager = activity.NewManager(storeInstance)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 
