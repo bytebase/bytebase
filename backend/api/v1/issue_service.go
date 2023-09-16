@@ -115,7 +115,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	var projectUID *int
+	var projectResourceID *string
 	if projectID != "-" {
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 			ResourceID: &projectID,
@@ -126,7 +126,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		if project == nil {
 			return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 		}
-		projectUID = &project.UID
+		projectResourceID = &project.ResourceID
 	}
 
 	limit := int(request.PageSize)
@@ -147,9 +147,9 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	limitPlusOne := limit + 1
 
 	issueFind := &store.FindIssueMessage{
-		ProjectUID: projectUID,
-		Limit:      &limitPlusOne,
-		Offset:     &offset,
+		ProjectResourceID: projectResourceID,
+		Limit:             &limitPlusOne,
+		Offset:            &offset,
 	}
 
 	filters, err := parseFilter(request.Filter)
@@ -247,18 +247,9 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	var projectUID *int
+	var projectResourceID *string
 	if projectID != "-" {
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &projectID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
-		}
-		if project == nil {
-			return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
-		}
-		projectUID = &project.UID
+		projectResourceID = &projectID
 	}
 
 	limit := int(request.PageSize)
@@ -279,10 +270,10 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	limitPlusOne := limit + 1
 
 	issueFind := &store.FindIssueMessage{
-		ProjectUID: projectUID,
-		Query:      &request.Query,
-		Limit:      &limitPlusOne,
-		Offset:     &offset,
+		ProjectResourceID: projectResourceID,
+		Query:             &request.Query,
+		Limit:             &limitPlusOne,
+		Offset:            &offset,
 	}
 
 	filters, err := parseFilter(request.Filter)
@@ -352,6 +343,33 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			} else {
 				issueFind.CreatedTsBefore = &ts
 			}
+		case "type":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+			}
+			if spec.value == "DDL" {
+				issueFind.TypeList = append(
+					issueFind.TypeList,
+					api.IssueDatabaseCreate,
+					api.IssueDatabaseSchemaUpdate,
+					api.IssueDatabaseSchemaUpdateGhost,
+					api.IssueDatabaseRestorePITR,
+					api.IssueDatabaseGeneral,
+				)
+			} else if spec.value == "DML" {
+				issueFind.TypeList = append(issueFind.TypeList, api.IssueDatabaseDataUpdate)
+			} else {
+				return nil, status.Errorf(codes.InvalidArgument, `unknown value "%s"`, spec.value)
+			}
+		case "instance":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+			}
+			instanceResourceID, err := common.GetInstanceID(spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, `invalid instance resource id "%s": %v`, spec.value, err.Error())
+			}
+			issueFind.InstanceResourceID = &instanceResourceID
 		}
 	}
 
