@@ -15,7 +15,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Extract build args
         run: |
           echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV

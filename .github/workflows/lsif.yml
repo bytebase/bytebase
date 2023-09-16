@@ -13,7 +13,7 @@ jobs:
     if: github.repository == 'bytebase/bytebase'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Generate LSIF data
         uses: sourcegraph/lsif-go-action@master
       - name: Upload LSIF data to sourcegraph.com
