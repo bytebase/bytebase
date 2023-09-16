@@ -77,6 +77,9 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.type) {
     filter.push(`type = "${find.type}"`);
   }
+  if (find.instance) {
+    filter.push(`instance = "${find.instance}"`);
+  }
   return filter.join(" && ");
 };
 
