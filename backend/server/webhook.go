@@ -1591,14 +1591,14 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 		},
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create plan for sample project")
+		return errors.Wrapf(err, "failed to create plan")
 	}
 	rollout, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
 		Plan:   plan.Name,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create rollout for sample project")
+		return errors.Wrapf(err, "failed to create rollout")
 	}
 	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
@@ -1612,7 +1612,7 @@ func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project 
 		},
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create issue for sample project")
+		return errors.Wrapf(err, "failed to create issue")
 	}
 	issueUID, err := strconv.Atoi(issue.Uid)
 	if err != nil {
@@ -2149,6 +2149,45 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			return nil
 		}(); err != nil {
 			slog.Error("Failed to dismiss stale review", log.BBError(err))
+		}
+	}
+	return nil
+}
+
+// patchTask patches the statement for a task.
+func patchTask(ctx context.Context, stores *store.Store, activityManager *activity.Manager, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
+	taskPatched, err := stores.UpdateTaskV2(ctx, taskPatch)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
+	}
+	if taskPatch.SheetID != nil {
+		oldSheetID, err := utils.GetTaskSheetID(task.Payload)
+		if err != nil {
+			return errors.Wrap(err, "failed to get old sheet ID")
+		}
+		newSheetID := *taskPatch.SheetID
+
+		// create a task sheet update activity
+		payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
+			TaskID:     taskPatched.ID,
+			OldSheetID: oldSheetID,
+			NewSheetID: newSheetID,
+			TaskName:   task.Name,
+			IssueName:  issue.Title,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task sheet: %v", taskPatched.Name).SetInternal(err)
+		}
+		if _, err := activityManager.CreateActivity(ctx, &store.ActivityMessage{
+			CreatorUID:   taskPatch.UpdaterID,
+			ContainerUID: taskPatched.PipelineID,
+			Type:         api.ActivityPipelineTaskStatementUpdate,
+			Payload:      string(payload),
+			Level:        api.ActivityInfo,
+		}, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 		}
 	}
 	return nil
