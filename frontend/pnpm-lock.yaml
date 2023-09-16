@@ -212,8 +212,8 @@ devDependencies:
     specifier: 4.1.1
     version: 4.1.1(rollup@3.29.2)
   '@tailwindcss/forms':
-    specifier: 0.5.3
-    version: 0.5.3(tailwindcss@3.2.1)
+    specifier: 0.5.6
+    version: 0.5.6(tailwindcss@3.2.1)
   '@tailwindcss/line-clamp':
     specifier: 0.4.2
     version: 0.4.2(tailwindcss@3.2.1)
@@ -1130,8 +1130,8 @@ packages:
       clipboard: 2.0.11
     dev: false
 
-  /@tailwindcss/forms@0.5.3(tailwindcss@3.2.1):
-    resolution: {integrity: sha512-y5mb86JUoiUgBjY/o6FJSFZSEttfb3Q5gllE4xoKjAAD+vBrnIhE4dViwUuow3va8mpH4s9jyUbUbrRGoRdc2Q==}
+  /@tailwindcss/forms@0.5.6(tailwindcss@3.2.1):
+    resolution: {integrity: sha512-Fw+2BJ0tmAwK/w01tEFL5TiaJBX1NLT1/YbWgvm7ws3Qcn11kiXxzNTEQDMs5V3mQemhB56l3u0i9dwdzSQldA==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || >= 3.0.0-alpha.1'
     dependencies:
