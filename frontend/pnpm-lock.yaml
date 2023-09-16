@@ -171,8 +171,8 @@ dependencies:
     specifier: 9.0.0
     version: 9.0.0
   v-code-diff:
-    specifier: 0.3.12
-    version: 0.3.12(vue@3.2.47)
+    specifier: 1.7.1
+    version: 1.7.1(vue@3.2.47)
   vdirs:
     specifier: ^0.1.8
     version: 0.1.8(vue@3.2.47)
@@ -2100,10 +2100,6 @@ packages:
       - vue
     dev: false
 
-  /abbrev@1.1.1:
-    resolution: {integrity: sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==}
-    dev: false
-
   /abort-controller-x@0.4.3:
     resolution: {integrity: sha512-VtUwTNU8fpMwvWGn4xE93ywbogTYsuT+AUxAXOeelbXuQVIwNmC5YLeho9sH4vZ4ITW8414TTAOG1nW6uIVHCA==}
     dev: false
@@ -2961,20 +2957,14 @@ packages:
     resolution: {integrity: sha512-gxtyfqMg7GKyhQmb056K7M3xszy/myH8w+B4RT+QXBQsvAOdc3XymqDDPHx1BgPgsdAA5SIifona89YtRATDzw==}
     dev: true
 
+  /diff-match-patch@1.0.5:
+    resolution: {integrity: sha512-IayShXAgj/QMXgB0IWmKx+rOPuGMhqm5w6jvFxmVenXKIzRqTAAsbBPT3kWQeGANj3jGgvcvv4yK6SxqYmikgw==}
+    dev: false
+
   /diff-sequences@29.6.3:
     resolution: {integrity: sha512-EjePK1srD3P08o2j4f0ExnylqRs5B9tJjcp9t1krH2qRi8CCdsYfwe9JgSLurFBWwq4uOlipzfk5fHNvwFKr8Q==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     dev: true
-
-  /diff2html@3.4.42:
-    resolution: {integrity: sha512-ja12y3PsOutadumdb/f3SUV+9+kgLBjUe6qY74amONUE0JD5aMBjkzrrxKg/6fxfJIQ8U03S3Niau0uBAz6iHQ==}
-    engines: {node: '>=12'}
-    dependencies:
-      diff: 5.1.0
-      hogan.js: 3.0.2
-    optionalDependencies:
-      highlight.js: 11.8.0
-    dev: false
 
   /diff@5.1.0:
     resolution: {integrity: sha512-D+mk+qE8VC/PAUrlAU34N+VfXev0ghe5ywmpqrawphmVZc1bEfn56uo9qpyGp1p4xpzOHkSW4ztBd6L7Xx4ACw==}
@@ -3571,21 +3561,9 @@ packages:
     hasBin: true
     dev: true
 
-  /highlight.js@10.7.3:
-    resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
-    dev: false
-
   /highlight.js@11.8.0:
     resolution: {integrity: sha512-MedQhoqVdr0U6SSnWPzfiadUcDHfN/Wzq25AkXiQv9oiOO/sG0S7XkvpFIqWBl9Yq1UYyYOOVORs5UW2XlPyzg==}
     engines: {node: '>=12.0.0'}
-    dev: false
-
-  /hogan.js@3.0.2:
-    resolution: {integrity: sha512-RqGs4wavGYJWE07t35JQccByczmNUXQT0E12ZYV1VKYu5UiAU9lsos/yBAcf840+zrUQQxgVduCR5/B8nNtibg==}
-    hasBin: true
-    dependencies:
-      mkdirp: 0.3.0
-      nopt: 1.0.10
     dev: false
 
   /html-to-image@1.11.11:
@@ -4113,11 +4091,6 @@ packages:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
     dev: true
 
-  /mkdirp@0.3.0:
-    resolution: {integrity: sha512-OHsdUcVAQ6pOtg5JYWpCBo9W/GySVuwvP9hueRMW7UqshC0tbfzLv8wjySTPm3tfUZ/21CE9E1pJagOA91Pxew==}
-    deprecated: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
-    dev: false
-
   /mkdirp@0.5.6:
     resolution: {integrity: sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw==}
     hasBin: true
@@ -4262,13 +4235,6 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       big-integer: 1.6.51
-    dev: false
-
-  /nopt@1.0.10:
-    resolution: {integrity: sha512-NWmpvLSqUrgrAC9HCuxEvb+PSloHpqVu+FqcO4eeF2h5qYRhA7ev6KvelyQAKtegUbC6RypJnlEOhd8vloNKYg==}
-    hasBin: true
-    dependencies:
-      abbrev: 1.1.1
     dev: false
 
   /normalize-path@3.0.0:
@@ -5449,18 +5415,19 @@ packages:
     hasBin: true
     dev: false
 
-  /v-code-diff@0.3.12(vue@3.2.47):
-    resolution: {integrity: sha512-i77+Yn2EbJ0KAZYns2RDxYzQN1OByvlU2VTtMY7MepgdxHxcpxyA63kLxgHJS2rE7TtaC8amIIDFuaa2gFqHug==}
+  /v-code-diff@1.7.1(vue@3.2.47):
+    resolution: {integrity: sha512-2O34z6DcVw3LygR9Xl07A28115nsps56dCH6zxFMLoW1jyEnWFPN7Kwh0GAYAeWzDiltbqsMWgvfqJYjBEZPgw==}
+    requiresBuild: true
     peerDependencies:
-      '@vue/composition-api': ^1.0.0-beta.1
-      vue: ^2.0.0 || >=3.0.0-rc.0
+      '@vue/composition-api': ^1.4.9
+      vue: ^2.6.0 || >=3.0.0
     peerDependenciesMeta:
       '@vue/composition-api':
         optional: true
     dependencies:
       diff: 5.1.0
-      diff2html: 3.4.42
-      highlight.js: 10.7.3
+      diff-match-patch: 1.0.5
+      highlight.js: 11.8.0
       vue: 3.2.47
       vue-demi: 0.13.11(vue@3.2.47)
     dev: false
