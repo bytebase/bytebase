@@ -10,7 +10,7 @@ dependencies:
     version: 0.1.8(vue@3.2.47)
   '@codingame/monaco-vscode-api':
     specifier: 1.69.12
-    version: 1.69.12(vscode-oniguruma@2.0.1)(vscode-textmate@7.0.4)
+    version: 1.69.12(vscode-oniguruma@2.0.1)(vscode-textmate@9.0.0)
   '@joe-re/sql-parser':
     specifier: ^1.7.0
     version: 1.7.0
@@ -109,7 +109,7 @@ dependencies:
     version: 0.34.1
   monaco-languageclient:
     specifier: 4.0.1
-    version: 4.0.1(vscode-oniguruma@2.0.1)(vscode-textmate@7.0.4)
+    version: 4.0.1(vscode-oniguruma@2.0.1)(vscode-textmate@9.0.0)
   naive-ui:
     specifier: 2.34.4
     version: 2.34.4(vue@3.2.47)
@@ -371,8 +371,8 @@ devDependencies:
     specifier: 2.0.1
     version: 2.0.1
   vscode-textmate:
-    specifier: 7.0.4
-    version: 7.0.4
+    specifier: 9.0.0
+    version: 9.0.0
   vue-i18n:
     specifier: 9.4.1
     version: 9.4.1(vue@3.2.47)
@@ -536,7 +536,7 @@ packages:
       - '@vue/composition-api'
     dev: false
 
-  /@codingame/monaco-vscode-api@1.69.12(vscode-oniguruma@2.0.1)(vscode-textmate@7.0.4):
+  /@codingame/monaco-vscode-api@1.69.12(vscode-oniguruma@2.0.1)(vscode-textmate@9.0.0):
     resolution: {integrity: sha512-ES1xRnU232t82tcdM2ImikkjGfAMgJtrF0XkLa4poEnvcUH0SFqUhYvcqk5CFggQWh16jqxifVvozcu0/mbH7A==}
     peerDependencies:
       vscode-oniguruma: ^1.6.2
@@ -544,7 +544,7 @@ packages:
     dependencies:
       monaco-editor: 0.34.1
       vscode-oniguruma: 2.0.1
-      vscode-textmate: 7.0.4
+      vscode-textmate: 9.0.0
     dev: false
 
   /@css-render/plugin-bem@0.15.12(css-render@0.15.12):
@@ -4111,11 +4111,11 @@ packages:
     resolution: {integrity: sha512-FKc80TyiMaruhJKKPz5SpJPIjL+dflGvz4CpuThaPMc94AyN7SeC9HQ8hrvaxX7EyHdJcUY5i4D0gNyJj1vSZQ==}
     dev: false
 
-  /monaco-languageclient@4.0.1(vscode-oniguruma@2.0.1)(vscode-textmate@7.0.4):
+  /monaco-languageclient@4.0.1(vscode-oniguruma@2.0.1)(vscode-textmate@9.0.0):
     resolution: {integrity: sha512-mUIq/7gQM/8CyOBVGv0thLRAR80vk49Ur0ROJveoh6R0/uwaUoyri+5OBslxsa5BICftLTsC8/Y+at6/iW50Ww==}
     engines: {node: '>=16.11.0', npm: '>=8.0.0'}
     dependencies:
-      vscode: /@codingame/monaco-vscode-api@1.69.12(vscode-oniguruma@2.0.1)(vscode-textmate@7.0.4)
+      vscode: /@codingame/monaco-vscode-api@1.69.12(vscode-oniguruma@2.0.1)(vscode-textmate@9.0.0)
       vscode-jsonrpc: 8.0.2
       vscode-languageclient: 8.0.2
     transitivePeerDependencies:
@@ -5636,8 +5636,8 @@ packages:
   /vscode-oniguruma@2.0.1:
     resolution: {integrity: sha512-poJU8iHIWnC3vgphJnrLZyI3YdqRlR27xzqDmpPXYzA93R4Gk8z7T6oqDzDoHjoikA2aS82crdXFkjELCdJsjQ==}
 
-  /vscode-textmate@7.0.4:
-    resolution: {integrity: sha512-9hJp0xL7HW1Q5OgGe03NACo7yiCTMEk3WU/rtKXUbncLtdg6rVVNJnHwD88UhbIYU2KoxY0Dih0x+kIsmUKn2A==}
+  /vscode-textmate@9.0.0:
+    resolution: {integrity: sha512-Cl65diFGxz7gpwbav10HqiY/eVYTO1sjQpmRmV991Bj7wAoOAjGQ97PpQcXorDE2Uc4hnGWLY17xme+5t6MlSg==}
 
   /vue-clipboard3@2.0.0:
     resolution: {integrity: sha512-Q9S7dzWGax7LN5iiSPcu/K1GGm2gcBBlYwmMsUc5/16N6w90cbKow3FnPmPs95sungns4yvd9/+JhbAznECS2A==}
