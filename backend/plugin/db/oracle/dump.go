@@ -29,9 +29,9 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 
 	var list []string
 	if driver.schemaTenantMode {
-		list = append(list, schemas...)
-	} else {
 		list = append(list, driver.databaseName)
+	} else {
+		list = append(list, schemas...)
 	}
 	if err := dumpTxn(ctx, txn, list, out); err != nil {
 		return "", err
