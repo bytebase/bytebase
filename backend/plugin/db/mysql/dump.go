@@ -81,7 +81,8 @@ const (
 )
 
 var (
-	excludeAutoIncrement = regexp.MustCompile(` AUTO_INCREMENT=\d+`)
+	excludeAutoIncrement  = regexp.MustCompile(` AUTO_INCREMENT=\d+`)
+	excludeAutoRandomBase = regexp.MustCompile(` AUTO_RANDOM_BASE=\d+`)
 )
 
 // Dump dumps the database.
@@ -228,7 +229,7 @@ func dumpTxn(txn *sql.Tx, dbType db.Type, database string, out io.Writer, schema
 			continue
 		}
 		if schemaOnly {
-			tbl.Statement = excludeSchemaAutoIncrementValue(tbl.Statement)
+			tbl.Statement = excludeSchemaAutoValues(tbl.Statement)
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
 			return err
@@ -307,9 +308,13 @@ func getTemporaryView(name string, columns []string) string {
 	return fmt.Sprintf(tempViewStmtFmt, name, stmt)
 }
 
-// excludeSchemaAutoIncrementValue excludes the starting value of AUTO_INCREMENT if it's a schema only dump.
+// excludeSchemaAutoValues excludes
+// 1) the starting value of AUTO_INCREMENT if it's a schema only dump.
 // https://github.com/bytebase/bytebase/issues/123
-func excludeSchemaAutoIncrementValue(s string) string {
+// 2) The auto random base in TiDB.
+// /*T![auto_rand_base] AUTO_RANDOM_BASE=39456621 */.
+func excludeSchemaAutoValues(s string) string {
+	s = excludeAutoRandomBase.ReplaceAllString(s, ``)
 	return excludeAutoIncrement.ReplaceAllString(s, ``)
 }
 
