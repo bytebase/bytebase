@@ -348,6 +348,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if !profile.Readonly {
 		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		s.backupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
+		s.rollbackRunner = rollbackrun.NewRunner(&profile, storeInstance, s.dbFactory, s.stateCfg)
+		s.mailSender = mail.NewSender(s.store, s.stateCfg)
+		s.relayRunner = relay.NewRunner(storeInstance, s.activityManager, s.stateCfg)
+		s.approvalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.activityManager, s.relayRunner, s.licenseService)
 
 		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.activityManager)
 		s.taskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
@@ -361,11 +365,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.schemaSyncer, s.stateCfg, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.backupRunner, s.activityManager, profile))
-
-		s.rollbackRunner = rollbackrun.NewRunner(&profile, storeInstance, s.dbFactory, s.stateCfg)
-		s.mailSender = mail.NewSender(s.store, s.stateCfg)
-		s.relayRunner = relay.NewRunner(storeInstance, s.activityManager, s.stateCfg)
-		s.approvalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.activityManager, s.relayRunner, s.licenseService)
 
 		s.planCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
 		databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
