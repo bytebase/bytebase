@@ -932,8 +932,8 @@ github.com/swaggo/echo-swagger v1.4.0 h1:RCxLKySw1SceHLqnmc41pKyiIeE+OiD7NSI7FUO
 github.com/swaggo/echo-swagger v1.4.0/go.mod h1:Wh3VlwjZGZf/LH0s81tz916JokuPG7y/ZqaqnckYqoQ=
 github.com/swaggo/files/v2 v2.0.0 h1:hmAt8Dkynw7Ssz46F6pn8ok6YmGZqHSVLZ+HQM7i0kw=
 github.com/swaggo/files/v2 v2.0.0/go.mod h1:24kk2Y9NYEJ5lHuCra6iVwkMjIekMCaFq/0JQj66kyM=
-github.com/swaggo/swag v1.16.1 h1:fTNRhKstPKxcnoKsytm4sahr8FaYzUcT7i1/3nd/fBg=
-github.com/swaggo/swag v1.16.1/go.mod h1:9/LMvHycG3NFHfR6LwvikHv5iFvmPADQ359cKikGxto=
+github.com/swaggo/swag v1.16.2 h1:28Pp+8DkQoV+HLzLx8RGJZXNGKbFqnuvSbAAtoxiY04=
+github.com/swaggo/swag v1.16.2/go.mod h1:6YzXnDcpr0767iOejs318CwYkCQqyGer6BizOg03f+E=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tikv/client-go/v2 v2.0.1-0.20220725090834-0cdc7c1d0fb9 h1:RW/8xnBK618j7B33mP4TTCVhzj1dgwZv/TT7vHaMpbg=
 github.com/tikv/client-go/v2 v2.0.1-0.20220725090834-0cdc7c1d0fb9/go.mod h1:v3DEt8LS9olI6D6El17pYBWq7B28hw3NnDFTxQHDLpY=
