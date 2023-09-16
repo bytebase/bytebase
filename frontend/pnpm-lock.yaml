@@ -222,7 +222,7 @@ devDependencies:
     version: 0.5.10(tailwindcss@3.2.1)
   '@trivago/prettier-plugin-sort-imports':
     specifier: ^4.2.0
-    version: 4.2.0(@vue/compiler-sfc@3.3.4)(prettier@2.7.1)
+    version: 4.2.0(@vue/compiler-sfc@3.3.4)(prettier@2.8.8)
   '@types/canvas-confetti':
     specifier: 1.4.3
     version: 1.4.3
@@ -263,8 +263,8 @@ devDependencies:
     specifier: ^7.3.0
     version: 7.3.0
   '@types/prettier':
-    specifier: 2.7.1
-    version: 2.7.1
+    specifier: 2.7.3
+    version: 2.7.3
   '@types/qrcode':
     specifier: ^1.5.2
     version: 1.5.2
@@ -318,7 +318,7 @@ devDependencies:
     version: 9.0.0(eslint@8.49.0)
   eslint-plugin-prettier:
     specifier: 4.2.1
-    version: 4.2.1(eslint-config-prettier@9.0.0)(eslint@8.49.0)(prettier@2.7.1)
+    version: 4.2.1(eslint-config-prettier@9.0.0)(eslint@8.49.0)(prettier@2.8.8)
   eslint-plugin-vue:
     specifier: 9.17.0
     version: 9.17.0(eslint@8.49.0)
@@ -338,8 +338,8 @@ devDependencies:
     specifier: 8.4.29
     version: 8.4.29
   prettier:
-    specifier: 2.7.1
-    version: 2.7.1
+    specifier: 2.8.8
+    version: 2.8.8
   protobufjs:
     specifier: ^7.2.5
     version: 7.2.5
@@ -1174,7 +1174,7 @@ packages:
       vue: 3.2.47
     dev: false
 
-  /@trivago/prettier-plugin-sort-imports@4.2.0(@vue/compiler-sfc@3.3.4)(prettier@2.7.1):
+  /@trivago/prettier-plugin-sort-imports@4.2.0(@vue/compiler-sfc@3.3.4)(prettier@2.8.8):
     resolution: {integrity: sha512-YBepjbt+ZNBVmN3ev1amQH3lWCmHyt5qTbLCp/syXJRu/Kw2koXh44qayB1gMRxcL/gV8egmjN5xWSrYyfUtyw==}
     peerDependencies:
       '@vue/compiler-sfc': 3.x
@@ -1190,7 +1190,7 @@ packages:
       '@vue/compiler-sfc': 3.3.4
       javascript-natural-sort: 0.7.1
       lodash: 4.17.21
-      prettier: 2.7.1
+      prettier: 2.8.8
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -1603,8 +1603,8 @@ packages:
       '@types/pouchdb-replication': 6.4.4
     dev: true
 
-  /@types/prettier@2.7.1:
-    resolution: {integrity: sha512-ri0UmynRRvZiiUJdiz38MmIblKK+oH30MztdBVR95dv/Ubw6neWSb8u1XpRb72L4qsZOhz+L+z9JD40SJmfWow==}
+  /@types/prettier@2.7.3:
+    resolution: {integrity: sha512-+68kP9yzs4LMp7VNh8gdzMSPZFL44MLGqiHWvttYJe+6qnuVr4Ek9wSBQoveqY/r+LwjCcU29kNVkidwim+kYA==}
     dev: true
 
   /@types/qrcode@1.5.2:
@@ -3154,7 +3154,7 @@ packages:
       eslint: 8.49.0
     dev: true
 
-  /eslint-plugin-prettier@4.2.1(eslint-config-prettier@9.0.0)(eslint@8.49.0)(prettier@2.7.1):
+  /eslint-plugin-prettier@4.2.1(eslint-config-prettier@9.0.0)(eslint@8.49.0)(prettier@2.8.8):
     resolution: {integrity: sha512-f/0rXLXUt0oFYs8ra4w49wYZBG5GKZpAYsJSm6rnYL5uVDjd+zowwMwVZHnAjf4edNrKpCDYfXDgmRE/Ak7QyQ==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
@@ -3167,7 +3167,7 @@ packages:
     dependencies:
       eslint: 8.49.0
       eslint-config-prettier: 9.0.0(eslint@8.49.0)
-      prettier: 2.7.1
+      prettier: 2.8.8
       prettier-linter-helpers: 1.0.0
     dev: true
 
@@ -4716,8 +4716,8 @@ packages:
       fast-diff: 1.3.0
     dev: true
 
-  /prettier@2.7.1:
-    resolution: {integrity: sha512-ujppO+MkdPqoVINuDFDRLClm7D78qbDt0/NR+wp5FqEZOoTNAjPHWj17QRhu7geIHJfcNhRk1XVQmF8Bp3ye+g==}
+  /prettier@2.8.8:
+    resolution: {integrity: sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==}
     engines: {node: '>=10.13.0'}
     hasBin: true
     dev: true
