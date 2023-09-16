@@ -88,7 +88,7 @@
     "@tailwindcss/line-clamp": "0.4.4",
     "@tailwindcss/typography": "0.5.10",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
-    "@types/canvas-confetti": "1.4.3",
+    "@types/canvas-confetti": "1.6.1",
     "@types/d3-shape": "^3.1.2",
     "@types/dompurify": "2.4.0",
     "@types/downloadjs": "1.4.3",
