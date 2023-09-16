@@ -159,8 +159,8 @@ dependencies:
     specifier: 7.5.2
     version: 7.5.2
   slug:
-    specifier: 8.2.2
-    version: 8.2.2
+    specifier: 8.2.3
+    version: 8.2.3
   splitpanes:
     specifier: 3.1.5
     version: 3.1.5
@@ -5005,8 +5005,8 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /slug@8.2.2:
-    resolution: {integrity: sha512-5ByW6qXqPeG0Tmlkh24JhdXhvQsbaJSjVr3GgGxUV0BSskZKKBZZfFWxezap8+fh1vxBN9GVbqI1V6nqAFxlBg==}
+  /slug@8.2.3:
+    resolution: {integrity: sha512-fXjhAZszNecz855GUNIwW0+sFPi9WV4bMiEKDOCA4wcq1ts1UnUVNy/F78B0Aat7/W3rA+se//33ILKNMrbeYQ==}
     hasBin: true
     dev: false
 
