@@ -46,7 +46,7 @@
     "lodash-es": "4.17.21",
     "lucide-vue-next": "^0.279.0",
     "markdown-it": "^13.0.1",
-    "maz-ui": "^3.10.4",
+    "maz-ui": "^3.11.1",
     "monaco-editor": "0.34.1",
     "monaco-languageclient": "4.0.1",
     "naive-ui": "2.34.4",
@@ -62,7 +62,7 @@
     "qrcode": "^1.5.3",
     "qs": "6.11.2",
     "rxjs": "^7.8.1",
-    "scroll-into-view-if-needed": "^3.0.0",
+    "scroll-into-view-if-needed": "^3.1.0",
     "scrollparent": "^2.1.0",
     "semver": "7.5.4",
     "slug": "8.2.3",
@@ -95,7 +95,7 @@
     "@types/file-saver": "^2.0.5",
     "@types/js-yaml": "4.0.6",
     "@types/lodash-es": "4.17.9",
-    "@types/markdown-it": "^13.0.0",
+    "@types/markdown-it": "^13.0.1",
     "@types/node": "18.17.17",
     "@types/normalize-wheel": "^1.0.1",
     "@types/papaparse": "5.3.8",
@@ -141,7 +141,7 @@
     "vue-i18n": "9.4.1",
     "vue-router": "4.2.4",
     "vue-tsc": "1.8.11",
-    "ws": "^8.14.0"
+    "ws": "^8.14.1"
   },
   "peerDependencies": {
     "@popperjs/core": "^2.11.6",
