@@ -116,6 +116,13 @@
           <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
           <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
         </div>
+        <a
+          href="/sql-editor"
+          target="_blank"
+          class="w-6 h-6"
+        >
+          <heroicons-solid:terminal class="w-6 h-6" />
+        </a>
         <router-link to="/inbox" exact-active-class="">
           <span
             v-if="inboxSummary.unread > 0"
