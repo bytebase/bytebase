@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
@@ -38,7 +37,6 @@ type SettingService struct {
 	profile        *config.Profile
 	licenseService enterpriseAPI.LicenseService
 	stateCfg       *state.State
-	feishuProvider *feishu.Provider
 }
 
 // NewSettingService creates a new setting service.
@@ -47,14 +45,12 @@ func NewSettingService(
 	profile *config.Profile,
 	licenseService enterpriseAPI.LicenseService,
 	stateCfg *state.State,
-	feishuProvider *feishu.Provider,
 ) *SettingService {
 	return &SettingService{
 		store:          store,
 		profile:        profile,
 		licenseService: licenseService,
 		stateCfg:       stateCfg,
-		feishuProvider: feishuProvider,
 	}
 }
 
@@ -72,7 +68,8 @@ var whitelistSettings = []api.SettingName{
 	api.SettingEnterpriseTrial,
 	api.SettingSchemaTemplate,
 	api.SettingDataClassification,
-	api.SettingSemanticCategory,
+	api.SettingSemanticTypes,
+	api.SettingMaskingAlgorithms,
 }
 
 //go:embed mail_templates/testmail/template.html
@@ -144,8 +141,12 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	if s.profile.IsFeatureUnavailable(settingName) {
 		return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 	}
-
 	apiSettingName := api.SettingName(settingName)
+	// TODO(zp): remove the following hard code when we persist the algorithm setting.
+	if apiSettingName == api.SettingMaskingAlgorithms {
+		return nil, status.Errorf(codes.InvalidArgument, "setting masking algorithm is not available")
+	}
+
 	var storeSettingValue string
 	switch apiSettingName {
 	case api.SettingWorkspaceProfile:
@@ -321,32 +322,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			if err := s.licenseService.IsFeatureEnabled(api.FeatureIMApproval); err != nil {
 				return nil, status.Errorf(codes.PermissionDenied, err.Error())
 			}
-
 			if payload.AppID == "" || payload.AppSecret == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "application ID and secret cannot be empty")
 			}
-
-			p := s.feishuProvider
-			// clear token cache so that we won't use the previous token.
-			p.ClearTokenCache()
-
-			// check bot info
-			if _, err := p.GetBotID(ctx, feishu.TokenCtx{
-				AppID:     payload.AppID,
-				AppSecret: payload.AppSecret,
-			}); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get bot id. Hint: check if bot is enabled")
-			}
-
-			// create approval definition
-			approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
-				AppID:     payload.AppID,
-				AppSecret: payload.AppSecret,
-			}, "")
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to create approval definition: %v", err)
-			}
-			payload.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
 		}
 
 		s, err := json.Marshal(payload)
@@ -480,25 +458,25 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingSemanticCategory:
-		storeCategorySetting := new(storepb.SemanticCategorySetting)
-		if err := convertV1PbToStorePb(request.Setting.Value.GetSemanticCategorySettingValue(), storeCategorySetting); err != nil {
+	case api.SettingSemanticTypes:
+		storeSemanticTypesSetting := new(storepb.SemanticTypesSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetSemanticTypesSettingValue(), storeSemanticTypesSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
 		idMap := make(map[string]any)
-		for _, category := range storeCategorySetting.Categories {
-			if !isValidUUID(category.Id) {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid category id format: %s", category.Id)
+		for _, tp := range storeSemanticTypesSetting.Types {
+			if !isValidUUID(tp.Id) {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid semantic type id format: %s", tp.Id)
 			}
-			if category.Title == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "category title cannot be empty: %s", category.Id)
+			if tp.Title == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "category title cannot be empty: %s", tp.Id)
 			}
-			if _, ok := idMap[category.Id]; ok {
-				return nil, status.Errorf(codes.InvalidArgument, "duplicate category id: %s", category.Id)
+			if _, ok := idMap[tp.Id]; ok {
+				return nil, status.Errorf(codes.InvalidArgument, "duplicate semantic type id: %s", tp.Id)
 			}
-			idMap[category.Id] = any(nil)
+			idMap[tp.Id] = any(nil)
 		}
-		bytes, err := protojson.Marshal(storeCategorySetting)
+		bytes, err := protojson.Marshal(storeSemanticTypesSetting)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
@@ -699,19 +677,33 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingSemanticCategory:
-		v1Value := new(v1pb.SemanticCategorySetting)
+	case api.SettingSemanticTypes:
+		v1Value := new(v1pb.SemanticTypesSetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
-				Value: &v1pb.Value_SemanticCategorySettingValue{
-					SemanticCategorySettingValue: v1Value,
+				Value: &v1pb.Value_SemanticTypesSettingValue{
+					SemanticTypesSettingValue: v1Value,
 				},
 			},
 		}, nil
+	case api.SettingMaskingAlgorithms:
+		v1Value := new(v1pb.MaskingAlgorithmSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_MaskingAlgorithmSettingValue{
+					MaskingAlgorithmSettingValue: v1Value,
+				},
+			},
+		}, nil
+
 	default:
 		return &v1pb.Setting{
 			Name: settingName,

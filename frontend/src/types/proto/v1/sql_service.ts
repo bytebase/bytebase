@@ -6,12 +6,6 @@ import { Duration } from "../google/protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
 import { Engine, engineFromJSON, engineToJSON, ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
 import { DatabaseMetadata } from "./database_service";
-import {
-  PlanCheckRun_Result,
-  PlanCheckRun_Type,
-  planCheckRun_TypeFromJSON,
-  planCheckRun_TypeToJSON,
-} from "./rollout_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -288,13 +282,7 @@ export function checkRequest_ChangeDatabaseTypeToJSON(object: CheckRequest_Chang
 }
 
 export interface CheckResponse {
-  runs: CheckResponse_Run[];
-}
-
-export interface CheckResponse_Run {
-  type: PlanCheckRun_Type;
-  results: PlanCheckRun_Result[];
-  error: string;
+  advices: Advice[];
 }
 
 function createBaseDifferPreviewRequest(): DifferPreviewRequest {
@@ -1841,13 +1829,13 @@ export const CheckRequest = {
 };
 
 function createBaseCheckResponse(): CheckResponse {
-  return { runs: [] };
+  return { advices: [] };
 }
 
 export const CheckResponse = {
   encode(message: CheckResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.runs) {
-      CheckResponse_Run.encode(v!, writer.uint32(10).fork()).ldelim();
+    for (const v of message.advices) {
+      Advice.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -1864,7 +1852,7 @@ export const CheckResponse = {
             break;
           }
 
-          message.runs.push(CheckResponse_Run.decode(reader, reader.uint32()));
+          message.advices.push(Advice.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1876,15 +1864,15 @@ export const CheckResponse = {
   },
 
   fromJSON(object: any): CheckResponse {
-    return { runs: Array.isArray(object?.runs) ? object.runs.map((e: any) => CheckResponse_Run.fromJSON(e)) : [] };
+    return { advices: Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [] };
   },
 
   toJSON(message: CheckResponse): unknown {
     const obj: any = {};
-    if (message.runs) {
-      obj.runs = message.runs.map((e) => e ? CheckResponse_Run.toJSON(e) : undefined);
+    if (message.advices) {
+      obj.advices = message.advices.map((e) => e ? Advice.toJSON(e) : undefined);
     } else {
-      obj.runs = [];
+      obj.advices = [];
     }
     return obj;
   },
@@ -1895,95 +1883,7 @@ export const CheckResponse = {
 
   fromPartial(object: DeepPartial<CheckResponse>): CheckResponse {
     const message = createBaseCheckResponse();
-    message.runs = object.runs?.map((e) => CheckResponse_Run.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseCheckResponse_Run(): CheckResponse_Run {
-  return { type: 0, results: [], error: "" };
-}
-
-export const CheckResponse_Run = {
-  encode(message: CheckResponse_Run, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
-    }
-    for (const v of message.results) {
-      PlanCheckRun_Result.encode(v!, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.error !== "") {
-      writer.uint32(26).string(message.error);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): CheckResponse_Run {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCheckResponse_Run();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.type = reader.int32() as any;
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.results.push(PlanCheckRun_Result.decode(reader, reader.uint32()));
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.error = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CheckResponse_Run {
-    return {
-      type: isSet(object.type) ? planCheckRun_TypeFromJSON(object.type) : 0,
-      results: Array.isArray(object?.results) ? object.results.map((e: any) => PlanCheckRun_Result.fromJSON(e)) : [],
-      error: isSet(object.error) ? String(object.error) : "",
-    };
-  },
-
-  toJSON(message: CheckResponse_Run): unknown {
-    const obj: any = {};
-    message.type !== undefined && (obj.type = planCheckRun_TypeToJSON(message.type));
-    if (message.results) {
-      obj.results = message.results.map((e) => e ? PlanCheckRun_Result.toJSON(e) : undefined);
-    } else {
-      obj.results = [];
-    }
-    message.error !== undefined && (obj.error = message.error);
-    return obj;
-  },
-
-  create(base?: DeepPartial<CheckResponse_Run>): CheckResponse_Run {
-    return CheckResponse_Run.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<CheckResponse_Run>): CheckResponse_Run {
-    const message = createBaseCheckResponse_Run();
-    message.type = object.type ?? 0;
-    message.results = object.results?.map((e) => PlanCheckRun_Result.fromPartial(e)) || [];
-    message.error = object.error ?? "";
+    message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
     return message;
   },
 };

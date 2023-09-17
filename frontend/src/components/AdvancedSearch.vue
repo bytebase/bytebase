@@ -48,7 +48,7 @@
         <div
           v-for="option in searchOptions"
           :key="option.id"
-          class="flex gap-x-2 px-3 py-1 items-baseline cursor-pointer hover:bg-gray-100"
+          class="flex gap-x-2 px-3 py-1 items-center cursor-pointer hover:bg-gray-100"
           @mousedown.prevent.stop="
             onOptionSelect(state.currentScope, option.id)
           "
@@ -67,11 +67,16 @@ import { NInput } from "naive-ui";
 import { reactive, computed, h, VNode, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import GitIcon from "@/components/GitIcon.vue";
-import { useProjectV1ListByCurrentUser } from "@/store";
+import { InstanceV1Name } from "@/components/v2";
+import { useProjectV1ListByCurrentUser, useInstanceV1List } from "@/store";
 import { Workflow } from "@/types/proto/v1/project_service";
-import { projectV1Name } from "@/utils";
+import {
+  projectV1Name,
+  extractProjectResourceName,
+  extractInstanceResourceName,
+} from "@/utils";
 
-type SearchScopeId = "project";
+type SearchScopeId = "project" | "instance" | "type";
 
 export interface SearchParams {
   query: string;
@@ -136,9 +141,12 @@ const state = reactive<LocalState>({
 const inputRef = ref<InstanceType<typeof NInput>>();
 
 const { projectList } = useProjectV1ListByCurrentUser();
+const { instanceList } = useInstanceV1List(false /* !showDeleted */);
 
 const searchScopes = computed((): SearchScope[] => {
-  return [
+  // TODO(ed): The scope options should have relevance.
+  // For example, if users select a specific project, we should only allow them select instances related with this project.
+  const scopes: SearchScope[] = [
     {
       id: "project",
       title: t("issue.advanced-search.scope.project.title"),
@@ -151,12 +159,39 @@ const searchScopes = computed((): SearchScope[] => {
           children.push(h(GitIcon, { class: "w-5" }));
         }
         return {
-          id: proj.name,
+          id: extractProjectResourceName(proj.name),
           label: h("div", { class: "flex gap-x-2" }, children),
         };
       }),
     },
+    {
+      id: "instance",
+      title: t("issue.advanced-search.scope.instance.title"),
+      description: t("issue.advanced-search.scope.instance.description"),
+      options: instanceList.value.map((ins) => {
+        return {
+          id: extractInstanceResourceName(ins.name),
+          label: h(InstanceV1Name, { instance: ins }),
+        };
+      }),
+    },
+    {
+      id: "type",
+      title: t("issue.advanced-search.scope.type.title"),
+      description: t("issue.advanced-search.scope.type.description"),
+      options: [
+        {
+          id: "DDL",
+          label: h("span", { innerHTML: "Data Definition Language" }),
+        },
+        {
+          id: "DML",
+          label: h("span", { innerHTML: "Data Manipulation Language" }),
+        },
+      ],
+    },
   ];
+  return scopes;
 });
 
 const searchOptions = computed((): SearchOption[] => {
@@ -173,11 +208,27 @@ const searchKeyword = computed(() => {
   return scope?.title ?? "";
 });
 
-const onOptionSelect = (keyword: SearchScopeId, id: string) => {
-  const search = `${keyword}:${id} ${query.value}`;
-  state.searchText = search;
+const onOptionSelect = (scopeId: SearchScopeId, scopeValue: string) => {
+  const params = getSearchParamsByText(state.searchText);
+  const index = params.scopes.findIndex((s) => s.id === scopeId);
+  if (index < 0) {
+    params.scopes.push({
+      id: scopeId,
+      value: scopeValue,
+    });
+  } else {
+    params.scopes[index] = {
+      id: scopeId,
+      value: scopeValue,
+    };
+  }
+  state.searchText = buildSearchTextByParams(params);
   debouncedUpdate();
   onClear();
+
+  if (params.scopes.length < searchScopes.value.length) {
+    state.showSearchScopes = true;
+  }
 };
 
 const onClear = () => {
@@ -211,7 +262,7 @@ const query = computed(() => {
 });
 
 const getSearchParamsByText = (text: string): SearchParams => {
-  const plainQuery = query.value;
+  const plainQuery = query.value.trim();
   const scopeText = plainQuery ? text.split(plainQuery)[0] || "" : text;
   return {
     query: plainQuery,
@@ -241,11 +292,6 @@ const onKeydown = (e: KeyboardEvent) => {
     state.showSearchScopes = true;
     return;
   }
-  const params = getSearchParamsByText(state.searchText);
-  if (params.scopes.length === 0) {
-    state.showSearchScopes = true;
-    return;
-  }
 
   const start = inputRef.value.inputElRef.selectionStart ?? -1;
   const end = inputRef.value.inputElRef.selectionEnd ?? -1;
@@ -254,6 +300,10 @@ const onKeydown = (e: KeyboardEvent) => {
     return;
   }
 
+  // Try to find the active section the cursor in.
+  // For example, the searchText is (the | is the current cursor):
+  // project:xxx insta|nce:yyy custom search text
+  // Then the active section is instance:yyy, we should should the instances selector
   const sections = state.searchText.split(" ");
   let i = 0;
   let len = 0;
@@ -269,6 +319,7 @@ const onKeydown = (e: KeyboardEvent) => {
   }
   if (i >= sections.length) {
     onClear();
+    state.showSearchScopes = true;
     return;
   }
 
@@ -277,9 +328,11 @@ const onKeydown = (e: KeyboardEvent) => {
     searchScopes.value.findIndex((item) => item.id === currentScope) >= 0;
   if (!existed) {
     onClear();
+    state.showSearchScopes = true;
     return;
   }
 
+  state.showSearchScopes = false;
   state.currentScope = currentScope;
 };
 </script>

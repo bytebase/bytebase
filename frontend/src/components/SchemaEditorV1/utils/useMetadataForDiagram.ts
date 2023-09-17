@@ -1,6 +1,6 @@
 import { computed, unref } from "vue";
 import { EditStatus } from "@/components/SchemaDiagram";
-import { Database, DatabaseSchema, MaybeRef } from "@/types";
+import { ComposedDatabase, MaybeRef } from "@/types";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -8,8 +8,8 @@ import {
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/store/database";
-import { Column, Schema, Table } from "@/types/schemaEditor/atomType";
+} from "@/types/proto/v1/database_service";
+import { DatabaseSchema, Column, Schema, Table } from "@/types/v1/schemaEditor";
 import { isColumnChanged } from "./column";
 import { isSchemaChanged } from "./schema";
 import { isTableChanged } from "./table";
@@ -19,19 +19,19 @@ type MetadataWithEditStatus<T, E> = T & {
   $$edit?: E;
 };
 
-const statusOfSchema = (database: Database, schema: Schema) => {
+const statusOfSchema = (database: ComposedDatabase, schema: Schema) => {
   const { status } = schema;
   if (status === "created" || status === "dropped") {
     return status;
   }
-  if (isSchemaChanged(database.id, schema.id)) {
+  if (isSchemaChanged(database.name, schema.id)) {
     return "changed";
   }
   return "normal";
 };
 
 const statusOfTable = (
-  database: Database,
+  database: ComposedDatabase,
   schema: Schema,
   table: Table
 ): EditStatus => {
@@ -39,7 +39,7 @@ const statusOfTable = (
   if (status === "created" || status === "dropped") {
     return status;
   }
-  if (isTableChanged(database.id, schema.id, table.id)) {
+  if (isTableChanged(database.name, schema.id, table.id)) {
     return "changed";
   }
 
@@ -47,7 +47,7 @@ const statusOfTable = (
 };
 
 const statusOfColumn = (
-  database: Database,
+  database: ComposedDatabase,
   schema: Schema,
   table: Table,
   column: Column
@@ -56,7 +56,7 @@ const statusOfColumn = (
   if (status === "created" || status === "dropped") {
     return status;
   }
-  if (isColumnChanged(database.id, schema.id, table.id, column.id)) {
+  if (isColumnChanged(database.name, schema.id, table.id, column.id)) {
     return "changed";
   }
 
@@ -70,8 +70,6 @@ export const useMetadataForDiagram = (
     const { database, schemaList } = unref(databaseSchema);
     const databaseMeta = DatabaseMetadata.fromPartial({});
     databaseMeta.name = database.name;
-    databaseMeta.collation = database.collation;
-    databaseMeta.characterSet = database.characterSet;
     databaseMeta.schemas = schemaList.map((schema) => {
       const schemaMeta = SchemaMetadata.fromPartial({});
       Object.defineProperty(schemaMeta, "$$status", {
@@ -137,10 +135,7 @@ export const useMetadataForDiagram = (
         });
         tableMeta.indexes = [pk];
 
-        const foreignKeyList = schema.foreignKeyList.filter(
-          (fk) => fk.tableId === table.id
-        );
-        tableMeta.foreignKeys = foreignKeyList.map((fk) => {
+        tableMeta.foreignKeys = table.foreignKeyList.map((fk) => {
           // In PostgreSQL, foreign keys can cross different schemas.
           // So we need to search the schemaList here.
           const refSchema = schemaList.find(

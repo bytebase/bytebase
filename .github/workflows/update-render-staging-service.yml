@@ -15,7 +15,7 @@ jobs:
         # The first service_id using PG 15 and the second using PG 14
         service_id: ["srv-c760lk4objdcv67lc6ug", "srv-ce02beha6gdsa605m5eg"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Extract version
         run: |
           echo "RELEASE_VERSION=${GITHUB_REF_NAME#release/}" >> $GITHUB_ENV

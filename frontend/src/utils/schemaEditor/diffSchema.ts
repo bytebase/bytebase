@@ -1,5 +1,5 @@
 import { isEqual, isUndefined } from "lodash-es";
-import { useSchemaEditorStore } from "@/store";
+import { useSchemaEditorV1Store } from "@/store";
 import {
   AlterTableContext,
   CreateSchemaContext,
@@ -8,8 +8,8 @@ import {
   DropTableContext,
   RenameSchemaContext,
   RenameTableContext,
-} from "@/types";
-import { Schema } from "@/types/schemaEditor/atomType";
+} from "@/types/schemaEditor";
+import { Schema } from "@/types/v1/schemaEditor";
 import { diffColumnList } from "./diffColumn";
 import { transformTableToCreateTableContext } from "./transform";
 
@@ -24,11 +24,11 @@ interface DiffResult {
 }
 
 export const diffSchema = (
-  databaseId: string,
+  database: string,
   originSchema: Schema | undefined,
   schema: Schema
 ): DiffResult => {
-  const editorStore = useSchemaEditorStore();
+  const schemaEditorV1Store = useSchemaEditorV1Store();
   const createSchemaContextList: CreateSchemaContext[] = [];
   const renameSchemaContextList: RenameSchemaContext[] = [];
   const dropSchemaContextList: DropSchemaContext[] = [];
@@ -65,16 +65,16 @@ export const diffSchema = (
         createTableContext.primaryKeyList.push(column.name);
       }
     }
-    const foreignKeyList = schema.foreignKeyList.filter(
+    const foreignKeyList = table.foreignKeyList.filter(
       (fk) => fk.tableId === table.id
     );
     for (const foreignKey of foreignKeyList) {
-      const referencedSchema = editorStore.getSchema(
-        databaseId,
+      const referencedSchema = schemaEditorV1Store.getSchema(
+        database,
         foreignKey.referencedSchemaId
       );
-      const referencedTable = editorStore.getTable(
-        databaseId,
+      const referencedTable = schemaEditorV1Store.getTable(
+        database,
         foreignKey.referencedSchemaId,
         foreignKey.referencedTableId
       );
@@ -124,10 +124,10 @@ export const diffSchema = (
 
     const originPrimaryKey = originTable.primaryKey;
     const primaryKey = table.primaryKey;
-    const originForeignKeyList = originSchema?.foreignKeyList.filter(
+    const originForeignKeyList = originTable.foreignKeyList.filter(
       (fk) => fk.tableId === table.id
     );
-    const foreignKeyList = schema.foreignKeyList.filter(
+    const foreignKeyList = table.foreignKeyList.filter(
       (fk) => fk.tableId === table.id
     );
 
@@ -221,8 +221,8 @@ export const diffSchema = (
                 foreignKey.columnIdList.length ===
                   foreignKey.referencedColumnIdList.length
               ) {
-                const referencedSchema = editorStore.getSchema(
-                  databaseId,
+                const referencedSchema = schemaEditorV1Store.getSchema(
+                  database,
                   foreignKey.referencedSchemaId
                 );
                 const referencedTable = referencedSchema?.tableList.find(

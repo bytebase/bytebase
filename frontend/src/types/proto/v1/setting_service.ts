@@ -89,7 +89,8 @@ export interface Value {
   externalApprovalSettingValue?: ExternalApprovalSetting | undefined;
   schemaTemplateSettingValue?: SchemaTemplateSetting | undefined;
   dataClassificationSettingValue?: DataClassificationSetting | undefined;
-  semanticCategorySettingValue?: SemanticCategorySetting | undefined;
+  semanticTypesSettingValue?: SemanticTypesSetting | undefined;
+  maskingAlgorithmSettingValue?: MaskingAlgorithmSetting | undefined;
 }
 
 export interface SMTPMailDeliverySettingValue {
@@ -444,16 +445,33 @@ export interface DataClassificationSetting_DataClassificationConfig_Classificati
   value?: DataClassificationSetting_DataClassificationConfig_DataClassification | undefined;
 }
 
-export interface SemanticCategorySetting {
-  categories: SemanticCategorySetting_SemanticCategory[];
+export interface SemanticTypesSetting {
+  types: SemanticTypesSetting_SemanticType[];
 }
 
-export interface SemanticCategorySetting_SemanticCategory {
-  /** id is the uuid for category item. */
+export interface SemanticTypesSetting_SemanticType {
+  /** id is the uuid for semantic type. */
   id: string;
-  /** the title of the category item, it should not be empty. */
+  /** the title of the semantic type, it should not be empty. */
   title: string;
-  /** the description of the category item, it can be empty. */
+  /** the description of the semantic type, it can be empty. */
+  description: string;
+  /** the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm. */
+  partialMaskAlgorithmId: string;
+  /** the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm. */
+  fullMaskAlgorithmId: string;
+}
+
+export interface MaskingAlgorithmSetting {
+  algorithms: MaskingAlgorithmSetting_MaskingAlgorithm[];
+}
+
+export interface MaskingAlgorithmSetting_MaskingAlgorithm {
+  /** id is the uuid for semantic type. */
+  id: string;
+  /** the title of the masking algorithm, it should not be empty. */
+  title: string;
+  /** the description of the masking algorithm, it can be empty. */
   description: string;
 }
 
@@ -873,7 +891,8 @@ function createBaseValue(): Value {
     externalApprovalSettingValue: undefined,
     schemaTemplateSettingValue: undefined,
     dataClassificationSettingValue: undefined,
-    semanticCategorySettingValue: undefined,
+    semanticTypesSettingValue: undefined,
+    maskingAlgorithmSettingValue: undefined,
   };
 }
 
@@ -909,8 +928,11 @@ export const Value = {
     if (message.dataClassificationSettingValue !== undefined) {
       DataClassificationSetting.encode(message.dataClassificationSettingValue, writer.uint32(82).fork()).ldelim();
     }
-    if (message.semanticCategorySettingValue !== undefined) {
-      SemanticCategorySetting.encode(message.semanticCategorySettingValue, writer.uint32(90).fork()).ldelim();
+    if (message.semanticTypesSettingValue !== undefined) {
+      SemanticTypesSetting.encode(message.semanticTypesSettingValue, writer.uint32(90).fork()).ldelim();
+    }
+    if (message.maskingAlgorithmSettingValue !== undefined) {
+      MaskingAlgorithmSetting.encode(message.maskingAlgorithmSettingValue, writer.uint32(98).fork()).ldelim();
     }
     return writer;
   },
@@ -997,7 +1019,14 @@ export const Value = {
             break;
           }
 
-          message.semanticCategorySettingValue = SemanticCategorySetting.decode(reader, reader.uint32());
+          message.semanticTypesSettingValue = SemanticTypesSetting.decode(reader, reader.uint32());
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.maskingAlgorithmSettingValue = MaskingAlgorithmSetting.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1036,8 +1065,11 @@ export const Value = {
       dataClassificationSettingValue: isSet(object.dataClassificationSettingValue)
         ? DataClassificationSetting.fromJSON(object.dataClassificationSettingValue)
         : undefined,
-      semanticCategorySettingValue: isSet(object.semanticCategorySettingValue)
-        ? SemanticCategorySetting.fromJSON(object.semanticCategorySettingValue)
+      semanticTypesSettingValue: isSet(object.semanticTypesSettingValue)
+        ? SemanticTypesSetting.fromJSON(object.semanticTypesSettingValue)
+        : undefined,
+      maskingAlgorithmSettingValue: isSet(object.maskingAlgorithmSettingValue)
+        ? MaskingAlgorithmSetting.fromJSON(object.maskingAlgorithmSettingValue)
         : undefined,
     };
   },
@@ -1078,9 +1110,13 @@ export const Value = {
       (obj.dataClassificationSettingValue = message.dataClassificationSettingValue
         ? DataClassificationSetting.toJSON(message.dataClassificationSettingValue)
         : undefined);
-    message.semanticCategorySettingValue !== undefined &&
-      (obj.semanticCategorySettingValue = message.semanticCategorySettingValue
-        ? SemanticCategorySetting.toJSON(message.semanticCategorySettingValue)
+    message.semanticTypesSettingValue !== undefined &&
+      (obj.semanticTypesSettingValue = message.semanticTypesSettingValue
+        ? SemanticTypesSetting.toJSON(message.semanticTypesSettingValue)
+        : undefined);
+    message.maskingAlgorithmSettingValue !== undefined &&
+      (obj.maskingAlgorithmSettingValue = message.maskingAlgorithmSettingValue
+        ? MaskingAlgorithmSetting.toJSON(message.maskingAlgorithmSettingValue)
         : undefined);
     return obj;
   },
@@ -1127,9 +1163,13 @@ export const Value = {
       (object.dataClassificationSettingValue !== undefined && object.dataClassificationSettingValue !== null)
         ? DataClassificationSetting.fromPartial(object.dataClassificationSettingValue)
         : undefined;
-    message.semanticCategorySettingValue =
-      (object.semanticCategorySettingValue !== undefined && object.semanticCategorySettingValue !== null)
-        ? SemanticCategorySetting.fromPartial(object.semanticCategorySettingValue)
+    message.semanticTypesSettingValue =
+      (object.semanticTypesSettingValue !== undefined && object.semanticTypesSettingValue !== null)
+        ? SemanticTypesSetting.fromPartial(object.semanticTypesSettingValue)
+        : undefined;
+    message.maskingAlgorithmSettingValue =
+      (object.maskingAlgorithmSettingValue !== undefined && object.maskingAlgorithmSettingValue !== null)
+        ? MaskingAlgorithmSetting.fromPartial(object.maskingAlgorithmSettingValue)
         : undefined;
     return message;
   },
@@ -3013,22 +3053,22 @@ export const DataClassificationSetting_DataClassificationConfig_ClassificationEn
   },
 };
 
-function createBaseSemanticCategorySetting(): SemanticCategorySetting {
-  return { categories: [] };
+function createBaseSemanticTypesSetting(): SemanticTypesSetting {
+  return { types: [] };
 }
 
-export const SemanticCategorySetting = {
-  encode(message: SemanticCategorySetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.categories) {
-      SemanticCategorySetting_SemanticCategory.encode(v!, writer.uint32(10).fork()).ldelim();
+export const SemanticTypesSetting = {
+  encode(message: SemanticTypesSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.types) {
+      SemanticTypesSetting_SemanticType.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticCategorySetting {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticTypesSetting {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSemanticCategorySetting();
+    const message = createBaseSemanticTypesSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3037,7 +3077,7 @@ export const SemanticCategorySetting = {
             break;
           }
 
-          message.categories.push(SemanticCategorySetting_SemanticCategory.decode(reader, reader.uint32()));
+          message.types.push(SemanticTypesSetting_SemanticType.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3048,43 +3088,217 @@ export const SemanticCategorySetting = {
     return message;
   },
 
-  fromJSON(object: any): SemanticCategorySetting {
+  fromJSON(object: any): SemanticTypesSetting {
     return {
-      categories: Array.isArray(object?.categories)
-        ? object.categories.map((e: any) => SemanticCategorySetting_SemanticCategory.fromJSON(e))
+      types: Array.isArray(object?.types)
+        ? object.types.map((e: any) => SemanticTypesSetting_SemanticType.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: SemanticCategorySetting): unknown {
+  toJSON(message: SemanticTypesSetting): unknown {
     const obj: any = {};
-    if (message.categories) {
-      obj.categories = message.categories.map((e) =>
-        e ? SemanticCategorySetting_SemanticCategory.toJSON(e) : undefined
-      );
+    if (message.types) {
+      obj.types = message.types.map((e) => e ? SemanticTypesSetting_SemanticType.toJSON(e) : undefined);
     } else {
-      obj.categories = [];
+      obj.types = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<SemanticCategorySetting>): SemanticCategorySetting {
-    return SemanticCategorySetting.fromPartial(base ?? {});
+  create(base?: DeepPartial<SemanticTypesSetting>): SemanticTypesSetting {
+    return SemanticTypesSetting.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SemanticCategorySetting>): SemanticCategorySetting {
-    const message = createBaseSemanticCategorySetting();
-    message.categories = object.categories?.map((e) => SemanticCategorySetting_SemanticCategory.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<SemanticTypesSetting>): SemanticTypesSetting {
+    const message = createBaseSemanticTypesSetting();
+    message.types = object.types?.map((e) => SemanticTypesSetting_SemanticType.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseSemanticCategorySetting_SemanticCategory(): SemanticCategorySetting_SemanticCategory {
+function createBaseSemanticTypesSetting_SemanticType(): SemanticTypesSetting_SemanticType {
+  return { id: "", title: "", description: "", partialMaskAlgorithmId: "", fullMaskAlgorithmId: "" };
+}
+
+export const SemanticTypesSetting_SemanticType = {
+  encode(message: SemanticTypesSetting_SemanticType, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.partialMaskAlgorithmId !== "") {
+      writer.uint32(34).string(message.partialMaskAlgorithmId);
+    }
+    if (message.fullMaskAlgorithmId !== "") {
+      writer.uint32(42).string(message.fullMaskAlgorithmId);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticTypesSetting_SemanticType {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSemanticTypesSetting_SemanticType();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.partialMaskAlgorithmId = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.fullMaskAlgorithmId = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SemanticTypesSetting_SemanticType {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      partialMaskAlgorithmId: isSet(object.partialMaskAlgorithmId) ? String(object.partialMaskAlgorithmId) : "",
+      fullMaskAlgorithmId: isSet(object.fullMaskAlgorithmId) ? String(object.fullMaskAlgorithmId) : "",
+    };
+  },
+
+  toJSON(message: SemanticTypesSetting_SemanticType): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    message.partialMaskAlgorithmId !== undefined && (obj.partialMaskAlgorithmId = message.partialMaskAlgorithmId);
+    message.fullMaskAlgorithmId !== undefined && (obj.fullMaskAlgorithmId = message.fullMaskAlgorithmId);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SemanticTypesSetting_SemanticType>): SemanticTypesSetting_SemanticType {
+    return SemanticTypesSetting_SemanticType.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SemanticTypesSetting_SemanticType>): SemanticTypesSetting_SemanticType {
+    const message = createBaseSemanticTypesSetting_SemanticType();
+    message.id = object.id ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.partialMaskAlgorithmId = object.partialMaskAlgorithmId ?? "";
+    message.fullMaskAlgorithmId = object.fullMaskAlgorithmId ?? "";
+    return message;
+  },
+};
+
+function createBaseMaskingAlgorithmSetting(): MaskingAlgorithmSetting {
+  return { algorithms: [] };
+}
+
+export const MaskingAlgorithmSetting = {
+  encode(message: MaskingAlgorithmSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.algorithms) {
+      MaskingAlgorithmSetting_MaskingAlgorithm.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingAlgorithmSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingAlgorithmSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.algorithms.push(MaskingAlgorithmSetting_MaskingAlgorithm.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingAlgorithmSetting {
+    return {
+      algorithms: Array.isArray(object?.algorithms)
+        ? object.algorithms.map((e: any) => MaskingAlgorithmSetting_MaskingAlgorithm.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MaskingAlgorithmSetting): unknown {
+    const obj: any = {};
+    if (message.algorithms) {
+      obj.algorithms = message.algorithms.map((e) =>
+        e ? MaskingAlgorithmSetting_MaskingAlgorithm.toJSON(e) : undefined
+      );
+    } else {
+      obj.algorithms = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingAlgorithmSetting>): MaskingAlgorithmSetting {
+    return MaskingAlgorithmSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingAlgorithmSetting>): MaskingAlgorithmSetting {
+    const message = createBaseMaskingAlgorithmSetting();
+    message.algorithms = object.algorithms?.map((e) => MaskingAlgorithmSetting_MaskingAlgorithm.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMaskingAlgorithmSetting_MaskingAlgorithm(): MaskingAlgorithmSetting_MaskingAlgorithm {
   return { id: "", title: "", description: "" };
 }
 
-export const SemanticCategorySetting_SemanticCategory = {
-  encode(message: SemanticCategorySetting_SemanticCategory, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const MaskingAlgorithmSetting_MaskingAlgorithm = {
+  encode(message: MaskingAlgorithmSetting_MaskingAlgorithm, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
@@ -3097,10 +3311,10 @@ export const SemanticCategorySetting_SemanticCategory = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticCategorySetting_SemanticCategory {
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingAlgorithmSetting_MaskingAlgorithm {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSemanticCategorySetting_SemanticCategory();
+    const message = createBaseMaskingAlgorithmSetting_MaskingAlgorithm();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3134,7 +3348,7 @@ export const SemanticCategorySetting_SemanticCategory = {
     return message;
   },
 
-  fromJSON(object: any): SemanticCategorySetting_SemanticCategory {
+  fromJSON(object: any): MaskingAlgorithmSetting_MaskingAlgorithm {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       title: isSet(object.title) ? String(object.title) : "",
@@ -3142,7 +3356,7 @@ export const SemanticCategorySetting_SemanticCategory = {
     };
   },
 
-  toJSON(message: SemanticCategorySetting_SemanticCategory): unknown {
+  toJSON(message: MaskingAlgorithmSetting_MaskingAlgorithm): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.title !== undefined && (obj.title = message.title);
@@ -3150,12 +3364,12 @@ export const SemanticCategorySetting_SemanticCategory = {
     return obj;
   },
 
-  create(base?: DeepPartial<SemanticCategorySetting_SemanticCategory>): SemanticCategorySetting_SemanticCategory {
-    return SemanticCategorySetting_SemanticCategory.fromPartial(base ?? {});
+  create(base?: DeepPartial<MaskingAlgorithmSetting_MaskingAlgorithm>): MaskingAlgorithmSetting_MaskingAlgorithm {
+    return MaskingAlgorithmSetting_MaskingAlgorithm.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SemanticCategorySetting_SemanticCategory>): SemanticCategorySetting_SemanticCategory {
-    const message = createBaseSemanticCategorySetting_SemanticCategory();
+  fromPartial(object: DeepPartial<MaskingAlgorithmSetting_MaskingAlgorithm>): MaskingAlgorithmSetting_MaskingAlgorithm {
+    const message = createBaseMaskingAlgorithmSetting_MaskingAlgorithm();
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";

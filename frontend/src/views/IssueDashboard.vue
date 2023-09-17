@@ -28,6 +28,15 @@
             :include-all="allowSelectAllUsers"
             @update:user="changeUserUID"
           />
+          <NDatePicker
+            v-model:value="selectedTimeRange"
+            type="datetimerange"
+            size="medium"
+            :on-confirm="confirmDatePicker"
+            :on-clear="clearDatePicker"
+            clearable
+          >
+          </NDatePicker>
           <SearchBox
             :value="state.filterText"
             :placeholder="$t('issue.filter-issue-by-name')"
@@ -85,7 +94,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NInputGroup, NButton } from "naive-ui";
+import dayjs from "dayjs";
+import { NInputGroup, NButton, NDatePicker } from "naive-ui";
 import { reactive, computed, watchEffect, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch, { SearchParams } from "@/components/AdvancedSearch.vue";
@@ -93,7 +103,11 @@ import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { UserSelect, SearchBox } from "@/components/v2";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
-import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
+import {
+  projectNamePrefix,
+  userNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
 import { UNKNOWN_ID, IssueFilter, ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
@@ -198,6 +212,22 @@ const selectedUserUID = computed((): string => {
     : extractUserUID(currentUserV1.value.name); // default to current user otherwise
 });
 
+const selectedTimeRange = computed((): [number, number] => {
+  const defaultTimeRange = [
+    dayjs().add(-60, "days").toDate().getTime(),
+    Date.now(),
+  ] as [number, number];
+  const createdTsAfter = route.query.createdTsAfter as string;
+  if (createdTsAfter) {
+    defaultTimeRange[0] = parseInt(createdTsAfter, 10);
+  }
+  const createdTsBefore = route.query.createdTsBefore as string;
+  if (createdTsBefore) {
+    defaultTimeRange[1] = parseInt(createdTsBefore, 10);
+  }
+  return defaultTimeRange;
+});
+
 const selectedUser = computed(() => {
   const uid = selectedUserUID.value;
   if (uid === String(UNKNOWN_ID)) {
@@ -234,6 +264,28 @@ const changeUserUID = (user: string | undefined) => {
   });
 };
 
+const confirmDatePicker = (value: [number, number]) => {
+  router.replace({
+    name: "workspace.issue",
+    query: {
+      ...route.query,
+      createdTsAfter: value[0],
+      createdTsBefore: value[1],
+    },
+  });
+};
+
+const clearDatePicker = () => {
+  router.replace({
+    name: "workspace.issue",
+    query: {
+      ...route.query,
+      createdTsAfter: 0,
+      createdTsBefore: Date.now(),
+    },
+  });
+};
+
 const goProject = () => {
   if (!project.value) return;
   router.push({
@@ -261,15 +313,29 @@ const onSearchParamsUpdate = (params: SearchParams) => {
 const issueFilter = computed((): IssueFilter => {
   const { query, scopes } = state.searchParams;
   const projectScope = scopes.find((s) => s.id === "project");
-  const project = projectScope?.value ?? `${projectNamePrefix}-`;
+  const instanceScope = scopes.find((s) => s.id === "instance");
+  const typeScope = scopes.find((s) => s.id === "type");
+
+  let instance = "";
+  if (instanceScope) {
+    instance = `${instanceNamePrefix}${instanceScope.value}`;
+  }
   let principal = "";
   if (selectedUser.value) {
     principal = `${userNamePrefix}${selectedUser.value.email}`;
   }
   return {
-    project,
     query,
     principal,
+    instance,
+    project: `${projectNamePrefix}${projectScope?.value ?? "-"}`,
+    createdTsAfter: selectedTimeRange.value
+      ? selectedTimeRange.value[0]
+      : undefined,
+    createdTsBefore: selectedTimeRange.value
+      ? selectedTimeRange.value[1]
+      : undefined,
+    type: typeScope?.value,
   };
 });
 </script>

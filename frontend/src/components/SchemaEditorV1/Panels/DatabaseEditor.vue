@@ -57,16 +57,6 @@
           <button
             class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
             :class="
-              state.selectedSubtab === 'raw-sql' && 'bg-gray-200 text-gray-800'
-            "
-            @click="handleChangeTab('raw-sql')"
-          >
-            <heroicons-outline:clipboard class="inline w-4 h-auto mr-1" />
-            {{ $t("schema-editor.raw-sql") }}
-          </button>
-          <button
-            class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
-            :class="
               state.selectedSubtab === 'schema-diagram' &&
               'bg-gray-200 text-gray-800'
             "
@@ -155,31 +145,9 @@
         </div>
       </div>
     </template>
-    <div
-      v-else-if="state.selectedSubtab === 'raw-sql'"
-      class="w-full h-full overflow-y-auto"
-    >
-      <div
-        v-if="state.isFetchingDDL"
-        class="w-full h-full min-h-[64px] flex justify-center items-center"
-      >
-        <BBSpin />
-      </div>
-      <template v-else>
-        <HighlightCodeBlock
-          v-if="state.statement !== ''"
-          class="text-sm px-3 py-2 whitespace-pre-wrap break-all"
-          language="sql"
-          :code="state.statement"
-        ></HighlightCodeBlock>
-        <div v-else class="flex px-3 py-2 italic text-sm text-gray-600">
-          {{ $t("schema-editor.nothing-changed") }}
-        </div>
-      </template>
-    </div>
     <template v-else-if="state.selectedSubtab === 'schema-diagram'">
       <SchemaDiagram
-        :key="currentTab.databaseId"
+        :key="currentTab.parentName"
         :database="databaseV1"
         :database-metadata="databaseMetadata"
         :schema-status="schemaStatus"
@@ -194,7 +162,7 @@
 
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
-    :database-id="state.tableNameModalContext.databaseId"
+    :parent-name="state.tableNameModalContext.parentName"
     :schema-id="state.tableNameModalContext.schemaId"
     :table-name="state.tableNameModalContext.tableName"
     @close="state.tableNameModalContext = undefined"
@@ -207,37 +175,29 @@ import { NEllipsis, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import {
   generateUniqueTabId,
   useDatabaseV1Store,
-  useNotificationStore,
-  useSchemaEditorStore,
+  useSchemaEditorV1Store,
 } from "@/store";
-import {
-  DatabaseTabContext,
-  DatabaseSchema,
-  SchemaEditorTabType,
-  DatabaseEdit,
-} from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/store/database";
-import { Engine } from "@/types/proto/v1/common";
+} from "@/types/proto/v1/database_service";
 import { Table } from "@/types/schemaEditor/atomType";
-import { bytesToString } from "@/utils";
 import {
-  checkHasSchemaChanges,
-  diffSchema,
-  mergeDiffResults,
-} from "@/utils/schemaEditor/diffSchema";
+  DatabaseTabContext,
+  DatabaseSchema,
+  SchemaEditorTabType,
+} from "@/types/v1/schemaEditor";
+import { bytesToString } from "@/utils";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
 
-type SubtabType = "table-list" | "schema-diagram" | "raw-sql";
+type SubtabType = "table-list" | "schema-diagram";
 
 interface LocalState {
   selectedSubtab: SubtabType;
@@ -245,27 +205,25 @@ interface LocalState {
   isFetchingDDL: boolean;
   statement: string;
   tableNameModalContext?: {
-    databaseId: string;
+    parentName: string;
     schemaId: string;
     tableName: string | undefined;
   };
 }
 
 const { t } = useI18n();
-const editorStore = useSchemaEditorStore();
-const notificationStore = useNotificationStore();
+const editorStore = useSchemaEditorV1Store();
 const searchPattern = ref("");
 const currentTab = computed(() => editorStore.currentTab as DatabaseTabContext);
 const state = reactive<LocalState>({
-  selectedSubtab:
-    (currentTab.value.selectedSubtab as SubtabType) || "table-list",
+  selectedSubtab: "table-list",
   selectedSchemaId: "",
   isFetchingDDL: false,
   statement: "",
 });
 const databaseSchema = computed(() => {
-  return editorStore.databaseSchemaById.get(
-    currentTab.value.databaseId
+  return editorStore.resourceMap["database"].get(
+    currentTab.value.parentName
   ) as DatabaseSchema;
 });
 const database = computed(() => databaseSchema.value.database);
@@ -365,72 +323,6 @@ watch(
   }
 );
 
-watch(
-  () => state.selectedSubtab,
-  async () => {
-    currentTab.value.selectedSubtab = state.selectedSubtab;
-    if (state.selectedSubtab === "raw-sql") {
-      state.isFetchingDDL = true;
-      const databaseEditList: DatabaseEdit[] = [];
-      for (const schema of databaseSchema.value.schemaList) {
-        const originSchema = databaseSchema.value.originSchemaList.find(
-          (originSchema) => originSchema.id === schema.id
-        );
-        const diffSchemaResult = diffSchema(
-          database.value.uid,
-          originSchema,
-          schema
-        );
-        if (checkHasSchemaChanges(diffSchemaResult)) {
-          const index = databaseEditList.findIndex(
-            (edit) => String(edit.databaseId) === database.value.uid
-          );
-          if (index !== -1) {
-            databaseEditList[index] = {
-              databaseId: Number(database.value.uid),
-              ...mergeDiffResults([diffSchemaResult, databaseEditList[index]]),
-            };
-          } else {
-            databaseEditList.push({
-              databaseId: Number(database.value.uid),
-              ...diffSchemaResult,
-            });
-          }
-        }
-      }
-
-      if (databaseEditList.length > 0) {
-        const statementList: string[] = [];
-        for (const databaseEdit of databaseEditList) {
-          const databaseEditResult = await editorStore.postDatabaseEdit(
-            databaseEdit
-          );
-          if (databaseEditResult.validateResultList.length > 0) {
-            notificationStore.pushNotification({
-              module: "bytebase",
-              style: "CRITICAL",
-              title: "Invalid request",
-              description: databaseEditResult.validateResultList
-                .map((result) => result.message)
-                .join("\n"),
-            });
-            state.statement = "";
-            return;
-          }
-          statementList.push(databaseEditResult.statement);
-        }
-        state.statement = statementList.join("\n");
-      } else {
-        state.statement = "";
-      }
-      state.isFetchingDDL = false;
-    }
-  },
-  {
-    immediate: true,
-  }
-);
-
 const isDroppedTable = (table: Table) => {
   return table.status === "dropped";
 };
@@ -445,7 +337,7 @@ const handleCreateNewTable = () => {
   );
   if (selectedSchema) {
     state.tableNameModalContext = {
-      databaseId: database.value.uid,
+      parentName: database.value.name,
       schemaId: selectedSchema.id,
       tableName: undefined,
     };
@@ -456,7 +348,7 @@ const handleTableItemClick = (table: Table) => {
   editorStore.addTab({
     id: generateUniqueTabId(),
     type: SchemaEditorTabType.TabForTable,
-    databaseId: database.value.uid,
+    parentName: database.value.name,
     schemaId: state.selectedSchemaId,
     tableId: table.id,
   });

@@ -8,7 +8,6 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
-import "v1/rollout_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -258,11 +257,5 @@ message CheckRequest {
 }
 
 message CheckResponse {
-  message Run {
-    PlanCheckRun.Type type = 1;
-    repeated PlanCheckRun.Result results = 2;
-    string error = 3;
-  }
-
-  repeated Run runs = 1;
+  repeated Advice advices = 1;
 }

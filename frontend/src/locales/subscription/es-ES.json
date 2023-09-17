@@ -33,17 +33,17 @@
     "title": "Plan",
     "try": "Empezar la prueba gratuita",
     "free": {
-      "title": "Plan comunitario",
+      "title": "Comunitario",
       "label": "",
       "desc": "Elementos esenciales del equipo para centralizar la gestión del ciclo de vida de la base de datos."
     },
     "team": {
-      "title": "Plan Pro",
+      "title": "Pro",
       "label": "",
       "desc": "Más políticas para estandarizar y facilitar la colaboración entre equipos."
     },
     "enterprise": {
-      "title": "Plan Empresarial",
+      "title": "Empresarial",
       "label": "",
       "desc": "Funciones adicionales de seguridad, cumplimiento y permisos. Soporte dedicado con SLA."
     }

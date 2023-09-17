@@ -817,13 +817,20 @@
       }
     },
     "view-commit": "查看提交",
-    "search-issue-name": "搜索工单名称",
     "advanced-search": {
       "self": "高级搜素",
       "scope": {
         "project": {
           "title": "项目",
           "description": "仅搜索某个项目下的工单"
+        },
+        "instance": {
+          "title": "实例",
+          "description": "仅搜索与某个实例关联的工单"
+        },
+        "type": {
+          "title": "变更类型",
+          "description": "根据数据库变更类型搜索"
         }
       }
     },

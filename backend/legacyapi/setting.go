@@ -42,8 +42,10 @@ const (
 	SettingSchemaTemplate SettingName = "bb.workspace.schema-template"
 	// SettingDataClassification is the setting name for data classification.
 	SettingDataClassification SettingName = "bb.workspace.data-classification"
-	// SettingSemanticCategory is the setting name for semantic category.
-	SettingSemanticCategory SettingName = "bb.workspace.semantic-category"
+	// SettingSemanticTypes is the setting name for semantic types.
+	SettingSemanticTypes SettingName = "bb.workspace.semantic-types"
+	// SettingMaskingAlgorithms is the setting name for masking algorithms.
+	SettingMaskingAlgorithms SettingName = "bb.workspace.masking-algorithms"
 )
 
 // IMType is the type of IM.

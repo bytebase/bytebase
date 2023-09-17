@@ -32,7 +32,7 @@
         </div>
         <button
           type="button"
-          class="p-1 rounded hover:bg-gray-300 mr-2"
+          class="p-1 rounded bg-gray-200 hover:bg-gray-300 border border-gray-300 mr-1"
           @click.prevent.stop="
             () => {
               router.replace({

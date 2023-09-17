@@ -734,16 +734,16 @@ func (x *DataClassificationSetting) GetConfigs() []*DataClassificationSetting_Da
 	return nil
 }
 
-type SemanticCategorySetting struct {
+type SemanticTypesSetting struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Categories []*SemanticCategorySetting_SemanticCategory `protobuf:"bytes,1,rep,name=categories,proto3" json:"categories,omitempty"`
+	Types []*SemanticTypesSetting_SemanticType `protobuf:"bytes,1,rep,name=types,proto3" json:"types,omitempty"`
 }
 
-func (x *SemanticCategorySetting) Reset() {
-	*x = SemanticCategorySetting{}
+func (x *SemanticTypesSetting) Reset() {
+	*x = SemanticTypesSetting{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_store_setting_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -751,13 +751,13 @@ func (x *SemanticCategorySetting) Reset() {
 	}
 }
 
-func (x *SemanticCategorySetting) String() string {
+func (x *SemanticTypesSetting) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SemanticCategorySetting) ProtoMessage() {}
+func (*SemanticTypesSetting) ProtoMessage() {}
 
-func (x *SemanticCategorySetting) ProtoReflect() protoreflect.Message {
+func (x *SemanticTypesSetting) ProtoReflect() protoreflect.Message {
 	mi := &file_store_setting_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -769,14 +769,14 @@ func (x *SemanticCategorySetting) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SemanticCategorySetting.ProtoReflect.Descriptor instead.
-func (*SemanticCategorySetting) Descriptor() ([]byte, []int) {
+// Deprecated: Use SemanticTypesSetting.ProtoReflect.Descriptor instead.
+func (*SemanticTypesSetting) Descriptor() ([]byte, []int) {
 	return file_store_setting_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *SemanticCategorySetting) GetCategories() []*SemanticCategorySetting_SemanticCategory {
+func (x *SemanticTypesSetting) GetTypes() []*SemanticTypesSetting_SemanticType {
 	if x != nil {
-		return x.Categories
+		return x.Types
 	}
 	return nil
 }
@@ -1264,21 +1264,25 @@ func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) 
 	return ""
 }
 
-type SemanticCategorySetting_SemanticCategory struct {
+type SemanticTypesSetting_SemanticType struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// id is the uuid for category item.
+	// id is the uuid for semantic type.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// the title of the category item, it should not be empty.
+	// the title of the semantic type, it should not be empty.
 	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	// the description of the category item, it can be empty.
+	// the description of the semantic type, it can be empty.
 	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm.
+	PartialMaskAlgorithmId string `protobuf:"bytes,4,opt,name=partial_mask_algorithm_id,json=partialMaskAlgorithmId,proto3" json:"partial_mask_algorithm_id,omitempty"`
+	// the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm.
+	FullMaskAlgorithmId string `protobuf:"bytes,5,opt,name=full_mask_algorithm_id,json=fullMaskAlgorithmId,proto3" json:"full_mask_algorithm_id,omitempty"`
 }
 
-func (x *SemanticCategorySetting_SemanticCategory) Reset() {
-	*x = SemanticCategorySetting_SemanticCategory{}
+func (x *SemanticTypesSetting_SemanticType) Reset() {
+	*x = SemanticTypesSetting_SemanticType{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_store_setting_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1286,13 +1290,13 @@ func (x *SemanticCategorySetting_SemanticCategory) Reset() {
 	}
 }
 
-func (x *SemanticCategorySetting_SemanticCategory) String() string {
+func (x *SemanticTypesSetting_SemanticType) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SemanticCategorySetting_SemanticCategory) ProtoMessage() {}
+func (*SemanticTypesSetting_SemanticType) ProtoMessage() {}
 
-func (x *SemanticCategorySetting_SemanticCategory) ProtoReflect() protoreflect.Message {
+func (x *SemanticTypesSetting_SemanticType) ProtoReflect() protoreflect.Message {
 	mi := &file_store_setting_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1304,28 +1308,42 @@ func (x *SemanticCategorySetting_SemanticCategory) ProtoReflect() protoreflect.M
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SemanticCategorySetting_SemanticCategory.ProtoReflect.Descriptor instead.
-func (*SemanticCategorySetting_SemanticCategory) Descriptor() ([]byte, []int) {
+// Deprecated: Use SemanticTypesSetting_SemanticType.ProtoReflect.Descriptor instead.
+func (*SemanticTypesSetting_SemanticType) Descriptor() ([]byte, []int) {
 	return file_store_setting_proto_rawDescGZIP(), []int{8, 0}
 }
 
-func (x *SemanticCategorySetting_SemanticCategory) GetId() string {
+func (x *SemanticTypesSetting_SemanticType) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *SemanticCategorySetting_SemanticCategory) GetTitle() string {
+func (x *SemanticTypesSetting_SemanticType) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *SemanticCategorySetting_SemanticCategory) GetDescription() string {
+func (x *SemanticTypesSetting_SemanticType) GetDescription() string {
 	if x != nil {
 		return x.Description
+	}
+	return ""
+}
+
+func (x *SemanticTypesSetting_SemanticType) GetPartialMaskAlgorithmId() string {
+	if x != nil {
+		return x.PartialMaskAlgorithmId
+	}
+	return ""
+}
+
+func (x *SemanticTypesSetting_SemanticType) GetFullMaskAlgorithmId() string {
+	if x != nil {
+		return x.FullMaskAlgorithmId
 	}
 	return ""
 }
@@ -1537,21 +1555,27 @@ var file_store_setting_proto_rawDesc = []byte{
 	0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x66,
 	0x69, 0x67, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x43, 0x6c, 0x61, 0x73, 0x73, 0x69, 0x66, 0x69, 0x63,
 	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01,
-	0x22, 0xcf, 0x01, 0x0a, 0x17, 0x53, 0x65, 0x6d, 0x61, 0x6e, 0x74, 0x69, 0x63, 0x43, 0x61, 0x74,
-	0x65, 0x67, 0x6f, 0x72, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x58, 0x0a, 0x0a,
-	0x63, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x69, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b,
-	0x32, 0x38, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72,
-	0x65, 0x2e, 0x53, 0x65, 0x6d, 0x61, 0x6e, 0x74, 0x69, 0x63, 0x43, 0x61, 0x74, 0x65, 0x67, 0x6f,
-	0x72, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x53, 0x65, 0x6d, 0x61, 0x6e, 0x74,
-	0x69, 0x63, 0x43, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x79, 0x52, 0x0a, 0x63, 0x61, 0x74, 0x65,
-	0x67, 0x6f, 0x72, 0x69, 0x65, 0x73, 0x1a, 0x5a, 0x0a, 0x10, 0x53, 0x65, 0x6d, 0x61, 0x6e, 0x74,
-	0x69, 0x63, 0x43, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x79, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69,
-	0x74, 0x6c, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65,
-	0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18,
-	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69,
-	0x6f, 0x6e, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d,
-	0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x22, 0xa8, 0x02, 0x0a, 0x14, 0x53, 0x65, 0x6d, 0x61, 0x6e, 0x74, 0x69, 0x63, 0x54, 0x79, 0x70,
+	0x65, 0x73, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x47, 0x0a, 0x05, 0x74, 0x79, 0x70,
+	0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x31, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x53, 0x65, 0x6d, 0x61, 0x6e, 0x74,
+	0x69, 0x63, 0x54, 0x79, 0x70, 0x65, 0x73, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x53,
+	0x65, 0x6d, 0x61, 0x6e, 0x74, 0x69, 0x63, 0x54, 0x79, 0x70, 0x65, 0x52, 0x05, 0x74, 0x79, 0x70,
+	0x65, 0x73, 0x1a, 0xc6, 0x01, 0x0a, 0x0c, 0x53, 0x65, 0x6d, 0x61, 0x6e, 0x74, 0x69, 0x63, 0x54,
+	0x79, 0x70, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x02, 0x69, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73,
+	0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b,
+	0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x39, 0x0a, 0x19, 0x70,
+	0x61, 0x72, 0x74, 0x69, 0x61, 0x6c, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x5f, 0x61, 0x6c, 0x67, 0x6f,
+	0x72, 0x69, 0x74, 0x68, 0x6d, 0x5f, 0x69, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x16,
+	0x70, 0x61, 0x72, 0x74, 0x69, 0x61, 0x6c, 0x4d, 0x61, 0x73, 0x6b, 0x41, 0x6c, 0x67, 0x6f, 0x72,
+	0x69, 0x74, 0x68, 0x6d, 0x49, 0x64, 0x12, 0x33, 0x0a, 0x16, 0x66, 0x75, 0x6c, 0x6c, 0x5f, 0x6d,
+	0x61, 0x73, 0x6b, 0x5f, 0x61, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x5f, 0x69, 0x64,
+	0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x13, 0x66, 0x75, 0x6c, 0x6c, 0x4d, 0x61, 0x73, 0x6b,
+	0x41, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x49, 0x64, 0x42, 0x14, 0x5a, 0x12, 0x67,
+	0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1580,7 +1604,7 @@ var file_store_setting_proto_goTypes = []interface{}{
 	(*SMTPMailDeliverySetting)(nil),                                               // 8: bytebase.store.SMTPMailDeliverySetting
 	(*SchemaTemplateSetting)(nil),                                                 // 9: bytebase.store.SchemaTemplateSetting
 	(*DataClassificationSetting)(nil),                                             // 10: bytebase.store.DataClassificationSetting
-	(*SemanticCategorySetting)(nil),                                               // 11: bytebase.store.SemanticCategorySetting
+	(*SemanticTypesSetting)(nil),                                                  // 11: bytebase.store.SemanticTypesSetting
 	(*WorkspaceApprovalSetting_Rule)(nil),                                         // 12: bytebase.store.WorkspaceApprovalSetting.Rule
 	(*ExternalApprovalSetting_Node)(nil),                                          // 13: bytebase.store.ExternalApprovalSetting.Node
 	(*SchemaTemplateSetting_FieldTemplate)(nil),                                   // 14: bytebase.store.SchemaTemplateSetting.FieldTemplate
@@ -1589,13 +1613,13 @@ var file_store_setting_proto_goTypes = []interface{}{
 	(*DataClassificationSetting_DataClassificationConfig_Level)(nil),              // 17: bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
 	(*DataClassificationSetting_DataClassificationConfig_DataClassification)(nil), // 18: bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
 	nil, // 19: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	(*SemanticCategorySetting_SemanticCategory)(nil), // 20: bytebase.store.SemanticCategorySetting.SemanticCategory
-	(*durationpb.Duration)(nil),                      // 21: google.protobuf.Duration
-	(*v1alpha1.ParsedExpr)(nil),                      // 22: google.api.expr.v1alpha1.ParsedExpr
-	(*ApprovalTemplate)(nil),                         // 23: bytebase.store.ApprovalTemplate
-	(*expr.Expr)(nil),                                // 24: google.type.Expr
-	(Engine)(0),                                      // 25: bytebase.store.Engine
-	(*ColumnMetadata)(nil),                           // 26: bytebase.store.ColumnMetadata
+	(*SemanticTypesSetting_SemanticType)(nil), // 20: bytebase.store.SemanticTypesSetting.SemanticType
+	(*durationpb.Duration)(nil),               // 21: google.protobuf.Duration
+	(*v1alpha1.ParsedExpr)(nil),               // 22: google.api.expr.v1alpha1.ParsedExpr
+	(*ApprovalTemplate)(nil),                  // 23: bytebase.store.ApprovalTemplate
+	(*expr.Expr)(nil),                         // 24: google.type.Expr
+	(Engine)(0),                               // 25: bytebase.store.Engine
+	(*ColumnMetadata)(nil),                    // 26: bytebase.store.ColumnMetadata
 }
 var file_store_setting_proto_depIdxs = []int32{
 	21, // 0: bytebase.store.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
@@ -1608,7 +1632,7 @@ var file_store_setting_proto_depIdxs = []int32{
 	14, // 7: bytebase.store.SchemaTemplateSetting.field_templates:type_name -> bytebase.store.SchemaTemplateSetting.FieldTemplate
 	15, // 8: bytebase.store.SchemaTemplateSetting.column_types:type_name -> bytebase.store.SchemaTemplateSetting.ColumnType
 	16, // 9: bytebase.store.DataClassificationSetting.configs:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig
-	20, // 10: bytebase.store.SemanticCategorySetting.categories:type_name -> bytebase.store.SemanticCategorySetting.SemanticCategory
+	20, // 10: bytebase.store.SemanticTypesSetting.types:type_name -> bytebase.store.SemanticTypesSetting.SemanticType
 	22, // 11: bytebase.store.WorkspaceApprovalSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
 	23, // 12: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
 	24, // 13: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
@@ -1731,7 +1755,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SemanticCategorySetting); i {
+			switch v := v.(*SemanticTypesSetting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1827,7 +1851,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SemanticCategorySetting_SemanticCategory); i {
+			switch v := v.(*SemanticTypesSetting_SemanticType); i {
 			case 0:
 				return &v.state
 			case 1:

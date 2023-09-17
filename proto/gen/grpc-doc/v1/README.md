@@ -549,12 +549,14 @@
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
+    - [MaskingAlgorithmSetting](#bytebase-v1-MaskingAlgorithmSetting)
+    - [MaskingAlgorithmSetting.MaskingAlgorithm](#bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm)
     - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
-    - [SemanticCategorySetting](#bytebase-v1-SemanticCategorySetting)
-    - [SemanticCategorySetting.SemanticCategory](#bytebase-v1-SemanticCategorySetting-SemanticCategory)
+    - [SemanticTypesSetting](#bytebase-v1-SemanticTypesSetting)
+    - [SemanticTypesSetting.SemanticType](#bytebase-v1-SemanticTypesSetting-SemanticType)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
     - [Value](#bytebase-v1-Value)
@@ -594,7 +596,6 @@
     - [Advice](#bytebase-v1-Advice)
     - [CheckRequest](#bytebase-v1-CheckRequest)
     - [CheckResponse](#bytebase-v1-CheckResponse)
-    - [CheckResponse.Run](#bytebase-v1-CheckResponse-Run)
     - [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest)
     - [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
@@ -1097,7 +1098,9 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | schema | [string](#string) |  |  |
 | table | [string](#string) |  |  |
 | column | [string](#string) |  |  |
-| semantic_category_id | [string](#string) |  |  |
+| semantic_type_id | [string](#string) |  |  |
+| full_masking_algorithm_id | [string](#string) |  | The full masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
+| partial_masking_algorithm_id | [string](#string) |  | The partial masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
 | masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
 
 
@@ -5668,7 +5671,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 
 When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
 | query | [string](#string) |  | Query is the query statement. |
-| filter | [string](#string) |  | Filter is used to filter issues returned in the list, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Supported field in filter: - principal, example: - principal = &#34;users/{email}&#34; - creator, example: - creator = &#34;users/{email}&#34; - assignee, example: - assignee = &#34;users/{email}&#34; - subscriber, example: - subscriber = &#34;users/{email}&#34; - status, example: - status = &#34;OPEN&#34; - status = &#34;DONE&#34; | &#34;CANCELED&#34; - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; |
+| filter | [string](#string) |  | Filter is used to filter issues returned in the list, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Supported field in filter: - principal, example: - principal = &#34;users/{email}&#34; - creator, example: - creator = &#34;users/{email}&#34; - assignee, example: - assignee = &#34;users/{email}&#34; - subscriber, example: - subscriber = &#34;users/{email}&#34; - status, example: - status = &#34;OPEN&#34; - status = &#34;DONE&#34; | &#34;CANCELED&#34; - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; - instance, example: - instance = &#34;instancs/{resource id}&#34; - type, only support &#34;DDL&#34; or &#34;DML&#34;, example: - type = &#34;DDL&#34; |
 
 
 
@@ -8789,6 +8792,40 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 
 
+<a name="bytebase-v1-MaskingAlgorithmSetting"></a>
+
+### MaskingAlgorithmSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| algorithms | [MaskingAlgorithmSetting.MaskingAlgorithm](#bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm"></a>
+
+### MaskingAlgorithmSetting.MaskingAlgorithm
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for semantic type. |
+| title | [string](#string) |  | the title of the masking algorithm, it should not be empty. |
+| description | [string](#string) |  | the description of the masking algorithm, it can be empty.
+
+If we need to support the custom masking algorithm, we need to define the payload to store the algorithm likes javascript code, python code, etc. |
+
+
+
+
+
+
 <a name="bytebase-v1-SMTPMailDeliverySettingValue"></a>
 
 ### SMTPMailDeliverySettingValue
@@ -8865,34 +8902,34 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 
 
-<a name="bytebase-v1-SemanticCategorySetting"></a>
+<a name="bytebase-v1-SemanticTypesSetting"></a>
 
-### SemanticCategorySetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| categories | [SemanticCategorySetting.SemanticCategory](#bytebase-v1-SemanticCategorySetting-SemanticCategory) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SemanticCategorySetting-SemanticCategory"></a>
-
-### SemanticCategorySetting.SemanticCategory
+### SemanticTypesSetting
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for category item. |
-| title | [string](#string) |  | the title of the category item, it should not be empty. |
-| description | [string](#string) |  | the description of the category item, it can be empty.
+| types | [SemanticTypesSetting.SemanticType](#bytebase-v1-SemanticTypesSetting-SemanticType) | repeated |  |
 
-We do not support custom algorithm by now, we only support the default algorithm, so we do not add the algorithm field right now. |
+
+
+
+
+
+<a name="bytebase-v1-SemanticTypesSetting-SemanticType"></a>
+
+### SemanticTypesSetting.SemanticType
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for semantic type. |
+| title | [string](#string) |  | the title of the semantic type, it should not be empty. |
+| description | [string](#string) |  | the description of the semantic type, it can be empty. |
+| partial_mask_algorithm_id | [string](#string) |  | the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm. |
+| full_mask_algorithm_id | [string](#string) |  | the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm. |
 
 
 
@@ -8951,7 +8988,8 @@ The data in setting value.
 | external_approval_setting_value | [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting) |  |  |
 | schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
 | data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
-| semantic_category_setting_value | [SemanticCategorySetting](#bytebase-v1-SemanticCategorySetting) |  |  |
+| semantic_types_setting_value | [SemanticTypesSetting](#bytebase-v1-SemanticTypesSetting) |  |  |
+| masking_algorithm_setting_value | [MaskingAlgorithmSetting](#bytebase-v1-MaskingAlgorithmSetting) |  |  |
 
 
 
@@ -9450,24 +9488,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| runs | [CheckResponse.Run](#bytebase-v1-CheckResponse-Run) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CheckResponse-Run"></a>
-
-### CheckResponse.Run
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
-| results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
-| error | [string](#string) |  |  |
+| advices | [Advice](#bytebase-v1-Advice) | repeated |  |
 
 
 

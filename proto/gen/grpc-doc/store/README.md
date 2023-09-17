@@ -140,8 +140,8 @@
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
-    - [SemanticCategorySetting](#bytebase-store-SemanticCategorySetting)
-    - [SemanticCategorySetting.SemanticCategory](#bytebase-store-SemanticCategorySetting-SemanticCategory)
+    - [SemanticTypesSetting](#bytebase-store-SemanticTypesSetting)
+    - [SemanticTypesSetting.SemanticType](#bytebase-store-SemanticTypesSetting-SemanticType)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
@@ -1835,7 +1835,9 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | schema | [string](#string) |  |  |
 | table | [string](#string) |  |  |
 | column | [string](#string) |  |  |
-| semantic_category_id | [string](#string) |  |  |
+| semantic_type_id | [string](#string) |  |  |
+| full_masking_algorithm_id | [string](#string) |  | The full masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
+| partial_masking_algorithm_id | [string](#string) |  | The partial masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
 
 
@@ -2179,34 +2181,34 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 
 
-<a name="bytebase-store-SemanticCategorySetting"></a>
+<a name="bytebase-store-SemanticTypesSetting"></a>
 
-### SemanticCategorySetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| categories | [SemanticCategorySetting.SemanticCategory](#bytebase-store-SemanticCategorySetting-SemanticCategory) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-SemanticCategorySetting-SemanticCategory"></a>
-
-### SemanticCategorySetting.SemanticCategory
+### SemanticTypesSetting
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for category item. |
-| title | [string](#string) |  | the title of the category item, it should not be empty. |
-| description | [string](#string) |  | the description of the category item, it can be empty.
+| types | [SemanticTypesSetting.SemanticType](#bytebase-store-SemanticTypesSetting-SemanticType) | repeated |  |
 
-We do not support custom algorithm by now, we only support the default algorithm, so we do not add the algorithm field right now. |
+
+
+
+
+
+<a name="bytebase-store-SemanticTypesSetting-SemanticType"></a>
+
+### SemanticTypesSetting.SemanticType
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for semantic type. |
+| title | [string](#string) |  | the title of the semantic type, it should not be empty. |
+| description | [string](#string) |  | the description of the semantic type, it can be empty. |
+| partial_mask_algorithm_id | [string](#string) |  | the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm. |
+| full_mask_algorithm_id | [string](#string) |  | the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm. |
 
 
 
