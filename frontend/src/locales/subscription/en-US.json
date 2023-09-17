@@ -33,17 +33,17 @@
     "title": "Community",
     "try": "Start free trial",
     "free": {
-      "title": "Community Plan",
+      "title": "Community",
       "label": "",
       "desc": "Team essentials to manage database development lifecycle."
     },
     "team": {
-      "title": "Pro Plan",
+      "title": "Pro",
       "label": "",
       "desc": "More policies to standardize and facilitate collaboration across teams."
     },
     "enterprise": {
-      "title": "Enterprise Plan",
+      "title": "Enterprise",
       "label": "",
       "desc": "Extra security, compliance, and permission features. Dedicated support with SLA."
     }
