@@ -10,6 +10,7 @@ export type SettingName =
   | "bb.enterprise.trial"
   | "bb.workspace.schema-template"
   | "bb.workspace.data-classification"
-  | "bb.workspace.semantic-category";
+  | "bb.workspace.semantic-types"
+  | "bb.workspace.masking-algorithms";
 
 export const defaultTokenDurationInHours = 7 * 24;

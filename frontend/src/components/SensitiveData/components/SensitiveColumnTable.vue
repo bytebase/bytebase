@@ -141,7 +141,7 @@ const emit = defineEmits<{
     event: "click",
     item: SensitiveColumn,
     row: number,
-    action: "VIEW" | "DELETE" | "EDIT" | "SELECT"
+    action: "VIEW" | "DELETE" | "EDIT"
   ): void;
   (event: "checked:update", list: number[]): void;
 }>();

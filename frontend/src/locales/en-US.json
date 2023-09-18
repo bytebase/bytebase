@@ -645,7 +645,7 @@
           "description": "Description",
           "full-masking-algorithm": "Full-masking algorithm",
           "partial-masking-algorithm": "Partial-masking algorithm",
-          "delete": "Delete this type?"
+          "delete": "Delete this semantic type?"
         }
       },
       "column-detail": {

@@ -63,12 +63,12 @@ export const useSettingV1Store = defineStore("setting_v1", {
       this.settingMapByName.set(setting.name, setting);
       return setting;
     },
-    getOrFetchSettingByName(name: SettingName) {
+    getOrFetchSettingByName(name: SettingName, silent = false) {
       const setting = this.getSettingByName(name);
       if (setting) {
         return setting;
       }
-      return this.fetchSettingByName(name);
+      return this.fetchSettingByName(name, silent);
     },
     getSettingByName(name: SettingName) {
       return this.settingMapByName.get(`${settingNamePrefix}${name}`);

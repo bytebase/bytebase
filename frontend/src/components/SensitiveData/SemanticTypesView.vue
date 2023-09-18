@@ -33,7 +33,7 @@
             <NInput
               v-else
               :value="rowData.item.title"
-              class=""
+              size="small"
               type="text"
               :placeholder="
                 $t('settings.sensitive-data.semantic-types.table.semantic-type')
@@ -48,7 +48,7 @@
             <NInput
               v-else
               :value="rowData.item.description"
-              class=""
+              size="small"
               type="text"
               :placeholder="
                 $t('settings.sensitive-data.semantic-types.table.description')
@@ -56,8 +56,34 @@
               @input="(val: string) => onInput(row, (data) => data.item.description = val)"
             />
           </BBTableCell>
-          <BBTableCell class="bb-grid-cell"> FULL MASKING </BBTableCell>
-          <BBTableCell class="bb-grid-cell"> HALF MASKING </BBTableCell>
+          <BBTableCell class="bb-grid-cell">
+            <NSelect
+              :value="rowData.item.fullMaskAlgorithmId"
+              :options="algorithmList"
+              :consistent-menu-width="false"
+              :placeholder="
+                $t('custom-approval.security-rule.condition.select-value')
+              "
+              :disabled="!hasPermission || !hasSensitiveDataFeature"
+              size="small"
+              style="min-width: 7rem; width: auto; overflow-x: hidden"
+              @update:value="(val: string) => onInput(row, (data) => data.item.fullMaskAlgorithmId = val)"
+            />
+          </BBTableCell>
+          <BBTableCell class="bb-grid-cell">
+            <NSelect
+              :value="rowData.item.partialMaskAlgorithmId"
+              :options="algorithmList"
+              :consistent-menu-width="false"
+              :placeholder="
+                $t('custom-approval.security-rule.condition.select-value')
+              "
+              :disabled="!hasPermission || !hasSensitiveDataFeature"
+              size="small"
+              style="min-width: 7rem; width: auto; overflow-x: hidden"
+              @update:value="(val: string) => onInput(row, (data) => data.item.partialMaskAlgorithmId = val)"
+            />
+          </BBTableCell>
           <BBTableCell v-if="hasPermission" class="bb-grid-cell w-6">
             <div class="flex justify-end items-center space-x-2">
               <NPopconfirm
@@ -114,26 +140,22 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { NPopconfirm, NButton, NInput } from "naive-ui";
+import { NPopconfirm, NButton, NSelect, NInput } from "naive-ui";
 import type { SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, nextTick, onMounted } from "vue";
+import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBTableColumn } from "@/bbkit/types";
 import {
   featureToRef,
   pushNotification,
   useCurrentUserV1,
-  usePolicyV1Store,
   useSettingV1Store,
 } from "@/store";
 import {
-  Policy,
-  PolicyType,
-  PolicyResourceType,
-  MaskingRulePolicy_MaskingRule,
-} from "@/types/proto/v1/org_policy_service";
-import { SemanticCategorySetting_SemanticCategory } from "@/types/proto/v1/setting_service";
+  SemanticTypesSetting_SemanticType,
+  MaskingAlgorithmSetting_MaskingAlgorithm,
+} from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
@@ -141,7 +163,7 @@ type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
 interface SemanticItem {
   mode: SemanticItemMode;
   dirty: boolean;
-  item: SemanticCategorySetting_SemanticCategory;
+  item: SemanticTypesSetting_SemanticType;
 }
 
 interface LocalState {
@@ -156,7 +178,6 @@ const state = reactive<LocalState>({
 });
 
 const settingStore = useSettingV1Store();
-const policyStore = usePolicyV1Store();
 const currentUserV1 = useCurrentUserV1();
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV1(
@@ -165,6 +186,32 @@ const hasPermission = computed(() => {
   );
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+
+const algorithmList = computed((): SelectOption[] => {
+  return (
+    settingStore.getSettingByName("bb.workspace.masking-algorithms")?.value
+      ?.maskingAlgorithmSettingValue?.algorithms ?? []
+  ).map((algorithm) => ({
+    label: algorithm.title,
+    value: algorithm.id,
+  }));
+});
+
+onMounted(async () => {
+  const semanticTypeSetting = await settingStore.getOrFetchSettingByName(
+    "bb.workspace.semantic-types",
+    true
+  );
+  state.semanticItemList = (
+    semanticTypeSetting.value?.semanticTypesSettingValue?.types ?? []
+  ).map((semanticType) => {
+    return {
+      dirty: false,
+      item: semanticType,
+      mode: "NORMAL",
+    };
+  });
+});
 
 const tableHeaderList = computed(() => {
   const list: BBTableColumn[] = [
@@ -198,7 +245,7 @@ const onAdd = () => {
   state.semanticItemList.push({
     mode: "CREATE",
     dirty: false,
-    item: SemanticCategorySetting_SemanticCategory.fromJSON({
+    item: SemanticTypesSetting_SemanticType.fromJSON({
       id: uuidv4(),
     }),
   });
@@ -213,8 +260,8 @@ const onRemove = async (index: number) => {
   if (item.mode === "CREATE") {
     return;
   }
-  // TODO: call api
 
+  // TODO: call api
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -235,7 +282,7 @@ const onConfirm = async (index: number) => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("common.created"),
+    title: t(`common.${item.mode === "CREATE" ? "created" : "updated"}`),
   });
 };
 
@@ -245,8 +292,20 @@ const onCancel = (index: number) => {
   if (item.mode === "CREATE") {
     state.semanticItemList.splice(index, 1);
   } else {
-    // TODO: reset row
-    state.semanticItemList[index].mode = "NORMAL";
+    const semanticTypeSetting = settingStore.getSettingByName(
+      "bb.workspace.semantic-types"
+    );
+    const origin = (
+      semanticTypeSetting?.value?.semanticTypesSettingValue?.types ?? []
+    ).find((s) => s.id === item.item.id);
+    if (!origin) {
+      return;
+    }
+    state.semanticItemList[index] = {
+      item: origin,
+      mode: "NORMAL",
+      dirty: false,
+    };
   }
 };
 
@@ -256,32 +315,18 @@ const onInput = (index: number, callback: (item: SemanticItem) => void) => {
     return;
   }
   callback(item);
-};
-
-const onDropdownChange = async (
-  index: number,
-  callback: (item: SemanticItem) => void
-) => {
-  const item = state.semanticItemList[index];
-  if (!item) {
-    return;
-  }
-  callback(item);
-  if (item.mode === "CREATE") {
-    return;
-  }
-
-  // TODO: call api
-
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
+  item.dirty = true;
 };
 
 const isConfirmDisabled = (data: SemanticItem): boolean => {
-  if (!data.item.title) {
+  if (
+    !data.item.title ||
+    !data.item.fullMaskAlgorithmId ||
+    !data.item.partialMaskAlgorithmId
+  ) {
+    return true;
+  }
+  if (data.mode === "EDIT" && !data.dirty) {
     return true;
   }
   return false;
