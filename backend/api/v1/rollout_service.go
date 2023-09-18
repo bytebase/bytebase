@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -850,13 +849,9 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 					if !ok {
 						return nil
 					}
-					_, sheetIDStr, err := common.GetProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
+					_, sheetID, err := common.GetProjectResourceIDSheetUID(config.ChangeDatabaseConfig.Sheet)
 					if err != nil {
 						return status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
-					}
-					sheetID, err := strconv.Atoi(sheetIDStr)
-					if err != nil {
-						return status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
 					}
 					if taskPayload.SheetID == sheetID {
 						return nil
