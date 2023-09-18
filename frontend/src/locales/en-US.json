@@ -2940,6 +2940,7 @@
     "schema-version": "Schema version",
     "personal-draft": "Personal draft",
     "baseline-version": "Baseline version",
+    "new-branch": "New branch",
     "parent-branch": "Parent branch",
     "save-draft": "Save draft",
     "merge-branch": "Merge branch",

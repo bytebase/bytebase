@@ -10,10 +10,13 @@
 </template>
 
 <script lang="ts" setup>
+import { useTitle } from "@vueuse/core";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import { useProjectV1Store, useSheetV1Store } from "@/store";
+import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { getProjectAndSheetId } from "@/store/modules/v1/common";
 import { idFromSlug } from "@/utils";
 
@@ -24,8 +27,10 @@ const props = defineProps({
   },
 });
 
+const { t } = useI18n();
 const sheetStore = useSheetV1Store();
 const projectStore = useProjectV1Store();
+const schemaDesignStore = useSchemaDesignStore();
 const initialized = ref(false);
 
 const isCreating = computed(() => props.branchSlug === "new");
@@ -44,10 +49,30 @@ onMounted(async () => {
     const sheetId = idFromSlug(props.branchSlug);
     const sheet = await sheetStore.getOrFetchSheetByUID(`${sheetId}`);
     if (sheet) {
-      const [project] = getProjectAndSheetId(sheet.name);
-      await projectStore.getOrFetchProjectByName(`projects/${project}`);
+      const [projectName] = getProjectAndSheetId(sheet.name);
+      const project = await projectStore.getOrFetchProjectByName(
+        `projects/${projectName}`
+      );
+      await schemaDesignStore.getOrFetchSchemaDesignByName(
+        `projects/${project}/schemaDesigns/${sheetId}`
+      );
     }
   }
   initialized.value = true;
 });
+
+const documentTitle = computed(() => {
+  if (isCreating.value) {
+    return t("schema-designer.new-branch");
+  } else {
+    if (branchName.value) {
+      const schemaDesign = schemaDesignStore.getSchemaDesignByName(
+        branchName.value
+      );
+      return `${schemaDesign.title} - ${t("common.branch")}`;
+    }
+  }
+  return t("common.loading");
+});
+useTitle(documentTitle);
 </script>
