@@ -15,7 +15,7 @@
         :column-list="tableHeaderList"
         :data-source="state.semanticItemList"
         :show-header="true"
-        :custom-header="false"
+        :custom-header="true"
         :left-bordered="true"
         :right-bordered="true"
         :top-bordered="true"
@@ -23,6 +23,13 @@
         :compact-section="true"
         :row-clickable="false"
       >
+        <template #header>
+          <BBTableHeaderCell
+            v-for="header in tableHeaderList"
+            :key="header.title"
+            :title="header.title"
+          />
+        </template>
         <template
           #body="{ rowData, row }: { rowData: SemanticItem, row: number }"
         >
@@ -57,7 +64,11 @@
             />
           </BBTableCell>
           <BBTableCell class="bb-grid-cell">
+            <h3 v-if="rowData.mode === 'NORMAL'">
+              {{ getAlgorithmById(rowData.item.fullMaskAlgorithmId)?.label }}
+            </h3>
             <NSelect
+              v-else
               :value="rowData.item.fullMaskAlgorithmId"
               :options="algorithmList"
               :consistent-menu-width="false"
@@ -71,7 +82,11 @@
             />
           </BBTableCell>
           <BBTableCell class="bb-grid-cell">
+            <h3 v-if="rowData.mode === 'NORMAL'">
+              {{ getAlgorithmById(rowData.item.partialMaskAlgorithmId)?.label }}
+            </h3>
             <NSelect
+              v-else
               :value="rowData.item.partialMaskAlgorithmId"
               :options="algorithmList"
               :consistent-menu-width="false"
@@ -152,10 +167,7 @@ import {
   useCurrentUserV1,
   useSettingV1Store,
 } from "@/store";
-import {
-  SemanticTypesSetting_SemanticType,
-  MaskingAlgorithmSetting_MaskingAlgorithm,
-} from "@/types/proto/v1/setting_service";
+import { SemanticTypesSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
@@ -241,12 +253,20 @@ const tableHeaderList = computed(() => {
   return list;
 });
 
+const getAlgorithmById = (algorithmId: string) => {
+  return algorithmList.value.find((a) => a.value === algorithmId);
+};
+
 const onAdd = () => {
+  const defaultAlgorithm =
+    algorithmList.value.length > 0 ? algorithmList.value[0].value : "";
   state.semanticItemList.push({
     mode: "CREATE",
     dirty: false,
     item: SemanticTypesSetting_SemanticType.fromJSON({
       id: uuidv4(),
+      fullMaskAlgorithmId: defaultAlgorithm,
+      partialMaskAlgorithmId: defaultAlgorithm,
     }),
   });
 };
@@ -261,7 +281,15 @@ const onRemove = async (index: number) => {
     return;
   }
 
-  // TODO: call api
+  await settingStore.upsertSetting({
+    name: "bb.workspace.semantic-types",
+    value: {
+      semanticTypesSettingValue: {
+        types: state.semanticItemList.map((data) => data.item),
+      },
+    },
+  });
+
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -277,7 +305,14 @@ const onConfirm = async (index: number) => {
     mode: "NORMAL",
   };
 
-  // TODO: call api
+  await settingStore.upsertSetting({
+    name: "bb.workspace.semantic-types",
+    value: {
+      semanticTypesSettingValue: {
+        types: state.semanticItemList.map((data) => data.item),
+      },
+    },
+  });
 
   pushNotification({
     module: "bytebase",
