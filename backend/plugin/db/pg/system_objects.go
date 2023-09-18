@@ -2,6 +2,30 @@ package pg
 
 import "strings"
 
+var (
+	// excludedDatabaseList is the list of system or internal databases.
+	excludedDatabaseList = map[string]bool{
+		// Skip our internal "bytebase" database
+		"bytebase": true,
+		// Skip internal databases from cloud service providers
+		// see https://github.com/bytebase/bytebase/issues/30
+		// aws
+		"rdsadmin": true,
+		// gcp
+		"cloudsql":      true,
+		"cloudsqladmin": true,
+		"alloydbadmin":  true,
+		// system templates.
+		"template0": true,
+		"template1": true,
+	}
+)
+
+func IsSystemDatabase(database string) bool {
+	_, ok := excludedDatabaseList[database]
+	return ok
+}
+
 func IsSystemUser(user string) bool {
 	return strings.HasPrefix(user, "alloydb")
 }

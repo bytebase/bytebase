@@ -148,7 +148,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	var filteredDatabases []*storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		// Skip all system databases
-		if _, ok := ExcludedDatabaseList[database.Name]; ok {
+		if IsSystemDatabase(database.Name) {
 			continue
 		}
 		filteredDatabases = append(filteredDatabases, database)

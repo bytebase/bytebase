@@ -306,7 +306,7 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 			if database.SyncState != api.OK {
 				continue
 			}
-			if _, exists := pg.ExcludedDatabaseList[database.DatabaseName]; exists {
+			if pg.IsSystemDatabase(database.DatabaseName) {
 				continue
 			}
 			if err := func() error {
