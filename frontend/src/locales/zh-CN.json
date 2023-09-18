@@ -2101,7 +2101,7 @@
     "setting": {
       "description": "标签是一组可用于标识数据库租户的键值对。{link}。"
     },
-    "db-name-template-tips": "如果您的租户数据库名字遵循命名模版，您可以在这里指定。例如：数据库名字为 db1__SH, db1__BJ, db1__GZ，此时命名模板可以是 {placeholder}。{link}。",
+    "db-name-template-tips": "使用模版来约束数据库命名。例如：您的数据库 db1 是按照地域分割为 US，Asia，Europe 并且您希望它们的名字是 db1__US, db1__ASIA, db1__EU，那么模版可以指定为 {placeholder}。{link}。",
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
     "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。"
