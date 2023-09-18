@@ -1131,7 +1131,7 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 // Due to the performance consideration, we DO NOT get the sensitive schema info if there are advice error in SQL review.
 func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
 	// Prepare related message.
-	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, nil, nil, advisor.Success, nil, nil, nil, err
 	}
@@ -1145,8 +1145,8 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	// dataShare must be false when engine is not redshift
 	// engine must be MYSQL or TIDB when connecting to instance (not database) in sql editor
 	dataShare := false
-	if database != nil {
-		dataShare = database.DataShare
+	if maybeDatabase != nil {
+		dataShare = maybeDatabase.DataShare
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
@@ -1164,7 +1164,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	}
 
 	// Run SQL review.
-	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, request, environment, instance, database)
+	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, environment, instance, maybeDatabase)
 	if err != nil {
 		return nil, nil, nil, adviceStatus, adviceList, nil, nil, err
 	}
@@ -1254,8 +1254,8 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		level = api.ActivityWarn
 	}
 	databaseID := 0
-	if database != nil {
-		databaseID = database.UID
+	if maybeDatabase != nil {
+		databaseID = maybeDatabase.UID
 	}
 	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
@@ -1271,7 +1271,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		return nil, nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
-	return user, instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, activity, nil
+	return user, instance, maybeDatabase, adviceStatus, adviceList, sensitiveSchemaInfo, activity, nil
 }
 
 func allPostgresSystemObjects(statement string) bool {
@@ -1750,8 +1750,8 @@ func getReadOnlyDataSource(instance *store.InstanceMessage) *store.DataSourceMes
 	return dataSource
 }
 
-func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequest, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage) (advisor.Status, []*v1pb.Advice, error) {
-	if !IsSQLReviewSupported(instance.Engine) || request.ConnectionDatabase == "" || database == nil {
+func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage) (advisor.Status, []*v1pb.Advice, error) {
+	if !IsSQLReviewSupported(instance.Engine) || database == nil {
 		return advisor.Success, nil, nil
 	}
 
@@ -1767,13 +1767,13 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequ
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 			return advisor.Error, nil, status.Errorf(codes.Internal, "failed to sync database schema: %v", err)
 		}
-	}
-	dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return advisor.Error, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
-	}
-	if dbSchema == nil {
-		return advisor.Error, nil, status.Errorf(codes.NotFound, "database schema not found: %v", database.UID)
+		dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return advisor.Error, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+		}
+		if dbSchema == nil {
+			return advisor.Error, nil, status.Errorf(codes.NotFound, "database schema not found: %v", database.UID)
+		}
 	}
 
 	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, advisor.SyntaxModeNormal)
@@ -1802,7 +1802,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequ
 		dbSchema.Metadata.CharacterSet,
 		dbSchema.Metadata.Collation,
 		environment.UID,
-		request.Statement,
+		statement,
 		catalog,
 		connection,
 		currentSchema,
