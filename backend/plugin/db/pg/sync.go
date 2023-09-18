@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -82,7 +81,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	defer txn.Rollback()
 
-	schemaList, err := getSchemas(txn)
+	schemas, err := getSchemas(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
@@ -108,22 +107,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, err
 	}
 
-	schemaNameMap := make(map[string]bool)
-	for _, schemaName := range schemaList {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range tableMap {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range viewMap {
-		schemaNameMap[schemaName] = true
-	}
-	var schemaNames []string
-	for schemaName := range schemaNameMap {
-		schemaNames = append(schemaNames, schemaName)
-	}
-	sort.Strings(schemaNames)
-	for _, schemaName := range schemaNames {
+	for _, schemaName := range schemas {
 		var tables []*storepb.TableMetadata
 		var views []*storepb.ViewMetadata
 		var functions []*storepb.FunctionMetadata
@@ -299,6 +283,9 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 		if err := rows.Scan(&schemaName); err != nil {
 			return nil, err
 		}
+		if IsSystemSchema(schemaName) {
+			continue
+		}
 		result = append(result, schemaName)
 	}
 	if err := rows.Err(); err != nil {
@@ -343,11 +330,13 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 
 	for rows.Next() {
 		table := &storepb.TableMetadata{}
-		// var tbl tableSchema
 		var schemaName string
 		var comment sql.NullString
 		if err := rows.Scan(&schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment); err != nil {
 			return nil, err
+		}
+		if IsSystemTable(table.Name) {
+			continue
 		}
 		if comment.Valid {
 			table.Comment = comment.String
@@ -445,6 +434,11 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 		if err := rows.Scan(&schemaName, &view.Name, &def, &comment); err != nil {
 			return nil, err
 		}
+		// Skip system views.
+		if IsSystemView(view.Name) {
+			continue
+		}
+
 		// Return error on NULL view definition.
 		// https://github.com/bytebase/bytebase/issues/343
 		if !def.Valid {
@@ -453,11 +447,6 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 		view.Definition = def.String
 		if comment.Valid {
 			view.Comment = comment.String
-		}
-
-		// Skip system views.
-		if IsSystemView(view.Name) {
-			continue
 		}
 
 		viewMap[schemaName] = append(viewMap[schemaName], view)
