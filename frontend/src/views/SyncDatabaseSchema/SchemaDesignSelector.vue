@@ -7,7 +7,7 @@
         {{ $t("database.select-branch") }}
       </span>
       <div>
-        <NButton @click="state.showCreatePanel = true">
+        <NButton @click="handleCreateBranch">
           <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
           <span>{{ $t("database.new-branch") }}</span>
         </NButton>
@@ -55,35 +55,16 @@
       </template>
     </BBGrid>
   </div>
-
-  <CreateSchemaDesignPanel
-    v-if="state.showCreatePanel"
-    @dismiss="state.showCreatePanel = false"
-    @created="
-      (schemaDesign) => {
-        state.showCreatePanel = false;
-        clickSchemaDesign(schemaDesign);
-      }
-    "
-  />
-
-  <EditSchemaDesignPanel
-    v-if="state.showEditPanel && selectedSchemaDesign"
-    :schema-design-name="selectedSchemaDesign.name"
-    :view-mode="true"
-    @dismiss="state.showEditPanel = false"
-  />
 </template>
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { NRadio, NButton, NEllipsis } from "naive-ui";
-import { computed, ref, reactive } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
-import CreateSchemaDesignPanel from "@/components/SchemaDesigner/CreateSchemaDesignPanel.vue";
-import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
 import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
 import {
   useSchemaDesignList,
@@ -96,11 +77,6 @@ import {
 } from "@/types/proto/v1/schema_design_service";
 import { projectV1Name } from "@/utils";
 
-interface LocalState {
-  showCreatePanel: boolean;
-  showEditPanel: boolean;
-}
-
 const emit = defineEmits<{
   (event: "select", schemaDesign: SchemaDesign): void;
 }>();
@@ -110,15 +86,12 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const userV1Store = useUserStore();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const { schemaDesignList } = useSchemaDesignList();
-const state = reactive<LocalState>({
-  showCreatePanel: false,
-  showEditPanel: false,
-});
 const selectedSchemaDesign = ref<SchemaDesign | undefined>(
   props.selectedSchemaDesign
 );
@@ -177,8 +150,24 @@ const clickSchemaDesign = (schemaDesign: SchemaDesign) => {
   emit("select", schemaDesign);
 };
 
+const handleCreateBranch = () => {
+  const route = router.resolve({
+    name: "workspace.branch.detail",
+    params: {
+      branchSlug: "new",
+    },
+  });
+  window.open(route.href, "_blank");
+};
+
 const handleViewSchemaDesign = (schemaDesign: SchemaDesign) => {
-  clickSchemaDesign(schemaDesign);
-  state.showEditPanel = true;
+  const [, sheetId] = getProjectAndSchemaDesignSheetId(schemaDesign.name);
+  const route = router.resolve({
+    name: "workspace.branch.detail",
+    params: {
+      branchSlug: `${schemaDesign.title}-${sheetId}`,
+    },
+  });
+  window.open(route.href, "_blank");
 };
 </script>
