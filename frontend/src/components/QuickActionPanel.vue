@@ -65,20 +65,6 @@
             {{ $t("database.change-data") }}
           </h3>
         </div>
-
-        <div
-          v-if="quickAction === 'quickaction.bb.database.branching'"
-          class="flex flex-col items-center w-24"
-        >
-          <button class="btn-icon-primary p-3" @click.prevent="designSchema">
-            <GitBranch class="w-4 h-4" />
-          </button>
-          <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-          >
-            {{ $t("database.branching") }}
-          </h3>
-        </div>
       </template>
 
       <div
@@ -249,11 +235,6 @@
       :type="'bb.issue.database.data.update'"
       @dismiss="state.quickActionType = undefined"
     />
-    <DesignSchemaPrepForm
-      v-if="state.quickActionType === 'quickaction.bb.database.branching'"
-      :project-id="projectId"
-      @dismiss="state.quickActionType = undefined"
-    />
     <TransferDatabaseForm
       v-if="
         projectId &&
@@ -299,7 +280,6 @@
 
 <script lang="ts" setup>
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { GitBranch } from "lucide-vue-next";
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -309,7 +289,6 @@ import InstanceForm from "@/components/InstanceForm/";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
-import DesignSchemaPrepForm from "@/components/SchemaDesigner/PrepForm/index.vue";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
@@ -402,10 +381,6 @@ const createInstance = () => {
 
 const alterSchema = () => {
   state.quickActionType = "quickaction.bb.database.schema.update";
-};
-
-const designSchema = () => {
-  state.quickActionType = "quickaction.bb.database.branching";
 };
 
 const changeData = () => {

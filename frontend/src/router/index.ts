@@ -159,14 +159,12 @@ const routes: Array<RouteRecordRaw> = [
                 const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
                   "quickaction.bb.database.schema.update",
                   "quickaction.bb.database.data.update",
-                  "quickaction.bb.database.branching",
                   "quickaction.bb.database.create",
                   "quickaction.bb.instance.create",
                 ];
                 const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [
                   "quickaction.bb.database.schema.update",
                   "quickaction.bb.database.data.update",
-                  "quickaction.bb.database.branching",
                   "quickaction.bb.issue.grant.request.querier",
                   "quickaction.bb.issue.grant.request.exporter",
                 ];
@@ -671,7 +669,6 @@ const routes: Array<RouteRecordRaw> = [
                   const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
                     "quickaction.bb.database.schema.update",
                     "quickaction.bb.database.data.update",
-                    "quickaction.bb.database.branching",
                     "quickaction.bb.database.create",
                     "quickaction.bb.project.database.transfer",
                     "quickaction.bb.project.database.transfer-out",
@@ -692,7 +689,6 @@ const routes: Array<RouteRecordRaw> = [
                     DEVELOPER_QUICK_ACTION_LIST.push(
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.branching",
                       "quickaction.bb.database.create"
                     );
                   }
@@ -833,13 +829,11 @@ const routes: Array<RouteRecordRaw> = [
                 const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
                   "quickaction.bb.database.schema.update",
                   "quickaction.bb.database.data.update",
-                  "quickaction.bb.database.branching",
                   "quickaction.bb.database.create",
                 ];
                 const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [
                   "quickaction.bb.database.schema.update",
                   "quickaction.bb.database.data.update",
-                  "quickaction.bb.database.branching",
                   "quickaction.bb.database.create",
                   "quickaction.bb.issue.grant.request.querier",
                   "quickaction.bb.issue.grant.request.exporter",
@@ -978,6 +972,31 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
             ],
+          },
+          {
+            path: "branch",
+            name: "workspace.branch",
+            meta: {
+              title: () => t("common.branches"),
+            },
+            components: {
+              content: () => import("../views/branch/BranchDashboard.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true, leftSidebar: true },
+          },
+          {
+            path: "branch/:branchSlug",
+            name: "workspace.branch.detail",
+            meta: {
+              allowBookmark: true,
+              overrideTitle: true,
+            },
+            components: {
+              content: () => import("../views/branch/BranchDetail.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true },
           },
         ],
       },
@@ -1305,6 +1324,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||
     to.name === "workspace.issue" ||
+    to.name === "workspace.branch" ||
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
     to.name?.toString().startsWith("workspace.database-group") ||
