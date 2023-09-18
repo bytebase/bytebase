@@ -334,8 +334,6 @@ func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise
 	switch issue.Type {
 	case api.IssueGrantRequest:
 		return getGrantRequestIssueRisk(ctx, s, issue, risks)
-	case api.IssueGeneral, api.IssueDatabaseCreate, api.IssueDatabaseSchemaUpdate, api.IssueDatabaseSchemaUpdateGhost, api.IssueDatabaseDataUpdate, api.IssueDatabaseRestorePITR:
-		return 0, store.RiskSourceDatabaseSchemaUpdate, true, nil
 	case api.IssueDatabaseGeneral:
 		return getDatabaseGeneralIssueRisk(ctx, s, licenseService, dbFactory, issue, risks)
 	default:

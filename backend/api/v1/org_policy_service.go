@@ -556,9 +556,9 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		}
 		issueTypeSeen := make(map[api.IssueType]bool)
 		for _, group := range payload.AssigneeGroupList {
-			if group.IssueType != api.IssueDatabaseSchemaUpdate &&
-				group.IssueType != api.IssueDatabaseSchemaUpdateGhost &&
-				group.IssueType != api.IssueDatabaseDataUpdate &&
+			if group.IssueType != issueDatabaseSchemaUpdate &&
+				group.IssueType != issueDatabaseSchemaUpdateGhost &&
+				group.IssueType != issueDatabaseDataUpdate &&
 				group.IssueType != api.IssueDatabaseGeneral {
 				return "", status.Errorf(codes.InvalidArgument, "invalid assignee group issue type %q", group.IssueType)
 			}
@@ -1043,7 +1043,7 @@ func convertToV1PBDeploymentApprovalPolicy(payloadStr string) (*v1pb.Policy_Depl
 		approvalStrategy = v1pb.ApprovalStrategy_AUTOMATIC
 	}
 
-	approvalStrategies := make([]*v1pb.DeploymentApprovalStrategy, 0)
+	var approvalStrategies []*v1pb.DeploymentApprovalStrategy
 	for _, group := range payload.AssigneeGroupList {
 		// HACK(p0ny): skip if type is IssueDatabaseGeneral
 		if group.IssueType == api.IssueDatabaseGeneral {
@@ -1104,15 +1104,15 @@ func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolic
 		var issueType api.IssueType
 		switch group.DeploymentType {
 		case v1pb.DeploymentType_DATABASE_CREATE:
-			issueType = api.IssueDatabaseCreate
+			issueType = issueDatabaseCreate
 		case v1pb.DeploymentType_DATABASE_DDL:
-			issueType = api.IssueDatabaseSchemaUpdate
+			issueType = issueDatabaseSchemaUpdate
 		case v1pb.DeploymentType_DATABASE_DDL_GHOST:
-			issueType = api.IssueDatabaseSchemaUpdateGhost
+			issueType = issueDatabaseSchemaUpdateGhost
 		case v1pb.DeploymentType_DATABASE_DML:
-			issueType = api.IssueDatabaseDataUpdate
+			issueType = issueDatabaseDataUpdate
 		case v1pb.DeploymentType_DATABASE_RESTORE_PITR:
-			issueType = api.IssueDatabaseRestorePITR
+			issueType = issueDatabaseRestorePITR
 		default:
 			return nil, errors.Errorf("invalid deployment type %v", group.DeploymentType)
 		}
@@ -1260,19 +1260,33 @@ func convertToV1PBMaskingExceptionPolicyPayload(policy *storepb.MaskingException
 	}, nil
 }
 
+// This is to be deprecated.
+const (
+	// IssueDatabaseCreate is the issue type for creating databases.
+	issueDatabaseCreate api.IssueType = "bb.issue.database.create"
+	// IssueDatabaseSchemaUpdate is the issue type for updating database schemas (DDL).
+	issueDatabaseSchemaUpdate api.IssueType = "bb.issue.database.schema.update"
+	// IssueDatabaseSchemaUpdateGhost is the issue type for updating database schemas using gh-ost.
+	issueDatabaseSchemaUpdateGhost api.IssueType = "bb.issue.database.schema.update.ghost"
+	// IssueDatabaseDataUpdate is the issue type for updating database data (DML).
+	issueDatabaseDataUpdate api.IssueType = "bb.issue.database.data.update"
+	// IssueDatabaseRestorePITR is the issue type for performing a Point-in-time Recovery.
+	issueDatabaseRestorePITR api.IssueType = "bb.issue.database.restore.pitr"
+)
+
 // TODO(p0ny): fix bb.issue.database.general.
 func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentType {
 	res := v1pb.DeploymentType_DEPLOYMENT_TYPE_UNSPECIFIED
 	switch issueType {
-	case api.IssueDatabaseCreate:
+	case issueDatabaseCreate:
 		res = v1pb.DeploymentType_DATABASE_CREATE
-	case api.IssueDatabaseSchemaUpdate:
+	case issueDatabaseSchemaUpdate:
 		res = v1pb.DeploymentType_DATABASE_DDL
-	case api.IssueDatabaseSchemaUpdateGhost:
+	case issueDatabaseSchemaUpdateGhost:
 		res = v1pb.DeploymentType_DATABASE_DDL_GHOST
-	case api.IssueDatabaseDataUpdate:
+	case issueDatabaseDataUpdate:
 		res = v1pb.DeploymentType_DATABASE_DML
-	case api.IssueDatabaseRestorePITR:
+	case issueDatabaseRestorePITR:
 		res = v1pb.DeploymentType_DATABASE_RESTORE_PITR
 	}
 
