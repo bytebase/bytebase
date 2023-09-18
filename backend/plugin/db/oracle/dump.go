@@ -1159,14 +1159,15 @@ type indexMeta struct {
 type sequenceMeta struct {
 	SequenceName sql.NullString
 	MinValue     sql.NullInt64
-	MaxValue     sql.NullInt64
-	IncrementBy  sql.NullInt64
-	CycleFlag    sql.NullString
-	OrderFlag    sql.NullString
-	CacheSize    sql.NullInt64
-	LastNumber   sql.NullInt64
-	KeepValue    sql.NullString
-	SessionFlag  sql.NullString
+	// https://github.com/bytebase/bytebase/issues/8192.
+	MaxValue    sql.NullString
+	IncrementBy sql.NullInt64
+	CycleFlag   sql.NullString
+	OrderFlag   sql.NullString
+	CacheSize   sql.NullInt64
+	LastNumber  sql.NullInt64
+	KeepValue   sql.NullString
+	SessionFlag sql.NullString
 }
 
 type triggerOrderingMeta struct {
