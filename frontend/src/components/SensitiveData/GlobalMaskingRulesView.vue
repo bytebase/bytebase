@@ -70,7 +70,11 @@
         :key="item.rule.id"
         class="flex items-start space-x-5"
       >
-        <div v-if="item.mode === 'NORMAL' && hasPermission">
+        <div
+          v-if="
+            item.mode === 'NORMAL' && hasPermission && hasSensitiveDataFeature
+          "
+        >
           <div v-if="state.reorderRules" class="mt-6 flex flex-col">
             <button @click="onReorder(item, -1)">
               <heroicons-solid:arrow-circle-up
