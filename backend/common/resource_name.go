@@ -431,13 +431,17 @@ func GetRoleID(name string) (string, error) {
 	return tokens[0], nil
 }
 
-// GetProjectResourceIDSheetID returns the project ID and sheet ID from a resource name.
-func GetProjectResourceIDSheetID(name string) (string, string, error) {
+// GetProjectResourceIDSheetUID returns the project ID and sheet UID from a resource name.
+func GetProjectResourceIDSheetUID(name string) (string, int, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, SheetIDPrefix)
 	if err != nil {
-		return "", "", err
+		return "", 0, err
 	}
-	return tokens[0], tokens[1], nil
+	sheetUID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, errors.Wrapf(err, "failed to convert sheet uid %q to int", tokens[1])
+	}
+	return tokens[0], sheetUID, nil
 }
 
 // GetProjectResourceIDAndSchemaDesignSheetID returns the project ID and schema design sheet ID from a resource name.
