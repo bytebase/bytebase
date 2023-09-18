@@ -1,5 +1,5 @@
 <template>
-  <div class="whitespace-pre-wrap w-full overflow-hidden">
+  <div class="whitespace-pre-wrap w-full overflow-hidden compact-sql-editor">
     <MonacoEditor
       ref="editorRef"
       class="w-full h-auto max-h-[360px]"
@@ -343,3 +343,9 @@ watch(
   (prompt) => (EDITOR_OPTIONS.value.lineNumbersMinChars = prompt.length + 1)
 );
 </script>
+
+<style lang="postcss">
+.compact-sql-editor .monaco-editor .line-numbers {
+  @apply pr-0;
+}
+</style>
