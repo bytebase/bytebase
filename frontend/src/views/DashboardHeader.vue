@@ -13,6 +13,13 @@
           >
 
           <router-link
+            to="/branch"
+            class="bar-link px-2 py-1 rounded-md"
+            :class="getRouteLinkClass('/branch')"
+            >{{ $t("common.branches") }}</router-link
+          >
+
+          <router-link
             to="/project"
             class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/project')"
