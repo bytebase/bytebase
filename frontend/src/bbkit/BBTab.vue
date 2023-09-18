@@ -6,7 +6,7 @@
         :id="item.id"
         :key="index"
         :href="`#${item.id}`"
-        class="select-none cursor-pointer flex justify-between py-2 px-1 font-medium border-b-2 border-transparent whitespace-nowrap"
+        class="select-none cursor-pointer flex justify-between py-2 px-1 font-medium border-b-2 whitespace-nowrap"
         :class="tabClass(index == selectedIndex)"
         @click.self="selectTabIndex(index)"
         @mouseenter="state.hoverIndex = index"
@@ -102,7 +102,8 @@ const tabClass = (selected: boolean) => {
     return width + " text-control-hover border-accent";
   }
   return (
-    width + " text-control hover:text-control-hover hover:border-control-border"
+    width +
+    " border-transparent text-control hover:text-control-hover hover:border-control-border"
   );
 };
 
