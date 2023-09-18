@@ -19,7 +19,6 @@
 
     <BranchTable
       :branches="filteredBranches"
-      :hide-project-column="hideProjectColumn"
       :ready="ready"
       class="border-x-0"
       @click="handleBranchClick"
@@ -33,45 +32,28 @@ import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import BranchTable from "@/components/Branch/BranchTable.vue";
-import { useProjectV1Store } from "@/store";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-
-const props = defineProps<{
-  projectId?: string;
-  hideProjectColumn?: boolean;
-}>();
 
 interface LocalState {
   searchKeyword: string;
 }
 
 const router = useRouter();
-const projectV1Store = useProjectV1Store();
 const { schemaDesignList, ready } = useSchemaDesignList();
 const state = reactive<LocalState>({
   searchKeyword: "",
 });
 
-const project = computed(() =>
-  projectV1Store.getProjectByUID(props.projectId || "")
-);
-
 const filteredBranches = computed(() => {
-  return orderBy(
-    props.projectId
-      ? schemaDesignList.value.filter((schemaDesign) =>
-          schemaDesign.name.startsWith(project.value.name)
-        )
-      : schemaDesignList.value,
-    "updateTime",
-    "desc"
-  ).filter((branch) => {
-    return state.searchKeyword
-      ? branch.title.includes(state.searchKeyword)
-      : true;
-  });
+  return orderBy(schemaDesignList.value, "updateTime", "desc").filter(
+    (branch) => {
+      return state.searchKeyword
+        ? branch.title.includes(state.searchKeyword)
+        : true;
+    }
+  );
 });
 
 const handleCreateBranch = () => {
