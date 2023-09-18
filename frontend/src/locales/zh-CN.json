@@ -1668,6 +1668,7 @@
       "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。"
     },
     "members": {
+      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间的所有者和 DBA 都具有项目所有的权限。",
       "add-member": "添加成员",
       "revoke-member": "撤销成员",
       "revoke-access": "撤销访问",
