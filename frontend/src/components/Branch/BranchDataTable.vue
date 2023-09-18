@@ -1,7 +1,6 @@
 <template>
   <NDataTable
-    :loading="!ready"
-    :default-expand-all="true"
+    :loading="isLoading"
     :bordered="false"
     :columns="dataTableColumns"
     :data="dataTableRows"
@@ -13,9 +12,15 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { NDataTable } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useUserStore } from "@/store";
+import {
+  useChangeHistoryStore,
+  useDatabaseV1Store,
+  useProjectV1Store,
+  useUserStore,
+} from "@/store";
+import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import {
   SchemaDesign,
   SchemaDesign_Type,
@@ -25,6 +30,8 @@ type BranchRowData = {
   branch: SchemaDesign;
   name: string;
   branchName: string;
+  projectName: string;
+  baselineVersion: string;
   updatedTimeStr: string;
   children?: BranchRowData[];
 };
@@ -41,16 +48,60 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const userV1Store = useUserStore();
+const projectV1Store = useProjectV1Store();
+const databaseStore = useDatabaseV1Store();
+const changeHistoryStore = useChangeHistoryStore();
+const isFetching = ref(true);
+
+watch(
+  () => props.branches,
+  async () => {
+    for (const branch of props.branches) {
+      const database = await databaseStore.getOrFetchDatabaseByName(
+        branch.baselineDatabase
+      );
+      if (database && branch.baselineChangeHistoryId) {
+        const changeHistoryName = `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`;
+        await changeHistoryStore.getOrFetchChangeHistoryByName(
+          changeHistoryName
+        );
+      }
+    }
+    isFetching.value = false;
+  },
+  {
+    deep: true,
+    immediate: true,
+  }
+);
+
+const isLoading = computed(() => {
+  return isFetching.value || !props.ready;
+});
 
 const dataTableRows = computed(() => {
   const parentBranches = props.branches.filter((branch) => {
     return branch.type === SchemaDesign_Type.MAIN_BRANCH;
   });
   const parentRows: BranchRowData[] = parentBranches.map((branch) => {
+    const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
+    const project = projectV1Store.getProjectByName(`projects/${projectName}`);
+    const database = databaseStore.getDatabaseByName(branch.baselineDatabase);
+    const changeHistory = branch.baselineChangeHistoryId
+      ? changeHistoryStore.getChangeHistoryByName(
+          `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`
+        )
+      : undefined;
+    const baselineVersion = `(${database.effectiveEnvironmentEntity.title}) ${
+      database.databaseName
+    } @${changeHistory ? changeHistory.version : "Previously latest schema"}`;
+
     return {
       branch: branch,
       name: branch.title,
       branchName: branch.title,
+      projectName: project.title,
+      baselineVersion: baselineVersion,
       updatedTimeStr: getUpdatedTimeStr(branch),
       children: [],
     };
@@ -66,7 +117,10 @@ const dataTableRows = computed(() => {
       parentRow.children?.push({
         branch: childBranch,
         name: childBranch.title,
-        branchName: childBranch.title,
+        branchName: `${parentRow.branchName}/${childBranch.title}`,
+        // Child branch does not show project name.
+        projectName: "",
+        baselineVersion: "",
         updatedTimeStr: getUpdatedTimeStr(childBranch),
       });
     }
@@ -80,6 +134,14 @@ const dataTableColumns = computed(() => {
     {
       title: t("common.branch"),
       key: "branchName",
+    },
+    {
+      title: t("common.project"),
+      key: "projectName",
+    },
+    {
+      title: t("schema-designer.baseline-version"),
+      key: "baselineVersion",
     },
     {
       title: t("common.updated"),
