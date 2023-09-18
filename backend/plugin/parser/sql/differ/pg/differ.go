@@ -548,10 +548,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to and preprocess new statements %q", newStmt)
 	}
-	systemSchemas = make(map[string]bool)
-	for _, schema := range pg.SystemSchemaList {
-		systemSchemas[schema] = true
-	}
 	oldSchemaMap := make(schemaMap)
 	oldSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
 	oldSchemaMap["public"].existsInNew = true
@@ -644,7 +640,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
 				continue
 			}
-			if _, exists := systemSchemas[stmt.Name.Schema]; exists {
+			if pg.IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
 			oldTable := oldSchemaMap.getTable(stmt.Name.Schema, stmt.Name.Name)
