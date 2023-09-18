@@ -17,18 +17,7 @@
         <label for="gitprovider" class="textlabel">
           {{ $t("repository.git-provider") }}
         </label>
-        <template v-if="vcsType === ExternalVersionControl_Type.AZURE_DEVOPS">
-          <img class="h-4 w-auto" src="../assets/azure-devops-logo.svg" />
-        </template>
-        <template v-if="vcsType === ExternalVersionControl_Type.GITLAB">
-          <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
-        </template>
-        <template v-if="vcsType === ExternalVersionControl_Type.GITHUB">
-          <img class="h-4 w-auto" src="../assets/github-logo.svg" />
-        </template>
-        <template v-if="vcsType === ExternalVersionControl_Type.BITBUCKET">
-          <img class="h-4 w-auto" src="../assets/bitbucket-logo.svg" />
-        </template>
+        <VCSIcon :type="vcsType" />
       </div>
       <input
         id="gitprovider"

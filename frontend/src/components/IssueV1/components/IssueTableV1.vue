@@ -83,7 +83,10 @@
                   issue.creatorEntity.name === SYSTEM_BOT_USER_NAME
                 "
               >
-                <img class="h-4 mr-2 w-auto" :src="vscProviderIcon(issue)" />
+                <VCSIcon
+                  custom-class="h-4 mr-2 w-auto"
+                  :type="getIssueVCSType(issue)"
+                />
               </template>
               <span
                 v-for="(item, index) in issueHighlightSections(
@@ -279,35 +282,14 @@ const issueTaskStatus = (issue: ComposedIssue) => {
   return activeTaskInRollout(issue.rolloutEntity).status;
 };
 
-const vscProviderIcon = (issue: ComposedIssue): string => {
+const getIssueVCSType = (issue: ComposedIssue): ExternalVersionControl_Type => {
   const repository = repositoryV1Store.getRepositoryByProject(
     issue.projectEntity.name
   );
   const vcs =
     vcsV1Store.getVCSByUid(repository?.vcsUid ?? "") ??
     ({} as ExternalVersionControl);
-
-  let iconType = "";
-  switch (vcs.type) {
-    case ExternalVersionControl_Type.AZURE_DEVOPS:
-      iconType = "azure-devops";
-      break;
-    case ExternalVersionControl_Type.GITLAB:
-      iconType = "gitlab";
-      break;
-    case ExternalVersionControl_Type.GITHUB:
-      iconType = "github";
-      break;
-    case ExternalVersionControl_Type.BITBUCKET:
-      iconType = "bitbucket";
-      break;
-    default:
-      iconType = "";
-  }
-  if (iconType === "") {
-    return iconType;
-  }
-  return new URL(`../../../assets/${iconType}-logo.svg`, import.meta.url).href;
+  return vcs.type;
 };
 
 watchEffect(async () => {

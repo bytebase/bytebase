@@ -78,7 +78,7 @@ export function isValidVCSApplicationIdOrSecret(
   str: string
 ): boolean {
   if (vcsType == ExternalVersionControl_Type.GITLAB) {
-    return /^[a-zA-Z0-9_]{64}$/.test(str);
+    return /^(.{1,}-){0,1}[a-zA-Z0-9_]{64}$/.test(str);
   } else if (vcsType == ExternalVersionControl_Type.GITHUB) {
     return /^[a-zA-Z0-9_]{20}$|^[a-zA-Z0-9_]{40}$/.test(str);
   } else if (vcsType == ExternalVersionControl_Type.BITBUCKET) {

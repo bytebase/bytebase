@@ -53,7 +53,7 @@
               "gitops.setting.add-git-provider.oauth-info.gitlab-self-host-login-as-admin"
             )
           }}
-          <img class="w-auto" src="../assets/gitlab_admin_area.png" />
+          <img class="w-auto" src="../../assets/gitlab_admin_area.png" />
         </li>
         <li>
           2.
@@ -216,7 +216,7 @@
               "gitops.setting.add-git-provider.oauth-info.github-login-as-admin"
             )
           }}
-          <img class="w-auto" src="../assets/github_admin_settings.png" />
+          <img class="w-auto" src="../../assets/github_admin_settings.png" />
         </li>
         <li>
           2.
@@ -291,7 +291,7 @@
               "gitops.setting.add-git-provider.oauth-info.github-enterprise-login-as-admin"
             )
           }}
-          <img class="w-auto" src="../assets/github_admin_settings.png" />
+          <img class="w-auto" src="../../assets/github_admin_settings.png" />
         </li>
         <li>
           2.
@@ -548,13 +548,13 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
-import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 import {
   isValidVCSApplicationIdOrSecret,
   TEXT_VALIDATION_DELAY,
   VCSConfig,
   redirectUrl,
-} from "../types";
+} from "@/types";
+import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 
 interface LocalState {
   applicationIdValidationTimer?: ReturnType<typeof setTimeout>;
