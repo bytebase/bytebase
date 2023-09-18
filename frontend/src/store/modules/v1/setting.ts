@@ -52,23 +52,25 @@ export const useSettingV1Store = defineStore("setting_v1", {
       );
     },
     async fetchSettingByName(name: SettingName, silent = false) {
-      const setting = await settingServiceClient.getSetting(
-        {
-          name: `${settingNamePrefix}${name}`,
-        },
-        {
-          silent,
-        }
-      );
-      this.settingMapByName.set(setting.name, setting);
-      return setting;
+      try {
+        const setting = await settingServiceClient.getSetting(
+          {
+            name: `${settingNamePrefix}${name}`,
+          },
+          { silent }
+        );
+        this.settingMapByName.set(setting.name, setting);
+        return setting;
+      } catch {
+        return;
+      }
     },
-    getOrFetchSettingByName(name: SettingName) {
+    getOrFetchSettingByName(name: SettingName, silent = false) {
       const setting = this.getSettingByName(name);
       if (setting) {
         return setting;
       }
-      return this.fetchSettingByName(name);
+      return this.fetchSettingByName(name, silent);
     },
     getSettingByName(name: SettingName) {
       return this.settingMapByName.get(`${settingNamePrefix}${name}`);

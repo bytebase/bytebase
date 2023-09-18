@@ -626,16 +626,27 @@
       "remove-sensitive-column-tips": "Expose this column?",
       "sensitive-column-list": "Explict masked column list",
       "global-masking-rule": "Global Masking Rule",
-      "semantic-types": "Semantic Types",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
       "global-rules": {
+        "self": "Global Masking Rule",
         "description": "Use global rule to apply masking levels in batch, e.g. all columns named as \"email\" will be masked with \"Partial\" level.",
         "condition-order": "Condition order",
         "add-rule": "Add rule",
         "re-order": "Re-order",
         "delete-rule-tip": "Delete this rule?",
         "check-rules": "Check global rules"
+      },
+      "semantic-types": {
+        "self": "Semantic Types",
+        "add-type": "Add type",
+        "table": {
+          "semantic-type": "Semantic type",
+          "description": "Description",
+          "full-masking-algorithm": "Full-masking algorithm",
+          "partial-masking-algorithm": "Partial-masking algorithm",
+          "delete": "Delete this semantic type?"
+        }
       },
       "column-detail": {
         "masking-setting-for-column": "Masking Setting for \"{column}\"",
