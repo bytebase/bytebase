@@ -1,15 +1,27 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto px-4">
+  <div class="space-y-3 w-full overflow-x-auto px-4 pt-1">
     <div class="w-full flex flex-row justify-between items-center">
-      <div class="w-full flex flex-row justify-start items-center">
-        <span class="flex w-40 items-center shrink-0 text-sm">
-          {{ $t("common.project") }}
-        </span>
+      <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <a
           class="normal-link inline-flex items-center"
           :href="`/project/${projectV1Slug(project)}`"
           >{{ project.title }}</a
         >
+        <span class="ml-1 -mr-2">/</span>
+        <NInput
+          v-model:value="state.schemaDesignTitle"
+          class="!w-auto"
+          :passively-activated="true"
+          :style="titleInputStyle"
+          :readonly="!state.isEditingTitle"
+          :placeholder="'feature/add-billing'"
+          @focus="state.isEditingTitle = true"
+          @blur="handleBranchTitleInputBlur"
+        />
+        <NTag v-if="parentBranch" round>
+          {{ $t("schema-designer.parent-branch") }}:
+          {{ parentBranch.title }}
+        </NTag>
       </div>
       <div>
         <div class="w-full flex flex-row justify-between items-center">
@@ -30,106 +42,44 @@
       </div>
     </div>
 
-    <div class="w-full flex flex-row justify-start items-center mt-1">
-      <span class="flex w-40 items-center text-sm">{{
-        $t("database.branch-name")
-      }}</span>
-      <div class="flex flex-row justify-start items-center gap-x-4">
-        <BBTextField
-          class="w-60 text-sm"
-          :readonly="!state.isEditingTitle"
-          :value="state.schemaDesignTitle"
-          :placeholder="'feature/add-billing'"
-          @input="
-            state.schemaDesignTitle = ($event.target as HTMLInputElement).value
-          "
+    <NDivider />
+
+    <div class="w-full flex flex-row justify-between items-center mt-1 gap-4">
+      <div class="flex flex-row justify-start items-center">
+        <span class="mr-4">{{ $t("schema-designer.baseline-version") }}:</span>
+        <DatabaseInfo
+          class="flex-nowrap mr-4 shrink-0"
+          :database="baselineDatabase"
         />
-
-        <NButton
-          v-if="!state.isEditingTitle"
-          text
-          @click="state.isEditingTitle = true"
-        >
-          <template #icon>
-            <NIcon size="16">
-              <Pen />
-            </NIcon>
-          </template>
-        </NButton>
-        <template v-else>
-          <NButton text type="warning" @click="handleCancelEditTitle">
-            <template #icon>
-              <NIcon>
-                <X />
-              </NIcon>
-            </template>
-          </NButton>
-          <NButton type="success" text @click="handleSaveBranchTitle">
-            <template #icon>
-              <NIcon>
-                <Check />
-              </NIcon>
-            </template>
-          </NButton>
-        </template>
-
-        <NTag v-if="parentBranch" round>
-          {{ $t("schema-designer.parent-branch") }}:
-          {{ parentBranch.title }}
-        </NTag>
-      </div>
-    </div>
-
-    <NDivider />
-
-    <div class="w-full flex flex-row justify-start items-center mt-1">
-      <span class="flex w-40 items-center text-sm font-medium">{{
-        $t("schema-designer.baseline-version")
-      }}</span>
-    </div>
-
-    <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center shrink-0 text-sm">
-        {{ $t("common.database") }}
-      </span>
-      <DatabaseInfo :database="baselineDatabase" />
-    </div>
-
-    <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center shrink-0 text-sm">
-        {{ $t("schema-designer.schema-version") }}
-      </span>
-      <div class="w-[calc(100%-10rem)]">
-        <div
-          v-if="changeHistory"
-          class="w-full flex flex-row justify-start items-center"
-        >
-          <span class="block pr-2 w-full max-w-[80%] truncate">
-            {{ changeHistory.version }} -
-            {{ changeHistory.description }}
-          </span>
-          <span class="text-control-light">
-            {{ humanizeDate(changeHistory.updateTime) }}
-          </span>
+        <div>
+          <NTooltip v-if="changeHistory" trigger="hover">
+            <template #trigger> @{{ changeHistory.version }} </template>
+            <div class="w-full flex flex-row justify-start items-center">
+              <span class="block pr-2 w-full max-w-[32rem] truncate">
+                {{ changeHistory.version }} -
+                {{ changeHistory.description }}
+              </span>
+              <span class="opacity-60">
+                {{ humanizeDate(changeHistory.updateTime) }}
+              </span>
+            </div>
+          </NTooltip>
+          <div v-else>
+            {{ "Previously latest schema" }}
+          </div>
         </div>
+      </div>
+      <div class="w-full flex flex-row justify-end gap-2">
+        <template v-if="!state.isEditing">
+          <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
+        </template>
         <template v-else>
-          {{ "Previously latest schema" }}
+          <NButton @click="handleCancelEdit">{{ $t("common.cancel") }}</NButton>
+          <NButton type="primary" @click="handleSaveSchemaDesignDraft">{{
+            $t("common.save")
+          }}</NButton>
         </template>
       </div>
-    </div>
-
-    <NDivider />
-
-    <div class="w-full flex flex-row justify-end gap-2">
-      <template v-if="!state.isEditing">
-        <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-      </template>
-      <template v-else>
-        <NButton @click="handleCancelEdit">{{ $t("common.cancel") }}</NButton>
-        <NButton type="primary" @click="handleSaveSchemaDesignDraft">{{
-          $t("common.save")
-        }}</NButton>
-      </template>
     </div>
 
     <div class="w-full h-[32rem]">
@@ -164,10 +114,10 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { cloneDeep, isEqual, uniqueId } from "lodash-es";
-import { Pen, X, Check } from "lucide-vue-next";
-import { NButton, NDivider, useDialog, NTag, NIcon } from "naive-ui";
+import { NButton, NDivider, NInput, NTooltip, useDialog, NTag } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, reactive, ref, watch } from "vue";
+import { CSSProperties, computed, reactive, ref, watch } from "vue";
+import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
@@ -260,6 +210,32 @@ const project = computed(() => {
   return baselineDatabase.value.projectEntity;
 });
 
+const titleInputStyle = computed(() => {
+  const style: CSSProperties = {
+    cursor: "default",
+    "--n-color-disabled": "transparent",
+    "--n-font-size": "16px",
+  };
+  const border = state.isEditingTitle
+    ? "1px solid var(--color-control-border)"
+    : "none";
+  style["--n-border"] = border;
+  style["--n-border-disabled"] = border;
+
+  return style;
+});
+
+onMounted(async () => {
+  if (
+    schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
+    state.schemaDesignName !== createdBranchName.value
+  ) {
+    await schemaDesignStore.getOrFetchSchemaDesignByName(
+      schemaDesign.value.baselineSheetName || ""
+    );
+  }
+});
+
 const prepareBaselineDatabase = async () => {
   const database = await databaseStore.getOrFetchDatabaseByName(
     schemaDesign.value.baselineDatabase
@@ -281,7 +257,7 @@ watch(
   }
 );
 
-const handleSaveBranchTitle = async () => {
+const handleBranchTitleInputBlur = async () => {
   if (state.schemaDesignTitle === "") {
     pushNotification({
       module: "bytebase",
@@ -317,11 +293,6 @@ const handleSaveBranchTitle = async () => {
       title: t("schema-designer.message.updated-succeed"),
     });
   }
-  state.isEditingTitle = false;
-};
-
-const handleCancelEditTitle = () => {
-  state.schemaDesignTitle = schemaDesign.value.title;
   state.isEditingTitle = false;
 };
 
