@@ -559,6 +559,11 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 			view.Comment = comment.String
 		}
 
+		// Skip system views.
+		if IsSystemView(view.Name) {
+			continue
+		}
+
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
 	if err := rows.Err(); err != nil {
@@ -753,7 +758,11 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 			return nil, err
 		}
 		// Skip internal functions.
+		// TODO(d): move this to IsSystemFunctions.
 		if strings.Contains(function.Definition, "$libdir/timescaledb") {
+			continue
+		}
+		if IsSystemFunctions(function.Name) {
 			continue
 		}
 
