@@ -20,7 +20,7 @@
           <GlobalMaskingRulesView />
         </BBTabPanel>
         <BBTabPanel :active="state.selectedIndex === 2">
-          <DataFeatureView />
+          <SemanticTypesView />
         </BBTabPanel>
       </div>
     </BBTab>
@@ -35,7 +35,7 @@ import type { BBTabItem } from "@/bbkit/types";
 import {
   SensitiveColumnView,
   GlobalMaskingRulesView,
-  DataFeatureView,
+  SemanticTypesView,
 } from "@/components/SensitiveData";
 import { featureToRef } from "@/store";
 import { isDev } from "@/utils";
@@ -58,13 +58,13 @@ const tabItemList = computed((): BBTabItem[] => {
       id: "sensitive-column-list",
     },
     {
-      title: t("settings.sensitive-data.global-masking-rule"),
+      title: t("settings.sensitive-data.global-rules.self"),
       id: "global-masking-rule",
     },
   ];
   if (isDev()) {
     tabList.push({
-      title: t("settings.sensitive-data.semantic-types"),
+      title: t("settings.sensitive-data.semantic-types.self"),
       id: "semantic-types",
     });
   }

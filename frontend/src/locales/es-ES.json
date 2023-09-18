@@ -625,16 +625,27 @@
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
       "sensitive-column-list": "Lista de columnas enmascaradas explícitas",
       "global-masking-rule": "Regla de enmascaramiento global",
-      "semantic-types": "Tipos semánticos",
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
       "global-rules": {
+        "self": "Regla de enmascaramiento global",
         "description": "Utilice la regla global para aplicar niveles de enmascaramiento por lotes, p. Todas las columnas denominadas \"correo electrónico\" se enmascararán con el nivel \"Parcial\".",
         "condition-order": "Orden de condición",
         "add-rule": "Agregar regla",
         "re-order": "Reordenar",
         "delete-rule-tip": "¿Eliminar esta regla?",
         "check-rules": "Check global rules"
+      },
+      "semantic-types": {
+        "self": "Tipos semánticos",
+        "add-type": "Agregar tipo",
+        "table": {
+          "semantic-type": "Tipo semántico",
+          "description": "Descripción",
+          "full-masking-algorithm": "Algoritmo de enmascaramiento completo",
+          "partial-masking-algorithm": "Algoritmo de enmascaramiento parcial",
+          "delete": "¿Eliminar este tipo semántico?"
+        }
       },
       "column-detail": {
         "masking-setting-for-column": "Configuración de enmascaramiento para \"{columna}\"",
