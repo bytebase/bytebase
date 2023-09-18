@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
@@ -2073,68 +2072,6 @@ export const IdentityProviderServiceDefinition = {
     },
   },
 } as const;
-
-export interface IdentityProviderServiceImplementation<CallContextExt = {}> {
-  getIdentityProvider(
-    request: GetIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IdentityProvider>>;
-  listIdentityProviders(
-    request: ListIdentityProvidersRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListIdentityProvidersResponse>>;
-  createIdentityProvider(
-    request: CreateIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IdentityProvider>>;
-  updateIdentityProvider(
-    request: UpdateIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IdentityProvider>>;
-  deleteIdentityProvider(
-    request: DeleteIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-  undeleteIdentityProvider(
-    request: UndeleteIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IdentityProvider>>;
-  testIdentityProvider(
-    request: TestIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<TestIdentityProviderResponse>>;
-}
-
-export interface IdentityProviderServiceClient<CallOptionsExt = {}> {
-  getIdentityProvider(
-    request: DeepPartial<GetIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IdentityProvider>;
-  listIdentityProviders(
-    request: DeepPartial<ListIdentityProvidersRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListIdentityProvidersResponse>;
-  createIdentityProvider(
-    request: DeepPartial<CreateIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IdentityProvider>;
-  updateIdentityProvider(
-    request: DeepPartial<UpdateIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IdentityProvider>;
-  deleteIdentityProvider(
-    request: DeepPartial<DeleteIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-  undeleteIdentityProvider(
-    request: DeepPartial<UndeleteIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IdentityProvider>;
-  testIdentityProvider(
-    request: DeepPartial<TestIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<TestIdentityProviderResponse>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

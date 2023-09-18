@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -1710,68 +1709,6 @@ export const SchemaDesignServiceDefinition = {
     },
   },
 } as const;
-
-export interface SchemaDesignServiceImplementation<CallContextExt = {}> {
-  getSchemaDesign(
-    request: GetSchemaDesignRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaDesign>>;
-  listSchemaDesigns(
-    request: ListSchemaDesignsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSchemaDesignsResponse>>;
-  createSchemaDesign(
-    request: CreateSchemaDesignRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaDesign>>;
-  updateSchemaDesign(
-    request: UpdateSchemaDesignRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaDesign>>;
-  mergeSchemaDesign(
-    request: MergeSchemaDesignRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaDesign>>;
-  parseSchemaString(
-    request: ParseSchemaStringRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ParseSchemaStringResponse>>;
-  deleteSchemaDesign(
-    request: DeleteSchemaDesignRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-}
-
-export interface SchemaDesignServiceClient<CallOptionsExt = {}> {
-  getSchemaDesign(
-    request: DeepPartial<GetSchemaDesignRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaDesign>;
-  listSchemaDesigns(
-    request: DeepPartial<ListSchemaDesignsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSchemaDesignsResponse>;
-  createSchemaDesign(
-    request: DeepPartial<CreateSchemaDesignRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaDesign>;
-  updateSchemaDesign(
-    request: DeepPartial<UpdateSchemaDesignRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaDesign>;
-  mergeSchemaDesign(
-    request: DeepPartial<MergeSchemaDesignRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaDesign>;
-  parseSchemaString(
-    request: DeepPartial<ParseSchemaStringRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ParseSchemaStringResponse>;
-  deleteSchemaDesign(
-    request: DeepPartial<DeleteSchemaDesignRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
