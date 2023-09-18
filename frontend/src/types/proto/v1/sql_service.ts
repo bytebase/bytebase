@@ -230,7 +230,6 @@ export interface PrettyResponse {
 
 export interface CheckRequest {
   statement: string;
-  engine: Engine;
   changeDatabaseType: CheckRequest_ChangeDatabaseType;
   /** Format: instances/{instance}/databases/{databaseName} */
   database: string;
@@ -1729,7 +1728,7 @@ export const PrettyResponse = {
 };
 
 function createBaseCheckRequest(): CheckRequest {
-  return { statement: "", engine: 0, changeDatabaseType: 0, database: "" };
+  return { statement: "", changeDatabaseType: 0, database: "" };
 }
 
 export const CheckRequest = {
@@ -1737,14 +1736,11 @@ export const CheckRequest = {
     if (message.statement !== "") {
       writer.uint32(10).string(message.statement);
     }
-    if (message.engine !== 0) {
-      writer.uint32(16).int32(message.engine);
-    }
     if (message.changeDatabaseType !== 0) {
-      writer.uint32(24).int32(message.changeDatabaseType);
+      writer.uint32(16).int32(message.changeDatabaseType);
     }
     if (message.database !== "") {
-      writer.uint32(34).string(message.database);
+      writer.uint32(26).string(message.database);
     }
     return writer;
   },
@@ -1768,17 +1764,10 @@ export const CheckRequest = {
             break;
           }
 
-          message.engine = reader.int32() as any;
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
           message.changeDatabaseType = reader.int32() as any;
           continue;
-        case 4:
-          if (tag !== 34) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
@@ -1796,7 +1785,6 @@ export const CheckRequest = {
   fromJSON(object: any): CheckRequest {
     return {
       statement: isSet(object.statement) ? String(object.statement) : "",
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       changeDatabaseType: isSet(object.changeDatabaseType)
         ? checkRequest_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
         : 0,
@@ -1807,7 +1795,6 @@ export const CheckRequest = {
   toJSON(message: CheckRequest): unknown {
     const obj: any = {};
     message.statement !== undefined && (obj.statement = message.statement);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     message.changeDatabaseType !== undefined &&
       (obj.changeDatabaseType = checkRequest_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
     message.database !== undefined && (obj.database = message.database);
@@ -1821,7 +1808,6 @@ export const CheckRequest = {
   fromPartial(object: DeepPartial<CheckRequest>): CheckRequest {
     const message = createBaseCheckRequest();
     message.statement = object.statement ?? "";
-    message.engine = object.engine ?? 0;
     message.changeDatabaseType = object.changeDatabaseType ?? 0;
     message.database = object.database ?? "";
     return message;
