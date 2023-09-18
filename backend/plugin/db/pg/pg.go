@@ -239,11 +239,9 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSche
 
 // getVersion gets the version of Postgres server.
 func (driver *Driver) getVersion(ctx context.Context) (string, error) {
-	// SHOW server_version_num returns an integer such as 100005, which means 10.0.5.
-	// It is more convenient to use SHOW server_version to get the version string.
-	// PostgreSQL supports it since 8.2.
+	// PostgreSQL supports SHOW server_version since 8.2.
 	// https://www.postgresql.org/docs/current/functions-info.html
-	query := "SHOW server_version_num"
+	query := "SHOW server_version"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
