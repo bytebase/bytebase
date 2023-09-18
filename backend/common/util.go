@@ -28,8 +28,8 @@ const (
 	MaxSheetSizeForRollback = 8 * 1024 * 1024
 	// MaxSheetSizeForPlanCheckDML is the maximum size of a sheet for plan check to check DML changes.
 	MaxSheetSizeForPlanCheckDML = 512 * 1024
-	// MaxStatementSizeForSqlReview is the maximum size of the statement to do sql review checks in sql service.
-	MaxStatementSizeForSqlReview = 512 * 1024
+	// MaxStatementSizeForSQLReview is the maximum size of the statement to do sql review checks in sql service.
+	MaxStatementSizeForSQLReview = 512 * 1024
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
