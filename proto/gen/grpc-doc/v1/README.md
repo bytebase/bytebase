@@ -8689,7 +8689,6 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| sensitive | [bool](#bool) |  |  |
 
 
 

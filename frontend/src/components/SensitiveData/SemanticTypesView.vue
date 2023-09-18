@@ -75,7 +75,6 @@
               :placeholder="
                 $t('custom-approval.security-rule.condition.select-value')
               "
-              :disabled="!hasPermission || !hasSensitiveDataFeature"
               size="small"
               style="min-width: 7rem; width: auto; overflow-x: hidden"
               @update:value="(val: string) => onInput(row, (data) => data.item.fullMaskAlgorithmId = val)"
@@ -93,13 +92,15 @@
               :placeholder="
                 $t('custom-approval.security-rule.condition.select-value')
               "
-              :disabled="!hasPermission || !hasSensitiveDataFeature"
               size="small"
               style="min-width: 7rem; width: auto; overflow-x: hidden"
               @update:value="(val: string) => onInput(row, (data) => data.item.partialMaskAlgorithmId = val)"
             />
           </BBTableCell>
-          <BBTableCell v-if="hasPermission" class="bb-grid-cell w-6">
+          <BBTableCell
+            v-if="hasPermission && hasSensitiveDataFeature"
+            class="bb-grid-cell w-6"
+          >
             <div class="flex justify-end items-center space-x-2">
               <NPopconfirm
                 v-if="rowData.mode === 'EDIT'"
@@ -108,7 +109,6 @@
                 <template #trigger>
                   <button
                     class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-                    :disabled="!hasPermission"
                     @click.stop=""
                   >
                     <heroicons-outline:trash class="w-4 h-4" />
@@ -132,7 +132,7 @@
               <NButton
                 v-if="rowData.mode !== 'NORMAL'"
                 type="primary"
-                :disabled="isConfirmDisabled(rowData) || !hasPermission"
+                :disabled="isConfirmDisabled(rowData)"
                 size="small"
                 @click.stop="onConfirm(row)"
               >
@@ -142,7 +142,6 @@
               <button
                 v-if="rowData.mode === 'NORMAL'"
                 class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-                :disabled="!hasPermission"
                 @click.stop="rowData.mode = 'EDIT'"
               >
                 <heroicons-outline:pencil class="w-4 h-4" />
@@ -244,7 +243,7 @@ const tableHeaderList = computed(() => {
       ),
     },
   ];
-  if (hasPermission.value) {
+  if (hasPermission.value && hasSensitiveDataFeature.value) {
     // operation.
     list.push({
       title: "",
