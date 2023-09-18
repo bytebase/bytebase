@@ -7,8 +7,8 @@
   <div class="flex flex-wrap pt-4 radio-set-row gap-4">
     <label
       v-for="vcsWithUIType in vcsListByUIType"
-      class="radio space-x-2"
       :key="vcsWithUIType.uiType"
+      class="radio space-x-2"
     >
       <input
         v-model="config.uiType"
