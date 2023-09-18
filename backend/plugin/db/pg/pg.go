@@ -254,7 +254,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	}
 	versionNum, err := strconv.Atoi(version)
 	if err != nil {
-		return version, err
+		return "", err
 	}
 	// https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION
 	const majorMultiplier = 10_000
