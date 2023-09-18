@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="title"
     class="text-left pl-4 pt-4 pb-2 py-text-base leading-6 font-medium text-gray-900"
   >
     {{ title }}
