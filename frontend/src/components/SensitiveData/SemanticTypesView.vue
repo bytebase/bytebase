@@ -203,7 +203,7 @@ onMounted(async () => {
     true
   );
   state.semanticItemList = (
-    semanticTypeSetting.value?.semanticTypesSettingValue?.types ?? []
+    semanticTypeSetting?.value?.semanticTypesSettingValue?.types ?? []
   ).map((semanticType) => {
     return {
       dirty: false,
