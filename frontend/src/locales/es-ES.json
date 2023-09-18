@@ -2101,7 +2101,7 @@
     "setting": {
       "description": "Una etiqueta es un par clave-valor que le ayuda a identificar el inquilino para una base de datos. {link}."
     },
-    "db-name-template-tips": "Si tus bases de datos de inquilinos siguen una plantilla de nombres, puedes especificarla aquí. Por ejemplo, si las bases de datos se llaman db1__SH, db1__BJ, db1__GZ, entonces la plantilla podría ser {placeholder}. {link}.",
+    "db-name-template-tips": "Especifique una plantilla para aplicar la denominación de la base de datos. Por ejemplo, si su base de datos db1 está dividida geográficamente en EE. UU., Asia y Europa y desea aplicar nombres como db1__US, db1__ASIA, db1__EU, entonces la plantilla podría ser {placeholder}. {link}.",
     "confirm-change": "¿Estás seguro de cambiar '{label}'?",
     "parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
     "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}."
