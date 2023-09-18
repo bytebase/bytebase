@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -251,6 +252,13 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 		}
 		return "", util.FormatErrorWithQuery(err, query)
 	}
+	versionNum, err := strconv.Atoi(version)
+	if err != nil {
+		return "", err
+	}
+	// https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION
+	const majorMultiplier = 10_000
+	version = fmt.Sprintf("%d.%d", versionNum/majorMultiplier, versionNum%majorMultiplier)
 	return version, nil
 }
 
