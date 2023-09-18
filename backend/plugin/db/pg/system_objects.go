@@ -1,10 +1,13 @@
 package pg
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 var (
-	// excludedDatabaseList is the list of system or internal databases.
-	excludedDatabaseList = map[string]bool{
+	// systemDatabases is the list of system or internal databases.
+	systemDatabases = map[string]bool{
 		// Skip our internal "bytebase" database
 		"bytebase": true,
 		// Skip internal databases from cloud service providers
@@ -20,8 +23,8 @@ var (
 		"template1": true,
 	}
 
-	// systemSchemaList is the list of system schemas that we will exclude from the schema sync.
-	systemSchemaList = map[string]bool{
+	// systemSchemas is the list of system schemas that we will exclude from the schema sync.
+	systemSchemas = map[string]bool{
 		"information_schema":       true,
 		"pg_catalog":               true,
 		"pg_toast":                 true,
@@ -33,8 +36,8 @@ var (
 		"timescaledb_experimental": true,
 	}
 
-	// systemTableList is the list of system tables that we will exclude from the schema sync.
-	systemTableList = map[string]bool{
+	// systemTables is the list of system tables that we will exclude from the schema sync.
+	systemTables = map[string]bool{
 		"pg_aggregate":               true,
 		"pg_am":                      true,
 		"pg_amop":                    true,
@@ -121,25 +124,31 @@ var (
 		"pg_stat_user_functions":     true,
 		"pg_stat_slru":               true,
 	}
-)
 
-const systemSchemas = "'information_schema', 'pg_catalog', 'pg_toast', '_timescaledb_cache', '_timescaledb_catalog', '_timescaledb_internal', '_timescaledb_config', 'timescaledb_information', 'timescaledb_experimental'"
+	systemSchemaWhereClause = func() string {
+		var schemas []string
+		for schema := range systemSchemas {
+			schemas = append(schemas, fmt.Sprintf("'%s'", schema))
+		}
+		return strings.Join(schemas, ",")
+	}()
+)
 
 func IsSystemUser(user string) bool {
 	return strings.HasPrefix(user, "alloydb")
 }
 
 func IsSystemDatabase(database string) bool {
-	_, ok := excludedDatabaseList[database]
+	_, ok := systemDatabases[database]
 	return ok
 }
 
 func IsSystemSchema(schema string) bool {
-	_, ok := systemSchemaList[schema]
+	_, ok := systemSchemas[schema]
 	return ok
 }
 func IsSystemTable(table string) bool {
-	_, ok := systemTableList[table]
+	_, ok := systemTables[table]
 	return ok
 }
 

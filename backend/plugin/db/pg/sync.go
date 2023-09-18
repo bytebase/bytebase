@@ -150,7 +150,7 @@ FROM
 WHERE
 	n.nspname NOT IN(%s)
 	AND c.contype = 'f'
-ORDER BY fk_schema, fk_table, fk_name;`, systemSchemas)
+ORDER BY fk_schema, fk_table, fk_name;`, systemSchemaWhereClause)
 
 func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
@@ -268,7 +268,7 @@ var listSchemaQuery = fmt.Sprintf(`
 SELECT nspname
 FROM pg_catalog.pg_namespace
 WHERE nspname NOT IN (%s);
-`, systemSchemas)
+`, systemSchemaWhereClause)
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
 	rows, err := txn.Query(listSchemaQuery)
@@ -304,7 +304,7 @@ SELECT tbl.schemaname, tbl.tablename,
 FROM pg_catalog.pg_tables tbl
 LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass` + fmt.Sprintf(`
 WHERE tbl.schemaname NOT IN (%s)
-ORDER BY tbl.schemaname, tbl.tablename;`, systemSchemas)
+ORDER BY tbl.schemaname, tbl.tablename;`, systemSchemaWhereClause)
 
 // getTables gets all tables of a database.
 func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
@@ -370,7 +370,7 @@ SELECT
 	pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
 FROM INFORMATION_SCHEMA.COLUMNS AS cols` + fmt.Sprintf(`
 WHERE cols.table_schema NOT IN (%s)
-ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, systemSchemas)
+ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, systemSchemaWhereClause)
 
 // getTableColumns gets the columns of a table.
 func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
@@ -416,7 +416,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 
 var listViewQuery = `
 SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views` + fmt.Sprintf(`
-WHERE schemaname NOT IN (%s);`, systemSchemas)
+WHERE schemaname NOT IN (%s);`, systemSchemaWhereClause)
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
@@ -553,7 +553,7 @@ SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
 	AND constraint_type = 'PRIMARY KEY') AS primary,
 	obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment` + fmt.Sprintf(`
 FROM pg_indexes AS idx WHERE idx.schemaname NOT IN (%s)
-ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, systemSchemas)
+ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, systemSchemaWhereClause)
 
 // getIndexes gets all indices of a database.
 func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
@@ -625,7 +625,7 @@ left join pg_namespace n on p.pronamespace = n.oid
 left join pg_language l on p.prolang = l.oid
 left join pg_type t on t.oid = p.prorettype ` + fmt.Sprintf(`
 where n.nspname not in (%s)
-order by function_schema, function_name;`, systemSchemas)
+order by function_schema, function_name;`, systemSchemaWhereClause)
 
 // getFunctions gets all functions of a database.
 func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
