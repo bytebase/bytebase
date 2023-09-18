@@ -257,7 +257,8 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 		return version, err
 	}
 	// https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION
-	version = fmt.Sprintf("%d.%d", versionNum/10000, versionNum%10000)
+	const majorMultiplier = 10_000
+	version = fmt.Sprintf("%d.%d", versionNum/majorMultiplier, versionNum%majorMultiplier)
 	return version, nil
 }
 
