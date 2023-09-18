@@ -135,7 +135,6 @@ import {
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
-  originalAnnouncement?: Announcement;
   announcement: Announcement;
   showFeatureModal: boolean;
 }
@@ -155,7 +154,6 @@ const defaultAnnouncement = function (): Announcement {
 
 const state = reactive<LocalState>({
   announcement: defaultAnnouncement(),
-  originalAnnouncement: undefined,
   showFeatureModal: false,
 });
 
@@ -163,7 +161,6 @@ watchEffect(() => {
   const announcement = settingV1Store.workspaceProfileSetting?.announcement;
   if (announcement) {
     state.announcement = cloneDeep(announcement);
-    state.originalAnnouncement = cloneDeep(announcement);
   }
 });
 
@@ -180,13 +177,16 @@ const allowSave = computed((): boolean => {
   }
 
   if (
-    state.originalAnnouncement === undefined &&
+    settingV1Store.workspaceProfileSetting?.announcement === undefined &&
     state.announcement.text === ""
   ) {
     return false;
   }
 
-  return !isEqual(state.originalAnnouncement, state.announcement);
+  return !isEqual(
+    settingV1Store.workspaceProfileSetting?.announcement,
+    state.announcement
+  );
 });
 
 const handleAnnouncementContentChange = (event: InputEvent) => {
@@ -229,7 +229,6 @@ const updateAnnouncementSetting = async () => {
   const currentSetting: Announcement | undefined = cloneDeep(
     settingV1Store.workspaceProfileSetting?.announcement
   );
-  state.originalAnnouncement = cloneDeep(currentSetting);
   if (currentSetting === undefined) {
     state.announcement = defaultAnnouncement();
   } else {

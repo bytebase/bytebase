@@ -1,7 +1,6 @@
 /* eslint-disable */
-import * as Long from "long";
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
 import { Engine, engineFromJSON, engineToJSON, ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
@@ -230,54 +229,8 @@ export interface PrettyResponse {
 
 export interface CheckRequest {
   statement: string;
-  changeDatabaseType: CheckRequest_ChangeDatabaseType;
   /** Format: instances/{instance}/databases/{databaseName} */
   database: string;
-}
-
-export enum CheckRequest_ChangeDatabaseType {
-  CHANGE_DATABASE_TYPE_UNSPECIFIED = 0,
-  DDL = 1,
-  DML = 2,
-  SDL = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function checkRequest_ChangeDatabaseTypeFromJSON(object: any): CheckRequest_ChangeDatabaseType {
-  switch (object) {
-    case 0:
-    case "CHANGE_DATABASE_TYPE_UNSPECIFIED":
-      return CheckRequest_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED;
-    case 1:
-    case "DDL":
-      return CheckRequest_ChangeDatabaseType.DDL;
-    case 2:
-    case "DML":
-      return CheckRequest_ChangeDatabaseType.DML;
-    case 3:
-    case "SDL":
-      return CheckRequest_ChangeDatabaseType.SDL;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return CheckRequest_ChangeDatabaseType.UNRECOGNIZED;
-  }
-}
-
-export function checkRequest_ChangeDatabaseTypeToJSON(object: CheckRequest_ChangeDatabaseType): string {
-  switch (object) {
-    case CheckRequest_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED:
-      return "CHANGE_DATABASE_TYPE_UNSPECIFIED";
-    case CheckRequest_ChangeDatabaseType.DDL:
-      return "DDL";
-    case CheckRequest_ChangeDatabaseType.DML:
-      return "DML";
-    case CheckRequest_ChangeDatabaseType.SDL:
-      return "SDL";
-    case CheckRequest_ChangeDatabaseType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
 }
 
 export interface CheckResponse {
@@ -1728,7 +1681,7 @@ export const PrettyResponse = {
 };
 
 function createBaseCheckRequest(): CheckRequest {
-  return { statement: "", changeDatabaseType: 0, database: "" };
+  return { statement: "", database: "" };
 }
 
 export const CheckRequest = {
@@ -1736,11 +1689,8 @@ export const CheckRequest = {
     if (message.statement !== "") {
       writer.uint32(10).string(message.statement);
     }
-    if (message.changeDatabaseType !== 0) {
-      writer.uint32(16).int32(message.changeDatabaseType);
-    }
     if (message.database !== "") {
-      writer.uint32(26).string(message.database);
+      writer.uint32(18).string(message.database);
     }
     return writer;
   },
@@ -1760,14 +1710,7 @@ export const CheckRequest = {
           message.statement = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.changeDatabaseType = reader.int32() as any;
-          continue;
-        case 3:
-          if (tag !== 26) {
+          if (tag !== 18) {
             break;
           }
 
@@ -1785,9 +1728,6 @@ export const CheckRequest = {
   fromJSON(object: any): CheckRequest {
     return {
       statement: isSet(object.statement) ? String(object.statement) : "",
-      changeDatabaseType: isSet(object.changeDatabaseType)
-        ? checkRequest_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
-        : 0,
       database: isSet(object.database) ? String(object.database) : "",
     };
   },
@@ -1795,8 +1735,6 @@ export const CheckRequest = {
   toJSON(message: CheckRequest): unknown {
     const obj: any = {};
     message.statement !== undefined && (obj.statement = message.statement);
-    message.changeDatabaseType !== undefined &&
-      (obj.changeDatabaseType = checkRequest_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
     message.database !== undefined && (obj.database = message.database);
     return obj;
   },
@@ -1808,7 +1746,6 @@ export const CheckRequest = {
   fromPartial(object: DeepPartial<CheckRequest>): CheckRequest {
     const message = createBaseCheckRequest();
     message.statement = object.statement ?? "";
-    message.changeDatabaseType = object.changeDatabaseType ?? 0;
     message.database = object.database ?? "";
     return message;
   },
@@ -2065,36 +2002,6 @@ export const SQLServiceDefinition = {
   },
 } as const;
 
-export interface SQLServiceImplementation<CallContextExt = {}> {
-  pretty(request: PrettyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<PrettyResponse>>;
-  query(request: QueryRequest, context: CallContext & CallContextExt): Promise<DeepPartial<QueryResponse>>;
-  export(request: ExportRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ExportResponse>>;
-  adminExecute(
-    request: AsyncIterable<AdminExecuteRequest>,
-    context: CallContext & CallContextExt,
-  ): ServerStreamingMethodResult<DeepPartial<AdminExecuteResponse>>;
-  differPreview(
-    request: DifferPreviewRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DifferPreviewResponse>>;
-  check(request: CheckRequest, context: CallContext & CallContextExt): Promise<DeepPartial<CheckResponse>>;
-}
-
-export interface SQLServiceClient<CallOptionsExt = {}> {
-  pretty(request: DeepPartial<PrettyRequest>, options?: CallOptions & CallOptionsExt): Promise<PrettyResponse>;
-  query(request: DeepPartial<QueryRequest>, options?: CallOptions & CallOptionsExt): Promise<QueryResponse>;
-  export(request: DeepPartial<ExportRequest>, options?: CallOptions & CallOptionsExt): Promise<ExportResponse>;
-  adminExecute(
-    request: AsyncIterable<DeepPartial<AdminExecuteRequest>>,
-    options?: CallOptions & CallOptionsExt,
-  ): AsyncIterable<AdminExecuteResponse>;
-  differPreview(
-    request: DeepPartial<DifferPreviewRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DifferPreviewResponse>;
-  check(request: DeepPartial<CheckRequest>, options?: CallOptions & CallOptionsExt): Promise<CheckResponse>;
-}
-
 declare const self: any | undefined;
 declare const window: any | undefined;
 declare const global: any | undefined;
@@ -2153,8 +2060,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
@@ -2163,5 +2068,3 @@ if (_m0.util.Long !== Long) {
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
 }
-
-export type ServerStreamingMethodResult<Response> = { [Symbol.asyncIterator](): AsyncIterator<Response, void> };

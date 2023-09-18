@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { LogEntity } from "./logging_service";
 
@@ -680,24 +679,6 @@ export const InboxServiceDefinition = {
     },
   },
 } as const;
-
-export interface InboxServiceImplementation<CallContextExt = {}> {
-  listInbox(request: ListInboxRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListInboxResponse>>;
-  getInboxSummary(
-    request: GetInboxSummaryRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<InboxSummary>>;
-  updateInbox(request: UpdateInboxRequest, context: CallContext & CallContextExt): Promise<DeepPartial<InboxMessage>>;
-}
-
-export interface InboxServiceClient<CallOptionsExt = {}> {
-  listInbox(request: DeepPartial<ListInboxRequest>, options?: CallOptions & CallOptionsExt): Promise<ListInboxResponse>;
-  getInboxSummary(
-    request: DeepPartial<GetInboxSummaryRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<InboxSummary>;
-  updateInbox(request: DeepPartial<UpdateInboxRequest>, options?: CallOptions & CallOptionsExt): Promise<InboxMessage>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

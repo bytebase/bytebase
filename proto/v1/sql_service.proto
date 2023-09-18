@@ -242,16 +242,8 @@ message PrettyResponse {
 message CheckRequest {
   string statement = 1;
 
-  enum ChangeDatabaseType {
-    CHANGE_DATABASE_TYPE_UNSPECIFIED = 0;
-    DDL = 1;
-    DML = 2;
-    SDL = 3;
-  }
-  ChangeDatabaseType change_database_type = 2;
-
   // Format: instances/{instance}/databases/{databaseName}
-  string database = 3;
+  string database = 2;
 }
 
 message CheckResponse {
