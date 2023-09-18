@@ -152,7 +152,7 @@ const defaultAnnouncement = function (): Announcement {
   };
 };
 
-const originalAnnouncement = ref<Announcement>();
+// const originalAnnouncement = ref<Announcement>();
 const state = reactive<LocalState>({
   announcement: defaultAnnouncement(),
   showFeatureModal: false,
@@ -162,7 +162,6 @@ watchEffect(() => {
   const announcement = settingV1Store.workspaceProfileSetting?.announcement;
   if (announcement) {
     state.announcement = cloneDeep(announcement);
-    originalAnnouncement.value = cloneDeep(announcement);
   }
 });
 
@@ -179,13 +178,16 @@ const allowSave = computed((): boolean => {
   }
 
   if (
-    originalAnnouncement.value === undefined &&
+    settingV1Store.workspaceProfileSetting?.announcement === undefined &&
     state.announcement.text === ""
   ) {
     return false;
   }
 
-  return !isEqual(originalAnnouncement.value, state.announcement);
+  return !isEqual(
+    settingV1Store.workspaceProfileSetting?.announcement,
+    state.announcement
+  );
 });
 
 const handleAnnouncementContentChange = (event: InputEvent) => {
@@ -228,7 +230,6 @@ const updateAnnouncementSetting = async () => {
   const currentSetting: Announcement | undefined = cloneDeep(
     settingV1Store.workspaceProfileSetting?.announcement
   );
-  originalAnnouncement.value = cloneDeep(currentSetting);
   if (currentSetting === undefined) {
     state.announcement = defaultAnnouncement();
   } else {
