@@ -9471,7 +9471,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | statement | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
 | change_database_type | [CheckRequest.ChangeDatabaseType](#bytebase-v1-CheckRequest-ChangeDatabaseType) |  |  |
 | database | [string](#string) |  | Format: instances/{instance}/databases/{databaseName} |
 
