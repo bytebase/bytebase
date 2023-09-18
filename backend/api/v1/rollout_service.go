@@ -849,16 +849,16 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 					if !ok {
 						return nil
 					}
-					_, sheetID, err := common.GetProjectResourceIDSheetUID(config.ChangeDatabaseConfig.Sheet)
+					_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.ChangeDatabaseConfig.Sheet)
 					if err != nil {
 						return status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
 					}
-					if taskPayload.SheetID == sheetID {
+					if taskPayload.SheetID == sheetUID {
 						return nil
 					}
 
 					sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-						UID: &sheetID,
+						UID: &sheetUID,
 					}, api.SystemBotID)
 					if err != nil {
 						return status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
