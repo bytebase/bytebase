@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Expr } from "../google/type/expr";
 import { IssuePayloadApproval } from "./approval";

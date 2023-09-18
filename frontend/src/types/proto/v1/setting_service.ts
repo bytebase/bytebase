@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
@@ -3493,24 +3492,6 @@ export const SettingServiceDefinition = {
     },
   },
 } as const;
-
-export interface SettingServiceImplementation<CallContextExt = {}> {
-  listSettings(
-    request: ListSettingsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSettingsResponse>>;
-  getSetting(request: GetSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
-  setSetting(request: SetSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
-}
-
-export interface SettingServiceClient<CallOptionsExt = {}> {
-  listSettings(
-    request: DeepPartial<ListSettingsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSettingsResponse>;
-  getSetting(request: DeepPartial<GetSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
-  setSetting(request: DeepPartial<SetSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
