@@ -3,12 +3,12 @@ package v1
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
+
+	"log/slog"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -124,17 +124,16 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 
 // GetSheet returns the requested sheet, cutoff the content if the content is too long and the `raw` flag in request is false.
 func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetRequest) (*v1pb.Sheet, error) {
-	projectResourceID, sheetID, err := common.GetProjectResourceIDSheetID(request.Name)
+	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	sheetIntID, err := strconv.Atoi(sheetID)
-	if err != nil || sheetIntID <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+	if sheetUID <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %d, must be positive integer", sheetUID))
 	}
 
 	find := &store.FindSheetMessage{
-		UID:      &sheetIntID,
+		UID:      &sheetUID,
 		LoadFull: request.Raw,
 	}
 
@@ -308,13 +307,12 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 		return nil, status.Errorf(codes.InvalidArgument, "sheet name cannot be empty")
 	}
 
-	projectResourceID, sheetID, err := common.GetProjectResourceIDSheetID(request.Sheet.Name)
+	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Sheet.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	sheetIntID, err := strconv.Atoi(sheetID)
-	if err != nil || sheetIntID <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+	if sheetUID <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %d, must be positive integer", sheetUID))
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -332,14 +330,14 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-		UID:        &sheetIntID,
+		UID:        &sheetUID,
 		ProjectUID: &project.UID,
 	}, currentPrincipalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
 	if sheet == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetIntID))
+		return nil, status.Errorf(codes.NotFound, "sheet %q not found", request.Sheet.Name)
 	}
 	canAccess, err := s.canWriteSheet(ctx, sheet)
 	if err != nil {
@@ -386,13 +384,9 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 
 // DeleteSheet deletes a sheet.
 func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteSheetRequest) (*emptypb.Empty, error) {
-	projectResourceID, sheetID, err := common.GetProjectResourceIDSheetID(request.Name)
+	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	sheetIDInt, err := strconv.Atoi(sheetID)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s", sheetID))
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
@@ -410,14 +404,14 @@ func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteShee
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 
 	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-		UID:        &sheetIDInt,
+		UID:        &sheetUID,
 		ProjectUID: &project.UID,
 	}, currentPrincipalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
 	if sheet == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetIDInt))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetUID))
 	}
 	canAccess, err := s.canWriteSheet(ctx, sheet)
 	if err != nil {
@@ -427,7 +421,7 @@ func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteShee
 		return nil, status.Errorf(codes.PermissionDenied, "cannot write sheet %s", sheet.Name)
 	}
 
-	if err := s.store.DeleteSheet(ctx, sheetIDInt); err != nil {
+	if err := s.store.DeleteSheet(ctx, sheetUID); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete sheet: %v", err))
 	}
 
@@ -685,17 +679,16 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 
 // UpdateSheetOrganizer upsert the sheet organizer.
 func (s *SheetService) UpdateSheetOrganizer(ctx context.Context, request *v1pb.UpdateSheetOrganizerRequest) (*v1pb.SheetOrganizer, error) {
-	_, sheetID, err := common.GetProjectResourceIDSheetID(request.Organizer.Sheet)
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Organizer.Sheet)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	sheetIntID, err := strconv.Atoi(sheetID)
-	if err != nil || sheetIntID <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+	if sheetUID <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %d, must be positive integer", sheetUID))
 	}
 
 	sheet, err := s.findSheet(ctx, &store.FindSheetMessage{
-		UID: &sheetIntID,
+		UID: &sheetUID,
 	})
 	if err != nil {
 		return nil, err
@@ -711,7 +704,7 @@ func (s *SheetService) UpdateSheetOrganizer(ctx context.Context, request *v1pb.U
 
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	sheetOrganizerUpsert := &store.SheetOrganizerMessage{
-		SheetUID:     sheetIntID,
+		SheetUID:     sheetUID,
 		PrincipalUID: currentPrincipalID,
 	}
 
