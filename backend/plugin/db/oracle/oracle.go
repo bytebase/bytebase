@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -194,4 +195,17 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, parser.Oracle, conn, statement)
+}
+
+func (driver *Driver) getMajorVersion(ctx context.Context) (int, error) {
+	var banner string
+	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'DM%'").Scan(&banner); err != nil {
+		return 0, err
+	}
+	re := regexp.MustCompile(`(\d+)`)
+	match := re.FindStringSubmatch(banner)
+	if len(match) > 0 {
+		return strconv.Atoi(match[0])
+	}
+	return 0, errors.Errorf("failed to parse major version from banner: %s", banner)
 }

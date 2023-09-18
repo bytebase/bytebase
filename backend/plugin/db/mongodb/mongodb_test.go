@@ -77,6 +77,34 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 	}
 }
 
+func TestIsMongoStatement(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      bool
+	}{
+		{
+			statement: `show collections`,
+			want:      false,
+		},
+		{
+			statement: `db.cpl_station_info.find().limit(100)`,
+			want:      true,
+		},
+		{
+			statement: ` 
+			  db.cpl_station_info.find().limit(100);
+			`,
+			want: true,
+		},
+	}
+
+	a := require.New(t)
+	for _, tt := range tests {
+		got := isMongoStatement(tt.statement)
+		a.Equal(tt.want, got, tt.statement)
+	}
+}
+
 func TestGetSimpleStatementResult(t *testing.T) {
 	v1 := `{
 	"age": 13,

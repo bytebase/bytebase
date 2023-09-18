@@ -171,10 +171,7 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	simpleStatement := false
-	if _, err := parser.ParseMongo(statement); err == nil {
-		simpleStatement = true
-	}
+	simpleStatement := isMongoStatement(statement)
 	startTime := time.Now()
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
@@ -292,4 +289,13 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 // RunStatement runs a SQL statement in a given connection.
 func (driver *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return driver.QueryConn(ctx, nil, statement, nil)
+}
+
+func isMongoStatement(statement string) bool {
+	if _, err := parser.ParseMongo(statement); err == nil {
+		return true
+	}
+	statement = strings.TrimLeft(statement, " \n\t")
+	statement = strings.ToLower(statement)
+	return strings.HasPrefix(statement, "db.")
 }

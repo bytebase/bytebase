@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -139,13 +138,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 		return nil, errors.Wrapf(err, "failed to get project id and database group id from target %q", config.Target)
 	}
 
-	_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(config.Sheet)
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.Sheet)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
-	}
-	sheetUID, err := strconv.Atoi(sheetUIDStr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert sheet id from %q", sheetUIDStr)
 	}
 
 	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -215,13 +210,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context,
 		return nil, errors.Errorf("database %q not found", databaseName)
 	}
 
-	_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(config.Sheet)
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.Sheet)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
-	}
-	sheetUID, err := strconv.Atoi(sheetUIDStr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert sheet id from %q", sheetUIDStr)
 	}
 
 	return getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database, nil)
@@ -250,13 +241,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigDeploymentConfigTarget(ctx context.
 		return nil, errors.Errorf("project %q not found", projectID)
 	}
 
-	_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(config.Sheet)
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.Sheet)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
-	}
-	sheetUID, err := strconv.Atoi(sheetUIDStr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert sheet id from %q", sheetUIDStr)
 	}
 
 	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)

@@ -1,35 +1,34 @@
 <template>
-  <div ref="wrapper" rule="database-table" v-bind="$attrs">
-    <BBGrid
-      class="border"
-      :show-placeholder="true"
-      :column-list="COLUMN_LIST"
-      :data-source="branches"
-      @click-row="clickBranch"
-    >
-      <template #item="{ item: branch }: { item: SchemaDesign }">
-        <div v-if="!hideProjectColumn" class="bb-grid-cell">
-          {{ projectV1Name(getFormatedValue(branch).project) }}
-        </div>
-        <div class="bb-grid-cell">
-          <NEllipsis :line-clamp="1">{{ branch.title }}</NEllipsis>
-        </div>
-        <div class="bb-grid-cell">
-          <NEllipsis :line-clamp="1">{{
-            getFormatedValue(branch).parentBranch
-          }}</NEllipsis>
-        </div>
-        <div class="bb-grid-cell">
-          <DatabaseInfo :database="getFormatedValue(branch).database" />
-        </div>
-        <div class="bb-grid-cell">
-          <span class="text-gray-400">{{
-            getFormatedValue(branch).updatedTimeStr
-          }}</span>
-        </div>
-      </template>
-    </BBGrid>
-  </div>
+  <BBGrid
+    class="border"
+    :show-placeholder="true"
+    :column-list="COLUMN_LIST"
+    :data-source="branches"
+    v-bind="$attrs"
+    @click-row="clickBranch"
+  >
+    <template #item="{ item: branch }: { item: SchemaDesign }">
+      <div v-if="!hideProjectColumn" class="bb-grid-cell">
+        {{ projectV1Name(getFormatedValue(branch).project) }}
+      </div>
+      <div class="bb-grid-cell">
+        <NEllipsis :line-clamp="1">{{ branch.title }}</NEllipsis>
+      </div>
+      <div class="bb-grid-cell">
+        <NEllipsis :line-clamp="1">{{
+          getFormatedValue(branch).parentBranch
+        }}</NEllipsis>
+      </div>
+      <div class="bb-grid-cell">
+        <DatabaseInfo :database="getFormatedValue(branch).database" />
+      </div>
+      <div class="bb-grid-cell">
+        <span class="text-gray-400">{{
+          getFormatedValue(branch).updatedTimeStr
+        }}</span>
+      </div>
+    </template>
+  </BBGrid>
 </template>
 
 <script lang="ts" setup>
