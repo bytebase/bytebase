@@ -10,8 +10,8 @@ import { computed } from "vue";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 
 const props = defineProps<{
-  classification: string;
-  classificationConfig: DataClassificationSetting_DataClassificationConfig;
+  classification?: string;
+  classificationConfig?: DataClassificationSetting_DataClassificationConfig;
 }>();
 
 const bgColorList = [
