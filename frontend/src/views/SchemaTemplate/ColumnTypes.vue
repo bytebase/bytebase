@@ -239,7 +239,7 @@ const getOrFetchSchemaTemplate = async () => {
     "bb.workspace.schema-template"
   );
   const columnTypes =
-    setting.value?.schemaTemplateSettingValue?.columnTypes || [];
+    setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
   const mysqlColumnTypes = columnTypes.find(
     (item) => item.engine === Engine.MYSQL
   );
@@ -248,7 +248,7 @@ const getOrFetchSchemaTemplate = async () => {
   );
   return {
     fieldTemplates:
-      setting.value?.schemaTemplateSettingValue?.fieldTemplates || [],
+      setting?.value?.schemaTemplateSettingValue?.fieldTemplates || [],
     mysqlColumnTypes,
     postgresqlColumnTypes,
   };
@@ -349,27 +349,8 @@ const handleMySQLTypesChange = async () => {
     }
   }
 
-  const setting = await settingStore.getOrFetchSettingByName(
-    "bb.workspace.schema-template"
-  );
-  setting.value!.schemaTemplateSettingValue = SchemaTemplateSetting.fromPartial(
-    {
-      ...setting.value?.schemaTemplateSettingValue,
-      columnTypes: uniqBy(
-        [
-          columnTypeTemplateForMySQL.value,
-          ...(setting.value?.schemaTemplateSettingValue?.columnTypes || []),
-        ],
-        "engine"
-      ),
-    }
-  );
-  await settingStore.upsertSetting({
-    name: "bb.workspace.schema-template",
-    value: {
-      schemaTemplateSettingValue: setting.value?.schemaTemplateSettingValue,
-    },
-  });
+  await upsertSchemaTemplateSetting(columnTypeTemplateForMySQL.value);
+
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -445,31 +426,36 @@ const handlePostgreSQLTypesChange = async () => {
     }
   }
 
-  const setting = await settingStore.getOrFetchSettingByName(
-    "bb.workspace.schema-template"
-  );
-  setting.value!.schemaTemplateSettingValue = SchemaTemplateSetting.fromPartial(
-    {
-      ...setting.value?.schemaTemplateSettingValue,
-      columnTypes: uniqBy(
-        [
-          columnTypeTemplateForPostgreSQL.value,
-          ...(setting.value?.schemaTemplateSettingValue?.columnTypes || []),
-        ],
-        "engine"
-      ),
-    }
-  );
-  await settingStore.upsertSetting({
-    name: "bb.workspace.schema-template",
-    value: {
-      schemaTemplateSettingValue: setting.value?.schemaTemplateSettingValue,
-    },
-  });
+  await upsertSchemaTemplateSetting(columnTypeTemplateForPostgreSQL.value);
+
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
     title: "Success to update column types",
+  });
+};
+
+const upsertSchemaTemplateSetting = async (
+  columnType: SchemaTemplateSetting_ColumnType
+) => {
+  const setting = await settingStore.getOrFetchSettingByName(
+    "bb.workspace.schema-template"
+  );
+  const schemaTemplateSettingValue = SchemaTemplateSetting.fromPartial({
+    ...setting?.value?.schemaTemplateSettingValue,
+    columnTypes: uniqBy(
+      [
+        columnType,
+        ...(setting?.value?.schemaTemplateSettingValue?.columnTypes || []),
+      ],
+      "engine"
+    ),
+  });
+  await settingStore.upsertSetting({
+    name: "bb.workspace.schema-template",
+    value: {
+      schemaTemplateSettingValue,
+    },
   });
 };
 </script>

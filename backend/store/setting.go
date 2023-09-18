@@ -42,7 +42,16 @@ var (
 	// Currently, we do not persist the algorithm setting, in order to use it conveniently, we hard code it here.
 	// TODO(zp): remove the following hard code when we persist the algorithm setting.
 	mockAlgorithmSetting = &v1pb.MaskingAlgorithmSetting{
-		Algorithms: []*v1pb.MaskingAlgorithmSetting_MaskingAlgorithm{},
+		Algorithms: []*v1pb.MaskingAlgorithmSetting_MaskingAlgorithm{
+			{
+				Id:    "substitution",
+				Title: "Substitution algorithm",
+			},
+			{
+				Id:    "hash-md5",
+				Title: "MD5 encryption",
+			},
+		},
 	}
 )
 
