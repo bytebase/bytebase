@@ -21,18 +21,6 @@ const (
 type IssueType string
 
 const (
-	// IssueGeneral is the issue type for general issues.
-	IssueGeneral IssueType = "bb.issue.general"
-	// IssueDatabaseCreate is the issue type for creating databases.
-	IssueDatabaseCreate IssueType = "bb.issue.database.create"
-	// IssueDatabaseSchemaUpdate is the issue type for updating database schemas (DDL).
-	IssueDatabaseSchemaUpdate IssueType = "bb.issue.database.schema.update"
-	// IssueDatabaseSchemaUpdateGhost is the issue type for updating database schemas using gh-ost.
-	IssueDatabaseSchemaUpdateGhost IssueType = "bb.issue.database.schema.update.ghost"
-	// IssueDatabaseDataUpdate is the issue type for updating database data (DML).
-	IssueDatabaseDataUpdate IssueType = "bb.issue.database.data.update"
-	// IssueDatabaseRestorePITR is the issue type for performing a Point-in-time Recovery.
-	IssueDatabaseRestorePITR IssueType = "bb.issue.database.restore.pitr"
 	// IssueGrantRequest is the issue type for requesting grant.
 	IssueGrantRequest IssueType = "bb.issue.grant.request"
 
