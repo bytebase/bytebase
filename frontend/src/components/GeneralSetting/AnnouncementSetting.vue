@@ -123,7 +123,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { AnnouncementLevelSelect } from "@/components/v2";
 import { pushNotification, useCurrentUserV1, featureToRef } from "@/store";
@@ -135,7 +135,6 @@ import {
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
-  originalAnnouncement?: Announcement;
   announcement: Announcement;
   showFeatureModal: boolean;
 }
@@ -153,9 +152,9 @@ const defaultAnnouncement = function (): Announcement {
   };
 };
 
+const originalAnnouncement = ref<Announcement>();
 const state = reactive<LocalState>({
   announcement: defaultAnnouncement(),
-  originalAnnouncement: undefined,
   showFeatureModal: false,
 });
 
@@ -163,7 +162,7 @@ watchEffect(() => {
   const announcement = settingV1Store.workspaceProfileSetting?.announcement;
   if (announcement) {
     state.announcement = cloneDeep(announcement);
-    state.originalAnnouncement = cloneDeep(announcement);
+    originalAnnouncement.value = cloneDeep(announcement);
   }
 });
 
@@ -180,13 +179,13 @@ const allowSave = computed((): boolean => {
   }
 
   if (
-    state.originalAnnouncement === undefined &&
+    originalAnnouncement.value === undefined &&
     state.announcement.text === ""
   ) {
     return false;
   }
 
-  return !isEqual(state.originalAnnouncement, state.announcement);
+  return !isEqual(originalAnnouncement.value, state.announcement);
 });
 
 const handleAnnouncementContentChange = (event: InputEvent) => {
@@ -229,7 +228,7 @@ const updateAnnouncementSetting = async () => {
   const currentSetting: Announcement | undefined = cloneDeep(
     settingV1Store.workspaceProfileSetting?.announcement
   );
-  state.originalAnnouncement = cloneDeep(currentSetting);
+  originalAnnouncement.value = cloneDeep(currentSetting);
   if (currentSetting === undefined) {
     state.announcement = defaultAnnouncement();
   } else {
