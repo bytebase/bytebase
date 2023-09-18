@@ -45,7 +45,7 @@
     <NDivider />
 
     <div class="w-full flex flex-row justify-between items-center mt-1 gap-4">
-      <div class="flex flex-row justify-start items-center">
+      <div class="flex flex-row justify-start items-center opacity-80">
         <span class="mr-4">{{ $t("schema-designer.baseline-version") }}:</span>
         <DatabaseInfo
           class="flex-nowrap mr-4 shrink-0"
