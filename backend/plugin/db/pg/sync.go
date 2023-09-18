@@ -637,8 +637,12 @@ func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
 	defer rows.Close()
 	for rows.Next() {
 		e := &storepb.ExtensionMetadata{}
-		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &e.Description); err != nil {
+		var description sql.NullString
+		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &description); err != nil {
 			return nil, err
+		}
+		if description.Valid {
+			e.Description = description.String
 		}
 		extensions = append(extensions, e)
 	}

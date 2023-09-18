@@ -42,6 +42,7 @@ var (
 		// gcp
 		"cloudsql":      true,
 		"cloudsqladmin": true,
+		"alloydbadmin":  true,
 		// system templates.
 		"template0": true,
 		"template1": true,
