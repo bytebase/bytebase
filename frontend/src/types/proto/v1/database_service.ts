@@ -1,7 +1,6 @@
 /* eslint-disable */
-import * as Long from "long";
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
@@ -8338,147 +8337,6 @@ export const DatabaseServiceDefinition = {
   },
 } as const;
 
-export interface DatabaseServiceImplementation<CallContextExt = {}> {
-  getDatabase(request: GetDatabaseRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Database>>;
-  listDatabases(
-    request: ListDatabasesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListDatabasesResponse>>;
-  /** Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. */
-  searchDatabases(
-    request: SearchDatabasesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchDatabasesResponse>>;
-  updateDatabase(request: UpdateDatabaseRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Database>>;
-  batchUpdateDatabases(
-    request: BatchUpdateDatabasesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchUpdateDatabasesResponse>>;
-  syncDatabase(
-    request: SyncDatabaseRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SyncDatabaseResponse>>;
-  getDatabaseMetadata(
-    request: GetDatabaseMetadataRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseMetadata>>;
-  getDatabaseSchema(
-    request: GetDatabaseSchemaRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseSchema>>;
-  diffSchema(
-    request: DiffSchemaRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DiffSchemaResponse>>;
-  getBackupSetting(
-    request: GetBackupSettingRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BackupSetting>>;
-  updateBackupSetting(
-    request: UpdateBackupSettingRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BackupSetting>>;
-  createBackup(request: CreateBackupRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Backup>>;
-  listBackups(
-    request: ListBackupsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListBackupsResponse>>;
-  listSlowQueries(
-    request: ListSlowQueriesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSlowQueriesResponse>>;
-  listSecrets(
-    request: ListSecretsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSecretsResponse>>;
-  updateSecret(request: UpdateSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Secret>>;
-  deleteSecret(request: DeleteSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  adviseIndex(
-    request: AdviseIndexRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<AdviseIndexResponse>>;
-  listChangeHistories(
-    request: ListChangeHistoriesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListChangeHistoriesResponse>>;
-  getChangeHistory(
-    request: GetChangeHistoryRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ChangeHistory>>;
-}
-
-export interface DatabaseServiceClient<CallOptionsExt = {}> {
-  getDatabase(request: DeepPartial<GetDatabaseRequest>, options?: CallOptions & CallOptionsExt): Promise<Database>;
-  listDatabases(
-    request: DeepPartial<ListDatabasesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListDatabasesResponse>;
-  /** Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. */
-  searchDatabases(
-    request: DeepPartial<SearchDatabasesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchDatabasesResponse>;
-  updateDatabase(
-    request: DeepPartial<UpdateDatabaseRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Database>;
-  batchUpdateDatabases(
-    request: DeepPartial<BatchUpdateDatabasesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchUpdateDatabasesResponse>;
-  syncDatabase(
-    request: DeepPartial<SyncDatabaseRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SyncDatabaseResponse>;
-  getDatabaseMetadata(
-    request: DeepPartial<GetDatabaseMetadataRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseMetadata>;
-  getDatabaseSchema(
-    request: DeepPartial<GetDatabaseSchemaRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseSchema>;
-  diffSchema(
-    request: DeepPartial<DiffSchemaRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DiffSchemaResponse>;
-  getBackupSetting(
-    request: DeepPartial<GetBackupSettingRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BackupSetting>;
-  updateBackupSetting(
-    request: DeepPartial<UpdateBackupSettingRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BackupSetting>;
-  createBackup(request: DeepPartial<CreateBackupRequest>, options?: CallOptions & CallOptionsExt): Promise<Backup>;
-  listBackups(
-    request: DeepPartial<ListBackupsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListBackupsResponse>;
-  listSlowQueries(
-    request: DeepPartial<ListSlowQueriesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSlowQueriesResponse>;
-  listSecrets(
-    request: DeepPartial<ListSecretsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSecretsResponse>;
-  updateSecret(request: DeepPartial<UpdateSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Secret>;
-  deleteSecret(request: DeepPartial<DeleteSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  adviseIndex(
-    request: DeepPartial<AdviseIndexRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<AdviseIndexResponse>;
-  listChangeHistories(
-    request: DeepPartial<ListChangeHistoriesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListChangeHistoriesResponse>;
-  getChangeHistory(
-    request: DeepPartial<GetChangeHistoryRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ChangeHistory>;
-}
-
 declare const self: any | undefined;
 declare const window: any | undefined;
 declare const global: any | undefined;
@@ -8534,8 +8392,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

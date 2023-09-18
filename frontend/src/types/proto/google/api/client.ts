@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../protobuf/duration";
 import { LaunchStage, launchStageFromJSON, launchStageToJSON } from "./launch_stage";
 

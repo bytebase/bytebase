@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 
@@ -606,20 +605,6 @@ export const RoleServiceDefinition = {
     },
   },
 } as const;
-
-export interface RoleServiceImplementation<CallContextExt = {}> {
-  listRoles(request: ListRolesRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListRolesResponse>>;
-  createRole(request: CreateRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Role>>;
-  updateRole(request: UpdateRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Role>>;
-  deleteRole(request: DeleteRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-}
-
-export interface RoleServiceClient<CallOptionsExt = {}> {
-  listRoles(request: DeepPartial<ListRolesRequest>, options?: CallOptions & CallOptionsExt): Promise<ListRolesResponse>;
-  createRole(request: DeepPartial<CreateRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<Role>;
-  updateRole(request: DeepPartial<UpdateRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<Role>;
-  deleteRole(request: DeepPartial<DeleteRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
