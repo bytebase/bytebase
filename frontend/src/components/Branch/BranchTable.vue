@@ -4,6 +4,7 @@
     :show-placeholder="true"
     :column-list="COLUMN_LIST"
     :data-source="branches"
+    :ready="ready"
     v-bind="$attrs"
     @click-row="clickBranch"
   >
@@ -54,6 +55,7 @@ const emit = defineEmits<{
 const props = defineProps<{
   branches: SchemaDesign[];
   hideProjectColumn?: boolean;
+  ready?: boolean;
 }>();
 
 const { t } = useI18n();

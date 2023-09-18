@@ -87,6 +87,19 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
+        // /branch/:branchSlug
+        // Total 2 elements, 2nd element is the branch slug
+        const branchComponents = currentRoute.path.match(
+          "/branch/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined];
+        if (branchComponents[1]) {
+          return {
+            branchSlug: branchComponents[1],
+          };
+        }
+      }
+
+      {
         // /db/:databaseSlug/table/:tableName
         // Total 3 elements, 2nd element is the database slug, 3rd element is the table name
         const databaseComponents = currentRoute.path.match(
