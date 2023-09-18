@@ -2,6 +2,10 @@ package pg
 
 import "strings"
 
+func IsSystemUser(user string) bool {
+	return strings.HasPrefix(user, "alloydb")
+}
+
 func IsSystemView(view string) bool {
 	if strings.HasPrefix(view, "g_columnar_") {
 		return true
@@ -13,6 +17,9 @@ func IsSystemView(view string) bool {
 		return true
 	}
 	if strings.HasPrefix(view, "g_agg_stat_") {
+		return true
+	}
+	if strings.HasPrefix(view, "hypopg") {
 		return true
 	}
 	return false
