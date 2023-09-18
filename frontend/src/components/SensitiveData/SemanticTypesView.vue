@@ -108,8 +108,8 @@
                 <template #trigger>
                   <button
                     class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-                    @click.stop=""
                     :disabled="!hasPermission"
+                    @click.stop=""
                   >
                     <heroicons-outline:trash class="w-4 h-4" />
                   </button>
@@ -142,8 +142,8 @@
               <button
                 v-if="rowData.mode === 'NORMAL'"
                 class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-                @click.stop="rowData.mode = 'EDIT'"
                 :disabled="!hasPermission"
+                @click.stop="rowData.mode = 'EDIT'"
               >
                 <heroicons-outline:pencil class="w-4 h-4" />
               </button>
@@ -244,7 +244,7 @@ const tableHeaderList = computed(() => {
       ),
     },
   ];
-  if (hasPermission) {
+  if (hasPermission.value) {
     // operation.
     list.push({
       title: "",
