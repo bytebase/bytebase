@@ -17,10 +17,9 @@
       </div>
     </div>
 
-    <BranchTable
+    <BranchDataTable
       :branches="filteredBranches"
       :ready="ready"
-      class="border-x-0"
       @click="handleBranchClick"
     />
   </div>
@@ -31,7 +30,7 @@ import { orderBy } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
-import BranchTable from "@/components/Branch/BranchTable.vue";
+import BranchDataTable from "@/components/Branch/BranchDataTable.vue";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
