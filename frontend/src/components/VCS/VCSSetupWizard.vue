@@ -30,20 +30,20 @@ import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, onUnmounted, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBStepTabItem } from "@/bbkit/types";
 import { pushNotification, useVCSV1Store } from "@/store";
-import {
-  OAuthToken,
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
-import { BBStepTabItem } from "../bbkit/types";
 import {
   isValidVCSApplicationIdOrSecret,
   VCSConfig,
   openWindowForOAuth,
   OAuthWindowEventPayload,
-} from "../types";
-import { isUrl } from "../utils";
+} from "@/types";
+import {
+  OAuthToken,
+  ExternalVersionControl,
+  ExternalVersionControl_Type,
+} from "@/types/proto/v1/externalvs_service";
+import { isUrl } from "@/utils";
 import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 import VCSProviderConfirmPanel from "./VCSProviderConfirmPanel.vue";
 import VCSProviderOAuthPanel from "./VCSProviderOAuthPanel.vue";

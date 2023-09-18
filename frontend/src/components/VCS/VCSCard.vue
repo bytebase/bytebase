@@ -4,15 +4,7 @@
   >
     <div class="flex py-2 px-4 justify-between">
       <div class="flex flex-row space-x-2 items-center">
-        <template v-if="vcs.type === ExternalVersionControl_Type.GITLAB">
-          <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
-        </template>
-        <template v-if="vcs.type === ExternalVersionControl_Type.GITHUB">
-          <img class="h-6 w-auto" src="../assets/github-logo.svg" />
-        </template>
-        <template v-if="vcs.type === ExternalVersionControl_Type.BITBUCKET">
-          <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
-        </template>
+        <VCSIcon custom-class="h-6" :type="vcs.type" />
         <h3 class="text-lg leading-6 font-medium text-main">
           {{ vcs.title }}
         </h3>
@@ -51,11 +43,8 @@
 <script lang="ts" setup>
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
-import {
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
-import { vcsSlugV1 } from "../utils";
+import { ExternalVersionControl } from "@/types/proto/v1/externalvs_service";
+import { vcsSlugV1 } from "@/utils";
 
 const props = defineProps({
   vcs: {

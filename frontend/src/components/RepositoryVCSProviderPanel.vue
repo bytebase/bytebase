@@ -9,18 +9,7 @@
         class="btn-normal items-center space-x-2 mx-2 my-2"
         @click.prevent="selectVCS(vcs)"
       >
-        <template v-if="vcs.type === ExternalVersionControl_Type.GITLAB">
-          <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
-        </template>
-        <template v-if="vcs.type === ExternalVersionControl_Type.GITHUB">
-          <img class="h-6 w-auto" src="../assets/github-logo.svg" />
-        </template>
-        <template v-if="vcs.type === ExternalVersionControl_Type.BITBUCKET">
-          <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
-        </template>
-        <template v-if="vcs.type === ExternalVersionControl_Type.AZURE_DEVOPS">
-          <img class="h-6 w-auto" src="../assets/azure-devops-logo.svg" />
-        </template>
+        <VCSIcon custom-class="h-6" :type="vcs.type" />
         <span>{{ vcs.title }}</span>
       </button>
     </template>
