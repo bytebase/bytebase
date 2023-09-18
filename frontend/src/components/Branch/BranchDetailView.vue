@@ -1,185 +1,156 @@
 <template>
-  <NDrawer
-    class="min-w-[calc(100%-10rem)] max-w-full"
-    :show="true"
-    :auto-focus="false"
-    :trap-focus="false"
-    :close-on-esc="true"
-    :native-scrollbar="true"
-    resizable
-    @update:show="(show: boolean) => !show && emit('dismiss')"
-  >
-    <NDrawerContent :title="$t('database.branch')" :closable="true">
-      <div class="space-y-3 w-full overflow-x-auto">
+  <div class="space-y-3 w-full overflow-x-auto px-4">
+    <div class="w-full flex flex-row justify-between items-center">
+      <div class="w-full flex flex-row justify-start items-center">
+        <span class="flex w-40 items-center shrink-0 text-sm">
+          {{ $t("common.project") }}
+        </span>
+        <a
+          class="normal-link inline-flex items-center"
+          :href="`/project/${projectV1Slug(project)}`"
+          >{{ project.title }}</a
+        >
+      </div>
+      <div>
         <div class="w-full flex flex-row justify-between items-center">
-          <div class="w-full flex flex-row justify-start items-center">
-            <span class="flex w-40 items-center shrink-0 text-sm">
-              {{ $t("common.project") }}
-            </span>
-            <a
-              class="normal-link inline-flex items-center"
-              :href="`/project/${projectV1Slug(project)}`"
-              >{{ project.title }}</a
-            >
-          </div>
-          <div>
-            <div class="w-full flex flex-row justify-between items-center">
-              <div
-                v-if="!viewMode && !state.isEditing"
-                class="flex flex-row justify-end items-center space-x-2"
-              >
-                <NButton
-                  v-if="parentBranch"
-                  @click="() => (state.showDiffEditor = true)"
-                  >{{ $t("schema-designer.merge-branch") }}</NButton
-                >
-                <NButton type="primary" @click="handleApplySchemaDesignClick">{{
-                  $t("schema-designer.apply-to-database")
-                }}</NButton>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="w-full flex flex-row justify-start items-center mt-1">
-          <span class="flex w-40 items-center text-sm">{{
-            $t("database.branch-name")
-          }}</span>
-          <div class="flex flex-row justify-start items-center gap-x-4">
-            <BBTextField
-              class="w-60 text-sm"
-              :readonly="!state.isEditingTitle"
-              :value="state.schemaDesignTitle"
-              :placeholder="'feature/add-billing'"
-              @input="
-                state.schemaDesignTitle = (
-                  $event.target as HTMLInputElement
-                ).value
-              "
-            />
-
+          <div
+            v-if="!viewMode && !state.isEditing"
+            class="flex flex-row justify-end items-center space-x-2"
+          >
             <NButton
-              v-if="!state.isEditingTitle"
-              text
-              @click="state.isEditingTitle = true"
+              v-if="parentBranch"
+              @click="() => (state.showDiffEditor = true)"
+              >{{ $t("schema-designer.merge-branch") }}</NButton
             >
-              <template #icon>
-                <NIcon size="16">
-                  <Pen />
-                </NIcon>
-              </template>
-            </NButton>
-            <template v-else>
-              <NButton text type="warning" @click="handleCancelEditTitle">
-                <template #icon>
-                  <NIcon>
-                    <X />
-                  </NIcon>
-                </template>
-              </NButton>
-              <NButton type="success" text @click="handleSaveBranchTitle">
-                <template #icon>
-                  <NIcon>
-                    <Check />
-                  </NIcon>
-                </template>
-              </NButton>
-            </template>
-
-            <NTag v-if="parentBranch" round>
-              {{ $t("schema-designer.parent-branch") }}:
-              {{ parentBranch.title }}
-            </NTag>
-          </div>
-        </div>
-
-        <NDivider />
-
-        <div class="w-full flex flex-row justify-start items-center mt-1">
-          <span class="flex w-40 items-center text-sm font-medium">{{
-            $t("schema-designer.baseline-version")
-          }}</span>
-        </div>
-
-        <div class="w-full flex flex-row justify-start items-center">
-          <span class="flex w-40 items-center shrink-0 text-sm">
-            {{ $t("common.database") }}
-          </span>
-          <DatabaseInfo :database="baselineDatabase" />
-        </div>
-
-        <div class="w-full flex flex-row justify-start items-center">
-          <span class="flex w-40 items-center shrink-0 text-sm">
-            {{ $t("schema-designer.schema-version") }}
-          </span>
-          <div class="w-[calc(100%-10rem)]">
-            <div
-              v-if="changeHistory"
-              class="w-full flex flex-row justify-start items-center"
-            >
-              <span class="block pr-2 w-full max-w-[80%] truncate">
-                {{ changeHistory.version }} -
-                {{ changeHistory.description }}
-              </span>
-              <span class="text-control-light">
-                {{ humanizeDate(changeHistory.updateTime) }}
-              </span>
-            </div>
-            <template v-else>
-              {{ "Previously latest schema" }}
-            </template>
-          </div>
-        </div>
-
-        <NDivider />
-
-        <div class="w-full flex flex-row justify-end gap-2">
-          <template v-if="!state.isEditing">
-            <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-          </template>
-          <template v-else>
-            <NButton @click="handleCancelEdit">{{
-              $t("common.cancel")
+            <NButton type="primary" @click="handleApplySchemaDesignClick">{{
+              $t("schema-designer.apply-to-database")
             }}</NButton>
-            <NButton type="primary" @click="handleSaveSchemaDesignDraft">{{
-              $t("common.save")
-            }}</NButton>
-          </template>
-        </div>
-
-        <div class="w-full h-[32rem]">
-          <SchemaEditorV1
-            :key="schemaEditorKey"
-            :readonly="!state.isEditing"
-            :project="project"
-            :resource-type="'branch'"
-            :branches="[schemaDesign]"
-          />
-        </div>
-        <!-- Don't show delete button in view mode. -->
-        <div v-if="!viewMode">
-          <BBButtonConfirm
-            :style="'DELETE'"
-            :button-text="$t('database.delete-this-branch')"
-            :require-confirm="true"
-            @confirm="deleteSchemaDesign"
-          />
+          </div>
         </div>
       </div>
+    </div>
 
-      <template v-if="viewMode" #footer>
-        <div class="flex-1 flex items-center justify-between">
-          <div></div>
+    <div class="w-full flex flex-row justify-start items-center mt-1">
+      <span class="flex w-40 items-center text-sm">{{
+        $t("database.branch-name")
+      }}</span>
+      <div class="flex flex-row justify-start items-center gap-x-4">
+        <BBTextField
+          class="w-60 text-sm"
+          :readonly="!state.isEditingTitle"
+          :value="state.schemaDesignTitle"
+          :placeholder="'feature/add-billing'"
+          @input="
+            state.schemaDesignTitle = ($event.target as HTMLInputElement).value
+          "
+        />
 
-          <div class="flex items-center justify-end gap-x-3">
-            <NButton @click.prevent="emit('dismiss')">
-              {{ $t("common.close") }}
-            </NButton>
-          </div>
+        <NButton
+          v-if="!state.isEditingTitle"
+          text
+          @click="state.isEditingTitle = true"
+        >
+          <template #icon>
+            <NIcon size="16">
+              <Pen />
+            </NIcon>
+          </template>
+        </NButton>
+        <template v-else>
+          <NButton text type="warning" @click="handleCancelEditTitle">
+            <template #icon>
+              <NIcon>
+                <X />
+              </NIcon>
+            </template>
+          </NButton>
+          <NButton type="success" text @click="handleSaveBranchTitle">
+            <template #icon>
+              <NIcon>
+                <Check />
+              </NIcon>
+            </template>
+          </NButton>
+        </template>
+
+        <NTag v-if="parentBranch" round>
+          {{ $t("schema-designer.parent-branch") }}:
+          {{ parentBranch.title }}
+        </NTag>
+      </div>
+    </div>
+
+    <NDivider />
+
+    <div class="w-full flex flex-row justify-start items-center mt-1">
+      <span class="flex w-40 items-center text-sm font-medium">{{
+        $t("schema-designer.baseline-version")
+      }}</span>
+    </div>
+
+    <div class="w-full flex flex-row justify-start items-center">
+      <span class="flex w-40 items-center shrink-0 text-sm">
+        {{ $t("common.database") }}
+      </span>
+      <DatabaseInfo :database="baselineDatabase" />
+    </div>
+
+    <div class="w-full flex flex-row justify-start items-center">
+      <span class="flex w-40 items-center shrink-0 text-sm">
+        {{ $t("schema-designer.schema-version") }}
+      </span>
+      <div class="w-[calc(100%-10rem)]">
+        <div
+          v-if="changeHistory"
+          class="w-full flex flex-row justify-start items-center"
+        >
+          <span class="block pr-2 w-full max-w-[80%] truncate">
+            {{ changeHistory.version }} -
+            {{ changeHistory.description }}
+          </span>
+          <span class="text-control-light">
+            {{ humanizeDate(changeHistory.updateTime) }}
+          </span>
         </div>
+        <template v-else>
+          {{ "Previously latest schema" }}
+        </template>
+      </div>
+    </div>
+
+    <NDivider />
+
+    <div class="w-full flex flex-row justify-end gap-2">
+      <template v-if="!state.isEditing">
+        <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+      <template v-else>
+        <NButton @click="handleCancelEdit">{{ $t("common.cancel") }}</NButton>
+        <NButton type="primary" @click="handleSaveSchemaDesignDraft">{{
+          $t("common.save")
+        }}</NButton>
+      </template>
+    </div>
+
+    <div class="w-full h-[32rem]">
+      <SchemaEditorV1
+        :key="schemaEditorKey"
+        :readonly="!state.isEditing"
+        :project="project"
+        :resource-type="'branch'"
+        :branches="[schemaDesign]"
+      />
+    </div>
+    <!-- Don't show delete button in view mode. -->
+    <div v-if="!viewMode">
+      <BBButtonConfirm
+        :style="'DELETE'"
+        :button-text="$t('database.delete-this-branch')"
+        :require-confirm="true"
+        @confirm="deleteSchemaDesign"
+      />
+    </div>
+  </div>
 
   <MergeBranchPanel
     v-if="state.showDiffEditor"
@@ -194,15 +165,7 @@
 import dayjs from "dayjs";
 import { cloneDeep, isEqual, uniqueId } from "lodash-es";
 import { Pen, X, Check } from "lucide-vue-next";
-import {
-  NButton,
-  NDrawer,
-  NDrawerContent,
-  NDivider,
-  useDialog,
-  NTag,
-  NIcon,
-} from "naive-ui";
+import { NButton, NDivider, useDialog, NTag, NIcon } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -245,7 +208,6 @@ const props = defineProps<{
   schemaDesignName: string;
   viewMode?: boolean;
 }>();
-const emit = defineEmits(["dismiss"]);
 
 const { t } = useI18n();
 const router = useRouter();
@@ -637,6 +599,8 @@ const handleApplySchemaDesignClick = () => {
 
 const deleteSchemaDesign = async () => {
   await schemaDesignStore.deleteSchemaDesign(schemaDesign.value.name);
-  emit("dismiss");
+  router.replace({
+    name: "workspace.branch",
+  });
 };
 </script>

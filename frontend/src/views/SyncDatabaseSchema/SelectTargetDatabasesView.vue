@@ -66,7 +66,7 @@
           <span>{{ $t("database.branch") }} - </span>
           <span
             class="normal-link inline-flex items-center"
-            @click="state.showViewSchemaDesignPanel = true"
+            @click="handleViewBranch"
           >
             <EngineIcon class="mr-1" :engine="engine" />
             {{ selectedSchemaDesign?.title || "Unknown" }}
@@ -241,13 +241,6 @@
     @update="handleSelectedDatabaseIdListChanged"
   />
 
-  <EditSchemaDesignPanel
-    v-if="state.showViewSchemaDesignPanel && selectedSchemaDesign"
-    :schema-design-name="selectedSchemaDesign.name"
-    :view-mode="true"
-    @dismiss="state.showViewSchemaDesignPanel = false"
-  />
-
   <RawSQLEditorPanel
     v-if="state.showViewRawSQLPanel && rawSqlState"
     :raw-sql-state="rawSqlState"
@@ -262,7 +255,7 @@ import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import EditSchemaDesignPanel from "@/components/SchemaDesigner/EditSchemaDesignPanel.vue";
+import { useRouter } from "vue-router";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { sqlServiceClient } from "@/grpcweb";
 import {
@@ -273,6 +266,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
@@ -307,6 +301,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const environmentV1Store = useEnvironmentV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
@@ -445,6 +440,23 @@ onMounted(async () => {
     await sheetStore.fetchSheetByUID(String(props.rawSqlState.sheetId));
   }
 });
+
+const handleViewBranch = () => {
+  if (!selectedSchemaDesign.value) {
+    return;
+  }
+
+  const [, sheetId] = getProjectAndSchemaDesignSheetId(
+    selectedSchemaDesign.value.name
+  );
+  const route = router.resolve({
+    name: "workspace.branch.detail",
+    params: {
+      branchSlug: `${selectedSchemaDesign.value.title}-${sheetId}`,
+    },
+  });
+  window.open(route.href, "_blank");
+};
 
 const getSourceDatabase = () => {
   if (!props.databaseSourceSchema) {

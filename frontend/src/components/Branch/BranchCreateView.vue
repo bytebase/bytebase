@@ -1,90 +1,70 @@
 <template>
-  <NDrawer
-    class="min-w-[calc(100%-10rem)] max-w-full"
-    :show="true"
-    :auto-focus="false"
-    :trap-focus="false"
-    :close-on-esc="true"
-    :native-scrollbar="true"
-    resizable
-    @update:show="(show: boolean) => !show && emit('dismiss')"
-  >
-    <NDrawerContent :title="$t('database.new-branch')" :closable="true">
-      <div class="space-y-3 w-full overflow-x-auto">
-        <div class="w-full flex flex-row justify-start items-center pt-1">
-          <span class="flex w-40 items-center shrink-0 text-sm">
-            {{ $t("common.project") }}
-          </span>
-          <ProjectSelect
-            class="!w-60 shrink-0"
-            :selected-id="state.projectId"
-            @select-project-id="handleProjectSelect"
-          />
-        </div>
-        <div class="w-full flex flex-row justify-start items-center mt-1">
-          <span class="flex w-40 items-center text-sm">{{
-            $t("database.branch-name")
-          }}</span>
-          <BBTextField
-            class="w-60 text-sm"
-            :value="state.schemaDesignTitle"
-            :placeholder="'feature/add-billing'"
-            @input="
-              state.schemaDesignTitle = (
-                $event.target as HTMLInputElement
-              ).value
-            "
-          />
-        </div>
-        <NDivider />
-        <div class="w-full flex flex-row justify-start items-center mt-1">
-          <span class="flex w-40 items-center text-sm font-medium">{{
-            $t("schema-designer.baseline-version")
-          }}</span>
-        </div>
-        <BaselineSchemaSelector
-          :project-id="state.projectId"
-          :baseline-schema="state.baselineSchema"
-          @update="handleBaselineSchemaChange"
-        />
-        <div class="!mt-6 w-full h-[32rem]">
-          <SchemaEditorV1
-            :key="refreshId"
-            :project="project"
-            :resource-type="'branch'"
-            :branches="[state.schemaDesign]"
-            :readonly="true"
-          />
-        </div>
+  <div class="space-y-3 w-full overflow-x-auto px-4">
+    <div class="w-full flex flex-row justify-start items-center pt-1">
+      <span class="flex w-40 items-center shrink-0 text-sm">
+        {{ $t("common.project") }}
+      </span>
+      <ProjectSelect
+        class="!w-60 shrink-0"
+        :selected-id="state.projectId"
+        @select-project-id="handleProjectSelect"
+      />
+    </div>
+    <div class="w-full flex flex-row justify-start items-center mt-1">
+      <span class="flex w-40 items-center text-sm">{{
+        $t("database.branch-name")
+      }}</span>
+      <BBTextField
+        class="w-60 text-sm"
+        :value="state.schemaDesignTitle"
+        :placeholder="'feature/add-billing'"
+        @input="
+          state.schemaDesignTitle = ($event.target as HTMLInputElement).value
+        "
+      />
+    </div>
+    <NDivider />
+    <div class="w-full flex flex-row justify-start items-center mt-1">
+      <span class="flex w-40 items-center text-sm font-medium">{{
+        $t("schema-designer.baseline-version")
+      }}</span>
+    </div>
+    <BaselineSchemaSelector
+      :project-id="state.projectId"
+      :baseline-schema="state.baselineSchema"
+      @update="handleBaselineSchemaChange"
+    />
+    <div class="!mt-6 w-full h-[32rem]">
+      <SchemaEditorV1
+        :key="refreshId"
+        :project="project"
+        :resource-type="'branch'"
+        :branches="[state.schemaDesign]"
+        :readonly="true"
+      />
+    </div>
+    <div class="w-full flex items-center justify-between mt-4">
+      <div></div>
+
+      <div class="flex items-center justify-end gap-x-3">
+        <NButton
+          type="primary"
+          :disabled="!allowConfirm"
+          @click.prevent="handleConfirm"
+        >
+          {{ confirmText }}
+        </NButton>
       </div>
-
-      <template #footer>
-        <div class="flex-1 flex items-center justify-between">
-          <div></div>
-
-          <div class="flex items-center justify-end gap-x-3">
-            <NButton @click.prevent="cancel">
-              {{ cancelText }}
-            </NButton>
-            <NButton
-              type="primary"
-              :disabled="!allowConfirm"
-              @click.prevent="handleConfirm"
-            >
-              {{ confirmText }}
-            </NButton>
-          </div>
-        </div>
-      </template>
-    </NDrawerContent>
-  </NDrawer>
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep, uniqueId } from "lodash-es";
-import { NButton, NDrawer, NDrawerContent, NDivider } from "naive-ui";
+import { NButton, NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
@@ -94,7 +74,10 @@ import {
   useSheetV1Store,
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
-import { databaseNamePrefix } from "@/store/modules/v1/common";
+import {
+  databaseNamePrefix,
+  getProjectAndSchemaDesignSheetId,
+} from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import {
   ChangeHistory,
@@ -131,12 +114,9 @@ const props = defineProps({
     default: undefined,
   },
 });
-const emit = defineEmits<{
-  (event: "dismiss"): void;
-  (event: "created", schemaDesign: SchemaDesign): void;
-}>();
 
 const { t } = useI18n();
+const router = useRouter();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
@@ -190,10 +170,6 @@ const allowConfirm = computed(() => {
   );
 });
 
-const cancelText = computed(() => {
-  return t("common.cancel");
-});
-
 const confirmText = computed(() => {
   return t("common.create");
 });
@@ -212,10 +188,6 @@ const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
     state.projectId = database.projectEntity.uid;
   }
   state.schemaDesign = await prepareSchemaDesign();
-};
-
-const cancel = () => {
-  emit("dismiss");
 };
 
 const project = computed(() => {
@@ -291,6 +263,16 @@ const handleConfirm = async () => {
     style: "SUCCESS",
     title: t("schema-designer.message.created-succeed"),
   });
-  emit("created", createdSchemaDesign);
+
+  // Go to branch detail page after created.
+  const [, sheetId] = getProjectAndSchemaDesignSheetId(
+    createdSchemaDesign.name
+  );
+  router.push({
+    name: "workspace.branch.detail",
+    params: {
+      branchSlug: `${createdSchemaDesign.title}-${sheetId}`,
+    },
+  });
 };
 </script>

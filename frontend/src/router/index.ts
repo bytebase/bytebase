@@ -1373,6 +1373,7 @@ router.beforeEach((to, from, next) => {
   const projectSlug = routerSlug.projectSlug;
   const projectWebhookSlug = routerSlug.projectWebhookSlug;
   const issueSlug = routerSlug.issueSlug;
+  const branchSlug = routerSlug.branchSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
   const dataSourceSlug = routerSlug.dataSourceSlug;
@@ -1455,6 +1456,13 @@ router.beforeEach((to, from, next) => {
 
   if (issueSlug) {
     // We've moved the preparation data fetch jobs into IssueDetail page
+    // so just next() here.
+    next();
+    return;
+  }
+
+  if (branchSlug) {
+    // We've moved the preparation data fetch jobs into BranchDetail page
     // so just next() here.
     next();
     return;

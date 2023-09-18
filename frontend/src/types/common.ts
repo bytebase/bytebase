@@ -50,6 +50,7 @@ export type RouterSlug = {
   projectSlug?: string;
   projectWebhookSlug?: string;
   issueSlug?: string;
+  branchSlug?: string;
   instanceSlug?: string;
   databaseSlug?: string;
   tableName?: string;
