@@ -4,7 +4,7 @@
       <div class="flex-1 overflow-hidden">
         <TabFilter v-model:value="state.tab" :items="tabItemList" />
       </div>
-      <div>
+      <div class="p-0.5">
         <SearchBox
           :value="state.searchText"
           :placeholder="$t('issue.filter-issue-by-name')"
