@@ -14,7 +14,10 @@
       </div>
     </div>
     <div v-show="state.tab === 'WAITING_APPROVAL'" class="mt-2">
-      <WaitingForMyApprovalIssueTableV1 session-key="home-waiting-approval">
+      <WaitingForMyApprovalIssueTableV1
+        v-if="hasCustomApprovalFeature"
+        session-key="home-waiting-approval"
+      >
         <template #table="{ issueList, loading }">
           <IssueTableV1
             class="border-x-0"
@@ -248,11 +251,13 @@ const currentUserUID = computed(() => extractUserUID(currentUserV1.value.name));
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
+  const WAITING_APPROVAL: TabFilterItem<TabValue> = {
+    value: "WAITING_APPROVAL",
+    label: t("issue.waiting-approval"),
+  };
+  const list = hasCustomApprovalFeature.value ? [WAITING_APPROVAL] : [];
   return [
-    {
-      value: "WAITING_APPROVAL",
-      label: t("issue.waiting-approval"),
-    },
+    ...list,
     { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
     { value: "CREATED", label: t("common.created") },
     { value: "SUBSCRIBED", label: t("common.subscribed") },
