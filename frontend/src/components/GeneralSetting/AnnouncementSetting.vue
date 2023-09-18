@@ -123,7 +123,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { computed, reactive, watchEffect, ref } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { AnnouncementLevelSelect } from "@/components/v2";
 import { pushNotification, useCurrentUserV1, featureToRef } from "@/store";
