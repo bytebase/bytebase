@@ -152,7 +152,6 @@ const defaultAnnouncement = function (): Announcement {
   };
 };
 
-// const originalAnnouncement = ref<Announcement>();
 const state = reactive<LocalState>({
   announcement: defaultAnnouncement(),
   showFeatureModal: false,
