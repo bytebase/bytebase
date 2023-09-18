@@ -59,6 +59,20 @@ ALTER TABLE public.environment ENABLE TRIGGER ALL;
 
 ALTER TABLE public.instance DISABLE TRIGGER ALL;
 
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (101, 'NORMAL', 101, 1695025927, 1, 1695025927, 102, 'mysql-prod', 'MYSQL', '8.0.27', '', 'mysql-prod', true, '{}', '{"lastSyncTime": "2023-09-18T08:32:07.392792Z", "mysqlLowerCaseTableNames": 2}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (102, 'NORMAL', 101, 1695025945, 1, 1695025945, 102, 'pg-prod', 'POSTGRES', '14.3', '', 'pg-prod', true, '{}', '{"lastSyncTime": "2023-09-18T08:32:24.731332Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (103, 'NORMAL', 101, 1695025963, 101, 1695025963, 102, 'tidb', 'TIDB', '', '', 'tidb', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (104, 'NORMAL', 101, 1695025982, 101, 1695025982, 102, 'snowflake', 'SNOWFLAKE', '', '', 'snowflake', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (105, 'NORMAL', 101, 1695025993, 101, 1695025993, 102, 'clickhouse', 'CLICKHOUSE', '', '', 'clickhouse', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (106, 'NORMAL', 101, 1695026057, 101, 1695026057, 102, 'mongodb', 'MONGODB', '', '', 'mongodb', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (107, 'NORMAL', 101, 1695026105, 101, 1695026105, 102, 'redis', 'REDIS', '', '', 'redis', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (108, 'NORMAL', 101, 1695026151, 101, 1695026151, 102, 'spanner', 'SPANNER', '', '', 'spanner', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (109, 'NORMAL', 101, 1695026169, 101, 1695026169, 102, 'oracle', 'ORACLE', '', '', 'oracle', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (110, 'NORMAL', 101, 1695026328, 101, 1695026328, 102, 'oceanbase', 'OCEANBASE', '', '', 'oceanbase', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (111, 'NORMAL', 101, 1695026339, 101, 1695026339, 102, 'mariadb', 'MARIADB', '', '', 'mariadb', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (112, 'NORMAL', 101, 1695026350, 101, 1695026350, 102, 'mssql', 'MSSQL', '', '', 'mssql', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (113, 'NORMAL', 101, 1695026361, 101, 1695026361, 102, 'redshift', 'REDSHIFT', '', '', 'redshift', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (114, 'NORMAL', 101, 1695026377, 101, 1695026377, 102, 'risingwave', 'RISINGWAVE', '', '', 'risingwave', true, '{}', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance ENABLE TRIGGER ALL;
@@ -131,6 +145,20 @@ ALTER TABLE public.bookmark ENABLE TRIGGER ALL;
 
 ALTER TABLE public.data_source DISABLE TRIGGER ALL;
 
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (101, 'NORMAL', 101, 1695025927, 101, 1695025927, 101, 'adea9f0f-c5bc-489a-adab-ccb1dc46afad', 'ADMIN', 'root', '', '', '', '', '127.0.0.1', '3306', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (102, 'NORMAL', 101, 1695025945, 101, 1695025945, 102, '20662196-d819-48b3-87f2-d6cf3e4ef4f0', 'ADMIN', 'postgres', '', '', '', '', '127.0.0.1', '5432', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (103, 'NORMAL', 101, 1695025963, 101, 1695025963, 103, '071e570c-a84c-4165-ab15-8089c58fee3b', 'ADMIN', '', '', '', '', '', '127.0.0.1', '4000', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (104, 'NORMAL', 101, 1695025982, 101, 1695025982, 104, 'f5a8f7c4-da41-43f4-9441-3f8df0d8b841', 'ADMIN', '', '', '', '', '', 'demo@example.com', '443', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (105, 'NORMAL', 101, 1695025993, 101, 1695025993, 105, '88f8d0fd-7294-46e2-819d-9ceba22ceb79', 'ADMIN', '', '', '', '', '', '127.0.0.1', '9000', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (106, 'NORMAL', 101, 1695026057, 101, 1695026057, 106, 'ea1f1ab9-8462-4c46-8767-e8397c37c043', 'ADMIN', '', '', '', '', '', '127.0.0.1', '27017', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (107, 'NORMAL', 101, 1695026105, 101, 1695026105, 107, 'ea84c685-65eb-477b-b11b-40693fd0ba23', 'ADMIN', '', '', '', '', '', '127.0.0.1', '6379', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (108, 'NORMAL', 101, 1695026151, 101, 1695026151, 108, '3d79930b-b468-47ee-8f1c-a537e1670ba5', 'ADMIN', '', 'CxQHKDB9BD15dTw=', '', '', '', 'projects/example/instances/example', '3306', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (109, 'NORMAL', 101, 1695026169, 101, 1695026169, 109, '8cc4fa61-962a-43cb-a743-aa8f3804a692', 'ADMIN', '', '', '', '', '', '127.0.0.1', '1521', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (110, 'NORMAL', 101, 1695026328, 101, 1695026328, 110, '953f609c-1c40-4732-8a77-6e439069cdbd', 'ADMIN', '', '', '', '', '', '127.0.0.1', '2883', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (111, 'NORMAL', 101, 1695026339, 101, 1695026339, 111, 'c09e455b-be78-48bc-aae5-8739ac44b035', 'ADMIN', '', '', '', '', '', '127.0.0.1', '3306', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (112, 'NORMAL', 101, 1695026350, 101, 1695026350, 112, 'c69ae443-0684-4683-b0a9-cade8f446ba9', 'ADMIN', '', '', '', '', '', '127.0.0.1', '1433', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (113, 'NORMAL', 101, 1695026361, 101, 1695026361, 113, '9b9bb649-7a63-4d3e-a16b-8725dc32a15e', 'ADMIN', '', '', '', '', '', '127.0.0.1', '5439', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (114, 'NORMAL', 101, 1695026377, 101, 1695026377, 114, 'b449371a-3305-4418-8297-86682012f719', 'ADMIN', '', '', '', '', '', '127.0.0.1', '3306', '{}', '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.data_source ENABLE TRIGGER ALL;
@@ -6896,6 +6924,11 @@ ALTER TABLE public.instance_change_history ENABLE TRIGGER ALL;
 
 ALTER TABLE public.instance_user DISABLE TRIGGER ALL;
 
+INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (101, 'NORMAL', 1, 1695025927, 1, 1695025927, 101, '''root''@''localhost''', 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, SHUTDOWN, PROCESS, FILE, REFERENCES, INDEX, ALTER, SHOW DATABASES, SUPER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER, CREATE TABLESPACE, CREATE ROLE, DROP ROLE ON *.* TO `root`@`localhost` WITH GRANT OPTION
+GRANT APPLICATION_PASSWORD_ADMIN,AUDIT_ADMIN,AUTHENTICATION_POLICY_ADMIN,BACKUP_ADMIN,BINLOG_ADMIN,BINLOG_ENCRYPTION_ADMIN,CLONE_ADMIN,CONNECTION_ADMIN,ENCRYPTION_KEY_ADMIN,FLUSH_OPTIMIZER_COSTS,FLUSH_STATUS,FLUSH_TABLES,FLUSH_USER_RESOURCES,GROUP_REPLICATION_ADMIN,GROUP_REPLICATION_STREAM,INNODB_REDO_LOG_ARCHIVE,INNODB_REDO_LOG_ENABLE,PASSWORDLESS_USER_ADMIN,PERSIST_RO_VARIABLES_ADMIN,REPLICATION_APPLIER,REPLICATION_SLAVE_ADMIN,RESOURCE_GROUP_ADMIN,RESOURCE_GROUP_USER,ROLE_ADMIN,SERVICE_CONNECTION_ADMIN,SESSION_VARIABLES_ADMIN,SET_USER_ID,SHOW_ROUTINE,SYSTEM_USER,SYSTEM_VARIABLES_ADMIN,TABLE_ENCRYPTION_ADMIN,XA_RECOVER_ADMIN ON *.* TO `root`@`localhost` WITH GRANT OPTION
+GRANT PROXY ON ``@`` TO `root`@`localhost` WITH GRANT OPTION') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (102, 'NORMAL', 1, 1695025945, 1, 1695025945, 102, 'postgres', 'Superuser, Create role, Create DB, Replication, Bypass RLS+') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (103, 'NORMAL', 1, 1695025945, 1, 1695025945, 102, 'david', '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance_user ENABLE TRIGGER ALL;
@@ -7040,19 +7073,19 @@ ALTER TABLE public.schema_group ENABLE TRIGGER ALL;
 
 ALTER TABLE public.setting DISABLE TRIGGER ALL;
 
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (101, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.branding.logo', '', 'The branding slogo image in base64 string format.') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (102, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.auth.secret', '0DYdOCjqcJSJ9KAfUlCOKsbS743PjSDi', 'Random string used to sign the JWT auth token.') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (101, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.branding.logo', '', 'The branding slogo image in base64 string format.') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (103, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.id', 'be28420e-5db3-4dc6-80ba-b822be20d36a', 'The workspace identifier') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (105, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.app.im', '{}', '') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (106, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.watermark', '0', 'Display watermark') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (104, 'NORMAL', 1, 1694683928, 1, 1695025798, 'bb.enterprise.license', 'eyJhbGciOiJSUzI1NiIsImtpZCI6InYxIiwidHlwIjoiSldUIn0.eyJpbnN0YW5jZUNvdW50Ijo5OTksInRyaWFsaW5nIjpmYWxzZSwicGxhbiI6IkVOVEVSUFJJU0UiLCJvcmdOYW1lIjoiYmIiLCJhdWQiOiJiYi5saWNlbnNlIiwiZXhwIjo3OTc0OTc5MjAwLCJpYXQiOjE2NjM2Njc1NjEsImlzcyI6ImJ5dGViYXNlIiwic3ViIjoiMDAwMDEwMDAuIn0.JjYCMeAAMB9FlVeDFLdN3jvFcqtPsbEzaIm1YEDhUrfekthCbIOeX_DB2Bg2OUji3HSX5uDvG9AkK4Gtrc4gLMPI3D5mk3L-6wUKZ0L4REztS47LT4oxVhpqPQayYa9lKJB1YoHaqeMV4Z5FXeOXwuACoELznlwpT6pXo9xXm_I6QwQiO7-zD83XOTO4PRjByc-q3GKQu_64zJMIKiCW0I8a3GvrdSnO7jUuYU1KPmCuk0ZRq3I91m29LTo478BMST59HqCLj1GGuCKtR3SL_376XsZfUUM0iSAur5scg99zNGWRj-sUo05wbAadYx6V6TKaWrBUi_8_0RnJyP5gbA', 'Enterprise license') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (107, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.plugin.openai.key', '', 'API key to request OpenAI (ChatGPT)') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (108, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.plugin.openai.endpoint', '', 'API Endpoint for OpenAI') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (109, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.approval.external', '{}', 'The external approval setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (110, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.schema-template', '{}', 'The schema template setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (111, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.data-classification', '{}', 'The data classification setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (112, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.approval', '{}', 'The workspace approval setting') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1694684897, 'bb.workspace.profile', '{}', '') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (104, 'NORMAL', 1, 1694683928, 101, 1694685010, 'bb.enterprise.license', 'eyJhbGciOiJSUzI1NiIsImtpZCI6InYxIiwidHlwIjoiSldUIn0.eyJpbnN0YW5jZUNvdW50Ijo5OTksInRyaWFsaW5nIjpmYWxzZSwicGxhbiI6IkVOVEVSUFJJU0UiLCJvcmdOYW1lIjoiYmIiLCJhdWQiOiJiYi5saWNlbnNlIiwiZXhwIjo3OTc0OTc5MjAwLCJpYXQiOjE2NjM2Njc1NjEsImlzcyI6ImJ5dGViYXNlIiwic3ViIjoiMDAwMDEwMDAuIn0.JjYCMeAAMB9FlVeDFLdN3jvFcqtPsbEzaIm1YEDhUrfekthCbIOeX_DB2Bg2OUji3HSX5uDvG9AkK4Gtrc4gLMPI3D5mk3L-6wUKZ0L4REztS47LT4oxVhpqPQayYa9lKJB1YoHaqeMV4Z5FXeOXwuACoELznlwpT6pXo9xXm_I6QwQiO7-zD83XOTO4PRjByc-q3GKQu_64zJMIKiCW0I8a3GvrdSnO7jUuYU1KPmCuk0ZRq3I91m29LTo478BMST59HqCLj1GGuCKtR3SL_376XsZfUUM0iSAur5scg99zNGWRj-sUo05wbAadYx6V6TKaWrBUi_8_0RnJyP5gbA', 'Enterprise license') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695025798, 'bb.workspace.profile', '{}', '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.setting ENABLE TRIGGER ALL;
@@ -7166,7 +7199,7 @@ SELECT pg_catalog.setval('public.bookmark_id_seq', 101, false);
 -- Name: data_source_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.data_source_id_seq', 101, false);
+SELECT pg_catalog.setval('public.data_source_id_seq', 114, true);
 
 
 --
@@ -7243,14 +7276,14 @@ SELECT pg_catalog.setval('public.instance_change_history_id_seq', 102, true);
 -- Name: instance_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_id_seq', 101, false);
+SELECT pg_catalog.setval('public.instance_id_seq', 114, true);
 
 
 --
 -- Name: instance_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_user_id_seq', 101, false);
+SELECT pg_catalog.setval('public.instance_user_id_seq', 103, true);
 
 
 --
@@ -7369,7 +7402,7 @@ SELECT pg_catalog.setval('public.schema_group_id_seq', 101, false);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 115, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 116, true);
 
 
 --
