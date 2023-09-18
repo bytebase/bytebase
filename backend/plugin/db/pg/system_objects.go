@@ -20,8 +20,8 @@ var (
 		"template1": true,
 	}
 
-	// SystemSchemaList is the list of system schemas that we will exclude from the schema sync.
-	SystemSchemaList = map[string]bool{
+	// systemSchemaList is the list of system schemas that we will exclude from the schema sync.
+	systemSchemaList = map[string]bool{
 		"information_schema":       true,
 		"pg_catalog":               true,
 		"pg_toast":                 true,
@@ -33,97 +33,101 @@ var (
 		"timescaledb_experimental": true,
 	}
 
-	// SystemTableList is the list of system tables that we will exclude from the schema sync.
-	SystemTableList = []string{
-		"pg_aggregate",
-		"pg_am",
-		"pg_amop",
-		"pg_amproc",
-		"pg_attrdef",
-		"pg_attribute",
-		"pg_authid",
-		"pg_auth_members",
-		"pg_cast",
-		"pg_class",
-		"pg_collation",
-		"pg_constraint",
-		"pg_conversion",
-		"pg_database",
-		"pg_db_role_setting",
-		"pg_default_acl",
-		"pg_depend",
-		"pg_description",
-		"pg_enum",
-		"pg_event_trigger",
-		"pg_extension",
-		"pg_foreign_data_wrapper",
-		"pg_foreign_server",
-		"pg_foreign_table",
-		"pg_index",
-		"pg_inherits",
-		"pg_init_privs",
-		"pg_language",
-		"pg_largeobject",
-		"pg_largeobject_metadata",
-		"pg_namespace",
-		"pg_opclass",
-		"pg_operator",
-		"pg_opfamily",
-		"pg_parameter_acl",
-		"pg_partitioned_table",
-		"pg_policy",
-		"pg_proc",
-		"pg_publication",
-		"pg_publication_namespace",
-		"pg_publication_rel",
-		"pg_range",
-		"pg_replication_origin",
-		"pg_rewrite",
-		"pg_seclabel",
-		"pg_sequence",
-		"pg_shdepend",
-		"pg_shdescription",
-		"pg_shseclabel",
-		"pg_statistic",
-		"pg_statistic_ext",
-		"pg_statistic_ext_data",
-		"pg_subscription",
-		"pg_subscription_rel",
-		"pg_tablespace",
-		"pg_transform",
-		"pg_trigger",
-		"pg_ts_config",
-		"pg_ts_config_map",
-		"pg_ts_dict",
-		"pg_ts_parser",
-		"pg_ts_template",
-		"pg_type",
-		"pg_user_mapping",
-		"pg_stat_activity",
-		"pg_stat_replication",
-		"pg_stat_replication_slots",
-		"pg_stat_wal_receiver",
-		"pg_stat_recovery_prefetch",
-		"pg_stat_subscription",
-		"pg_stat_subscription_stats",
-		"pg_stat_ssl",
-		"pg_stat_gssapi",
-		"pg_stat_archiver",
-		"pg_stat_bgwriter",
-		"pg_stat_wal",
-		"pg_stat_database",
-		"pg_stat_database_conflicts",
-		"pg_stat_all_tables",
-		"pg_stat_all_indexes",
-		"pg_statio_all_tables",
-		"pg_statio_all_indexes",
-		"pg_statio_all_sequences",
-		"pg_stat_user_functions",
-		"pg_stat_slru",
+	// systemTableList is the list of system tables that we will exclude from the schema sync.
+	systemTableList = map[string]bool{
+		"pg_aggregate":               true,
+		"pg_am":                      true,
+		"pg_amop":                    true,
+		"pg_amproc":                  true,
+		"pg_attrdef":                 true,
+		"pg_attribute":               true,
+		"pg_authid":                  true,
+		"pg_auth_members":            true,
+		"pg_cast":                    true,
+		"pg_class":                   true,
+		"pg_collation":               true,
+		"pg_constraint":              true,
+		"pg_conversion":              true,
+		"pg_database":                true,
+		"pg_db_role_setting":         true,
+		"pg_default_acl":             true,
+		"pg_depend":                  true,
+		"pg_description":             true,
+		"pg_enum":                    true,
+		"pg_event_trigger":           true,
+		"pg_extension":               true,
+		"pg_foreign_data_wrapper":    true,
+		"pg_foreign_server":          true,
+		"pg_foreign_table":           true,
+		"pg_index":                   true,
+		"pg_inherits":                true,
+		"pg_init_privs":              true,
+		"pg_language":                true,
+		"pg_largeobject":             true,
+		"pg_largeobject_metadata":    true,
+		"pg_namespace":               true,
+		"pg_opclass":                 true,
+		"pg_operator":                true,
+		"pg_opfamily":                true,
+		"pg_parameter_acl":           true,
+		"pg_partitioned_table":       true,
+		"pg_policy":                  true,
+		"pg_proc":                    true,
+		"pg_publication":             true,
+		"pg_publication_namespace":   true,
+		"pg_publication_rel":         true,
+		"pg_range":                   true,
+		"pg_replication_origin":      true,
+		"pg_rewrite":                 true,
+		"pg_seclabel":                true,
+		"pg_sequence":                true,
+		"pg_shdepend":                true,
+		"pg_shdescription":           true,
+		"pg_shseclabel":              true,
+		"pg_statistic":               true,
+		"pg_statistic_ext":           true,
+		"pg_statistic_ext_data":      true,
+		"pg_subscription":            true,
+		"pg_subscription_rel":        true,
+		"pg_tablespace":              true,
+		"pg_transform":               true,
+		"pg_trigger":                 true,
+		"pg_ts_config":               true,
+		"pg_ts_config_map":           true,
+		"pg_ts_dict":                 true,
+		"pg_ts_parser":               true,
+		"pg_ts_template":             true,
+		"pg_type":                    true,
+		"pg_user_mapping":            true,
+		"pg_stat_activity":           true,
+		"pg_stat_replication":        true,
+		"pg_stat_replication_slots":  true,
+		"pg_stat_wal_receiver":       true,
+		"pg_stat_recovery_prefetch":  true,
+		"pg_stat_subscription":       true,
+		"pg_stat_subscription_stats": true,
+		"pg_stat_ssl":                true,
+		"pg_stat_gssapi":             true,
+		"pg_stat_archiver":           true,
+		"pg_stat_bgwriter":           true,
+		"pg_stat_wal":                true,
+		"pg_stat_database":           true,
+		"pg_stat_database_conflicts": true,
+		"pg_stat_all_tables":         true,
+		"pg_stat_all_indexes":        true,
+		"pg_statio_all_tables":       true,
+		"pg_statio_all_indexes":      true,
+		"pg_statio_all_sequences":    true,
+		"pg_stat_user_functions":     true,
+		"pg_stat_slru":               true,
 	}
 )
 
 const systemSchemas = "'information_schema', 'pg_catalog', 'pg_toast', '_timescaledb_cache', '_timescaledb_catalog', '_timescaledb_internal', '_timescaledb_config', 'timescaledb_information', 'timescaledb_experimental'"
+
+func IsSystemUser(user string) bool {
+	return strings.HasPrefix(user, "alloydb")
+}
 
 func IsSystemDatabase(database string) bool {
 	_, ok := excludedDatabaseList[database]
@@ -131,12 +135,12 @@ func IsSystemDatabase(database string) bool {
 }
 
 func IsSystemSchema(schema string) bool {
-	_, ok := SystemSchemaList[schema]
+	_, ok := systemSchemaList[schema]
 	return ok
 }
-
-func IsSystemUser(user string) bool {
-	return strings.HasPrefix(user, "alloydb")
+func IsSystemTable(table string) bool {
+	_, ok := systemTableList[table]
+	return ok
 }
 
 func IsSystemView(view string) bool {
@@ -158,7 +162,7 @@ func IsSystemView(view string) bool {
 	return false
 }
 
-func IsSystemFunctions(function string) bool {
+func IsSystemFunctions(function, definition string) bool {
 	if strings.HasPrefix(function, "g_columnar_") {
 		return true
 	}
@@ -175,6 +179,9 @@ func IsSystemFunctions(function string) bool {
 		return true
 	}
 	if function == "pg_stat_statements_wrapper" {
+		return true
+	}
+	if strings.Contains(definition, "$libdir/timescaledb") {
 		return true
 	}
 	return false

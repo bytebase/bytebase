@@ -654,11 +654,7 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 			return nil, err
 		}
 		// Skip internal functions.
-		// TODO(d): move this to IsSystemFunctions.
-		if strings.Contains(function.Definition, "$libdir/timescaledb") {
-			continue
-		}
-		if IsSystemFunctions(function.Name) {
+		if IsSystemFunctions(function.Name, function.Definition) {
 			continue
 		}
 
