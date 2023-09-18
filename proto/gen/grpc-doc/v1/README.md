@@ -609,7 +609,6 @@
     - [RowValue](#bytebase-v1-RowValue)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
-    - [CheckRequest.ChangeDatabaseType](#bytebase-v1-CheckRequest-ChangeDatabaseType)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -9471,7 +9470,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | statement | [string](#string) |  |  |
-| change_database_type | [CheckRequest.ChangeDatabaseType](#bytebase-v1-CheckRequest-ChangeDatabaseType) |  |  |
 | database | [string](#string) |  | Format: instances/{instance}/databases/{databaseName} |
 
 
@@ -9705,20 +9703,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | SUCCESS | 1 |  |
 | WARNING | 2 |  |
 | ERROR | 3 |  |
-
-
-
-<a name="bytebase-v1-CheckRequest-ChangeDatabaseType"></a>
-
-### CheckRequest.ChangeDatabaseType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DML | 2 |  |
-| SDL | 3 |  |
 
 
  
