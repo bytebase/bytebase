@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="payload.defaultStrategy === ApprovalStrategy.MANUAL"
-    class="my-4 space-y-4"
-  >
+  <div class="my-4 space-y-4">
     <div class="flex space-x-4">
       <input
         v-model="state.assigneeGroup"
@@ -11,7 +8,7 @@
         type="radio"
         class="text-accent disabled:text-accent-disabled focus:ring-accent"
         :value="ApprovalGroup.APPROVAL_GROUP_DBA"
-        :disabled="!allowEdit"
+        :disabled="!enableEdit"
       />
       <div class="-mt-0.5">
         <div class="textlabel">
@@ -27,7 +24,7 @@
         type="radio"
         class="text-accent disabled:text-accent-disabled focus:ring-accent"
         :value="ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER"
-        :disabled="!allowEdit"
+        :disabled="!enableEdit"
       />
       <div class="-mt-0.5">
         <div class="textlabel">
@@ -69,6 +66,12 @@ const emit = defineEmits<{
 
 const payload = computed(() => {
   return props.policy.deploymentApprovalPolicy!;
+});
+
+const enableEdit = computed(() => {
+  return (
+    props.allowEdit && payload.value.defaultStrategy === ApprovalStrategy.MANUAL
+  );
 });
 
 const getAssigneeGroup = (): ApprovalGroup => {
