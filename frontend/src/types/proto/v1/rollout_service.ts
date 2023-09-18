@@ -1,7 +1,6 @@
 /* eslint-disable */
-import * as Long from "long";
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { ChangedResources } from "./database_service";
@@ -6095,74 +6094,6 @@ export const RolloutServiceDefinition = {
   },
 } as const;
 
-export interface RolloutServiceImplementation<CallContextExt = {}> {
-  getPlan(request: GetPlanRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Plan>>;
-  listPlans(request: ListPlansRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListPlansResponse>>;
-  createPlan(request: CreatePlanRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Plan>>;
-  updatePlan(request: UpdatePlanRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Plan>>;
-  getRollout(request: GetRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
-  createRollout(request: CreateRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
-  previewRollout(request: PreviewRolloutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Rollout>>;
-  listTaskRuns(
-    request: ListTaskRunsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListTaskRunsResponse>>;
-  listPlanCheckRuns(
-    request: ListPlanCheckRunsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListPlanCheckRunsResponse>>;
-  runPlanChecks(
-    request: RunPlanChecksRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<RunPlanChecksResponse>>;
-  batchRunTasks(
-    request: BatchRunTasksRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchRunTasksResponse>>;
-  batchSkipTasks(
-    request: BatchSkipTasksRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchSkipTasksResponse>>;
-  batchCancelTaskRuns(
-    request: BatchCancelTaskRunsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchCancelTaskRunsResponse>>;
-}
-
-export interface RolloutServiceClient<CallOptionsExt = {}> {
-  getPlan(request: DeepPartial<GetPlanRequest>, options?: CallOptions & CallOptionsExt): Promise<Plan>;
-  listPlans(request: DeepPartial<ListPlansRequest>, options?: CallOptions & CallOptionsExt): Promise<ListPlansResponse>;
-  createPlan(request: DeepPartial<CreatePlanRequest>, options?: CallOptions & CallOptionsExt): Promise<Plan>;
-  updatePlan(request: DeepPartial<UpdatePlanRequest>, options?: CallOptions & CallOptionsExt): Promise<Plan>;
-  getRollout(request: DeepPartial<GetRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
-  createRollout(request: DeepPartial<CreateRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
-  previewRollout(request: DeepPartial<PreviewRolloutRequest>, options?: CallOptions & CallOptionsExt): Promise<Rollout>;
-  listTaskRuns(
-    request: DeepPartial<ListTaskRunsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListTaskRunsResponse>;
-  listPlanCheckRuns(
-    request: DeepPartial<ListPlanCheckRunsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListPlanCheckRunsResponse>;
-  runPlanChecks(
-    request: DeepPartial<RunPlanChecksRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<RunPlanChecksResponse>;
-  batchRunTasks(
-    request: DeepPartial<BatchRunTasksRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchRunTasksResponse>;
-  batchSkipTasks(
-    request: DeepPartial<BatchSkipTasksRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchSkipTasksResponse>;
-  batchCancelTaskRuns(
-    request: DeepPartial<BatchCancelTaskRunsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchCancelTaskRunsResponse>;
-}
-
 declare const self: any | undefined;
 declare const window: any | undefined;
 declare const global: any | undefined;
@@ -6218,8 +6149,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -959,38 +958,6 @@ export const ActuatorServiceDefinition = {
     },
   },
 } as const;
-
-export interface ActuatorServiceImplementation<CallContextExt = {}> {
-  getActuatorInfo(
-    request: GetActuatorInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ActuatorInfo>>;
-  updateActuatorInfo(
-    request: UpdateActuatorInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ActuatorInfo>>;
-  deleteCache(request: DeleteCacheRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  listDebugLog(
-    request: ListDebugLogRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListDebugLogResponse>>;
-}
-
-export interface ActuatorServiceClient<CallOptionsExt = {}> {
-  getActuatorInfo(
-    request: DeepPartial<GetActuatorInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ActuatorInfo>;
-  updateActuatorInfo(
-    request: DeepPartial<UpdateActuatorInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ActuatorInfo>;
-  deleteCache(request: DeepPartial<DeleteCacheRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  listDebugLog(
-    request: DeepPartial<ListDebugLogRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListDebugLogResponse>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
