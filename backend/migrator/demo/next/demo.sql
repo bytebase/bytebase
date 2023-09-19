@@ -24,8 +24,11 @@ SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE public.principal DISABLE TRIGGER ALL;
 
-INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695111825, 1, 1695111825, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (101, 'NORMAL', 1, 1694684977, 1, 1694684977, 'END_USER', 'Demo', 'demo@example.com', '$2a$10$JbwDbh1u86G9UUCMKXehV.uKPQhZYEJIUiLpVXRkVM4pNAUnU1THG', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695112047, 1, 1695112047, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (101, 'NORMAL', 1, 1694684977, 101, 1695112774, 'END_USER', 'Demo Owner', 'demo@example.com', '$2a$10$JbwDbh1u86G9UUCMKXehV.uKPQhZYEJIUiLpVXRkVM4pNAUnU1THG', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (102, 'NORMAL', 1, 1695112807, 101, 1695112895, 'END_USER', 'Jerry DBA', 'jerry@example.com', '$2a$10$GH4GKACLebRGpY3B/oAgNuuIg/FA/j0a5x7h9.AQxex1TfD8cb6ZG', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (103, 'NORMAL', 1, 1695112807, 101, 1695112903, 'END_USER', 'Tom Dev', 'tom@example.com', '$2a$10$5d6.P.g/jb8AmSdsdkqZE.fopcsRDPLdlSRSg.Homdbbl7GpEZPVq', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (104, 'NORMAL', 1, 1695112807, 101, 1695112915, 'END_USER', 'Jane Dev', 'jane@example.com', '$2a$10$g451CEsfAi8iTgAP/8hPWOklx/j9fCbl..XuEZDIg4QTUW1mZlcRe', '', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.principal ENABLE TRIGGER ALL;
@@ -37,6 +40,13 @@ ALTER TABLE public.principal ENABLE TRIGGER ALL;
 ALTER TABLE public.activity DISABLE TRIGGER ALL;
 
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (101, 'NORMAL', 101, 1694684977, 101, 1694684977, 101, 'bb.member.create', 'INFO', '', '{"role": "OWNER", "principalId": 101, "memberStatus": "ACTIVE", "principalName": "Demo", "principalEmail": "demo@example.com"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (102, 'NORMAL', 102, 1695112807, 102, 1695112807, 102, 'bb.member.create', 'INFO', '', '{"role": "DBA", "principalId": 102, "memberStatus": "ACTIVE", "principalName": "jerry", "principalEmail": "jerry@example.com"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (103, 'NORMAL', 103, 1695112807, 103, 1695112807, 103, 'bb.member.create', 'INFO', '', '{"role": "DEVELOPER", "principalId": 103, "memberStatus": "ACTIVE", "principalName": "tom", "principalEmail": "tom@example.com"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (104, 'NORMAL', 104, 1695112807, 104, 1695112807, 104, 'bb.member.create', 'INFO', '', '{"role": "DEVELOPER", "principalId": 104, "memberStatus": "ACTIVE", "principalName": "jane", "principalEmail": "jane@example.com"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (105, 'NORMAL', 101, 1695112950, 101, 1695112950, 101, 'bb.project.member.create', 'INFO', 'Granted Tom Dev to tom@example.com (DEVELOPER).', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (106, 'NORMAL', 101, 1695112950, 101, 1695112950, 101, 'bb.project.member.create', 'INFO', 'Granted Jerry DBA to jerry@example.com (OWNER).', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (107, 'NORMAL', 101, 1695113006, 101, 1695113006, 101, 'bb.project.member.create', 'INFO', 'Granted Demo Owner to demo@example.com (DEVELOPER).', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (108, 'NORMAL', 101, 1695113011, 101, 1695113011, 101, 'bb.project.member.delete', 'INFO', 'Revoked OWNER from Demo Owner (demo@example.com).', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.activity ENABLE TRIGGER ALL;
@@ -84,7 +94,7 @@ ALTER TABLE public.instance ENABLE TRIGGER ALL;
 
 ALTER TABLE public.project DISABLE TRIGGER ALL;
 
-INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695111825, 1, 1695111825, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695112047, 1, 1695112047, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (101, 'NORMAL', 101, 1694685057, 101, 1694685057, 'Test', 'TEST', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'test', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 
 
@@ -270,7 +280,7 @@ ALTER TABLE public.inbox ENABLE TRIGGER ALL;
 
 ALTER TABLE public.instance_change_history DISABLE TRIGGER ALL;
 
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695111825, 1, 1695111825, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919162345', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695112047, 1, 1695112047, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919162727', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
 CREATE TYPE row_status AS ENUM (''NORMAL'', ''ARCHIVED'');
 
 -- updated_ts trigger.
@@ -3003,7 +3013,7 @@ VALUES
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 103;
 ', '', 0, '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695111826, 1, 1695111826, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695112047, 1, 1695112048, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
 ', NULL, '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -6914,7 +6924,7 @@ ALTER TABLE ONLY public.vcs
 ALTER TABLE ONLY public.vcs
     ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
 
-', 63416000, '{}') ON CONFLICT DO NOTHING;
+', 62590000, '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (103, 'NORMAL', 1, 1695110681, 1, 1695110681, NULL, NULL, NULL, 'development', 3, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919160440', 'Migrate version 2.8.4 server version development with files migration/prod/2.8/0004##issue_type.sql.', 'ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts;
 
 UPDATE issue
@@ -10890,7 +10900,10 @@ ALTER TABLE public.label_value ENABLE TRIGGER ALL;
 
 ALTER TABLE public.member DISABLE TRIGGER ALL;
 
-INSERT INTO public.member (id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id) VALUES (101, 'NORMAL', 1, 1694684977, 1, 1694684977, 'ACTIVE', 'OWNER', 101) ON CONFLICT DO NOTHING;
+INSERT INTO public.member (id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id) VALUES (101, 'NORMAL', 1, 1694684977, 101, 1695112774, 'ACTIVE', 'OWNER', 101) ON CONFLICT DO NOTHING;
+INSERT INTO public.member (id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id) VALUES (102, 'NORMAL', 1, 1695112807, 101, 1695112895, 'ACTIVE', 'DBA', 102) ON CONFLICT DO NOTHING;
+INSERT INTO public.member (id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id) VALUES (103, 'NORMAL', 1, 1695112807, 101, 1695112903, 'ACTIVE', 'DEVELOPER', 103) ON CONFLICT DO NOTHING;
+INSERT INTO public.member (id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id) VALUES (104, 'NORMAL', 1, 1695112807, 101, 1695112915, 'ACTIVE', 'DEVELOPER', 104) ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.member ENABLE TRIGGER ALL;
@@ -10926,7 +10939,9 @@ ALTER TABLE public.policy ENABLE TRIGGER ALL;
 
 ALTER TABLE public.project_member DISABLE TRIGGER ALL;
 
-INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (101, 'NORMAL', 101, 1694685057, 101, 1694685057, 101, 'OWNER', 101, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (102, 'NORMAL', 101, 1695112950, 101, 1695112950, 101, 'DEVELOPER', 103, '{"title": "Developer"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (103, 'NORMAL', 101, 1695112950, 101, 1695112950, 101, 'OWNER', 102, '{"title": "Owner"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (104, 'NORMAL', 101, 1695113006, 101, 1695113006, 101, 'DEVELOPER', 101, '{"title": "Developer"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.project_member ENABLE TRIGGER ALL;
@@ -11009,7 +11024,7 @@ INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, 
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (110, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.schema-template', '{}', 'The schema template setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (111, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.data-classification', '{}', 'The data classification setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (112, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.approval', '{}', 'The workspace approval setting') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695111826, 'bb.workspace.profile', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695112048, 'bb.workspace.profile', '{}', '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.setting ENABLE TRIGGER ALL;
@@ -11088,7 +11103,7 @@ ALTER TABLE public.task_run ENABLE TRIGGER ALL;
 -- Name: activity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.activity_id_seq', 101, true);
+SELECT pg_catalog.setval('public.activity_id_seq', 108, true);
 
 
 --
@@ -11235,7 +11250,7 @@ SELECT pg_catalog.setval('public.label_value_id_seq', 101, false);
 -- Name: member_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.member_id_seq', 101, true);
+SELECT pg_catalog.setval('public.member_id_seq', 104, true);
 
 
 --
@@ -11270,7 +11285,7 @@ SELECT pg_catalog.setval('public.policy_id_seq', 105, true);
 -- Name: principal_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.principal_id_seq', 101, true);
+SELECT pg_catalog.setval('public.principal_id_seq', 104, true);
 
 
 --
@@ -11284,7 +11299,7 @@ SELECT pg_catalog.setval('public.project_id_seq', 101, true);
 -- Name: project_member_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.project_member_id_seq', 101, true);
+SELECT pg_catalog.setval('public.project_member_id_seq', 104, true);
 
 
 --
@@ -11326,7 +11341,7 @@ SELECT pg_catalog.setval('public.schema_group_id_seq', 101, false);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 119, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 120, true);
 
 
 --
