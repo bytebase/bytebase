@@ -56,6 +56,13 @@ service SchemaDesignService {
     option (google.api.http) = {delete: "/v1/{name=projects/*/schemaDesigns/*}"};
     option (google.api.method_signature) = "name";
   }
+
+  rpc DiffMetadata(ParseSchemaStringRequest) returns (ParseSchemaStringResponse) {
+    option (google.api.http) = {
+      post: "/v1/schemaDesign:diffMetadata"
+      body: "*"
+    };
+  }
 }
 
 message SchemaDesign {
@@ -213,4 +220,20 @@ message DeleteSchemaDesignRequest {
   // The name of the schema design to delete.
   // Format: projects/{project}/schemaDesigns/{schemaDesign}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message DiffMetadataRequest {
+  // The metadata of the source schema.
+  DatabaseMetadata source_metadata = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The metadata of the target schema.
+  DatabaseMetadata target_metadata = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The database engine of the schema.
+  Engine engine = 3;
+}
+
+message DiffMetadataResponse {
+  // The diff of the metadata.
+  string diff = 1;
 }
