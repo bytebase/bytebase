@@ -9453,6 +9453,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | title | [string](#string) |  | The advice title. |
 | content | [string](#string) |  | The advice content. |
 | line | [int32](#int32) |  | The advice line number in the SQL statement. |
+| column | [int32](#int32) |  | The advice column number in the SQL statement. |
 | detail | [string](#string) |  | The advice detail. |
 
 
