@@ -347,19 +347,20 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
 			}
-			if spec.value == "DDL" {
-				issueFind.TypeList = append(
-					issueFind.TypeList,
-					api.IssueDatabaseCreate,
-					api.IssueDatabaseSchemaUpdate,
-					api.IssueDatabaseSchemaUpdateGhost,
-					api.IssueDatabaseRestorePITR,
-					api.IssueDatabaseGeneral,
-				)
-			} else if spec.value == "DML" {
-				issueFind.TypeList = append(issueFind.TypeList, api.IssueDatabaseDataUpdate)
-			} else {
-				return nil, status.Errorf(codes.InvalidArgument, `unknown value "%s"`, spec.value)
+			switch spec.value {
+			case "DDL":
+				issueFind.TaskTypes = &[]api.TaskType{
+					api.TaskDatabaseSchemaUpdate,
+					api.TaskDatabaseSchemaUpdateSDL,
+					api.TaskDatabaseSchemaUpdateGhostSync,
+					api.TaskDatabaseSchemaUpdateGhostCutover,
+				}
+			case "DML":
+				issueFind.TaskTypes = &[]api.TaskType{
+					api.TaskDatabaseDataUpdate,
+				}
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, `unknown value %q`, spec.value)
 			}
 		case "instance":
 			if spec.operator != comparatorTypeEqual {
@@ -1533,12 +1534,10 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 
 func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
 	switch t {
-	case api.IssueDatabaseCreate, api.IssueDatabaseSchemaUpdate, api.IssueDatabaseSchemaUpdateGhost, api.IssueDatabaseDataUpdate, api.IssueDatabaseRestorePITR, api.IssueDatabaseGeneral:
+	case api.IssueDatabaseGeneral:
 		return v1pb.Issue_DATABASE_CHANGE
 	case api.IssueGrantRequest:
 		return v1pb.Issue_GRANT_REQUEST
-	case api.IssueGeneral:
-		return v1pb.Issue_TYPE_UNSPECIFIED
 	default:
 		return v1pb.Issue_TYPE_UNSPECIFIED
 	}

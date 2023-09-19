@@ -1,42 +1,11 @@
 <template>
   <div class="mt-4 space-y-4">
     <div class="flex justify-end">
-      <div
-        v-if="vcsUIType == 'GITLAB_SELF_HOST'"
-        class="flex flex-row items-center space-x-2"
-      >
+      <div v-if="vcsWithUIType" class="flex flex-row items-center space-x-2">
         <div class="textlabel whitespace-nowrap">
-          {{ $t("gitops.setting.add-git-provider.gitlab-self-host") }}
+          {{ vcsWithUIType.title }}
         </div>
-        <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
-      </div>
-      <div
-        v-else-if="vcsUIType == 'GITLAB_COM'"
-        class="flex flex-row items-center space-x-2"
-      >
-        <div class="textlabel whitespace-nowrap">GitLab.com</div>
-        <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
-      </div>
-      <div
-        v-else-if="vcsUIType == 'GITHUB_COM'"
-        class="flex flex-row items-center space-x-2"
-      >
-        <div class="textlabel whitespace-nowrap">GitHub.com</div>
-        <img class="h-6 w-auto" src="../assets/github-logo.svg" />
-      </div>
-      <div
-        v-else-if="vcsUIType == 'BITBUCKET_ORG'"
-        class="flex flex-row items-center space-x-2"
-      >
-        <div class="textlabel whitespace-nowrap">Bitbucket.org</div>
-        <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
-      </div>
-      <div
-        v-else-if="vcsUIType == 'AZURE_DEVOPS'"
-        class="flex flex-row items-center space-x-2"
-      >
-        <div class="textlabel whitespace-nowrap">Azure DevOps</div>
-        <img class="h-6 w-auto" src="../assets/azure-devops-logo.svg" />
+        <VCSIcon custom-class="h-6" :type="vcsWithUIType.type" />
       </div>
     </div>
 
@@ -194,6 +163,7 @@
 import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
+import { vcsListByUIType } from "@/components/VCS/utils";
 import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
 import {
   OAuthToken,
@@ -235,6 +205,10 @@ const vcsUIType = computed((): VCSUIType => {
     return getVCSUIType(vcs.value);
   }
   return "GITLAB_SELF_HOST";
+});
+
+const vcsWithUIType = computed(() => {
+  return vcsListByUIType.value.find((data) => data.uiType === vcsUIType.value);
 });
 
 const state = reactive<LocalState>({

@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="title"
     class="text-left pl-4 pt-4 pb-2 py-text-base leading-6 font-medium text-gray-900"
   >
     {{ title }}
@@ -71,11 +72,22 @@
               <template v-else> #{{ issue.uid }} </template>
             </div>
             <div
-              class="flex truncate"
+              class="flex truncate items-center"
               :class="{
                 'font-semibold': isAssigneeAttentionOn(issue),
               }"
             >
+              <template
+                v-if="
+                  issue.projectEntity.workflow == Workflow.VCS &&
+                  issue.creatorEntity.name === SYSTEM_BOT_USER_NAME
+                "
+              >
+                <VCSIcon
+                  custom-class="h-4 mr-2 w-auto"
+                  :type="getIssueVCSType(issue)"
+                />
+              </template>
               <span
                 v-for="(item, index) in issueHighlightSections(
                   issue.title,
@@ -156,7 +168,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, watch, ref } from "vue";
+import { reactive, computed, watch, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit";
@@ -164,8 +176,12 @@ import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActio
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import IssueStatusIcon from "@/components/IssueV1/components/IssueStatusIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
-import { useCurrentUserV1 } from "@/store";
-import type { ComposedIssue } from "@/types";
+import { useCurrentUserV1, useRepositoryV1Store, useVCSV1Store } from "@/store";
+import { type ComposedIssue, SYSTEM_BOT_USER_NAME } from "@/types";
+import {
+  ExternalVersionControl,
+  ExternalVersionControl_Type,
+} from "@/types/proto/v1/externalvs_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Workflow } from "@/types/proto/v1/project_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
@@ -245,6 +261,8 @@ const state = reactive<LocalState>({
   selectedIssueIdList: new Set(),
 });
 const currentUserV1 = useCurrentUserV1();
+const repositoryV1Store = useRepositoryV1Store();
+const vcsV1Store = useVCSV1Store();
 
 const tableRef = ref<HTMLDivElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
@@ -263,6 +281,28 @@ const issueTaskStatus = (issue: ComposedIssue) => {
 
   return activeTaskInRollout(issue.rolloutEntity).status;
 };
+
+const getIssueVCSType = (issue: ComposedIssue): ExternalVersionControl_Type => {
+  const repository = repositoryV1Store.getRepositoryByProject(
+    issue.projectEntity.name
+  );
+  const vcs =
+    vcsV1Store.getVCSByUid(repository?.vcsUid ?? "") ??
+    ({} as ExternalVersionControl);
+  return vcs.type;
+};
+
+watchEffect(async () => {
+  props.issueList.forEach(async (issue) => {
+    const repo = await repositoryV1Store.getOrFetchRepositoryByProject(
+      issue.projectEntity.name,
+      true
+    );
+    if (repo) {
+      await vcsV1Store.fetchVCSByUid(repo.vcsUid);
+    }
+  });
+});
 
 const isIssueSelected = (issue: ComposedIssue): boolean => {
   return state.selectedIssueIdList.has(issue.uid);

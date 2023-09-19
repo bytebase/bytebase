@@ -222,12 +222,9 @@ import {
 import {
   experimentalCreateIssueByPlan,
   hasFeature,
-  useActuatorV1Store,
   useCurrentUserV1,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
-  useIssueStore,
   useProjectV1Store,
 } from "@/store";
 import {
@@ -237,9 +234,6 @@ import {
   UNKNOWN_ID,
   ComposedInstance,
   unknownInstance,
-  IssueCreate,
-  CreateDatabaseContext,
-  PITRContext,
 } from "@/types";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { UserRole } from "@/types/proto/v1/auth_service";
@@ -261,7 +255,6 @@ import {
   hasWorkspacePermissionV1,
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
-  issueSlug,
 } from "@/utils";
 import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
 import {
@@ -316,9 +309,6 @@ const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const environmentV1Store = useEnvironmentV1Store();
 const projectV1Store = useProjectV1Store();
-const developmentUseV1IssueUI = computed(() => {
-  return !!useActuatorV1Store().serverInfo?.developmentUseV2Scheduler;
-});
 
 const showAssigneeSelect = computed(() => {
   // If the role can't change assignee after creating the issue, then we will show the
@@ -560,117 +550,9 @@ const createV1 = async () => {
     state.creating = false;
   }
 };
-const createLegacy = async () => {
-  if (!allowCreate.value) {
-    return;
-  }
-
-  let newIssue: IssueCreate;
-
-  const databaseName = state.databaseName;
-  const tableName = state.tableName;
-  const instanceId = Number(state.instanceId);
-  let owner = "";
-  if (requireDatabaseOwnerName.value && state.instanceRole) {
-    const instanceUser = await instanceV1Store.fetchInstanceRoleByName(
-      state.instanceRole
-    );
-    owner = instanceUser.roleName;
-  }
-
-  if (isTenantProject.value) {
-    if (!hasFeature("bb.feature.multi-tenancy")) {
-      state.showFeatureModal = true;
-      return;
-    }
-  }
-  // Do not submit non-selected optional labels
-  const labels = Object.keys(state.labels)
-    .map((key) => {
-      const value = state.labels[key];
-      return { key, value };
-    })
-    .filter((kv) => !!kv.value);
-
-  const createDatabaseContext: CreateDatabaseContext = {
-    instanceId,
-    databaseName: databaseName,
-    tableName: tableName,
-    owner,
-    characterSet:
-      state.characterSet ||
-      defaultCharsetOfEngineV1(selectedInstance.value.engine),
-    collation:
-      state.collation ||
-      defaultCollationOfEngineV1(selectedInstance.value.engine),
-    cluster: state.cluster,
-    labels: JSON.stringify(labels),
-  };
-
-  if (props.backup) {
-    // If props.backup is specified, we create a PITR issue
-    // with createDatabaseContext
-    const { instance, database } = extractDatabaseResourceName(
-      props.backup.name
-    );
-    const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
-      `instances/${instance}/databases/${database}`
-    );
-    const createContext: PITRContext = {
-      databaseId: Number(db.uid),
-      backupId: Number(props.backup.uid),
-      createDatabaseContext,
-    };
-    const backupTitle = extractBackupResourceName(props.backup.name);
-    newIssue = {
-      name: `Create database '${databaseName}' from backup '${backupTitle}'`,
-      type: "bb.issue.database.restore.pitr",
-      description: `Creating database '${databaseName}' from backup '${backupTitle}'`,
-      assigneeId: parseInt(state.assigneeId!, 10),
-      projectId: parseInt(state.projectId!, 10),
-      pipeline: {
-        stageList: [],
-        name: "",
-      },
-      createContext,
-      payload: {},
-    };
-  } else {
-    // Otherwise we create a simple database.create issue.
-    newIssue = {
-      name: `Create database '${databaseName}'`,
-      type: "bb.issue.database.create",
-      description: "",
-      assigneeId: parseInt(state.assigneeId!, 10),
-      projectId: parseInt(state.projectId!, 10),
-      pipeline: {
-        stageList: [],
-        name: "",
-      },
-      createContext: createDatabaseContext,
-      payload: {},
-    };
-  }
-
-  state.creating = true;
-  useIssueStore()
-    .createIssue(newIssue)
-    .then(
-      (createdIssue) => {
-        router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
-      },
-      () => {
-        state.creating = false;
-      }
-    );
-};
 
 const create = async () => {
-  if (developmentUseV1IssueUI.value) {
-    await createV1();
-  } else {
-    await createLegacy();
-  }
+  await createV1();
 };
 
 // update `state.labelList` when selected Environment changed

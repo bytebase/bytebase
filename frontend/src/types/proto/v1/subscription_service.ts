@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
@@ -933,44 +932,6 @@ export const SubscriptionServiceDefinition = {
     },
   },
 } as const;
-
-export interface SubscriptionServiceImplementation<CallContextExt = {}> {
-  getSubscription(
-    request: GetSubscriptionRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Subscription>>;
-  getFeatureMatrix(
-    request: GetFeatureMatrixRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<FeatureMatrix>>;
-  updateSubscription(
-    request: UpdateSubscriptionRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Subscription>>;
-  trialSubscription(
-    request: TrialSubscriptionRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Subscription>>;
-}
-
-export interface SubscriptionServiceClient<CallOptionsExt = {}> {
-  getSubscription(
-    request: DeepPartial<GetSubscriptionRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Subscription>;
-  getFeatureMatrix(
-    request: DeepPartial<GetFeatureMatrixRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<FeatureMatrix>;
-  updateSubscription(
-    request: DeepPartial<UpdateSubscriptionRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Subscription>;
-  trialSubscription(
-    request: DeepPartial<TrialSubscriptionRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Subscription>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

@@ -36,13 +36,16 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	if err != nil {
 		return "", "", 0, errors.Wrap(err, "failed to generate random JWT secret")
 	}
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	authSetting, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingAuthSecret,
 		Value:       secret,
 		Description: "Random string used to sign the JWT auth token.",
-	}, api.SystemBotID); err != nil {
+	}, api.SystemBotID)
+	if err != nil {
 		return "", "", 0, err
 	}
+	// Set secret to the stored secret.
+	secret = authSetting.Value
 
 	// initial workspace
 	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{

@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 
 export const protobufPackage = "bytebase.v1";
@@ -308,16 +307,6 @@ export const CelServiceDefinition = {
     },
   },
 } as const;
-
-export interface CelServiceImplementation<CallContextExt = {}> {
-  parse(request: ParseRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ParseResponse>>;
-  deparse(request: DeparseRequest, context: CallContext & CallContextExt): Promise<DeepPartial<DeparseResponse>>;
-}
-
-export interface CelServiceClient<CallOptionsExt = {}> {
-  parse(request: DeepPartial<ParseRequest>, options?: CallOptions & CallOptionsExt): Promise<ParseResponse>;
-  deparse(request: DeepPartial<DeparseRequest>, options?: CallOptions & CallOptionsExt): Promise<DeparseResponse>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

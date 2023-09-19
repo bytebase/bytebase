@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Duration } from "../google/protobuf/duration";
 import { Expr } from "../google/type/expr";
@@ -280,7 +280,6 @@ export interface DataClassificationSetting_DataClassificationConfig_Level {
   id: string;
   title: string;
   description: string;
-  sensitive: boolean;
 }
 
 export interface DataClassificationSetting_DataClassificationConfig_DataClassification {
@@ -1592,7 +1591,7 @@ export const DataClassificationSetting_DataClassificationConfig = {
 };
 
 function createBaseDataClassificationSetting_DataClassificationConfig_Level(): DataClassificationSetting_DataClassificationConfig_Level {
-  return { id: "", title: "", description: "", sensitive: false };
+  return { id: "", title: "", description: "" };
 }
 
 export const DataClassificationSetting_DataClassificationConfig_Level = {
@@ -1608,9 +1607,6 @@ export const DataClassificationSetting_DataClassificationConfig_Level = {
     }
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
-    }
-    if (message.sensitive === true) {
-      writer.uint32(32).bool(message.sensitive);
     }
     return writer;
   },
@@ -1643,13 +1639,6 @@ export const DataClassificationSetting_DataClassificationConfig_Level = {
 
           message.description = reader.string();
           continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.sensitive = reader.bool();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1664,7 +1653,6 @@ export const DataClassificationSetting_DataClassificationConfig_Level = {
       id: isSet(object.id) ? String(object.id) : "",
       title: isSet(object.title) ? String(object.title) : "",
       description: isSet(object.description) ? String(object.description) : "",
-      sensitive: isSet(object.sensitive) ? Boolean(object.sensitive) : false,
     };
   },
 
@@ -1673,7 +1661,6 @@ export const DataClassificationSetting_DataClassificationConfig_Level = {
     message.id !== undefined && (obj.id = message.id);
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined && (obj.description = message.description);
-    message.sensitive !== undefined && (obj.sensitive = message.sensitive);
     return obj;
   },
 
@@ -1690,7 +1677,6 @@ export const DataClassificationSetting_DataClassificationConfig_Level = {
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
-    message.sensitive = object.sensitive ?? false;
     return message;
   },
 };

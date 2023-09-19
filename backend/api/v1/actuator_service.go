@@ -98,20 +98,19 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 	}
 
 	serverInfo := v1pb.ActuatorInfo{
-		Version:                   s.profile.Version,
-		GitCommit:                 s.profile.GitCommit,
-		Readonly:                  s.profile.Readonly,
-		Saas:                      s.profile.SaaS,
-		DemoName:                  s.profile.DemoName,
-		NeedAdminSetup:            count == 0,
-		ExternalUrl:               setting.ExternalUrl,
-		DisallowSignup:            setting.DisallowSignup,
-		Require_2Fa:               setting.Require_2Fa,
-		LastActiveTime:            timestamppb.New(time.Unix(s.profile.LastActiveTs, 0)),
-		WorkspaceId:               workspaceID,
-		GitopsWebhookUrl:          setting.GitopsWebhookUrl,
-		Debug:                     slog.Default().Enabled(ctx, slog.LevelDebug),
-		DevelopmentUseV2Scheduler: true,
+		Version:          s.profile.Version,
+		GitCommit:        s.profile.GitCommit,
+		Readonly:         s.profile.Readonly,
+		Saas:             s.profile.SaaS,
+		DemoName:         s.profile.DemoName,
+		NeedAdminSetup:   count == 0,
+		ExternalUrl:      setting.ExternalUrl,
+		DisallowSignup:   setting.DisallowSignup,
+		Require_2Fa:      setting.Require_2Fa,
+		LastActiveTime:   timestamppb.New(time.Unix(s.profile.LastActiveTs, 0)),
+		WorkspaceId:      workspaceID,
+		GitopsWebhookUrl: setting.GitopsWebhookUrl,
+		Debug:            slog.Default().Enabled(ctx, slog.LevelDebug),
 	}
 
 	return &serverInfo, nil

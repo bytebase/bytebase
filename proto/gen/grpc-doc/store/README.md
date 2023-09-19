@@ -2067,7 +2067,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| sensitive | [bool](#bool) |  |  |
 
 
 

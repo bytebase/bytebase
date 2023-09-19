@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { BackupPlanSchedule, backupPlanScheduleFromJSON, backupPlanScheduleToJSON } from "./org_policy_service";
 
@@ -1038,20 +1037,6 @@ export const AnomalyServiceDefinition = {
     },
   },
 } as const;
-
-export interface AnomalyServiceImplementation<CallContextExt = {}> {
-  searchAnomalies(
-    request: SearchAnomaliesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchAnomaliesResponse>>;
-}
-
-export interface AnomalyServiceClient<CallOptionsExt = {}> {
-  searchAnomalies(
-    request: DeepPartial<SearchAnomaliesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchAnomaliesResponse>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

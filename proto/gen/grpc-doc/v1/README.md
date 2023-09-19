@@ -505,6 +505,8 @@
     - [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest)
     - [DeparseSchemaMetadataRequest](#bytebase-v1-DeparseSchemaMetadataRequest)
     - [DeparseSchemaMetadataResponse](#bytebase-v1-DeparseSchemaMetadataResponse)
+    - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
+    - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest)
     - [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest)
     - [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse)
@@ -611,7 +613,6 @@
     - [RowValue](#bytebase-v1-RowValue)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
-    - [CheckRequest.ChangeDatabaseType](#bytebase-v1-CheckRequest-ChangeDatabaseType)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -650,7 +651,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
 | gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
-| development_use_v2_scheduler | [bool](#bool) |  | development_use_v2_scheduler flag means if the server uses the v2 task run scheduler. this flag is only used for development purpose and will be removed once we switch to the v2 scheduler. |
 
 
 
@@ -8177,6 +8177,38 @@ Type is the database change type.
 
 
 
+<a name="bytebase-v1-DiffMetadataRequest"></a>
+
+### DiffMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
+| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffMetadataResponse"></a>
+
+### DiffMetadataResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  | The diff of the metadata. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetSchemaDesignRequest"></a>
 
 ### GetSchemaDesignRequest
@@ -8373,6 +8405,7 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | ParseSchemaString | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
 | DeparseSchemaMetadata | [DeparseSchemaMetadataRequest](#bytebase-v1-DeparseSchemaMetadataRequest) | [DeparseSchemaMetadataResponse](#bytebase-v1-DeparseSchemaMetadataResponse) |  |
 | DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  
 
@@ -8723,7 +8756,6 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| sensitive | [bool](#bool) |  |  |
 
 
 
@@ -9489,6 +9521,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | title | [string](#string) |  | The advice title. |
 | content | [string](#string) |  | The advice content. |
 | line | [int32](#int32) |  | The advice line number in the SQL statement. |
+| column | [int32](#int32) |  | The advice column number in the SQL statement. |
 | detail | [string](#string) |  | The advice detail. |
 
 
@@ -9505,8 +9538,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | statement | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| change_database_type | [CheckRequest.ChangeDatabaseType](#bytebase-v1-CheckRequest-ChangeDatabaseType) |  |  |
 | database | [string](#string) |  | Format: instances/{instance}/databases/{databaseName} |
 
 
@@ -9740,20 +9771,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | SUCCESS | 1 |  |
 | WARNING | 2 |  |
 | ERROR | 3 |  |
-
-
-
-<a name="bytebase-v1-CheckRequest-ChangeDatabaseType"></a>
-
-### CheckRequest.ChangeDatabaseType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DML | 2 |  |
-| SDL | 3 |  |
 
 
  

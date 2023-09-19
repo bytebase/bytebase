@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"log/slog"
@@ -327,17 +326,13 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		return []*store.TaskMessage{taskCreate}, nil, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		_, sheetIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
-		sheetID, err := strconv.Atoi(sheetIDStr)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
-		}
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			SpecID:        spec.Id,
-			SheetID:       sheetID,
+			SheetID:       sheetUID,
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 		}
 		bytes, err := json.Marshal(payload)
@@ -357,17 +352,13 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		return []*store.TaskMessage{taskCreate}, nil, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
-		_, sheetIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
-		sheetID, err := strconv.Atoi(sheetIDStr)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
-		}
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
 			SpecID:        spec.Id,
-			SheetID:       sheetID,
+			SheetID:       sheetUID,
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 		}
 		bytes, err := json.Marshal(payload)
@@ -387,19 +378,15 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		return []*store.TaskMessage{taskCreate}, nil, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
-		_, sheetIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
-		}
-		sheetID, err := strconv.Atoi(sheetIDStr)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
 		var taskCreateList []*store.TaskMessage
 		// task "sync"
 		payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
 			SpecID:        spec.Id,
-			SheetID:       sheetID,
+			SheetID:       sheetUID,
 			SchemaVersion: c.SchemaVersion,
 		}
 		bytesSync, err := json.Marshal(payloadSync)
@@ -442,17 +429,13 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		return taskCreateList, taskIndexDAGList, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-		_, sheetIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
-		sheetID, err := strconv.Atoi(sheetIDStr)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
-		}
 		payload := api.TaskDatabaseDataUpdatePayload{
 			SpecID:            spec.Id,
-			SheetID:           sheetID,
+			SheetID:           sheetUID,
 			SchemaVersion:     getOrDefaultSchemaVersion(c.SchemaVersion),
 			RollbackEnabled:   c.RollbackEnabled,
 			RollbackSQLStatus: api.RollbackSQLStatusPending,
@@ -541,13 +524,9 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Conte
 		return nil, nil, errors.Wrapf(err, "failed to register environment id %q", environmentID)
 	}
 
-	_, sheetUIDStr, err := common.GetProjectResourceIDSheetID(c.Sheet)
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
-	}
-	sheetUID, err := strconv.Atoi(sheetUIDStr)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetUIDStr)
 	}
 	sheetStatement, err := s.GetSheetStatementByID(ctx, sheetUID)
 	if err != nil {

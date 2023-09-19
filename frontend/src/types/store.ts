@@ -15,7 +15,6 @@ import {
 } from "./id";
 import { Instance, MigrationHistory } from "./instance";
 import { Issue } from "./issue";
-import { IssueSubscriber } from "./issueSubscriber";
 import { Label } from "./label";
 import { Notification } from "./notification";
 import { Principal } from "./principal";
@@ -31,10 +30,6 @@ export interface PrincipalState {
 export interface IssueState {
   issueById: Map<IssueId, Issue>;
   isCreatingIssue: boolean;
-}
-
-export interface IssueSubscriberState {
-  subscriberList: Map<IssueId, IssueSubscriber[]>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

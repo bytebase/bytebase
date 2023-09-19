@@ -2,18 +2,19 @@ package v1
 
 import (
 	"bytes"
-	"cmp"
 	"context"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"cmp"
+	"log/slog"
 
 	"github.com/google/cel-go/cel"
 	"github.com/labstack/echo/v4"
@@ -920,6 +921,57 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 	return activity, nil
 }
 
+func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1pb.CheckResponse, error) {
+	if len(request.Statement) > common.MaxStatementSizeForSQLReview {
+		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxStatementSizeForSQLReview/1024)
+	}
+
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Database)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get database, error: %v", err)
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Database)
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &database.EffectiveEnvironmentID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get environment, error: %v", err)
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
+	}
+
+	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, environment, instance, database)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to do sql review check, error: %v", err)
+	}
+
+	return &v1pb.CheckResponse{
+		Advices: adviceList,
+	}, nil
+}
+
 // Query executes a SQL query.
 // We have the following stages:
 //  1. pre-query
@@ -1131,7 +1183,7 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 // Due to the performance consideration, we DO NOT get the sensitive schema info if there are advice error in SQL review.
 func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
 	// Prepare related message.
-	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, nil, nil, advisor.Success, nil, nil, nil, err
 	}
@@ -1145,8 +1197,8 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	// dataShare must be false when engine is not redshift
 	// engine must be MYSQL or TIDB when connecting to instance (not database) in sql editor
 	dataShare := false
-	if database != nil {
-		dataShare = database.DataShare
+	if maybeDatabase != nil {
+		dataShare = maybeDatabase.DataShare
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
@@ -1164,7 +1216,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	}
 
 	// Run SQL review.
-	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, request, environment, instance, database)
+	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, environment, instance, maybeDatabase)
 	if err != nil {
 		return nil, nil, nil, adviceStatus, adviceList, nil, nil, err
 	}
@@ -1254,8 +1306,8 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		level = api.ActivityWarn
 	}
 	databaseID := 0
-	if database != nil {
-		databaseID = database.UID
+	if maybeDatabase != nil {
+		databaseID = maybeDatabase.UID
 	}
 	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
@@ -1271,7 +1323,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 		return nil, nil, nil, advisor.Success, nil, nil, nil, err
 	}
 
-	return user, instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, activity, nil
+	return user, instance, maybeDatabase, adviceStatus, adviceList, sensitiveSchemaInfo, activity, nil
 }
 
 func allPostgresSystemObjects(statement string) bool {
@@ -1281,21 +1333,13 @@ func allPostgresSystemObjects(statement string) bool {
 		slog.Debug("Failed to extract resource list from statement", slog.String("statement", statement), log.BBError(err))
 		return false
 	}
-	systemSchemas := make(map[string]bool)
-	for _, schema := range pg.SystemSchemaList {
-		systemSchemas[schema] = true
-	}
-	systemTables := make(map[string]bool)
-	for _, table := range pg.SystemTableList {
-		systemTables[table] = true
-	}
 	for _, resource := range resources {
-		if systemSchemas[resource.Schema] {
+		if pg.IsSystemSchema(resource.Schema) {
 			continue
 		}
 		// If schema is not specified, user can access the pg_catalog schema if the table is pg_catalog's system table.
 		// So we need to check this case.
-		if resource.Schema == "" && systemTables[resource.Table] {
+		if resource.Schema == "" && pg.IsSystemTable(resource.Table) {
 			continue
 		}
 		return false
@@ -1750,8 +1794,8 @@ func getReadOnlyDataSource(instance *store.InstanceMessage) *store.DataSourceMes
 	return dataSource
 }
 
-func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequest, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage) (advisor.Status, []*v1pb.Advice, error) {
-	if !IsSQLReviewSupported(instance.Engine) || request.ConnectionDatabase == "" || database == nil {
+func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage) (advisor.Status, []*v1pb.Advice, error) {
+	if !IsSQLReviewSupported(instance.Engine) || database == nil {
 		return advisor.Success, nil, nil
 	}
 
@@ -1767,13 +1811,13 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequ
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 			return advisor.Error, nil, status.Errorf(codes.Internal, "failed to sync database schema: %v", err)
 		}
-	}
-	dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return advisor.Error, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
-	}
-	if dbSchema == nil {
-		return advisor.Error, nil, status.Errorf(codes.NotFound, "database schema not found: %v", database.UID)
+		dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return advisor.Error, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+		}
+		if dbSchema == nil {
+			return advisor.Error, nil, status.Errorf(codes.NotFound, "database schema not found: %v", database.UID)
+		}
 	}
 
 	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, advisor.SyntaxModeNormal)
@@ -1802,7 +1846,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, request *v1pb.QueryRequ
 		dbSchema.Metadata.CharacterSet,
 		dbSchema.Metadata.Collation,
 		environment.UID,
-		request.Statement,
+		statement,
 		catalog,
 		connection,
 		currentSchema,
@@ -1824,6 +1868,7 @@ func convertAdviceList(list []advisor.Advice) []*v1pb.Advice {
 			Title:   advice.Title,
 			Content: advice.Content,
 			Line:    int32(advice.Line),
+			Column:  int32(advice.Column),
 			Detail:  advice.Details,
 		})
 	}

@@ -13,4 +13,3 @@ export * from "./plan-check";
 export * from "./task-run";
 export * from "./poll";
 export * from "./subscriber";
-export * from "./legacy-issue-compatibility";

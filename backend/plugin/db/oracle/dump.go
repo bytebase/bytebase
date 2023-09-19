@@ -33,7 +33,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 	} else {
 		list = append(list, schemas...)
 	}
-	if err := dumpTxn(ctx, txn, list, out); err != nil {
+	if err := driver.dumpTxn(ctx, txn, list, out); err != nil {
 		return "", err
 	}
 
@@ -43,17 +43,17 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 	return "", nil
 }
 
-func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {
+func (driver *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {
 	for _, schema := range schemas {
-		if err := dumpSchemaTxn(ctx, txn, schema, out); err != nil {
+		if err := driver.dumpSchemaTxn(ctx, txn, schema, out); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
-	if err := dumpTableTxn(ctx, txn, schema, out); err != nil {
+func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+	if err := driver.dumpTableTxn(ctx, txn, schema, out); err != nil {
 		return err
 	}
 	if err := dumpViewTxn(ctx, txn, schema, out); err != nil {
@@ -65,7 +65,7 @@ func dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Write
 	if err := dumpIndexTxn(ctx, txn, schema, out); err != nil {
 		return err
 	}
-	if err := dumpSequenceTxn(ctx, txn, schema, out); err != nil {
+	if err := driver.dumpSequenceTxn(ctx, txn, schema, out); err != nil {
 		return err
 	}
 	return dumpTriggerOrderingTxn(ctx, txn, schema, out)
@@ -1287,6 +1287,41 @@ WHERE
   )
 ORDER BY
   T.TABLE_NAME ASC`
+	dumpFieldSQL11g = `
+SELECT
+	T.IOT_TYPE,
+	ET.TABLE_NAME EXT_TABLE_NAME,
+	C.TABLE_NAME,
+	C.COLUMN_NAME,
+	C.DATA_TYPE,
+	C.DATA_TYPE_OWNER,
+	C.DATA_LENGTH,
+	C.DATA_PRECISION,
+	C.DATA_SCALE,
+	C.NULLABLE,
+	C.COLUMN_ID,
+	C.DATA_DEFAULT,
+	C.CHAR_LENGTH,
+	C.CHAR_USED,
+	NULL,
+	NULL,
+	COM.COLUMN_NAME IS_INVISIBLE,
+	COM.COMMENTS
+FROM
+	"SYS"."ALL_TAB_COLS" C,
+	SYS.ALL_ALL_TABLES T,
+	SYS.ALL_EXTERNAL_TABLES ET,
+	"SYS"."ALL_COL_COMMENTS" COM
+WHERE
+	COM.OWNER(+) = C.OWNER
+	AND COM.TABLE_NAME(+) = C.TABLE_NAME
+	AND COM.COLUMN_NAME(+) = C.COLUMN_NAME
+	AND T.TABLE_NAME = C.TABLE_NAME
+	AND T.OWNER = C.OWNER
+	AND ET.TABLE_NAME(+) = T.TABLE_NAME
+	AND ET.OWNER(+) = T.OWNER
+	AND C.OWNER = '%s'
+ORDER BY C.TABLE_NAME, C.COLUMN_ID ASC`
 	dumpFieldSQL = `
 SELECT
 	T.IOT_TYPE,
@@ -1543,6 +1578,22 @@ WHERE
 	AND I.OWNER = '%s'
 ORDER BY I.INDEX_NAME, I.TABLE_NAME ASC, IC.COLUMN_POSITION ASC
 `
+	dumpSequenceSQL11g = `
+SELECT
+	SEQUENCE_NAME,
+	MIN_VALUE,
+	MAX_VALUE,
+	INCREMENT_BY,
+	CYCLE_FLAG,
+	ORDER_FLAG,
+	CACHE_SIZE,
+	LAST_NUMBER
+FROM
+	SYS.ALL_SEQUENCES
+WHERE
+	SEQUENCE_OWNER = '%s'
+ORDER BY SEQUENCE_NAME ASC
+`
 	dumpSequenceSQL = `
 SELECT
 	SEQUENCE_NAME,
@@ -1636,7 +1687,7 @@ ORDER BY AT.TABLE_OWNER, AT.TABLE_NAME, AT.TRIGGER_NAME, ATC.COLUMN_NAME ASC
 `
 )
 
-func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
 	tableMap := make(map[string]*tableSchema)
 	tableRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTableSQL, schema))
 	var constraintList []*constraintMeta
@@ -1720,7 +1771,16 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 		return err
 	}
 
-	fieldRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpFieldSQL, schema))
+	var fieldRows *sql.Rows
+	majorVersion, err := driver.getMajorVersion(ctx)
+	if err != nil {
+		return err
+	}
+	if majorVersion >= 12 {
+		fieldRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpFieldSQL, schema))
+	} else {
+		fieldRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpFieldSQL11g, schema))
+	}
 	if err != nil {
 		return err
 	}
@@ -2108,9 +2168,18 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 	return assembleIndexes(mergedIndexList, out)
 }
 
-func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
+func (driver *Driver) dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	sequences := []*sequenceMeta{}
-	sequenceRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
+	var sequenceRows *sql.Rows
+	majorVersion, err := driver.getMajorVersion(ctx)
+	if err != nil {
+		return err
+	}
+	if majorVersion >= 12 {
+		sequenceRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
+	} else {
+		sequenceRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL11g, schema))
+	}
 	if err != nil {
 		return err
 	}
