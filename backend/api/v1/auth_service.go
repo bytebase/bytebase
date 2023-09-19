@@ -35,8 +35,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-type CreateUserFunc func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
-
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
