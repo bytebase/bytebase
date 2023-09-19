@@ -65,7 +65,7 @@ func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema str
 	if err := dumpIndexTxn(ctx, txn, schema, out); err != nil {
 		return err
 	}
-	if err := dumpSequenceTxn(ctx, txn, schema, out); err != nil {
+	if err := driver.dumpSequenceTxn(ctx, txn, schema, out); err != nil {
 		return err
 	}
 	return dumpTriggerOrderingTxn(ctx, txn, schema, out)
@@ -1303,8 +1303,8 @@ SELECT
 	C.DATA_DEFAULT,
 	C.CHAR_LENGTH,
 	C.CHAR_USED,
-	C.COLLATION,
-	C.DEFAULT_ON_NULL,
+	NULL,
+	NULL,
 	COM.COLUMN_NAME IS_INVISIBLE,
 	COM.COMMENTS
 FROM
@@ -1577,6 +1577,22 @@ WHERE
 	AND C.CONSTRAINT_NAME IS NULL
 	AND I.OWNER = '%s'
 ORDER BY I.INDEX_NAME, I.TABLE_NAME ASC, IC.COLUMN_POSITION ASC
+`
+	dumpSequenceSQL11g = `
+SELECT
+	SEQUENCE_NAME,
+	MIN_VALUE,
+	MAX_VALUE,
+	INCREMENT_BY,
+	CYCLE_FLAG,
+	ORDER_FLAG,
+	CACHE_SIZE,
+	LAST_NUMBER
+FROM
+	SYS.ALL_SEQUENCES
+WHERE
+	SEQUENCE_OWNER = '%s'
+ORDER BY SEQUENCE_NAME ASC
 `
 	dumpSequenceSQL = `
 SELECT
@@ -2152,9 +2168,18 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 	return assembleIndexes(mergedIndexList, out)
 }
 
-func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
+func (driver *Driver) dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	sequences := []*sequenceMeta{}
-	sequenceRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
+	var sequenceRows *sql.Rows
+	majorVersion, err := driver.getMajorVersion(ctx)
+	if err != nil {
+		return err
+	}
+	if majorVersion >= 12 {
+		sequenceRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
+	} else {
+		sequenceRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL11g, schema))
+	}
 	if err != nil {
 		return err
 	}
