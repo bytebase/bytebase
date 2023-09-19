@@ -3,7 +3,6 @@ import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { issueServiceClient } from "@/grpcweb";
 import {
-  IdType,
   ActivityIssueCommentCreatePayload,
   PresetRoleType,
   ComposedIssue,
@@ -84,7 +83,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     comment,
     payload,
   }: {
-    issueId: IdType;
+    issueId: string;
     comment: string;
     payload?: ActivityIssueCommentCreatePayload;
   }) => {
@@ -95,7 +94,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
         payload: JSON.stringify(payload ?? {}),
       },
     });
-    await useActivityV1Store().fetchActivityListByIssueId(issueId);
+    await useActivityV1Store().fetchActivityListByIssueUID(issueId);
   };
 
   const updateIssueComment = async ({
@@ -104,7 +103,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     comment,
   }: {
     commentId: string;
-    issueId: IdType;
+    issueId: string;
     comment: string;
   }) => {
     await issueServiceClient.updateIssueComment({
@@ -115,7 +114,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       },
       updateMask: ["comment"],
     });
-    await useActivityV1Store().fetchActivityListByIssueId(issueId);
+    await useActivityV1Store().fetchActivityListByIssueUID(issueId);
   };
 
   const listIssues = async ({ find, pageSize, pageToken }: ListIssueParams) => {
