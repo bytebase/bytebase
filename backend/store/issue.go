@@ -687,16 +687,11 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	join := []string{}
 	if v := find.ProjectResourceID; v != nil {
-		join = append(join, "LEFT JOIN project ON project.id = issue.project_id")
-		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM project WHERE project.id = issue.project_id AND project.resource_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceResourceID; v != nil {
-		join = append(join, "LEFT JOIN pipeline ON pipeline.id = issue.pipeline_id")
-		join = append(join, "LEFT JOIN task ON task.pipeline_id = pipeline.id")
-		join = append(join, "LEFT JOIN instance ON instance.id = task.instance_id")
-		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task LEFT JOIN instance ON instance.id = task.instance_id WHERE task.pipeline_id = issue.pipeline_id AND instance.resource_id = $%d)", len(args)+1)), append(args, *v)
 	}
 
 	if v := find.PrincipalID; v != nil {
@@ -783,10 +778,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.payload,
 		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers
 	FROM %s
-	%s
 	WHERE %s
 	%s
-	%s`, from, strings.Join(join, "\n"), strings.Join(where, " AND "), orderByClause, limitOffsetClause)
+	%s`, from, strings.Join(where, " AND "), orderByClause, limitOffsetClause)
 
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
