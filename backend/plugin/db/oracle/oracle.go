@@ -199,7 +199,7 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 
 func (driver *Driver) getMajorVersion(ctx context.Context) (int, error) {
 	var banner string
-	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'DM%'").Scan(&banner); err != nil {
+	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version").Scan(&banner); err != nil {
 		return 0, err
 	}
 	re := regexp.MustCompile(`(\d+)`)
