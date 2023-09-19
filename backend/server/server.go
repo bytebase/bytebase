@@ -301,7 +301,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerWebhookRoutes(webhookGroup)
 	apiGroup := s.e.Group(internalAPIPrefix)
 	s.registerDatabaseRoutes(apiGroup)
-	s.registerIssueRoutes(apiGroup)
 
 	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
 	// the user has to restart the server to take the latest value.
