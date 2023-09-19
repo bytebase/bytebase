@@ -202,7 +202,7 @@ func TestTenantVCS(t *testing.T) {
 		vcsType             v1pb.ExternalVersionControl_Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
+		newWebhookPushEvent func(gitFiles []string, beforeSHA, afterSHA string) any
 	}{
 		{
 			name:               "GitLab",
@@ -210,7 +210,7 @@ func TestTenantVCS(t *testing.T) {
 			vcsType:            v1pb.ExternalVersionControl_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
+			newWebhookPushEvent: func(gitFiles []string, beforeSHA, afterSHA string) any {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -222,7 +222,7 @@ func TestTenantVCS(t *testing.T) {
 					CommitList: []gitlab.WebhookCommit{
 						{
 							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: []string{gitFile},
+							AddedList: gitFiles,
 						},
 					},
 				}
@@ -234,7 +234,7 @@ func TestTenantVCS(t *testing.T) {
 			vcsType:            v1pb.ExternalVersionControl_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
+			newWebhookPushEvent: func(gitFiles []string, beforeSHA, afterSHA string) any {
 				return github.WebhookPushEvent{
 					Ref:    "refs/heads/feature/foo",
 					Before: beforeSHA,
@@ -258,7 +258,7 @@ func TestTenantVCS(t *testing.T) {
 								Name:  "fake_github_author",
 								Email: "fake_github_author@localhost",
 							},
-							Added: []string{gitFile},
+							Added: gitFiles,
 						},
 					},
 				}
@@ -441,7 +441,7 @@ func TestTenantVCS(t *testing.T) {
 				{Path: gitFile, Type: vcs.FileDiffTypeAdded},
 			})
 			a.NoError(err)
-			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile, "1", "2"))
+			payload, err := json.Marshal(test.newWebhookPushEvent([]string{gitFile}, "1", "2"))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -450,6 +450,8 @@ func TestTenantVCS(t *testing.T) {
 			issue, err := ctl.getLastOpenIssue(ctx, project)
 			a.NoError(err)
 			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
+			a.NoError(err)
+			err = ctl.closeIssue(ctx, project, issue.Name)
 			a.NoError(err)
 
 			// Query schema.
@@ -462,6 +464,45 @@ func TestTenantVCS(t *testing.T) {
 				dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Name, databaseName)})
 				a.NoError(err)
 				a.Equal(wantBookSchema, dbMetadata.Schema)
+			}
+
+			// Test a commit with multiple files.
+			gitFile2 := "bbtest/ver2##migrate##create_a_test_table.sql"
+			gitFile3 := "bbtest/ver3##migrate##create_a_test_table.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile2: migrationStatement2, gitFile3: migrationStatement3})
+			a.NoError(err)
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "2", "3", []vcs.FileDiff{
+				{Path: gitFile2, Type: vcs.FileDiffTypeAdded},
+				{Path: gitFile3, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
+			payload, err = json.Marshal(test.newWebhookPushEvent([]string{gitFile2, gitFile3}, "2", "3"))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+			// There are two issues created.
+			listIssueResp, err := ctl.issueServiceClient.ListIssues(ctx, &v1pb.ListIssuesRequest{
+				Parent: project.Name,
+				Filter: "status = OPEN",
+			})
+			a.NoError(err)
+			a.Len(listIssueResp.Issues, 2)
+			for i := len(listIssueResp.Issues) - 1; i >= 0; i-- {
+				issue = listIssueResp.Issues[i]
+				err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
+				a.NoError(err)
+			}
+
+			// Query schema.
+			for _, testInstance := range testInstances {
+				dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName)})
+				a.NoError(err)
+				a.Equal(want3BookSchema, dbMetadata.Schema)
+			}
+			for _, prodInstance := range prodInstances {
+				dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Name, databaseName)})
+				a.NoError(err)
+				a.Equal(want3BookSchema, dbMetadata.Schema)
 			}
 		})
 	}
