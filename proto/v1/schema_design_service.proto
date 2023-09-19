@@ -57,7 +57,7 @@ service SchemaDesignService {
     option (google.api.method_signature) = "name";
   }
 
-  rpc DiffMetadata(ParseSchemaStringRequest) returns (ParseSchemaStringResponse) {
+  rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
     option (google.api.http) = {
       post: "/v1/schemaDesign:diffMetadata"
       body: "*"

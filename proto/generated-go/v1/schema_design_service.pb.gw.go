@@ -478,7 +478,7 @@ func local_request_SchemaDesignService_DeleteSchemaDesign_0(ctx context.Context,
 }
 
 func request_SchemaDesignService_DiffMetadata_0(ctx context.Context, marshaler runtime.Marshaler, client SchemaDesignServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ParseSchemaStringRequest
+	var protoReq DiffMetadataRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -495,7 +495,7 @@ func request_SchemaDesignService_DiffMetadata_0(ctx context.Context, marshaler r
 }
 
 func local_request_SchemaDesignService_DiffMetadata_0(ctx context.Context, marshaler runtime.Marshaler, server SchemaDesignServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ParseSchemaStringRequest
+	var protoReq DiffMetadataRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)

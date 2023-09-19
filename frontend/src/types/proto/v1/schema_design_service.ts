@@ -1873,9 +1873,9 @@ export const SchemaDesignServiceDefinition = {
     },
     diffMetadata: {
       name: "DiffMetadata",
-      requestType: ParseSchemaStringRequest,
+      requestType: DiffMetadataRequest,
       requestStream: false,
-      responseType: ParseSchemaStringResponse,
+      responseType: DiffMetadataResponse,
       responseStream: false,
       options: {
         _unknownFields: {
