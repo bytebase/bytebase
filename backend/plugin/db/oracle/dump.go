@@ -1578,6 +1578,22 @@ WHERE
 	AND I.OWNER = '%s'
 ORDER BY I.INDEX_NAME, I.TABLE_NAME ASC, IC.COLUMN_POSITION ASC
 `
+	dumpSequenceSQL11g = `
+SELECT
+	SEQUENCE_NAME,
+	MIN_VALUE,
+	MAX_VALUE,
+	INCREMENT_BY,
+	CYCLE_FLAG,
+	ORDER_FLAG,
+	CACHE_SIZE,
+	LAST_NUMBER
+FROM
+	SYS.ALL_SEQUENCES
+WHERE
+	SEQUENCE_OWNER = '%s'
+ORDER BY SEQUENCE_NAME ASC
+`
 	dumpSequenceSQL = `
 SELECT
 	SEQUENCE_NAME,
@@ -2154,7 +2170,17 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 
 func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	sequences := []*sequenceMeta{}
-	sequenceRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
+	// sequenceRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
+	var sequenceRows *sql.Rows
+	majorVersion, err := driver.getMajorVersion(ctx)
+	if err != nil {
+		return err
+	}
+	if majorVersion >= 12 {
+		sequenceRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
+	} else {
+		sequenceRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL11g, schema))
+	}
 	if err != nil {
 		return err
 	}
