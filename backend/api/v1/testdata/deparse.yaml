@@ -1,0 +1,127 @@
+- engine: 2
+  metadata:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: c
+                  position: 0
+                  default: null
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+                - name: a
+                  position: 0
+                  default:
+                    value: "1"
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: abcdefg
+                  classification: ""
+                  usercomment: abcdefg
+                  effectivemaskinglevel: 0
+                - name: b
+                  position: 0
+                  default:
+                    value: '''NULL'''
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - a
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - a
+                  referencedschema: ""
+                  referencedtable: t2
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default:
+                    value: "NULL"
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  schema: |-
+    CREATE TABLE `t` (
+      `c` int NULL,
+      `a` int NULL DEFAULT 1 COMMENT 'abcdefg',
+      `b` varchar(20) NULL DEFAULT 'NULL',
+      PRIMARY KEY (`a`, `b`),
+      CONSTRAINT `fk1` FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
+    );
+    CREATE TABLE `t2` (
+      `b` int NOT NULL DEFAULT NULL,
+      PRIMARY KEY (`b`)
+    );
