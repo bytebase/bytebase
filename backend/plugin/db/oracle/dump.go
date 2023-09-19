@@ -65,7 +65,7 @@ func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema str
 	if err := dumpIndexTxn(ctx, txn, schema, out); err != nil {
 		return err
 	}
-	if err := dumpSequenceTxn(ctx, txn, schema, out); err != nil {
+	if err := driver.dumpSequenceTxn(ctx, txn, schema, out); err != nil {
 		return err
 	}
 	return dumpTriggerOrderingTxn(ctx, txn, schema, out)
@@ -2166,7 +2166,7 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 	return assembleIndexes(mergedIndexList, out)
 }
 
-func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
+func (driver *Driver) dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	sequences := []*sequenceMeta{}
 	var sequenceRows *sql.Rows
 	majorVersion, err := driver.getMajorVersion(ctx)
