@@ -35,6 +35,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+type CreateUserFunc func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
+
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
@@ -44,7 +46,7 @@ type AuthService struct {
 	licenseService enterpriseAPI.LicenseService
 	metricReporter *metricreport.Reporter
 	profile        *config.Profile
-	postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
+	postCreateUser CreateUserFunc
 }
 
 // NewAuthService creates a new AuthService.

@@ -39,7 +39,6 @@ import (
 	"github.com/bytebase/bytebase/backend/metric"
 	metricCollector "github.com/bytebase/bytebase/backend/metric/collector"
 	"github.com/bytebase/bytebase/backend/migrator"
-	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
@@ -167,8 +166,7 @@ type Server struct {
 	// Postgres utility binaries
 	pgBinDir string
 
-	s3Client       *bbs3.Client
-	feishuProvider *feishu.Provider
+	s3Client *bbs3.Client
 
 	// stateCfg is the shared in-momory state within the server.
 	stateCfg *state.State
@@ -429,21 +427,21 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	)
 	configureEchoRouters(s.e, s.grpcServer, mux)
 
-	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, tokenDuration, s.licenseService, s.metricReporter, &profile,
-		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
-			if s.profile.TestOnlySkipOnboardingData {
-				return nil
-			}
-			// Only generate onboarding data after the first enduser signup.
-			if firstEndUser {
-				if profile.SampleDatabasePort != 0 {
-					if err := s.generateOnboardingData(ctx, user); err != nil {
-						return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
-					}
+	postCreateUser := func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
+		if profile.TestOnlySkipOnboardingData {
+			return nil
+		}
+		// Only generate onboarding data after the first enduser signup.
+		if firstEndUser {
+			if profile.SampleDatabasePort != 0 {
+				if err := s.generateOnboardingData(ctx, user); err != nil {
+					return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
 				}
 			}
-			return nil
-		}))
+		}
+		return nil
+	}
+	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, tokenDuration, s.licenseService, s.metricReporter, &profile, postCreateUser))
 	v1pb.RegisterActuatorServiceServer(s.grpcServer, v1.NewActuatorService(s.store, &s.profile, &s.errorRecordRing))
 	v1pb.RegisterSubscriptionServiceServer(s.grpcServer, v1.NewSubscriptionService(
 		s.store,
@@ -464,7 +462,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
-	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile, s.licenseService, s.stateCfg, s.feishuProvider))
+	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile, s.licenseService, s.stateCfg))
 	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService(s.store, s.schemaSyncer, s.dbFactory, s.activityManager, s.licenseService))
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))

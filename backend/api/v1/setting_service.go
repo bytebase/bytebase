@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
@@ -38,7 +37,6 @@ type SettingService struct {
 	profile        *config.Profile
 	licenseService enterpriseAPI.LicenseService
 	stateCfg       *state.State
-	feishuProvider *feishu.Provider
 }
 
 // NewSettingService creates a new setting service.
@@ -47,14 +45,12 @@ func NewSettingService(
 	profile *config.Profile,
 	licenseService enterpriseAPI.LicenseService,
 	stateCfg *state.State,
-	feishuProvider *feishu.Provider,
 ) *SettingService {
 	return &SettingService{
 		store:          store,
 		profile:        profile,
 		licenseService: licenseService,
 		stateCfg:       stateCfg,
-		feishuProvider: feishuProvider,
 	}
 }
 
@@ -330,28 +326,6 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			if payload.AppID == "" || payload.AppSecret == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "application ID and secret cannot be empty")
 			}
-
-			p := s.feishuProvider
-			// clear token cache so that we won't use the previous token.
-			p.ClearTokenCache()
-
-			// check bot info
-			if _, err := p.GetBotID(ctx, feishu.TokenCtx{
-				AppID:     payload.AppID,
-				AppSecret: payload.AppSecret,
-			}); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get bot id. Hint: check if bot is enabled")
-			}
-
-			// create approval definition
-			approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
-				AppID:     payload.AppID,
-				AppSecret: payload.AppSecret,
-			}, "")
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to create approval definition: %v", err)
-			}
-			payload.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
 		}
 
 		s, err := json.Marshal(payload)
