@@ -133,9 +133,6 @@ const allowUserToApplyIssueStatusTransition = (
 };
 
 function isIssueReviewDone(issue: ComposedIssue) {
-  const context = extractIssueReviewContext(
-    computed(() => undefined),
-    computed(() => issue)
-  );
+  const context = extractIssueReviewContext(computed(() => issue));
   return context.done.value;
 }

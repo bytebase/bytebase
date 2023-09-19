@@ -155,12 +155,8 @@ import BBContextMenuButton, {
 } from "@/bbkit/BBContextMenuButton.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { usePITRLogic } from "@/plugins";
-import {
-  experimentalCreateIssueByPlan,
-  useActuatorV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
-import { ComposedDatabase, CreateDatabaseContext } from "@/types";
+import { experimentalCreateIssueByPlan, useSubscriptionV1Store } from "@/store";
+import { ComposedDatabase } from "@/types";
 import { DeploymentType } from "@/types/proto/v1/deployment";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
@@ -168,7 +164,6 @@ import {
   Plan_RestoreDatabaseConfig,
   Plan_Spec,
 } from "@/types/proto/v1/rollout_service";
-import { issueSlug } from "@/utils";
 import RestoreTargetForm from "../DatabaseBackup/RestoreTargetForm.vue";
 import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
 import ChangeHistoryBrief from "./ChangeHistoryBrief.vue";
@@ -217,9 +212,6 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-const developmentUseV1IssueUI = computed(() => {
-  return !!useActuatorV1Store().serverInfo?.developmentUseV2Scheduler;
-});
 const createDatabaseForm = ref<InstanceType<typeof CreatePITRDatabaseForm>>();
 
 const hasPITRFeature = computed(() => {
@@ -231,8 +223,9 @@ const hasPITRFeature = computed(() => {
 
 const timezone = computed(() => "UTC" + dayjs().format("ZZ"));
 
-const { pitrAvailable, doneBackupList, lastChangeHistory, createPITRIssue } =
-  usePITRLogic(toRef(props, "database"));
+const { pitrAvailable, doneBackupList, lastChangeHistory } = usePITRLogic(
+  toRef(props, "database")
+);
 
 const pitrButtonDisabled = computed((): boolean => {
   return !props.allowAdmin || !pitrAvailable.value.result;
@@ -365,6 +358,7 @@ const onConfirmV1 = async () => {
       restoreDatabaseConfig.createDatabaseConfig = {
         target: database.instance,
         database: context.databaseName,
+        environment: database.environment,
         table: "",
         backup: "",
         characterSet: context.characterSet,
@@ -419,77 +413,8 @@ const onConfirmV1 = async () => {
     resetUI();
   }
 };
-const onConfirmLegacy = async () => {
-  if (!hasPITRFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
-
-  if (!isValidParams.value) {
-    return;
-  }
-
-  state.loading = true;
-
-  try {
-    let createDatabaseContext: CreateDatabaseContext | undefined = undefined;
-    const { target, createContext: context } = state;
-    if (target === "NEW" && context) {
-      createDatabaseContext = {
-        projectId: Number(context.projectId),
-        environmentId: Number(context.environmentId),
-        instanceId: Number(context.instanceId),
-        databaseName: context.databaseName,
-        tableName: "",
-        characterSet: context.characterSet,
-        collation: context.collation,
-        owner: "",
-        cluster: "",
-      } as CreateDatabaseContext;
-      // Do not submit non-selected optional labels
-      const labels = Object.keys(context.labels)
-        .map((key) => {
-          const value = context.labels[key];
-          return { key, value };
-        })
-        .filter((kv) => !!kv.value);
-      createDatabaseContext.labels = JSON.stringify(labels);
-    }
-
-    const issueNameParts: string[] = [
-      `Restore database [${props.database.databaseName}]`,
-    ];
-    if (state.mode === "CUSTOM") {
-      const datetime = dayjs(state.pitrTimestampMS).format(
-        "YYYY-MM-DD HH:mm:ss"
-      );
-      issueNameParts.push(`to [${datetime} ${timezone.value}]`);
-    } else {
-      issueNameParts.push(
-        `before migration version [${lastChangeHistory.value!.version}]`
-      );
-    }
-    const issue = await createPITRIssue(
-      Math.floor(state.pitrTimestampMS / 1000),
-      createDatabaseContext,
-      {
-        name: issueNameParts.join(" "),
-      }
-    );
-    const slug = issueSlug(issue.name, issue.id);
-    router.push(`/issue/${slug}`);
-  } catch (ex) {
-    // TODO: error handling
-  } finally {
-    resetUI();
-  }
-};
 
 const onConfirm = async () => {
-  if (developmentUseV1IssueUI.value) {
-    await onConfirmV1();
-  } else {
-    await onConfirmLegacy();
-  }
+  await onConfirmV1();
 };
 </script>

@@ -38,12 +38,6 @@ const syncNow = async () => {
 
   syncing.value = true;
   try {
-    // await useIssueV1Store().fetchIssueByLegacyIssue(
-    //   issue.value,
-    //   true /* force */
-    // );
-    // TODO
-
     synced.value = true;
     // Show 'synced' status for several seconds to avoid user clicking sync
     // button too frequently.

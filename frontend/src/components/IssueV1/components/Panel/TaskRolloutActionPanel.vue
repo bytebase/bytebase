@@ -265,21 +265,6 @@ const handleConfirm = async (
     state.loading = false;
     emit("close");
   }
-
-  // Trying to avoid some kind of concurrency and race condition, we fetch the
-  // latest snapshot of issue from the server-side and check whether this
-  // transition is applicable again.
-  // const latestIssue = await useIssueStore().fetchIssueById(issue.value.id);
-
-  // const { action: transition } = props;
-  // const applicableList = getApplicableIssueStatusTransitionList(latestIssue);
-  // if (!isApplicableTransition(transition, applicableList)) {
-  //   return cleanup();
-  // }
-
-  // changeIssueStatus(transition.to, comment);
-  // isTransiting.value = false;
-  // emit("updated");
 };
 
 const resetState = () => {

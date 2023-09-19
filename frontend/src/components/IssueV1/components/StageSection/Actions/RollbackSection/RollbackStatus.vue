@@ -112,7 +112,7 @@ const allowPreviewRollback = computed(() => {
 });
 
 const taskRollbackBy = computed((): TaskRollbackBy | undefined => {
-  const activityList = useActivityV1Store().getActivityListByIssue(
+  const activityList = useActivityV1Store().getActivityListByIssueV1(
     issue.value.uid
   );
   // Find the latest comment activity with TaskRollbackBy struct if possible.

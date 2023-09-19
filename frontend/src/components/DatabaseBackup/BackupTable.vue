@@ -156,18 +156,8 @@ import {
 import EllipsisText from "@/components/EllipsisText.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import {
-  experimentalCreateIssueByPlan,
-  useActuatorV1Store,
-  useIssueStore,
-  useSubscriptionV1Store,
-} from "@/store";
-import {
-  ComposedDatabase,
-  IssueCreate,
-  PITRContext,
-  SYSTEM_BOT_ID,
-} from "@/types";
+import { experimentalCreateIssueByPlan, useSubscriptionV1Store } from "@/store";
+import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   Backup,
@@ -177,7 +167,7 @@ import {
 import { DeploymentType } from "@/types/proto/v1/deployment";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
-import { extractBackupResourceName, issueSlug } from "@/utils";
+import { extractBackupResourceName } from "@/utils";
 import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
 
 export type BackupRow = BBGridRow<Backup>;
@@ -216,9 +206,6 @@ const props = defineProps({
 
 const router = useRouter();
 const { t } = useI18n();
-const developmentUseV1IssueUI = computed(() => {
-  return !!useActuatorV1Store().serverInfo?.developmentUseV2Scheduler;
-});
 
 const state = reactive<LocalState>({
   restoreBackupContext: undefined,
@@ -384,61 +371,8 @@ const doRestoreInPlaceV1 = async () => {
     state.creatingRestoreIssue = false;
   }
 };
-const doRestoreInPlaceLegacy = async () => {
-  const { restoreBackupContext } = state;
-  if (!restoreBackupContext) {
-    return;
-  }
-
-  if (!hasPITRFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
-
-  state.creatingRestoreIssue = true;
-
-  try {
-    const { backup } = restoreBackupContext;
-    const { database } = props;
-
-    const issueNameParts: string[] = [
-      `Restore database [${database.databaseName}]`,
-      `to backup snapshot [${extractBackupResourceName(
-        restoreBackupContext.backup.name
-      )}]`,
-    ];
-
-    const issueStore = useIssueStore();
-    const createContext: PITRContext = {
-      databaseId: Number(database.uid),
-      backupId: Number(backup.uid),
-    };
-    const issueCreate: IssueCreate = {
-      name: issueNameParts.join(" "),
-      type: "bb.issue.database.restore.pitr",
-      description: "",
-      assigneeId: SYSTEM_BOT_ID,
-      projectId: Number(database.projectEntity.uid),
-      payload: {},
-      createContext,
-    };
-
-    await issueStore.validateIssue(issueCreate);
-
-    const issue = await issueStore.createIssue(issueCreate);
-
-    const slug = issueSlug(issue.name, issue.id);
-    router.push(`/issue/${slug}`);
-  } catch {
-    state.creatingRestoreIssue = false;
-  }
-};
 
 const doRestoreInPlace = async () => {
-  if (developmentUseV1IssueUI.value) {
-    await doRestoreInPlaceV1();
-  } else {
-    await doRestoreInPlaceLegacy();
-  }
+  await doRestoreInPlaceV1();
 };
 </script>
