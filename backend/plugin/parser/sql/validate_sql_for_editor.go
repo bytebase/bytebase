@@ -3,12 +3,12 @@ package parser
 import (
 	"bytes"
 	"encoding/json"
+	"log/slog"
 	"regexp"
 	"strings"
 
-	pgquery "github.com/pganalyze/pg_query_go/v2"
+	pgquery "github.com/pganalyze/pg_query_go/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 )
@@ -21,7 +21,7 @@ import (
 // We also support CTE with SELECT statements, but not with DML statements.
 func ValidateSQLForEditor(engine EngineType, statement string) bool {
 	switch engine {
-	case Postgres, Redshift:
+	case Postgres, Redshift, RisingWave:
 		return postgresValidateSQLForEditor(statement)
 	case MySQL, TiDB, MariaDB, OceanBase:
 		return mysqlValidateSQLForEditor(statement)
@@ -38,7 +38,7 @@ func ValidateSQLForEditor(engine EngineType, statement string) bool {
 func standardValidateSQLForEditor(statement string) bool {
 	textWithoutQuotedAndComment, err := removeQuotedTextAndComment(Standard, statement)
 	if err != nil {
-		log.Debug("Failed to remove quoted text and comment", zap.String("statement", statement), zap.Error(err))
+		slog.Debug("Failed to remove quoted text and comment", slog.String("statement", statement), log.BBError(err))
 		return false
 	}
 
@@ -53,7 +53,7 @@ func standardValidateSQLForEditor(statement string) bool {
 func mysqlValidateSQLForEditor(statement string) bool {
 	textWithoutQuotedAndComment, err := removeQuotedTextAndComment(MySQL, statement)
 	if err != nil {
-		log.Debug("Failed to remove quoted text and comment", zap.String("statement", statement), zap.Error(err))
+		slog.Debug("Failed to remove quoted text and comment", slog.String("statement", statement), log.BBError(err))
 		return false
 	}
 
@@ -67,7 +67,7 @@ func mysqlValidateSQLForEditor(statement string) bool {
 func postgresValidateSQLForEditor(statement string) bool {
 	jsonText, err := pgquery.ParseToJSON(statement)
 	if err != nil {
-		log.Debug("Failed to parse statement to JSON", zap.String("statement", statement), zap.Error(err))
+		slog.Debug("Failed to parse statement to JSON", slog.String("statement", statement), log.BBError(err))
 		return false
 	}
 
@@ -92,7 +92,7 @@ func postgresValidateSQLForEditor(statement string) bool {
 		var jsonData map[string]any
 
 		if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
-			log.Debug("Failed to unmarshal JSON", zap.String("jsonText", jsonText), zap.Error(err))
+			slog.Debug("Failed to unmarshal JSON", slog.String("jsonText", jsonText), log.BBError(err))
 			return false
 		}
 
@@ -164,7 +164,7 @@ func checkStatementWithoutQuotedTextAndComment(statement string) bool {
 
 func removeQuotedTextAndComment(engine EngineType, statement string) (string, error) {
 	switch engine {
-	case Postgres:
+	case Postgres, RisingWave:
 		return "", errors.Errorf("unsupported engine type: %s", engine)
 	case MySQL, TiDB, MariaDB, OceanBase:
 		return mysqlRemoveQuotedTextAndComment(statement)

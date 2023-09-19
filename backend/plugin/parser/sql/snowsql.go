@@ -2,7 +2,9 @@
 package parser
 
 import (
+	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
@@ -161,4 +163,176 @@ func IsSnowflakeKeyword(s string, caseSensitive bool) bool {
 		s = strings.ToUpper(s)
 	}
 	return snowflakeKeyword[s]
+}
+
+type snowsqlResourceExtractListener struct {
+	*parser.BaseSnowflakeParserListener
+
+	currentDatabase string
+	currentSchema   string
+	resourceMap     map[string]SchemaResource
+}
+
+func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refContext) {
+	objectName := ctx.Object_name()
+	if objectName == nil {
+		return
+	}
+
+	var parts []string
+	database := l.currentDatabase
+	if d := objectName.GetD(); d != nil {
+		normalizedD := NormalizeSnowSQLObjectNamePart(d)
+		if normalizedD != "" {
+			database = normalizedD
+		}
+	}
+	parts = append(parts, database)
+
+	schema := l.currentSchema
+	if s := objectName.GetS(); s != nil {
+		normalizedS := NormalizeSnowSQLObjectNamePart(s)
+		if normalizedS != "" {
+			schema = normalizedS
+		}
+	}
+	parts = append(parts, schema)
+
+	var table string
+	if o := objectName.GetO(); o != nil {
+		normalizedO := NormalizeSnowSQLObjectNamePart(o)
+		if normalizedO != "" {
+			table = normalizedO
+		}
+	}
+	parts = append(parts, table)
+
+	normalizedObjectName := strings.Join(parts, ".")
+	l.resourceMap[normalizedObjectName] = SchemaResource{
+		Database: database,
+		Schema:   schema,
+		Table:    table,
+	}
+}
+
+// extractSnowflakeNormalizeResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
+func extractSnowflakeNormalizeResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]SchemaResource, error) {
+	tree, err := ParseSnowSQL(selectStatement)
+	if err != nil {
+		return nil, err
+	}
+
+	l := &snowsqlResourceExtractListener{
+		currentDatabase: currentNormalizedDatabase,
+		currentSchema:   currentNormalizedSchema,
+		resourceMap:     make(map[string]SchemaResource),
+	}
+
+	var result []SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	for _, resource := range l.resourceMap {
+		result = append(result, resource)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return result, nil
+}
+
+// NormalizeSnowSQLObjectName normalizes the given object name.
+func NormalizeSnowSQLObjectName(objectName parser.IObject_nameContext, fallbackDatabaseName, fallbackSchemaName string) string {
+	var parts []string
+
+	database := fallbackDatabaseName
+	if d := objectName.GetD(); d != nil {
+		normalizedD := NormalizeSnowSQLObjectNamePart(d)
+		if normalizedD != "" {
+			database = normalizedD
+		}
+	}
+	parts = append(parts, database)
+
+	schema := fallbackSchemaName
+	if s := objectName.GetS(); s != nil {
+		normalizedS := NormalizeSnowSQLObjectNamePart(s)
+		if normalizedS != "" {
+			schema = normalizedS
+		}
+	}
+	parts = append(parts, schema)
+
+	if o := objectName.GetO(); o != nil {
+		normalizedO := NormalizeSnowSQLObjectNamePart(o)
+		if normalizedO != "" {
+			parts = append(parts, normalizedO)
+		}
+	}
+	return strings.Join(parts, ".")
+}
+
+// NormalizeSnowSQLSchemaName normalizes the given schema name.
+func NormalizeSnowSQLSchemaName(schemaName parser.ISchema_nameContext, fallbackDatabaseName string) string {
+	ids := schemaName.AllId_()
+
+	var parts []string
+	database := fallbackDatabaseName
+	if len(ids) == 2 {
+		normalizedD := NormalizeSnowSQLObjectNamePart(ids[0])
+		if normalizedD != "" {
+			database = normalizedD
+		}
+	}
+	parts = append(parts, database)
+
+	var schema string
+	if len(ids) == 2 {
+		normalizedS := NormalizeSnowSQLObjectNamePart(ids[1])
+		if normalizedS != "" {
+			schema = normalizedS
+		}
+	} else {
+		normalizedS := NormalizeSnowSQLObjectNamePart(ids[0])
+		if normalizedS != "" {
+			schema = normalizedS
+		}
+	}
+	parts = append(parts, schema)
+	return strings.Join(parts, ".")
+}
+
+// NormalizeSnowSQLObjectNamePart normalizes the object name part.
+func NormalizeSnowSQLObjectNamePart(part parser.IId_Context) string {
+	if part == nil {
+		return ""
+	}
+	return ExtractSnowSQLOrdinaryIdentifier(part.GetText())
+}
+
+// ExtractSnowSQLOrdinaryIdentifier extracts the ordinary object name from a string. It follows the following rules:
+//
+// 1. If there are no double quotes on either side, it will be converted to uppercase.
+//
+// 2. If there are double quotes on both sides, the case will not change, the double quotes on both sides will be removed, and `""` in content will be converted to `"`.
+//
+// Caller MUST ensure the identifier is VALID.
+func ExtractSnowSQLOrdinaryIdentifier(identifier string) string {
+	quoted := strings.HasPrefix(identifier, `"`) && strings.HasSuffix(identifier, `"`)
+	if quoted {
+		identifier = identifier[1 : len(identifier)-1]
+	}
+	runeObjectName := []rune(identifier)
+	var result []rune
+	for i := 0; i < len(runeObjectName); i++ {
+		newRune := runeObjectName[i]
+		if i+1 < len(runeObjectName) && runeObjectName[i] == '"' && runeObjectName[i+1] == '"' && quoted {
+			newRune = '"'
+			i++
+		} else if !quoted {
+			newRune = unicode.ToUpper(newRune)
+		}
+		result = append(result, newRune)
+	}
+	return string(result)
 }

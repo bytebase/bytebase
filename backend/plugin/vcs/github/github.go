@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -19,7 +20,6 @@ import (
 	"golang.org/x/crypto/nacl/box"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -201,51 +201,6 @@ type WebhookPushEvent struct {
 	Repository WebhookRepository `json:"repository"`
 	Sender     WebhookSender     `json:"sender"`
 	Commits    []WebhookCommit   `json:"commits"`
-}
-
-// fetchUserInfoImpl fetches user information from the given resourceURI, which
-// should be either "user" or "users/{username}".
-func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
-	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "GET")
-	}
-
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to read user info from URL %s", url)
-	} else if code >= 300 {
-		return nil, errors.Errorf("failed to read user info from URL %s, status code: %d, body: %s", url, code, body)
-	}
-
-	var user User
-	if err = json.Unmarshal([]byte(body), &user); err != nil {
-		return nil, errors.Wrap(err, "unmarshal")
-	}
-	return &vcs.UserInfo{
-		PublicEmail: user.Email,
-		Name:        user.Name,
-		State:       vcs.StateActive,
-	}, err
-}
-
-// TryLogin tries to fetch the user info from the current OAuth context.
-func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, "user")
 }
 
 // CommitAuthor represents a GitHub API response for a commit author.
@@ -648,8 +603,8 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 // ReadFileMeta reads the metadata of the given file in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
-	lastCommitID, err := p.getLastCommitID(ctx, oauthCtx, instanceURL, repositoryID, ref)
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
+	lastCommitID, err := p.getLastCommitID(ctx, oauthCtx, instanceURL, repositoryID, refInfo.RefName)
 	if err != nil {
 		return nil, errors.Wrap(err, "get last commit ID")
 	}
@@ -674,6 +629,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
 
+	// TODO(zp): should check non-200 return value?
 	if code == http.StatusNotFound {
 		return nil, common.Errorf(common.NotFound, "failed to read file meta from URL %s", url)
 	} else if code >= 300 {
@@ -752,8 +708,8 @@ func (p *Provider) getLastCommitID(ctx context.Context, oauthCtx common.OauthCon
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), ref)
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), refInfo.RefName)
 	code, _, body, err := oauth.GetWithHeader(
 		ctx,
 		p.client,
@@ -824,20 +780,20 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 	for _, file := range allPRFiles {
 		u, err := url.Parse(file.ContentsURL)
 		if err != nil {
-			log.Debug("Failed to parse content url for file",
-				zap.String("content_url", file.ContentsURL),
-				zap.String("file", file.FileName),
-				zap.Error(err),
+			slog.Debug("Failed to parse content url for file",
+				slog.String("content_url", file.ContentsURL),
+				slog.String("file", file.FileName),
+				log.BBError(err),
 			)
 			continue
 		}
 
 		m, err := url.ParseQuery(u.RawQuery)
 		if err != nil {
-			log.Debug("Failed to parse query for file",
-				zap.String("content_url", file.ContentsURL),
-				zap.String("file", file.FileName),
-				zap.Error(err),
+			slog.Debug("Failed to parse query for file",
+				slog.String("content_url", file.ContentsURL),
+				slog.String("file", file.FileName),
+				log.BBError(err),
 			)
 			continue
 		}

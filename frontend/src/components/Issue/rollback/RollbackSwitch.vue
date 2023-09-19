@@ -10,8 +10,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useRollbackLogic } from "./common";
 import { BBSwitch } from "@/bbkit";
+import { useRollbackLogic } from "./common";
 
 const { allowRollback, rollbackEnabled, toggleRollback } = useRollbackLogic();
 </script>

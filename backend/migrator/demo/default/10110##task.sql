@@ -23,9 +23,9 @@ VALUES
         6004,
         7014,
         'Welcome',
-        'bb.task.general',
+        'bb.task.database.schema.update',
         'PENDING_APPROVAL',
-        '{"statement":"SELECT ''Welcome Tech Lead, DBA, Developer'';"}'
+        '{"migrationType":"MIGRATE","statement":"CREATE TABLE t1 (name TEXT, age INT);"}'
     );
 
 -- Task for Pipeline 9002

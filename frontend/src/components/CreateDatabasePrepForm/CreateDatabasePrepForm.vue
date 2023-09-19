@@ -6,13 +6,11 @@
           {{ $t("common.project") }} <span style="color: red">*</span>
         </label>
         <ProjectSelect
-          id="project"
-          class="mt-1"
-          name="project"
+          class="mt-1 !w-full"
           required
           :disabled="!allowEditProject"
-          :selected-id="state.projectId"
-          @select-project-id="selectProject"
+          :project="state.projectId"
+          @update:project="selectProject"
         />
       </div>
 
@@ -21,13 +19,13 @@
           {{ $t("create-db.new-database-name") }}
           <span class="text-red-600">*</span>
         </label>
-        <input
-          id="databaseName"
-          v-model="state.databaseName"
+        <NInput
+          v-model:value="state.databaseName"
           required
           name="databaseName"
           type="text"
-          class="textfield mt-1 w-full"
+          class="mt-1 w-full"
+          :placeholder="$t('create-db.new-database-name')"
         />
         <span v-if="isReservedName" class="text-red-600">
           <i18n-t keypath="create-db.reserved-db-error">
@@ -49,13 +47,12 @@
           {{ $t("create-db.new-collection-name") }}
           <span class="text-red-600">*</span>
         </label>
-        <input
-          id="tableName"
-          v-model="state.tableName"
+        <NInput
+          v-model:value="state.tableName"
           required
           name="tableName"
           type="text"
-          class="textfield mt-1 w-full"
+          class="mt-1 w-full"
         />
       </div>
 
@@ -63,12 +60,11 @@
         <label for="name" class="textlabel">
           {{ $t("create-db.cluster") }}
         </label>
-        <input
-          id="name"
-          v-model="state.cluster"
+        <NInput
+          v-model:value="state.cluster"
           name="cluster"
           type="text"
-          class="textfield mt-1 w-full"
+          class="mt-1 w-full"
         />
       </div>
 
@@ -87,12 +83,12 @@
         </label>
         <!-- It's default selected to the first env, so we don't need to set `required` here -->
         <EnvironmentSelect
-          id="environment"
-          class="mt-1 w-full"
+          class="mt-1"
+          required
           name="environment"
           :disabled="!allowEditEnvironment"
-          :selected-id="state.environmentId"
-          @select-environment-id="selectEnvironment"
+          :environment="state.environmentId"
+          @update:environment="selectEnvironment"
         />
       </div>
 
@@ -108,15 +104,13 @@
         </div>
         <div class="flex flex-row space-x-2 items-center">
           <InstanceSelect
-            id="instance"
             class="mt-1"
             name="instance"
             required
             :disabled="!allowEditInstance"
-            :selected-id="state.instanceId"
-            :environment-id="state.environmentId"
+            :instance="state.instanceId"
             :filter="instanceV1HasCreateDatabase"
-            @select-instance-id="selectInstance"
+            @update:instance="selectInstance"
           />
         </div>
       </div>
@@ -127,13 +121,12 @@
           <span class="text-red-600">*</span>
         </label>
         <InstanceRoleSelect
-          id="instance-user"
           class="mt-1"
           name="instance-user"
           :instance-id="state.instanceId"
           :role="state.instanceRole"
           :filter="filterInstanceRole"
-          @select="selectInstanceRole"
+          @update:instance-role="selectInstanceRole"
         />
       </div>
 
@@ -156,12 +149,11 @@
                 : $t("db.character-set")
             }}</label
           >
-          <input
-            id="charset"
-            v-model="state.characterSet"
+          <NInput
+            v-model:value="state.characterSet"
             name="charset"
             type="text"
-            class="textfield mt-1 w-full"
+            class="mt-1 w-full"
             :placeholder="defaultCharsetOfEngineV1(selectedInstance.engine)"
           />
         </div>
@@ -170,12 +162,11 @@
           <label for="collation" class="textlabel">
             {{ $t("db.collation") }}
           </label>
-          <input
-            id="collation"
-            v-model="state.collation"
+          <NInput
+            v-model:value="state.collation"
             name="collation"
             type="text"
-            class="textfield mt-1 w-full"
+            class="mt-1 w-full"
             :placeholder="
               defaultCollationOfEngineV1(selectedInstance.engine) || 'default'
             "
@@ -202,8 +193,8 @@
   </div>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.multi-tenancy"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
   <div
@@ -215,45 +206,23 @@
 </template>
 
 <script lang="ts" setup>
+import { isEmpty } from "lodash-es";
+import { NInput } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, PropType, watchEffect, ref, toRef } from "vue";
 import { useRouter } from "vue-router";
-import { isEmpty } from "lodash-es";
-import { useEventListener } from "@vueuse/core";
-
-import { InstanceV1EngineIcon } from "@/components/v2";
-import {
-  DatabaseLabelForm,
-  DatabaseNameTemplateTips,
-  useDBNameTemplateInputState,
-} from "./";
-import InstanceSelect from "@/components/InstanceSelect.vue";
-import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
-import ProjectSelect from "@/components/ProjectSelect.vue";
-import MemberSelect from "@/components/MemberSelect.vue";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
+import MemberSelect from "@/components/MemberSelect.vue";
 import {
-  IssueCreate,
-  SYSTEM_BOT_ID,
-  defaultCharsetOfEngineV1,
-  defaultCollationOfEngineV1,
-  CreateDatabaseContext,
-  UNKNOWN_ID,
-  PITRContext,
-  ComposedInstance,
-  unknownInstance,
-} from "@/types";
-import { TenantMode } from "@/types/proto/v1/project_service";
-import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
+  ProjectSelect,
+  EnvironmentSelect,
+  InstanceSelect,
+  InstanceV1EngineIcon,
+} from "@/components/v2";
 import {
-  extractDatabaseResourceName,
-  extractEnvironmentResourceName,
-  hasWorkspacePermissionV1,
-  instanceV1HasCollationAndCharacterSet,
-  instanceV1HasCreateDatabase,
-  issueSlug,
-} from "@/utils";
-import {
+  experimentalCreateIssueByPlan,
   hasFeature,
+  useActuatorV1Store,
   useCurrentUserV1,
   useDatabaseV1Store,
   useEnvironmentV1Store,
@@ -261,10 +230,45 @@ import {
   useIssueStore,
   useProjectV1Store,
 } from "@/store";
+import {
+  SYSTEM_BOT_ID,
+  defaultCharsetOfEngineV1,
+  defaultCollationOfEngineV1,
+  UNKNOWN_ID,
+  ComposedInstance,
+  unknownInstance,
+  IssueCreate,
+  CreateDatabaseContext,
+  PITRContext,
+} from "@/types";
+import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { UserRole } from "@/types/proto/v1/auth_service";
 import { Engine } from "@/types/proto/v1/common";
-import { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { Backup } from "@/types/proto/v1/database_service";
+import { DeploymentType } from "@/types/proto/v1/deployment";
+import { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import {
+  Plan,
+  Plan_CreateDatabaseConfig,
+  Plan_Spec,
+} from "@/types/proto/v1/rollout_service";
+import {
+  extractBackupResourceName,
+  extractDatabaseResourceName,
+  extractEnvironmentResourceName,
+  hasWorkspacePermissionV1,
+  instanceV1HasCollationAndCharacterSet,
+  instanceV1HasCreateDatabase,
+  issueSlug,
+} from "@/utils";
+import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
+import {
+  DatabaseLabelForm,
+  DatabaseNameTemplateTips,
+  useDBNameTemplateInputState,
+} from "./";
 
 interface LocalState {
   projectId?: string;
@@ -310,12 +314,10 @@ const instanceV1Store = useInstanceV1Store();
 const router = useRouter();
 
 const currentUserV1 = useCurrentUserV1();
+const environmentV1Store = useEnvironmentV1Store();
 const projectV1Store = useProjectV1Store();
-
-useEventListener("keydown", (e: KeyboardEvent) => {
-  if (e.code == "Escape") {
-    cancel();
-  }
+const developmentUseV1IssueUI = computed(() => {
+  return !!useActuatorV1Store().serverInfo?.developmentUseV2Scheduler;
 });
 
 const showAssigneeSelect = computed(() => {
@@ -437,16 +439,15 @@ useDBNameTemplateInputState(project, {
   labels: toRef(state, "labels"),
 });
 
-const selectProject = (projectId: string) => {
+const selectProject = (projectId: string | undefined) => {
   state.projectId = projectId;
 };
 
-const selectEnvironment = (environmentId: string) => {
+const selectEnvironment = (environmentId: string | undefined) => {
   state.environmentId = environmentId;
 };
 
 const selectInstance = (instanceId: string | undefined) => {
-  if (!instanceId) return;
   state.instanceId = instanceId;
 };
 
@@ -469,7 +470,97 @@ const cancel = () => {
   emit("dismiss");
 };
 
-const create = async () => {
+const createV1 = async () => {
+  if (!allowCreate.value) {
+    return;
+  }
+
+  const databaseName = state.databaseName;
+  const tableName = state.tableName;
+  const instanceId = Number(state.instanceId);
+  let owner = "";
+  if (requireDatabaseOwnerName.value && state.instanceRole) {
+    const instanceUser = await instanceV1Store.fetchInstanceRoleByName(
+      state.instanceRole
+    );
+    owner = instanceUser.roleName;
+  }
+
+  if (isTenantProject.value) {
+    if (!hasFeature("bb.feature.multi-tenancy")) {
+      state.showFeatureModal = true;
+      return;
+    }
+  }
+
+  const instance = instanceV1Store.getInstanceByUID(String(instanceId));
+  const environment = environmentV1Store.getEnvironmentByUID(
+    state.environmentId!
+  );
+  const specs: Plan_Spec[] = [];
+  const createDatabaseConfig: Plan_CreateDatabaseConfig = {
+    target: instance.name,
+    database: databaseName,
+    table: tableName,
+    labels: state.labels,
+    environment: environment.name,
+
+    characterSet:
+      state.characterSet ||
+      defaultCharsetOfEngineV1(selectedInstance.value.engine),
+    collation:
+      state.collation ||
+      defaultCollationOfEngineV1(selectedInstance.value.engine),
+    cluster: state.cluster,
+    owner,
+    backup: "",
+  };
+  const spec: Plan_Spec = {
+    id: uuidv4(),
+  };
+  specs.push(spec);
+
+  const issueCreate = Issue.fromJSON({
+    type: Issue_Type.DATABASE_CHANGE,
+  });
+
+  if (props.backup) {
+    spec.restoreDatabaseConfig = {
+      backup: props.backup.name,
+      createDatabaseConfig,
+      // `target` here is the original db
+      target: extractDatabaseResourceName(props.backup.name).full,
+    };
+    const backupTitle = extractBackupResourceName(props.backup.name);
+    issueCreate.title = `Create database '${databaseName}' from backup '${backupTitle}'`;
+    issueCreate.description = `Creating database '${databaseName}' from backup '${backupTitle}'`;
+  } else {
+    issueCreate.title = `Create database '${databaseName}'`;
+    spec.createDatabaseConfig = createDatabaseConfig;
+  }
+
+  state.creating = true;
+  try {
+    const planCreate = Plan.fromJSON({
+      steps: [{ specs: [spec] }],
+    });
+    await trySetDefaultAssigneeByEnvironmentAndDeploymentType(
+      issueCreate,
+      project.value,
+      instance.environment,
+      DeploymentType.DATABASE_CREATE
+    );
+    const { createdIssue } = await experimentalCreateIssueByPlan(
+      project.value,
+      issueCreate,
+      planCreate
+    );
+    router.push(`/issue/${createdIssue.uid}`);
+  } finally {
+    state.creating = false;
+  }
+};
+const createLegacy = async () => {
   if (!allowCreate.value) {
     return;
   }
@@ -530,10 +621,11 @@ const create = async () => {
       backupId: Number(props.backup.uid),
       createDatabaseContext,
     };
+    const backupTitle = extractBackupResourceName(props.backup.name);
     newIssue = {
-      name: `Create database '${databaseName}' from backup '${props.backup.name}'`,
+      name: `Create database '${databaseName}' from backup '${backupTitle}'`,
       type: "bb.issue.database.restore.pitr",
-      description: `Creating database '${databaseName}' from backup '${props.backup.name}'`,
+      description: `Creating database '${databaseName}' from backup '${backupTitle}'`,
       assigneeId: parseInt(state.assigneeId!, 10),
       projectId: parseInt(state.projectId!, 10),
       pipeline: {
@@ -573,13 +665,21 @@ const create = async () => {
     );
 };
 
+const create = async () => {
+  if (developmentUseV1IssueUI.value) {
+    await createV1();
+  } else {
+    await createLegacy();
+  }
+};
+
 // update `state.labelList` when selected Environment changed
 watchEffect(() => {
   const envId = state.environmentId;
   const { labels } = state;
   const key = "bb.environment";
   if (envId) {
-    const env = useEnvironmentV1Store().getEnvironmentByUID(envId);
+    const env = environmentV1Store.getEnvironmentByUID(envId);
     const resourceId = extractEnvironmentResourceName(env.name);
     labels[key] = resourceId;
   } else {

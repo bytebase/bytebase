@@ -7,12 +7,13 @@ import {
   SingleSQLResult,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
+import { QueryResult } from "@/types/proto/v1/sql_service";
 import { useLegacySQLStore } from "./sql";
 import { useTabStore } from "./tab";
-import { useDatabaseV1Store } from "./v1/database";
 import { useInstanceV1Store, useSQLStore, useActivityV1Store } from "./v1";
+import { useDatabaseV1Store } from "./v1/database";
 
-// set the limit to 10000 temporarily to avoid the query timeout and page crash
+// set the limit to 1000 temporarily to avoid the query timeout and page crash
 export const RESULT_ROWS_LIMIT = 1000;
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
@@ -23,6 +24,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     queryHistoryList: [],
     isFetchingQueryHistory: false,
     isFetchingSheet: false,
+    mode: "BUNDLED",
   }),
 
   actions: {
@@ -104,4 +106,23 @@ export const mockAffectedRows0 = (): SingleSQLResult => {
     data: [["Affected Rows"], ["BIGINT"], [[0]], [false]],
     error: "",
   };
+};
+
+export const mockAffectedV1Rows0 = (): QueryResult => {
+  return QueryResult.fromPartial({
+    columnNames: ["Affected Rows"],
+    columnTypeNames: ["BIGINT"],
+    masked: [false],
+    error: "",
+    statement: "",
+    rows: [
+      {
+        values: [
+          {
+            int64Value: 0,
+          },
+        ],
+      },
+    ],
+  });
 };

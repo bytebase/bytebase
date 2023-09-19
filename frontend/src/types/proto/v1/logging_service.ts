@@ -1,7 +1,7 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -67,6 +67,44 @@ export interface GetLogRequest {
   name: string;
 }
 
+export interface ExportLogsRequest {
+  /**
+   * Consistent with filter and order by in ListLogs.
+   * filter is the filter to apply on the list logs request,
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * The field only support in filter:
+   * - creator, example:
+   *    - creator = "users/{email}"
+   * - resource, example:
+   *    - resource = "projects/{project resource id}"
+   * - level, example:
+   *    - level = "INFO"
+   *    - level = "ERROR | WARN"
+   * - action, example:
+   *    - action = "ACTION_MEMBER_CREATE" | "ACTION_ISSUE_CREATE"
+   * - create_time, example:
+   *    - create_time <= "2022-01-01T12:00:00.000Z"
+   *    - create_time >= "2022-01-01T12:00:00.000Z"
+   * For example:
+   * List the logs of type 'ACTION_ISSUE_COMMENT_CREATE' in issue/123: 'action="ACTION_ISSUE_COMMENT_CREATE", resource="issue/123"'
+   */
+  filter: string;
+  /**
+   * The order by of the log.
+   * Only support order by create_time.
+   * For example:
+   *  - order_by = "create_time asc"
+   *  - order_by = "create_time desc"
+   */
+  orderBy: string;
+  /** The export format. */
+  format: ExportFormat;
+}
+
+export interface ExportLogsResponse {
+  content: Uint8Array;
+}
+
 export interface LogEntity {
   /**
    * The name of the log.
@@ -78,8 +116,8 @@ export interface LogEntity {
    * Format: users/{email}
    */
   creator: string;
-  createTime?: Date;
-  updateTime?: Date;
+  createTime?: Date | undefined;
+  updateTime?: Date | undefined;
   action: LogEntity_Action;
   level: LogEntity_Level;
   /**
@@ -141,6 +179,8 @@ export enum LogEntity_Action {
   ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34,
   /** ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE - ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. */
   ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 35,
+  /** ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE - ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
+  ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE = 36,
   /**
    * ACTION_PROJECT_REPOSITORY_PUSH - Project related activity types.
    * Enum value 41 - 60
@@ -152,12 +192,10 @@ export enum LogEntity_Action {
   ACTION_PROJECT_MEMBER_CREATE = 42,
   /** ACTION_PROJECT_MEMBER_DELETE - ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project. */
   ACTION_PROJECT_MEMBER_DELETE = 43,
-  /** ACTION_PROJECT_MEMBER_ROLE_UPDATE - ACTION_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. */
-  ACTION_PROJECT_MEMBER_ROLE_UPDATE = 44,
   /** ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE - ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. */
-  ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 45,
+  ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 44,
   /** ACTION_PROJECT_DATABASE_TRANSFER - ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another. */
-  ACTION_PROJECT_DATABASE_TRANSFER = 46,
+  ACTION_PROJECT_DATABASE_TRANSFER = 45,
   /**
    * ACTION_DATABASE_SQL_EDITOR_QUERY - Database related activity types.
    * Enum value 61 - 80
@@ -217,6 +255,9 @@ export function logEntity_ActionFromJSON(object: any): LogEntity_Action {
     case 35:
     case "ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE":
       return LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE;
+    case 36:
+    case "ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE":
+      return LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE;
     case 41:
     case "ACTION_PROJECT_REPOSITORY_PUSH":
       return LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH;
@@ -227,12 +268,9 @@ export function logEntity_ActionFromJSON(object: any): LogEntity_Action {
     case "ACTION_PROJECT_MEMBER_DELETE":
       return LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE;
     case 44:
-    case "ACTION_PROJECT_MEMBER_ROLE_UPDATE":
-      return LogEntity_Action.ACTION_PROJECT_MEMBER_ROLE_UPDATE;
-    case 45:
     case "ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE":
       return LogEntity_Action.ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE;
-    case 46:
+    case 45:
     case "ACTION_PROJECT_DATABASE_TRANSFER":
       return LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER;
     case 61:
@@ -280,14 +318,14 @@ export function logEntity_ActionToJSON(object: LogEntity_Action): string {
       return "ACTION_PIPELINE_TASK_STATEMENT_UPDATE";
     case LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
       return "ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE";
+    case LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
+      return "ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE";
     case LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH:
       return "ACTION_PROJECT_REPOSITORY_PUSH";
     case LogEntity_Action.ACTION_PROJECT_MEMBER_CREATE:
       return "ACTION_PROJECT_MEMBER_CREATE";
     case LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE:
       return "ACTION_PROJECT_MEMBER_DELETE";
-    case LogEntity_Action.ACTION_PROJECT_MEMBER_ROLE_UPDATE:
-      return "ACTION_PROJECT_MEMBER_ROLE_UPDATE";
     case LogEntity_Action.ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
       return "ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE";
     case LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER:
@@ -578,6 +616,147 @@ export const GetLogRequest = {
   },
 };
 
+function createBaseExportLogsRequest(): ExportLogsRequest {
+  return { filter: "", orderBy: "", format: 0 };
+}
+
+export const ExportLogsRequest = {
+  encode(message: ExportLogsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.filter !== "") {
+      writer.uint32(10).string(message.filter);
+    }
+    if (message.orderBy !== "") {
+      writer.uint32(18).string(message.orderBy);
+    }
+    if (message.format !== 0) {
+      writer.uint32(40).int32(message.format);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExportLogsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportLogsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.orderBy = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.format = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportLogsRequest {
+    return {
+      filter: isSet(object.filter) ? String(object.filter) : "",
+      orderBy: isSet(object.orderBy) ? String(object.orderBy) : "",
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+    };
+  },
+
+  toJSON(message: ExportLogsRequest): unknown {
+    const obj: any = {};
+    message.filter !== undefined && (obj.filter = message.filter);
+    message.orderBy !== undefined && (obj.orderBy = message.orderBy);
+    message.format !== undefined && (obj.format = exportFormatToJSON(message.format));
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportLogsRequest>): ExportLogsRequest {
+    return ExportLogsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ExportLogsRequest>): ExportLogsRequest {
+    const message = createBaseExportLogsRequest();
+    message.filter = object.filter ?? "";
+    message.orderBy = object.orderBy ?? "";
+    message.format = object.format ?? 0;
+    return message;
+  },
+};
+
+function createBaseExportLogsResponse(): ExportLogsResponse {
+  return { content: new Uint8Array(0) };
+}
+
+export const ExportLogsResponse = {
+  encode(message: ExportLogsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.content.length !== 0) {
+      writer.uint32(10).bytes(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExportLogsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportLogsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.content = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportLogsResponse {
+    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0) };
+  },
+
+  toJSON(message: ExportLogsResponse): unknown {
+    const obj: any = {};
+    message.content !== undefined &&
+      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportLogsResponse>): ExportLogsResponse {
+    return ExportLogsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ExportLogsResponse>): ExportLogsResponse {
+    const message = createBaseExportLogsResponse();
+    message.content = object.content ?? new Uint8Array(0);
+    return message;
+  },
+};
+
 function createBaseLogEntity(): LogEntity {
   return {
     name: "",
@@ -784,17 +963,87 @@ export const LoggingServiceDefinition = {
         },
       },
     },
+    exportLogs: {
+      name: "ExportLogs",
+      requestType: ExportLogsRequest,
+      requestStream: false,
+      responseType: ExportLogsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              20,
+              58,
+              1,
+              42,
+              34,
+              15,
+              47,
+              118,
+              49,
+              47,
+              108,
+              111,
+              103,
+              115,
+              58,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
-export interface LoggingServiceImplementation<CallContextExt = {}> {
-  listLogs(request: ListLogsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListLogsResponse>>;
-  getLog(request: GetLogRequest, context: CallContext & CallContextExt): Promise<DeepPartial<LogEntity>>;
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
+  }
+  if (typeof self !== "undefined") {
+    return self;
+  }
+  if (typeof window !== "undefined") {
+    return window;
+  }
+  if (typeof global !== "undefined") {
+    return global;
+  }
+  throw "Unable to locate global object";
+})();
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if (tsProtoGlobalThis.Buffer) {
+    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = tsProtoGlobalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
 }
 
-export interface LoggingServiceClient<CallOptionsExt = {}> {
-  listLogs(request: DeepPartial<ListLogsRequest>, options?: CallOptions & CallOptionsExt): Promise<ListLogsResponse>;
-  getLog(request: DeepPartial<GetLogRequest>, options?: CallOptions & CallOptionsExt): Promise<LogEntity>;
+function base64FromBytes(arr: Uint8Array): string {
+  if (tsProtoGlobalThis.Buffer) {
+    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(String.fromCharCode(byte));
+    });
+    return tsProtoGlobalThis.btoa(bin.join(""));
+  }
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

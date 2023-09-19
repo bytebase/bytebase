@@ -73,16 +73,15 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, watch } from "vue";
+import { head } from "lodash-es";
 import { NPopconfirm } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { head } from "lodash-es";
-
+import { reactive, watch } from "vue";
 import { useCurrentTab } from "@/store";
-import ConversationRenameDialog from "./ConversationRenameDialog.vue";
-import type { Conversation } from "../../types";
-import { useConversationStore } from "../../store";
 import { useAIContext, useCurrentChat } from "../../logic";
+import { useConversationStore } from "../../store";
+import type { Conversation } from "../../types";
+import ConversationRenameDialog from "./ConversationRenameDialog.vue";
 
 type LocalState = {
   rename: Conversation | undefined;

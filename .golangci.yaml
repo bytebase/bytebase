@@ -15,26 +15,23 @@ linters:
     - nilerr
     - godot
     - forbidigo
+    - mirror
+    - bodyclose
 
 # golangci-lint run --exclude="Rollback,logger.Sync,pgInstance.Stop"
 issues:
   include:
     # https://golangci-lint.run/usage/configuration/#command-line-options
-    - EXC0012
-    - EXC0013
-    - EXC0014
-    - EXC0015
   exclude:
     - Rollback
     - logger.Sync
     - pgInstance.Stop
     - fmt.Printf
-    - fmt.Print
     - Enter(.*)_(.*)
     - Exit(.*)_(.*)
 
 run:
-  timeout: 20m
+  timeout: 30m
   build-tags:
     - mysql
   skip-dirs:
@@ -87,8 +84,12 @@ linters-settings:
   govet:
     settings:
       printf: # The name of the analyzer, run `go tool vet help` to see the list of all analyzers
-        funcs: # Run `go tool vet help printf` to see the full configuration of `printf`
+        funcs: # Run `go tool vet help printf` to see the full configuration of `printf`.
           - common.Errorf
+    enable-all: true
+    disable:
+      - fieldalignment
+      - shadow
   forbidigo:
     forbid:
       - 'fmt\.Errorf(# Please use errors\.Wrap\|Wrapf\|Errorf instead)?'

@@ -12,10 +12,21 @@ type StageMessage struct {
 	Name          string
 	EnvironmentID int
 	PipelineID    int
-	// Active is true if not all tasks are done within the stage.
-	Active bool
+	TaskList      []*TaskMessage
+
 	// Output only.
 	ID int
+
+	// TODO(d): this is used to create the tasks.
+	TaskIndexDAGList []TaskIndexDAG
+}
+
+// TaskIndexDAG describes task dependency relationship using array index to represent task.
+// It is needed because we don't know task id before insertion, so we describe the dependency
+// using the in-memory representation, i.e, the array index.
+type TaskIndexDAG struct {
+	FromIndex int
+	ToIndex   int
 }
 
 // CreateStageV2 creates a list of stages.
@@ -98,8 +109,7 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			stage.id,
 			stage.pipeline_id,
 			stage.environment_id,
-			stage.name,
-			(SELECT COUNT(1) > 0 FROM task WHERE task.pipeline_id = stage.pipeline_id AND task.stage_id <= stage.id AND task.status != 'DONE')
+			stage.name
 		FROM stage
 		WHERE %s ORDER BY id ASC`, strings.Join(where, " AND ")),
 		args...,
@@ -117,7 +127,6 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			&stage.PipelineID,
 			&stage.EnvironmentID,
 			&stage.Name,
-			&stage.Active,
 		); err != nil {
 			return nil, err
 		}

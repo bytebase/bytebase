@@ -44,7 +44,7 @@ var (
 	// MockIndexColumnList is the mock index column list for test.
 	MockIndexColumnList = []string{"id", "name"}
 	// MockMySQLDatabase is the mock MySQL database for test.
-	MockMySQLDatabase = &storepb.DatabaseMetadata{
+	MockMySQLDatabase = &storepb.DatabaseSchemaMetadata{
 		Name: "test",
 		Schemas: []*storepb.SchemaMetadata{
 			{
@@ -84,7 +84,7 @@ var (
 		},
 	}
 	// MockPostgreSQLDatabase is the mock PostgreSQL database for test.
-	MockPostgreSQLDatabase = &storepb.DatabaseMetadata{
+	MockPostgreSQLDatabase = &storepb.DatabaseSchemaMetadata{
 		Name: "test",
 		Schemas: []*storepb.SchemaMetadata{
 			{
@@ -175,13 +175,14 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 		}
 
 		ctx := SQLReviewCheckContext{
-			Charset:       "",
-			Collation:     "",
-			DbType:        dbType,
-			Catalog:       &testCatalog{finder: finder},
-			Driver:        nil,
-			Context:       context.Background(),
-			CurrentSchema: "SYS",
+			Charset:         "",
+			Collation:       "",
+			DbType:          dbType,
+			Catalog:         &testCatalog{finder: finder},
+			Driver:          nil,
+			Context:         context.Background(),
+			CurrentSchema:   "SYS",
+			CurrentDatabase: "TEST_DB",
 		}
 
 		adviceList, err := SQLReviewCheck(tc.Statement, ruleList, ctx)
@@ -244,8 +245,8 @@ func (*MockDriver) Execute(_ context.Context, _ string, _ bool, _ database.Execu
 	return 0, nil
 }
 
-// QueryConn2 queries a SQL statement in a given connection.
-func (*MockDriver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *database.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ *database.QueryContext) ([]*v1pb.QueryResult, error) {
 	return nil, nil
 }
 
@@ -254,48 +255,13 @@ func (*MockDriver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1
 	return nil, nil
 }
 
-// QueryConn implements the Driver interface.
-func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *database.QueryContext) ([]any, error) {
-	switch statement {
-	// For TestStatementDMLDryRun
-	case "EXPLAIN DELETE FROM tech_book":
-		return nil, errors.Errorf("MockDriver disallows it")
-	// For TestStatementAffectedRowLimit
-	case "EXPLAIN UPDATE tech_book SET id = 1":
-		return []any{
-			nil,
-			nil,
-			[]any{
-				[]any{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
-			},
-		}, nil
-	// For TestInsertRowLimit
-	case "EXPLAIN INSERT INTO tech_book SELECT * FROM tech_book":
-		return []any{
-			nil,
-			nil,
-			[]any{
-				nil,
-				[]any{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
-			},
-		}, nil
-	}
-	return []any{
-		nil,
-		nil,
-		[]any{
-			[]any{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1, nil, nil},
-		},
-	}, nil
-}
-
 // SyncInstance implements the Driver interface.
 func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, error) {
 	return nil, nil
 }
 
 // SyncDBSchema implements the Driver interface.
-func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseMetadata, error) {
+func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	return nil, nil
 }
 
@@ -396,6 +362,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType db.Type) (s
 		maxLength := 64
 		if dbType == db.Snowflake {
 			format = "^[A-Z]+(_[A-Z]+)*$"
+		} else if dbType == db.MSSQL {
+			format = "^[A-Z]([_A-Za-z])*$"
 		}
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    format,

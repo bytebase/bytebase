@@ -1,5 +1,6 @@
 import { ResourceIdentifier, ResourceObject } from "./resourceObject";
 import { ResponseWithData } from "./response";
+
 /**
  * example
   {

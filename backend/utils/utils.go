@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -15,11 +17,13 @@ import (
 	"github.com/github/gh-ost/go/base"
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -147,7 +151,7 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 		dmlBatchSize                        = 10
 		maxLagMillisecondsThrottleThreshold = 1500
 		defaultNumRetries                   = 60
-		cutoverLockTimeoutSeconds           = 3
+		cutoverLockTimeoutSeconds           = 60
 		exponentialBackoffMaxInterval       = 64
 		throttleHTTPIntervalMillis          = 100
 		throttleHTTPTimeoutMillis           = 1000
@@ -175,6 +179,9 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 		migrationContext.AssumeRBR = true
 	}
 	// set defaults
+	if err := migrationContext.SetConnectionConfig(""); err != nil {
+		return nil, err
+	}
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
@@ -217,16 +224,6 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 		return nil, err
 	}
 	return migrationContext, nil
-}
-
-// GetActiveStage returns the first active stage among all stages.
-func GetActiveStage(stages []*store.StageMessage) *store.StageMessage {
-	for _, stage := range stages {
-		if stage.Active {
-			return stage
-		}
-	}
-	return nil
 }
 
 // isMatchExpression checks whether a databases matches the query.
@@ -276,7 +273,7 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 	databaseMap := make(map[int]*store.DatabaseMessage)
 	for _, database := range databaseList {
 		databaseMap[database.UID] = database
-		idToLabels[database.UID] = database.Labels
+		idToLabels[database.UID] = database.GetEffectiveLabels()
 	}
 
 	// idsSeen records database id which is already in a stage.
@@ -355,26 +352,25 @@ func GetTaskSheetID(taskPayload string) (int, error) {
 	return taskSheetID.SheetID, nil
 }
 
-// GetTaskSkippedAndReason gets skipped and skippedReason from a task.
-func GetTaskSkippedAndReason(task *api.Task) (bool, string, error) {
+// GetTaskSkipped gets skipped from a task.
+func GetTaskSkipped(task *store.TaskMessage) (bool, error) {
 	var payload struct {
-		Skipped       bool   `json:"skipped,omitempty"`
-		SkippedReason string `json:"skippedReason,omitempty"`
+		Skipped bool `json:"skipped,omitempty"`
 	}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-		return false, "", err
+		return false, err
 	}
-	return payload.Skipped, payload.SkippedReason, nil
+	return payload.Skipped, nil
 }
 
 // MergeTaskCreateLists merges a matrix of taskCreate and taskIndexDAG to a list of taskCreate and taskIndexDAG.
 // The index of returned taskIndexDAG list is set regarding the merged taskCreate.
-func MergeTaskCreateLists(taskCreateLists [][]api.TaskCreate, taskIndexDAGLists [][]api.TaskIndexDAG) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func MergeTaskCreateLists(taskCreateLists [][]*store.TaskMessage, taskIndexDAGLists [][]store.TaskIndexDAG) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
 	if len(taskCreateLists) != len(taskIndexDAGLists) {
 		return nil, nil, errors.Errorf("expect taskCreateLists and taskIndexDAGLists to have the same length, get %d, %d respectively", len(taskCreateLists), len(taskIndexDAGLists))
 	}
-	var resTaskCreateList []api.TaskCreate
-	var resTaskIndexDAGList []api.TaskIndexDAG
+	var resTaskCreateList []*store.TaskMessage
+	var resTaskIndexDAGList []store.TaskIndexDAG
 	offset := 0
 	for i := range taskCreateLists {
 		taskCreateList := taskCreateLists[i]
@@ -382,7 +378,7 @@ func MergeTaskCreateLists(taskCreateLists [][]api.TaskCreate, taskIndexDAGLists 
 
 		resTaskCreateList = append(resTaskCreateList, taskCreateList...)
 		for _, dag := range taskIndexDAGList {
-			resTaskIndexDAGList = append(resTaskIndexDAGList, api.TaskIndexDAG{
+			resTaskIndexDAGList = append(resTaskIndexDAGList, store.TaskIndexDAG{
 				FromIndex: dag.FromIndex + offset,
 				ToIndex:   dag.ToIndex + offset,
 			})
@@ -392,111 +388,19 @@ func MergeTaskCreateLists(taskCreateLists [][]api.TaskCreate, taskIndexDAGLists 
 	return resTaskCreateList, resTaskIndexDAGList, nil
 }
 
-// PassAllCheck checks whether a task has passed all task checks.
-func PassAllCheck(task *store.TaskMessage, allowedStatus api.TaskCheckStatus, taskCheckRuns []*store.TaskCheckRunMessage, engine db.Type) (bool, error) {
-	var runs []*store.TaskCheckRunMessage
-	for _, run := range taskCheckRuns {
-		if run.TaskID == task.ID {
-			runs = append(runs, run)
-		}
-	}
-	// schema update, data update and gh-ost sync task have required task check.
-	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := passCheck(runs, api.TaskCheckDatabaseConnect, allowedStatus)
-		if err != nil {
-			return false, err
-		}
-		if !pass {
-			return false, nil
-		}
-
-		if api.IsSyntaxCheckSupported(engine) {
-			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-
-		if api.IsSQLReviewSupported(engine) {
-			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-
-		if engine == db.Postgres {
-			ok, err := passCheck(runs, api.TaskCheckDatabaseStatementType, allowedStatus)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-	}
-
-	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		ok, err := passCheck(runs, api.TaskCheckGhostSync, allowedStatus)
-		if err != nil {
-			return false, err
-		}
-		if !ok {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
-// Returns true only if the task check run result is at least the minimum required level.
-// For PendingApproval->Pending transitions, the minimum level is SUCCESS.
-// For Pending->Running transitions, the minimum level is WARN.
-func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
-	var lastRun *store.TaskCheckRunMessage
-	for _, run := range taskCheckRunList {
-		if checkType != run.Type {
-			continue
-		}
-		if lastRun == nil || lastRun.ID < run.ID {
-			lastRun = run
-		}
-	}
-
-	if lastRun == nil || lastRun.Status != api.TaskCheckRunDone {
-		return false, nil
-	}
-	checkResult := &api.TaskCheckRunResultPayload{}
-	if err := json.Unmarshal([]byte(lastRun.Result), checkResult); err != nil {
-		return false, err
-	}
-	for _, result := range checkResult.ResultList {
-		if result.Status.LessThan(allowedStatus) {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
 // ExecuteMigrationDefault executes migration.
-func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
-	execFunc := func(execStatement string) error {
+func ExecuteMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, sheetID *int, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+	execFunc := func(ctx context.Context, execStatement string) error {
 		if _, err := driver.Execute(ctx, execStatement, false /* createDatabase */, opts); err != nil {
 			return err
 		}
 		return nil
 	}
-	return ExecuteMigrationWithFunc(ctx, store, driver, mi, statement, execFunc)
+	return ExecuteMigrationWithFunc(ctx, driverCtx, store, driver, mi, statement, sheetID, execFunc)
 }
 
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
-func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, execFunc func(execStatement string) error) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
 	// For baseline migration, we also record the live schema to detect the schema drift.
@@ -505,7 +409,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Dri
 		return "", "", err
 	}
 
-	insertedID, err := BeginMigration(ctx, s, m, prevSchemaBuf.String(), statement)
+	insertedID, err := BeginMigration(ctx, s, m, prevSchemaBuf.String(), statement, sheetID)
 	if err != nil {
 		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 			return insertedID, prevSchemaBuf.String(), nil
@@ -517,9 +421,9 @@ func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Dri
 
 	defer func() {
 		if err := EndMigration(ctx, s, startedNs, insertedID, updatedSchema, resErr == nil /* isDone */); err != nil {
-			log.Error("Failed to update migration history record",
-				zap.Error(err),
-				zap.String("migration_id", migrationHistoryID),
+			slog.Error("Failed to update migration history record",
+				log.BBError(err),
+				slog.String("migration_id", migrationHistoryID),
 			)
 		}
 	}()
@@ -549,7 +453,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Dri
 			// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
 			renderedStatement = RenderStatement(statement, materials)
 		}
-		if err := execFunc(renderedStatement); err != nil {
+		if err := execFunc(driverCtx, renderedStatement); err != nil {
 			return "", "", err
 		}
 	}
@@ -568,7 +472,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Dri
 }
 
 // BeginMigration checks before executing migration and inserts a migration history record with pending status.
-func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo, prevSchema string, statement string) (string, error) {
+func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo, prevSchema, statement string, sheetID *int) (string, error) {
 	// Convert version to stored version.
 	storedVersion, err := util.ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
@@ -593,7 +497,7 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 			return migrationHistory.ID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
 		case db.Pending:
 			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
-			log.Debug(err.Error())
+			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
 				return migrationHistory.ID, nil
@@ -601,7 +505,7 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 			return "", common.Wrap(err, common.MigrationPending)
 		case db.Failed:
 			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
-			log.Debug(err.Error())
+			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
 				return migrationHistory.ID, nil
@@ -615,7 +519,7 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	insertedID, err := store.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, storedVersion, statementRecord)
+	insertedID, err := store.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, storedVersion, statementRecord, sheetID)
 	if err != nil {
 		return "", err
 	}
@@ -727,7 +631,7 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 	var approvers []*storepb.IssuePayloadApproval_Approver
 	var activities []*store.ActivityMessage
 
-	step := FindNextPendingStep(approval.ApprovalTemplates[0], approvers)
+	step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
 	if step == nil {
 		return nil, nil, nil
 	}
@@ -774,13 +678,21 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 	if node == nil {
 		return errors.Errorf("external approval node %s not found", externalNodeID)
 	}
-	uri, err := relayClient.Create(node.Endpoint, relay.CreatePayload{})
+	id, err := relayClient.Create(node.Endpoint, &relay.CreatePayload{
+		IssueID:     fmt.Sprintf("%d", issue.UID),
+		Title:       issue.Title,
+		Description: issue.Description,
+		Project:     issue.Project.ResourceID,
+		CreateTime:  issue.CreatedTime,
+		Creator:     issue.Creator.Email,
+		Assignee:    issue.Assignee.Email,
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create external approval")
 	}
 	payload, err := json.Marshal(&api.ExternalApprovalPayloadRelay{
 		ExternalApprovalNodeID: node.Id,
-		URI:                    uri,
+		ID:                     id,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal external approval payload")
@@ -793,6 +705,61 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 		RequesterUID: api.SystemBotID,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to create external approval")
+	}
+	return nil
+}
+
+// UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
+func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
+	policy, err := stores.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
+	if err != nil {
+		return err
+	}
+	var newConditionExpr string
+	if grantRequest.Condition != nil {
+		newConditionExpr = grantRequest.Condition.Expression
+	}
+	updated := false
+
+	userID, err := strconv.Atoi(strings.TrimPrefix(grantRequest.User, "users/"))
+	if err != nil {
+		return err
+	}
+	newUser, err := stores.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if newUser == nil {
+		return status.Errorf(codes.Internal, "user %v not found", userID)
+	}
+	for _, binding := range policy.Bindings {
+		if binding.Role != api.Role(grantRequest.Role) {
+			continue
+		}
+		var oldConditionExpr string
+		if binding.Condition != nil {
+			oldConditionExpr = binding.Condition.Expression
+		}
+		if oldConditionExpr != newConditionExpr {
+			continue
+		}
+		// Append
+		binding.Members = append(binding.Members, newUser)
+		updated = true
+		break
+	}
+	roleID := api.Role(strings.TrimPrefix(grantRequest.Role, "roles/"))
+	if !updated {
+		condition := grantRequest.Condition
+		condition.Description = fmt.Sprintf("#%d", issue.UID)
+		policy.Bindings = append(policy.Bindings, &store.PolicyBinding{
+			Role:      roleID,
+			Members:   []*store.UserMessage{newUser},
+			Condition: condition,
+		})
+	}
+	if _, err := stores.SetProjectIAMPolicy(ctx, policy, api.SystemBotID, issue.Project.UID); err != nil {
+		return err
 	}
 	return nil
 }
@@ -901,4 +868,108 @@ func ConvertVcsPushEvent(pushEvent *vcs.PushEvent) *storepb.PushEvent {
 		Commits:            convertVcsPushEventCommits(pushEvent.CommitList),
 		FileCommit:         convertVcsPushEventFileCommit(&pushEvent.FileCommit),
 	}
+}
+
+// GetMatchedAndUnmatchedDatabasesInDatabaseGroup returns the matched and unmatched databases in the given database group.
+func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
+	if err != nil {
+		return nil, nil, err
+	}
+	var matches []*store.DatabaseMessage
+	var unmatches []*store.DatabaseMessage
+
+	// DONOT check bb.feature.database-grouping for instance. The API here is read-only in the frontend, we need to show if the instance is matched but missing required license.
+	// The feature guard will works during issue creation.
+	for _, database := range allDatabases {
+		res, _, err := prog.ContextEval(ctx, map[string]any{
+			"resource": map[string]any{
+				"database_name":    database.DatabaseName,
+				"environment_name": fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID),
+				"instance_id":      database.InstanceID,
+			},
+		})
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Internal, err.Error())
+		}
+
+		val, err := res.ConvertToNative(reflect.TypeOf(false))
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Internal, "expect bool result")
+		}
+		if boolVal, ok := val.(bool); ok && boolVal {
+			matches = append(matches, database)
+		} else {
+			unmatches = append(unmatches, database)
+		}
+	}
+	return matches, unmatches, nil
+}
+
+// GetMatchedAndUnmatchedTablesInSchemaGroup returns the matched and unmatched tables in the given schema group.
+func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *store.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
+	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var matched []string
+	var unmatched []string
+
+	for _, schema := range dbSchema.Metadata.Schemas {
+		for _, table := range schema.Tables {
+			res, _, err := prog.ContextEval(ctx, map[string]any{
+				"resource": map[string]any{
+					"table_name": table.Name,
+				},
+			})
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, err.Error())
+			}
+
+			val, err := res.ConvertToNative(reflect.TypeOf(false))
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "expect bool result")
+			}
+
+			if boolVal, ok := val.(bool); ok && boolVal {
+				matched = append(matched, table.Name)
+			} else {
+				unmatched = append(unmatched, table.Name)
+			}
+		}
+	}
+	return matched, unmatched, nil
+}
+
+// ChangeIssueStatus changes the status of an issue.
+func ChangeIssueStatus(ctx context.Context, stores *store.Store, activityManager *activity.Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) error {
+	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
+	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updaterID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
+	}
+
+	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
+		OldStatus: issue.Status,
+		NewStatus: newStatus,
+		IssueName: updatedIssue.Title,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
+	}
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   updaterID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityIssueStatusUpdate,
+		Level:        api.ActivityInfo,
+		Comment:      comment,
+		Payload:      string(payload),
+	}
+	if _, err := activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: updatedIssue,
+	}); err != nil {
+		return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
+	}
+	return nil
 }

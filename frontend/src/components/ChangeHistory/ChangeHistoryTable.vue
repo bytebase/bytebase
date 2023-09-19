@@ -11,39 +11,59 @@
   >
     <template #header>
       <template v-if="mode == 'DATABASE'">
-        <BBTableHeaderCell
-          :left-padding="4"
-          class="w-2"
-          :title="columnList[0].title"
-        />
+        <BBTableHeaderCell class="w-12" :left-padding="4" @click.stop="">
+          <NCheckbox
+            v-if="historySectionList.length > 0"
+            :checked="allSelectionState.checked"
+            :indeterminate="allSelectionState.indeterminate"
+            @update:checked="toggleAllChangeHistorySelection"
+          />
+        </BBTableHeaderCell>
         <BBTableHeaderCell class="w-8" :title="columnList[1].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[2].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
-        <BBTableHeaderCell class="w-48" :title="columnList[4].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[7].title" />
+        <BBTableHeaderCell class="w-12" :title="columnList[2].title" />
+        <BBTableHeaderCell class="w-56" :title="columnList[3].title" />
+        <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
+        <BBTableHeaderCell :title="columnList[5].title" />
+        <BBTableHeaderCell :title="columnList[6].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[7].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[8].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[9].title" />
       </template>
       <template v-else>
         <BBTableHeaderCell
           :left-padding="4"
-          class="w-2"
+          class="w-8"
           :title="columnList[0].title"
         />
-        <BBTableHeaderCell class="w-16" :title="columnList[1].title" />
+        <BBTableHeaderCell class="w-56" :title="columnList[1].title" />
         <BBTableHeaderCell class="w-16" :title="columnList[2].title" />
-        <BBTableHeaderCell class="w-48" :title="columnList[3].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[5].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[6].title" />
+        <BBTableHeaderCell :title="columnList[3].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[4].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[5].title" />
+        <BBTableHeaderCell class="w-28" :title="columnList[6].title" />
       </template>
     </template>
     <template #body="{ rowData: history }: { rowData: ChangeHistory }">
-      <BBTableCell :left-padding="4">
-        <ChangeHistoryStatusIcon :status="history.status" />
+      <BBTableCell
+        v-if="mode == 'DATABASE'"
+        class="table-cell"
+        :left-padding="4"
+        @click.stop=""
+      >
+        <NCheckbox
+          :disabled="!allowToSelectChangeHistory(history)"
+          :checked="selectedChangeHistoryNameList?.includes(history.name)"
+          @update:checked="handleToggleChangeHistorySelected(history)"
+        />
       </BBTableCell>
-      <BBTableCell v-if="mode == 'DATABASE'">
-        {{ changeHistory_SourceToJSON(history.source) }}
+      <BBTableCell :left-padding="mode !== 'DATABASE' && 4">
+        <ChangeHistoryStatusIcon class="mx-auto" :status="history.status" />
+      </BBTableCell>
+      <BBTableCell v-if="mode === 'DATABASE'">
+        <div class="flex items-center gap-x-1">
+          {{ getHistoryChangeType(history.type) }}
+          <GitIcon v-if="history.pushEvent" class="w-4 h-4 text-control" />
+        </div>
       </BBTableCell>
       <BBTableCell>
         {{ history.version }}
@@ -53,23 +73,34 @@
             history.type === ChangeHistory_Type.BRANCH
           "
           class="textinfolabel"
-          >({{ history.type }})</span
+          >({{ changeHistory_TypeToJSON(history.type) }})</span
         >
       </BBTableCell>
       <BBTableCell>
-        <template v-if="extractReviewId(history.review)">
+        <template v-if="extractIssueUID(history.issue)">
           <!--Short circuit the click event to prevent propagating to row click-->
           <router-link
-            :to="`/issue/${extractReviewId(history.review)}`"
+            :to="`/issue/${extractIssueUID(history.issue)}`"
             class="normal-link"
             @click.stop=""
-            >{{ extractReviewId(history.review) }}
+            >{{ extractIssueUID(history.issue) }}
           </router-link>
         </template>
       </BBTableCell>
+      <BBTableCell v-if="mode === 'DATABASE'">
+        <TextOverflowPopover
+          :content="
+            getAffectedTablesOfChangeHistory(history)
+              .map(getAffectedTableDisplayName)
+              .join(', ')
+          "
+          :max-length="100"
+          placement="bottom"
+        />
+      </BBTableCell>
       <BBTableCell>
-        <SQLPreviewPopover
-          :statement="history.statement"
+        <TextOverflowPopover
+          :content="history.statement"
           :max-length="100"
           placement="bottom"
         />
@@ -88,43 +119,43 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
-import { useRouter } from "vue-router";
+import { NCheckbox } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { ComposedDatabase } from "@/types";
+import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "@/bbkit/types";
+import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
+import { useUserStore } from "@/store";
+import { ComposedDatabase } from "@/types";
+import { AffectedTable } from "@/types/changeHistory";
 import {
-  extractReviewId,
+  ChangeHistory,
+  ChangeHistory_Status,
+  ChangeHistory_Type,
+  changeHistory_TypeToJSON,
+} from "@/types/proto/v1/database_service";
+import {
+  extractIssueUID,
   humanizeDate,
   extractUserResourceName,
   changeHistoryLink,
+  getAffectedTablesOfChangeHistory,
+  getHistoryChangeType,
 } from "@/utils";
-import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
-import {
-  ChangeHistory,
-  changeHistory_SourceToJSON,
-  ChangeHistory_Type,
-} from "@/types/proto/v1/database_service";
-import { useUserStore } from "@/store";
 
 type Mode = "DATABASE" | "PROJECT";
 
-const props = defineProps({
-  mode: {
-    default: "DATABASE",
-    type: String as PropType<Mode>,
-  },
-  databaseSectionList: {
-    required: true,
-    type: Array as PropType<ComposedDatabase[]>,
-  },
-  historySectionList: {
-    required: true,
-    type: Array as PropType<BBTableSectionDataSource<ChangeHistory>[]>,
-  },
-});
+const props = defineProps<{
+  mode?: Mode;
+  databaseSectionList: ComposedDatabase[];
+  historySectionList: BBTableSectionDataSource<ChangeHistory>[];
+  selectedChangeHistoryNameList?: string[];
+}>();
+
+const emit = defineEmits<{
+  (event: "update:selected", value: string[]): void;
+}>();
 
 const router = useRouter();
 
@@ -137,13 +168,19 @@ const columnList = computed(() => {
         title: "",
       },
       {
-        title: t("change-history.workflow"),
+        title: "",
+      },
+      {
+        title: t("change-history.change-type"),
       },
       {
         title: t("common.version"),
       },
       {
         title: t("common.issue"),
+      },
+      {
+        title: t("db.tables"),
       },
       {
         title: "SQL",
@@ -193,5 +230,79 @@ const clickHistory = (section: number, row: number) => {
 const creatorOfChangeHistory = (history: ChangeHistory) => {
   const email = extractUserResourceName(history.creator);
   return useUserStore().getUserByEmail(email);
+};
+
+const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
+  const { schema, table, dropped } = affectedTable;
+  let name = table;
+  if (schema !== "") {
+    name = `${schema}.${table}`;
+  }
+  if (dropped) {
+    name = `${name} (deleted)`;
+  }
+  return name;
+};
+
+const allSelectionState = computed(() => {
+  const set = props.selectedChangeHistoryNameList || [];
+  const list = props.historySectionList
+    .map((t) => t.list)
+    .flat()
+    .filter(
+      (changeHistory) => allowToSelectChangeHistory(changeHistory) === true
+    );
+
+  const checked = list.every((changeHistory) =>
+    set.includes(changeHistory.name)
+  );
+
+  const indeterminate =
+    !checked && list.some((changeHistory) => set.includes(changeHistory.name));
+
+  return {
+    checked,
+    indeterminate,
+  };
+});
+
+const toggleAllChangeHistorySelection = (): void => {
+  const list = props.historySectionList
+    .map((t) => t.list)
+    .flat()
+    .filter(
+      (changeHistory) => allowToSelectChangeHistory(changeHistory) === true
+    );
+
+  if (allSelectionState.value.checked === false) {
+    emit(
+      "update:selected",
+      list.map((i) => i.name)
+    );
+  } else {
+    emit("update:selected", []);
+  }
+};
+
+const allowToSelectChangeHistory = (history: ChangeHistory) => {
+  return (
+    history.status === ChangeHistory_Status.DONE &&
+    (history.type === ChangeHistory_Type.BASELINE ||
+      history.type === ChangeHistory_Type.MIGRATE ||
+      history.type === ChangeHistory_Type.MIGRATE_SDL ||
+      history.type === ChangeHistory_Type.DATA)
+  );
+};
+
+const handleToggleChangeHistorySelected = (history: ChangeHistory) => {
+  const selected = props.selectedChangeHistoryNameList ?? [];
+  if (selected.includes(history.name)) {
+    emit(
+      "update:selected",
+      selected.filter((name) => name !== history.name)
+    );
+  } else {
+    emit("update:selected", [...selected, history.name]);
+  }
 };
 </script>

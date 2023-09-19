@@ -18,7 +18,7 @@
         </div>
       </BBTableCell>
       <BBTableCell>
-        <FunctionDefinitionView :definition="functionItem.definition" />
+        <DefinitionView :definition="functionItem.definition" />
       </BBTableCell>
     </template>
   </BBTable>
@@ -27,10 +27,10 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
+import DefinitionView from "@/components/DefinitionView.vue";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { ComposedDatabase } from "@/types";
 import { FunctionMetadata } from "@/types/proto/store/database";
-import EllipsisText from "@/components/EllipsisText.vue";
-import FunctionDefinitionView from "@/components/FunctionDefinitionView.vue";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps({
@@ -59,7 +59,9 @@ const hasSchemaProperty = computed(() => {
     isPostgres.value ||
     engine.value === Engine.SNOWFLAKE ||
     engine.value === Engine.ORACLE ||
-    engine.value === Engine.MSSQL
+    engine.value === Engine.DM ||
+    engine.value === Engine.MSSQL ||
+    engine.value === Engine.RISINGWAVE
   );
 });
 

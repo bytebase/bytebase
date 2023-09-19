@@ -8,6 +8,7 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
@@ -15,60 +16,74 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 		{
 			UID:          0,
 			DatabaseName: "hello",
-			Labels: map[string]string{
-				"bb.location":    "us-central1",
-				"bb.tenant":      "bytebase",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "us-central1",
+					"bb.tenant":      "bytebase",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          1,
 			DatabaseName: "hello",
-			Labels: map[string]string{
-				"bb.location":    "earth",
-				"bb.tenant":      "bytebase",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "earth",
+					"bb.tenant":      "bytebase",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          2,
 			DatabaseName: "hello",
-			Labels: map[string]string{
-				"bb.location":    "europe-west1",
-				"bb.tenant":      "bytebase",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "europe-west1",
+					"bb.tenant":      "bytebase",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          3,
 			DatabaseName: "hello",
-			Labels: map[string]string{
-				"bb.location":    "earth",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "earth",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          4,
 			DatabaseName: "world",
-			Labels: map[string]string{
-				"bb.location":    "earth",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "earth",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          5,
 			DatabaseName: "db1_us",
-			Labels: map[string]string{
-				"bb.location":    "us",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "us",
+					"bb.environment": "dev",
+				},
 			},
 		},
 		{
 			UID:          6,
 			DatabaseName: "db1_eu",
-			Labels: map[string]string{
-				"bb.location":    "eu",
-				"bb.environment": "dev",
+			Metadata: &storepb.DatabaseMetadata{
+				Labels: map[string]string{
+					"bb.location":    "eu",
+					"bb.environment": "dev",
+				},
 			},
 		},
 	}
@@ -264,33 +279,33 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 func TestMergeTaskCreateLists(t *testing.T) {
 	tests := []struct {
 		name               string
-		taskCreateLists    [][]api.TaskCreate
-		taskIndexDAGLists  [][]api.TaskIndexDAG
-		wantTaskCreateList []api.TaskCreate
-		wantTaskDAGList    []api.TaskIndexDAG
+		taskCreateLists    [][]*store.TaskMessage
+		taskIndexDAGLists  [][]store.TaskIndexDAG
+		wantTaskCreateList []*store.TaskMessage
+		wantTaskDAGList    []store.TaskIndexDAG
 	}{
 		{
 			name: "simple, len=1",
-			taskCreateLists: [][]api.TaskCreate{
+			taskCreateLists: [][]*store.TaskMessage{
 				{
 					{}, {},
 				},
 			},
-			taskIndexDAGLists: [][]api.TaskIndexDAG{
+			taskIndexDAGLists: [][]store.TaskIndexDAG{
 				{
 					{FromIndex: 0, ToIndex: 1},
 				},
 			},
-			wantTaskCreateList: []api.TaskCreate{
+			wantTaskCreateList: []*store.TaskMessage{
 				{}, {},
 			},
-			wantTaskDAGList: []api.TaskIndexDAG{
+			wantTaskDAGList: []store.TaskIndexDAG{
 				{FromIndex: 0, ToIndex: 1},
 			},
 		},
 		{
 			name: "len=2",
-			taskCreateLists: [][]api.TaskCreate{
+			taskCreateLists: [][]*store.TaskMessage{
 				{
 					{}, {}, {}, {},
 				},
@@ -298,7 +313,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{}, {}, {}, {},
 				},
 			},
-			taskIndexDAGLists: [][]api.TaskIndexDAG{
+			taskIndexDAGLists: [][]store.TaskIndexDAG{
 				{
 					{FromIndex: 0, ToIndex: 1},
 					{FromIndex: 1, ToIndex: 3},
@@ -307,10 +322,10 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{FromIndex: 1, ToIndex: 2},
 				},
 			},
-			wantTaskCreateList: []api.TaskCreate{
+			wantTaskCreateList: []*store.TaskMessage{
 				{}, {}, {}, {}, {}, {}, {}, {},
 			},
-			wantTaskDAGList: []api.TaskIndexDAG{
+			wantTaskDAGList: []store.TaskIndexDAG{
 				{FromIndex: 0, ToIndex: 1},
 				{FromIndex: 1, ToIndex: 3},
 				{FromIndex: 5, ToIndex: 6},
@@ -318,7 +333,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 		},
 		{
 			name: "len=3",
-			taskCreateLists: [][]api.TaskCreate{
+			taskCreateLists: [][]*store.TaskMessage{
 				{
 					{}, {}, {}, {},
 				},
@@ -329,7 +344,7 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{}, {}, {}, {},
 				},
 			},
-			taskIndexDAGLists: [][]api.TaskIndexDAG{
+			taskIndexDAGLists: [][]store.TaskIndexDAG{
 				{
 					{FromIndex: 0, ToIndex: 1},
 					{FromIndex: 1, ToIndex: 3},
@@ -341,10 +356,10 @@ func TestMergeTaskCreateLists(t *testing.T) {
 					{FromIndex: 1, ToIndex: 2},
 				},
 			},
-			wantTaskCreateList: []api.TaskCreate{
+			wantTaskCreateList: []*store.TaskMessage{
 				{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
 			},
-			wantTaskDAGList: []api.TaskIndexDAG{
+			wantTaskDAGList: []store.TaskIndexDAG{
 				{FromIndex: 0, ToIndex: 1},
 				{FromIndex: 1, ToIndex: 3},
 				{FromIndex: 5, ToIndex: 6},

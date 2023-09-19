@@ -17,10 +17,10 @@
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { ActivityProjectRepositoryPushPayload } from "../../types";
 import { issueSlug } from "../../utils/slug";
 import { Link } from "./types";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 
 const props = defineProps({
   activity: {

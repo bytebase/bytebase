@@ -44,9 +44,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { NEllipsis } from "naive-ui";
-
+import { computed } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useDynamicSuggestions } from "../logic";
 

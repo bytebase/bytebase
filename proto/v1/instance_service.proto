@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/common.proto";
@@ -80,7 +81,9 @@ service InstanceService {
 
   rpc SyncSlowQueries(SyncSlowQueriesRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/v1/{instance=instances/*}:syncSlowQueries"
+      post: "/v1/{parent=instances/*}:syncSlowQueries"
+      additional_bindings {post: "/v1/{parent=projects/*}:syncSlowQueries"}
+
       body: "*"
     };
   }
@@ -208,8 +211,19 @@ message UpdateDataSourceRequest {
 
 message SyncSlowQueriesRequest {
   // The name of the instance to sync slow queries.
-  // Format: instances/{instance}
-  string instance = 1 [(google.api.field_behavior) = REQUIRED];
+  // Format: instances/{instance} for one instance
+  //      or projects/{project} for one project.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// InstanceOptions is the option for instances.
+message InstanceOptions {
+  // The schema tenant mode is used to determine whether the instance is in schema tenant mode.
+  // For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
+  bool schema_tenant_mode = 1;
+
+  // How often the instance is synced.
+  google.protobuf.Duration sync_interval = 2;
 }
 
 message Instance {
@@ -234,13 +248,15 @@ message Instance {
 
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
-  string environment = 9;
+  string environment = 9 [(google.api.field_behavior) = OPTIONAL];
 
   bool activation = 10;
+
+  InstanceOptions options = 11;
 }
 
 message DataSource {
-  string title = 1;
+  string id = 1;
   DataSourceType type = 2;
   string username = 3;
   string password = 4 [(google.api.field_behavior) = INPUT_ONLY];

@@ -8,7 +8,5 @@ type CreateTableStmt struct {
 	Name           *TableDef
 	ColumnList     []*ColumnDef
 	ConstraintList []*ConstraintDef
-
-	// TODO(rebelice): convert the partition definition.
-	PartitionDef Node
+	PartitionDef   *PartitionDef
 }

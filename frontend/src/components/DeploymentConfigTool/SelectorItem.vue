@@ -33,8 +33,12 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-
+import { uniq } from "lodash-es";
 import { computed, PropType, watch } from "vue";
+import {
+  LabelSelectorRequirement,
+  OperatorType,
+} from "@/types/proto/v1/project_service";
 import { ComposedDatabase } from "../../types";
 import {
   getLabelValuesFromDatabaseV1List,
@@ -43,11 +47,6 @@ import {
   RESERVED_LABEL_KEYS,
 } from "../../utils";
 import LabelSelect from "./LabelSelect.vue";
-import { uniq } from "lodash-es";
-import {
-  LabelSelectorRequirement,
-  OperatorType,
-} from "@/types/proto/v1/project_service";
 
 const OPERATORS: OperatorType[] = [
   OperatorType.OPERATOR_TYPE_IN,

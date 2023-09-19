@@ -3,6 +3,8 @@ package mysql
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 
@@ -26,10 +28,10 @@ type CompatibilityAdvisor struct {
 }
 
 // Check checks schema backward compatibility.
-func (*CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*CompatibilityAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	root, ok := ctx.AST.([]ast.StmtNode)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

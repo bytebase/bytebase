@@ -1,9 +1,10 @@
+import type { Table, LanguageState } from "@sql-lsp/types";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import type {
   CompletionItem,
   CompletionParams,
 } from "vscode-languageserver/browser";
-import type { Table, LanguageState } from "@sql-lsp/types";
+import { AliasMapping } from "./alias";
 import {
   createColumnCandidates,
   createDatabaseCandidates,
@@ -11,10 +12,9 @@ import {
   createSubQueryCandidates,
   createTableCandidates,
 } from "./candidates";
-import { getFromClauses, isDialectWithSchema } from "./utils";
-import { simpleTokenize } from "./tokenizer";
-import { AliasMapping } from "./alias";
 import { SubQueryMapping } from "./sub-query";
+import { simpleTokenize } from "./tokenizer";
+import { getFromClauses, isDialectWithSchema } from "./utils";
 
 export const complete = async (
   params: CompletionParams,

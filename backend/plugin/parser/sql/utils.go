@@ -10,12 +10,15 @@ import (
 	"sort"
 	"strings"
 
-	pgquery "github.com/pganalyze/pg_query_go/v2"
+	"github.com/antlr4-go/antlr/v4"
+	pgquery "github.com/pganalyze/pg_query_go/v4"
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/model"
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
+
+	plsql "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
@@ -34,6 +37,9 @@ type SchemaResource struct {
 	Database string
 	Schema   string
 	Table    string
+
+	// LinkedServer is the special resource for MSSQL, which can be used to specify the linked server.
+	LinkedServer string
 }
 
 // String implements fmt.Stringer interface.
@@ -56,6 +62,21 @@ func (r SchemaResource) Pretty() string {
 	return strings.Join(list, ".")
 }
 
+// ExtractChangedResources extracts the changed resources from the SQL.
+func ExtractChangedResources(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+	switch engineType {
+	case MySQL, MariaDB, OceanBase:
+		return extractMySQLChangedResources(currentDatabase, sql)
+	case Oracle:
+		return extractOracleChangedResources(currentDatabase, currentSchema, sql)
+	default:
+		if currentDatabase == "" {
+			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
+		}
+		return nil, errors.Errorf("engine type %q is not supported", engineType)
+	}
+}
+
 // ExtractResourceList extracts the resource list from the SQL.
 func ExtractResourceList(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
 	switch engineType {
@@ -67,14 +88,17 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 	case Oracle:
 		// The resource list for Oracle may contains table, view and temporary table.
 		return extractOracleResourceList(currentDatabase, currentSchema, sql)
-	case Postgres:
+	case Postgres, RisingWave:
 		// The resource list for Postgres may contains table, view and temporary table.
-		return extractPostgresResourceList(currentDatabase, "public", sql)
+		return extractPostgresResourceList(currentDatabase, currentSchema, sql)
+	case Snowflake:
+		return extractSnowflakeNormalizeResourceListFromSelectStatement(currentDatabase, "PUBLIC", sql)
+	case MSSQL:
+		return extractMSSQLNormalizedResourceListFromSelectStatement(currentDatabase, "dbo", sql)
 	default:
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
 		}
-
 		return []SchemaResource{{Database: currentDatabase}}, nil
 	}
 }
@@ -389,10 +413,32 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	var list []SingleSQL
 	var err error
 	switch engineType {
-	case Oracle, MSSQL:
+	case Oracle:
+		tree, tokens, err := ParsePLSQL(statement)
+		if err != nil {
+			return nil, err
+		}
+
+		var result []SingleSQL
+		for _, item := range tree.GetChildren() {
+			if stmt, ok := item.(plsql.IUnit_statementContext); ok {
+				stopIndex := stmt.GetStop().GetTokenIndex()
+				if stmt.GetStop().GetTokenType() == plsql.PlSqlParserSEMICOLON {
+					stopIndex--
+				}
+				lastToken := tokens.Get(stopIndex)
+				result = append(result, SingleSQL{
+					Text:     tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
+					LastLine: lastToken.GetLine(),
+					Empty:    false,
+				})
+			}
+		}
+		return result, nil
+	case MSSQL:
 		t := newTokenizer(statement)
 		list, err = t.splitStandardMultiSQL()
-	case Postgres, Redshift:
+	case Postgres, Redshift, RisingWave:
 		t := newTokenizer(statement)
 		list, err = t.splitPostgreSQLMultiSQL()
 	case MySQL, MariaDB, OceanBase:
@@ -539,10 +585,24 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	var list []SingleSQL
 	var err error
 	switch engineType {
-	case Oracle, MSSQL:
+	case Oracle:
+		text := antlr.NewIoStream(src).String()
+		sqls, err := SplitMultiSQL(engineType, text)
+		if err != nil {
+			return nil, err
+		}
+		for _, sql := range sqls {
+			if f != nil {
+				if err := f(sql.Text); err != nil {
+					return nil, err
+				}
+			}
+		}
+		return sqls, nil
+	case MSSQL:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitStandardMultiSQL()
-	case Postgres, Redshift:
+	case Postgres, Redshift, RisingWave:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitPostgreSQLMultiSQL()
 	case MySQL, MariaDB, OceanBase:
@@ -596,9 +656,9 @@ func SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
 	return newTokenizer(node.Text()).setLineForMySQLCreateTableStmt(node, firstLine)
 }
 
-// ExtractTiDBUnsupportStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
+// ExtractTiDBUnsupportedStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
 // and returns the remaining statements supported by TiDB from `stmts`.
-func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
+func ExtractTiDBUnsupportedStmts(stmts string) ([]string, string, error) {
 	var unsupportStmts []string
 	var supportedStmts bytes.Buffer
 	// We use our bb tokenizer to help us split the multi-statements into statement list.
@@ -612,8 +672,8 @@ func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
 			unsupportStmts = append(unsupportStmts, content)
 			continue
 		}
-		_, _ = supportedStmts.Write([]byte(content))
-		_, _ = supportedStmts.Write([]byte("\n"))
+		_, _ = supportedStmts.WriteString(content)
+		_, _ = supportedStmts.WriteString("\n")
 	}
 	return unsupportStmts, supportedStmts.String(), nil
 }
@@ -746,13 +806,47 @@ func TypeString(tp byte) string {
 }
 
 // ExtractDatabaseList extracts all databases from statement.
-func ExtractDatabaseList(engineType EngineType, statement string) ([]string, error) {
+func ExtractDatabaseList(engineType EngineType, statement string, fallbackNormalizedDatabaseName string) ([]string, error) {
 	switch engineType {
 	case MySQL, TiDB, MariaDB, OceanBase:
 		return extractMySQLDatabaseList(statement)
+	case Snowflake:
+		return extractSnowSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
+	case MSSQL:
+		return extractMSSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
+}
+
+func extractMSSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
+	schemaPlaceholder := "dbo"
+	schemaResource, err := extractMSSQLNormalizedResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for _, resource := range schemaResource {
+		result = append(result, resource.Database)
+	}
+	return result, nil
+}
+
+// extractSnowSQLNormalizedDatabaseList extracts all databases from statement, and normalizes the database name.
+// If the database name is not specified, it will fallback to the normalizedDatabaseName.
+func extractSnowSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
+	schemaPlaceholder := "schema_placeholder"
+	schemaResource, err := extractSnowflakeNormalizeResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for _, resource := range schemaResource {
+		result = append(result, resource.Database)
+	}
+	return result, nil
 }
 
 func newMySQLParser() *tidbparser.Parser {
@@ -775,7 +869,7 @@ func extractMySQLDatabaseList(statement string) ([]string, error) {
 	}
 
 	for _, node := range nodeList {
-		databaseList := extractDatabaseListFromNode(node)
+		databaseList := extractMySQLDatabaseListFromNode(node)
 		for _, database := range databaseList {
 			databaseMap[database] = true
 		}
@@ -791,8 +885,8 @@ func extractMySQLDatabaseList(statement string) ([]string, error) {
 	return databaseList, nil
 }
 
-// extractDatabaseListFromNode extracts all the database from node.
-func extractDatabaseListFromNode(in tidbast.Node) []string {
+// extractMySQLDatabaseListFromNode extracts all the database from node.
+func extractMySQLDatabaseListFromNode(in tidbast.Node) []string {
 	tableNameList := ExtractMySQLTableList(in, false /* asName */)
 
 	databaseMap := make(map[string]bool)

@@ -44,7 +44,7 @@
             class="ml-1 text-sm text-gray-400 max-w-[124px]"
             line-clamp="1"
           >
-            ({{ database.instanceEntity.environmentEntity.title }})
+            ({{ database.effectiveEnvironmentEntity.title }})
             {{ database.instanceEntity.title }}
           </NEllipsis>
         </div>
@@ -78,7 +78,7 @@
       >
         <NEllipsis class="text-sm" line-clamp="1">
           {{ database.databaseName }}
-          ({{ database.instanceEntity.environmentEntity.title }})
+          ({{ database.effectiveEnvironmentEntity.title }})
         </NEllipsis>
         <div class="flex flex-row justify-end items-center shrink-0">
           <NEllipsis class="ml-1 text-sm text-gray-400" line-clamp="1">
@@ -93,9 +93,9 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { reactive } from "vue";
+import BBLoader from "@/bbkit/BBLoader.vue";
 import { ComposedDatabase } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";
-import BBLoader from "@/bbkit/BBLoader.vue";
 
 interface LocalState {
   showMatchedDatabaseList: boolean;

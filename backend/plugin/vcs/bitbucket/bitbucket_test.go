@@ -474,7 +474,10 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "tests/__init__.py", "eefd5ef")
+	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "tests/__init__.py", vcs.RefInfo{
+		RefType: vcs.RefTypeCommit,
+		RefName: "eefd5ef",
+	})
 	require.NoError(t, err)
 
 	want := &vcs.FileMeta{
@@ -497,7 +500,10 @@ func TestProvider_ReadFileContent(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileContent(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "tests/__init__.py", "eefd5ef")
+	got, err := p.ReadFileContent(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "tests/__init__.py", vcs.RefInfo{
+		RefType: vcs.RefTypeCommit,
+		RefName: "eefd5ef",
+	})
 	require.NoError(t, err)
 
 	want := "#!/bin/sh\nhalt"

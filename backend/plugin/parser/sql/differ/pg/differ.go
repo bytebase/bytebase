@@ -3,11 +3,13 @@ package pg
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"sort"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -231,6 +233,9 @@ func newTypeInfo(id int, createType *ast.CreateTypeStmt) *typeInfo {
 }
 
 func (m schemaMap) addTable(id int, table *ast.CreateTableStmt) error {
+	if pg.IsSystemSchema(table.Name.Schema) {
+		return nil
+	}
 	schema, exists := m[table.Name.Schema]
 	if !exists {
 		return errors.Errorf("failed to add table: schema %s not found", table.Name.Schema)
@@ -248,6 +253,9 @@ func (m schemaMap) getTable(schemaName string, tableName string) *tableInfo {
 }
 
 func (m schemaMap) addConstraint(id int, addConstraint *ast.AddConstraintStmt) error {
+	if pg.IsSystemSchema(addConstraint.Table.Schema) {
+		return nil
+	}
 	schema, exists := m[addConstraint.Table.Schema]
 	if !exists {
 		return errors.Errorf("failed to add constraint: schema %s not found", addConstraint.Table.Schema)
@@ -277,6 +285,9 @@ func (m schemaMap) getConstraint(schemaName string, tableName string, constraint
 }
 
 func (m schemaMap) addExtension(id int, extension *ast.CreateExtensionStmt) error {
+	if pg.IsSystemSchema(extension.Schema) {
+		return nil
+	}
 	schema, exists := m[extension.Schema]
 	if !exists {
 		return errors.Errorf("failed to add extension: schema %s not found", extension.Schema)
@@ -294,6 +305,9 @@ func (m schemaMap) getExtension(schemaName string, extensionName string) *extens
 }
 
 func (m schemaMap) addFunction(id int, function *ast.CreateFunctionStmt) error {
+	if pg.IsSystemSchema(function.Function.Schema) {
+		return nil
+	}
 	schema, exists := m[function.Function.Schema]
 	if !exists {
 		return errors.Errorf("failed to add function: schema %s not found", function.Function.Schema)
@@ -315,6 +329,9 @@ func (m schemaMap) getFunction(schemaName string, signature string) *functionInf
 }
 
 func (m schemaMap) addIndex(id int, index *ast.CreateIndexStmt) error {
+	if pg.IsSystemSchema(index.Index.Table.Schema) {
+		return nil
+	}
 	schema, exists := m[index.Index.Table.Schema]
 	if !exists {
 		return errors.Errorf("failed to add table: schema %s not found", index.Index.Table.Schema)
@@ -332,6 +349,9 @@ func (m schemaMap) getIndex(schemaName string, indexName string) *indexInfo {
 }
 
 func (m schemaMap) addSequence(id int, sequence *ast.CreateSequenceStmt) error {
+	if pg.IsSystemSchema(sequence.SequenceDef.SequenceName.Schema) {
+		return nil
+	}
 	schema, exists := m[sequence.SequenceDef.SequenceName.Schema]
 	if !exists {
 		return errors.Errorf("failed to add sequence: schema %s not found", sequence.SequenceDef.SequenceName.Schema)
@@ -349,6 +369,9 @@ func (m schemaMap) getSequence(schemaName string, sequenceName string) *sequence
 }
 
 func (m schemaMap) addTrigger(id int, trigger *ast.CreateTriggerStmt) error {
+	if pg.IsSystemSchema(trigger.Trigger.Table.Schema) {
+		return nil
+	}
 	schema, exists := m[trigger.Trigger.Table.Schema]
 	if !exists {
 		return errors.Errorf("failed to add trigger: schema %s not found", trigger.Trigger.Table.Schema)
@@ -374,6 +397,9 @@ func (m schemaMap) getTrigger(schemaName string, tableName string, triggerName s
 }
 
 func (m schemaMap) addType(id int, createType *ast.CreateTypeStmt) error {
+	if pg.IsSystemSchema(createType.Type.TypeName().Schema) {
+		return nil
+	}
 	schema, exists := m[createType.Type.TypeName().Schema]
 	if !exists {
 		return errors.Errorf("failed to add type: schema %s not found", createType.Type.TypeName().Schema)
@@ -412,6 +438,9 @@ func (m schemaMap) addSequenceOwnedBy(id int, alterStmt *ast.AlterSequenceStmt) 
 		return errors.Errorf("expect OwnedBy only, but found %v", alterStmt)
 	}
 
+	if pg.IsSystemSchema(alterStmt.Name.Schema) {
+		return nil
+	}
 	schema, exists := m[alterStmt.Name.Schema]
 	if !exists {
 		return errors.Errorf("failed to add sequence owned by: schema %s not found", alterStmt.Name.Schema)
@@ -424,12 +453,40 @@ func (m schemaMap) addSequenceOwnedBy(id int, alterStmt *ast.AlterSequenceStmt) 
 	return nil
 }
 
-func parseAndPreprocessStatment(statement string) ([]ast.Node, error) {
+func parseAndPreprocessStatement(statement string) ([]ast.Node, []string, error) {
 	nodeList, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse statement %q", statement)
+		return nil, nil, errors.Wrapf(err, "failed to parse statement %q", statement)
 	}
-	return mergeDefaultIntoColumn(nodeList)
+	nodes, err := mergeDefaultIntoColumn(nodeList)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to merge default into column for statement %q", statement)
+	}
+
+	partitions := extractPartitions(nodes)
+	return nodes, partitions, nil
+}
+
+func extractPartitions(nodes []ast.Node) []string {
+	var partitions []string
+	for _, node := range nodes {
+		switch node := node.(type) {
+		case *ast.AlterTableStmt:
+			for _, alterItem := range node.AlterItemList {
+				switch item := alterItem.(type) {
+				case *ast.AttachPartitionStmt:
+					if item.Partition != nil {
+						partitions = append(partitions, fmt.Sprintf("%s.%s", item.Partition.Schema, item.Partition.Name))
+					}
+				default:
+					continue
+				}
+			}
+		default:
+			continue
+		}
+	}
+	return partitions
 }
 
 // mergeDefaultIntoColumn merges some statements into one statement, for example, merge
@@ -481,27 +538,39 @@ func mergeDefaultIntoColumn(nodeList []ast.Node) ([]ast.Node, error) {
 }
 
 // SchemaDiff computes the schema differences between old and new schema.
-func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
-	oldNodes, err := parseAndPreprocessStatment(oldStmt)
+func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error) {
+	oldNodes, oldPartitions, err := parseAndPreprocessStatement(oldStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse and preprocess old statements %q", oldStmt)
 	}
-	newNodes, err := parseAndPreprocessStatment(newStmt)
+	newNodes, newPartitions, err := parseAndPreprocessStatement(newStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to and preprocess new statements %q", newStmt)
 	}
 	oldSchemaMap := make(schemaMap)
 	oldSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
 	oldSchemaMap["public"].existsInNew = true
+	oldPartitionMap := make(map[string]bool)
+	for _, partition := range oldPartitions {
+		oldPartitionMap[partition] = true
+	}
 	for i, node := range oldNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateSchemaStmt:
 			oldSchemaMap[stmt.Name] = newSchemaInfo(i, stmt)
 		case *ast.CreateTableStmt:
+			if _, exists := oldPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
+				// ignore partition table
+				continue
+			}
 			if err := oldSchemaMap.addTable(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.AlterTableStmt:
+			// ignore partition table
+			if _, exists := oldPartitionMap[fmt.Sprintf("%s.%s", stmt.Table.Schema, stmt.Table.Name)]; exists {
+				continue
+			}
 			for _, alterItem := range stmt.AlterItemList {
 				switch item := alterItem.(type) {
 				case *ast.AddConstraintStmt:
@@ -513,11 +582,18 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					default:
 						return "", errors.Errorf("unsupported constraint type %d", item.Constraint.Type)
 					}
+				case *ast.AttachPartitionStmt:
+					// ignore attach partition
+					continue
 				default:
 					return "", errors.Errorf("unsupported alter table item type %T", item)
 				}
 			}
 		case *ast.CreateIndexStmt:
+			// ignore partition index
+			if _, exists := oldPartitionMap[fmt.Sprintf("%s.%s", stmt.Index.Table.Schema, stmt.Index.Table.Name)]; exists {
+				continue
+			}
 			if err := oldSchemaMap.addIndex(i, stmt); err != nil {
 				return "", err
 			}
@@ -552,9 +628,20 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	}
 
 	diff := &diffNode{}
+	newPartitionMap := make(map[string]bool)
+	for _, partition := range newPartitions {
+		newPartitionMap[partition] = true
+	}
 	for _, node := range newNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
+			// ignore partition table
+			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
+				continue
+			}
+			if pg.IsSystemSchema(stmt.Name.Schema) {
+				continue
+			}
 			oldTable := oldSchemaMap.getTable(stmt.Name.Schema, stmt.Name.Name)
 			// Add the new table.
 			if oldTable == nil {
@@ -567,6 +654,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateSchemaStmt:
+			if pg.IsSystemSchema(stmt.Name) {
+				continue
+			}
 			schema, hasSchema := oldSchemaMap[stmt.Name]
 			if !hasSchema {
 				diff.createSchemaList = append(diff.createSchemaList, stmt)
@@ -574,6 +664,13 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 			schema.existsInNew = true
 		case *ast.AlterTableStmt:
+			// ignore partition table
+			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Table.Schema, stmt.Table.Name)]; exists {
+				continue
+			}
+			if pg.IsSystemSchema(stmt.Table.Schema) {
+				continue
+			}
 			for _, alterItem := range stmt.AlterItemList {
 				switch item := alterItem.(type) {
 				case *ast.AddConstraintStmt:
@@ -599,11 +696,21 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					default:
 						return "", errors.Errorf("unsupported constraint type %d", item.Constraint.Type)
 					}
+				case *ast.AttachPartitionStmt:
+					// ignore attach partition
+					continue
 				default:
 					return "", errors.Errorf("unsupported alter table item type %T", item)
 				}
 			}
 		case *ast.CreateIndexStmt:
+			// ignore partition index
+			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Index.Table.Schema, stmt.Index.Table.Name)]; exists {
+				continue
+			}
+			if pg.IsSystemSchema(stmt.Index.Table.Schema) {
+				continue
+			}
 			oldIndex := oldSchemaMap.getIndex(stmt.Index.Table.Schema, stmt.Index.Name)
 			// Add the new index.
 			if oldIndex == nil {
@@ -616,6 +723,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateSequenceStmt:
+			if pg.IsSystemSchema(stmt.SequenceDef.SequenceName.Schema) {
+				continue
+			}
 			oldSequence := oldSchemaMap.getSequence(stmt.SequenceDef.SequenceName.Schema, stmt.SequenceDef.SequenceName.Name)
 			// Add the new sequence.
 			if oldSequence == nil {
@@ -631,6 +741,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if !onlySetOwnedBy(stmt) {
 				return "", errors.Errorf("expect OwnedBy only, but found %v", stmt)
 			}
+			if pg.IsSystemSchema(stmt.Name.Schema) {
+				continue
+			}
 			oldSequence := oldSchemaMap.getSequence(stmt.Name.Schema, stmt.Name.Name)
 			// Add the new sequence owned by.
 			if oldSequence == nil || oldSequence.ownedByInfo == nil {
@@ -642,6 +755,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateExtensionStmt:
+			if pg.IsSystemSchema(stmt.Schema) {
+				continue
+			}
 			oldExtension := oldSchemaMap.getExtension(stmt.Schema, stmt.Name)
 			// Add the extension.
 			if oldExtension == nil {
@@ -654,6 +770,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateFunctionStmt:
+			if pg.IsSystemSchema(stmt.Function.Schema) {
+				continue
+			}
 			signature, err := functionSignature(stmt.Function)
 			if err != nil {
 				return "", err
@@ -670,6 +789,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateTriggerStmt:
+			if pg.IsSystemSchema(stmt.Trigger.Table.Schema) {
+				continue
+			}
 			oldTrigger := oldSchemaMap.getTrigger(stmt.Trigger.Table.Schema, stmt.Trigger.Table.Name, stmt.Trigger.Name)
 			// Add the trigger.
 			if oldTrigger == nil {
@@ -682,6 +804,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateTypeStmt:
+			if pg.IsSystemSchema(stmt.Type.TypeName().Schema) {
+				continue
+			}
 			oldType := oldSchemaMap.getType(stmt.Type.TypeName().Schema, stmt.Type.TypeName().Name)
 			// Add the type.
 			if oldType == nil {

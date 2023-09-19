@@ -24,8 +24,8 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { ViewMetadata } from "@/types/proto/store/database";
 import { ComposedDatabase } from "@/types";
+import { ViewMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps({
@@ -48,7 +48,11 @@ const { t } = useI18n();
 const engine = computed(() => props.database.instanceEntity.engine);
 
 const hasSchemaProperty = computed(() => {
-  return engine.value === Engine.POSTGRES || engine.value === Engine.SNOWFLAKE;
+  return (
+    engine.value === Engine.POSTGRES ||
+    engine.value === Engine.SNOWFLAKE ||
+    engine.value === Engine.RISINGWAVE
+  );
 });
 
 const columnList = computed(() => [

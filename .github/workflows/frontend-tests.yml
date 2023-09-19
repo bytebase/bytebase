@@ -8,12 +8,16 @@ on:
     paths:
       - "frontend/**"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   eslint-checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2.2.4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2.4.0
         with:
           version: 8.6.0
       - uses: actions/setup-node@v3
@@ -30,8 +34,8 @@ jobs:
   frontend-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2.2.4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2.4.0
         with:
           version: 8.6.0
       - uses: actions/setup-node@v3
@@ -47,5 +51,6 @@ jobs:
       - name: Run pnpm release build
         run: |
           cp ../backend/plugin/advisor/config/* ./src/types
+          cp ../backend/enterprise/api/plan.yaml ./src/types
           pnpm release-docker
         working-directory: frontend

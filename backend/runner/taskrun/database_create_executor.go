@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // NewDatabaseCreateExecutor creates a database create task executor.
@@ -43,10 +44,11 @@ type DatabaseCreateExecutor struct {
 var cannotCreateDatabase = map[db.Type]bool{
 	db.Redis:  true,
 	db.Oracle: true,
+	db.DM:     true,
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")
@@ -55,7 +57,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get sheet statement of sheet: %d", payload.SheetID)
 	}
-	sheet, err := exec.store.GetSheetV2(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := exec.store.GetSheet(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get sheet: %d", payload.SheetID)
 	}
@@ -77,11 +79,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		return true, nil, errors.Errorf("Creating database is not supported")
 	}
 
-	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
-	if err != nil {
-		return true, nil, err
-	}
-
 	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &payload.ProjectID})
 	if err != nil {
 		return true, nil, errors.Errorf("failed to find project with ID %d", payload.ProjectID)
@@ -91,10 +88,10 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	}
 
 	// Create database.
-	log.Debug("Start creating database...",
-		zap.String("instance", instance.Title),
-		zap.String("database", payload.DatabaseName),
-		zap.String("statement", statement),
+	slog.Debug("Start creating database...",
+		slog.String("instance", instance.Title),
+		slog.String("database", payload.DatabaseName),
+		slog.String("statement", statement),
 	)
 
 	// Upsert first because we need database id in instance change history.
@@ -111,12 +108,14 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
 		ProjectID:            project.ResourceID,
-		EnvironmentID:        environment.ResourceID,
 		InstanceID:           instance.ResourceID,
 		DatabaseName:         payload.DatabaseName,
+		EnvironmentID:        payload.EnvironmentID,
 		SyncState:            api.NotFound,
 		SuccessfulSyncTimeTs: time.Now().Unix(),
-		Labels:               labels,
+		Metadata: &storepb.DatabaseMetadata{
+			Labels: labels,
+		},
 	})
 	if err != nil {
 		return true, nil, err
@@ -134,6 +133,8 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		}
 	case db.Oracle:
 		return true, nil, errors.Errorf("Do not support creating databases for Oracle")
+	case db.DM:
+		return true, nil, errors.Errorf("Do not support creating databases for DM")
 	default:
 		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {
@@ -141,12 +142,20 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		}
 	}
 	defer defaultDBDriver.Close(ctx)
-	if _, err := defaultDBDriver.Execute(ctx, statement, true /* createDatabase */, db.ExecuteOptions{}); err != nil {
+	if _, err := defaultDBDriver.Execute(driverCtx, statement, true /* createDatabase */, db.ExecuteOptions{}); err != nil {
 		return true, nil, err
 	}
 
+	environmentID := instance.EnvironmentID
+	if payload.EnvironmentID != "" {
+		environmentID = payload.EnvironmentID
+	}
+	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
+	if err != nil {
+		return true, nil, err
+	}
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-	peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, environment, instance, project, task, database)
+	peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, driverCtx, environment, instance, project, task, database)
 	if err != nil {
 		return true, nil, err
 	}
@@ -190,15 +199,15 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	if _, err := exec.store.UpdateTaskV2(ctx, taskDatabaseIDPatch); err != nil {
 		return true, nil, err
 	}
-	if _, err := exec.store.PatchSheetV2(ctx, sheetPatch); err != nil {
+	if _, err := exec.store.PatchSheet(ctx, sheetPatch); err != nil {
 		return true, nil, errors.Wrapf(err, "failed to update sheet %d after executing the task", sheet.UID)
 	}
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-		log.Error("failed to sync database schema",
-			zap.String("instanceName", instance.ResourceID),
-			zap.String("databaseName", database.DatabaseName),
-			zap.Error(err),
+		slog.Error("failed to sync database schema",
+			slog.String("instanceName", instance.ResourceID),
+			slog.String("databaseName", database.DatabaseName),
+			log.BBError(err),
 		)
 	}
 
@@ -209,7 +218,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	}, nil
 }
 
-func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, database *store.DatabaseMessage) (string, string, error) {
+func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, database *store.DatabaseMessage) (string, string, error) {
 	if project.TenantMode != api.TenantModeTenant {
 		return "", "", nil
 	}
@@ -247,9 +256,9 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, env
 	if err != nil {
 		// If somehow we unable to find the principal, we just emit the error since it's not
 		// critical enough to fail the entire operation.
-		log.Error("Failed to fetch creator for composing the migration info",
-			zap.Int("task_id", task.ID),
-			zap.Error(err),
+		slog.Error("Failed to fetch creator for composing the migration info",
+			slog.Int("task_id", task.ID),
+			log.BBError(err),
 		)
 	} else {
 		mi.Creator = creator.Name
@@ -258,23 +267,23 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, env
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not
 		// critical enough to fail the entire operation.
-		log.Error("Failed to fetch containing issue for composing the migration info",
-			zap.Int("task_id", task.ID),
-			zap.Error(err),
+		slog.Error("Failed to fetch containing issue for composing the migration info",
+			slog.Int("task_id", task.ID),
+			log.BBError(err),
 		)
 	}
 	if issue == nil {
 		err := errors.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
-		log.Error(err.Error(),
-			zap.Int("task_id", task.ID),
-			zap.Error(err),
+		slog.Error(err.Error(),
+			slog.Int("task_id", task.ID),
+			log.BBError(err),
 		)
 	} else {
 		mi.IssueID = strconv.Itoa(issue.UID)
 		mi.IssueIDInt = &issue.UID
 	}
 
-	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, mi, schema, db.ExecuteOptions{}); err != nil {
+	if _, _, err := utils.ExecuteMigrationDefault(ctx, driverCtx, exec.store, driver, mi, schema, nil, db.ExecuteOptions{}); err != nil {
 		return "", "", err
 	}
 	return schemaVersion, schema, nil
@@ -286,7 +295,7 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
 	case db.MSSQL:
 		return fmt.Sprintf(`USE "%s";\n`, databaseName), nil
-	case db.Postgres:
+	case db.Postgres, db.RisingWave:
 		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
 	case db.ClickHouse:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
@@ -314,6 +323,7 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) (string, string, error) {
 	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &project.ResourceID,
+		Engine:    &instance.Engine,
 	})
 	if err != nil {
 		return "", "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
@@ -373,7 +383,7 @@ func getPeerTenantDatabase(databaseMatrix [][]*store.DatabaseMessage, environmen
 	// We try to use an existing tenant with the same environment, if possible.
 	for _, databaseList := range databaseMatrix {
 		for _, db := range databaseList {
-			if db.EnvironmentID == environmentID {
+			if db.EffectiveEnvironmentID == environmentID {
 				similarDB = db
 				break
 			}

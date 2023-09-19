@@ -49,6 +49,33 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 	return count, nil
 }
 
+// CountActiveUsers counts the number of endusers.
+func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	query := `
+		SELECT
+			count(1)
+		FROM principal
+		LEFT JOIN member ON principal.id = member.principal_id
+		WHERE (principal.type = $1 OR principal.type = $2) AND member.row_status = $3`
+	var count int
+	if err := tx.QueryRowContext(ctx, query, api.EndUser, api.ServiceAccount, api.Normal).Scan(&count); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled.
 func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context) ([]*metric.DatabaseCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -303,5 +330,47 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
+	return res, nil
+}
+
+// CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by row_status, visibility, source and type.
+// Used by the metric collector.
+func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Context) ([]*metric.SheetCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT row_status, visibility, source, type, COUNT(*) AS count
+		FROM sheet
+		GROUP BY row_status, visibility, source, type`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res []*metric.SheetCountMetric
+	for rows.Next() {
+		var sheetCount metric.SheetCountMetric
+		if err := rows.Scan(
+			&sheetCount.RowStatus,
+			&sheetCount.Visibility,
+			&sheetCount.Source,
+			&sheetCount.Type,
+			&sheetCount.Count,
+		); err != nil {
+			return nil, err
+		}
+		res = append(res, &sheetCount)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	return res, nil
 }

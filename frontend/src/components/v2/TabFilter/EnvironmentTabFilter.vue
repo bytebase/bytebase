@@ -5,7 +5,9 @@
     @update:value="$emit('update:environment', $event)"
   >
     <template #label="{ item }">
-      <template v-if="item.value === UNKNOWN_ID">{{ item.label }}</template>
+      <template v-if="item.value === UNKNOWN_ENVIRONMENT_NAME">{{
+        item.label
+      }}</template>
       <EnvironmentV1Name v-else :environment="item.environment" :link="false" />
     </template>
   </TabFilter>
@@ -14,12 +16,11 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { useEnvironmentV1List } from "@/store";
-import { UNKNOWN_ID, unknownEnvironment } from "@/types";
-import { TabFilterItem } from "./types";
-import { EnvironmentV1Name } from "../Model";
+import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentV1Name } from "../Model";
+import { TabFilterItem } from "./types";
 
 interface EnvironmentTabFilterItem extends TabFilterItem<string> {
   environment: Environment;
@@ -27,10 +28,11 @@ interface EnvironmentTabFilterItem extends TabFilterItem<string> {
 
 const props = withDefaults(
   defineProps<{
-    environment: string; // UNKNOWN_ID(-1) to "ALL"
+    environment?: string; // UNKNOWN_ENVIRONMENT_NAME to "ALL"
     includeAll?: boolean;
   }>(),
   {
+    environment: UNKNOWN_ENVIRONMENT_NAME,
     includeAll: false,
   }
 );
@@ -46,17 +48,17 @@ const items = computed(() => {
   const reversedEnvironmentList = [...environmentList.value].reverse();
   const environmentItems =
     reversedEnvironmentList.map<EnvironmentTabFilterItem>((env) => ({
-      value: env.uid,
+      value: env.name,
       label: env.title,
       environment: env,
     }));
-  if (props.environment === String(UNKNOWN_ID) || props.includeAll) {
+  if (props.environment === UNKNOWN_ENVIRONMENT_NAME || props.includeAll) {
     const dummyAll = {
       ...unknownEnvironment(),
       title: t("common.all"),
     };
     environmentItems.unshift({
-      value: dummyAll.uid,
+      value: dummyAll.name,
       label: dummyAll.title,
       environment: dummyAll,
     });

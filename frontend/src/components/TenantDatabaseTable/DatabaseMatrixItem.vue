@@ -81,12 +81,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
 import { NPopover } from "naive-ui";
-
+import { computed, PropType } from "vue";
+import { State } from "@/types/proto/v1/common";
 import { ComposedDatabase } from "../../types";
 import { databaseV1Slug, hidePrefix, PRESET_LABEL_KEYS } from "../../utils";
-import { State } from "@/types/proto/v1/common";
 import { InstanceV1Name } from "../v2";
 
 const props = defineProps({

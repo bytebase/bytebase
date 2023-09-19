@@ -78,32 +78,29 @@
     </template>
   </div>
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.sql-review"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
 
 <script lang="ts" setup>
 import { NTabs, NTab, NTooltip } from "naive-ui";
-import { reactive, watch, computed, ref } from "vue";
 import { CodeDiff } from "v-code-diff";
-import axios from "axios";
-
+import { reactive, watch, computed, ref } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { sqlServiceClient } from "@/grpcweb";
+import { useSilentRequest } from "@/plugins/silent-request";
 import {
   hasFeature,
   pushNotification,
   useChangeHistoryStore,
   useDatabaseV1Store,
 } from "@/store";
-import { useIssueLogic } from "./logic";
 import { Task, TaskId } from "@/types";
 import MonacoEditor from "../MonacoEditor";
-import { sqlServiceClient } from "@/grpcweb";
+import { useIssueLogic } from "./logic";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
-import { useSilentRequest } from "@/plugins/silent-request";
-import { engineToJSON } from "@/types/proto/v1/common";
 
 type TabView = "diff" | "statement" | "schema";
 
@@ -180,12 +177,11 @@ const useSDLState = () => {
     const expectedSDL = statement;
 
     const getSchemaDiff = async () => {
-      const { data } = await axios.post("/v1/sql/schema/diff", {
-        engineType: engineToJSON(database.instanceEntity.engine),
-        sourceSchema: previousSDL ?? "",
-        targetSchema: expectedSDL ?? "",
+      const { diff } = await databaseStore.diffSchema({
+        name: database.name,
+        schema: expectedSDL,
       });
-      return data ?? "";
+      return diff ?? "";
     };
     const diffDDL = await useSilentRequest(getSchemaDiff);
 

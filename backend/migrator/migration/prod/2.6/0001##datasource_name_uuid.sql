@@ -1,0 +1,1 @@
+UPDATE data_source SET name = uuid_in(md5(random()::text || random()::text)::cstring);

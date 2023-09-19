@@ -31,7 +31,7 @@
         </button>
       </div>
       <div v-if="canAssignLicense" class="bb-grid-cell hover:underline">
-        {{ instance.activation ? "Assigned" : "N/A" }}
+        {{ instance.activation ? "Y" : "" }}
       </div>
     </template>
   </BBGrid>
@@ -41,17 +41,16 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-
+import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
+import { ComposedInstance } from "@/types";
 import {
   urlfy,
   instanceV1Slug,
   instanceV1Name,
   hostPortOfInstanceV1,
 } from "@/utils";
-import { ComposedInstance } from "@/types";
-import InstanceV1EngineIcon from "../InstanceV1EngineIcon.vue";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
-import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
+import InstanceV1EngineIcon from "../InstanceV1EngineIcon.vue";
 
 export type InstanceRow = BBGridRow<ComposedInstance>;
 

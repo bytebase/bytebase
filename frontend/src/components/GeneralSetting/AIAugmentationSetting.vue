@@ -8,8 +8,8 @@
         {{ $t("settings.general.workspace.only-owner-can-edit") }}
       </span>
     </div>
-    <div class="flex-1 lg:px-5">
-      <div class="mb-7 mt-5 lg:mt-0">
+    <div class="flex-1 lg:px-4">
+      <div class="mb-7 mt-4 lg:mt-0">
         <label
           class="flex items-center gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
@@ -36,13 +36,17 @@
                 href="https://platform.openai.com/account/api-keys"
                 class="normal-link"
                 target="_blank"
-                >{{ $t("common.view-doc") }}</a
+                >{{
+                  $t(
+                    "settings.general.workspace.plugin.openai.openai-key.find-my-key"
+                  )
+                }}</a
               >
             </template>
           </i18n-t>
         </div>
         <BBTextField
-          class="mb-5 w-full"
+          class="mb-4 w-full"
           :disabled="!allowEdit"
           :value="state.openAIKey"
           :placeholder="
@@ -77,7 +81,7 @@
           }}
         </div>
         <BBTextField
-          class="mb-5 w-full"
+          class="mb-4 w-full"
           :disabled="!allowEdit"
           :value="state.openAIEndpoint"
           @input="handleOpenAIEndpointChange"
@@ -96,20 +100,20 @@
     </div>
 
     <FeatureModal
-      v-if="state.showFeatureModal"
       feature="bb.feature.plugin.openai"
+      :open="state.showFeatureModal"
       @cancel="state.showFeatureModal = false"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
+import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
-import scrollIntoView from "scroll-into-view-if-needed";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   openAIKey: string;

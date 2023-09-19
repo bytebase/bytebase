@@ -1,6 +1,6 @@
-import { computed, onBeforeUnmount, reactive, Ref, watch } from "vue";
 import { useEventListener, usePointer } from "@vueuse/core";
 import { sumBy } from "lodash-es";
+import { computed, onBeforeUnmount, reactive, Ref, watch } from "vue";
 
 export type TableResizeOptions = {
   tableRef: Ref<HTMLTableElement | undefined>;
@@ -35,7 +35,16 @@ const useTableResize = (options: TableResizeOptions) => {
 
   const table = computed(() => options.tableRef.value!);
 
+  const containerWidth = computed(() => {
+    return options.scrollerRef?.value?.scrollWidth || 0;
+  });
+
   const normalizeWidth = (width: number) => {
+    if (state.columns.length === 1) {
+      // When there is only one column, display it with full width.
+      // minus 1px to avoid unexpected horizontal scrollbar.
+      return containerWidth.value - 1;
+    }
     const { maxWidth, minWidth } = options;
     if (width > maxWidth) return maxWidth;
     if (width < minWidth) return minWidth;

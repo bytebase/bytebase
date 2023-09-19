@@ -521,32 +521,37 @@ func (gh *GitHub) SendWebhookPush(repositoryID string, payload []byte) error {
 
 	// Trigger all webhooks
 	for _, webhook := range r.webhooks {
-		req, err := http.NewRequest("POST", webhook.Config.URL, bytes.NewReader(payload))
-		if err != nil {
-			return errors.Wrapf(err, "failed to create a new POST request to %q", webhook.Config.URL)
-		}
+		if err := func() error {
+			req, err := http.NewRequest("POST", webhook.Config.URL, bytes.NewReader(payload))
+			if err != nil {
+				return errors.Wrapf(err, "failed to create a new POST request to %q", webhook.Config.URL)
+			}
 
-		m := hmac.New(sha256.New, []byte(webhook.Config.Secret))
-		if _, err := m.Write(payload); err != nil {
-			return errors.Wrap(err, "failed to calculate SHA256 of the webhook secret")
-		}
-		signature := "sha256=" + hex.EncodeToString(m.Sum(nil))
-		req.Header.Set("X-Hub-Signature-256", signature)
-		req.Header.Set("X-GitHub-Event", "push")
+			m := hmac.New(sha256.New, []byte(webhook.Config.Secret))
+			if _, err := m.Write(payload); err != nil {
+				return errors.Wrap(err, "failed to calculate SHA256 of the webhook secret")
+			}
+			signature := "sha256=" + hex.EncodeToString(m.Sum(nil))
+			req.Header.Set("X-Hub-Signature-256", signature)
+			req.Header.Set("X-GitHub-Event", "push")
 
-		resp, err := gh.client.Do(req)
-		if err != nil {
-			return errors.Wrapf(err, "failed to send POST request to %q", webhook.Config.URL)
+			resp, err := gh.client.Do(req)
+			if err != nil {
+				return errors.Wrapf(err, "failed to send POST request to %q", webhook.Config.URL)
+			}
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return errors.Wrap(err, "failed to read response body")
+			}
+			if resp.StatusCode != http.StatusOK {
+				return errors.Errorf("unexpected response status code %d, body: %s", resp.StatusCode, body)
+			}
+			gh.echo.Logger.Infof("SendWebhookPush response body %s\n", body)
+			return nil
+		}(); err != nil {
+			return err
 		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return errors.Wrap(err, "failed to read response body")
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.Errorf("unexpected response status code %d, body: %s", resp.StatusCode, body)
-		}
-		gh.echo.Logger.Infof("SendWebhookPush response body %s\n", body)
 	}
 	return nil
 }

@@ -1,9 +1,14 @@
 <template>
   <div
     class="suffix"
-    :class="{
-      admin: tab.mode === TabMode.Admin,
-    }"
+    :class="[
+      {
+        admin: tab.mode === TabMode.Admin,
+        closable,
+      },
+
+      [sheetTypeForTab(tab).toLowerCase()],
+    ]"
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
   >
@@ -19,10 +24,10 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
-
+import { isTabClosable } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
-import { useTabStore } from "@/store";
+import { sheetTypeForTab } from "@/utils";
 
 type LocalState = {
   hovering: boolean;
@@ -49,16 +54,13 @@ defineEmits<{
   (e: "close", tab: TabInfo, index: number): void;
 }>();
 
-const tabStore = useTabStore();
+const closable = computed(() => {
+  return isTabClosable(props.tab);
+});
 
 const icon = computed((): IconType | undefined => {
-  if (state.hovering) {
-    if (tabStore.tabList.length > 1) {
-      // Show 'close' if
-      // - hovering
-      // - and closeable (not the only one tab)
-      return "close";
-    }
+  if (state.hovering && closable.value) {
+    return "close";
   }
   if (props.tab.mode === TabMode.ReadOnly && !props.tab.isSaved) {
     return "unsaved";
@@ -72,7 +74,14 @@ const icon = computed((): IconType | undefined => {
   @apply flex items-center min-w-[1.25rem];
 }
 .icon {
-  @apply block w-5 h-5 p-0.5 text-gray-300 hover:text-gray-500 hover:bg-gray-200 rounded;
+  @apply block w-5 h-5 p-0.5 text-gray-500 rounded;
+}
+
+.suffix.closable.temp .icon {
+  @apply text-accent;
+}
+.suffix.closable .icon {
+  @apply hover:text-gray-700 hover:bg-gray-200;
 }
 .suffix.admin .icon {
   @apply text-gray-400 hover:text-gray-300 hover:bg-gray-400/30;

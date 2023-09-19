@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -16,13 +17,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -36,12 +36,16 @@ import (
 	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+
+	// Register azure plugin.
+	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -79,10 +83,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			for _, commit := range pushEvent.CommitList {
 				commitList = append(commitList, commit.ID)
 			}
-			log.Debug("all commits are created by Bytebase",
-				zap.String("repoURL", pushEvent.Project.WebURL),
-				zap.String("repoName", pushEvent.Project.FullPath),
-				zap.String("commits", strings.Join(commitList, ", ")),
+			slog.Debug("all commits are created by Bytebase",
+				slog.String("repoURL", pushEvent.Project.WebURL),
+				slog.String("repoName", pushEvent.Project.FullPath),
+				slog.String("commits", strings.Join(commitList, ", ")),
 			)
 			return c.String(http.StatusOK, "OK")
 		}
@@ -100,7 +104,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return err
 		}
 		if len(repositoryList) == 0 {
-			log.Debug("Empty handle repo list. Ignore this push event.")
+			slog.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
 
@@ -147,10 +151,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			for _, commit := range pushEvent.Commits {
 				commitList = append(commitList, commit.ID)
 			}
-			log.Debug("all commits are created by Bytebase",
-				zap.String("repoURL", pushEvent.Repository.HTMLURL),
-				zap.String("repoName", pushEvent.Repository.FullName),
-				zap.String("commits", strings.Join(commitList, ", ")),
+			slog.Debug("all commits are created by Bytebase",
+				slog.String("repoURL", pushEvent.Repository.HTMLURL),
+				slog.String("repoName", pushEvent.Repository.FullName),
+				slog.String("commits", strings.Join(commitList, ", ")),
 			)
 			return c.String(http.StatusOK, "OK")
 		}
@@ -172,7 +176,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return err
 		}
 		if len(repositoryList) == 0 {
-			log.Debug("Empty handle repo list. Ignore this push event.")
+			slog.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
 
@@ -215,10 +219,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						commitList = append(commitList, commit.Hash)
 					}
 				}
-				log.Debug("all commits are created by Bytebase",
-					zap.String("repoURL", pushEvent.Repository.Links.HTML.Href),
-					zap.String("repoName", pushEvent.Repository.FullName),
-					zap.String("commits", strings.Join(commitList, ", ")),
+				slog.Debug("all commits are created by Bytebase",
+					slog.String("repoURL", pushEvent.Repository.Links.HTML.Href),
+					slog.String("repoName", pushEvent.Repository.FullName),
+					slog.String("commits", strings.Join(commitList, ", ")),
 				)
 				continue
 			}
@@ -232,7 +236,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				return err
 			}
 			if len(repositoryList) == 0 {
-				log.Debug("Empty handle repo list. Ignore this push event.")
+				slog.Debug("Empty handle repo list. Ignore this push event.")
 				continue
 			}
 			repo := repositoryList[0]
@@ -321,6 +325,228 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		return c.String(http.StatusOK, strings.Join(allCreatedMessages, "\n"))
 	})
 
+	g.POST("/azure/:id", func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
+		}
+		pushEvent := new(azure.ServiceHookCodePushEvent)
+		if err := json.Unmarshal(body, pushEvent); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
+		}
+
+		// Validate presumptions.
+		// This shouldn't happen as we only setup webhook to receive push event, just in case.
+		if pushEvent.EventType != "git.push" {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Presumption failed: invalid webhook event type, got %s, want git.push", pushEvent.EventType))
+		}
+		// All the examples on https://learn.microsoft.com/en-us/azure/devops/service-hooks/events?view=azure-devops#code-pushed
+		// have only one ref update.
+		if len(pushEvent.Resource.RefUpdates) != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Presumption failed: the number of ref updates is not 1, got %d", len(pushEvent.Resource.RefUpdates)))
+		}
+		if pushEvent.Resource.RefUpdates[0].NewObjectID == strings.Repeat("0", 40) {
+			// Users delete branch will trigger a push event, but the refUpdates.NewObjectID is all zero.
+			return c.String(http.StatusOK, "Do not process the push event which is generated by deleting branch")
+		}
+
+		webhookEndpointID := c.Param("id")
+		// TODO(zp): find a better way to recognize the refine repository id, we use the format:
+		// organization_name/project_name/repository_name
+		repositories, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{
+			WebhookEndpointID: &webhookEndpointID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list repositories").SetInternal(err)
+		}
+		if len(repositories) == 0 {
+			return c.String(http.StatusOK, "No repository matched")
+		}
+		// Check the consistence of the repositories, it should not throw any error by right.
+		for i := 1; i < len(repositories); i++ {
+			if repositories[i].ExternalID != repositories[0].ExternalID {
+				return echo.NewHTTPError(http.StatusPreconditionFailed, "The repositories external id are not consistent: %v", fmt.Sprintf("%v", repositories))
+			}
+		}
+		repositoryID := repositories[0].ExternalID
+
+		// Filter out the repository which does not match the branch filter.
+		filter := func(repo *store.RepositoryMessage) (bool, error) {
+			refUpdate := pushEvent.Resource.RefUpdates[0]
+			return s.isWebhookEventBranch(refUpdate.Name, repo.BranchFilter)
+		}
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to filter repository").SetInternal(err)
+		}
+		if len(repositoryList) == 0 {
+			slog.Debug("Empty handle repo list. Ignore this push event.")
+			return c.String(http.StatusOK, "No repository matched")
+		}
+
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
+		}
+
+		oauthContext := common.OauthContext{
+			ClientID:     repositoryList[0].vcs.ApplicationID,
+			ClientSecret: repositoryList[0].vcs.Secret,
+			AccessToken:  repositoryList[0].repository.AccessToken,
+			RefreshToken: repositoryList[0].repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+		}
+
+		if len(pushEvent.Resource.Commits) == 0 {
+			// If users merge one branch to our target branch, the commits list is empty in push event.
+			// And we cannot get the commits in range [refUpdates.oldObjectId, refUpdates.newObjectId] from Azure DevOps API.
+			// So, when the commit list is empty, we think it is generated by merge,
+			// then we need to query the queryPullRequest API to find out if the updateRef.newObjectId
+			// is the last commit of the Pull Request, and then we can use the PullRef.newObjectId API
+			// to find out if it is the last commit of the Pull Request. Request ID to list the corresponding commits.
+			probablePullRequests, err := azure.QueryPullRequest(ctx, oauthContext, repositoryList[0].repository.ExternalID, pushEvent.Resource.RefUpdates[0].NewObjectID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query pull request").SetInternal(err)
+			}
+			var filterOutPullRequestList []*azure.PullRequest
+			for _, pullRequest := range probablePullRequests {
+				if pullRequest.Status != "completed" {
+					continue
+				}
+				// We only handle the pull request which is merged to the target branch.
+				// NOTE: here we should compare with the refUpdates.Name instead of the repository.BranchFilter
+				if pullRequest.TargetRefName != pushEvent.Resource.RefUpdates[0].Name {
+					continue
+				}
+				filterOutPullRequestList = append(filterOutPullRequestList, pullRequest)
+			}
+
+			if len(filterOutPullRequestList) == 0 {
+				return echo.NewHTTPError(http.StatusOK, "No pull request matched")
+			}
+			if len(filterOutPullRequestList) != 1 {
+				return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("Expected only one pull request, but got %d, content: %+v", len(filterOutPullRequestList), filterOutPullRequestList).Error())
+			}
+			// We should backfill the commit list by the commits in the pull request.
+			pullRequest := filterOutPullRequestList[0]
+			commitsInPullRequest, err := azure.GetPullRequestCommits(ctx, oauthContext, repositoryList[0].repository.ExternalID, pullRequest.ID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get pull request commits").SetInternal(err)
+			}
+			pushEvent.Resource.Commits = commitsInPullRequest
+		}
+
+		// For Azure DevOps, if users create a new branch and push it to the remote. It will trigger a code push event,
+		// but do not contain any commits in the event. So we do not need to consider the case that the commit id is
+		// all zero.
+		for _, commit := range pushEvent.Resource.Commits {
+			if commit.CommitID == strings.Repeat("0", 40) {
+				return echo.NewHTTPError(http.StatusBadRequest, "Presumption failed: the commit id is all zero")
+			}
+		}
+
+		// Filter out all the commits created by Bytebase(e.g. write-back the latest schema) to avoid infinite loop.
+		nonBytebaseCommitList := filterAzureBytebaseCommit(pushEvent.Resource.Commits)
+		if len(nonBytebaseCommitList) == 0 {
+			var commitIDs []string
+			for _, commit := range pushEvent.Resource.Commits {
+				commitIDs = append(commitIDs, commit.CommitID)
+			}
+			slog.Debug("all commits are created by Bytebase",
+				slog.String("repoURL", pushEvent.Resource.Repository.URL),
+				slog.String("repoID", repositoryID),
+				slog.String("repoName", pushEvent.Resource.Repository.Name),
+				slog.String("commits", strings.Join(commitIDs, ", ")),
+			)
+			return c.String(http.StatusOK, "OK")
+		}
+		pushEvent.Resource.Commits = nonBytebaseCommitList
+
+		// Azure DevOps' service hook does not contain the file diff information for each commit, so we need to backfill
+		// the file diff information by ourselves.
+		// We will use the previous commit id as the base commit id and the current commit id as the target commit id to
+		// get the file diff information commit by commit. We use the oldObjectId in resources.refUpdates as the base commit id
+		// for the first commit.
+		// NOTE: We presume that the sequence of the commits in the code push event is the reverse order of the commit sequence(aka. stack sequence, commit first, appear last) in the repository.
+		backfillCommits := make([]vcs.Commit, 0, len(nonBytebaseCommitList))
+		for _, commit := range nonBytebaseCommitList {
+			changes, err := azure.GetChangesByCommit(ctx, oauthContext, repositoryList[0].repository.ExternalID, commit.CommitID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get changes by commit %q", commit.CommitID)).SetInternal(err)
+			}
+
+			var addedList, modifiedList []string
+			for _, change := range changes.Changes {
+				switch change.ChangeType {
+				case "add":
+					addedList = append(addedList, change.Item.Path)
+				case "edit":
+					modifiedList = append(modifiedList, change.Item.Path)
+				}
+			}
+
+			backfillCommits = append(backfillCommits, vcs.Commit{
+				ID:           commit.CommitID,
+				Title:        commit.Comment,
+				Message:      commit.Comment,
+				CreatedTs:    commit.Author.Date.Unix(),
+				URL:          commit.URL,
+				AuthorName:   commit.Author.Name,
+				AuthorEmail:  commit.Author.Email,
+				AddedList:    addedList,
+				ModifiedList: modifiedList,
+			})
+		}
+
+		if len(backfillCommits) == 1 && len(backfillCommits[0].AddedList) == 1 && strings.HasSuffix(backfillCommits[0].AddedList[0], azure.SQLReviewPipelineFilePath) {
+			// Setup SQL review pipeline and policy.
+			if err := azure.EnableSQLReviewCI(ctx, oauthContext, repositoryList[0].repository.ExternalID, repositoryList[0].repository.BranchFilter, repositoryList[0].repository.WebhookSecretToken); err != nil {
+				slog.Error("failed to setup pipeline", log.BBError(err), slog.String("repository", repositoryList[0].repository.ExternalID))
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to setup SQL review pipeline").SetInternal(err)
+			}
+			return c.String(http.StatusOK, "OK")
+		}
+
+		// Backfill web url for commits.
+		if pushEvent.Resource.PushID != 0 {
+			commitsInPush, err := azure.GetPushCommitsByPushID(ctx, oauthContext, repositoryList[0].repository.ExternalID, pushEvent.Resource.PushID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get push commits by push id %d", pushEvent.Resource.PushID)).SetInternal(err)
+			}
+			// Convert values to map from commitID to remote url.
+			commitID2Value := make(map[string]string)
+			for _, value := range commitsInPush.Value {
+				commitID2Value[value.CommitID] = value.RemoteURL
+			}
+			for i := range backfillCommits {
+				if remoteURL, ok := commitID2Value[backfillCommits[i].ID]; ok {
+					backfillCommits[i].URL = remoteURL
+				}
+			}
+		}
+
+		baseVCSPushEvent := vcs.PushEvent{
+			VCSType:            vcs.AzureDevOps,
+			Ref:                pushEvent.Resource.RefUpdates[0].Name,
+			Before:             pushEvent.Resource.RefUpdates[0].OldObjectID,
+			After:              pushEvent.Resource.RefUpdates[0].NewObjectID,
+			RepositoryID:       repositoryList[0].repository.ExternalID,
+			RepositoryURL:      repositoryList[0].repository.WebURL,
+			RepositoryFullPath: repositoryList[0].repository.ExternalID,
+			AuthorName:         pushEvent.Resource.PushedBy.DisplayName,
+			CommitList:         backfillCommits,
+		}
+
+		createdMessages, err := s.processPushEvent(ctx, repositoryList, baseVCSPushEvent)
+		if err != nil {
+			return err
+		}
+		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
+	})
+
 	// id is the webhookEndpointID in repository
 	// This endpoint is generated and injected into GitHub action & GitLab CI during the VCS setup.
 	g.POST("/sql-review/:id", func(c echo.Context) error {
@@ -329,9 +555,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read SQL review request").SetInternal(err)
 		}
-		log.Debug("SQL review request received for VCS project",
-			zap.String("webhook_endpoint_id", c.Param("id")),
-			zap.String("request", string(body)),
+		slog.Debug("SQL review request received for VCS project",
+			slog.String("webhook_endpoint_id", c.Param("id")),
+			slog.String("request", string(body)),
 		)
 
 		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -353,17 +579,17 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		filter := func(repo *store.RepositoryMessage) (bool, error) {
 			if !repo.EnableSQLReviewCI {
-				log.Debug("Skip repository as the SQL review CI is not enabled.",
-					zap.Int("repository_id", repo.UID),
-					zap.String("repository_external_id", repo.ExternalID),
+				slog.Debug("Skip repository as the SQL review CI is not enabled.",
+					slog.Int("repository_id", repo.UID),
+					slog.String("repository_external_id", repo.ExternalID),
 				)
 				return false, nil
 			}
 
 			if !strings.HasPrefix(repo.WebURL, request.WebURL) {
-				log.Debug("Skip repository as the web URL is not matched.",
-					zap.String("request_web_url", request.WebURL),
-					zap.String("repo_web_url", repo.WebURL),
+				slog.Debug("Skip repository as the web URL is not matched.",
+					slog.String("request_web_url", request.WebURL),
+					slog.String("repo_web_url", repo.WebURL),
 				)
 				return false, nil
 			}
@@ -381,7 +607,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return err
 		}
 		if len(repositoryList) == 0 {
-			log.Debug("Empty handle repo list. Ignore this request.")
+			slog.Debug("Empty handle repo list. Ignore this request.")
 			return c.JSON(http.StatusOK, &api.VCSSQLReviewResult{
 				Status:  advisor.Success,
 				Content: []string{},
@@ -397,9 +623,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				AccessToken:  repo.repository.AccessToken,
 				RefreshToken: repo.repository.RefreshToken,
 				Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
 			},
 			repo.vcs.InstanceURL,
-			request.RepositoryID,
+			repo.repository.ExternalID,
 			request.PullRequestID,
 		)
 		if err != nil {
@@ -420,7 +647,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			// of the xml file
 			// 2. If we can find it, then we will extract the sql from the mapper xml
 			// 3. match the environments in the configuration xml, look for the sql-review policy in the environment and apply it.
-			var isMybatisMapperXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis.org/dtd/mybatis-3-mapper.dtd`)
+			var isMybatisMapperXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis\.org/dtd/mybatis-3-mapper\.dtd`)
 
 			mybatisMapperXMLFiles := make(map[string]string)
 			var commitID string
@@ -440,7 +667,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					repo.vcs.InstanceURL,
 					repo.repository.ExternalID,
 					prFile.Path,
-					prFile.LastCommitID,
+					vcs.RefInfo{
+						RefType: vcs.RefTypeCommit,
+						RefName: prFile.LastCommitID,
+					},
 				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read file content").SetInternal(err)
@@ -468,14 +698,16 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			response = convertSQLAdviceToGitHubActionResult(sqlFileName2Advice)
 		case vcs.GitLab:
 			response = convertSQLAdviceToGitLabCIResult(sqlFileName2Advice)
+		case vcs.AzureDevOps:
+			response = convertSQLAdviceToGitLabCIResult(sqlFileName2Advice)
 		}
 
-		log.Debug("SQL review finished",
-			zap.String("pull_request", request.PullRequestID),
-			zap.String("status", string(response.Status)),
-			zap.String("content", strings.Join(response.Content, "\n")),
-			zap.String("repository_id", request.RepositoryID),
-			zap.String("vcs", string(repo.vcs.Type)),
+		slog.Debug("SQL review finished",
+			slog.String("pull_request", request.PullRequestID),
+			slog.String("status", string(response.Status)),
+			slog.String("content", strings.Join(response.Content, "\n")),
+			slog.String("repository_id", request.RepositoryID),
+			slog.String("vcs", string(repo.vcs.Type)),
 		)
 
 		return c.JSON(http.StatusOK, response)
@@ -497,9 +729,9 @@ func (s *Server) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapp
 	}
 	var wg sync.WaitGroup
 	for _, mybatisMapperXMLFile := range mybatisMapperXMLFileData {
-		log.Debug("Mybatis mapper xml file data",
-			zap.String("mapper file", mybatisMapperXMLFile.mapperPath),
-			zap.String("config file", mybatisMapperXMLFile.configPath),
+		slog.Debug("Mybatis mapper xml file data",
+			slog.String("mapper file", mybatisMapperXMLFile.mapperPath),
+			slog.String("config file", mybatisMapperXMLFile.configPath),
 		)
 		if mybatisMapperXMLFile.configContent == "" {
 			continue
@@ -509,11 +741,11 @@ func (s *Server) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapp
 			defer wg.Done()
 			adviceList, err := s.sqlAdviceForMybatisMapperFile(ctx, datum)
 			if err != nil {
-				log.Error(
+				slog.Error(
 					"Failed to take SQL review for file",
-					zap.String("file", datum.mapperContent),
-					zap.String("repository", repoInfo.repository.WebURL),
-					zap.Error(err),
+					slog.String("file", datum.mapperContent),
+					slog.String("repository", repoInfo.repository.WebURL),
+					log.BBError(err),
 				)
 				sqlCheckAdvices[datum.configPath] = []advisor.Advice{
 					{
@@ -556,7 +788,7 @@ func (s *Server) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybat
 				policy, err := s.store.GetSQLReviewPolicy(ctx, env.UID)
 				if err != nil {
 					if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-						log.Debug("Cannot found SQL review policy in environment", zap.String("Environment", confEnv.ID), zap.Error(err))
+						slog.Debug("Cannot found SQL review policy in environment", slog.String("Environment", confEnv.ID), log.BBError(err))
 						continue
 					}
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get SQL review policy").SetInternal(err)
@@ -576,7 +808,7 @@ func (s *Server) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybat
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get empty catalog").SetInternal(err)
 				}
 
-				mybatisSQLs, lineMapping, err := extractMybatisMapperSQL(datum.mapperContent)
+				mybatisSQLs, lineMapping, err := extractMybatisMapperSQL(datum.mapperContent, engineType)
 				if err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract mybatis mapper sql").SetInternal(err)
 				}
@@ -651,11 +883,11 @@ func (s *Server) sqlAdviceForSQLFiles(
 				defer wg.Done()
 				adviceList, err := s.sqlAdviceForFile(ctx, file, externalURL)
 				if err != nil {
-					log.Error(
+					slog.Error(
 						"Failed to take SQL review for file",
-						zap.String("file", file.item.FileName),
-						zap.String("external_id", file.repoInfo.repository.ExternalID),
-						zap.Error(err),
+						slog.String("file", file.item.FileName),
+						slog.String("external_id", file.repoInfo.repository.ExternalID),
+						log.BBError(err),
 					)
 					sqlCheckAdvice[file.item.FileName] = []advisor.Advice{
 						{
@@ -681,9 +913,9 @@ func (s *Server) sqlAdviceForFile(
 	fileInfo fileInfo,
 	externalURL string,
 ) ([]advisor.Advice, error) {
-	log.Debug("Processing file",
-		zap.String("file", fileInfo.item.FileName),
-		zap.String("vcs", string(fileInfo.repoInfo.vcs.Type)),
+	slog.Debug("Processing file",
+		slog.String("file", fileInfo.item.FileName),
+		slog.String("vcs", string(fileInfo.repoInfo.vcs.Type)),
 	)
 
 	// TODO: support tenant mode project
@@ -703,12 +935,12 @@ func (s *Server) sqlAdviceForFile(
 	// We can use https://github.com/bytebase/bytebase/blob/main/server/issue.go#L691 to find databases in tenant mode project.
 	databases, err := s.findProjectDatabases(ctx, fileInfo.repoInfo.project.UID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
 	if err != nil {
-		log.Debug(
+		slog.Debug(
 			"Failed to list database migration info",
-			zap.String("project", fileInfo.repoInfo.repository.ProjectResourceID),
-			zap.String("database", fileInfo.migrationInfo.Database),
-			zap.String("environment", fileInfo.migrationInfo.Environment),
-			zap.Error(err),
+			slog.String("project", fileInfo.repoInfo.repository.ProjectResourceID),
+			slog.String("database", fileInfo.migrationInfo.Database),
+			slog.String("environment", fileInfo.migrationInfo.Environment),
+			log.BBError(err),
 		)
 		return nil, errors.Errorf("Failed to list databse with error: %v", err)
 	}
@@ -721,11 +953,15 @@ func (s *Server) sqlAdviceForFile(
 			AccessToken:  fileInfo.repoInfo.repository.AccessToken,
 			RefreshToken: fileInfo.repoInfo.repository.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, fileInfo.repoInfo.repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", externalURL),
 		},
 		fileInfo.repoInfo.vcs.InstanceURL,
 		fileInfo.repoInfo.repository.ExternalID,
 		fileInfo.item.FileName,
-		fileInfo.item.Commit.ID,
+		vcs.RefInfo{
+			RefType: vcs.RefTypeCommit,
+			RefName: fileInfo.item.Commit.ID,
+		},
 	)
 	if err != nil {
 		return nil, errors.Errorf("Failed to read file cotent for %s with error: %v", fileInfo.item.FileName, err)
@@ -742,11 +978,11 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("cannot found instance %s", database.InstanceID)
 		}
 		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureVCSSQLReviewWorkflow, instance); err != nil {
-			log.Debug(err.Error(), zap.String("instance", instance.ResourceID))
+			slog.Debug(err.Error(), slog.String("instance", instance.ResourceID))
 			continue
 		}
 
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 		if err != nil {
 			return nil, err
 		}
@@ -756,7 +992,7 @@ func (s *Server) sqlAdviceForFile(
 		policy, err := s.store.GetSQLReviewPolicy(ctx, environment.UID)
 		if err != nil {
 			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-				log.Debug("Cannot found SQL review policy in environment", zap.String("Environment", database.EnvironmentID), zap.Error(err))
+				slog.Debug("Cannot found SQL review policy in environment", slog.String("Environment", database.EffectiveEnvironmentID), log.BBError(err))
 				continue
 			}
 			return nil, errors.Errorf("Failed to get SQL review policy in environment %v with error: %v", instance.EnvironmentID, err)
@@ -767,8 +1003,11 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to convert database engine type %v to advisor db type with error: %v", instance.Engine, err)
 		}
 
-		// TODO(rebelice): support SDL mode for webhook.
-		catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, advisor.SyntaxModeNormal)
+		advisorMode := advisor.SyntaxModeNormal
+		if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
+			advisorMode = advisor.SyntaxModeSDL
+		}
+		catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, advisorMode)
 		if err != nil {
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.UID, err)
 		}
@@ -836,38 +1075,46 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 			ShowDeleted: false,
 		})
 		if err != nil {
-			log.Error("failed to find the project",
-				zap.String("project_resource_id", repo.ProjectResourceID),
-				zap.String("repository_external_id", repo.ExternalID),
+			slog.Error("failed to find the project",
+				slog.String("project_resource_id", repo.ProjectResourceID),
+				slog.String("repository_external_id", repo.ExternalID),
 			)
 			continue
 		}
 		if project == nil {
-			log.Debug("skipping repo due to missing project",
-				zap.String("project_resource_id", repo.ProjectResourceID),
-				zap.String("repository_external_id", repo.ExternalID),
+			slog.Debug("skipping repo due to missing project",
+				slog.String("project_resource_id", repo.ProjectResourceID),
+				slog.String("repository_external_id", repo.ExternalID),
 			)
 			continue
 		}
 		externalVCS, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
 		if err != nil {
-			log.Error("failed to find the vcs",
-				zap.Int("vcs_uid", repo.VCSUID),
-				zap.String("repository_external_id", repo.ExternalID),
+			slog.Error("failed to find the vcs",
+				slog.Int("vcs_uid", repo.VCSUID),
+				slog.String("repository_external_id", repo.ExternalID),
 			)
 			continue
 		}
 		if externalVCS == nil {
-			log.Debug("skipping repo due to missing VCS",
-				zap.Int("vcs_uid", repo.VCSUID),
-				zap.String("repository_external_id", repo.ExternalID),
+			slog.Debug("skipping repo due to missing VCS",
+				slog.Int("vcs_uid", repo.VCSUID),
+				slog.String("repository_external_id", repo.ExternalID),
 			)
 			continue
 		}
 
-		if pushEventRepositoryID != repo.ExternalID {
-			log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.UID), zap.String("pushEventExternalID", pushEventRepositoryID), zap.String("repoExternalID", repo.ExternalID))
-			continue
+		switch externalVCS.Type {
+		case vcs.AzureDevOps:
+			if !strings.HasSuffix(repo.ExternalID, pushEventRepositoryID) {
+				slog.Debug("Skipping repo due to external ID mismatch", slog.Int("repoID", repo.UID), slog.String("pushEventExternalID", pushEventRepositoryID), slog.String("repoExternalID", repo.ExternalID))
+				continue
+			}
+		default:
+			if pushEventRepositoryID != repo.ExternalID {
+				slog.Debug("Skipping repo due to external ID mismatch", slog.Int("repoID", repo.UID), slog.String("pushEventExternalID", pushEventRepositoryID), slog.String("repoExternalID", repo.ExternalID))
+				continue
+			}
 		}
 
 		ok, err := filter(repo)
@@ -875,7 +1122,7 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 			return nil, err
 		}
 		if !ok {
-			log.Debug("Skipping repo due to mismatched payload signature", zap.Int("repoID", repo.UID))
+			slog.Debug("Skipping repo due to mismatched payload signature", slog.Int("repoID", repo.UID))
 			continue
 		}
 
@@ -898,7 +1145,7 @@ func (*Server) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, er
 		return false, errors.Wrapf(err, "failed to match branch filter")
 	}
 	if !ok {
-		log.Debug("Skipping repo due to branch filter mismatch", zap.String("branch", branch), zap.String("filter", branchFilter))
+		slog.Debug("Skipping repo due to branch filter mismatch", slog.String("branch", branch), slog.String("filter", branchFilter))
 		return false, nil
 	}
 	return true, nil
@@ -926,10 +1173,10 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 func parseBranchNameFromRefs(ref string) (string, error) {
 	expectedPrefix := "refs/heads/"
 	if !strings.HasPrefix(ref, expectedPrefix) || len(expectedPrefix) == len(ref) {
-		log.Debug(
+		slog.Debug(
 			"ref is not prefix with expected prefix",
-			zap.String("ref", ref),
-			zap.String("expected prefix", expectedPrefix),
+			slog.String("ref", ref),
+			slog.String("expected prefix", expectedPrefix),
 		)
 		return ref, errors.Errorf("unexpected ref name %q without prefix %q", ref, expectedPrefix)
 	}
@@ -947,10 +1194,10 @@ func (s *Server) processPushEvent(ctx context.Context, repoInfoList []*repoInfo,
 		for _, c := range baseVCSPushEvent.CommitList {
 			commitIDs = append(commitIDs, c.ID)
 		}
-		log.Warn("No files found from the push event",
-			zap.String("repoURL", baseVCSPushEvent.RepositoryURL),
-			zap.String("repoName", baseVCSPushEvent.RepositoryFullPath),
-			zap.String("commits", strings.Join(commitIDs, ",")))
+		slog.Warn("No files found from the push event",
+			slog.String("repoURL", baseVCSPushEvent.RepositoryURL),
+			slog.String("repoName", baseVCSPushEvent.RepositoryFullPath),
+			slog.String("commits", strings.Join(commitIDs, ",")))
 		return nil, nil
 	}
 
@@ -965,14 +1212,15 @@ func (s *Server) processPushEvent(ctx context.Context, repoInfoList []*repoInfo,
 		}
 	}
 
-	var createdMessageList []string
 	repoID2FileItemList := groupFileInfoByRepo(filteredDistinctFileList, repoInfoList)
+
+	var createdMessageList []string
 	for _, fileInfoListInRepo := range repoID2FileItemList {
 		// There are possibly multiple files in the push event.
 		// Each file corresponds to a (database name, schema version) pair.
 		// We want the migration statements are sorted by the file's schema version, and grouped by the database name.
-		dbID2FileInfoList := groupFileInfoByDatabase(fileInfoListInRepo)
-		for _, fileInfoListInDB := range dbID2FileInfoList {
+		dbName2FileInfoList := groupFileInfoByDatabase(fileInfoListInRepo)
+		for _, fileInfoListInDB := range dbName2FileInfoList {
 			fileInfoListSorted := sortFilesBySchemaVersion(fileInfoListInDB)
 			repoInfo := fileInfoListSorted[0].repoInfo
 			pushEvent := baseVCSPushEvent
@@ -991,8 +1239,8 @@ func (s *Server) processPushEvent(ctx context.Context, repoInfoList []*repoInfo,
 				createdMessageList = append(createdMessageList, createdMessage)
 			} else {
 				for _, activityCreate := range activityCreateList {
-					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
-						log.Warn("Failed to create project activity for the ignored repository files", zap.Error(err))
+					if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
+						slog.Warn("Failed to create project activity for the ignored repository files", log.BBError(err))
 					}
 				}
 			}
@@ -1004,13 +1252,14 @@ func (s *Server) processPushEvent(ctx context.Context, repoInfoList []*repoInfo,
 		for _, repoInfo := range repoInfoList {
 			repoURLs = append(repoURLs, repoInfo.repository.WebURL)
 		}
-		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Strings("repos", repoURLs))
+		slog.Warn("Ignored push event because no applicable file found in the commit list", slog.Any("repos", repoURLs))
 	}
 
 	return createdMessageList, nil
 }
 
-// Users may merge commits from other branches, and some of the commits merged in may already be merged into the main branch.
+// Users may merge commits from other branches,
+// and some of the commits merged in may already be merged into the main branch.
 // In that case, the commits in the push event contains files which are not added in this PR/MR.
 // We use the compare API to get the file diffs and filter files by the diffs.
 // TODO(dragonly): generate distinct file change list from the commits diff instead of filter.
@@ -1072,12 +1321,12 @@ func groupFileInfoByDatabase(fileInfoList []fileInfo) map[string][]fileInfo {
 func groupFileInfoByRepo(distinctFileList []vcs.DistinctFileItem, repoInfoList []*repoInfo) map[int][]fileInfo {
 	repoID2FileItemList := make(map[int][]fileInfo)
 	for _, item := range distinctFileList {
-		log.Debug("Processing file", zap.String("file", item.FileName), zap.String("commit", item.Commit.ID))
+		slog.Debug("Processing file", slog.String("file", item.FileName), slog.String("commit", item.Commit.ID))
 		migrationInfo, fType, repoInfo, err := getFileInfo(item, repoInfoList)
 		if err != nil {
-			log.Warn("Failed to get file info for the ignored repository file",
-				zap.String("file", item.FileName),
-				zap.Error(err),
+			slog.Warn("Failed to get file info for the ignored repository file",
+				slog.String("file", item.FileName),
+				log.BBError(err),
 			)
 			continue
 		}
@@ -1109,9 +1358,9 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.M
 	var fileRepositoryList []*repoInfo
 	for _, repoInfo := range repoInfoList {
 		if !strings.HasPrefix(fileItem.FileName, repoInfo.repository.BaseDirectory) {
-			log.Debug("Ignored file outside the base directory",
-				zap.String("file", fileItem.FileName),
-				zap.String("base_directory", repoInfo.repository.BaseDirectory),
+			slog.Debug("Ignored file outside the base directory",
+				slog.String("file", fileItem.FileName),
+				slog.String("base_directory", repoInfo.repository.BaseDirectory),
 			)
 			continue
 		}
@@ -1131,10 +1380,10 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.M
 
 		mi, err := db.ParseMigrationInfo(fileItem.FileName, filePathTemplate, allowOmitDatabaseName)
 		if err != nil {
-			log.Error("Failed to parse migration file info",
-				zap.String("project", repoInfo.repository.ProjectResourceID),
-				zap.String("file", fileItem.FileName),
-				zap.Error(err),
+			slog.Error("Failed to parse migration file info",
+				slog.String("project", repoInfo.repository.ProjectResourceID),
+				slog.String("file", fileItem.FileName),
+				log.BBError(err),
 			)
 			continue
 		}
@@ -1151,9 +1400,9 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.M
 
 		si, err := db.ParseSchemaFileInfo(repoInfo.repository.BaseDirectory, repoInfo.repository.SchemaPathTemplate, fileItem.FileName)
 		if err != nil {
-			log.Debug("Failed to parse schema file info",
-				zap.String("file", fileItem.FileName),
-				zap.Error(err),
+			slog.Debug("Failed to parse schema file info",
+				slog.String("file", fileItem.FileName),
+				log.BBError(err),
 			)
 			continue
 		}
@@ -1208,13 +1457,13 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 					databaseName := fileInfo.migrationInfo.Database
 					issueName := fmt.Sprintf(sdlIssueNameTemplate, databaseName, "Alter schema")
 					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
-					if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repoInfo.project.UID, migrationDetailListForFile); err != nil {
+					if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
 						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 					}
 					createdIssueList = append(createdIssueList, issueName)
 				}
 			} else {
-				log.Debug("Ignored schema file for non-SDL project", zap.String("fileName", fileInfo.item.FileName), zap.String("type", string(fileInfo.item.ItemType)))
+				slog.Debug("Ignored schema file for non-SDL project", slog.String("fileName", fileInfo.item.FileName), slog.String("type", string(fileInfo.item.ItemType)))
 			}
 		} else { // fileInfo.fType == fileTypeMigration
 			// This is a migration-based DDL or DML file and we would allow it for both DDL and SDL schema change type project.
@@ -1249,7 +1498,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	description := strings.ReplaceAll(fileInfoList[0].migrationInfo.Description, "_", " ")
 	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType, description)
 	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
-	if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repoInfo.project.UID, migrationDetailList); err != nil {
+	if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList); err != nil {
 		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
 	}
 	createdIssueList = append(createdIssueList, issueName)
@@ -1277,51 +1526,104 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 	return ret
 }
 
-func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationDetailList []*api.MigrationDetail) error {
-	createContext, err := json.Marshal(
-		&api.MigrationContext{
-			VCSPushEvent: &pushEvent,
-			DetailList:   migrationDetailList,
+func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*api.MigrationDetail) error {
+	var steps []*v1pb.Plan_Step
+	if len(migrationDetailList) == 1 && migrationDetailList[0].DatabaseID == 0 {
+		migrationDetail := migrationDetailList[0]
+		changeType := getChangeType(migrationDetail.MigrationType)
+		steps = []*v1pb.Plan_Step{
+			{
+				Specs: []*v1pb.Plan_Spec{
+					{
+						Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+							ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+								Type:          changeType,
+								Target:        fmt.Sprintf("projects/%s/deploymentConfigs/default", project.ResourceID),
+								Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
+								SchemaVersion: migrationDetail.SchemaVersion,
+							},
+						},
+					},
+				},
+			},
+		}
+	} else {
+		var specs []*v1pb.Plan_Spec
+		for _, migrationDetail := range migrationDetailList {
+			changeType := getChangeType(migrationDetail.MigrationType)
+			var target string
+			if migrationDetail.DatabaseID != 0 {
+				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.DatabaseID})
+				if err != nil {
+					return err
+				}
+				if database == nil {
+					return errors.Errorf("database %d not found", migrationDetail.DatabaseID)
+				}
+				target = fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
+			} else {
+				// TODO(d): should never reach this.
+				return errors.Errorf("tenant database is not supported yet")
+			}
+			specs = append(specs, &v1pb.Plan_Spec{
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Type:          changeType,
+						Target:        target,
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
+						SchemaVersion: migrationDetail.SchemaVersion,
+					},
+				},
+			})
+		}
+		steps = []*v1pb.Plan_Step{
+			{
+				Specs: specs,
+			},
+		}
+	}
+	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
+	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Plan: &v1pb.Plan{
+			Title: issueName,
+			Steps: steps,
 		},
-	)
+	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
+		return errors.Wrapf(err, "failed to create plan")
 	}
-
-	// TODO(d): unify issue type for database changes.
-	issueType := api.IssueDatabaseDataUpdate
-	for _, detail := range migrationDetailList {
-		if detail.MigrationType == db.Migrate || detail.MigrationType == db.Baseline {
-			issueType = api.IssueDatabaseSchemaUpdate
-		}
-	}
-	issueCreate := &api.IssueCreate{
-		ProjectID:             projectID,
-		Name:                  issueName,
-		Type:                  issueType,
-		Description:           issueDescription,
-		AssigneeID:            api.SystemBotID,
-		AssigneeNeedAttention: true,
-		CreateContext:         string(createContext),
-	}
-	issue, err := s.createIssue(ctx, issueCreate, creatorID)
+	rollout, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Plan:   plan.Name,
+	})
 	if err != nil {
-		log.Error("Failed to create issue", zap.Any("issueCreate", issueCreate), zap.Error(err))
-		errMsg := "Failed to create schema update issue"
-		if issueType == api.IssueDatabaseDataUpdate {
-			errMsg = "Failed to create data update issue"
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
+		return errors.Wrapf(err, "failed to create rollout")
 	}
-
-	// TODO(p0ny): sheet, for each sheet, update the payload to backtrace the issue.
-
+	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Issue: &v1pb.Issue{
+			Title:       issueName,
+			Description: issueDescription,
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+			Plan:        plan.Name,
+			Rollout:     rollout.Name,
+		},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create issue")
+	}
+	issueUID, err := strconv.Atoi(issue.Uid)
+	if err != nil {
+		return err
+	}
 	// Create a project activity after successfully creating the issue from the push event.
 	activityPayload, err := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
 			VCSPushEvent: pushEvent,
-			IssueID:      issue.ID,
-			IssueName:    issue.Name,
+			IssueID:      issueUID,
+			IssueName:    issue.Title,
 		},
 	)
 	if err != nil {
@@ -1330,17 +1632,31 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 
 	activityCreate := &store.ActivityMessage{
 		CreatorUID:   creatorID,
-		ContainerUID: projectID,
+		ContainerUID: project.UID,
 		Type:         api.ActivityProjectRepositoryPush,
 		Level:        api.ActivityInfo,
-		Comment:      fmt.Sprintf("Created issue %q.", issue.Name),
+		Comment:      fmt.Sprintf("Created issue %q.", issue.Title),
 		Payload:      string(activityPayload),
 	}
-	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issueUID)).SetInternal(err)
 	}
 
 	return nil
+}
+
+func getChangeType(migrationType db.MigrationType) v1pb.Plan_ChangeDatabaseConfig_Type {
+	switch migrationType {
+	case db.Baseline:
+		return v1pb.Plan_ChangeDatabaseConfig_BASELINE
+	case db.Migrate:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE
+	case db.MigrateSDL:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL
+	case db.Data:
+		return v1pb.Plan_ChangeDatabaseConfig_DATA
+	}
+	return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 }
 
 func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
@@ -1350,9 +1666,9 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 			Email: &email,
 		})
 		if err != nil {
-			log.Warn("Failed to find the principal with committer email, use system bot instead", zap.String("email", email), zap.Error(err))
+			slog.Warn("Failed to find the principal with committer email, use system bot instead", slog.String("email", email), log.BBError(err))
 		} else if committerPrincipal == nil {
-			log.Info("Principal with committer email does not exist, use system bot instead", zap.String("email", email))
+			slog.Info("Principal with committer email does not exist, use system bot instead", slog.String("email", email))
 		} else {
 			creatorID = committerPrincipal.ID
 		}
@@ -1372,15 +1688,31 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	if project == nil {
 		return nil, errors.Errorf("project %d not found", projectID)
 	}
-	foundDatabases, err := s.store.ListDatabases(ctx,
+	// The database name for PostgreSQL, Oracle, Snowflake and some databases are case sensitive.
+	// But the database name for MySQL, TiDB and other databases are case insensitive.
+	// So we should find databases by case-insensitive and double-check for case sensitive database engines.
+	caseInsensitiveDatabases, err := s.store.ListDatabases(ctx,
 		&store.FindDatabaseMessage{
-			ProjectID:    &project.ResourceID,
-			DatabaseName: &dbName,
+			ProjectID:           &project.ResourceID,
+			DatabaseName:        &dbName,
+			IgnoreCaseSensitive: true,
 		},
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "find database")
-	} else if len(foundDatabases) == 0 {
+	}
+	var foundDatabases []*store.DatabaseMessage
+	for _, database := range caseInsensitiveDatabases {
+		database := database
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+		if err != nil {
+			return nil, errors.Wrap(err, "find instance")
+		}
+		if store.IgnoreDatabaseAndTableCaseSensitive(instance) || database.DatabaseName == dbName {
+			foundDatabases = append(foundDatabases, database)
+		}
+	}
+	if len(foundDatabases) == 0 {
 		return nil, errors.Errorf("project %d does not have database %q", projectID, dbName)
 	}
 
@@ -1400,7 +1732,7 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	if environmentResourceID != "" {
 		for _, database := range foundDatabases {
 			// Environment resource ID comparison is case-sensitive.
-			if database.EnvironmentID == environmentResourceID {
+			if database.EffectiveEnvironmentID == environmentResourceID {
 				filteredDatabases = append(filteredDatabases, database)
 			}
 		}
@@ -1414,10 +1746,10 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	// In case there are databases with identical name in a project for the same environment.
 	marked := make(map[string]bool)
 	for _, database := range filteredDatabases {
-		if _, ok := marked[database.EnvironmentID]; ok {
+		if _, ok := marked[database.EffectiveEnvironmentID]; ok {
 			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, environmentResourceID)
 		}
-		marked[database.EnvironmentID] = true
+		marked[database.EffectiveEnvironmentID] = true
 	}
 	return filteredDatabases, nil
 }
@@ -1430,8 +1762,8 @@ func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file s
 		},
 	)
 	if marshalErr != nil {
-		log.Warn("Failed to construct project activity payload for the ignored repository file",
-			zap.Error(marshalErr),
+		slog.Warn("Failed to construct project activity payload for the ignored repository file",
+			log.BBError(marshalErr),
 		)
 		return nil
 	}
@@ -1480,7 +1812,10 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 		externalVCS.InstanceURL,
 		repo.ExternalID,
 		file,
-		pushEvent.CommitList[len(pushEvent.CommitList)-1].ID,
+		vcs.RefInfo{
+			RefType: vcs.RefTypeCommit,
+			RefName: pushEvent.CommitList[len(pushEvent.CommitList)-1].ID,
+		},
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "read content")
@@ -1493,7 +1828,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*store.ActivityMessage) {
 	dbName := schemaInfo.Database
 	if dbName == "" && repoInfo.project.TenantMode == api.TenantModeDisabled {
-		log.Debug("Ignored schema file without a database name", zap.String("file", file))
+		slog.Debug("Ignored schema file without a database name", slog.String("file", file))
 		return nil, nil
 	}
 
@@ -1503,14 +1838,20 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
-	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+	sheetPayload := &storepb.SheetPayload{
+		VcsPayload: &storepb.SheetPayload_VCSPayload{
+			PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
+		},
+	}
+	sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: repoInfo.project.UID,
 		Name:       file,
 		Statement:  sdl,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+		Visibility: store.ProjectSheet,
+		Source:     store.SheetFromBytebaseArtifact,
+		Type:       store.SheetForSQL,
+		Payload:    sheetPayload,
 	})
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
@@ -1519,13 +1860,12 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 
 	var migrationDetailList []*api.MigrationDetail
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
-		migrationDetailList = append(migrationDetailList,
-			&api.MigrationDetail{
+		return []*api.MigrationDetail{
+			{
 				MigrationType: db.MigrateSDL,
 				SheetID:       sheet.UID,
 			},
-		)
-		return migrationDetailList, nil
+		}, nil
 	}
 
 	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, dbName, schemaInfo.Environment)
@@ -1567,17 +1907,23 @@ func (s *Server) prepareIssueFromFile(
 		}
 	}
 
+	sheetPayload := &storepb.SheetPayload{
+		VcsPayload: &storepb.SheetPayload_VCSPayload{
+			PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
+		},
+	}
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
 		// A non-YAML file means the whole file content is the SQL statement
 		if !fileInfo.item.IsYAML {
-			sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+			sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 				CreatorID:  api.SystemBotID,
 				ProjectUID: repoInfo.project.UID,
 				Name:       fileInfo.item.FileName,
 				Statement:  content,
-				Visibility: api.ProjectSheet,
-				Source:     api.SheetFromBytebaseArtifact,
-				Type:       api.SheetForSQL,
+				Visibility: store.ProjectSheet,
+				Source:     store.SheetFromBytebaseArtifact,
+				Type:       store.SheetForSQL,
+				Payload:    sheetPayload,
 			})
 			if err != nil {
 				activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -1606,14 +1952,15 @@ func (s *Server) prepareIssueFromFile(
 			}
 		}
 
-		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
 			Statement:  migrationFile.Statement,
-			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebaseArtifact,
-			Type:       api.SheetForSQL,
+			Visibility: store.ProjectSheet,
+			Source:     store.SheetFromBytebaseArtifact,
+			Type:       store.SheetForSQL,
+			Payload:    sheetPayload,
 		})
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -1656,14 +2003,15 @@ func (s *Server) prepareIssueFromFile(
 	}
 
 	if fileInfo.item.ItemType == vcs.FileItemTypeAdded {
-		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
 			Statement:  content,
-			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebaseArtifact,
-			Type:       api.SheetForSQL,
+			Visibility: store.ProjectSheet,
+			Source:     store.SheetFromBytebaseArtifact,
+			Type:       store.SheetForSQL,
+			Payload:    sheetPayload,
 		})
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
@@ -1685,7 +2033,7 @@ func (s *Server) prepareIssueFromFile(
 	}
 
 	migrationVersion := fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())
-	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, migrationVersion, content); err != nil {
+	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, migrationVersion, content, pushEvent); err != nil {
 		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(
 				repoInfo.project.UID,
@@ -1698,17 +2046,15 @@ func (s *Server) prepareIssueFromFile(
 	return nil, nil
 }
 
-func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases []*store.DatabaseMessage, fileName, schemaVersion, statement string) error {
-	// TODO(p0ny): sheet, create new sheets and update task sheet id.
+func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases []*store.DatabaseMessage, fileName, schemaVersion, statement string, pushEvent vcs.PushEvent) error {
 	// For modified files, we try to update the existing issue's statement.
 	for _, database := range databases {
-		find := &api.TaskFind{
-			DatabaseID: &database.UID,
-			StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
-			TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
-			Payload:    fmt.Sprintf("task.payload->>'schemaVersion' = '%s'", schemaVersion),
-		}
-		taskList, err := s.store.ListTasks(ctx, find)
+		taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
+			DatabaseID:              &database.UID,
+			LatestTaskRunStatusList: &[]api.TaskRunStatus{api.TaskRunNotStarted, api.TaskRunFailed},
+			TypeList:                &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
+			Payload:                 fmt.Sprintf("task.payload->>'schemaVersion' = '%s'", schemaVersion),
+		})
 		if err != nil {
 			return err
 		}
@@ -1716,65 +2062,85 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			continue
 		}
 		if len(taskList) > 1 {
-			log.Error("Found more than one pending approval or failed tasks for modified VCS file, should be only one task.", zap.Int("databaseID", database.UID), zap.String("schemaVersion", schemaVersion))
+			slog.Error("Found more than one pending approval or failed tasks for modified VCS file, should be only one task.", slog.Int("databaseID", database.UID), slog.String("schemaVersion", schemaVersion))
 			return nil
 		}
 		task := taskList[0]
 		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 		if err != nil {
-			log.Error("failed to get issue by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
+			slog.Error("failed to get issue by pipeline ID", slog.Int("pipeline ID", task.PipelineID), log.BBError(err))
 			return nil
 		}
 		if issue == nil {
-			log.Error("issue not found by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
+			slog.Error("issue not found by pipeline ID", slog.Int("pipeline ID", task.PipelineID))
 			return nil
 		}
 
-		sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+		sheetPayload := &storepb.SheetPayload{
+			VcsPayload: &storepb.SheetPayload_VCSPayload{
+				PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
+			},
+		}
+		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: issue.Project.UID,
 			Name:       fileName,
 			Statement:  statement,
-			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebaseArtifact,
-			Type:       api.SheetForSQL,
+			Visibility: store.ProjectSheet,
+			Source:     store.SheetFromBytebaseArtifact,
+			Type:       store.SheetForSQL,
+			Payload:    sheetPayload,
 		})
 		if err != nil {
 			return err
 		}
 
 		// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
-		log.Debug("Patching task for modified file VCS push event", zap.String("fileName", fileName), zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID))
+		slog.Debug("Patching task for modified file VCS push event", slog.String("fileName", fileName), slog.Int("issueID", issue.UID), slog.Int("taskID", task.ID))
 		taskPatch := api.TaskPatch{
 			ID:        task.ID,
 			SheetID:   &sheet.UID,
 			UpdaterID: api.SystemBotID,
 		}
-		if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
-			log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID), zap.Error(err))
+		if err := patchTask(ctx, s.store, s.activityManager, task, &taskPatch, issue); err != nil {
+			slog.Error("Failed to patch task with the same migration version", slog.Int("issueID", issue.UID), slog.Int("taskID", task.ID), log.BBError(err))
 			return nil
+		}
+
+		if issue.PlanUID != nil {
+			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+			if err != nil {
+				slog.Error("failed to get plan", slog.Int64("plan ID", *issue.PlanUID), log.BBError(err))
+			}
+			for _, step := range plan.Config.Steps {
+				for _, spec := range step.Specs {
+					v, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig)
+					if !ok {
+						continue
+					}
+					if v.ChangeDatabaseConfig.SchemaVersion == schemaVersion && v.ChangeDatabaseConfig.Target == fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName) {
+						v.ChangeDatabaseConfig.Sheet = fmt.Sprintf("projects/%s/sheets/%d", issue.Project.ResourceID, sheet.UID)
+					}
+				}
+			}
+			if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
+				UID:       *issue.PlanUID,
+				Config:    plan.Config,
+				UpdaterID: api.SystemBotID,
+			}); err != nil {
+				slog.Error("failed to update plan", slog.Int64("plan ID", *issue.PlanUID), log.BBError(err))
+			}
 		}
 
 		// dismiss stale review, re-find the approval template
 		// it's ok if we failed
 		if err := func() error {
-			if task.Status != api.TaskPendingApproval {
-				return nil
-			}
-			payload := &storepb.IssuePayload{}
-			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-				return errors.Wrapf(err, "failed to unmarshal original issue payload")
-			}
-			payload.Approval = &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-			}
-			payloadBytes, err := protojson.Marshal(payload)
-			if err != nil {
-				return errors.Wrapf(err, "failed to marshal issue payload")
-			}
-			payloadStr := string(payloadBytes)
 			issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-				Payload: &payloadStr,
+				PayloadUpsert: &storepb.IssuePayload{
+					Approval: &storepb.IssuePayloadApproval{
+						ApprovalFindingDone: false,
+					},
+				},
 			}, api.SystemBotID)
 			if err != nil {
 				return errors.Wrap(err, "failed to update issue payload")
@@ -1782,7 +2148,46 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 			return nil
 		}(); err != nil {
-			log.Error("Failed to dismiss stale review", zap.Error(err))
+			slog.Error("Failed to dismiss stale review", log.BBError(err))
+		}
+	}
+	return nil
+}
+
+// patchTask patches the statement for a task.
+func patchTask(ctx context.Context, stores *store.Store, activityManager *activity.Manager, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
+	taskPatched, err := stores.UpdateTaskV2(ctx, taskPatch)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
+	}
+	if taskPatch.SheetID != nil {
+		oldSheetID, err := utils.GetTaskSheetID(task.Payload)
+		if err != nil {
+			return errors.Wrap(err, "failed to get old sheet ID")
+		}
+		newSheetID := *taskPatch.SheetID
+
+		// create a task sheet update activity
+		payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
+			TaskID:     taskPatched.ID,
+			OldSheetID: oldSheetID,
+			NewSheetID: newSheetID,
+			TaskName:   task.Name,
+			IssueName:  issue.Title,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task sheet: %v", taskPatched.Name).SetInternal(err)
+		}
+		if _, err := activityManager.CreateActivity(ctx, &store.ActivityMessage{
+			CreatorUID:   taskPatch.UpdaterID,
+			ContainerUID: taskPatched.PipelineID,
+			Type:         api.ActivityPipelineTaskStatementUpdate,
+			Payload:      string(payload),
+			Level:        api.ActivityInfo,
+		}, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 		}
 	}
 	return nil
@@ -1931,6 +2336,17 @@ func getSQLAdviceFileList(adviceMap map[string][]advisor.Advice) []string {
 	return fileList
 }
 
+func filterAzureBytebaseCommit(list []azure.ServiceHookCodePushEventResourceCommit) []azure.ServiceHookCodePushEventResourceCommit {
+	var result []azure.ServiceHookCodePushEventResourceCommit
+	for _, commit := range list {
+		if commit.Author.Name == vcs.BytebaseAuthorName && commit.Author.Email == vcs.BytebaseAuthorEmail {
+			continue
+		}
+		result = append(result, commit)
+	}
+	return result
+}
+
 func filterGitHubBytebaseCommit(list []github.WebhookCommit) []github.WebhookCommit {
 	var result []github.WebhookCommit
 	for _, commit := range list {
@@ -1984,14 +2400,25 @@ func extractDBTypeFromJDBCConnectionString(jdbcURL string) (db.Type, error) {
 }
 
 // extractMybatisMapperSQL will extract the SQL from mybatis mapper XML.
-func extractMybatisMapperSQL(mapperContent string) (string, []*ast.MybatisSQLLineMapping, error) {
+func extractMybatisMapperSQL(mapperContent string, engineType db.Type) (string, []*ast.MybatisSQLLineMapping, error) {
 	mybatisMapperParser := mapperparser.NewParser(mapperContent)
 	mybatisMapperNode, err := mybatisMapperParser.Parse()
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to parse mybatis mapper xml")
 	}
+
+	var placeholder string
+	switch engineType {
+	case db.MySQL:
+		placeholder = "?"
+	case db.Postgres:
+		placeholder = "$1"
+	default:
+		return "", nil, errors.Errorf("unsupported database type %q", engineType)
+	}
+
 	var sb strings.Builder
-	lineMapping, err := mybatisMapperNode.RestoreSQLWithLineMapping(mybatisMapperParser.GetRestoreContext(), &sb)
+	lineMapping, err := mybatisMapperNode.RestoreSQLWithLineMapping(mybatisMapperParser.NewRestoreContext().WithRestoreDataNodePlaceholder(placeholder), &sb)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to restore mybatis mapper xml")
 	}
@@ -2027,7 +2454,7 @@ func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *re
 	var mybatisMapperXMLFileData []*mybatisMapperXMLFileDatum
 	// isMybatisConfigXMLRegex is the regex to match the mybatis configuration XML file, if it can match the file content,
 	// we regard the file as the mybatis configuration XML file.
-	var isMybatisConfigXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis.org/dtd/mybatis-3-config.dtd`)
+	var isMybatisConfigXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis\.org/dtd/mybatis-3-config\.dtd`)
 	// configPathCache is the cache of the mybatis configuration XML file directory,
 	// the key is the mybatis mapper XML file ls-tree syntax directory, and value is the mybatis configuration XML file ls-tree syntax path.
 	configPathCache := make(map[string]string)
@@ -2088,7 +2515,10 @@ func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *re
 					repoInfo.vcs.InstanceURL,
 					repoInfo.repository.ExternalID,
 					file.Path,
-					commitID,
+					vcs.RefInfo{
+						RefType: vcs.RefTypeCommit,
+						RefName: commitID,
+					},
 				)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to read file content for repository %q commitID %q file %q", repoInfo.repository.WebURL, commitID, file.Path)

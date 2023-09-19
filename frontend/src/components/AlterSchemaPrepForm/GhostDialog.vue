@@ -53,8 +53,8 @@
   </BBDialog>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.online-migration"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -62,8 +62,8 @@
 <script lang="ts" setup>
 import { reactive, ref } from "vue";
 import { BBDialog } from "@/bbkit";
-import LearnMoreLink from "../LearnMoreLink.vue";
 import { featureToRef } from "@/store";
+import LearnMoreLink from "../LearnMoreLink.vue";
 
 type Mode = "normal" | "online";
 

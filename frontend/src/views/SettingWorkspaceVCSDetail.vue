@@ -1,35 +1,11 @@
 <template>
   <div class="mt-4 space-y-4">
     <div class="flex justify-end">
-      <div
-        v-if="vcsUIType == 'GITLAB_SELF_HOST'"
-        class="flex flex-row items-center space-x-2"
-      >
+      <div v-if="vcsWithUIType" class="flex flex-row items-center space-x-2">
         <div class="textlabel whitespace-nowrap">
-          {{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
+          {{ vcsWithUIType.title }}
         </div>
-        <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
-      </div>
-      <div
-        v-else-if="vcsUIType == 'GITLAB_COM'"
-        class="flex flex-row items-center space-x-2"
-      >
-        <div class="textlabel whitespace-nowrap">GitLab.com</div>
-        <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
-      </div>
-      <div
-        v-else-if="vcsUIType == 'GITHUB_COM'"
-        class="flex flex-row items-center space-x-2"
-      >
-        <div class="textlabel whitespace-nowrap">GitHub.com</div>
-        <img class="h-6 w-auto" src="../assets/github-logo.svg" />
-      </div>
-      <div
-        v-else-if="vcsUIType == 'BITBUCKET_ORG'"
-        class="flex flex-row items-center space-x-2"
-      >
-        <div class="textlabel whitespace-nowrap">Bitbucket.org</div>
-        <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
+        <VCSIcon custom-class="h-6" :type="vcsWithUIType.type" />
       </div>
     </div>
 
@@ -91,6 +67,12 @@
         <template v-else-if="vcsUIType == 'GITHUB_COM'">
           {{ $t("gitops.setting.git-provider.github-application-id-label") }}
         </template>
+        <template v-else-if="vcsUIType == 'AZURE_DEVOPS'">
+          {{ $t("gitops.setting.git-provider.azure-application-id-label") }}
+          <a :href="adminApplicationUrl" target="_blank" class="normal-link">{{
+            $t("gitops.setting.git-provider.view-in-azure")
+          }}</a>
+        </template>
       </p>
       <input
         id="applicationid"
@@ -112,6 +94,9 @@
         </template>
         <template v-else-if="vcsUIType == 'GITHUB_COM'">
           {{ $t("gitops.setting.git-provider.secret-label-github") }}
+        </template>
+        <template v-else-if="vcsUIType == 'AZURE_DEVOPS'">
+          {{ $t("gitops.setting.git-provider.azure-secret-label") }}
         </template>
       </p>
       <input
@@ -175,22 +160,23 @@
 </template>
 
 <script lang="ts" setup>
+import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import RepositoryTable from "../components/RepositoryTable.vue";
-import isEmpty from "lodash-es/isEmpty";
-import { idFromSlug, getVCSUIType } from "../utils";
-import {
-  openWindowForOAuth,
-  OAuthWindowEventPayload,
-  VCSUIType,
-} from "../types";
+import { vcsListByUIType } from "@/components/VCS/utils";
 import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
 import {
   OAuthToken,
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
+import RepositoryTable from "../components/RepositoryTable.vue";
+import {
+  openWindowForOAuth,
+  OAuthWindowEventPayload,
+  VCSUIType,
+} from "../types";
+import { idFromSlug, getVCSUIType } from "../utils";
 
 interface LocalState {
   title: string;
@@ -219,6 +205,10 @@ const vcsUIType = computed((): VCSUIType => {
     return getVCSUIType(vcs.value);
   }
   return "GITLAB_SELF_HOST";
+});
+
+const vcsWithUIType = computed(() => {
+  return vcsListByUIType.value.find((data) => data.uiType === vcsUIType.value);
 });
 
 const state = reactive<LocalState>({
@@ -269,12 +259,16 @@ watchEffect(async () => {
 });
 
 const adminApplicationUrl = computed(() => {
-  if (vcsUIType.value == "GITLAB_SELF_HOST") {
-    return `${vcs.value?.url}/admin/applications`;
-  } else if (vcsUIType.value == "GITLAB_COM") {
-    return "https://gitlab.com/-/profile/applications";
+  switch (vcsUIType.value) {
+    case "AZURE_DEVOPS":
+      return `https://app.vsaex.visualstudio.com/app/view?clientId=${vcs.value?.applicationId}`;
+    case "GITLAB_COM":
+      return "https://gitlab.com/-/profile/applications";
+    case "GITLAB_SELF_HOST":
+      return `${vcs.value?.url}/admin/applications`;
+    default:
+      return "";
   }
-  return "";
 });
 
 const repositoryList = computed(() =>
@@ -303,6 +297,8 @@ const doUpdate = () => {
       authorizeUrl = `https://github.com/login/oauth/authorize`;
     } else if (vcs.value.type === ExternalVersionControl_Type.BITBUCKET) {
       authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
+    } else if (vcs.value.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+      authorizeUrl = "https://app.vssps.visualstudio.com/oauth2/authorize";
     }
     const newWindow = openWindowForOAuth(
       authorizeUrl,

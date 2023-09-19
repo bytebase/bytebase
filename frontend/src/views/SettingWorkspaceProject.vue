@@ -31,14 +31,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from "vue";
 import { NCheckbox } from "naive-ui";
-
-import { DEFAULT_PROJECT_V1_NAME } from "../types";
-import { useProjectV1List } from "@/store";
+import { reactive, computed } from "vue";
 import { ProjectV1Table, SearchBox } from "@/components/v2";
+import { useProjectV1List } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import { filterProjectV1ListByKeyword } from "@/utils";
+import { DEFAULT_PROJECT_V1_NAME } from "../types";
 
 interface LocalState {
   searchText: string;

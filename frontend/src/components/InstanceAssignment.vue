@@ -43,7 +43,7 @@
               class="pl-2 first:pl-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
               :class="[column.center && 'text-center pr-2']"
             >
-              <template v-if="index === 0">
+              <template v-if="index === 0 && canManageSubscription">
                 <input
                   v-if="instanceList.length > 0"
                   type="checkbox"
@@ -52,7 +52,7 @@
                   :indeterminate="allSelectionState.indeterminate"
                   :disabled="
                     !allSelectionState.checked &&
-                    instanceList.length > instanceCount
+                    instanceList.length > instanceLicenseCount
                   "
                   @input="
                     selectAllInstances(
@@ -68,6 +68,7 @@
             #body="{ rowData: instance }: { rowData: ComposedInstance }"
           >
             <BBTableCell
+              v-if="canManageSubscription"
               class="w-[1%]"
               @click.stop="
                 toggleSelectInstance(instance, !isInstanceSelected(instance))
@@ -78,7 +79,10 @@
                 type="checkbox"
                 class="ml-2 h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
                 :checked="isInstanceSelected(instance)"
-                :disabled="state.selectedInstance.size == instanceCount"
+                :disabled="
+                  !isInstanceSelected(instance) &&
+                  state.selectedInstance.size == instanceLicenseCount
+                "
               />
             </BBTableCell>
             <BBTableCell class="bb-grid-cell">
@@ -115,9 +119,10 @@
             </NButton>
             <NButton
               :disabled="
+                !canManageSubscription ||
                 !assignmentChanged ||
                 state.processing ||
-                state.selectedInstance.size > instanceCount
+                state.selectedInstance.size > instanceLicenseCount
               "
               type="primary"
               @click.prevent="updateAssignment"
@@ -132,22 +137,23 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { reactive, computed, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { storeToRefs } from "pinia";
-
 import type { BBTableColumn, BBTableSectionDataSource } from "@/bbkit/types";
-import { instanceV1Slug, instanceV1Name, hostPortOfInstanceV1 } from "@/utils";
+import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useInstanceV1Store,
   useInstanceV1List,
   useSubscriptionV1Store,
   useDatabaseV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import { ComposedInstance } from "@/types";
-import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { instanceV1Slug, instanceV1Name, hostPortOfInstanceV1 } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 defineProps({
   show: {
@@ -156,21 +162,26 @@ defineProps({
   },
 });
 
-const columnList: BBTableColumn[] = [
-  {
-    // This column is for selection input.
-    title: "",
-  },
-  {
-    title: "common.name",
-  },
-  {
-    title: "common.environment",
-  },
-  {
-    title: "common.Address",
-  },
-];
+const columnList = computed(() => {
+  const resp: BBTableColumn[] = [
+    {
+      title: "common.name",
+    },
+    {
+      title: "common.environment",
+    },
+    {
+      title: "common.Address",
+    },
+  ];
+  if (canManageSubscription.value) {
+    resp.unshift({
+      // This column is for selection input.
+      title: "",
+    });
+  }
+  return resp;
+});
 
 interface LocalState {
   selectedInstance: Set<string>;
@@ -187,9 +198,17 @@ const instanceV1Store = useInstanceV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
+const currentUserV1 = useCurrentUserV1();
 
 const { instanceList } = useInstanceV1List(false /* !showDeleted */);
-const { instanceCount } = storeToRefs(subscriptionStore);
+const { instanceLicenseCount } = storeToRefs(subscriptionStore);
+
+const canManageSubscription = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-subscription",
+    currentUserV1.value.userRole
+  );
+});
 
 watchEffect(() => {
   for (const instance of instanceList.value) {
@@ -200,10 +219,10 @@ watchEffect(() => {
 });
 
 const totalLicenseCount = computed((): string => {
-  if (instanceCount.value === Number.MAX_VALUE) {
+  if (instanceLicenseCount.value === Number.MAX_VALUE) {
     return t("subscription.unlimited");
   }
-  return `${instanceCount.value}`;
+  return `${instanceLicenseCount.value}`;
 });
 
 const assignedLicenseCount = computed((): string => {

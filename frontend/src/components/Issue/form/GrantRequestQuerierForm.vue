@@ -33,7 +33,6 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { onMounted, reactive } from "vue";
-import { useIssueLogic } from "../logic";
 import {
   DatabaseResource,
   GrantRequestPayload,
@@ -41,6 +40,7 @@ import {
   PresetRoleType,
 } from "@/types";
 import { convertFromCELString } from "@/utils/issue/cel";
+import { useIssueLogic } from "../logic";
 import DatabaseResourceTable from "../table/DatabaseResourceTable.vue";
 
 interface LocalState {

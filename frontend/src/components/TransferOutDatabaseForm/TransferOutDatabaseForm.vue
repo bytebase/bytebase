@@ -1,9 +1,9 @@
 <template>
-  <DrawerContent :title="$t('quick-action.transfer-out-db-title')">
+  <DrawerContent :title="$t('database.transfer-database-from-to')">
     <div
       class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] h-full flex flex-col gap-y-2"
     >
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-x-8">
         <div class="flex-1 flex items-center gap-x-2">
           <span class="textlabel">
             {{ $t("database.transfer.source-project") }}
@@ -12,7 +12,8 @@
         </div>
         <div class="flex-1 flex items-center gap-x-2">
           <span class="textlabel">
-            {{ $t("database.transfer.target-project") }}
+            {{ $t("database.transfer.select-target-project") }}
+            <span class="text-red-500">*</span>
           </span>
           <ProjectSelect
             v-model:project="targetProjectId"
@@ -32,8 +33,14 @@
         :render-target-list="renderTargetList"
         :source-filterable="true"
         :source-filter-placeholder="$t('database.search-database-name')"
+        class="bb-transfer-out-database-transfer"
         style="height: 100%"
       />
+      <div
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 z-10 w-8 h-8 text-control flex items-center justify-center"
+      >
+        <heroicons:chevron-right class="w-8 h-8" />
+      </div>
       <div
         v-if="loading"
         class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
@@ -68,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref, toRef } from "vue";
+import { cloneDeep } from "lodash-es";
 import {
   NTransfer,
   NTree,
@@ -77,10 +84,9 @@ import {
   NButton,
   NTooltip,
 } from "naive-ui";
+import { computed, h, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
-import { cloneDeep } from "lodash-es";
-
-import { ComposedDatabase, PresetRoleType, UNKNOWN_ID } from "@/types";
+import { ProjectV1Name, ProjectSelect, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -89,15 +95,15 @@ import {
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
-import { ProjectV1Name, ProjectSelect, DrawerContent } from "@/components/v2";
+import { ComposedDatabase, PresetRoleType, UNKNOWN_ID } from "@/types";
+import { Project } from "@/types/proto/v1/project_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import Label from "./Label.vue";
 import {
   DatabaseTreeOption,
   flattenTreeOptions,
   mapTreeOptions,
 } from "./common";
-import { Project } from "@/types/proto/v1/project_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
@@ -273,3 +279,13 @@ const doTransfer = async () => {
   }
 };
 </script>
+
+<style>
+.bb-transfer-out-database-transfer {
+  @apply gap-x-8;
+}
+
+.bb-transfer-out-database-transfer .n-transfer-list--target {
+  border-left: 1px solid var(--n-border-color) !important;
+}
+</style>

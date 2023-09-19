@@ -7,12 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os/exec"
 	"regexp"
 	"strings"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
 
@@ -82,7 +81,8 @@ const (
 )
 
 var (
-	excludeAutoIncrement = regexp.MustCompile(` AUTO_INCREMENT=\d+`)
+	excludeAutoIncrement  = regexp.MustCompile(` AUTO_INCREMENT=\d+`)
+	excludeAutoRandomBase = regexp.MustCompile(` AUTO_RANDOM_BASE=\d+`)
 )
 
 // Dump dumps the database.
@@ -100,10 +100,10 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	// Before we dump the real data, we should record the binlog position for PITR.
 	// Please refer to https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md#full-backup for details.
 	if !schemaOnly {
-		log.Debug("flush tables in database with read locks",
-			zap.String("database", driver.databaseName))
+		slog.Debug("flush tables in database with read locks",
+			slog.String("database", driver.databaseName))
 		if err := FlushTablesWithReadLock(ctx, driver.dbType, conn, driver.databaseName); err != nil {
-			log.Error("flush tables failed", zap.Error(err))
+			slog.Error("flush tables failed", log.BBError(err))
 			return "", err
 		}
 
@@ -111,9 +111,9 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 		if err != nil {
 			return "", err
 		}
-		log.Debug("binlog coordinate at dump time",
-			zap.String("fileName", binlog.FileName),
-			zap.Int64("position", binlog.Position))
+		slog.Debug("binlog coordinate at dump time",
+			slog.String("fileName", binlog.FileName),
+			slog.Int64("position", binlog.Position))
 
 		payload := api.BackupPayload{BinlogInfo: binlog}
 		payloadBytes, err = json.Marshal(payload)
@@ -136,7 +136,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	}
 	defer txn.Rollback()
 
-	log.Debug("begin to dump database", zap.String("database", driver.databaseName), zap.Bool("schemaOnly", schemaOnly))
+	slog.Debug("begin to dump database", slog.String("database", driver.databaseName), slog.Bool("schemaOnly", schemaOnly))
 	if err := dumpTxn(txn, driver.dbType, driver.databaseName, out, schemaOnly); err != nil {
 		return "", err
 	}
@@ -212,8 +212,15 @@ func dumpTxn(txn *sql.Tx, dbType db.Type, database string, out io.Writer, schema
 		if tbl.TableType != viewTableType {
 			continue
 		}
-		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", getTemporaryView(tbl.Name, tbl.ViewColumns))); err != nil {
-			return err
+		if tbl.InvalidView != "" {
+			// We will write the invalid view error string to schema.
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", fmt.Sprintf(viewStmtFmt, tbl.Name, fmt.Sprintf("-- %s", tbl.InvalidView)))); err != nil {
+				return err
+			}
+		} else {
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", getTemporaryView(tbl.Name, tbl.ViewColumns))); err != nil {
+				return err
+			}
 		}
 	}
 	// Construct tables.
@@ -222,7 +229,7 @@ func dumpTxn(txn *sql.Tx, dbType db.Type, database string, out io.Writer, schema
 			continue
 		}
 		if schemaOnly {
-			tbl.Statement = excludeSchemaAutoIncrementValue(tbl.Statement)
+			tbl.Statement = excludeSchemaAutoValues(tbl.Statement)
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
 			return err
@@ -301,9 +308,13 @@ func getTemporaryView(name string, columns []string) string {
 	return fmt.Sprintf(tempViewStmtFmt, name, stmt)
 }
 
-// excludeSchemaAutoIncrementValue excludes the starting value of AUTO_INCREMENT if it's a schema only dump.
+// excludeSchemaAutoValues excludes
+// 1) the starting value of AUTO_INCREMENT if it's a schema only dump.
 // https://github.com/bytebase/bytebase/issues/123
-func excludeSchemaAutoIncrementValue(s string) string {
+// 2) The auto random base in TiDB.
+// /*T![auto_rand_base] AUTO_RANDOM_BASE=39456621 */.
+func excludeSchemaAutoValues(s string) string {
+	s = excludeAutoRandomBase.ReplaceAllString(s, ``)
 	return excludeAutoIncrement.ReplaceAllString(s, ``)
 }
 
@@ -376,6 +387,8 @@ type TableSchema struct {
 	TableType   string
 	Statement   string
 	ViewColumns []string
+	// InvalidView is the error message indicating an invalid view object.
+	InvalidView string
 }
 
 // routineSchema describes the schema of a function or procedure (routine).
@@ -436,9 +449,10 @@ func getTablesTx(txn *sql.Tx, dbType db.Type, dbName string) ([]*TableSchema, er
 		if tbl.TableType == viewTableType {
 			viewColumns, err := getViewColumns(txn, dbName, tbl.Name)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to call getViewColumns(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
+				tbl.InvalidView = err.Error()
+			} else {
+				tbl.ViewColumns = viewColumns
 			}
-			tbl.ViewColumns = viewColumns
 		}
 	}
 	return tables, nil
@@ -763,12 +777,42 @@ func getTriggers(txn *sql.Tx, dbType db.Type, dbName string) ([]*triggerSchema, 
 // getTriggerStmt gets the create statement of a trigger.
 func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE TRIGGER `%s`.`%s`;", dbName, triggerName)
-	var sqlmode, stmt, charset, collation, unused string
-	if err := txn.QueryRow(query).Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused, &unused); err != nil {
-		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
-		}
+	rows, err := txn.Query(query)
+	if err != nil {
 		return "", err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+
+	var sqlmode, stmt, charset, collation string
+	var unused any
+	for rows.Next() {
+		cols := make([]any, len(columns))
+		// The query SHOW CREATE TRIGGER returns uncertain number of columns.
+		for i := 0; i < len(columns); i++ {
+			switch columns[i] {
+			case "sql_mode":
+				cols[i] = &sqlmode
+			case "SQL Original Statement":
+				cols[i] = &stmt
+			case "character_set_client":
+				cols[i] = &charset
+			case "collation_connection":
+				cols[i] = &collation
+			default:
+				cols[i] = &unused
+			}
+		}
+		if err := rows.Scan(cols...); err != nil {
+			return "", errors.Wrapf(err, "cannot scan row from %q query", query)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
 	}
 	return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
 }

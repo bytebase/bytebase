@@ -1,5 +1,5 @@
-import { removeElementBySelector } from "@/utils";
 import { indexOf, isUndefined } from "lodash-es";
+import { removeElementBySelector } from "@/utils";
 import { getStringFromI18NText } from "./i18n";
 import { Position, HintData } from "./types";
 import {

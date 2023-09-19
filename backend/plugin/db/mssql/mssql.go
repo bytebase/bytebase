@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"strings"
 	"time"
@@ -13,8 +14,6 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
 	"google.golang.org/protobuf/types/known/durationpb"
-
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -106,7 +105,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			log.Debug("rowsAffected returns error", zap.Error(err))
+			slog.Debug("rowsAffected returns error", log.BBError(err))
 		} else {
 			totalRowsAffected += rowsAffected
 		}
@@ -123,18 +122,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	return totalRowsAffected, nil
 }
 
-// QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	return util.Query(ctx, db.MSSQL, conn, statement, queryContext)
-}
-
 func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 	// TODO(d): support SELECT 1 (mssql: No column name was specified for column 1 of 'result').
 	return fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, limit)
 }
 
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.MSSQL, statement)
 	if err != nil {
 		return nil, err
@@ -171,7 +165,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 		queryContext.ReadOnly = false
 	}
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.MSSQL, conn, stmt, queryContext)
+	result, err := util.Query(ctx, db.MSSQL, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

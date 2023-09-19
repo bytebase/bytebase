@@ -14,13 +14,12 @@
 
 <script lang="ts" setup>
 import { shallowRef, watch } from "vue";
-
-import type { ComposedDatabase } from "@/types";
 import {
   type SlowQueryFilterParams,
   SlowQueryPanel,
   defaultSlowQueryFilterParams,
 } from "@/components/SlowQuery";
+import type { ComposedDatabase } from "@/types";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -28,7 +27,7 @@ const props = defineProps<{
 
 const filter = shallowRef<SlowQueryFilterParams>({
   ...defaultSlowQueryFilterParams(),
-  environment: props.database.instanceEntity.environmentEntity,
+  environment: props.database.effectiveEnvironmentEntity,
   instance: props.database.instanceEntity,
   database: props.database,
 });
@@ -36,7 +35,7 @@ const filter = shallowRef<SlowQueryFilterParams>({
 watch(
   () => props.database.name,
   () => {
-    filter.value.environment = props.database.instanceEntity.environmentEntity;
+    filter.value.environment = props.database.effectiveEnvironmentEntity;
     filter.value.instance = props.database.instanceEntity;
     filter.value.database = props.database;
   }

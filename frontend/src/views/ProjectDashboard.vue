@@ -15,15 +15,14 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
-
+import { SearchBox, ProjectV1Table } from "@/components/v2";
 import {
   useUIStateStore,
   useProjectV1ListByCurrentUser,
   useCurrentUserV1,
 } from "@/store";
-import { filterProjectV1ListByKeyword, isMemberOfProjectV1 } from "@/utils";
 import { DEFAULT_PROJECT_ID } from "@/types";
-import { SearchBox, ProjectV1Table } from "@/components/v2";
+import { filterProjectV1ListByKeyword, isMemberOfProjectV1 } from "@/utils";
 
 interface LocalState {
   searchText: string;

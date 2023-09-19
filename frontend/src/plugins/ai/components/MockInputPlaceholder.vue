@@ -1,7 +1,8 @@
 <template>
-  <div v-if="!dismissed" class="w-full px-4 py-2 border-t">
+  <div v-if="!DISMISS_PLACEHOLDER" class="w-full px-4 py-2 border-t">
     <NInputGroup>
       <NInput
+        size="small"
         class="bb-ai-mock-input !cursor-pointer"
         :disabled="false"
         :placeholder="$t('plugin.ai.text-to-sql-disabled-placeholder')"
@@ -33,22 +34,18 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from "vue-router";
 import { NInput, NInputGroup, NButton, NTooltip } from "naive-ui";
-import { useLocalStorage } from "@vueuse/core";
+import { useRouter } from "vue-router";
+import { DISMISS_PLACEHOLDER } from "./state";
 
 const router = useRouter();
-const dismissed = useLocalStorage<boolean>(
-  "bb.plugin.open-ai.dismiss-placeholder",
-  false
-);
 
 const handleClick = () => {
   router.push({ name: "setting.workspace.general", hash: "#ai-augmentation" });
 };
 
 const handleDismiss = () => {
-  dismissed.value = true;
+  DISMISS_PLACEHOLDER.value = true;
 };
 </script>
 

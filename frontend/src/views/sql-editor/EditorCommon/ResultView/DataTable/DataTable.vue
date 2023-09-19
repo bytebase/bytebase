@@ -17,7 +17,7 @@
           class="relative border-collapse table-fixed z-[1]"
           v-bind="tableResize.getTableProps()"
         >
-          <thead class="sticky top-0 z-[1] shadow">
+          <thead class="sticky top-0 z-[1] drop-shadow-sm">
             <tr>
               <th
                 v-for="header of table.getFlatHeaders()"
@@ -39,6 +39,19 @@
                     v-if="isSensitiveColumn(header.index)"
                     class="ml-0.5 shrink-0"
                   />
+                  <template v-else-if="isColumnMissingSensitive(header.index)">
+                    <FeatureBadgeForInstanceLicense
+                      v-if="hasSensitiveFeature"
+                      :show="true"
+                      custom-class="ml-0.5 shrink-0"
+                      feature="bb.feature.sensitive-data"
+                    />
+                    <FeatureBadge
+                      v-else
+                      feature="bb.feature.sensitive-data"
+                      custom-class="ml-0.5 shrink-0"
+                    />
+                  </template>
                 </div>
 
                 <!-- The drag-to-resize handler -->
@@ -55,13 +68,21 @@
               v-for="(row, rowIndex) of table.getRowModel().rows"
               :key="rowIndex"
               class="group"
+              :data-row-index="offset + rowIndex"
             >
               <td
                 v-for="(cell, cellIndex) of row.getVisibleCells()"
                 :key="cellIndex"
-                class="px-2 py-1 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border border-block-border group-last:border-b-0 group-even:bg-gray-50/50 dark:group-even:bg-gray-700/50"
+                class="p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border border-block-border group-last:border-b-0 group-even:bg-gray-50/50 dark:group-even:bg-gray-700/50"
+                :data-col-index="cellIndex"
               >
-                <TableCell :html="renderCellValue(cell.getValue())" />
+                <TableCell
+                  :value="cell.getValue()"
+                  :keyword="keyword"
+                  :set-index="setIndex"
+                  :row-index="offset + rowIndex"
+                  :col-index="cellIndex"
+                />
               </td>
             </tr>
           </tbody>
@@ -78,14 +99,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, PropType, ref, watch } from "vue";
 import { ColumnDef, Table } from "@tanstack/vue-table";
-import { escape } from "lodash-es";
-
-import useTableColumnWidthLogic from "./useTableResize";
+import { computed, nextTick, PropType, ref, watch } from "vue";
+import { useSubscriptionV1Store } from "@/store";
+import { useSQLResultViewContext } from "../context";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
 import TableCell from "./TableCell.vue";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import useTableColumnWidthLogic from "./useTableResize";
 
 export type DataTableColumn = {
   key: string;
@@ -105,18 +125,27 @@ const props = defineProps({
     type: Array as PropType<boolean[]>,
     default: () => [],
   },
+  masked: {
+    type: Array as PropType<boolean[]>,
+    default: () => [],
+  },
   table: {
     type: Object as PropType<Table<string[]>>,
     required: true,
   },
-  keyword: {
-    type: String,
-    default: "",
+  setIndex: {
+    type: Number,
+    default: 0,
+  },
+  offset: {
+    type: Number,
+    default: 0,
   },
 });
 
 const scrollerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
+const subscriptionStore = useSubscriptionV1Store();
 
 const tableResize = useTableColumnWidthLogic({
   tableRef,
@@ -126,27 +155,18 @@ const tableResize = useTableColumnWidthLogic({
 });
 
 const data = computed(() => props.data);
+const { keyword } = useSQLResultViewContext();
+
+const hasSensitiveFeature = computed(() => {
+  return subscriptionStore.hasFeature("bb.feature.sensitive-data");
+});
 
 const isSensitiveColumn = (index: number): boolean => {
-  return props.sensitive[index] ?? false;
+  return props.masked[index] ?? false;
 };
 
-const renderCellValue = (value: any) => {
-  const str = String(value);
-  if (str.length === 0) {
-    return `<br style="min-width: 1rem; display: inline-flex;" />`;
-  }
-
-  const { keyword } = props;
-  if (!keyword) {
-    return escape(str);
-  }
-
-  return getHighlightHTMLByRegExp(
-    escape(str),
-    escape(keyword),
-    false /* !caseSensitive */
-  );
+const isColumnMissingSensitive = (index: number): boolean => {
+  return (props.sensitive[index] ?? false) && !isSensitiveColumn(index);
 };
 
 const scrollTo = (x: number, y: number) => {

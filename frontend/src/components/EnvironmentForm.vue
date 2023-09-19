@@ -78,6 +78,26 @@
             <div class="flex space-x-4">
               <input
                 v-model="state.approvalPolicy.deploymentApprovalPolicy!.defaultStrategy"
+                name="manual-approval-never"
+                tabindex="-1"
+                type="radio"
+                class="text-accent disabled:text-accent-disabled focus:ring-accent"
+                :value="ApprovalStrategy.AUTOMATIC"
+                :disabled="!allowEdit"
+              />
+              <div class="-mt-0.5">
+                <div class="textlabel">
+                  {{ $t("policy.rollout.auto") }}
+                </div>
+                <div class="mt-1 textinfolabel">
+                  {{ $t("policy.rollout.auto-info") }}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex space-x-4">
+              <input
+                v-model="state.approvalPolicy.deploymentApprovalPolicy!.defaultStrategy"
                 name="manual-approval-always"
                 tabindex="-1"
                 type="radio"
@@ -86,8 +106,9 @@
                 :disabled="!allowEdit"
               />
               <div class="-mt-0.5">
-                <div class="textlabel">
+                <div class="textlabel flex">
                   {{ $t("policy.rollout.manual") }}
+                  <FeatureBadge feature="bb.feature.approval-policy" />
                 </div>
                 <div class="mt-1 textinfolabel">
                   {{ $t("policy.rollout.manual-info") }}
@@ -98,32 +119,9 @@
             <AssigneeGroupEditor
               class="ml-8"
               :policy="state.approvalPolicy"
-              :allow-edit="allowEdit"
-              @update="(assigneeGroupList) => {
-              state.approvalPolicy.deploymentApprovalPolicy!.deploymentApprovalStrategies = assigneeGroupList
-            }"
+              :disabled="!allowEdit"
+              @update="onApprovalGroupUpdate"
             />
-
-            <div class="flex space-x-4">
-              <input
-                v-model="state.approvalPolicy.deploymentApprovalPolicy!.defaultStrategy"
-                name="manual-approval-never"
-                tabindex="-1"
-                type="radio"
-                class="text-accent disabled:text-accent-disabled focus:ring-accent"
-                :value="ApprovalStrategy.AUTOMATIC"
-                :disabled="!allowEdit"
-              />
-              <div class="-mt-0.5">
-                <div class="textlabel flex">
-                  {{ $t("policy.rollout.auto") }}
-                  <FeatureBadge feature="bb.feature.approval-policy" />
-                </div>
-                <div class="mt-1 textinfolabel">
-                  {{ $t("policy.rollout.auto-info") }}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
         <div class="col-span-1 mt-6">
@@ -300,43 +298,43 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
-import { Status } from "nice-grpc-common";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
-
-import type { ResourceId, SQLReviewPolicy, ValidatedMessage } from "@/types";
-import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
-import { environmentNamePrefix } from "@/store/modules/v1/common";
-import { getErrorCode } from "@/utils/grpcweb";
+import { Status } from "nice-grpc-common";
+import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBSwitch } from "@/bbkit";
 import { DrawerContent } from "@/components/v2";
-import {
-  extractEnvironmentResourceName,
-  hasWorkspacePermissionV1,
-  sqlReviewPolicySlug,
-} from "@/utils";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
   pushNotification,
   useCurrentUserV1,
   useEnvironmentV1List,
   useSQLReviewStore,
 } from "@/store";
-import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
-import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
+import type { ResourceId, SQLReviewPolicy, ValidatedMessage } from "@/types";
+import { State } from "@/types/proto/v1/common";
+import {
+  Environment,
+  EnvironmentTier,
+} from "@/types/proto/v1/environment_service";
 import {
   Policy,
   PolicyType,
   BackupPlanSchedule,
   ApprovalStrategy,
+  DeploymentApprovalStrategy,
 } from "@/types/proto/v1/org_policy_service";
 import {
-  Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
-import { State } from "@/types/proto/v1/common";
+  extractEnvironmentResourceName,
+  hasWorkspacePermissionV1,
+  sqlReviewPolicySlug,
+} from "@/utils";
+import { getErrorCode } from "@/utils/grpcweb";
+import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
 
 interface LocalState {
   environment: Environment;
@@ -449,6 +447,20 @@ const onSQLReviewPolicyClick = () => {
       },
     });
   }
+};
+
+const onApprovalGroupUpdate = (
+  assigneeGroupList: DeploymentApprovalStrategy[]
+) => {
+  if (!state.approvalPolicy.deploymentApprovalPolicy) {
+    return;
+  }
+  state.approvalPolicy.deploymentApprovalPolicy.deploymentApprovalStrategies =
+    assigneeGroupList;
+  state.approvalPolicy.deploymentApprovalPolicy.defaultStrategy =
+    assigneeGroupList.length === 0
+      ? ApprovalStrategy.AUTOMATIC
+      : ApprovalStrategy.MANUAL;
 };
 
 watch(

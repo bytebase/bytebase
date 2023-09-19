@@ -12,9 +12,9 @@ export const AuditActivityTypeList = [
   //
   // Project related
   LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER,
-  LogEntity_Action.ACTION_PROJECT_MEMBER_ROLE_UPDATE,
   // SQL Editor related.
   LogEntity_Action.ACTION_DATABASE_SQL_EDITOR_QUERY,
+  LogEntity_Action.ACTION_DATABASE_SQL_EXPORT,
 ];
 
 export const AuditActivityTypeI18nNameMap: { [key: number]: string } = {
@@ -28,8 +28,7 @@ export const AuditActivityTypeI18nNameMap: { [key: number]: string } = {
     "audit-log.type.workspace.member-deactivate",
   [LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER]:
     "audit-log.type.project.database-transfer",
-  [LogEntity_Action.ACTION_PROJECT_MEMBER_ROLE_UPDATE]:
-    "audit-log.type.project.member-role-update",
   [LogEntity_Action.ACTION_DATABASE_SQL_EDITOR_QUERY]:
     "audit-log.type.sql-editor-query",
+  [LogEntity_Action.ACTION_DATABASE_SQL_EXPORT]: "audit-log.type.sql-export",
 };

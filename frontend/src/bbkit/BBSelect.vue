@@ -51,7 +51,7 @@
         <div
           v-if="state.showMenu"
           ref="popup"
-          class="z-50 rounded-md bg-white shadow-lg mt-0.5"
+          class="z-50 rounded bg-white shadow-lg mt-0.5"
           :style="popupStyle"
         >
           <ul
@@ -59,7 +59,7 @@
             role="listbox"
             aria-labelledby="listbox-label"
             aria-activedescendant="listbox-item-3"
-            class="max-h-56 rounded-md py-1 ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
+            class="max-h-56 rounded py-1 ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
           >
             <!--
               Select option, manage highlight styles based on mouseenter/mouseleave and keyboard navigation.
@@ -84,7 +84,7 @@
               </div>
               <span
                 v-if="
-                  (!multiple && item === state.selectedItem) ||
+                  (!multiple && isEqual(item, state.selectedItem)) ||
                   (multiple && state.selectedItemList.includes(item))
                 "
                 class="absolute inset-y-0 right-0 flex items-center pr-4"
@@ -104,6 +104,8 @@
 </template>
 
 <script lang="ts">
+import { onClickOutside, useElementBounding } from "@vueuse/core";
+import { isEqual } from "lodash-es";
 import {
   reactive,
   PropType,
@@ -114,7 +116,6 @@ import {
   computed,
 } from "vue";
 import { VBinder, VTarget, VFollower } from "vueuc";
-import { onClickOutside, useElementBounding } from "@vueuse/core";
 
 interface LocalState {
   showMenu: boolean;
@@ -258,6 +259,7 @@ export default defineComponent({
       button,
       popup,
       popupStyle,
+      isEqual,
     };
   },
 });

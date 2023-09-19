@@ -2,6 +2,9 @@
   <template v-if="hash === 'overview'">
     <ProjectOverviewPanel id="overview" :project="project" />
   </template>
+  <template v-if="hash === 'branches'">
+    <ProjectBranchesPanel id="branches" :project-id="project.uid" />
+  </template>
   <template v-if="hash === 'databases'">
     <ProjectDeploymentConfigPanel
       v-if="isTenantProject"
@@ -60,26 +63,26 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRoute } from "vue-router";
-
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
-import { idFromSlug, sortDatabaseV1List } from "../utils";
-import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
-import ProjectChangeHistoryPanel from "../components/ProjectChangeHistoryPanel.vue";
-import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
-import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
-import ProjectDatabasesPanel from "../components/ProjectDatabasesPanel.vue";
-import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
-import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
-import ProjectMemberPanel from "../components/ProjectMember/ProjectMemberPanel.vue";
-import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
-import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
+import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
+import ProjectBranchesPanel from "@/components/ProjectBranchesPanel.vue";
 import {
   useSearchDatabaseV1List,
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
+import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
+import ProjectChangeHistoryPanel from "../components/ProjectChangeHistoryPanel.vue";
+import ProjectDatabasesPanel from "../components/ProjectDatabasesPanel.vue";
+import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
+import ProjectMemberPanel from "../components/ProjectMember/ProjectMemberPanel.vue";
+import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
+import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
+import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
+import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
+import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
+import { idFromSlug, sortDatabaseV1List } from "../utils";
 
 const props = defineProps({
   projectWebhookSlug: {

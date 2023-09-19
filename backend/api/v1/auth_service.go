@@ -6,8 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"regexp"
 	"strings"
+	"time"
 
+	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
@@ -16,16 +19,13 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/pquerna/otp/totp"
-
-	"github.com/nyaruka/phonenumbers"
-
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
@@ -35,11 +35,14 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+type CreateUserFunc func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
+
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
 	store          *store.Store
 	secret         string
+	tokenDuration  time.Duration
 	licenseService enterpriseAPI.LicenseService
 	metricReporter *metricreport.Reporter
 	profile        *config.Profile
@@ -47,10 +50,11 @@ type AuthService struct {
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
+func NewAuthService(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
 	return &AuthService{
 		store:          store,
 		secret:         secret,
+		tokenDuration:  tokenDuration,
 		licenseService: licenseService,
 		metricReporter: metricReporter,
 		profile:        profile,
@@ -60,7 +64,7 @@ func NewAuthService(store *store.Store, secret string, licenseService enterprise
 
 // GetUser gets a user.
 func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest) (*v1pb.User, error) {
-	userID, err := getUserID(request.Name)
+	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -89,6 +93,10 @@ func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 
 // CreateUser creates a user.
 func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRequest) (*v1pb.User, error) {
+	if err := s.userCountGuard(ctx); err != nil {
+		return nil, err
+	}
+
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
@@ -128,7 +136,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	firstEndUser := count == 0
 
 	if request.User.Phone != "" {
-		if err := validatePhone(request.User.Phone); err != nil {
+		if err := common.ValidatePhone(request.User.Phone); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid phone %q, error: %v", request.User.Phone, err)
 		}
 	}
@@ -239,7 +247,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	userID, err := getUserID(request.User.Name)
+	userID, err := common.GetUserID(request.User.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -251,7 +259,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
 	}
 	if user.MemberDeleted {
-		return nil, status.Errorf(codes.InvalidArgument, "user %q has been deleted", userID)
+		return nil, status.Errorf(codes.NotFound, "user %q has been deleted", userID)
 	}
 
 	role := ctx.Value(common.RoleContextKey).(api.Role)
@@ -325,7 +333,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			}
 		case "phone":
 			if request.User.Phone != "" {
-				if err := validatePhone(request.User.Phone); err != nil {
+				if err := common.ValidatePhone(request.User.Phone); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid phone number %q, error: %v", request.User.Phone, err)
 				}
 			}
@@ -398,7 +406,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 // DeleteUser deletes a user.
 func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRequest) (*emptypb.Empty, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	userID, err := getUserID(request.Name)
+	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -410,7 +418,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
 	}
 	if user.MemberDeleted {
-		return nil, status.Errorf(codes.InvalidArgument, "user %q has been deleted", userID)
+		return nil, status.Errorf(codes.NotFound, "user %q has been deleted", userID)
 	}
 
 	role := ctx.Value(common.RoleContextKey).(api.Role)
@@ -426,8 +434,12 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 
 // UndeleteUser undeletes a user.
 func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUserRequest) (*v1pb.User, error) {
+	if err := s.userCountGuard(ctx); err != nil {
+		return nil, err
+	}
+
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	userID, err := getUserID(request.Name)
+	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -475,7 +487,7 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	}
 
 	convertedUser := &v1pb.User{
-		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),
+		Name:     fmt.Sprintf("%s%d", common.UserNamePrefix, user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
 		Phone:    user.Phone,
@@ -573,7 +585,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
 	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
 	if s.licenseService.IsFeatureEnabled(api.Feature2FA) == nil && !mfaSecondLogin && userMFAEnabled {
-		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
+		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, s.tokenDuration)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate MFA temp token")
 		}
@@ -582,19 +594,13 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		}, nil
 	}
 
-	var accessToken, refreshToken string
+	var accessToken string
 	if loginUser.Type == api.EndUser {
-		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
+		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, s.tokenDuration)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
 		accessToken = token
-		if request.Web {
-			refreshToken, err = auth.GenerateRefreshToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to generate API access token")
-			}
-		}
 	} else if loginUser.Type == api.ServiceAccount {
 		token, err := auth.GenerateAPIToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
@@ -607,9 +613,8 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 
 	if request.Web {
 		if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-			auth.GatewayMetadataAccessTokenKey:  accessToken,
-			auth.GatewayMetadataRefreshTokenKey: refreshToken,
-			auth.GatewayMetadataUserIDKey:       fmt.Sprintf("%d", loginUser.ID),
+			auth.GatewayMetadataAccessTokenKey: accessToken,
+			auth.GatewayMetadataUserIDKey:      fmt.Sprintf("%d", loginUser.ID),
 		})); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 		}
@@ -630,9 +635,8 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 // Logout is the auth logout method.
 func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb.Empty, error) {
 	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-		auth.GatewayMetadataAccessTokenKey:  "",
-		auth.GatewayMetadataRefreshTokenKey: "",
-		auth.GatewayMetadataUserIDKey:       "",
+		auth.GatewayMetadataAccessTokenKey: "",
+		auth.GatewayMetadataUserIDKey:      "",
 	})); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 	}
@@ -659,7 +663,7 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 }
 
 func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	idpID, err := getIdentityProviderID(request.IdpName)
+	idpID, err := common.GetIdentityProviderID(request.IdpName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get identity provider ID: %v", err)
 	}
@@ -679,7 +683,6 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	var userInfo *storepb.IdentityProviderUserInfo
-	var fieldMapping *storepb.FieldMapping
 	if idp.Type == storepb.IdentityProviderType_OAUTH2 {
 		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
@@ -698,21 +701,22 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-		fieldMapping = idp.Config.GetOauth2Config().FieldMapping
 	} else if idp.Type == storepb.IdentityProviderType_OIDC {
 		oauth2Context := request.IdpContext.GetOauth2Context()
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
 
+		idpConfig := idp.Config.GetOidcConfig()
 		oidcIDP, err := oidc.NewIdentityProvider(
 			ctx,
 			oidc.IdentityProviderConfig{
-				Issuer:        idp.Config.GetOidcConfig().Issuer,
-				ClientID:      idp.Config.GetOidcConfig().ClientId,
-				ClientSecret:  idp.Config.GetOidcConfig().ClientSecret,
-				FieldMapping:  idp.Config.GetOidcConfig().FieldMapping,
-				SkipTLSVerify: idp.Config.GetOidcConfig().SkipTlsVerify,
+				Issuer:        idpConfig.Issuer,
+				ClientID:      idpConfig.ClientId,
+				ClientSecret:  idpConfig.ClientSecret,
+				FieldMapping:  idpConfig.FieldMapping,
+				SkipTLSVerify: idpConfig.SkipTlsVerify,
+				AuthStyle:     idpConfig.GetAuthStyle(),
 			},
 		)
 		if err != nil {
@@ -729,7 +733,29 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
 		}
-		fieldMapping = idp.Config.GetOidcConfig().FieldMapping
+	} else if idp.Type == storepb.IdentityProviderType_LDAP {
+		idpConfig := idp.Config.GetLdapConfig()
+		ldapIDP, err := ldap.NewIdentityProvider(
+			ldap.IdentityProviderConfig{
+				Host:             idpConfig.Host,
+				Port:             int(idpConfig.Port),
+				SkipTLSVerify:    idpConfig.SkipTlsVerify,
+				BindDN:           idpConfig.BindDn,
+				BindPassword:     idpConfig.BindPassword,
+				BaseDN:           idpConfig.BaseDn,
+				UserFilter:       idpConfig.UserFilter,
+				SecurityProtocol: ldap.SecurityProtocol(idpConfig.SecurityProtocol),
+				FieldMapping:     idpConfig.FieldMapping,
+			},
+		)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create new LDAP identity provider: %v", err)
+		}
+
+		userInfo, err = ldapIDP.Authenticate(request.Email, request.Password)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get user info: %v", err)
+		}
 	} else {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider type %s not supported", idp.Type.String())
 	}
@@ -738,13 +764,16 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	// The userinfo's email comes from identity provider, it has to be converted to lower-case.
-	var email string
-	if fieldMapping.Identifier == fieldMapping.Email {
-		email = strings.ToLower(userInfo.Email)
-	} else {
-		email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, idp.Domain))
+	email := strings.ToLower(userInfo.Identifier)
+	if err := validateEmail(email); err != nil {
+		// If the email is invalid, we will try to use the domain and identifier to construct the email.
+		if idp.Domain != "" {
+			domain := extractDomain(idp.Domain)
+			email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, domain))
+		}
 	}
-	if email == "" {
+	// If the email is still invalid, we will return an error.
+	if err := validateEmail(email); err != nil {
 		return nil, status.Errorf(codes.NotFound, "unable to identify the user by provider user info")
 	}
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
@@ -772,6 +801,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 			Name:         userInfo.DisplayName,
 			Email:        email,
+			Phone:        userInfo.Phone,
 			Type:         api.EndUser,
 			PasswordHash: string(passwordHash),
 		}, api.SystemBotID)
@@ -824,15 +854,21 @@ func validateEmail(email string) error {
 	return nil
 }
 
-func validatePhone(phone string) error {
-	phoneNumber, err := phonenumbers.Parse(phone, "")
+func extractDomain(input string) string {
+	pattern := `[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+`
+	regExp, err := regexp.Compile(pattern)
 	if err != nil {
-		return err
+		// WHen the pattern is invalid, we just return the input.
+		return input
 	}
-	if !phonenumbers.IsValidNumber(phoneNumber) {
-		return errors.New("invalid phone number")
+
+	match := regExp.FindString(input)
+	domainParts := strings.Split(match, ".")
+	// If the domain has at least 3 parts, we will remove the first part.
+	if len(domainParts) >= 3 {
+		match = strings.Join(domainParts[1:], ".")
 	}
-	return nil
+	return match
 }
 
 const (
@@ -868,4 +904,17 @@ func generateRecoveryCodes(n int) ([]string, error) {
 		recoveryCodes[i] = code
 	}
 	return recoveryCodes, nil
+}
+
+func (s *AuthService) userCountGuard(ctx context.Context) error {
+	userLimit := s.licenseService.GetPlanLimitValue(ctx, enterpriseAPI.PlanLimitMaximumUser)
+
+	count, err := s.store.CountActiveUsers(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, err.Error())
+	}
+	if int64(count) >= userLimit {
+		return status.Errorf(codes.ResourceExhausted, "reached the maximum user count %d", userLimit)
+	}
+	return nil
 }

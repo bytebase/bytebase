@@ -10,9 +10,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetInstanceByID gets an instance of Instance.
@@ -61,8 +64,7 @@ func (s *Store) composeInstance(ctx context.Context, instance *InstanceMessage) 
 		composedInstance.DataSourceList = append(composedInstance.DataSourceList, &api.DataSource{
 			ID:         ds.UID,
 			InstanceID: instance.UID,
-			DatabaseID: ds.DatabaseID,
-			Name:       ds.Title,
+			Name:       ds.ID,
 			Type:       ds.Type,
 			Username:   ds.Username,
 			Host:       ds.Host,
@@ -95,11 +97,13 @@ type InstanceMessage struct {
 	ExternalLink string
 	DataSources  []*DataSourceMessage
 	Activation   bool
+	Options      *storepb.InstanceOptions
 	// Output only.
 	EnvironmentID string
 	UID           int
 	Deleted       bool
 	EngineVersion string
+	Metadata      *storepb.InstanceMetadata
 }
 
 // UpdateInstanceMessage is the message for updating an instance.
@@ -110,6 +114,9 @@ type UpdateInstanceMessage struct {
 	DataSources   *[]*DataSourceMessage
 	EngineVersion *string
 	Activation    *bool
+	// OptionsUpsert upserts the top-level messages of the instance options.
+	OptionsUpsert *storepb.InstanceOptions
+	Metadata      *storepb.InstanceMetadata
 
 	// Output only.
 	UpdaterID     int
@@ -218,6 +225,16 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		where = fmt.Sprintf("WHERE (%s) < %d", countActivateInstanceQuery, maximumActivation)
 	}
 
+	optionBytes, err := protojson.Marshal(instanceCreate.Options)
+	if err != nil {
+		return nil, err
+	}
+
+	metadataBytes, err := protojson.Marshal(instanceCreate.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
 	var instanceID int
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			INSERT INTO instance (
@@ -228,9 +245,11 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 				name,
 				engine,
 				external_link,
-				activation
+				activation,
+				options,
+				metadata
 			)
-			SELECT $1, $2, $3, $4, $5, $6, $7, $8
+			SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			%s
 			RETURNING id
 		`, where),
@@ -242,17 +261,14 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		instanceCreate.Engine,
 		instanceCreate.ExternalLink,
 		instanceCreate.Activation,
+		optionBytes,
+		metadataBytes,
 	).Scan(&instanceID); err != nil {
 		return nil, err
 	}
 
-	allDatabaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, instanceID, &DatabaseMessage{DatabaseName: api.AllDatabaseName})
-	if err != nil {
-		return nil, err
-	}
-
 	for _, ds := range instanceCreate.DataSources {
-		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, allDatabaseUID, creatorID, ds); err != nil {
+		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, creatorID, ds); err != nil {
 			return nil, err
 		}
 	}
@@ -275,6 +291,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		ExternalLink:  instanceCreate.ExternalLink,
 		DataSources:   dataSources,
 		Activation:    instanceCreate.Activation,
+		Options:       instanceCreate.Options,
+		Metadata:      instanceCreate.Metadata,
 	}
 	s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
@@ -316,6 +334,22 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
+	if v := patch.OptionsUpsert; v != nil {
+		options, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+
+		set, args = append(set, fmt.Sprintf("options = options || $%d", len(args)+1)), append(args, options)
+	}
+	if v := patch.Metadata; v != nil {
+		metadata, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+
+		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadata)
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -352,9 +386,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				engine_version,
 				external_link,
 				activation,
-				row_status
+				row_status,
+				options,
+				metadata
 		`, strings.Join(where, " AND "))
 	var rowStatus string
+	var options, metadata []byte
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&instance.UID,
 		&instance.ResourceID,
@@ -364,6 +401,8 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		&instance.ExternalLink,
 		&instance.Activation,
 		&rowStatus,
+		&options,
+		&metadata,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -372,22 +411,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 
 	if patch.DataSources != nil {
-		allDatabaseName := api.AllDatabaseName
-		allDatabase, err := s.getDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
-			InstanceID:         &instance.ResourceID,
-			DatabaseName:       &allDatabaseName,
-			IncludeAllDatabase: true,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		if err := s.clearDataSourceImpl(ctx, tx, instance.UID, allDatabase.UID); err != nil {
+		if err := s.clearDataSourceImpl(ctx, tx, instance.UID); err != nil {
 			return nil, err
 		}
 
 		for _, ds := range *patch.DataSources {
-			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, allDatabase.UID, patch.UpdaterID, ds); err != nil {
+			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, patch.UpdaterID, ds); err != nil {
 				return nil, err
 			}
 		}
@@ -398,6 +427,17 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		return nil, err
 	}
 	instance.DataSources = dataSourceList
+	var instanceOptions storepb.InstanceOptions
+	if err := protojson.Unmarshal(options, &instanceOptions); err != nil {
+		return nil, err
+	}
+	instance.Options = &instanceOptions
+
+	var instanceMetadata storepb.InstanceMetadata
+	if err := protojson.Unmarshal(metadata, &instanceMetadata); err != nil {
+		return nil, err
+	}
+	instance.Metadata = &instanceMetadata
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -434,7 +474,9 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			engine_version,
 			external_link,
 			activation,
-			instance.row_status AS row_status
+			instance.row_status AS row_status,
+			instance.options AS options,
+			instance.metadata AS metadata
 		FROM instance
 		LEFT JOIN environment ON environment.id = instance.environment_id
 		WHERE `+strings.Join(where, " AND "),
@@ -447,6 +489,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	for rows.Next() {
 		var instanceMessage InstanceMessage
 		var rowStatus string
+		var options, metadata []byte
 		if err := rows.Scan(
 			&instanceMessage.EnvironmentID,
 			&instanceMessage.UID,
@@ -457,10 +500,22 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			&instanceMessage.ExternalLink,
 			&instanceMessage.Activation,
 			&rowStatus,
+			&options,
+			&metadata,
 		); err != nil {
 			return nil, err
 		}
 		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+		var instanceOptions storepb.InstanceOptions
+		if err := protojson.Unmarshal(options, &instanceOptions); err != nil {
+			return nil, err
+		}
+		instanceMessage.Options = &instanceOptions
+		var instanceMetadata storepb.InstanceMetadata
+		if err := protojson.Unmarshal(metadata, &instanceMetadata); err != nil {
+			return nil, err
+		}
+		instanceMessage.Metadata = &instanceMetadata
 		instanceMessages = append(instanceMessages, &instanceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -520,7 +575,7 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context) ([]*I
 	return instances, nil
 }
 
-var countActivateInstanceQuery = "SELECT COUNT(*) FROM instance WHERE activation = TRUE"
+var countActivateInstanceQuery = "SELECT COUNT(*) FROM instance WHERE activation = TRUE AND row_status = 'NORMAL'"
 
 // CheckActivationLimit checks if activation instance count reaches the limit.
 func (s *Store) CheckActivationLimit(ctx context.Context, maximumActivation int) error {
@@ -547,4 +602,21 @@ func validateDataSourceList(dataSources []*DataSourceMessage) error {
 		return status.Errorf(codes.InvalidArgument, "missing required data source type %s", api.Admin)
 	}
 	return nil
+}
+
+// IgnoreDatabaseAndTableCaseSensitive returns true if the engine ignores database and table case sensitive.
+func IgnoreDatabaseAndTableCaseSensitive(instance *InstanceMessage) bool {
+	switch instance.Engine {
+	case db.TiDB:
+		return true
+	case db.MySQL, db.MariaDB:
+		return instance.Metadata != nil && instance.Metadata.MysqlLowerCaseTableNames != 0
+	case db.MSSQL:
+		// In fact, SQL Server is possible to create a case-sensitive database and case-insensitive database on one instance.
+		// https://www.webucator.com/article/how-to-check-case-sensitivity-in-sql-server/
+		// But by default, SQL Server is case-insensitive.
+		return true
+	default:
+		return false
+	}
 }

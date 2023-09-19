@@ -20,7 +20,8 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRoute } from "vue-router";
-
+import { getRollbackTaskMappingFromQuery } from "@/plugins/issue/logic/initialize/standard";
+import { useIssueById } from "@/store";
 import {
   RollbackDetail,
   Task,
@@ -28,10 +29,8 @@ import {
   TaskDatabaseDataUpdatePayload,
 } from "@/types";
 import { unknown, UNKNOWN_ID } from "@/types";
-import { flattenTaskList, useIssueLogic } from "./logic";
-import { useIssueById } from "@/store";
 import { buildIssueLinkWithTask } from "@/utils";
-import { getRollbackTaskMappingFromQuery } from "@/plugins/issue/logic/initialize/standard";
+import { flattenTaskList, useIssueLogic } from "./logic";
 
 const { create, selectedTask } = useIssueLogic();
 const route = useRoute();

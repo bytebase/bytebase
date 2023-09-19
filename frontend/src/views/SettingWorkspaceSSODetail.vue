@@ -16,7 +16,6 @@
         </a>
       </div>
     </div>
-    <hr />
   </div>
 
   <IdentityProviderCreateForm
@@ -25,8 +24,8 @@
   />
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.sso"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -34,8 +33,8 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useRoute } from "vue-router";
-import { useIdentityProviderStore } from "@/store/modules/idp";
 import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
+import { useIdentityProviderStore } from "@/store/modules/idp";
 import { State } from "@/types/proto/v1/common";
 
 interface LocalState {

@@ -58,7 +58,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
+import { checkStatusOfTask, isTaskSkipped } from "@/utils";
 import type {
   Task,
   TaskCheckStatus,
@@ -66,7 +66,6 @@ import type {
   TaskStatus,
 } from "../../types";
 import { SkipIcon } from "../Icon";
-import { checkStatusOfTask, isTaskSkipped } from "@/utils";
 
 const props = defineProps<{
   create: boolean;

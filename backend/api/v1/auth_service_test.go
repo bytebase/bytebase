@@ -2,26 +2,33 @@ package v1
 
 import "testing"
 
-func TestValidatePhone(t *testing.T) {
+func TestExtractDomain(t *testing.T) {
 	tests := []struct {
-		phone string
-		want  bool
+		domain string
+		want   string
 	}{
 		{
-			phone: "1234567890",
-			want:  false,
+			domain: "www.google.com",
+			want:   "google.com",
 		},
 		{
-			phone: "+8615655556666",
-			want:  true,
+			domain: "code.google.com",
+			want:   "google.com",
+		},
+		{
+			domain: "code.google.com.cn",
+			want:   "google.com.cn",
+		},
+		{
+			domain: "google.com",
+			want:   "google.com",
 		},
 	}
 
 	for _, test := range tests {
-		got := validatePhone(test.phone)
-		isValid := got == nil
-		if isValid != test.want {
-			t.Errorf("validatePhone %s, err %v", test.phone, got)
+		got := extractDomain(test.domain)
+		if got != test.want {
+			t.Errorf("extractDomain %s, got %s, want %s", test.domain, got, test.want)
 		}
 	}
 }

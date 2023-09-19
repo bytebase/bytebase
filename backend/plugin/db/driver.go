@@ -53,6 +53,10 @@ const (
 	Redshift Type = "REDSHIFT"
 	// MariaDB is the database type for MariaDB.
 	MariaDB Type = "MARIADB"
+	// DM is the database type for DM.
+	DM Type = "DM"
+	// RisingWave is the database type for RisingWave.
+	RisingWave Type = "RISINGWAVE"
 	// UnknownType is the database type for UNKNOWN.
 	UnknownType Type = "UNKNOWN"
 
@@ -75,7 +79,8 @@ type InstanceMetadata struct {
 	Version       string
 	InstanceRoles []*storepb.InstanceRoleMetadata
 	// Simplified database metadata.
-	Databases []*storepb.DatabaseMetadata
+	Databases []*storepb.DatabaseSchemaMetadata
+	Metadata  *storepb.InstanceMetadata
 }
 
 // TableKey is the map key for table metadata.
@@ -380,6 +385,7 @@ type MigrationHistory struct {
 	Version               string
 	Description           string
 	Statement             string
+	SheetID               *int
 	Schema                string
 	SchemaPrev            string
 	ExecutionDurationNs   int64
@@ -393,9 +399,10 @@ type MigrationHistory struct {
 type MigrationHistoryFind struct {
 	ID *string
 
-	Database *string
-	Source   *MigrationSource
-	Version  *string
+	Database        *string
+	Source          *MigrationSource
+	Version         *string
+	ResourcesFilter *string
 	// If specified, then it will only fetch "Limit" most recent migration histories
 	Limit  *int
 	Offset *int
@@ -428,6 +435,9 @@ type ConnectionConfig struct {
 	SID         string
 	ServiceName string
 	SSHConfig   SSHConfig
+	// SchemaTenantMode is the Oracle specific mode.
+	// If true, bytebase will treat the schema as a database.
+	SchemaTenantMode bool
 }
 
 // SSHConfig is the configuration for connection over SSH.
@@ -449,10 +459,11 @@ type ConnectionContext struct {
 // QueryContext is the context to query.
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit                 int
-	ReadOnly              bool
-	SensitiveDataMaskType SensitiveDataMaskType
-	SensitiveSchemaInfo   *SensitiveSchemaInfo
+	Limit               int
+	ReadOnly            bool
+	SensitiveSchemaInfo *SensitiveSchemaInfo
+	// EnableSensitive will set to be true if the database instance has license.
+	EnableSensitive bool
 
 	// CurrentDatabase is for MySQL
 	CurrentDatabase string
@@ -500,10 +511,8 @@ type Driver interface {
 	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, createDatabase bool, opts ExecuteOptions) (int64, error)
 	// Used for execute readonly SELECT statement
-	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]any, error)
-	// Used for execute readonly SELECT statement
 	// TODO(rebelice): remove QueryConn and rename QueryConn2 to QueryConn when legacy code is removed.
-	QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]*v1pb.QueryResult, error)
+	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]*v1pb.QueryResult, error)
 	// RunStatement will execute the statement and return the result, for both SELECT and non-SELECT statements.
 	RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error)
 
@@ -511,7 +520,7 @@ type Driver interface {
 	// SyncInstance syncs the instance metadata.
 	SyncInstance(ctx context.Context) (*InstanceMetadata, error)
 	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error)
+	SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error)
 
 	// Sync slow query logs
 	// SyncSlowQuery syncs the slow query logs.
@@ -607,24 +616,31 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
 
-// SensitiveDataMaskType is the mask type for sensitive data.
-type SensitiveDataMaskType string
-
-const (
-	// SensitiveDataMaskTypeDefault is the sensitive data type to hide data with a default method.
-	// The default method is subject to change.
-	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
-)
-
 // SensitiveSchemaInfo is the schema info using to extract sensitive fields.
 type SensitiveSchemaInfo struct {
-	DatabaseList []DatabaseSchema
+	// IgnoreCaseSensitive is the flag to ignore case sensitive.
+	// IMPORTANT: This flag is ONLY for database names, table names and view names in MySQL-like database.
+	IgnoreCaseSensitive bool
+	DatabaseList        []DatabaseSchema
 }
 
 // DatabaseSchema is the database schema using to extract sensitive fields.
 type DatabaseSchema struct {
+	Name       string
+	SchemaList []SchemaSchema
+}
+
+// SchemaSchema is the schema of the schema using to extract sensitive fields.
+type SchemaSchema struct {
 	Name      string
 	TableList []TableSchema
+	ViewList  []ViewSchema
+}
+
+// ViewSchema is the view schema using to extract sensitive fields.
+type ViewSchema struct {
+	Name       string
+	Definition string
 }
 
 // TableSchema is the table schema using to extract sensitive fields.
@@ -635,12 +651,12 @@ type TableSchema struct {
 
 // ColumnInfo is the column info using to extract sensitive fields.
 type ColumnInfo struct {
-	Name      string
-	Sensitive bool
+	Name         string
+	MaskingLevel storepb.MaskingLevel
 }
 
 // SensitiveField is the struct about SELECT fields.
 type SensitiveField struct {
-	Name      string
-	Sensitive bool
+	Name         string
+	MaskingLevel storepb.MaskingLevel
 }

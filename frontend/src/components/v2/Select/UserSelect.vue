@@ -16,12 +16,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, watchEffect, h } from "vue";
-import { NSelect, SelectOption } from "naive-ui";
-import { useI18n } from "vue-i18n";
 import { intersection } from "lodash-es";
+import { NSelect, SelectOption } from "naive-ui";
+import { computed, watch, watchEffect, h } from "vue";
+import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
-
+import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useProjectV1Store, useUserStore } from "@/store";
 import {
   PresetRoleType,
@@ -31,10 +31,9 @@ import {
   UNKNOWN_USER_NAME,
   unknownUser,
 } from "@/types";
-import { extractUserUID, memberListInProjectV1 } from "@/utils";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import UserAvatar from "@/components/User/UserAvatar.vue";
+import { extractUserUID, memberListInProjectV1 } from "@/utils";
 
 interface UserSelectOption extends SelectOption {
   value: string;
@@ -231,13 +230,25 @@ const renderAvatar = (user: User) => {
 const renderLabel = (option: SelectOption) => {
   const { user } = option as UserSelectOption;
   const avatar = renderAvatar(user);
-  const text = h("span", { class: "truncate" }, user.title);
+  const children = [h("span", {}, user.title)];
+  if (user.name !== UNKNOWN_USER_NAME) {
+    children.push(h("span", { class: "text-gray-400" }, `(${user.email})`));
+  }
   return h(
     "div",
     {
-      class: "flex items-center gap-x-2",
+      class: "w-full flex items-center gap-x-2",
     },
-    [avatar, text]
+    [
+      avatar,
+      h(
+        "div",
+        {
+          class: "flex flex-row justify-start items-center gap-x-0.5 truncate",
+        },
+        children
+      ),
+    ]
   );
 };
 

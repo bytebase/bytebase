@@ -3,6 +3,7 @@ package mongoutil
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"runtime"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/resources/utils"
 )
 
@@ -24,12 +24,14 @@ func GetMongoshPath(binDir string) string {
 func getTarNameAndVersion() (tarname string, version string, err error) {
 	var tarName string
 	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
-		tarName = "mongoutil-darwin-arm64.txz"
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		tarName = "mongoutil-darwin-x86_64.txz"
+		tarName = "mongoutil-1.6.1-darwin-amd64.txz"
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
+		tarName = "mongoutil-1.6.1-darwin-arm64.txz"
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
-		tarName = "mongoutil-linux-x86_64.txz"
+		tarName = "mongoutil-1.6.1-linux-amd64.txz"
+	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
+		tarName = "mongoutil-1.6.1-linux-arm64.txz"
 	default:
 		return "", "", errors.Errorf("unsupported platform: %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
@@ -49,7 +51,7 @@ func Install(resourceDir string) (string, error) {
 			return "", errors.Wrapf(err, "failed to check binary directory path %q", mongoutilDir)
 		}
 		// Install if not exist yet
-		log.Info("Installing MongoDB utilities, it may take about several minutes...")
+		slog.Info("Installing MongoDB utilities, it may take about several minutes...")
 		if err := installImpl(resourceDir, mongoutilDir, tarName, version); err != nil {
 			return "", errors.Wrap(err, "cannot install mongoutil")
 		}

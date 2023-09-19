@@ -75,20 +75,18 @@
   </div>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.vcs-sheet-sync"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRoute } from "vue-router";
 import { last } from "lodash-es";
 import { useDialog } from "naive-ui";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { t } from "@/plugins/i18n";
-
-import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   hasFeature,
   useUserStore,
@@ -97,13 +95,13 @@ import {
   useProjectV1Store,
   useEnvironmentV1Store,
 } from "@/store";
-import { getSheetIssueBacktracePayloadV1 } from "@/utils";
+import { Workflow } from "@/types/proto/v1/project_service";
+import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   type SheetViewMode,
   SheetTable,
   SheetViewModeList,
 } from "./sql-editor/Sheet";
-import { Workflow } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   isLoading: boolean;
@@ -135,7 +133,7 @@ const navigationList = computed(() => {
     },
     {
       path: "/sheets/starred",
-      label: t("common.starred"),
+      label: t("sheet.starred"),
     },
   ];
 
@@ -221,10 +219,7 @@ const fetchSheetData = async () => {
     sheetList = await sheetV1Store.fetchSharedSheetList();
   }
 
-  // Hide those sheets from issue.
-  state.sheetList = sheetList.filter((sheet) => {
-    return !getSheetIssueBacktracePayloadV1(sheet);
-  });
+  state.sheetList = sheetList;
 };
 
 onMounted(async () => {

@@ -62,6 +62,14 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
 
+  rpc DiffSchema(DiffSchemaRequest) returns (DiffSchemaResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*/databases/*}:diffSchema"
+      additional_bindings {post: "/v1/{name=instances/*/databases/*/changeHistories/*}:diffSchema"}
+      body: "*"
+    };
+  }
+
   rpc GetBackupSetting(GetBackupSettingRequest) returns (BackupSetting) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/backupSetting}"};
   }
@@ -244,6 +252,27 @@ message GetDatabaseSchemaRequest {
   bool sdl_format = 2;
 }
 
+message DiffSchemaRequest {
+  // The name of the database or change history.
+  // Format:
+  // databse: instances/{instance}/databases/{database}
+  // change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  oneof target {
+    // The target schema.
+    string schema = 2;
+
+    // The resource name of the change history
+    // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+    string change_history = 3;
+  }
+}
+
+message DiffSchemaResponse {
+  string diff = 1;
+}
+
 message GetBackupSettingRequest {
   // The name of the database to retrieve backup setting.
   // Format: instances/{instance}/databases/{database}/backupSetting
@@ -315,8 +344,16 @@ message Database {
   // The version of database schema.
   string schema_version = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The environment resource.
+  // Format: environments/prod where prod is the environment resource ID.
+  string environment = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // The effective environment based on environment tag above and environment tag on the instance.
+  // Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview.
+  string effective_environment = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   // Labels will be used for deployment and policy control.
-  map<string, string> labels = 7;
+  map<string, string> labels = 9;
 }
 
 // DatabaseMetadata is the metadata for databases.
@@ -351,6 +388,12 @@ message SchemaMetadata {
 
   // The functions is the list of functions in a schema.
   repeated FunctionMetadata functions = 4;
+
+  // The streams is the list of streams in a schema, currently, only used for Snowflake.
+  repeated StreamMetadata streams = 5;
+
+  // The routines is the list of routines in a schema, currently, only used for Snowflake.
+  repeated TaskMetadata tasks = 6;
 }
 
 // TableMetadata is the metadata for tables.
@@ -386,7 +429,14 @@ message TableMetadata {
   string create_options = 10;
 
   // The comment is the comment of a table.
+  // classification and user_comment is parsed from the comment.
   string comment = 11;
+
+  // The classification is the classification of a table parsed from the comment.
+  string classification = 13;
+
+  // The user_comment is the user comment of a table parsed from the comment.
+  string user_comment = 14;
 
   // The foreign_keys is the list of foreign keys in a table.
   repeated ForeignKeyMetadata foreign_keys = 12;
@@ -416,7 +466,18 @@ message ColumnMetadata {
   string collation = 7;
 
   // The comment is the comment of a column.
+  // classification and user_comment is parsed from the comment.
   string comment = 8;
+
+  // The classification is the classification of a column parsed from the comment.
+  string classification = 9;
+
+  // The user_comment is the user comment of a column parsed from the comment.
+  string user_comment = 10;
+
+  // The effective_masking_level is the effective masking level of the column, evaluate from the
+  // column masking data and global masking rules.
+  MaskingLevel effective_masking_level = 11;
 }
 
 // ViewMetadata is the metadata for views.
@@ -453,6 +514,80 @@ message FunctionMetadata {
 
   // The definition is the definition of a view.
   string definition = 2;
+}
+
+message TaskMetadata {
+  // The name is the name of a task.
+  string name = 1;
+
+  // The id is the snowflake-generated id of a task.
+  // Example: 01ad32a0-1bb6-5e93-0000-000000000001
+  string id = 2;
+
+  // The owner of the task.
+  string owner = 3;
+
+  // The comment of the task.
+  string comment = 4;
+
+  // The warehouse of the task.
+  string warehouse = 5;
+
+  // The schedule interval of the task.
+  string schedule = 6;
+
+  // The predecessor tasks of the task.
+  repeated string predecessors = 7;
+
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_STARTED = 1;
+    STATE_SUSPENDED = 2;
+  }
+  // The state of the task.
+  State state = 8;
+
+  // The condition of the task.
+  string condition = 9;
+
+  // The definition of the task.
+  string definition = 10;
+}
+
+message StreamMetadata {
+  // The name is the name of a stream.
+  string name = 1;
+
+  // The table_name is the name of the table/view that the stream is created on.
+  string table_name = 2;
+
+  // The owner of the stream.
+  string owner = 3;
+
+  // The comment of the stream.
+  string comment = 4;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_DELTA = 1;
+  }
+  // The type of the stream.
+  Type type = 5;
+
+  // Indicates whether the stream was last read before the `stale_after` time.
+  bool stale = 6;
+
+  enum Mode {
+    MODE_UNSPECIFIED = 0;
+    MODE_DEFAULT = 1;
+    MODE_APPEND_ONLY = 2;
+    MODE_INSERT_ONLY = 3;
+  }
+  // The mode of the stream.
+  Mode mode = 7;
+
+  // The definition of the stream.
+  string definition = 8;
 }
 
 // IndexMetadata is the metadata for indexes.
@@ -850,10 +985,32 @@ message ChangeHistory {
   string schema = 14;
   string prev_schema = 15;
   google.protobuf.Duration execution_duration = 16;
-  // Format: projects/{project}/reviews/{review}
-  string review = 17;
+  // Format: projects/{project}/issues/{issue}
+  string issue = 17;
 
   PushEvent push_event = 18;
+
+  ChangedResources changed_resources = 19;
+}
+
+message ChangedResources {
+  repeated ChangedResourceDatabase databases = 1;
+}
+
+message ChangedResourceDatabase {
+  string name = 1;
+
+  repeated ChangedResourceSchema schemas = 2;
+}
+
+message ChangedResourceSchema {
+  string name = 1;
+
+  repeated ChangedResourceTable tables = 2;
+}
+
+message ChangedResourceTable {
+  string name = 1;
 }
 
 enum ChangeHistoryView {
@@ -882,6 +1039,28 @@ message ListChangeHistoriesRequest {
   string page_token = 3;
 
   ChangeHistoryView view = 4;
+
+  // The filter of the change histories.
+  // Follow the CEL syntax.
+  // currently, we have one function for CEL:
+  // - tableExists(database, schema, table): return true if the table exists in changed resources.
+  //
+  // examples:
+  // Use
+  //   tableExists("db", "public", "table1")
+  // to filter the change histories which have the table "table1" in the schema "public" of the database "db".
+  // For MySQL, the schema is always "", such as tableExists("db", "", "table1").
+  //
+  // Combine multiple functions with "&&" and "||", we MUST use the Disjunctive Normal Form(DNF).
+  // In other words, the CEL expression consists of several parts connected by OR operators.
+  // For example, the following expression is valid:
+  // (
+  //  tableExists("db", "public", "table1") &&
+  //  tableExists("db", "public", "table2")
+  // ) || (
+  //  tableExists("db", "public", "table3")
+  // )
+  string filter = 5;
 }
 
 message ListChangeHistoriesResponse {

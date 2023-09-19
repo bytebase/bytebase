@@ -1,11 +1,12 @@
 <template>
   <div
     v-if="connectionTreeStore.tree.state === ConnectionTreeState.LOADED"
-    class="databases-tree p-2 space-y-2 h-full flex flex-col"
+    class="databases-tree p-0.5 gap-y-1 h-full flex flex-col"
     :class="connectionTreeStore.tree.mode"
   >
-    <div class="databases-tree--input">
+    <div class="databases-tree--input pt-1 px-2">
       <NInput
+        size="small"
         :value="searchPattern"
         :placeholder="$t('sql-editor.search-databases')"
         :clearable="true"
@@ -18,17 +19,19 @@
     </div>
     <div class="databases-tree--tree flex-1 overflow-y-auto select-none">
       <NTree
+        ref="treeRef"
         block-line
         :data="treeData"
-        :pattern="mounted ? searchPattern : ''"
+        :pattern="mounted ? throttledSearchPattern : ''"
         :show-irrelevant-nodes="false"
         :expand-on-click="true"
         :selected-keys="selectedKeys"
-        :expanded-keys="connectionTreeStore.expandedTreeNodeKeys"
+        :expanded-keys="expandedTreeNodeKeysForCurrentTreeMode"
         :render-label="renderLabel"
         :render-prefix="renderPrefix"
-        :render-suffix="renderSuffix"
         :node-props="nodeProps"
+        :virtual-scroll="true"
+        @load="handleLoadSubTree"
         @update:expanded-keys="updateExpandedKeys"
       />
     </div>
@@ -50,38 +53,44 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, h, nextTick, watch } from "vue";
+import { useMounted, useThrottleFn } from "@vueuse/core";
 import { NTree, NInput, NDropdown, DropdownOption, TreeOption } from "naive-ui";
+import { ref, computed, h, nextTick, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useMounted } from "@vueuse/core";
-
-import type {
-  ConnectionAtom,
-  CoreTabInfo,
-  DatabaseId,
-  InstanceId,
-} from "@/types";
-import { ConnectionTreeState, TabMode, UNKNOWN_ID } from "@/types";
 import {
   isConnectableAtom,
   useConnectionTreeStore,
   useCurrentUserV1,
   useDatabaseV1Store,
+  useInstanceV1Store,
+  useSQLEditorStore,
   useIsLoggedIn,
   useTabStore,
+  CONNECTION_TREE_DELIMITER,
+  useDBSchemaV1Store,
 } from "@/store";
+import type { ConnectionAtom, CoreTabInfo, DatabaseId } from "@/types";
+import {
+  ConnectionTreeMode,
+  ConnectionTreeState,
+  TabMode,
+  UNKNOWN_ID,
+} from "@/types";
+import { SchemaMetadata } from "@/types/proto/v1/database_service";
 import {
   emptyConnection,
-  getDefaultTabNameFromConnection,
+  getSuggestedTabNameFromConnection,
   hasWorkspacePermissionV1,
   instanceV1HasReadonlyMode,
   instanceOfConnectionAtom,
   instanceV1HasAlterSchema,
   isDescendantOf,
   isSimilarTab,
+  instanceV1AllowsCrossDatabaseQuery,
 } from "@/utils";
-import { scrollIntoViewIfNeeded } from "@/bbkit/BBUtil";
-import { Prefix, Label, Suffix } from "./TreeNode";
+import { useSQLEditorContext } from "../context";
+import { Prefix, Label } from "./TreeNode";
+import { fetchDatabaseSubTree } from "./common";
 
 type Position = {
   x: number;
@@ -98,7 +107,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (
-    event: "alter-schema",
+    event: "edit-schema",
     params: { databaseId: DatabaseId; schema: string; table: string }
   ): void;
   (event: "update:search-pattern", keyword: string): void;
@@ -106,19 +115,25 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const connectionTreeStore = useConnectionTreeStore();
 const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUserV1 = useCurrentUserV1();
+const sqlEditorStore = useSQLEditorStore();
+const { selectedDatabaseSchemaByDatabaseName } = useSQLEditorContext();
 
 const mounted = useMounted();
+const treeRef = ref<InstanceType<typeof NTree>>();
+const throttledSearchPattern = ref(props.searchPattern);
 const showDropdown = ref(false);
 const dropdownPosition = ref<Position>({
   x: 0,
   y: 0,
 });
 const dropdownContext = ref<ConnectionAtom>();
+
 const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
   const atom = dropdownContext.value;
   if (!atom) {
@@ -151,12 +166,12 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
         });
       }
     }
-    if (atom.type === "database") {
+    if (atom.type === "database" && sqlEditorStore.mode === "BUNDLED") {
       const database = databaseStore.getDatabaseByUID(atom.id);
       if (instanceV1HasAlterSchema(database.instanceEntity)) {
         items.push({
-          key: "alter-schema",
-          label: t("database.alter-schema"),
+          key: "edit-schema",
+          label: t("database.edit-schema"),
           item: atom,
         });
       }
@@ -168,10 +183,26 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
 // Highlight the current tab's connection node.
 const selectedKeys = computed(() => {
   const { instanceId, databaseId } = tabStore.currentTab.connection;
+
   if (databaseId !== String(UNKNOWN_ID)) {
+    const db = databaseStore.getDatabaseByUID(databaseId);
+    const selected = selectedDatabaseSchemaByDatabaseName.value.get(db.name);
+    if (selected) {
+      const { schema, table } = selected;
+      if (schema.name) {
+        return [
+          `table-${[db.uid, schema.name, table.name].join(
+            CONNECTION_TREE_DELIMITER
+          )}`,
+        ];
+      } else {
+        return [
+          `table-${[db.uid, table.name].join(CONNECTION_TREE_DELIMITER)}`,
+        ];
+      }
+    }
     return [`database-${databaseId}`];
-  }
-  if (instanceId !== String(UNKNOWN_ID)) {
+  } else if (instanceId !== String(UNKNOWN_ID)) {
     return [`instance-${instanceId}`];
   }
   return [];
@@ -186,6 +217,26 @@ const allowAdmin = computed(() =>
 
 const treeData = computed(() => connectionTreeStore.tree.data);
 
+const connect = (target: CoreTabInfo) => {
+  if (isSimilarTab(target, tabStore.currentTab)) {
+    // Don't go further if the connection doesn't change.
+    return;
+  }
+  if (tabStore.currentTab.isFreshNew) {
+    // If the current tab is "fresh new", update its connection directly.
+    tabStore.updateCurrentTab(target);
+  } else {
+    // Otherwise select or add a new tab and set its connection
+    const name = getSuggestedTabNameFromConnection(target.connection);
+    tabStore.selectOrAddSimilarTab(
+      target,
+      /* beside */ false,
+      /* defaultTabName */ name
+    );
+    tabStore.updateCurrentTab(target);
+  }
+};
+
 const setConnection = (
   option: ConnectionAtom,
   extra: { sheetName?: string; mode: TabMode } = {
@@ -194,9 +245,21 @@ const setConnection = (
   }
 ) => {
   if (option) {
+    if (option.type === "schema" || option.type === "table") {
+      // Should be handled in maybeSelectTable
+      return;
+    }
+
     if (option.type === "project") {
       // Not connectable to a project
       return;
+    }
+
+    if (option.type === "instance") {
+      const instance = instanceStore.getInstanceByUID(option.id);
+      if (!instanceV1AllowsCrossDatabaseQuery(instance)) {
+        return;
+      }
     }
 
     const target: CoreTabInfo = {
@@ -204,20 +267,6 @@ const setConnection = (
       ...extra,
     };
     const conn = target.connection;
-
-    const connect = () => {
-      if (isSimilarTab(target, tabStore.currentTab)) {
-        // Don't go further if the connection doesn't change.
-        return;
-      }
-      const name = getDefaultTabNameFromConnection(target.connection);
-      tabStore.selectOrAddSimilarTab(
-        target,
-        /* beside */ false,
-        /* defaultTabName */ name
-      );
-      tabStore.updateCurrentTab(target);
-    };
 
     // If selected item is instance node
     if (option.type === "instance") {
@@ -229,7 +278,7 @@ const setConnection = (
       conn.databaseId = database.uid;
     }
 
-    connect();
+    connect(target);
   }
 };
 
@@ -245,21 +294,14 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
   return h(Prefix, { atom });
 };
 
-// Render a 'connected' icon in the right of the node
-// if it matches the current tab's connection
-const renderSuffix = ({ option }: { option: TreeOption }) => {
-  const atom = option as any as ConnectionAtom;
-  return h(Suffix, { atom });
-};
-
 const handleSelect = (key: string) => {
   const option = dropdownOptions.value.find((item) => item.key === key);
   if (!option) {
     return;
   }
 
-  if (key === "alter-schema") {
-    emit("alter-schema", {
+  if (key === "edit-schema") {
+    emit("edit-schema", {
       databaseId: option.item.id,
       schema: "",
       table: "",
@@ -277,11 +319,71 @@ const handleClickoutside = () => {
   showDropdown.value = false;
 };
 
+const expandedTreeNodeKeysForCurrentTreeMode = computed(() => {
+  const { tree, expandedTreeNodeKeys } = connectionTreeStore;
+  switch (tree.mode) {
+    case ConnectionTreeMode.INSTANCE:
+      return expandedTreeNodeKeys.filter((key) => !key.startsWith("project-"));
+    case ConnectionTreeMode.PROJECT:
+      return expandedTreeNodeKeys.filter((key) => !key.startsWith("instance-"));
+  }
+  // Fallback to make TypeScript compiler happy
+  return [];
+});
+
 const maybeExpandKey = (key: string) => {
   const keys = connectionTreeStore.expandedTreeNodeKeys;
   if (!keys.includes(key)) {
     keys.push(key);
   }
+};
+
+const maybeSelectTable = async (atom: ConnectionAtom) => {
+  const parts = atom.id.split(CONNECTION_TREE_DELIMITER);
+  if (parts.length < 2 || parts.length > 3) {
+    return;
+  }
+  const database = databaseStore.getDatabaseByUID(parts[0]);
+  if (database.uid !== tabStore.currentTab.connection.databaseId) {
+    const target: CoreTabInfo = {
+      connection: {
+        instanceId: database.instanceEntity.uid,
+        databaseId: database.uid,
+      },
+      mode: TabMode.ReadOnly,
+    };
+    target.connection.instanceId = database.instanceEntity.uid;
+    target.connection.databaseId = database.uid;
+
+    connect(target);
+    await nextTick();
+  }
+  const databaseMetadata =
+    await useDBSchemaV1Store().getOrFetchDatabaseMetadata(database.name);
+  let schemaMetadata: SchemaMetadata | undefined = undefined;
+  if (parts.length === 2) {
+    // database -> table
+    schemaMetadata = databaseMetadata.schemas.find((s) => s.name === "");
+  }
+  if (parts.length === 3) {
+    // database -> schema -> table
+    const schema = parts[1];
+    schemaMetadata = databaseMetadata.schemas.find((s) => s.name === schema);
+  }
+  if (!schemaMetadata) {
+    return;
+  }
+  const table = parts[parts.length - 1];
+  const tableMetadata = schemaMetadata.tables.find((t) => t.name === table);
+  if (!tableMetadata) {
+    return;
+  }
+  selectedDatabaseSchemaByDatabaseName.value.set(database.name, {
+    db: database,
+    database: databaseMetadata,
+    schema: schemaMetadata,
+    table: tableMetadata,
+  });
 };
 
 const nodeProps = ({ option }: { option: TreeOption }) => {
@@ -295,6 +397,9 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // And ignore the fold/unfold arrow.
         if (atom.type === "instance" || atom.type === "database") {
           setConnection(atom);
+        }
+        if (atom.type === "table") {
+          maybeSelectTable(atom);
         }
       }
     },
@@ -315,31 +420,37 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   };
 };
 
+const handleLoadSubTree = (node: TreeOption) => {
+  const atom = node as any as ConnectionAtom;
+  const type = atom.type;
+  if (type === "database") {
+    return fetchDatabaseSubTree(atom);
+  }
+  return Promise.resolve();
+};
+
 const updateExpandedKeys = (keys: string[]) => {
-  connectionTreeStore.expandedTreeNodeKeys = keys.filter(
-    (key) => !key.startsWith("database-")
-  );
+  connectionTreeStore.expandedTreeNodeKeys = keys;
 };
 
 // When switching tabs, scroll the matched node into view if needed.
-const scrollToConnectedNode = (
-  instanceId: InstanceId,
-  databaseId: DatabaseId
-) => {
-  if (instanceId === UNKNOWN_ID && databaseId === UNKNOWN_ID) {
+const scrollToConnectedNode = (instanceId: string, databaseId: string) => {
+  if (instanceId === String(UNKNOWN_ID) && databaseId === String(UNKNOWN_ID)) {
     return;
   }
-  let id: string;
-  if (databaseId === UNKNOWN_ID) {
-    id = `tree-node-label-instance-${instanceId}`;
-  } else {
-    id = `tree-node-label-database-${databaseId}`;
+  const tree = treeRef.value;
+  if (!tree) {
+    return;
   }
+  const key =
+    databaseId !== String(UNKNOWN_ID)
+      ? `database-${databaseId}`
+      : `instance-${instanceId}`;
+
   nextTick(() => {
-    const elem = document.getElementById(id);
-    if (elem) {
-      scrollIntoViewIfNeeded(elem);
-    }
+    tree.scrollTo({
+      key,
+    });
   });
 };
 
@@ -374,11 +485,32 @@ watch(
   },
   { immediate: true }
 );
+
+watch(
+  () => props.searchPattern,
+  useThrottleFn(
+    (searchPattern: string | undefined) => {
+      throttledSearchPattern.value = searchPattern;
+    },
+    100,
+    true /* trailing */,
+    true /* leading */
+  ),
+  {
+    immediate: true,
+  }
+);
 </script>
 
-<style postcss>
+<style lang="postcss">
 .databases-tree .n-tree-node-content {
-  @apply !pl-0;
+  @apply !pl-0 text-sm;
+}
+.databases-tree .n-tree-node-wrapper {
+  padding: 0;
+}
+.databases-tree .n-tree-node-indent {
+  width: 0.25rem;
 }
 .databases-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;

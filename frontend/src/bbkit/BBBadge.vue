@@ -39,12 +39,12 @@ const props = withDefaults(
   defineProps<{
     text?: string;
     canRemove?: boolean;
-    style?: BBBadgeStyle;
+    badgeStyle?: BBBadgeStyle;
     size?: BBBadgeSize;
     link?: string;
   }>(),
   {
-    style: "INFO",
+    badgeStyle: "INFO",
     text: "",
     canRemove: true,
     size: "normal",
@@ -53,7 +53,7 @@ const props = withDefaults(
 );
 
 const color = computed(() => {
-  switch (props.style) {
+  switch (props.badgeStyle) {
     case "INFO":
       return "indigo";
     case "WARN":

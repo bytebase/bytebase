@@ -62,7 +62,7 @@
   </Drawer>
 
   <FeatureModal
-    v-if="state.missingRequiredFeature != undefined"
+    :open="state.missingRequiredFeature != undefined"
     :feature="state.missingRequiredFeature"
     @cancel="state.missingRequiredFeature = undefined"
   />
@@ -71,10 +71,7 @@
 <script lang="ts" setup>
 import { onMounted, computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
-import { arraySwap, environmentV1Slug } from "../utils";
-import EnvironmentDetail from "../views/EnvironmentDetail.vue";
-import EnvironmentForm from "../components/EnvironmentForm.vue";
-import type { BBTabItem } from "../bbkit/types";
+import { Drawer, ProductionEnvironmentV1Icon } from "@/components/v2";
 import {
   useRegisterCommand,
   useUIStateStore,
@@ -83,11 +80,6 @@ import {
   defaultEnvironmentTier,
   useEnvironmentV1List,
 } from "@/store";
-import { Drawer, ProductionEnvironmentV1Icon } from "@/components/v2";
-import {
-  Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
 import {
   usePolicyV1Store,
   defaultBackupSchedule,
@@ -95,12 +87,19 @@ import {
   getDefaultBackupPlanPolicy,
   getDefaultDeploymentApprovalPolicy,
 } from "@/store/modules/v1/policy";
+import { emptyEnvironment } from "@/types";
+import {
+  Environment,
+  EnvironmentTier,
+} from "@/types/proto/v1/environment_service";
 import {
   Policy,
-  PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { emptyEnvironment } from "@/types";
+import type { BBTabItem } from "../bbkit/types";
+import EnvironmentForm from "../components/EnvironmentForm.vue";
+import { arraySwap, environmentV1Slug } from "../utils";
+import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_APPROVAL_POLICY: Policy = getDefaultDeploymentApprovalPolicy(
@@ -264,25 +263,6 @@ const doCreate = async (
       policy: backupPolicy,
     }),
   ];
-  if (environmentTier === EnvironmentTier.PROTECTED) {
-    requests.push(
-      policyV1Store.upsertPolicy({
-        parentPath: environment.name,
-        updateMask: ["payload", "inherit_from_parent"],
-        policy: {
-          type: PolicyType.ACCESS_CONTROL,
-          inheritFromParent: true,
-          accessControlPolicy: {
-            disallowRules: [
-              {
-                fullDatabase: environmentTier === EnvironmentTier.PROTECTED,
-              },
-            ],
-          },
-        },
-      })
-    );
-  }
   await Promise.all(requests);
   state.showCreateModal = false;
   selectEnvironment(environment.order);

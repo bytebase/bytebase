@@ -35,6 +35,7 @@
       <NInputGroup style="width: auto">
         <InstanceSelect
           v-if="state.transferSource == 'DEFAULT'"
+          class="!w-48"
           :instance="instanceFilter?.uid ?? String(UNKNOWN_ID)"
           :include-all="true"
           :filter="filterInstance"
@@ -61,10 +62,14 @@
 </template>
 
 <script lang="ts" setup>
-import { type PropType, computed, reactive, watch } from "vue";
 import { NInputGroup } from "naive-ui";
-
-import { TransferSource } from "./utils";
+import { type PropType, computed, reactive, watch } from "vue";
+import { InstanceSelect, ProjectSelect, SearchBox } from "@/components/v2";
+import {
+  useCurrentUserV1,
+  useInstanceV1Store,
+  useProjectV1Store,
+} from "@/store";
 import {
   UNKNOWN_ID,
   ComposedDatabase,
@@ -72,14 +77,9 @@ import {
   DEFAULT_PROJECT_V1_NAME,
   PresetRoleType,
 } from "@/types";
-import { InstanceSelect, ProjectSelect, SearchBox } from "@/components/v2";
-import {
-  useCurrentUserV1,
-  useInstanceV1Store,
-  useProjectV1Store,
-} from "@/store";
 import { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import { TransferSource } from "./utils";
 
 interface LocalState {
   transferSource: TransferSource;

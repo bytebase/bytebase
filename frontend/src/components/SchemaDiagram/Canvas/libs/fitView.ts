@@ -1,6 +1,6 @@
-import type { Geometry, Rect } from "../../types";
 import { calcBBox, fitBBox } from "../../common";
 import { ZOOM_RANGE } from "../../common/const";
+import type { Geometry, Rect } from "../../types";
 
 export const fitView = (
   canvas: Element,

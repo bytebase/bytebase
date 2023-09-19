@@ -1,5 +1,5 @@
-import { SchemaMetadata, TableMetadata } from "@/types/proto/store/database";
 import type { TreeOption } from "naive-ui";
+import { SchemaMetadata, TableMetadata } from "@/types/proto/store/database";
 
 export type NodeType = "schema" | "table";
 

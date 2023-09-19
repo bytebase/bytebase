@@ -1,5 +1,4 @@
 import { format, FormatOptions } from "sql-formatter";
-
 import { SQLDialect } from "../../types";
 
 type FormatResult = {

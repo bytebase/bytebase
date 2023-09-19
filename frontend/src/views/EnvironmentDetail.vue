@@ -14,7 +14,7 @@
     @update-policy="updatePolicy"
   />
   <FeatureModal
-    v-if="state.missingRequiredFeature != undefined"
+    :open="state.missingRequiredFeature != undefined"
     :feature="state.missingRequiredFeature"
     @cancel="state.missingRequiredFeature = undefined"
   />
@@ -49,16 +49,18 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep } from "lodash-es";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { cloneDeep } from "lodash-es";
 import { useRouter } from "vue-router";
-
+import BBModal from "@/bbkit/BBModal.vue";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import EnvironmentForm from "@/components/EnvironmentForm.vue";
-import { environmentV1Slug, idFromSlug } from "@/utils";
 import { hasFeature, pushNotification, useBackupV1Store } from "@/store";
-import BBModal from "@/bbkit/BBModal.vue";
+import {
+  useEnvironmentV1Store,
+  defaultEnvironmentTier,
+} from "@/store/modules/v1/environment";
 import {
   usePolicyV1Store,
   defaultBackupSchedule,
@@ -66,21 +68,18 @@ import {
   getDefaultBackupPlanPolicy,
   getDefaultDeploymentApprovalPolicy,
 } from "@/store/modules/v1/policy";
+import { State } from "@/types/proto/v1/common";
+import {
+  Environment,
+  EnvironmentTier,
+} from "@/types/proto/v1/environment_service";
 import {
   Policy as PolicyV1,
   PolicyType as PolicyTypeV1,
   PolicyResourceType,
   BackupPlanSchedule,
 } from "@/types/proto/v1/org_policy_service";
-import {
-  useEnvironmentV1Store,
-  defaultEnvironmentTier,
-} from "@/store/modules/v1/environment";
-import {
-  Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
-import { State } from "@/types/proto/v1/common";
+import { environmentV1Slug, idFromSlug } from "@/utils";
 
 interface LocalState {
   environment: Environment;
@@ -176,32 +175,6 @@ const doUpdate = (environmentPatch: Environment) => {
     .updateEnvironment(pendingUpdate)
     .then((environment) => {
       assignEnvironment(environment);
-
-      const disallowed = environment.tier === EnvironmentTier.PROTECTED;
-      if (disallowed) {
-        return policyV1Store.upsertPolicy({
-          parentPath: environment.name,
-          updateMask: ["payload", "inherit_from_parent"],
-          policy: {
-            type: PolicyTypeV1.ACCESS_CONTROL,
-            inheritFromParent: true,
-            accessControlPolicy: {
-              disallowRules: [{ fullDatabase: true }],
-            },
-          },
-        });
-      } else {
-        policyV1Store
-          .getOrFetchPolicyByParentAndType({
-            parentPath: environment.name,
-            policyType: PolicyTypeV1.ACCESS_CONTROL,
-          })
-          .then((existingPolicy) => {
-            if (existingPolicy) {
-              policyV1Store.deletePolicy(existingPolicy.name);
-            }
-          });
-      }
     })
     .then(() => {
       pushNotification({

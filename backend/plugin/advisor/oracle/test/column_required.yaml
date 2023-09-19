@@ -4,7 +4,7 @@
       code: 401
       title: column.required
       content: 'Table "BOOK" requires columns: "created_ts", "creator_id", "updated_ts", "updater_id"'
-      line: 2
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE book(
@@ -28,7 +28,7 @@
       code: 401
       title: column.required
       content: 'Table "TECH_BOOK" requires columns: "creator_id"'
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     ALTER TABLE tech_book ADD "creator_id" int;
@@ -38,5 +38,5 @@
       code: 401
       title: column.required
       content: 'Table "TECH_BOOK" requires columns: "creator_id"'
-      line: 3
+      line: 2
       details: ""

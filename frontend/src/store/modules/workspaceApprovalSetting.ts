@@ -1,16 +1,15 @@
+import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { cloneDeep } from "lodash-es";
-
 import { settingServiceClient } from "@/grpcweb";
-import { Setting } from "@/types/proto/v1/setting_service";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
+import { Risk_Source } from "@/types/proto/v1/risk_service";
+import { Setting } from "@/types/proto/v1/setting_service";
 import {
   resolveLocalApprovalConfig,
   buildWorkspaceApprovalSetting,
   seedWorkspaceApprovalSetting,
 } from "@/utils";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { useGracefulRequest } from "./utils";
 
 const SETTING_NAME = "settings/bb.workspace.approval";

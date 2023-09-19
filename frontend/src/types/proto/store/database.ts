@@ -1,12 +1,24 @@
 /* eslint-disable */
-import * as Long from "long";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
+import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
 
 export const protobufPackage = "bytebase.store";
 
 /** DatabaseMetadata is the metadata for databases. */
 export interface DatabaseMetadata {
+  labels: { [key: string]: string };
+  lastSyncTime?: Date | undefined;
+}
+
+export interface DatabaseMetadata_LabelsEntry {
+  key: string;
+  value: string;
+}
+
+/** DatabaseSchemaMetadata is the schema metadata for databases. */
+export interface DatabaseSchemaMetadata {
   name: string;
   /** The schemas is the list of schemas in a database. */
   schemas: SchemaMetadata[];
@@ -18,6 +30,8 @@ export interface DatabaseMetadata {
   extensions: ExtensionMetadata[];
   /** The database belongs to a datashare. */
   datashare: boolean;
+  /** The service name of the database. It's the Oracle specific concept. */
+  serviceName: string;
 }
 
 /**
@@ -226,8 +240,15 @@ export interface TableMetadata {
   dataFree: number;
   /** The create_options is the create option of a table. */
   createOptions: string;
-  /** The comment is the comment of a table. */
+  /**
+   * The comment is the comment of a table.
+   * classification and user_comment is parsed from the comment.
+   */
   comment: string;
+  /** The classification is the classification of a table parsed from the comment. */
+  classification: string;
+  /** The user_comment is the user comment of a table parsed from the comment. */
+  userComment: string;
   /** The foreign_keys is the list of foreign keys in a table. */
   foreignKeys: ForeignKeyMetadata[];
 }
@@ -239,7 +260,9 @@ export interface ColumnMetadata {
   /** The position is the position in columns. */
   position: number;
   /** The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. */
-  default?: string;
+  default?:
+    | string
+    | undefined;
   /** The nullable is the nullable of a column. */
   nullable: boolean;
   /** The type is the type of a column. */
@@ -248,8 +271,15 @@ export interface ColumnMetadata {
   characterSet: string;
   /** The collation is the collation of a column. */
   collation: string;
-  /** The comment is the comment of a column. */
+  /**
+   * The comment is the comment of a column.
+   * classification and user_comment is parsed from the comment.
+   */
   comment: string;
+  /** The classification is the classification of a table parsed from the comment. */
+  classification: string;
+  /** The user_comment is the user comment of a table parsed from the comment. */
+  userComment: string;
 }
 
 /** ViewMetadata is the metadata for views. */
@@ -365,11 +395,168 @@ export interface SecretItem {
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], datashare: false };
+  return { labels: {}, lastSyncTime: undefined };
 }
 
 export const DatabaseMetadata = {
   encode(message: DatabaseMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    Object.entries(message.labels).forEach(([key, value]) => {
+      DatabaseMetadata_LabelsEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).ldelim();
+    });
+    if (message.lastSyncTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSyncTime), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          const entry1 = DatabaseMetadata_LabelsEntry.decode(reader, reader.uint32());
+          if (entry1.value !== undefined) {
+            message.labels[entry1.key] = entry1.value;
+          }
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lastSyncTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseMetadata {
+    return {
+      labels: isObject(object.labels)
+        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      lastSyncTime: isSet(object.lastSyncTime) ? fromJsonTimestamp(object.lastSyncTime) : undefined,
+    };
+  },
+
+  toJSON(message: DatabaseMetadata): unknown {
+    const obj: any = {};
+    obj.labels = {};
+    if (message.labels) {
+      Object.entries(message.labels).forEach(([k, v]) => {
+        obj.labels[k] = v;
+      });
+    }
+    message.lastSyncTime !== undefined && (obj.lastSyncTime = message.lastSyncTime.toISOString());
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
+    return DatabaseMetadata.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
+    const message = createBaseDatabaseMetadata();
+    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    message.lastSyncTime = object.lastSyncTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseDatabaseMetadata_LabelsEntry(): DatabaseMetadata_LabelsEntry {
+  return { key: "", value: "" };
+}
+
+export const DatabaseMetadata_LabelsEntry = {
+  encode(message: DatabaseMetadata_LabelsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseMetadata_LabelsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseMetadata_LabelsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseMetadata_LabelsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: DatabaseMetadata_LabelsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseMetadata_LabelsEntry>): DatabaseMetadata_LabelsEntry {
+    return DatabaseMetadata_LabelsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DatabaseMetadata_LabelsEntry>): DatabaseMetadata_LabelsEntry {
+    const message = createBaseDatabaseMetadata_LabelsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseDatabaseSchemaMetadata(): DatabaseSchemaMetadata {
+  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], datashare: false, serviceName: "" };
+}
+
+export const DatabaseSchemaMetadata = {
+  encode(message: DatabaseSchemaMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -388,13 +575,16 @@ export const DatabaseMetadata = {
     if (message.datashare === true) {
       writer.uint32(48).bool(message.datashare);
     }
+    if (message.serviceName !== "") {
+      writer.uint32(58).string(message.serviceName);
+    }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseMetadata {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseSchemaMetadata {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDatabaseMetadata();
+    const message = createBaseDatabaseSchemaMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -440,6 +630,13 @@ export const DatabaseMetadata = {
 
           message.datashare = reader.bool();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.serviceName = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -449,7 +646,7 @@ export const DatabaseMetadata = {
     return message;
   },
 
-  fromJSON(object: any): DatabaseMetadata {
+  fromJSON(object: any): DatabaseSchemaMetadata {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       schemas: Array.isArray(object?.schemas) ? object.schemas.map((e: any) => SchemaMetadata.fromJSON(e)) : [],
@@ -459,10 +656,11 @@ export const DatabaseMetadata = {
         ? object.extensions.map((e: any) => ExtensionMetadata.fromJSON(e))
         : [],
       datashare: isSet(object.datashare) ? Boolean(object.datashare) : false,
+      serviceName: isSet(object.serviceName) ? String(object.serviceName) : "",
     };
   },
 
-  toJSON(message: DatabaseMetadata): unknown {
+  toJSON(message: DatabaseSchemaMetadata): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.schemas) {
@@ -478,21 +676,23 @@ export const DatabaseMetadata = {
       obj.extensions = [];
     }
     message.datashare !== undefined && (obj.datashare = message.datashare);
+    message.serviceName !== undefined && (obj.serviceName = message.serviceName);
     return obj;
   },
 
-  create(base?: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
-    return DatabaseMetadata.fromPartial(base ?? {});
+  create(base?: DeepPartial<DatabaseSchemaMetadata>): DatabaseSchemaMetadata {
+    return DatabaseSchemaMetadata.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
-    const message = createBaseDatabaseMetadata();
+  fromPartial(object: DeepPartial<DatabaseSchemaMetadata>): DatabaseSchemaMetadata {
+    const message = createBaseDatabaseSchemaMetadata();
     message.name = object.name ?? "";
     message.schemas = object.schemas?.map((e) => SchemaMetadata.fromPartial(e)) || [];
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
     message.datashare = object.datashare ?? false;
+    message.serviceName = object.serviceName ?? "";
     return message;
   },
 };
@@ -992,6 +1192,8 @@ function createBaseTableMetadata(): TableMetadata {
     dataFree: 0,
     createOptions: "",
     comment: "",
+    classification: "",
+    userComment: "",
     foreignKeys: [],
   };
 }
@@ -1030,6 +1232,12 @@ export const TableMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(90).string(message.comment);
+    }
+    if (message.classification !== "") {
+      writer.uint32(106).string(message.classification);
+    }
+    if (message.userComment !== "") {
+      writer.uint32(114).string(message.userComment);
     }
     for (const v of message.foreignKeys) {
       ForeignKeyMetadata.encode(v!, writer.uint32(98).fork()).ldelim();
@@ -1121,6 +1329,20 @@ export const TableMetadata = {
 
           message.comment = reader.string();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.classification = reader.string();
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.userComment = reader.string();
+          continue;
         case 12:
           if (tag !== 98) {
             break;
@@ -1150,6 +1372,8 @@ export const TableMetadata = {
       dataFree: isSet(object.dataFree) ? Number(object.dataFree) : 0,
       createOptions: isSet(object.createOptions) ? String(object.createOptions) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
+      classification: isSet(object.classification) ? String(object.classification) : "",
+      userComment: isSet(object.userComment) ? String(object.userComment) : "",
       foreignKeys: Array.isArray(object?.foreignKeys)
         ? object.foreignKeys.map((e: any) => ForeignKeyMetadata.fromJSON(e))
         : [],
@@ -1177,6 +1401,8 @@ export const TableMetadata = {
     message.dataFree !== undefined && (obj.dataFree = Math.round(message.dataFree));
     message.createOptions !== undefined && (obj.createOptions = message.createOptions);
     message.comment !== undefined && (obj.comment = message.comment);
+    message.classification !== undefined && (obj.classification = message.classification);
+    message.userComment !== undefined && (obj.userComment = message.userComment);
     if (message.foreignKeys) {
       obj.foreignKeys = message.foreignKeys.map((e) => e ? ForeignKeyMetadata.toJSON(e) : undefined);
     } else {
@@ -1202,6 +1428,8 @@ export const TableMetadata = {
     message.dataFree = object.dataFree ?? 0;
     message.createOptions = object.createOptions ?? "";
     message.comment = object.comment ?? "";
+    message.classification = object.classification ?? "";
+    message.userComment = object.userComment ?? "";
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     return message;
   },
@@ -1217,6 +1445,8 @@ function createBaseColumnMetadata(): ColumnMetadata {
     characterSet: "",
     collation: "",
     comment: "",
+    classification: "",
+    userComment: "",
   };
 }
 
@@ -1245,6 +1475,12 @@ export const ColumnMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(66).string(message.comment);
+    }
+    if (message.classification !== "") {
+      writer.uint32(74).string(message.classification);
+    }
+    if (message.userComment !== "") {
+      writer.uint32(82).string(message.userComment);
     }
     return writer;
   },
@@ -1312,6 +1548,20 @@ export const ColumnMetadata = {
 
           message.comment = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.classification = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.userComment = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1331,6 +1581,8 @@ export const ColumnMetadata = {
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
       collation: isSet(object.collation) ? String(object.collation) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
+      classification: isSet(object.classification) ? String(object.classification) : "",
+      userComment: isSet(object.userComment) ? String(object.userComment) : "",
     };
   },
 
@@ -1344,6 +1596,8 @@ export const ColumnMetadata = {
     message.characterSet !== undefined && (obj.characterSet = message.characterSet);
     message.collation !== undefined && (obj.collation = message.collation);
     message.comment !== undefined && (obj.comment = message.comment);
+    message.classification !== undefined && (obj.classification = message.classification);
+    message.userComment !== undefined && (obj.userComment = message.userComment);
     return obj;
   },
 
@@ -1361,6 +1615,8 @@ export const ColumnMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.comment = object.comment ?? "";
+    message.classification = object.classification ?? "";
+    message.userComment = object.userComment ?? "";
     return message;
   },
 };
@@ -2243,10 +2499,10 @@ export const SecretItem = {
   },
 };
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
@@ -2269,6 +2525,28 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
+
 function longToNumber(long: Long): number {
   if (long.gt(Number.MAX_SAFE_INTEGER)) {
     throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
@@ -2276,11 +2554,13 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

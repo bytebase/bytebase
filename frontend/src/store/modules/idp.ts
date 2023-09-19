@@ -1,8 +1,8 @@
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
-import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { identityProviderClient } from "@/grpcweb";
 import { State } from "@/types/proto/v1/common";
+import { IdentityProvider } from "@/types/proto/v1/idp_service";
 
 interface IdentityProviderState {
   identityProviderMapByName: Map<string, IdentityProvider>;

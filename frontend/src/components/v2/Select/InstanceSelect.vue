@@ -1,5 +1,6 @@
 <template>
   <NSelect
+    v-bind="$attrs"
     :value="instance"
     :options="options"
     :placeholder="$t('instance.select')"
@@ -9,21 +10,19 @@
     :virtual-scroll="true"
     :fallback-option="false"
     class="bb-instance-select"
-    style="width: 12rem"
     @update:value="$emit('update:instance', $event)"
   />
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, h } from "vue";
 import { NSelect, SelectOption } from "naive-ui";
+import { computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { useEnvironmentV1Store, useInstanceV1List } from "@/store";
 import { ComposedInstance, UNKNOWN_ID, unknownInstance } from "@/types";
-import { InstanceV1EngineIcon } from "../Model";
 import { Engine, State } from "@/types/proto/v1/common";
 import { supportedEngineV1List } from "@/utils";
-import { useEnvironmentV1Store, useInstanceV1List } from "@/store";
+import { InstanceV1EngineIcon } from "../Model/Instance";
 
 interface InstanceSelectOption extends SelectOption {
   value: string;

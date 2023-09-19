@@ -2,10 +2,8 @@ package tests
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,7 +11,6 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -136,21 +133,12 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	pgStopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
 	defer pgStopInstance()
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
-	a.NoError(err)
-
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-
 	mysqlInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "root", Password: ""}},
 		},
@@ -162,7 +150,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "pgInstance",
 			Engine:      v1pb.Engine_POSTGRES,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "root"}},
 		},
@@ -181,18 +169,16 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		default:
 			a.FailNow("unsupported db type")
 		}
-		err = ctl.createDatabase(ctx, projectUID, instance, tt.databaseName, databaseOwner, nil)
+		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, tt.databaseName, databaseOwner, nil)
 		a.NoError(err)
 
 		database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 			Name: fmt.Sprintf("%s/databases/%s", instance.Name, tt.databaseName),
 		})
 		a.NoError(err)
-		databaseUID, err := strconv.Atoi(database.Uid)
-		a.NoError(err)
 
 		sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-			Parent: project.Name,
+			Parent: ctl.project.Name,
 			Sheet: &v1pb.Sheet{
 				Title:      "prepareStatements",
 				Content:    []byte(tt.prepareStatements),
@@ -202,32 +188,9 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			},
 		})
 		a.NoError(err)
-		sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-		a.NoError(err)
 
-		// Create an issue that updates database schema.
-		createContext, err := json.Marshal(&api.MigrationContext{
-			DetailList: []*api.MigrationDetail{
-				{
-					MigrationType: db.Migrate,
-					DatabaseID:    databaseUID,
-					SheetID:       sheetUID,
-				},
-			},
-		})
+		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 		a.NoError(err)
-		issue, err := ctl.createIssue(api.IssueCreate{
-			ProjectID:     projectUID,
-			Name:          fmt.Sprintf("Prepare statements of database %q", tt.databaseName),
-			Type:          api.IssueDatabaseSchemaUpdate,
-			Description:   fmt.Sprintf("Prepare statements of database %q.", tt.databaseName),
-			AssigneeID:    api.SystemBotID,
-			CreateContext: string(createContext),
-		})
-		a.NoError(err)
-		status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-		a.NoError(err)
-		a.Equal(api.TaskDone, status)
 
 		results, err := ctl.adminQuery(ctx, instance, tt.databaseName, tt.query)
 		a.NoError(err)

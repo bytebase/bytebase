@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net"
 	"regexp"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -249,7 +249,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		}
 		// Restore the current transaction role to the current user.
 		if _, err := tx.ExecContext(ctx, "SET SESSION AUTHORIZATION DEFAULT"); err != nil {
-			log.Warn("Failed to restore the current transaction role to the current user", zap.Error(err))
+			slog.Warn("Failed to restore the current transaction role to the current user", log.BBError(err))
 		}
 
 		if err := tx.Commit(); err != nil {
@@ -258,7 +258,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			log.Debug("rowsAffected returns error", zap.Error(err))
+			slog.Debug("rowsAffected returns error", log.BBError(err))
 		} else {
 			totalRowsAffected += rowsAffected
 		}
@@ -314,35 +314,6 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 	return databaseName, nil
 }
 
-// QueryConn will query the database using the provided connection, it is useful for keeping the context of the connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
-	if err != nil {
-		return nil, err
-	}
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
-
-	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
-	// https://github.com/postgres/postgres/blob/master/src/bin/psql/common.c#L969
-	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
-		sqlResult, err := conn.ExecContext(ctx, singleSQLs[0].Text)
-		if err != nil {
-			return nil, err
-		}
-		affectedRows, err := sqlResult.RowsAffected()
-		if err != nil {
-			return nil, err
-		}
-		field := []string{"Affected Rows"}
-		types := []string{"INT"}
-		rows := [][]any{{affectedRows}}
-		return []any{field, types, rows}, nil
-	}
-	return util.Query(ctx, db.Postgres, conn, statement, queryContext)
-}
-
 // GetCurrentDatabaseOwner returns the current database owner name.
 func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 	const query = `
@@ -372,8 +343,8 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 	return owner, nil
 }
 
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
 		return nil, err
@@ -415,7 +386,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.Redshift, conn, stmt, queryContext)
+	result, err := util.Query(ctx, db.Redshift, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

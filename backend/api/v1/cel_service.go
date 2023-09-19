@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -23,7 +24,7 @@ func NewCelService() *CelService {
 
 // Parse parses a CEL expression.
 func (*CelService) Parse(_ context.Context, request *v1pb.ParseRequest) (*v1pb.ParseResponse, error) {
-	e, err := cel.NewEnv(iamPolicyCELAttributes...)
+	e, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create CEL environment: %v", err)
 	}

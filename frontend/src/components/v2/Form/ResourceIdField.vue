@@ -52,10 +52,9 @@
 </template>
 
 <script lang="ts" setup>
+import { NInput, type InputProps } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { NInput, type InputProps } from "naive-ui";
-
 import type { ResourceId, ValidatedMessage } from "@/types";
 import { randomString } from "@/utils";
 
@@ -205,6 +204,7 @@ const escape = (str: string) => {
     .toLowerCase()
     .split("")
     .map((char) => {
+      if (char == " ") return "-";
       if (char.match(/\s/)) return "";
       if (characters.includes(char)) return char;
       return randomCharacter(char);

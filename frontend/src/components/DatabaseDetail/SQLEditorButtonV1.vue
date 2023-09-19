@@ -19,9 +19,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { NTooltip } from "naive-ui";
-
+import { computed } from "vue";
+import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
 import {
   ComposedDatabase,
   ConnectionTreeMode,
@@ -29,7 +29,6 @@ import {
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { connectionV1Slug, hasWorkspacePermissionV1 } from "@/utils";
-import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
 
 const props = withDefaults(
   defineProps<{

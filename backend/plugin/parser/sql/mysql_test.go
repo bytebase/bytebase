@@ -12,22 +12,27 @@ func TestMySQLParser(t *testing.T) {
 	tests := []struct {
 		statement    string
 		errorMessage string
+		total        int
 	}{
 		{
 			statement:    "aaa",
-			errorMessage: "line 1:0 extraneous input 'aaa' expecting {<EOF>, ALTER_SYMBOL, ANALYZE_SYMBOL, BEGIN_SYMBOL, BINLOG_SYMBOL, CACHE_SYMBOL, CALL_SYMBOL, CHANGE_SYMBOL, CHECKSUM_SYMBOL, CHECK_SYMBOL, COMMIT_SYMBOL, CREATE_SYMBOL, DEALLOCATE_SYMBOL, DELETE_SYMBOL, DESC_SYMBOL, DESCRIBE_SYMBOL, DO_SYMBOL, DROP_SYMBOL, EXECUTE_SYMBOL, EXPLAIN_SYMBOL, FLUSH_SYMBOL, FOR_SYMBOL, GET_SYMBOL, GRANT_SYMBOL, HANDLER_SYMBOL, HELP_SYMBOL, IMPORT_SYMBOL, INSERT_SYMBOL, INSTALL_SYMBOL, KILL_SYMBOL, LOAD_SYMBOL, LOCK_SYMBOL, OPTIMIZE_SYMBOL, PREPARE_SYMBOL, PURGE_SYMBOL, RELEASE_SYMBOL, RENAME_SYMBOL, REPAIR_SYMBOL, REPLACE_SYMBOL, RESET_SYMBOL, RESIGNAL_SYMBOL, REVOKE_SYMBOL, ROLLBACK_SYMBOL, SAVEPOINT_SYMBOL, SELECT_SYMBOL, SET_SYMBOL, SHOW_SYMBOL, SHUTDOWN_SYMBOL, SIGNAL_SYMBOL, START_SYMBOL, STOP_SYMBOL, TABLE_SYMBOL, TRUNCATE_SYMBOL, UNINSTALL_SYMBOL, UNLOCK_SYMBOL, UPDATE_SYMBOL, USE_SYMBOL, VALUES_SYMBOL, WITH_SYMBOL, XA_SYMBOL, CLONE_SYMBOL, RESTART_SYMBOL, ';', '('}",
+			errorMessage: "Syntax error at line 1:0 \nrelated text: aaa",
 		},
 		{
 			statement: "select * from t;\n -- comments",
+			total:     1,
 		},
 		{
 			statement: "SELECT count(t.a) as TID from t1 as t;",
+			total:     1,
 		},
 		{
-			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
+			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;   		",
+			total:     2,
 		},
 		{
 			statement: "CREATE TABLE t1 (c1 INT);",
+			total:     1,
 		},
 		{
 			statement: `
@@ -60,6 +65,7 @@ func TestMySQLParser(t *testing.T) {
 				CALL complex_procedure('MySQL', @output_value);
 				SELECT @output_value;
 			`,
+			total: 4,
 		},
 		{
 			statement: `CREATE TABLE IF NOT EXISTS test_table (
@@ -71,13 +77,15 @@ func TestMySQLParser(t *testing.T) {
 			REPLACE INTO test_table (id, name, description)
 			VALUES (1, 'Test', 'This is a test.');
 			`,
+			total: 2,
 		},
 	}
 
 	for i, test := range tests {
-		_, err := ParseMySQL(test.statement)
+		list, err := ParseMySQL(test.statement)
 		if test.errorMessage == "" {
 			require.NoError(t, err, i)
+			require.Equal(t, test.total, len(list), i)
 		} else {
 			require.EqualError(t, err, test.errorMessage)
 		}
@@ -225,5 +233,59 @@ func TestSplitMySQLStatements(t *testing.T) {
 		for i, statement := range list {
 			require.Equal(t, test.expected[i], statement.Text)
 		}
+	}
+}
+
+func TestExtractMySQLChangedResources(t *testing.T) {
+	tests := []struct {
+		statement string
+		expected  []SchemaResource
+	}{
+		{
+			statement: "CREATE TABLE t1 (c1 INT);",
+			expected: []SchemaResource{
+				{
+					Database: "db",
+					Table:    "t1",
+				},
+			},
+		},
+		{
+			statement: "DROP TABLE t1;",
+			expected: []SchemaResource{
+				{
+					Database: "db",
+					Table:    "t1",
+				},
+			},
+		},
+		{
+			statement: "ALTER TABLE t1 ADD COLUMN c1 INT;",
+			expected: []SchemaResource{
+				{
+					Database: "db",
+					Table:    "t1",
+				},
+			},
+		},
+		{
+			statement: "RENAME TABLE t1 TO t2;",
+			expected: []SchemaResource{
+				{
+					Database: "db",
+					Table:    "t1",
+				},
+				{
+					Database: "db",
+					Table:    "t2",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		resources, err := extractMySQLChangedResources("db", test.statement)
+		require.NoError(t, err)
+		require.Equal(t, test.expected, resources, test.statement)
 	}
 }

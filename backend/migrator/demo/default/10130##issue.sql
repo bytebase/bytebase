@@ -21,8 +21,8 @@ VALUES
         9001,
         'Hello world!',
         'OPEN',
-        'bb.issue.general',
-        'Welcome to Bytebase, this is the issue interface where developers and DBAs collaborate on database schema management issues such as: '||chr(10)||' - Creating a new database'||chr(10)||' - Creating a table'||chr(10)||' - Creating an index'||chr(10)||' - Adding/Altering a column'||chr(10)||' - Troubleshooting performance issue'||chr(10)||'Let''s try some simple tasks:'||chr(10)||'1. Bookmark this issue by clicking the star icon on the top of this page'||chr(10)||'2. Leave a comment below to greet future customers.',
+        'bb.issue.database.schema.update',
+        'Welcome to Bytebase, this is the issue interface where developers and DBAs collaborate on database schema management issues such as: '||chr(10)||chr(10)||' - Creating a new database'||chr(10)||' - Creating a table'||chr(10)||' - Creating an index'||chr(10)||' - Adding/Altering a column'||chr(10)||' - Troubleshooting performance issue'||chr(10)||chr(10)||'Let''s try some simple tasks:'||chr(10)||chr(10)||'1. Bookmark this issue by clicking the star icon on the top of this page.'||chr(10)||'2. Leave a comment below to greet future customers.',
         101
     );
 

@@ -1,7 +1,9 @@
+<!-- This component is used when uses don't have available plan to access the feature, or the instance is missing required license. -->
+<!-- Normally this should be a blocker to use the feature -->
 <template>
   <div
     v-if="instanceMissingLicense"
-    :class="['text-accentcursor-pointer', customClass]"
+    :class="['text-accent cursor-pointer', customClass]"
     @click="state.showInstanceAssignmentDrawer = true"
   >
     <NTooltip :show-arrow="true">
@@ -13,26 +15,47 @@
       </span>
     </NTooltip>
   </div>
-  <router-link
-    v-else-if="!hasFeature"
-    to="/setting/subscription"
-    exact-active-class=""
-  >
-    <heroicons-solid:sparkles class="text-accent w-5 h-5" />
-  </router-link>
+  <template v-else-if="!hasFeature">
+    <NTooltip :show-arrow="true">
+      <template #trigger>
+        <router-link
+          v-if="clickable"
+          to="/setting/subscription"
+          exact-active-class=""
+        >
+          <heroicons-solid:sparkles class="text-accent w-5 h-5" />
+        </router-link>
+        <span v-else>
+          <heroicons-solid:sparkles class="text-accent w-5 h-5" />
+        </span>
+      </template>
+      <span class="w-56 text-sm">
+        {{
+          $t("subscription.require-subscription", {
+            requiredPlan: $t(
+              `subscription.plan.${planTypeToString(
+                subscriptionStore.getMinimumRequiredPlan(feature)
+              )}.title`
+            ),
+          })
+        }}
+      </span>
+    </NTooltip>
+  </template>
   <InstanceAssignment
-    v-if="!hasFeature"
+    v-if="instanceMissingLicense && canManageSubscription"
     :show="state.showInstanceAssignmentDrawer"
     @dismiss="state.showInstanceAssignmentDrawer = false"
   />
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed } from "vue";
-import { FeatureType } from "@/types";
-import { useSubscriptionV1Store } from "@/store";
-import { Instance } from "@/types/proto/v1/instance_service";
 import { NTooltip } from "naive-ui";
+import { reactive, PropType, computed } from "vue";
+import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
+import { FeatureType, planTypeToString } from "@/types";
+import { Instance } from "@/types/proto/v1/instance_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
@@ -52,6 +75,10 @@ const props = defineProps({
     default: "",
     type: String,
   },
+  clickable: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const state = reactive<LocalState>({
@@ -59,6 +86,7 @@ const state = reactive<LocalState>({
 });
 
 const subscriptionStore = useSubscriptionV1Store();
+const currentUserV1 = useCurrentUserV1();
 
 const hasFeature = computed(() => {
   return subscriptionStore.hasInstanceFeature(props.feature, props.instance);
@@ -68,6 +96,13 @@ const instanceMissingLicense = computed(() => {
   return subscriptionStore.instanceMissingLicense(
     props.feature,
     props.instance
+  );
+});
+
+const canManageSubscription = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-subscription",
+    currentUserV1.value.userRole
   );
 });
 </script>

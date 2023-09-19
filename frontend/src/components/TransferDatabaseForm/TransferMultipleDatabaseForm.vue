@@ -133,20 +133,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, watch } from "vue";
 import { NButton, NCollapse, NCollapseItem } from "naive-ui";
-
+import { computed, PropType, reactive, watch } from "vue";
 import { type BBGridColumn, BBGrid } from "@/bbkit";
-import { ComposedDatabase } from "@/types";
-import { TransferSource } from "./utils";
 import { useDatabaseV1Store, useEnvironmentV1List } from "@/store";
+import { ComposedDatabase } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 import {
   DrawerContent,
   InstanceV1Name,
   ProductionEnvironmentV1Icon,
 } from "../v2";
-import { State } from "@/types/proto/v1/common";
+import { TransferSource } from "./utils";
 
 type LocalState = {
   selectedDatabaseUidListForEnvironment: Map<string, Set<string>>;
@@ -197,7 +196,7 @@ const gridColumnList = computed((): BBGridColumn[] => {
 const databaseListGroupByEnvironment = computed(() => {
   const listByEnv = environmentList.value.map((environment) => {
     const databaseList = props.databaseList.filter(
-      (db) => db.instanceEntity.environment === environment.name
+      (db) => db.effectiveEnvironment === environment.name
     );
     return {
       environment,
@@ -288,7 +287,7 @@ const getSelectionStateSummaryForEnvironment = (
 };
 
 const handleClickRow = (db: ComposedDatabase) => {
-  const environment = db.instanceEntity.environmentEntity;
+  const environment = db.effectiveEnvironmentEntity;
   toggleDatabaseIdForEnvironment(
     db.uid,
     environment.uid,

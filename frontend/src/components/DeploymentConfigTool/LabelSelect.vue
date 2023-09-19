@@ -83,9 +83,9 @@
 </template>
 
 <script lang="ts">
+import { onClickOutside } from "@vueuse/core";
 import { reactive, PropType, watch, defineComponent, ref, computed } from "vue";
 import { VBinder, VTarget, VFollower } from "vueuc";
-import { onClickOutside } from "@vueuse/core";
 import ResponsiveTags from "./ResponsiveTags.vue";
 
 export type DataType = string | number;

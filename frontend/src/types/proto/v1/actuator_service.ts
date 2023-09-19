@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -12,9 +11,11 @@ export interface GetActuatorInfoRequest {
 
 export interface UpdateActuatorInfoRequest {
   /** The actuator to update. */
-  actuator?: ActuatorInfo;
+  actuator?:
+    | ActuatorInfo
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface ListDebugLogRequest {
@@ -46,7 +47,7 @@ export interface ListDebugLogResponse {
 }
 
 export interface DebugLog {
-  recordTime?: Date;
+  recordTime?: Date | undefined;
   requestPath: string;
   role: string;
   error: string;
@@ -82,7 +83,9 @@ export interface ActuatorInfo {
   /** disallow_signup is the flag to disable self-service signup. */
   disallowSignup: boolean;
   /** last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value. */
-  lastActiveTime?: Date;
+  lastActiveTime?:
+    | Date
+    | undefined;
   /** require_2fa is the flag to require 2FA for all users. */
   require2fa: boolean;
   /** workspace_id is the identifier for the workspace. */
@@ -91,6 +94,12 @@ export interface ActuatorInfo {
   gitopsWebhookUrl: string;
   /** debug flag means if the debug mode is enabled. */
   debug: boolean;
+  /**
+   * development_use_v2_scheduler flag means if the server uses the v2 task run scheduler.
+   * this flag is only used for development purpose and
+   * will be removed once we switch to the v2 scheduler.
+   */
+  developmentUseV2Scheduler: boolean;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -528,6 +537,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     workspaceId: "",
     gitopsWebhookUrl: "",
     debug: false,
+    developmentUseV2Scheduler: false,
   };
 }
 
@@ -577,6 +587,9 @@ export const ActuatorInfo = {
     }
     if (message.debug === true) {
       writer.uint32(120).bool(message.debug);
+    }
+    if (message.developmentUseV2Scheduler === true) {
+      writer.uint32(800).bool(message.developmentUseV2Scheduler);
     }
     return writer;
   },
@@ -693,6 +706,13 @@ export const ActuatorInfo = {
 
           message.debug = reader.bool();
           continue;
+        case 100:
+          if (tag !== 800) {
+            break;
+          }
+
+          message.developmentUseV2Scheduler = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -719,6 +739,9 @@ export const ActuatorInfo = {
       workspaceId: isSet(object.workspaceId) ? String(object.workspaceId) : "",
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? String(object.gitopsWebhookUrl) : "",
       debug: isSet(object.debug) ? Boolean(object.debug) : false,
+      developmentUseV2Scheduler: isSet(object.developmentUseV2Scheduler)
+        ? Boolean(object.developmentUseV2Scheduler)
+        : false,
     };
   },
 
@@ -739,6 +762,8 @@ export const ActuatorInfo = {
     message.workspaceId !== undefined && (obj.workspaceId = message.workspaceId);
     message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
     message.debug !== undefined && (obj.debug = message.debug);
+    message.developmentUseV2Scheduler !== undefined &&
+      (obj.developmentUseV2Scheduler = message.developmentUseV2Scheduler);
     return obj;
   },
 
@@ -763,6 +788,7 @@ export const ActuatorInfo = {
     message.workspaceId = object.workspaceId ?? "";
     message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
     message.debug = object.debug ?? false;
+    message.developmentUseV2Scheduler = object.developmentUseV2Scheduler ?? false;
     return message;
   },
 };
@@ -932,38 +958,6 @@ export const ActuatorServiceDefinition = {
     },
   },
 } as const;
-
-export interface ActuatorServiceImplementation<CallContextExt = {}> {
-  getActuatorInfo(
-    request: GetActuatorInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ActuatorInfo>>;
-  updateActuatorInfo(
-    request: UpdateActuatorInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ActuatorInfo>>;
-  deleteCache(request: DeleteCacheRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  listDebugLog(
-    request: ListDebugLogRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListDebugLogResponse>>;
-}
-
-export interface ActuatorServiceClient<CallOptionsExt = {}> {
-  getActuatorInfo(
-    request: DeepPartial<GetActuatorInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ActuatorInfo>;
-  updateActuatorInfo(
-    request: DeepPartial<UpdateActuatorInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ActuatorInfo>;
-  deleteCache(request: DeepPartial<DeleteCacheRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  listDebugLog(
-    request: DeepPartial<ListDebugLogRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListDebugLogResponse>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

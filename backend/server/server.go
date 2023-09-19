@@ -3,43 +3,20 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"math"
+	"log/slog"
 	"net"
-	"net/http"
 	"runtime"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
-	// embed will embeds the acl policy.
-	_ "embed"
-
-	"github.com/blang/semver/v4"
-	"github.com/casbin/casbin/v2"
-	"github.com/casbin/casbin/v2/model"
-	"github.com/google/uuid"
-	"github.com/gosimple/slug"
 	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/labstack/echo-contrib/pprof"
-	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
-	scas "github.com/qiangmzsx/string-adapter/v2"
-	echoSwagger "github.com/swaggo/echo-swagger"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
-
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 
@@ -54,33 +31,23 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	enterpriseService "github.com/bytebase/bytebase/backend/enterprise/service"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/metric"
-	metricCollector "github.com/bytebase/bytebase/backend/metric/collector"
 	"github.com/bytebase/bytebase/backend/migrator"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	metricPlugin "github.com/bytebase/bytebase/backend/plugin/metric"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
-	"github.com/bytebase/bytebase/backend/runner/anomaly"
 	"github.com/bytebase/bytebase/backend/runner/approval"
-	"github.com/bytebase/bytebase/backend/runner/apprun"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
-	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register clickhouse driver.
 
@@ -106,6 +73,13 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redshift"
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
+	// Register clickhouse driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	// Register dm driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/dm"
+	// Register risingwave driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/risingwave"
+
 	// Register fake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/fake"
 	// Register mysql advisor.
@@ -116,13 +90,15 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
 	// Register snowflake advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
-	// Register clickhouse driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
+	// Register mssql advisor.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 
 	// Register mysql differ driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/mysql"
 	// Register postgres differ driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/pg"
+	// Register oracle differ driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/plsql"
 	// Register mysql edit driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/edit/mysql"
 	// Register postgres edit driver.
@@ -137,36 +113,29 @@ const (
 	// internalAPIPrefix is the API prefix for Bytebase internal, used by the UX.
 	internalAPIPrefix = "/api"
 	// webhookAPIPrefix is the API prefix for Bytebase webhook.
-	webhookAPIPrefix = "/hook"
-	// openAPIPrefix is the API prefix for Bytebase OpenAPI.
-	openAPIPrefix          = "/v1"
-	maxStacksize           = 8 * 1024
+	webhookAPIPrefix       = "/hook"
+	maxStacksize           = 1024 * 10240
 	gracefulShutdownPeriod = 10 * time.Second
 )
 
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	TaskScheduler      *taskrun.Scheduler
-	TaskCheckScheduler *taskcheck.Scheduler
-	MetricReporter     *metricreport.Reporter
-	SchemaSyncer       *schemasync.Syncer
-	SlowQuerySyncer    *slowquerysync.Syncer
-	MailSender         *mail.SlowQueryWeeklyMailSender
-	BackupRunner       *backuprun.Runner
-	AnomalyScanner     *anomaly.Scanner
-	ApplicationRunner  *apprun.Runner
-	RollbackRunner     *rollbackrun.Runner
-	ApprovalRunner     *approval.Runner
-	RelayRunner        *relay.Runner
+	taskSchedulerV2    *taskrun.SchedulerV2
+	planCheckScheduler *plancheck.Scheduler
+	metricReporter     *metricreport.Reporter
+	schemaSyncer       *schemasync.Syncer
+	slowQuerySyncer    *slowquerysync.Syncer
+	mailSender         *mail.SlowQueryWeeklyMailSender
+	backupRunner       *backuprun.Runner
+	rollbackRunner     *rollbackrun.Runner
+	approvalRunner     *approval.Runner
+	relayRunner        *relay.Runner
 	runnerWG           sync.WaitGroup
 
-	ActivityManager *activity.Manager
+	activityManager *activity.Manager
 
 	licenseService enterpriseAPI.LicenseService
-
-	// SchemaVersion is the bytebase's schema version
-	SchemaVersion *semver.Version
 
 	profile         config.Profile
 	e               *echo.Echo
@@ -178,6 +147,10 @@ type Server struct {
 	secret          string
 	errorRecordRing api.ErrorRecordRing
 
+	// Stubs.
+	rolloutService *v1.RolloutService
+	issueService   *v1.IssueService
+
 	// MySQL utility binaries
 	mysqlBinDir string
 	// MongoDB utility binaries
@@ -185,8 +158,7 @@ type Server struct {
 	// Postgres utility binaries
 	pgBinDir string
 
-	s3Client       *bbs3.Client
-	feishuProvider *feishu.Provider
+	s3Client *bbs3.Client
 
 	// stateCfg is the shared in-momory state within the server.
 	stateCfg *state.State
@@ -194,37 +166,6 @@ type Server struct {
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
 }
-
-//go:embed acl_casbin_model.conf
-var casbinModel string
-
-//go:embed acl_casbin_policy_owner.csv
-var casbinOwnerPolicy string
-
-//go:embed acl_casbin_policy_dba.csv
-var casbinDBAPolicy string
-
-//go:embed acl_casbin_policy_developer.csv
-var casbinDeveloperPolicy string
-
-// Use following cmd to generate swagger doc
-// swag init -g ./backend/server.go -d ./backend/server --output docs/openapi --parseDependency
-
-// @title Bytebase OpenAPI
-// @version 1.0
-// @description The OpenAPI for bytebase.
-// @termsOfService https://www.bytebase.com/terms
-
-// @contact.name API Support
-// @contact.url https://github.com/bytebase/bytebase/
-// @contact.email support@bytebase.com
-
-// @license.name MIT
-// @license.url https://github.com/bytebase/bytebase/blob/main/LICENSE
-
-// @host localhost:8080
-// @BasePath /v1/
-// @schemes http
 
 // NewServer creates a server.
 func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
@@ -235,18 +176,17 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	// Display config
-	log.Info("-----Config BEGIN-----")
-	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
-	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
-	log.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
-	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
-	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
-	log.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
-	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
-	log.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
-	log.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
-	log.Info(fmt.Sprintf("backupCredentialFile=%s", profile.BackupCredentialFile))
-	log.Info("-----Config END-------")
+	slog.Info("-----Config BEGIN-----")
+	slog.Info(fmt.Sprintf("mode=%s", profile.Mode))
+	slog.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
+	slog.Info(fmt.Sprintf("resourceDir=%s", profile.ResourceDir))
+	slog.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
+	slog.Info(fmt.Sprintf("demoName=%s", profile.DemoName))
+	slog.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
+	slog.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
+	slog.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
+	slog.Info(fmt.Sprintf("backupCredentialFile=%s", profile.BackupCredentialFile))
+	slog.Info("-----Config END-------")
 
 	serverStarted := false
 	defer func() {
@@ -277,27 +217,30 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Start a Postgres sample server. This is used for onboarding users without requiring them to
 	// configure an external instance.
 	if profile.SampleDatabasePort != 0 {
-		log.Info("-----Sample Postgres Instance BEGIN-----")
-		sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir)
-		log.Info(fmt.Sprintf("sampleDatabasePort=%d", profile.SampleDatabasePort))
-		log.Info(fmt.Sprintf("sampleDataDir=%s", sampleDataDir))
+		slog.Info("-----Sample Postgres Instance BEGIN-----")
+		sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir, "test")
+		slog.Info(fmt.Sprintf("Start test sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort, sampleDataDir))
 		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
-			return nil, err
+			slog.Error("failed to init test sample instance", log.BBError(err))
 		}
-		log.Info("-----Sample Postgres Instance END-----")
+		sampleDataDir = common.GetPostgresSampleDataDir(profile.DataDir, "prod")
+		slog.Info(fmt.Sprintf("Start prod sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort+1, sampleDataDir))
+		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort+1, profile.Mode); err != nil {
+			slog.Error("failed to init prod sample instance", log.BBError(err))
+		}
+		slog.Info("-----Sample Postgres Instance END-----")
 	}
 
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
 		pgDataDir := common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
-		log.Info("-----Embedded Postgres Config BEGIN-----")
-		log.Info(fmt.Sprintf("datastorePort=%d", profile.DatastorePort))
-		log.Info(fmt.Sprintf("pgDataDir=%s", pgDataDir))
-		log.Info("-----Embedded Postgres Config END-----")
+		slog.Info("-----Embedded Postgres BEGIN-----")
+		slog.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", profile.DatastorePort, pgDataDir))
 		if err := postgres.InitDB(s.pgBinDir, pgDataDir, profile.PgUser); err != nil {
 			return nil, err
 		}
 		s.metaDB = store.NewMetadataDBWithEmbedPg(profile.PgUser, pgDataDir, s.pgBinDir, profile.DemoName, profile.Mode)
+		slog.Info("-----Embedded Postgres END-----")
 	} else {
 		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoName, profile.Mode)
 	}
@@ -314,28 +257,28 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	storeInstance := store.New(storeDB)
 	if profile.Readonly {
-		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
+		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
-		metadataVersion, err := migrator.MigrateSchema(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode)
-		if err != nil {
-			return nil, err
-		}
-		s.SchemaVersion = metadataVersion
-		if err := storeInstance.BackfillRiskExpression(ctx); err != nil {
-			return nil, err
-		}
-		if err := storeInstance.BackfillWorkspaceApprovalSetting(ctx); err != nil {
+		if _, err := migrator.MigrateSchema(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode); err != nil {
 			return nil, err
 		}
 	}
+	s.store = storeInstance
 
 	s.stateCfg = &state.State{
 		InstanceDatabaseSyncChan:             make(chan *store.InstanceMessage, 100),
-		InstanceSlowQuerySyncChan:            make(chan string, 100),
+		InstanceSlowQuerySyncChan:            make(chan *state.InstanceSlowQuerySyncMessage, 100),
 		InstanceOutstandingConnections:       make(map[int]int),
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
+		TaskSkippedOrDoneChan:                make(chan int, 1000),
+		PlanCheckTickleChan:                  make(chan int, 1000),
+		TaskRunTickleChan:                    make(chan int, 1000),
 	}
-	s.store = storeInstance
+
+	if err := s.store.BackfillIssueTsVector(ctx); err != nil {
+		slog.Warn("failed to backfill issue ts vector", log.BBError(err))
+	}
+
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
@@ -343,75 +286,27 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	config, err := s.getInitSetting(ctx, storeInstance)
+	secret, externalURL, tokenDuration, err := s.getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
-	s.secret = config.secret
-
-	s.ActivityManager = activity.NewManager(storeInstance)
+	s.secret = secret
+	s.activityManager = activity.NewManager(storeInstance)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
-	e := echo.New()
-	e.Debug = profile.Debug
-	e.HideBanner = true
-	e.HidePort = true
-	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-		Skipper: func(c echo.Context) bool {
-			// Skip grpc and webhook calls.
-			return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
-				strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix) ||
-				strings.HasPrefix(c.Request().URL.Path, "/api/sheet/")
-		},
-		Timeout: 30 * time.Second,
-	}))
-	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
-		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
-			middleware.RateLimiterMemoryStoreConfig{Rate: 30, Burst: 60, ExpiresIn: 3 * time.Minute},
-		),
-		IdentifierExtractor: func(ctx echo.Context) (string, error) {
-			id := ctx.RealIP()
-			return id, nil
-		},
-		ErrorHandler: func(context echo.Context, err error) error {
-			return context.JSON(http.StatusForbidden, nil)
-		},
-		DenyHandler: func(context echo.Context, identifier string, err error) error {
-			return context.JSON(http.StatusTooManyRequests, nil)
-		},
-	}))
 
-	// Disallow to be embedded in an iFrame.
-	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
-		XFrameOptions: "DENY",
-	}))
+	// Configure echo server.
+	s.e = echo.New()
 
-	// MetricReporter middleware.
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			defer func() {
-				// only update for authorized request
-				id, ok := c.Get(getPrincipalIDContextKey()).(int)
-				if !ok || id <= 0 {
-					return
-				}
-				s.profile.LastActiveTs = time.Now().Unix()
-				ctx := c.Request().Context()
+	webhookGroup := s.e.Group(webhookAPIPrefix)
+	s.registerWebhookRoutes(webhookGroup)
+	apiGroup := s.e.Group(internalAPIPrefix)
+	s.registerDatabaseRoutes(apiGroup)
+	s.registerIssueRoutes(apiGroup)
 
-				s.MetricReporter.Report(ctx, &metricPlugin.Metric{
-					Name:  metric.APIRequestMetricName,
-					Value: 1,
-					Labels: map[string]any{
-						"path":   c.Request().URL.Path,
-						"method": c.Request().Method,
-					},
-				})
-			}()
-			return next(c)
-		}
-	})
-
-	embedFrontend(e)
-	s.e = e
+	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
+	// the user has to restart the server to take the latest value.
+	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL, TokenDuration: tokenDuration}
+	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(gatewayModifier.Modify))
 
 	if profile.BackupBucket != "" {
 		credentials, err := bbs3.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
@@ -425,128 +320,66 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.s3Client = s3Client
 	}
 
-	s.MetricReporter = metricreport.NewReporter(s.store, s.licenseService, &s.profile, false)
+	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, &s.profile, false)
+	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
-		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
-		s.SlowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
-		// TODO(p0ny): enable Feishu provider only when it is needed.
-		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
-		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile, s.licenseService)
+		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
+		s.backupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
+		s.rollbackRunner = rollbackrun.NewRunner(&profile, storeInstance, s.dbFactory, s.stateCfg)
+		s.mailSender = mail.NewSender(s.store, s.stateCfg)
+		s.relayRunner = relay.NewRunner(storeInstance, s.activityManager, s.stateCfg)
+		s.approvalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.activityManager, s.relayRunner, s.licenseService)
 
-		s.RelayRunner = relay.NewRunner(storeInstance, s.ActivityManager, s.TaskScheduler, s.stateCfg)
+		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.activityManager)
+		s.taskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
+		s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.schemaSyncer, s.stateCfg, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.backupRunner, s.activityManager, profile))
 
-		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
-		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
-		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.ActivityManager, s.RelayRunner, s.licenseService)
-
-		s.MailSender = mail.NewSender(s.store, s.stateCfg)
-
-		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
-		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
-		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
-		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.licenseService, s.stateCfg, s.SchemaSyncer, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
-		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
-
-		s.TaskCheckScheduler = taskcheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
-		statementSimpleExecutor := taskcheck.NewStatementAdvisorSimpleExecutor(storeInstance, s.licenseService)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementFakeAdvise, statementSimpleExecutor)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
-		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory, s.licenseService)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
-		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
-		databaseConnectExecutor := taskcheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
-		ghostSyncExecutor := taskcheck.NewGhostSyncExecutor(storeInstance, s.secret)
-		s.TaskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
-		pitrMySQLExecutor := taskcheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
-		statementTypeReportExecutor := taskcheck.NewStatementTypeReportExecutor(storeInstance)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementTypeReport, statementTypeReportExecutor)
-		statementAffectedRowsExecutor := taskcheck.NewStatementAffectedRowsReportExecutor(storeInstance, s.dbFactory)
-		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAffectedRowsReport, statementAffectedRowsExecutor)
-
-		// Anomaly scanner
-		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
+		s.planCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
+		databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
+		s.planCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
+		statementTypeExecutor := plancheck.NewStatementTypeExecutor(storeInstance, s.dbFactory)
+		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementType, statementTypeExecutor)
+		statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(storeInstance, s.dbFactory, s.licenseService)
+		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
+		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.secret)
+		s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
+		pitrMySQLExecutor := plancheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
+		s.planCheckScheduler.Register(store.PlanCheckDatabasePITRMySQL, pitrMySQLExecutor)
+		statementReportExecutor := plancheck.NewStatementReportExecutor(storeInstance, s.dbFactory)
+		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 
 		// Metric reporter
 		s.initMetricReporter()
 	}
 
-	// Middleware
-	//
-	// API logger middleware.
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Skipper: func(c echo.Context) bool {
-			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {
-				return true
-			}
-			return !common.HasPrefixes(c.Path(), internalAPIPrefix, openAPIPrefix, webhookAPIPrefix)
-		},
-		Format: `{"time":"${time_rfc3339}",` +
-			`"method":"${method}","uri":"${uri}",` +
-			`"status":${status},"error":"${error}"}` + "\n",
-	}))
-	// Panic recovery middleware.
-	e.Use(recoverMiddleware)
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
-
-	webhookGroup := e.Group(webhookAPIPrefix)
-	s.registerWebhookRoutes(webhookGroup)
-
-	apiGroup := e.Group(internalAPIPrefix)
-	// API JWT authentication middleware.
-	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(internalAPIPrefix, s.store, next, profile.Mode, config.secret)
-	})
-
-	m, err := model.NewModelFromString(casbinModel)
-	if err != nil {
-		return nil, err
-	}
-	sa := scas.NewAdapter(strings.Join([]string{casbinOwnerPolicy, casbinDBAPolicy, casbinDeveloperPolicy}, "\n"))
-	ce, err := casbin.NewEnforcer(m, sa)
-	if err != nil {
-		return nil, err
-	}
-	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(s, internalAPIPrefix, ce, next, profile.Readonly)
-	})
-	s.registerDatabaseRoutes(apiGroup)
-	s.registerIssueRoutes(apiGroup)
-	s.registerIssueSubscriberRoutes(apiGroup)
-	s.registerTaskRoutes(apiGroup)
-	s.registerStageRoutes(apiGroup)
-	s.registerSQLRoutes(apiGroup)
-
-	// Register healthz endpoint.
-	e.GET("/healthz", func(c echo.Context) error {
-		return c.String(http.StatusOK, "OK!\n")
-	})
-
 	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, s.secret, s.licenseService, profile.Mode)
+	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, profile.Mode)
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
-	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing)
+	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
 		stack := make([]byte, maxStacksize)
 		stack = stack[:runtime.Stack(stack, true)]
 		// keep a multiline stack
-		log.Error("v1 server panic error", zap.Error(errors.Errorf("error: %v\n%s", p, stack)))
-		return status.Errorf(codes.Unknown, "error: %v", p)
+		slog.Error("v1 server panic error", log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
+		return status.Errorf(codes.Internal, "error: %v\n%s", p, stack)
 	}
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
+	grpc.EnableTracing = true
 	s.grpcServer = grpc.NewServer(
 		// Override the maximum receiving message size to 100M for uploading large sheets.
 		grpc.MaxRecvMsgSize(100*1024*1024),
+		grpc.InitialWindowSize(100000000),
+		grpc.InitialConnWindowSize(100000000),
 		grpc.ChainUnaryInterceptor(
 			debugProvider.DebugInterceptor,
 			authProvider.AuthenticationInterceptor,
@@ -560,325 +393,31 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			recoveryStreamInterceptor,
 		),
 	)
-	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.licenseService, s.MetricReporter, &profile,
-		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
-			if s.profile.TestOnlySkipOnboardingData {
-				return nil
-			}
-			// Only generate onboarding data after the first enduser signup.
-			if firstEndUser {
-				if profile.SampleDatabasePort != 0 {
-					if err := s.generateOnboardingData(ctx, user.ID); err != nil {
-						return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
-					}
+	configureEchoRouters(s.e, s.grpcServer, mux)
+	postCreateUser := func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
+		if profile.TestOnlySkipOnboardingData {
+			return nil
+		}
+		// Only generate onboarding data after the first enduser signup.
+		if firstEndUser {
+			if profile.SampleDatabasePort != 0 {
+				if err := s.generateOnboardingData(ctx, user); err != nil {
+					return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
 				}
 			}
-			return nil
-		}))
-	v1pb.RegisterActuatorServiceServer(s.grpcServer, v1.NewActuatorService(s.store, &s.profile, &s.errorRecordRing))
-	v1pb.RegisterSubscriptionServiceServer(s.grpcServer, v1.NewSubscriptionService(
-		s.store,
-		&s.profile,
-		s.MetricReporter,
-		s.licenseService))
-	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
-	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(
-		s.store,
-		s.licenseService,
-		s.MetricReporter,
-		s.secret,
-		s.stateCfg,
-		s.dbFactory,
-		s.SchemaSyncer))
-	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store, s.ActivityManager, s.licenseService))
-	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner, s.SchemaSyncer, s.licenseService))
-	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
-	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
-	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
-	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile, s.licenseService, s.stateCfg, s.feishuProvider))
-	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
-	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService(s.store, s.SchemaSyncer, s.dbFactory, s.ActivityManager))
-	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
-	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
-	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store, s.ActivityManager, s.TaskScheduler, s.TaskCheckScheduler, s.RelayRunner, s.stateCfg))
-	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.stateCfg, s.ActivityManager))
-	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
-	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store, s.licenseService))
-	v1pb.RegisterCelServiceServer(s.grpcServer, v1.NewCelService())
-	v1pb.RegisterLoggingServiceServer(s.grpcServer, v1.NewLoggingService(s.store))
-	v1pb.RegisterBookmarkServiceServer(s.grpcServer, v1.NewBookmarkService(s.store))
-	v1pb.RegisterInboxServiceServer(s.grpcServer, v1.NewInboxService(s.store))
-	reflection.Register(s.grpcServer)
-
-	// REST gateway proxy.
-	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
-	grpcConn, err := grpc.Dial(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		}
+		return nil
+	}
+	rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, &s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.activityManager, s.backupRunner, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
 	if err != nil {
 		return nil, err
 	}
-	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(auth.GatewayResponseModifier))
-	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterSubscriptionServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterEnvironmentServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterInstanceServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterProjectServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterDatabaseServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterInstanceRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterOrgPolicyServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterIdentityProviderServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterAnomalyServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterSQLServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterExternalVersionControlServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterLoggingServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterBookmarkServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, err
-	}
-	e.Any("/v1/*", echo.WrapHandler(mux))
-	// GRPC web proxy.
-	options := []grpcweb.Option{
-		grpcweb.WithCorsForRegisteredEndpointsOnly(false),
-		grpcweb.WithOriginFunc(func(origin string) bool {
-			return true
-		}),
-		grpcweb.WithWebsockets(true),
-		grpcweb.WithWebsocketOriginFunc(func(req *http.Request) bool {
-			return true
-		}),
-	}
-	wrappedGrpc := grpcweb.WrapServer(s.grpcServer, options...)
-	e.Any("/bytebase.v1.*", echo.WrapHandler(wrappedGrpc))
+	s.rolloutService, s.issueService = rolloutService, issueService
 
-	// Register open API routes
-	s.registerOpenAPIRoutes(e)
-
-	// Register pprof endpoints.
-	pprof.Register(e)
-	// Register prometheus metrics endpoint.
-	p := prometheus.NewPrometheus("api", nil)
-	p.Use(e)
+	reflection.Register(s.grpcServer)
 
 	serverStarted = true
 	return s, nil
-}
-
-func (s *Server) registerOpenAPIRoutes(e *echo.Echo) {
-	e.POST("/v1/sql/advise", s.sqlCheckController)
-	e.POST("/v1/sql/schema/diff", schemaDiff)
-}
-
-// initMetricReporter will initial the metric scheduler.
-func (s *Server) initMetricReporter() {
-	metricReporter := metricreport.NewReporter(s.store, s.licenseService, &s.profile, s.profile.EnableMetric)
-	metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
-	metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
-	metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
-	metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCountCollector(s.store))
-	metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(s.store))
-	metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(s.store))
-	metricReporter.Register(metric.SheetCountMetricName, metricCollector.NewSheetCountCollector(s.store))
-	metricReporter.Register(metric.MemberCountMetricName, metricCollector.NewMemberCountCollector(s.store))
-	s.MetricReporter = metricReporter
-}
-
-// retrieved via the SettingService upon startup.
-type workspaceConfig struct {
-	// secret used to sign the JWT auth token
-	secret string
-	// workspaceID used to initial the identify for a new workspace.
-	workspaceID string
-}
-
-func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*workspaceConfig, error) {
-	// secretLength is the length for the secret used to sign the JWT auto token.
-	const secretLength = 32
-
-	// initial branding
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingBrandingLogo,
-		Value:       "",
-		Description: "The branding logo image in base64 string format.",
-	}, api.SystemBotID); err != nil {
-		return nil, err
-	}
-
-	conf := &workspaceConfig{}
-
-	// initial JWT token
-	value, err := common.RandomString(secretLength)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate random JWT secret")
-	}
-	authSetting, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingAuthSecret,
-		Value:       value,
-		Description: "Random string used to sign the JWT auth token.",
-	}, api.SystemBotID)
-	if err != nil {
-		return nil, err
-	}
-	conf.secret = authSetting.Value
-
-	// initial workspace
-	workspaceSetting, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWorkspaceID,
-		Value:       uuid.New().String(),
-		Description: "The workspace identifier",
-	}, api.SystemBotID)
-	if err != nil {
-		return nil, err
-	}
-	conf.workspaceID = workspaceSetting.Value
-
-	// initial license
-	if _, _, err = datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingEnterpriseLicense,
-		Value:       "",
-		Description: "Enterprise license",
-	}, api.SystemBotID); err != nil {
-		return nil, err
-	}
-
-	// initial feishu app
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingAppIM,
-		Value:       "{}",
-		Description: "",
-	}, api.SystemBotID); err != nil {
-		return nil, err
-	}
-
-	// initial watermark setting
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWatermark,
-		Value:       "0",
-		Description: "Display watermark",
-	}, api.SystemBotID); err != nil {
-		return nil, err
-	}
-
-	// initial OpenAI key setting
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingPluginOpenAIKey,
-		Value:       "",
-		Description: "API key to request OpenAI (ChatGPT)",
-	}, api.SystemBotID); err != nil {
-		return nil, err
-	}
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingPluginOpenAIEndpoint,
-		Value:       "",
-		Description: "API Endpoint for OpenAI",
-	}, api.SystemBotID); err != nil {
-		return nil, err
-	}
-
-	// initial external approval setting
-	externalApprovalSettingValue, err := protojson.Marshal(&storepb.ExternalApprovalSetting{})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal initial external approval setting")
-	}
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWorkspaceExternalApproval,
-		Value:       string(externalApprovalSettingValue),
-		Description: "The external approval setting",
-	}, api.SystemBotID); err != nil {
-		return nil, err
-	}
-
-	// initial workspace approval setting
-	approvalSettingValue, err := protojson.Marshal(&storepb.WorkspaceApprovalSetting{})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal initial workspace approval setting")
-	}
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name: api.SettingWorkspaceApproval,
-		// Value is ""
-		Value:       string(approvalSettingValue),
-		Description: "The workspace approval setting",
-	}, api.SystemBotID); err != nil {
-		return nil, err
-	}
-
-	// initial workspace profile setting
-	settingName := api.SettingWorkspaceProfile
-	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name:    &settingName,
-		Enforce: true,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
-		ExternalUrl: s.profile.ExternalURL,
-	}
-	if workspaceProfileSetting != nil {
-		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(workspaceProfileSetting.Value), workspaceProfilePayload); err != nil {
-			return nil, err
-		}
-		if s.profile.ExternalURL != "" {
-			workspaceProfilePayload.ExternalUrl = s.profile.ExternalURL
-		}
-	}
-
-	bytes, err := protojson.Marshal(workspaceProfilePayload)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := datastore.UpsertSettingV2(ctx, &store.SetSettingMessage{
-		Name:  api.SettingWorkspaceProfile,
-		Value: string(bytes),
-	}, api.SystemBotID); err != nil {
-		return nil, err
-	}
-
-	return conf, nil
 }
 
 // Run will run the server.
@@ -886,35 +425,32 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
 	if !s.profile.Readonly {
-		if err := s.TaskScheduler.ClearRunningTasks(ctx); err != nil {
+		// runnerWG waits for all goroutines to complete.
+		if err := s.taskSchedulerV2.ClearRunningTaskRuns(ctx); err != nil {
 			return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
 		}
-		// runnerWG waits for all goroutines to complete.
 		s.runnerWG.Add(1)
-		go s.TaskScheduler.Run(ctx, &s.runnerWG)
+		go s.taskSchedulerV2.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
+		go s.schemaSyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.SchemaSyncer.Run(ctx, &s.runnerWG)
+		go s.slowQuerySyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.SlowQuerySyncer.Run(ctx, &s.runnerWG)
+		go s.mailSender.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.MailSender.Run(ctx, &s.runnerWG)
+		go s.backupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.BackupRunner.Run(ctx, &s.runnerWG)
+		go s.rollbackRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
+		go s.approvalRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
-		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.RollbackRunner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.ApprovalRunner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.RelayRunner.Run(ctx, &s.runnerWG)
+		go s.relayRunner.Run(ctx, &s.runnerWG)
 
 		s.runnerWG.Add(1)
-		go s.MetricReporter.Run(ctx, &s.runnerWG)
+		go s.metricReporter.Run(ctx, &s.runnerWG)
+
+		s.runnerWG.Add(1)
+		go s.planCheckScheduler.Run(ctx, &s.runnerWG)
 	}
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
@@ -923,7 +459,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	}
 	go func() {
 		if err := s.grpcServer.Serve(listen); err != nil {
-			log.Error("grpc server listen error", zap.Error(err))
+			slog.Error("grpc server listen error", log.BBError(err))
 		}
 	}()
 	return s.e.Start(fmt.Sprintf(":%d", port))
@@ -931,12 +467,12 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 // Shutdown will shut down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Info("Stopping Bytebase...")
-	log.Info("Stopping web server...")
+	slog.Info("Stopping Bytebase...")
+	slog.Info("Stopping web server...")
 
 	// Close the metric reporter
-	if s.MetricReporter != nil {
-		s.MetricReporter.Close()
+	if s.metricReporter != nil {
+		s.metricReporter.Close()
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, gracefulShutdownPeriod)
@@ -981,8 +517,11 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 	// Shutdown postgres sample instance.
 	if s.profile.SampleDatabasePort != 0 {
-		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir)); err != nil {
-			log.Error("Failed to stop postgres sample instance", zap.Error(err))
+		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir, "test")); err != nil {
+			slog.Error("Failed to stop test postgres sample instance", log.BBError(err))
+		}
+		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir, "prod")); err != nil {
+			slog.Error("Failed to stop prod postgres sample instance", log.BBError(err))
 		}
 	}
 
@@ -990,253 +529,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	if s.metaDB != nil {
 		s.metaDB.Close()
 	}
-	log.Info("Bytebase stopped properly")
-
-	return nil
-}
-
-// GetEcho returns the echo server.
-func (s *Server) GetEcho() *echo.Echo {
-	return s.e
-}
-
-// getSampleSQLReviewPolicy returns a sample SQL review policy for preparing onboardign data.
-func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
-	policy := &advisor.SQLReviewPolicy{
-		Name: "SQL Review Sample Policy",
-	}
-
-	ruleList := []*advisor.SQLReviewRule{}
-
-	// Add DropEmptyDatabase rule for MySQL, TiDB, MariaDB.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB} {
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    advisor.SchemaRuleDropEmptyDatabase,
-			Level:   advisor.SchemaRuleLevelError,
-			Engine:  e,
-			Payload: "{}",
-		})
-	}
-
-	// Add ColumnNotNull rule for MySQL, TiDB, MariaDB, Postgres.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    advisor.SchemaRuleColumnNotNull,
-			Level:   advisor.SchemaRuleLevelWarning,
-			Engine:  e,
-			Payload: "{}",
-		})
-	}
-
-	// Add TableDropNamingConvention rule for MySQL, TiDB, MariaDB Postgres.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    advisor.SchemaRuleTableDropNamingConvention,
-			Level:   advisor.SchemaRuleLevelError,
-			Engine:  e,
-			Payload: "{\"format\":\"_del$\"}",
-		})
-	}
-
-	policy.RuleList = ruleList
-	return policy
-}
-
-// generateOnboardingData generates onboarding data after the first signup.
-func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
-	project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
-		ResourceID: "project-sample",
-		Title:      "Sample Project",
-		Key:        "SAM",
-		Workflow:   api.UIWorkflow,
-		Visibility: api.Public,
-		TenantMode: api.TenantModeDisabled,
-	}, userID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create onboarding project")
-	}
-
-	instance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
-		ResourceID:   postgres.SampleInstanceResourceID,
-		Title:        "Postgres Sample Instance",
-		Engine:       db.Postgres,
-		ExternalLink: "",
-		DataSources: []*store.DataSourceMessage{
-			{
-				Title:              api.AdminDataSourceName,
-				Type:               api.Admin,
-				Username:           postgres.SampleUser,
-				ObfuscatedPassword: common.Obfuscate("", s.secret),
-				Host:               common.GetPostgresSocketDir(),
-				Port:               strconv.Itoa(s.profile.SampleDatabasePort),
-				Database:           postgres.SampleDatabase,
-			},
-		},
-		EnvironmentID: api.DefaultProdEnvironmentID,
-		Activation:    true,
-	}, userID, math.MaxInt)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create onboarding instance")
-	}
-
-	// Sync the instance schema so we can transfer the sample database later.
-	if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
-		return errors.Wrapf(err, "failed to sync onboarding instance")
-	}
-
-	// Transfer sample database to the just created project.
-	transferDatabaseMessage := &store.UpdateDatabaseMessage{
-		InstanceID:   instance.ResourceID,
-		DatabaseName: postgres.SampleDatabase,
-		ProjectID:    &project.ResourceID,
-	}
-	_, err = s.store.UpdateDatabase(ctx, transferDatabaseMessage, userID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to transfer sample database")
-	}
-
-	dbName := postgres.SampleDatabase
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instance.ResourceID,
-		DatabaseName: &dbName,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to find onboarding instance")
-	}
-
-	// Need to sync database schema so we can configure sensitive data policy and create the schema
-	// update issue later.
-	if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-		return errors.Wrapf(err, "failed to sync sample database schema")
-	}
-
-	// Add a sample SQL Review policy to the prod environment. This pairs with the following schema
-	// change issue to demonstrate the SQL Review feature.
-	policyPayload, err := json.Marshal(*getSampleSQLReviewPolicy())
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal onboarding SQL Review policy")
-	}
-
-	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
-		ResourceUID:       api.DefaultProdEnvironmentUID,
-		ResourceType:      api.PolicyResourceTypeEnvironment,
-		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeSQLReview,
-		InheritFromParent: true,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}, userID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create onboarding SQL Review policy")
-	}
-
-	// Create a standalone sample SQL sheet.
-	// This is different from another sample SQL sheet created below, which is created as part of
-	// creating a schema change issue.
-	sheetCreate := &store.SheetMessage{
-		CreatorID:   userID,
-		ProjectUID:  project.UID,
-		DatabaseUID: &database.UID,
-		Name:        "Sample Sheet",
-		Statement:   "SELECT * FROM salary;",
-		Visibility:  api.ProjectSheet,
-		Source:      api.SheetFromBytebase,
-		Type:        api.SheetForSQL,
-	}
-	_, err = s.store.CreateSheetV2(ctx, sheetCreate)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create sample sheet")
-	}
-
-	// Create a schema update issue and start with creating the sheet for the schema update.
-	sheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
-		CreatorID: api.SystemBotID,
-
-		ProjectUID:  project.UID,
-		DatabaseUID: &database.UID,
-
-		Name:       "Alter table sheet for Sample Issue",
-		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
-		Payload:    "{}",
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create sheet for sample project")
-	}
-
-	createContext, err := json.Marshal(
-		&api.MigrationContext{
-			DetailList: []*api.MigrationDetail{
-				{
-					MigrationType: db.Migrate,
-					DatabaseID:    database.UID,
-					// This will violate the NOT NULL SQL Review policy configured above and emit a
-					// warning. Thus to demonstrate the SQL Review capability.
-					SheetID: sheet.UID,
-				},
-			},
-		})
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal sample schema update issue context")
-	}
-
-	issueCreate := &api.IssueCreate{
-		ProjectID: project.UID,
-		Name:      "👉👉👉 [START HERE] Add email column to Employee table",
-		Type:      api.IssueDatabaseSchemaUpdate,
-		Description: `A sample issue to showcase how to review database schema change.
-		
-Click "Approve" button to apply the schema update.`,
-		AssigneeID:            userID,
-		AssigneeNeedAttention: true,
-		CreateContext:         string(createContext),
-	}
-
-	// Use system bot as the creator so that the issue only appears in the user's assignee list
-	issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create sample issue")
-	}
-
-	// Bookmark the issue.
-	if _, err := s.store.CreateBookmarkV2(ctx, &store.BookmarkMessage{
-		Name: "Sample Issue",
-		Link: fmt.Sprintf("/issue/%s-%d", slug.Make(issue.Name), issue.ID),
-	}, userID); err != nil {
-		return errors.Wrapf(err, "failed to bookmark sample issue")
-	}
-
-	// Add a sensitive data policy to pair it with the sample query below. So that user can
-	// experience the sensitive data masking feature from SQL Editor.
-	sensitiveDataPolicy := api.SensitiveDataPolicy{
-		SensitiveDataList: []api.SensitiveData{
-			{
-				Schema: "public",
-				Table:  "salary",
-				Column: "amount",
-				Type:   api.SensitiveDataMaskTypeDefault,
-			},
-		},
-	}
-	policyPayload, err = json.Marshal(sensitiveDataPolicy)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal onboarding sensitive data policy")
-	}
-
-	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
-		ResourceUID:       database.UID,
-		ResourceType:      api.PolicyResourceTypeDatabase,
-		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeSensitiveData,
-		InheritFromParent: true,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}, userID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create onboarding sensitive data policy")
-	}
+	slog.Info("Bytebase stopped properly")
 
 	return nil
 }

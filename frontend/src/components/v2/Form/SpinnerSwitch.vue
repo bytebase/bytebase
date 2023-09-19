@@ -3,8 +3,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
 import { NSwitch } from "naive-ui";
+import { ref } from "vue";
 
 const props = defineProps<{
   onToggle: (on: boolean) => Promise<any>;

@@ -1,0 +1,426 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/expr.proto";
+
+option go_package = "generated-go/v1";
+
+service IssueService {
+  rpc GetIssue(GetIssueRequest) returns (Issue) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/issues/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc CreateIssue(CreateIssueRequest) returns (Issue) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/issues"
+      body: "issue"
+    };
+    option (google.api.method_signature) = "parent,issue";
+  }
+
+  rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/issues"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc UpdateIssue(UpdateIssueRequest) returns (Issue) {
+    option (google.api.http) = {
+      patch: "/v1/{issue.name=projects/*/issues/*}"
+      body: "issue"
+    };
+    option (google.api.method_signature) = "issue,update_mask";
+  }
+
+  rpc SearchIssues(SearchIssuesRequest) returns (SearchIssuesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/issues:search"};
+    option (google.api.method_signature) = "";
+  }
+
+  rpc CreateIssueComment(CreateIssueCommentRequest) returns (IssueComment) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/issues/*}:comment"
+      body: "issue_comment"
+    };
+    option (google.api.method_signature) = "parent,issue_comment";
+  }
+
+  rpc UpdateIssueComment(UpdateIssueCommentRequest) returns (IssueComment) {
+    option (google.api.http) = {
+      patch: "/v1/{parent=projects/*/issues/*}:comment"
+      body: "issue_comment"
+    };
+    option (google.api.method_signature) = "parent,issue_comment,update_mask";
+  }
+
+  rpc BatchUpdateIssuesStatus(BatchUpdateIssuesStatusRequest) returns (BatchUpdateIssuesStatusResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/issues:batchUpdateStatus"
+      body: "*"
+    };
+  }
+
+  rpc ApproveIssue(ApproveIssueRequest) returns (Issue) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/issues/*}:approve"
+      body: "*"
+    };
+  }
+
+  rpc RejectIssue(RejectIssueRequest) returns (Issue) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/issues/*}:reject"
+      body: "*"
+    };
+  }
+
+  rpc RequestIssue(RequestIssueRequest) returns (Issue) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/issues/*}:request"
+      body: "*"
+    };
+  }
+}
+
+message GetIssueRequest {
+  // The name of the issue to retrieve.
+  // Format: projects/{project}/issues/{issue}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  bool force = 2;
+}
+
+message CreateIssueRequest {
+  // The parent, which owns this collection of issues.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The issue to create.
+  Issue issue = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListIssuesRequest {
+  // The parent, which owns this collection of issues.
+  // Format: projects/{project}
+  // Use "projects/-" to list all issues from all projects.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of issues to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 issues will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListIssues` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListIssues` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Filter is used to filter issues returned in the list.
+  string filter = 4;
+}
+
+message ListIssuesResponse {
+  // The issues from the specified request.
+  repeated Issue issues = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message UpdateIssueRequest {
+  // The issue to update.
+  //
+  // The issue's `name` field is used to identify the issue to update.
+  // Format: projects/{project}/issues/{issue}
+  Issue issue = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SearchIssuesRequest {
+  // The parent, which owns this collection of issues.
+  // Format: projects/{project}.
+  // Use "projects/-" to search all issues.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of issues to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 issues will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `SearchIssues` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `SearchIssues` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Query is the query statement.
+  string query = 4;
+
+  // Filter is used to filter issues returned in the list,
+  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+  // Supported field in filter:
+  // - principal, example:
+  //    - principal = "users/{email}"
+  // - creator, example:
+  //    - creator = "users/{email}"
+  // - assignee, example:
+  //    - assignee = "users/{email}"
+  // - subscriber, example:
+  //    - subscriber = "users/{email}"
+  // - status, example:
+  //    - status = "OPEN"
+  //    - status = "DONE" | "CANCELED"
+  // - create_time, example:
+  //    - create_time <= "2022-01-01T12:00:00.000Z"
+  //    - create_time >= "2022-01-01T12:00:00.000Z"
+  // - instance, example:
+  //    - instance = "instancs/{resource id}"
+  // - type, only support "DDL" or "DML", example:
+  //    - type = "DDL"
+  string filter = 5;
+}
+
+message SearchIssuesResponse {
+  // The issues from the specified request.
+  repeated Issue issues = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message BatchUpdateIssuesStatusRequest {
+  // The parent resource shared by all issues being updated.
+  // Format: projects/{project}
+  // If the operation spans parents, a dash (-) may be accepted as a wildcard.
+  // We only support updating the status of databases for now.
+  string parent = 1;
+
+  // The list of issues to update.
+  // Format: projects/{project}/issues/{issue}
+  repeated string issues = 2;
+
+  // The new status.
+  IssueStatus status = 3;
+
+  string reason = 4;
+}
+
+message BatchUpdateIssuesStatusResponse {}
+
+message ApproveIssueRequest {
+  // The name of the issue to add an approver.
+  // Format: projects/{project}/issues/{issue}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string comment = 2;
+}
+
+message RejectIssueRequest {
+  // The name of the issue to add an rejection.
+  // Format: projects/{project}/issues/{issue}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string comment = 2;
+}
+
+message RequestIssueRequest {
+  // The name of the issue to request a issue.
+  // Format: projects/{project}/issues/{issue}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string comment = 2;
+}
+
+message Issue {
+  // The name of the issue.
+  // Format: projects/{project}/issues/{issue}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string title = 3;
+
+  string description = 4;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    DATABASE_CHANGE = 1;
+    GRANT_REQUEST = 2;
+  }
+  Type type = 5;
+
+  IssueStatus status = 6;
+
+  // Format: users/hello@world.com
+  string assignee = 7;
+
+  bool assignee_attention = 8;
+
+  message Approver {
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      PENDING = 1;
+      APPROVED = 2;
+      REJECTED = 3;
+    }
+    // The new status.
+    Status status = 1;
+
+    // Format: users/hello@world.com
+    string principal = 2;
+  }
+  repeated Approver approvers = 9;
+
+  repeated ApprovalTemplate approval_templates = 10;
+
+  // If the value is `false`, it means that the backend is still finding matching approval templates.
+  // If `true`, approval_templates & approvers & approval_finding_error are available.
+  bool approval_finding_done = 11;
+  string approval_finding_error = 12;
+
+  // The subscribers.
+  // Format: users/hello@world.com
+  repeated string subscribers = 13;
+
+  // Format: users/hello@world.com
+  string creator = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp create_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The plan associated with the issue.
+  // Can be empty.
+  // Format: projects/{project}/plans/{plan}
+  string plan = 17;
+
+  // The rollout associated with the issue.
+  // Can be empty.
+  // Format: projects/{project}/rollouts/{rollout}
+  string rollout = 18;
+
+  // Used if the issue type is GRANT_REQUEST.
+  GrantRequest grant_request = 19;
+}
+
+message GrantRequest {
+  // The requested role.
+  // Format: roles/EXPORTER.
+  string role = 1;
+  // The user to be granted.
+  // Format: users/{email}.
+  string user = 2;
+  google.type.Expr condition = 3;
+  google.protobuf.Duration expiration = 4;
+}
+
+enum IssueStatus {
+  ISSUE_STATUS_UNSPECIFIED = 0;
+  OPEN = 1;
+  DONE = 2;
+  CANCELED = 3;
+}
+
+message ApprovalTemplate {
+  ApprovalFlow flow = 1;
+  string title = 2;
+  string description = 3;
+  // The name of the creator in users/{email} format.
+  // TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator.
+  string creator = 4;
+}
+
+message ApprovalFlow {
+  repeated ApprovalStep steps = 1;
+}
+
+message ApprovalStep {
+  // Type of the ApprovalStep
+  // ALL means every node must be approved to proceed.
+  // ANY means approving any node will proceed.
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    ALL = 1;
+    ANY = 2;
+  }
+  Type type = 1;
+
+  repeated ApprovalNode nodes = 2;
+}
+
+message ApprovalNode {
+  // Type of the ApprovalNode.
+  // type determines who should approve this node.
+  // ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
+  // See GroupValue below for the predefined user groups.
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    ANY_IN_GROUP = 1;
+  }
+  Type type = 1;
+
+  // The predefined user groups are:
+  // - WORKSPACE_OWNER
+  // - WORKSPACE_DBA
+  // - PROJECT_OWNER
+  // - PROJECT_MEMBER
+  enum GroupValue {
+    GROUP_VALUE_UNSPECIFILED = 0;
+    WORKSPACE_OWNER = 1;
+    WORKSPACE_DBA = 2;
+    PROJECT_OWNER = 3;
+    PROJECT_MEMBER = 4;
+  }
+  oneof payload {
+    GroupValue group_value = 2;
+    // Format: roles/{role}
+    string role = 3;
+    string external_node_id = 4;
+  }
+}
+
+message CreateIssueCommentRequest {
+  // The issue name
+  // Format: projects/{project}/issues/{issue}
+  string parent = 1;
+
+  IssueComment issue_comment = 2;
+}
+
+message UpdateIssueCommentRequest {
+  // The issue name
+  // Format: projects/{project}/issues/{issue}
+  string parent = 1;
+
+  IssueComment issue_comment = 2;
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+message IssueComment {
+  string uid = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string comment = 2;
+
+  // TODO: use struct message instead.
+  string payload = 3;
+
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

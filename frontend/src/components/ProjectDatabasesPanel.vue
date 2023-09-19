@@ -7,15 +7,16 @@
         <EnvironmentTabFilter
           :environment="state.environment"
           :include-all="true"
-          @update:environment="state.environment = $event ?? UNKNOWN_ID"
+          @update:environment="state.environment = $event"
         />
       </div>
       <NInputGroup style="width: auto">
         <InstanceSelect
+          class="!w-48"
           :instance="state.instance"
           :include-all="true"
           :filter="filterInstance"
-          :environment="state.environment"
+          :environment="environment?.uid"
           @update:instance="
             state.instance = $event ? String($event) : String(UNKNOWN_ID)
           "
@@ -49,20 +50,28 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed, ref, watchEffect } from "vue";
-import { NInputGroup } from "naive-ui";
 import { uniqBy } from "lodash-es";
-
-import { ComposedDatabase, ComposedInstance, UNKNOWN_ID } from "../types";
-import { filterDatabaseV1ByKeyword, isDatabaseV1Accessible } from "@/utils";
-import { DatabaseV1Table } from "./v2";
-import { EnvironmentTabFilter, InstanceSelect, SearchBox } from "./v2";
+import { NInputGroup } from "naive-ui";
+import { reactive, PropType, computed, ref, watchEffect } from "vue";
+import {
+  useCurrentUserV1,
+  usePolicyV1Store,
+  useEnvironmentV1Store,
+} from "@/store";
 import {
   Policy,
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { useCurrentUserV1, usePolicyV1Store } from "@/store";
+import { filterDatabaseV1ByKeyword, isDatabaseV1Accessible } from "@/utils";
+import {
+  ComposedDatabase,
+  ComposedInstance,
+  UNKNOWN_ID,
+  UNKNOWN_ENVIRONMENT_NAME,
+} from "../types";
+import { DatabaseV1Table } from "./v2";
+import { EnvironmentTabFilter, InstanceSelect, SearchBox } from "./v2";
 
 interface LocalState {
   environment: string;
@@ -78,8 +87,10 @@ const props = defineProps({
 });
 
 const currentUserV1 = useCurrentUserV1();
+const environmentV1Store = useEnvironmentV1Store();
+
 const state = reactive<LocalState>({
-  environment: String(UNKNOWN_ID),
+  environment: UNKNOWN_ENVIRONMENT_NAME,
   instance: String(UNKNOWN_ID),
   keyword: "",
 });
@@ -88,8 +99,8 @@ const policyList = ref<Policy[]>([]);
 const preparePolicyList = () => {
   usePolicyV1Store()
     .fetchPolicies({
-      resourceType: PolicyResourceType.DATABASE,
-      policyType: PolicyType.ACCESS_CONTROL,
+      policyType: PolicyType.WORKSPACE_IAM,
+      resourceType: PolicyResourceType.WORKSPACE,
     })
     .then((list) => (policyList.value = list));
 };
@@ -98,11 +109,11 @@ watchEffect(preparePolicyList);
 
 const filteredDatabaseList = computed(() => {
   let list = [...props.databaseList].filter((database) =>
-    isDatabaseV1Accessible(database, policyList.value, currentUserV1.value)
+    isDatabaseV1Accessible(database, currentUserV1.value)
   );
-  if (state.environment !== String(UNKNOWN_ID)) {
+  if (state.environment !== UNKNOWN_ENVIRONMENT_NAME) {
     list = list.filter(
-      (db) => db.instanceEntity.environmentEntity.uid === state.environment
+      (db) => db.effectiveEnvironmentEntity.name === state.environment
     );
   }
   if (state.instance !== String(UNKNOWN_ID)) {
@@ -131,4 +142,8 @@ const instanceList = computed(() => {
 const filterInstance = (instance: ComposedInstance) => {
   return instanceList.value.findIndex((inst) => inst.uid === instance.uid) >= 0;
 };
+
+const environment = computed(() => {
+  return environmentV1Store.getEnvironmentByName(state.environment);
+});
 </script>

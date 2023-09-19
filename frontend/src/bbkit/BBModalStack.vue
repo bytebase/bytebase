@@ -15,6 +15,7 @@
 </template>
 
 <script lang="ts">
+import { zindexable } from "vdirs";
 import {
   computed,
   defineComponent,
@@ -24,7 +25,6 @@ import {
   Ref,
   ref,
 } from "vue";
-import { zindexable } from "vdirs";
 
 export type ModalStackContext = {
   stack: Ref<number[]>;

@@ -1,9 +1,15 @@
-import { hasFeature, useCurrentUserIamPolicy } from "@/store";
+import { resolveCELExpr } from "@/plugins/cel";
+import { hasFeature, useCurrentUserIamPolicy, usePolicyV1Store } from "@/store";
+import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedDatabase, Instance } from "@/types";
-import { hasWorkspacePermissionV1 } from "./role";
-import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { User } from "@/types/proto/v1/auth_service";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import {
+  PolicyType,
+  policyTypeToJSON,
+} from "@/types/proto/v1/org_policy_service";
+import { hasWorkspacePermissionV1 } from "./role";
+import { extractEnvironmentNameListFromExpr } from "./v1";
 
 export const isInstanceAccessible = (instance: Instance, user: User) => {
   if (!hasFeature("bb.feature.access-control")) {
@@ -34,7 +40,6 @@ export const isInstanceAccessible = (instance: Instance, user: User) => {
 
 export const isDatabaseAccessible = (
   database: ComposedDatabase,
-  policyList: Policy[],
   user: User
 ) => {
   if (
@@ -49,19 +54,25 @@ export const isDatabaseAccessible = (
   }
 
   if (hasFeature("bb.feature.access-control")) {
-    const { environmentEntity } = database.instanceEntity;
-    if (environmentEntity.tier === EnvironmentTier.PROTECTED) {
-      const policy = policyList.find((policy) => {
-        const { type, resourceUid, enforce } = policy;
-        return (
-          type === PolicyType.ACCESS_CONTROL &&
-          resourceUid === `${database.uid}` &&
-          enforce
+    const name = `${policyNamePrefix}${policyTypeToJSON(
+      PolicyType.WORKSPACE_IAM
+    )}`;
+    const policy = usePolicyV1Store().getPolicyByName(name);
+    if (policy) {
+      const bindings = policy.workspaceIamPolicy?.bindings;
+      if (bindings) {
+        const querierBinding = bindings.find(
+          (binding) => binding.role === "roles/QUERIER"
         );
-      });
-      if (policy) {
-        // The database is in the allowed list
-        return true;
+        if (querierBinding) {
+          const simpleExpr = resolveCELExpr(
+            querierBinding.parsedExpr?.expr || Expr.fromPartial({})
+          );
+          const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
+          if (envNameList.includes(database.effectiveEnvironment)) {
+            return true;
+          }
+        }
       }
     }
   }

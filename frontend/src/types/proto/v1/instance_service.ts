@@ -1,6 +1,6 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
+import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Engine, engineFromJSON, engineToJSON, State, stateFromJSON, stateToJSON } from "./common";
@@ -86,7 +86,9 @@ export interface ListInstancesResponse {
 
 export interface CreateInstanceRequest {
   /** The instance to create. */
-  instance?: Instance;
+  instance?:
+    | Instance
+    | undefined;
   /**
    * The ID to use for the instance, which will become the final component of
    * the instance's resource name.
@@ -106,9 +108,11 @@ export interface UpdateInstanceRequest {
    * The instance's `name` field is used to identify the instance to update.
    * Format: instances/{instance}
    */
-  instance?: Instance;
+  instance?:
+    | Instance
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteInstanceRequest {
@@ -150,7 +154,9 @@ export interface AddDataSourceRequest {
    * Identified by type.
    * Only READ_ONLY data source can be added.
    */
-  dataSource?: DataSource;
+  dataSource?:
+    | DataSource
+    | undefined;
   /** Validate only also tests the data source connection. */
   validateOnly: boolean;
 }
@@ -165,7 +171,7 @@ export interface RemoveDataSourceRequest {
    * Identified by type.
    * Only READ_ONLY data source can be removed.
    */
-  dataSource?: DataSource;
+  dataSource?: DataSource | undefined;
 }
 
 export interface UpdateDataSourceRequest {
@@ -175,9 +181,13 @@ export interface UpdateDataSourceRequest {
    */
   instance: string;
   /** Identified by type. */
-  dataSource?: DataSource;
+  dataSource?:
+    | DataSource
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?:
+    | string[]
+    | undefined;
   /** Validate only also tests the data source connection. */
   validateOnly: boolean;
 }
@@ -185,9 +195,21 @@ export interface UpdateDataSourceRequest {
 export interface SyncSlowQueriesRequest {
   /**
    * The name of the instance to sync slow queries.
-   * Format: instances/{instance}
+   * Format: instances/{instance} for one instance
+   *      or projects/{project} for one project.
    */
-  instance: string;
+  parent: string;
+}
+
+/** InstanceOptions is the option for instances. */
+export interface InstanceOptions {
+  /**
+   * The schema tenant mode is used to determine whether the instance is in schema tenant mode.
+   * For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
+   */
+  schemaTenantMode: boolean;
+  /** How often the instance is synced. */
+  syncInterval?: Duration | undefined;
 }
 
 export interface Instance {
@@ -210,10 +232,11 @@ export interface Instance {
    */
   environment: string;
   activation: boolean;
+  options?: InstanceOptions | undefined;
 }
 
 export interface DataSource {
-  title: string;
+  id: string;
   type: DataSourceType;
   username: string;
   password: string;
@@ -1114,13 +1137,13 @@ export const UpdateDataSourceRequest = {
 };
 
 function createBaseSyncSlowQueriesRequest(): SyncSlowQueriesRequest {
-  return { instance: "" };
+  return { parent: "" };
 }
 
 export const SyncSlowQueriesRequest = {
   encode(message: SyncSlowQueriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.instance !== "") {
-      writer.uint32(10).string(message.instance);
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
     }
     return writer;
   },
@@ -1137,7 +1160,7 @@ export const SyncSlowQueriesRequest = {
             break;
           }
 
-          message.instance = reader.string();
+          message.parent = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1149,12 +1172,12 @@ export const SyncSlowQueriesRequest = {
   },
 
   fromJSON(object: any): SyncSlowQueriesRequest {
-    return { instance: isSet(object.instance) ? String(object.instance) : "" };
+    return { parent: isSet(object.parent) ? String(object.parent) : "" };
   },
 
   toJSON(message: SyncSlowQueriesRequest): unknown {
     const obj: any = {};
-    message.instance !== undefined && (obj.instance = message.instance);
+    message.parent !== undefined && (obj.parent = message.parent);
     return obj;
   },
 
@@ -1164,7 +1187,81 @@ export const SyncSlowQueriesRequest = {
 
   fromPartial(object: DeepPartial<SyncSlowQueriesRequest>): SyncSlowQueriesRequest {
     const message = createBaseSyncSlowQueriesRequest();
-    message.instance = object.instance ?? "";
+    message.parent = object.parent ?? "";
+    return message;
+  },
+};
+
+function createBaseInstanceOptions(): InstanceOptions {
+  return { schemaTenantMode: false, syncInterval: undefined };
+}
+
+export const InstanceOptions = {
+  encode(message: InstanceOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schemaTenantMode === true) {
+      writer.uint32(8).bool(message.schemaTenantMode);
+    }
+    if (message.syncInterval !== undefined) {
+      Duration.encode(message.syncInterval, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): InstanceOptions {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInstanceOptions();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.schemaTenantMode = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.syncInterval = Duration.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InstanceOptions {
+    return {
+      schemaTenantMode: isSet(object.schemaTenantMode) ? Boolean(object.schemaTenantMode) : false,
+      syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
+    };
+  },
+
+  toJSON(message: InstanceOptions): unknown {
+    const obj: any = {};
+    message.schemaTenantMode !== undefined && (obj.schemaTenantMode = message.schemaTenantMode);
+    message.syncInterval !== undefined &&
+      (obj.syncInterval = message.syncInterval ? Duration.toJSON(message.syncInterval) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<InstanceOptions>): InstanceOptions {
+    return InstanceOptions.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
+    const message = createBaseInstanceOptions();
+    message.schemaTenantMode = object.schemaTenantMode ?? false;
+    message.syncInterval = (object.syncInterval !== undefined && object.syncInterval !== null)
+      ? Duration.fromPartial(object.syncInterval)
+      : undefined;
     return message;
   },
 };
@@ -1181,6 +1278,7 @@ function createBaseInstance(): Instance {
     dataSources: [],
     environment: "",
     activation: false,
+    options: undefined,
   };
 }
 
@@ -1215,6 +1313,9 @@ export const Instance = {
     }
     if (message.activation === true) {
       writer.uint32(80).bool(message.activation);
+    }
+    if (message.options !== undefined) {
+      InstanceOptions.encode(message.options, writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -1296,6 +1397,13 @@ export const Instance = {
 
           message.activation = reader.bool();
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.options = InstanceOptions.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1317,6 +1425,7 @@ export const Instance = {
       dataSources: Array.isArray(object?.dataSources) ? object.dataSources.map((e: any) => DataSource.fromJSON(e)) : [],
       environment: isSet(object.environment) ? String(object.environment) : "",
       activation: isSet(object.activation) ? Boolean(object.activation) : false,
+      options: isSet(object.options) ? InstanceOptions.fromJSON(object.options) : undefined,
     };
   },
 
@@ -1336,6 +1445,8 @@ export const Instance = {
     }
     message.environment !== undefined && (obj.environment = message.environment);
     message.activation !== undefined && (obj.activation = message.activation);
+    message.options !== undefined &&
+      (obj.options = message.options ? InstanceOptions.toJSON(message.options) : undefined);
     return obj;
   },
 
@@ -1355,13 +1466,16 @@ export const Instance = {
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     message.environment = object.environment ?? "";
     message.activation = object.activation ?? false;
+    message.options = (object.options !== undefined && object.options !== null)
+      ? InstanceOptions.fromPartial(object.options)
+      : undefined;
     return message;
   },
 };
 
 function createBaseDataSource(): DataSource {
   return {
-    title: "",
+    id: "",
     type: 0,
     username: "",
     password: "",
@@ -1385,8 +1499,8 @@ function createBaseDataSource(): DataSource {
 
 export const DataSource = {
   encode(message: DataSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
     }
     if (message.type !== 0) {
       writer.uint32(16).int32(message.type);
@@ -1457,7 +1571,7 @@ export const DataSource = {
             break;
           }
 
-          message.title = reader.string();
+          message.id = reader.string();
           continue;
         case 2:
           if (tag !== 16) {
@@ -1596,7 +1710,7 @@ export const DataSource = {
 
   fromJSON(object: any): DataSource {
     return {
-      title: isSet(object.title) ? String(object.title) : "",
+      id: isSet(object.id) ? String(object.id) : "",
       type: isSet(object.type) ? dataSourceTypeFromJSON(object.type) : 0,
       username: isSet(object.username) ? String(object.username) : "",
       password: isSet(object.password) ? String(object.password) : "",
@@ -1620,7 +1734,7 @@ export const DataSource = {
 
   toJSON(message: DataSource): unknown {
     const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
+    message.id !== undefined && (obj.id = message.id);
     message.type !== undefined && (obj.type = dataSourceTypeToJSON(message.type));
     message.username !== undefined && (obj.username = message.username);
     message.password !== undefined && (obj.password = message.password);
@@ -1648,7 +1762,7 @@ export const DataSource = {
 
   fromPartial(object: DeepPartial<DataSource>): DataSource {
     const message = createBaseDataSource();
-    message.title = object.title ?? "";
+    message.id = object.id ?? "";
     message.type = object.type ?? 0;
     message.username = object.username ?? "";
     message.password = object.password ?? "";
@@ -2196,25 +2310,66 @@ export const InstanceServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              47,
+              88,
               58,
               1,
               42,
+              90,
+              41,
               34,
-              42,
+              39,
               47,
               118,
               49,
               47,
               123,
-              105,
-              110,
-              115,
-              116,
+              112,
               97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              58,
+              115,
+              121,
               110,
               99,
+              83,
+              108,
+              111,
+              119,
+              81,
+              117,
               101,
+              114,
+              105,
+              101,
+              115,
+              34,
+              40,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
               61,
               105,
               110,
@@ -2251,70 +2406,6 @@ export const InstanceServiceDefinition = {
     },
   },
 } as const;
-
-export interface InstanceServiceImplementation<CallContextExt = {}> {
-  getInstance(request: GetInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
-  listInstances(
-    request: ListInstancesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListInstancesResponse>>;
-  createInstance(request: CreateInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
-  updateInstance(request: UpdateInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
-  deleteInstance(request: DeleteInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  undeleteInstance(
-    request: UndeleteInstanceRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Instance>>;
-  syncInstance(
-    request: SyncInstanceRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SyncInstanceResponse>>;
-  addDataSource(request: AddDataSourceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
-  removeDataSource(
-    request: RemoveDataSourceRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Instance>>;
-  updateDataSource(
-    request: UpdateDataSourceRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Instance>>;
-  syncSlowQueries(request: SyncSlowQueriesRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-}
-
-export interface InstanceServiceClient<CallOptionsExt = {}> {
-  getInstance(request: DeepPartial<GetInstanceRequest>, options?: CallOptions & CallOptionsExt): Promise<Instance>;
-  listInstances(
-    request: DeepPartial<ListInstancesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListInstancesResponse>;
-  createInstance(
-    request: DeepPartial<CreateInstanceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Instance>;
-  updateInstance(
-    request: DeepPartial<UpdateInstanceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Instance>;
-  deleteInstance(request: DeepPartial<DeleteInstanceRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  undeleteInstance(
-    request: DeepPartial<UndeleteInstanceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Instance>;
-  syncInstance(
-    request: DeepPartial<SyncInstanceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SyncInstanceResponse>;
-  addDataSource(request: DeepPartial<AddDataSourceRequest>, options?: CallOptions & CallOptionsExt): Promise<Instance>;
-  removeDataSource(
-    request: DeepPartial<RemoveDataSourceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Instance>;
-  updateDataSource(
-    request: DeepPartial<UpdateDataSourceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Instance>;
-  syncSlowQueries(request: DeepPartial<SyncSlowQueriesRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

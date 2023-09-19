@@ -1,69 +1,45 @@
 <template>
   <div class="aside-panel h-full">
-    <n-tabs v-model:value="tab" type="segment" class="h-full">
-      <n-tab-pane name="projects" :tab="$t('common.projects')">
-        <Splitpanes
-          horizontal
-          class="default-theme"
-          :dbl-click-splitter="false"
-        >
-          <Pane>
-            <DatabaseTree
-              key="sql-editor-database-tree"
-              v-model:search-pattern="searchPattern"
-              @alter-schema="$emit('alter-schema', $event)"
-            />
-          </Pane>
-          <Pane v-if="showSchemaPanel" :size="40">
-            <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
-          </Pane>
-        </Splitpanes>
-      </n-tab-pane>
-      <n-tab-pane
-        v-if="hasInstanceView"
-        name="instances"
-        :tab="$t('common.instances')"
-      >
-        <Splitpanes
-          horizontal
-          class="default-theme"
-          :dbl-click-splitter="false"
-        >
-          <Pane>
-            <DatabaseTree
-              key="sql-editor-database-tree"
-              v-model:search-pattern="searchPattern"
-              @alter-schema="$emit('alter-schema', $event)"
-            />
-          </Pane>
-          <Pane v-if="showSchemaPanel" :size="40">
-            <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
-          </Pane>
-        </Splitpanes>
-      </n-tab-pane>
-      <n-tab-pane name="history" :tab="$t('common.history')">
-        <QueryHistoryContainer />
-      </n-tab-pane>
-    </n-tabs>
+    <NTabs
+      v-if="hasInstanceView"
+      v-model:value="databaseTab"
+      type="segment"
+      size="small"
+      class="primary-sidebar h-full"
+      pane-style="height: calc(100% - 35px); padding: 0;"
+    >
+      <NTabPane name="projects" :tab="$t('common.projects')">
+        <DatabaseTree
+          key="sql-editor-database-tree"
+          v-model:search-pattern="searchPattern"
+          @alter-schema="$emit('alter-schema', $event)"
+        />
+      </NTabPane>
+      <NTabPane name="instances" :tab="$t('common.instances')">
+        <DatabaseTree
+          key="sql-editor-database-tree"
+          v-model:search-pattern="searchPattern"
+          @alter-schema="$emit('alter-schema', $event)"
+        />
+      </NTabPane>
+    </NTabs>
+    <div v-else class="primary-sidebar h-full">
+      <DatabaseTree
+        key="sql-editor-database-tree"
+        v-model:search-pattern="searchPattern"
+        @alter-schema="$emit('alter-schema', $event)"
+      />
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { NTabs, NTabPane } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
-
-import {
-  useConnectionTreeStore,
-  useCurrentUserV1,
-  useInstanceV1Store,
-  useTabStore,
-} from "@/store";
-import DatabaseTree from "./DatabaseTree.vue";
-import QueryHistoryContainer from "./QueryHistoryContainer.vue";
-import SchemaPanel from "./SchemaPanel/";
-import { Splitpanes, Pane } from "splitpanes";
-import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
+import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
+import { ConnectionTreeMode } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
-import { Engine } from "@/types/proto/v1/common";
+import DatabaseTree from "./DatabaseTree.vue";
 
 defineEmits<{
   (
@@ -73,11 +49,10 @@ defineEmits<{
 }>();
 
 const currentUserV1 = useCurrentUserV1();
-const tabStore = useTabStore();
 const connectionTreeStore = useConnectionTreeStore();
 const searchPattern = ref("");
 
-const tab = ref<"projects" | "instances" | "history">(
+const databaseTab = ref<"projects" | "instances">(
   connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE
     ? "instances"
     : "projects"
@@ -90,31 +65,18 @@ const hasInstanceView = computed((): boolean => {
   );
 });
 
-const showSchemaPanel = computed(() => {
-  const conn = tabStore.currentTab.connection;
-  if (conn.databaseId === String(UNKNOWN_ID)) {
-    return false;
-  }
-  const instance = useInstanceV1Store().getInstanceByUID(conn.instanceId);
-  if (instance.engine === Engine.REDIS) {
-    return false;
-  }
-  return true;
-});
-
 watchEffect(() => {
-  if (tab.value === "projects") {
+  if (databaseTab.value === "projects") {
     connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;
   }
-  if (tab.value === "instances") {
+  if (databaseTab.value === "instances") {
     connectionTreeStore.tree.mode = ConnectionTreeMode.INSTANCE;
   }
 });
 </script>
 
-<style scoped>
-.aside-panel .n-tab-pane {
-  height: calc(100% - 40px);
-  @apply pt-0;
+<style lang="postcss">
+.primary-sidebar .n-tabs-rail {
+  @apply pt-1;
 }
 </style>

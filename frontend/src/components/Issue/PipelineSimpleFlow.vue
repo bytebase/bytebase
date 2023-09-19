@@ -60,7 +60,7 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
-
+import { useVerticalScrollState } from "@/composables/useScrollState";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import {
   Pipeline,
@@ -71,12 +71,11 @@ import {
   TaskDatabaseCreatePayload,
   unknownDatabase,
 } from "@/types";
-import { taskSlug } from "@/utils";
-import { useIssueLogic } from "./logic";
-import { TaskExtraActionsButton } from "./StatusTransitionButtonGroup";
-import { useVerticalScrollState } from "@/composables/useScrollState";
-import { InstanceV1Name } from "../v2";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
+import { taskSlug } from "@/utils";
+import { InstanceV1Name } from "../v2";
+import { TaskExtraActionsButton } from "./StatusTransitionButtonGroup";
+import { useIssueLogic } from "./logic";
 
 const {
   create,

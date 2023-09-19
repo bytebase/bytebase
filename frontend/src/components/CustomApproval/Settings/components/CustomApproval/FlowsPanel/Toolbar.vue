@@ -8,13 +8,17 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-
 import { useCustomApprovalContext } from "../context";
 import { emptyLocalApprovalRule } from "../logic";
+
 const context = useCustomApprovalContext();
-const { allowAdmin, dialog } = context;
+const { hasFeature, showFeatureModal, allowAdmin, dialog } = context;
 
 const createRule = () => {
+  if (!hasFeature.value) {
+    showFeatureModal.value = true;
+    return;
+  }
   dialog.value = {
     mode: "CREATE",
     rule: emptyLocalApprovalRule(),

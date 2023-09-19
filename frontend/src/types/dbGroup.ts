@@ -1,4 +1,5 @@
 import { ConditionGroupExpr } from "@/plugins/cel";
+import { ComposedDatabase } from "@/types";
 import { Environment } from "./proto/v1/environment_service";
 import {
   DatabaseGroup,
@@ -6,7 +7,6 @@ import {
   SchemaGroup,
   SchemaGroup_Table,
 } from "./proto/v1/project_service";
-import { ComposedDatabase } from "@/types";
 
 export interface ComposedDatabaseGroup extends DatabaseGroup {
   databaseGroupName: string;

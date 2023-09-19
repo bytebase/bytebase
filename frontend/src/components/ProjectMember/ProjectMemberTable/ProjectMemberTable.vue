@@ -24,59 +24,91 @@
         </div>
       </div>
     </template>
-    <template #item="{ item }: ProjectMemberRow">
-      <div v-if="showSelectionColumn" class="bb-grid-cell items-center !px-2">
-        <slot name="selection" :member="item" />
+    <template #item="{ item: projectMember }: ProjectMemberRow">
+      <div v-if="showSelectionColumn" class="bb-grid-cell items-start !px-2">
+        <div class="h-10 flex flex-col items-center justify-center">
+          <slot name="selection" :member="projectMember" />
+        </div>
       </div>
-      <div class="bb-grid-cell gap-x-2">
-        <UserAvatar :user="item.user" />
+      <div class="bb-grid-cell items-start gap-x-2">
+        <UserAvatar class="mt-1" :user="projectMember.user" />
         <div class="flex flex-col">
           <div class="flex flex-row items-center space-x-2">
             <router-link
-              :to="`/u/${extractUserUID(item.user.name)}`"
+              :to="`/u/${extractUserUID(projectMember.user.name)}`"
               class="normal-link"
-              >{{ item.user.title }}</router-link
+              >{{ projectMember.user.title }}</router-link
             >
             <span
-              v-if="currentUserV1.name === item.user.name"
+              v-if="currentUserV1.name === projectMember.user.name"
               class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
               >{{ $t("common.you") }}</span
             >
           </div>
-          <span class="textlabel">{{ item.user.email }}</span>
+          <span class="textinfolabel">{{ projectMember.user.email }}</span>
         </div>
       </div>
       <div v-if="hasRBACFeature" class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
-        <NTag
-          v-for="binding in getFormatedBindingList(item.bindingList)"
-          :key="binding.role"
-          class="flex flex-row justify-start items-center"
-        >
-          <template v-if="isBindingExpired(binding)" #avatar>
-            <RoleExpiredTip />
-          </template>
-          {{ displayRoleTitle(binding.role) }}
-        </NTag>
-      </div>
-      <div class="bb-grid-cell gap-x-2 justify-end">
-        <NTooltip v-if="allowAdmin" trigger="hover">
-          <template #trigger>
-            <button
-              class="cursor-pointer opacity-60 hover:opacity-100"
-              @click="editingMember = item"
+        <!-- TODO: we need a data table -->
+        <div class="w-full flex flex-col justify-start items-start">
+          <p
+            v-for="binding in getSortedBindingList(projectMember.bindingList)"
+            :key="binding.role"
+            class="w-auto py-0.5 flex flex-row justify-start items-center flex-nowrap gap-x-2"
+            :class="isExpired(binding) ? 'line-through' : ''"
+          >
+            <span class="block truncate">{{
+              displayRoleTitle(binding.role)
+            }}</span>
+            <span
+              v-if="getBindingConditionTitle(binding)"
+              class="block truncate text-blue-600 cursor-pointer hover:text-blue-800"
+              @click="editingBinding = binding"
             >
-              <heroicons-outline:pencil class="w-4 h-4" />
-            </button>
-          </template>
-          {{ $t("common.edit") }}
-        </NTooltip>
-        <NButton
-          v-else-if="allowView(item)"
-          size="tiny"
-          @click="editingMember = item"
-        >
-          {{ $t("common.view") }}
-        </NButton>
+              {{
+                getBindingConditionTitle(binding) ||
+                displayRoleTitle(binding.role)
+              }}
+            </span>
+            <span v-if="isExpired(binding)"
+              >({{ $t("project.members.expired") }})</span
+            >
+          </p>
+        </div>
+      </div>
+      <div v-if="hasRBACFeature" class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
+        <div class="w-full flex flex-col justify-start items-start">
+          <p
+            v-for="binding in getSortedBindingList(projectMember.bindingList)"
+            :key="binding.role"
+            class="w-full py-0.5 truncate"
+            :class="isExpired(binding) ? 'line-through' : ''"
+          >
+            <span>{{ getExpiredTimeString(binding) || "*" }}</span>
+          </p>
+        </div>
+      </div>
+      <div class="bb-grid-cell items-start gap-x-2 justify-end">
+        <div class="h-10 flex flex-col items-center justify-center">
+          <NTooltip v-if="allowAdmin" trigger="hover">
+            <template #trigger>
+              <button
+                class="cursor-pointer opacity-60 hover:opacity-100"
+                @click="editingMember = projectMember"
+              >
+                <heroicons-outline:pencil class="w-4 h-4" />
+              </button>
+            </template>
+            {{ $t("common.edit") }}
+          </NTooltip>
+          <NButton
+            v-else-if="allowView(projectMember)"
+            size="tiny"
+            @click="editingMember = projectMember"
+          >
+            {{ $t("common.view") }}
+          </NButton>
+        </div>
       </div>
     </template>
 
@@ -91,33 +123,43 @@
     :member="editingMember"
     @close="editingMember = null"
   />
+
+  <EditProjectRolePanel
+    v-if="editingBinding"
+    :project="project"
+    :binding="editingBinding"
+    @close="editingBinding = null"
+  />
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
-import { NButton, NTag } from "naive-ui";
 import { useI18n } from "vue-i18n";
-
-import { ComposedProject } from "@/types";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import { Binding, IamPolicy } from "@/types/proto/v1/project_service";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 import { featureToRef, useCurrentUserV1, useProjectIamPolicy } from "@/store";
+import { ComposedProject, PresetRoleTypeList } from "@/types";
+import { Binding } from "@/types/proto/v1/iam_policy";
 import {
   hasWorkspacePermissionV1,
   displayRoleTitle,
   hasPermissionInProjectV1,
   extractUserUID,
 } from "@/utils";
+import {
+  getExpiredTimeString,
+  isExpired,
+  getExpiredDateTime,
+} from "../ProjectRoleTable/utils";
+import { getBindingConditionTitle } from "../common/util";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel.vue";
 import { ComposedProjectMember } from "./types";
-import UserAvatar from "@/components/User/UserAvatar.vue";
-import { convertFromExpr } from "@/utils/issue/cel";
 
 export type ProjectMemberRow = BBGridRow<ComposedProjectMember>;
 
 const props = defineProps<{
   project: ComposedProject;
-  iamPolicy: IamPolicy;
   editable: boolean;
   memberList: ComposedProjectMember[];
   ready?: boolean;
@@ -128,25 +170,30 @@ const { t } = useI18n();
 const hasRBACFeature = featureToRef("bb.feature.rbac");
 const currentUserV1 = useCurrentUserV1();
 const editingMember = ref<ComposedProjectMember | null>(null);
+const editingBinding = ref<Binding | null>(null);
 
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const columnList = computed(() => {
   const ACCOUNT: BBGridColumn = {
-    title: t("settings.members.table.account"),
+    title: t("common.user"),
     width: hasRBACFeature.value ? "minmax(auto, 18rem)" : "1fr",
   };
   const ROLE: BBGridColumn = {
-    title: t("settings.members.table.roles"),
+    title: t("common.role.self"),
     width: "1fr",
+  };
+  const EXPIRATION: BBGridColumn = {
+    title: t("common.expiration"),
+    width: "16rem",
   };
   const OPERATIONS: BBGridColumn = {
     title: "",
-    width: "10rem",
+    width: "4rem",
   };
   const list = hasRBACFeature.value
-    ? [ACCOUNT, ROLE, OPERATIONS]
+    ? [ACCOUNT, ROLE, EXPIRATION, OPERATIONS]
     : [ACCOUNT, OPERATIONS];
   if (props.showSelectionColumn) {
     list.unshift({
@@ -189,46 +236,37 @@ const allowView = (item: ComposedProjectMember) => {
   return item.user.name === currentUserV1.value.name;
 };
 
-const getFormatedBindingList = (bindingList: Binding[]) => {
-  const bindingMap = new Map<string, Binding>();
+const getSortedBindingList = (bindingList: Binding[]) => {
+  let roleMap = new Map<string, Binding[]>();
   for (const binding of bindingList) {
-    const key = binding.role;
-    const oldBinding = bindingMap.get(key);
-
-    if (oldBinding) {
-      const expiredTime = getExpiredTime(binding);
-      const oldExpiredTime = getExpiredTime(oldBinding);
-      if (!oldExpiredTime) {
-        bindingMap.set(key, binding);
-      } else {
-        if (expiredTime && expiredTime < oldExpiredTime) {
-          bindingMap.set(key, binding);
-        }
-      }
-    } else {
-      bindingMap.set(key, binding);
+    const role = binding.role;
+    if (!roleMap.has(role)) {
+      roleMap.set(role, []);
     }
+    roleMap.get(role)?.push(binding);
   }
-
-  return Array.from(bindingMap.values());
-};
-
-const getExpiredTime = (binding: Binding) => {
-  const parsedExpr = binding.parsedExpr;
-  if (parsedExpr?.expr) {
-    const expression = convertFromExpr(parsedExpr.expr);
-    if (expression.expiredTime) {
-      return expression.expiredTime;
-    }
+  // Sort by role type.
+  roleMap = new Map(
+    [...roleMap].sort((a, b) => {
+      if (!PresetRoleTypeList.includes(a[0])) return -1;
+      if (!PresetRoleTypeList.includes(b[0])) return 1;
+      return (
+        PresetRoleTypeList.indexOf(a[0]) - PresetRoleTypeList.indexOf(b[0])
+      );
+    })
+  );
+  // Sort by expiration time.
+  for (const role of roleMap.keys()) {
+    roleMap.set(
+      role,
+      roleMap.get(role)?.sort((a, b) => {
+        return (
+          (getExpiredDateTime(b)?.getTime() ?? -1) -
+          (getExpiredDateTime(a)?.getTime() ?? -1)
+        );
+      }) || []
+    );
   }
-  return null;
-};
-
-const isBindingExpired = (binding: Binding) => {
-  const expiredTime = getExpiredTime(binding);
-  if (expiredTime) {
-    return new Date(expiredTime).getTime() < Date.now();
-  }
-  return false;
+  return Array.from(roleMap.values()).flat();
 };
 </script>

@@ -34,7 +34,7 @@ func NewInstanceRoleService(store *store.Store, dbFactory *dbfactory.DBFactory) 
 
 // GetInstanceRole gets an role.
 func (s *InstanceRoleService) GetInstanceRole(ctx context.Context, request *v1pb.GetInstanceRoleRequest) (*v1pb.InstanceRole, error) {
-	instanceID, roleName, err := getInstanceRoleID(request.Name)
+	instanceID, roleName, err := common.GetInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -70,7 +70,7 @@ func (s *InstanceRoleService) GetInstanceRole(ctx context.Context, request *v1pb
 
 // ListInstanceRoles lists all roles in an instance.
 func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, request *v1pb.ListInstanceRolesRequest) (*v1pb.ListInstanceRolesResponse, error) {
-	instanceID, err := getInstanceID(request.Parent)
+	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -126,13 +126,16 @@ func (s *InstanceRoleService) CreateInstanceRole(ctx context.Context, request *v
 	if request.Role == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "role must be set")
 	}
-	instanceID, err := getInstanceID(request.Parent)
+	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.getInstanceMessage(ctx, instanceID)
 	if err != nil {
 		return nil, err
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", instanceID)
 	}
 
 	roleUpsert := &db.DatabaseRoleUpsertMessage{
@@ -176,7 +179,7 @@ func (s *InstanceRoleService) UpdateInstanceRole(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instanceID, roleName, err := getInstanceRoleID(request.Role.Name)
+	instanceID, roleName, err := common.GetInstanceRoleID(request.Role.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -184,6 +187,9 @@ func (s *InstanceRoleService) UpdateInstanceRole(ctx context.Context, request *v
 	instance, err := s.getInstanceMessage(ctx, instanceID)
 	if err != nil {
 		return nil, err
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", instanceID)
 	}
 
 	upsert := &db.DatabaseRoleUpsertMessage{
@@ -233,7 +239,7 @@ func (s *InstanceRoleService) UpdateInstanceRole(ctx context.Context, request *v
 
 // DeleteInstanceRole deletes an role.
 func (s *InstanceRoleService) DeleteInstanceRole(ctx context.Context, request *v1pb.DeleteInstanceRoleRequest) (*emptypb.Empty, error) {
-	instanceID, roleName, err := getInstanceRoleID(request.Name)
+	instanceID, roleName, err := common.GetInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -241,6 +247,9 @@ func (s *InstanceRoleService) DeleteInstanceRole(ctx context.Context, request *v
 	instance, err := s.getInstanceMessage(ctx, instanceID)
 	if err != nil {
 		return nil, err
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", instanceID)
 	}
 
 	if err := func() error {
@@ -273,10 +282,6 @@ func (s *InstanceRoleService) getInstanceMessage(ctx context.Context, instanceID
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
-	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", instanceID)
-	}
-
 	return instance, nil
 }
 
@@ -295,7 +300,7 @@ func validateRole(dbType db.Type, upsert *db.DatabaseRoleUpsertMessage) error {
 		return status.Errorf(codes.InvalidArgument, "Invalid role name, role name cannot be empty")
 	}
 	switch dbType {
-	case db.Postgres:
+	case db.Postgres, db.RisingWave:
 		if v := upsert.ConnectionLimit; v != nil && *v < int32(-1) {
 			return status.Errorf(codes.InvalidArgument, "Invalid connection limit, it should greater than or equal to -1")
 		}

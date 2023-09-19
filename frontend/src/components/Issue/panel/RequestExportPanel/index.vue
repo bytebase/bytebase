@@ -18,163 +18,88 @@
           </span>
           <ProjectSelect
             class="!w-60 shrink-0"
-            :only-userself="false"
-            :selected-id="state.projectId"
-            @select-project-id="handleProjectSelect"
+            :project="state.projectId"
+            @update:project="handleProjectSelect"
           />
         </div>
-        <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
-            {{ $t("common.database") }}
-            <RequiredStar />
-          </span>
-          <div class="flex flex-row justify-start items-center">
-            <EnvironmentSelect
-              class="!w-60 mr-4 shrink-0"
-              name="environment"
-              :select-default="false"
-              :selected-id="state.environmentId"
-              @select-environment-id="handleEnvironmentSelect"
-            />
-            <DatabaseSelect
-              class="!w-96"
-              :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
-              :mode="'ALL'"
-              :environment-id="state.environmentId"
+
+        <template v-if="props.statementOnly">
+          <div class="w-full flex flex-col justify-start items-start">
+            <span class="flex items-center textlabel mb-2">
+              {{ $t("common.database") }}
+              <RequiredStar />
+            </span>
+            <div class="flex flex-row justify-start items-center">
+              <EnvironmentSelect
+                class="!w-60 mr-4 shrink-0"
+                :environment="state.environmentId"
+                @update:environment="handleEnvironmentSelect"
+              />
+              <DatabaseSelect
+                class="!w-96"
+                :database="state.databaseId"
+                :environment="state.environmentId"
+                :project="state.projectId"
+                @update:database="handleDatabaseSelect"
+              >
+              </DatabaseSelect>
+            </div>
+          </div>
+          <div class="w-full flex flex-col justify-start items-start">
+            <span class="flex items-center textlabel mb-2">
+              SQL
+              <RequiredStar />
+            </span>
+            <div class="w-full h-[300px] border rounded">
+              <MonacoEditor
+                class="w-full h-full py-2"
+                :value="state.statement"
+                :auto-focus="false"
+                :language="'sql'"
+                :dialect="dialect"
+                @change="(value: string) => (state.statement = value)"
+              />
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <div class="w-full flex flex-col justify-start items-start">
+            <span class="flex items-center textlabel mb-2">
+              {{ $t("common.databases") }}
+              <RequiredStar />
+            </span>
+            <DatabaseResourceForm
               :project-id="state.projectId"
-              :sync-status="'OK'"
-              :customize-item="true"
-              @select-database-id="handleDatabaseSelect"
-            >
-              <template #customizeItem="{ database }">
-                <div class="flex items-center">
-                  <InstanceV1EngineIcon :instance="database.instanceEntity" />
-                  <span class="mx-2">{{ database.databaseName }}</span>
-                  <span class="text-gray-400">
-                    ({{ instanceV1Name(database.instanceEntity) }})
-                  </span>
-                </div>
-              </template>
-            </DatabaseSelect>
-          </div>
-        </div>
-        <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
-            {{ $t("issue.grant-request.export-method") }}
-            <RequiredStar />
-          </span>
-          <div class="w-full mb-2">
-            <NRadioGroup
-              v-model:value="state.exportMethod"
-              class="w-full !flex flex-row justify-start items-center gap-4"
-              name="export-method"
-            >
-              <NRadio :value="'SQL'" label="SQL" />
-              <NTooltip :disabled="allowSelectTableResource">
-                <template #trigger>
-                  <NRadio
-                    :disabled="!allowSelectTableResource"
-                    :value="'DATABASE'"
-                    :label="$t('common.database')"
-                  />
-                </template>
-                {{ $t("issue.grant-request.please-select-database-first") }}
-              </NTooltip>
-            </NRadioGroup>
-          </div>
-          <div
-            v-show="state.exportMethod === 'SQL'"
-            class="w-full h-[300px] border rounded"
-          >
-            <MonacoEditor
-              class="w-full h-full py-2"
-              :value="state.statement"
-              :auto-focus="false"
-              :language="'sql'"
-              :dialect="dialect"
-              @change="handleStatementChange"
+              :database-resources="state.databaseResources"
+              @update:condition="state.databaseResourceCondition = $event"
+              @update:database-resources="state.databaseResources = $event"
             />
           </div>
-          <div
-            v-if="state.exportMethod === 'DATABASE'"
-            class="w-full flex flex-row justify-start items-center"
-          >
-            <SelectTableForm
-              :project-id="state.projectId"
-              :database-id="state.databaseId"
-              :selected-database-resource-list="
-                selectedTableResource ? [selectedTableResource] : []
-              "
-              @update="handleTableResourceUpdate"
-            />
-          </div>
-        </div>
+        </template>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">
             {{ $t("issue.grant-request.export-rows") }}
             <RequiredStar />
           </span>
-          <input
-            v-model="state.maxRowCount"
+          <NInputNumber
+            v-model:value="state.maxRowCount"
             required
-            type="number"
-            class="textfield"
+            class="!w-60"
             placeholder="Max row count"
+            :min="1"
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
-            {{ $t("issue.grant-request.export-format") }}
-            <RequiredStar />
-          </span>
-          <div>
-            <NRadioGroup
-              v-model:value="state.exportFormat"
-              class="w-full !flex flex-row justify-start items-center gap-4"
-              name="export-format"
-            >
-              <NRadio :value="'CSV'" label="CSV" />
-              <NRadio :value="'JSON'" label="JSON" />
-              <NRadio v-if="isDev" :value="'SQL'" label="SQL" />
-            </NRadioGroup>
-          </div>
-        </div>
-        <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-start textlabel mb-2">
-            {{ $t("issue.grant-request.expire-days") }}
+            {{ $t("common.expiration") }}
             <RequiredStar />
           </span>
-          <div>
-            <NRadioGroup
-              v-model:value="state.expireDays"
-              class="!grid grid-cols-6 gap-4"
-              name="radiogroup"
-            >
-              <div
-                v-for="day in expireDaysOptions"
-                :key="day.value"
-                class="col-span-1 flex flex-row justify-start items-center"
-              >
-                <NRadio :value="day.value" :label="day.label" />
-              </div>
-              <div class="col-span-2 flex flex-row justify-start items-center">
-                <NRadio
-                  :value="-1"
-                  :label="$t('issue.grant-request.customize')"
-                />
-                <NInputNumber
-                  v-model:value="state.customDays"
-                  class="!w-24 ml-2"
-                  :disabled="state.expireDays !== -1"
-                  :min="1"
-                  :show-button="false"
-                  :placeholder="''"
-                >
-                  <template #suffix>{{ $t("common.date.days") }}</template>
-                </NInputNumber>
-              </div>
-            </NRadioGroup>
-          </div>
+          <ExpirationSelector
+            class="grid-cols-6"
+            :options="expireDaysOptions"
+            :value="state.expireDays"
+            @update="state.expireDays = $event"
+          />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">{{
@@ -205,68 +130,69 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
+import { head, isUndefined } from "lodash-es";
 import {
+  NButton,
   NDrawer,
   NDrawerContent,
-  NRadioGroup,
-  NRadio,
-  NInputNumber,
   NInput,
-  NTooltip,
+  NInputNumber,
 } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import ExpirationSelector from "@/components/ExpirationSelector.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import {
-  DatabaseResource,
-  IssueCreate,
-  PresetRoleType,
-  SQLDialect,
-  SYSTEM_BOT_ID,
-  UNKNOWN_ID,
-  dialectOfEngineV1,
-} from "@/types";
-import {
-  extractUserUID,
-  instanceV1Name,
-  issueSlug,
-  memberListInProjectV1,
-} from "@/utils";
+  ProjectSelect,
+  EnvironmentSelect,
+  DatabaseSelect,
+} from "@/components/v2";
+import { issueServiceClient } from "@/grpcweb";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
-  useIssueStore,
   useProjectV1Store,
+  pushNotification,
 } from "@/store";
-import MonacoEditor from "@/components/MonacoEditor";
-import RequiredStar from "@/components/RequiredStar.vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
-import DatabaseSelect from "@/components/DatabaseSelect.vue";
+import {
+  DatabaseResource,
+  PresetRoleType,
+  SQLDialect,
+  SYSTEM_BOT_EMAIL,
+  UNKNOWN_ID,
+  dialectOfEngineV1,
+} from "@/types";
+import { Duration } from "@/types/proto/google/protobuf/duration";
+import { Expr } from "@/types/proto/google/type/expr";
 import { Engine } from "@/types/proto/v1/common";
-import { head } from "lodash-es";
-import { useRouter } from "vue-router";
-import SelectTableForm from "./SelectTableForm/index.vue";
-import dayjs from "dayjs";
+import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
+import { issueSlug, memberListInProjectV1 } from "@/utils";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
+import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 
 interface LocalState {
   projectId?: string;
   environmentId?: string;
   databaseId?: string;
+  databaseResourceCondition?: string;
+  databaseResources: DatabaseResource[];
   expireDays: number;
-  customDays: number;
   maxRowCount: number;
-  exportMethod: "SQL" | "DATABASE";
-  exportFormat: "CSV" | "JSON" | "SQL";
   statement: string;
   description: string;
 }
 
 const props = defineProps<{
+  projectId?: string;
   databaseId?: string;
   statement?: string;
+  statementOnly?: boolean;
+  redirectToIssuePage?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
@@ -274,16 +200,14 @@ const { t } = useI18n();
 const router = useRouter();
 const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
+const projectStore = useProjectV1Store();
 const state = reactive<LocalState>({
+  databaseResources: [],
   expireDays: 1,
-  customDays: 7,
   maxRowCount: 1000,
-  exportMethod: "SQL",
-  exportFormat: "CSV",
   statement: "",
   description: "",
 });
-const selectedTableResource = ref<DatabaseResource>();
 
 const selectedDatabase = computed(() => {
   if (!state.databaseId || state.databaseId === String(UNKNOWN_ID)) {
@@ -311,28 +235,31 @@ const expireDaysOptions = computed(() => [
   },
 ]);
 
-const allowCreate = computed(() => {
-  if (!state.databaseId) {
-    return false;
-  }
-
-  if (state.exportMethod === "SQL") {
-    return state.statement && state.statement !== "";
-  } else {
-    return selectedTableResource.value !== undefined;
-  }
-});
-
-const allowSelectTableResource = computed(() => {
-  return state.databaseId !== undefined;
-});
-
 const dialect = computed((): SQLDialect => {
   const db = selectedDatabase.value;
   return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
 });
 
+const allowCreate = computed(() => {
+  if (!state.projectId) {
+    return false;
+  }
+  if (props.statementOnly) {
+    if (!state.databaseId || !state.statement) {
+      return false;
+    }
+  } else {
+    if (isUndefined(state.databaseResourceCondition)) {
+      return false;
+    }
+  }
+  return true;
+});
+
 onMounted(async () => {
+  if (props.projectId) {
+    handleProjectSelect(props.projectId);
+  }
   if (props.databaseId) {
     handleDatabaseSelect(props.databaseId);
   }
@@ -341,11 +268,11 @@ onMounted(async () => {
   }
 });
 
-const handleProjectSelect = async (projectId: string) => {
+const handleProjectSelect = async (projectId: string | undefined) => {
   state.projectId = projectId;
 };
 
-const handleEnvironmentSelect = (environmentId: string) => {
+const handleEnvironmentSelect = (environmentId: string | undefined) => {
   state.environmentId = environmentId;
   const database = databaseStore.getDatabaseByUID(
     state.databaseId || String(UNKNOWN_ID)
@@ -354,37 +281,21 @@ const handleEnvironmentSelect = (environmentId: string) => {
   if (
     database &&
     database.uid !== String(UNKNOWN_ID) &&
-    database.instanceEntity.environmentEntity.uid !== state.environmentId
+    database.effectiveEnvironmentEntity.uid !== state.environmentId
   ) {
     state.databaseId = undefined;
   }
 };
 
-const handleDatabaseSelect = (databaseId: string) => {
+const handleDatabaseSelect = (databaseId: string | undefined) => {
   state.databaseId = databaseId;
   const database = databaseStore.getDatabaseByUID(
     state.databaseId || String(UNKNOWN_ID)
   );
   if (database && database.uid !== String(UNKNOWN_ID)) {
     handleProjectSelect(database.projectEntity.uid);
-    handleEnvironmentSelect(database.instanceEntity.environmentEntity.uid);
+    handleEnvironmentSelect(database.effectiveEnvironmentEntity.uid);
   }
-};
-
-const handleTableResourceUpdate = (
-  databaseResourceList: DatabaseResource[]
-) => {
-  if (databaseResourceList.length > 1) {
-    throw new Error("Only one table can be selected");
-  } else if (databaseResourceList.length === 0) {
-    selectedTableResource.value = undefined;
-  } else {
-    selectedTableResource.value = databaseResourceList[0];
-  }
-};
-
-const handleStatementChange = (value: string) => {
-  state.statement = value;
 };
 
 const doCreateIssue = async () => {
@@ -392,91 +303,115 @@ const doCreateIssue = async () => {
     return;
   }
 
-  const newIssue: IssueCreate = {
-    name: generateIssueName(),
-    type: "bb.issue.grant.request",
+  const newIssue = Issue.fromPartial({
+    title: generateIssueName(),
     description: state.description,
-    projectId: Number(state.projectId),
-    assigneeId: SYSTEM_BOT_ID,
-    createContext: {},
-    payload: {},
-  };
+    type: Issue_Type.GRANT_REQUEST,
+    assignee: `users/${SYSTEM_BOT_EMAIL}`,
+    grantRequest: {},
+  });
 
   // update issue's assignee to first project owner.
-  const project = await useProjectV1Store().getOrFetchProjectByUID(
-    state.projectId!
-  );
+  const project = await projectStore.getOrFetchProjectByUID(state.projectId!);
   const memberList = memberListInProjectV1(project, project.iamPolicy);
   const ownerList = memberList.filter((member) =>
     member.roleList.includes(PresetRoleType.OWNER)
   );
   const projectOwner = head(ownerList);
   if (projectOwner) {
-    const userUID = extractUserUID(projectOwner.user.name);
-    newIssue.assigneeId = Number(userUID);
+    newIssue.assignee = `users/${projectOwner.user.email}`;
   }
 
   const expression: string[] = [];
-  const expireDays =
-    state.expireDays === -1 ? state.customDays : state.expireDays;
+  const expireDays = state.expireDays;
   expression.push(
     `request.time < timestamp("${dayjs()
       .add(expireDays, "days")
       .toISOString()}")`
   );
-  expression.push(`request.export_format == "${state.exportFormat}"`);
-  expression.push(`request.row_limit == ${state.maxRowCount}`);
-  if (state.exportMethod === "SQL") {
-    expression.push(`request.statement == "${btoa(state.statement)}"`);
-    const cel = stringifyDatabaseResources([
-      {
-        databaseName: selectedDatabase.value!.name,
-      },
-    ]);
-    expression.push(cel);
+  expression.push(`request.row_limit <= ${state.maxRowCount}`);
+  if (props.statementOnly) {
+    // Selected database condition.
+    expression.push(
+      stringifyDatabaseResources([
+        {
+          databaseName: selectedDatabase.value!.name,
+        },
+      ])
+    );
+    // Statement condition.
+    expression.push(
+      `request.statement == "${btoa(
+        unescape(encodeURIComponent(state.statement))
+      )}"`
+    );
   } else {
-    if (!selectedTableResource.value) {
-      throw new Error("No table selected");
+    if (state.databaseResourceCondition) {
+      expression.push(state.databaseResourceCondition);
     }
-    const cel = stringifyDatabaseResources([selectedTableResource.value]);
-    expression.push(cel);
   }
 
   const celExpressionString = expression.join(" && ");
-  newIssue.payload = {
-    grantRequest: {
-      role: "roles/EXPORTER",
-      user: currentUser.value.name,
-      condition: {
-        expression: celExpressionString,
-      },
-    },
+  newIssue.grantRequest = {
+    role: "roles/EXPORTER",
+    user: `users/${currentUser.value.email}`,
+    condition: Expr.fromPartial({
+      expression: celExpressionString,
+    }),
+    expiration: Duration.fromPartial({
+      seconds: expireDays * 24 * 60 * 60,
+    }),
   };
 
-  const issue = await useIssueStore().createIssue(newIssue);
-  router.push(`/issue/${issueSlug(issue.name, issue.id)}`);
+  const createdIssue = await issueServiceClient.createIssue({
+    parent: project.name,
+    issue: newIssue,
+  });
+
+  pushNotification({
+    module: "bytebase",
+    style: "INFO",
+    title: t("issue.grant-request.request-sent"),
+  });
+
+  if (props.redirectToIssuePage) {
+    const route = router.resolve({
+      path: `/issue/${issueSlug(createdIssue.title, createdIssue.uid)}`,
+    });
+    window.open(route.href, "_blank");
+  }
+
+  emit("close");
 };
 
 const generateIssueName = () => {
-  const database = selectedDatabase.value;
-  if (!database) {
-    throw new Error("No database selected");
-  }
+  if (props.statementOnly) {
+    const database = selectedDatabase.value;
+    if (!database) {
+      throw new Error("Database is not selected");
+    }
 
-  if (state.exportMethod === "SQL") {
-    return `Request data export for "${database.databaseName} (${database.instanceEntity.title})"`;
+    if (state.databaseResources.length === 0) {
+      return `Request data export for "${database.databaseName} (${database.instanceEntity.title})"`;
+    } else {
+      const sections: string[] = [];
+      for (const databaseResource of state.databaseResources) {
+        const nameList = [database.databaseName];
+        if (databaseResource.schema) {
+          nameList.push(databaseResource.schema);
+        }
+        if (databaseResource.table) {
+          nameList.push(databaseResource.table);
+        }
+        sections.push(nameList.join("."));
+      }
+      return `Request data export for "${sections.join(".")} (${
+        database.instanceEntity.title
+      })"`;
+    }
   } else {
-    const tableResource = selectedTableResource.value as DatabaseResource;
-    const nameList = [database.databaseName];
-    if (tableResource.schema) {
-      nameList.push(tableResource.schema);
-    }
-    if (tableResource.table) {
-      nameList.push(tableResource.table);
-    }
-    return `Request data export for "${nameList.join(".")} (${
-      database.instanceEntity.title
-    })"`;
+    const project = projectStore.getProjectByUID(state.projectId!);
+    return `Request data export for "${project.title}"`;
   }
 };
 </script>

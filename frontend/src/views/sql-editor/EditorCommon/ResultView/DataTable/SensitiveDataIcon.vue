@@ -19,7 +19,6 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-
 import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
 

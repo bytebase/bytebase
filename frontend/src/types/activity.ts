@@ -1,5 +1,10 @@
-import { ExternalApprovalEvent } from "./externalApproval";
+import {
+  LogEntity_Action,
+  LogEntity_Level,
+} from "@/types/proto/v1/logging_service";
 import { FieldId } from "../plugins";
+import { t } from "../plugins/i18n";
+import { ExternalApprovalEvent } from "./externalApproval";
 import {
   DatabaseId,
   InstanceId,
@@ -11,15 +16,10 @@ import {
 } from "./id";
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
-import { StageStatusUpdateType, TaskStatus } from "./pipeline";
-import { VCSPushEvent } from "./vcs";
-import { Advice } from "./sqlAdvice";
-import { t } from "../plugins/i18n";
+import { StageStatusUpdateType, TaskRunStatus, TaskStatus } from "./pipeline";
 import { ApprovalEvent } from "./review";
-import {
-  LogEntity_Action,
-  LogEntity_Level,
-} from "@/types/proto/v1/logging_service";
+import { Advice } from "./sqlAdvice";
+import { VCSPushEvent } from "./vcs";
 
 export function activityName(action: LogEntity_Action): string {
   switch (action) {
@@ -35,6 +35,8 @@ export function activityName(action: LogEntity_Action): string {
       return t("activity.type.pipeline-stage-status-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE:
       return t("activity.type.pipeline-task-status-update");
+    case LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
+      return t("activity.type.pipeline-task-run-status-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT:
       return t("activity.type.pipeline-task-file-commit");
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
@@ -57,8 +59,6 @@ export function activityName(action: LogEntity_Action): string {
       return t("activity.type.project-member-create");
     case LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE:
       return t("activity.type.project-member-delete");
-    case LogEntity_Action.ACTION_PROJECT_MEMBER_ROLE_UPDATE:
-      return t("activity.type.project-member-role-update");
     case LogEntity_Action.ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
       return t("activity.type.database-recovery-pitr-done");
   }
@@ -100,6 +100,7 @@ export type ActivityIssueStatusUpdatePayload = {
   newStatus: IssueStatus;
   issueName: string;
 };
+
 export type ActivityStageStatusUpdatePayload = {
   stageId: StageId;
   stageStatusUpdateType: StageStatusUpdateType;
@@ -111,6 +112,13 @@ export type ActivityTaskStatusUpdatePayload = {
   taskId: TaskId;
   oldStatus: TaskStatus;
   newStatus: TaskStatus;
+  issueName: string;
+  taskName: string;
+};
+
+export type ActivityPipelineTaskRunStatusUpdatePayload = {
+  taskId: TaskId;
+  newStatus: TaskRunStatus;
   issueName: string;
   taskName: string;
 };

@@ -1,42 +1,49 @@
 <template>
   <div
-    class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-4 border-b bg-white"
+    ref="containerRef"
+    class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-2 border-b bg-white"
   >
     <div
       class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center"
     >
-      <NButton type="primary" :disabled="!allowQuery" @click="handleRunQuery">
-        <mdi:play class="h-5 w-5 -ml-1.5" />
+      <NButton
+        type="primary"
+        size="small"
+        :disabled="!allowQuery"
+        @click="handleRunQuery"
+      >
+        <mdi:play class="-ml-1.5" />
         <span>
           {{
             showRunSelected ? $t("sql-editor.run-selected") : $t("common.run")
           }}
         </span>
 
-        <span class="hidden sm:inline ml-1">
+        <span v-show="showShortcutText" class="ml-1">
           ({{ keyboardShortcutStr("cmd_or_ctrl+⏎") }})
         </span>
       </NButton>
-      <NButton :disabled="!allowQuery" @click="handleExplainQuery">
-        <mdi:play class="h-5 w-5 -ml-1.5" />
+      <NButton size="small" :disabled="!allowQuery" @click="handleExplainQuery">
+        <mdi:play class="-ml-1.5" />
         <span>Explain</span>
-        <span class="hidden sm:inline ml-1">
+        <span v-show="showShortcutText" class="ml-1">
           ({{ keyboardShortcutStr("cmd_or_ctrl+E") }})
         </span>
       </NButton>
-      <NButton :disabled="!allowQuery" @click="handleFormatSQL">
+      <NButton size="small" :disabled="!allowQuery" @click="handleFormatSQL">
         <span>{{ $t("sql-editor.format") }}</span>
-        <span class="hidden sm:inline ml-1">
+        <span v-show="showShortcutText" class="ml-1">
           ({{ keyboardShortcutStr("shift+opt_or_alt+F") }})
         </span>
       </NButton>
       <NButton
         v-if="showClearScreen"
+        size="small"
         :disabled="queryList.length <= 1 || isExecutingSQL"
         @click="handleClearScreen"
       >
         <span>{{ $t("sql-editor.clear-screen") }}</span>
-        <span class="hidden sm:inline ml-1">
+        <span v-show="showShortcutText" class="ml-1">
           ({{ keyboardShortcutStr("shift+opt_or_alt+C") }})
         </span>
       </NButton>
@@ -44,19 +51,20 @@
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
     >
-      <AdminModeButton />
+      <AdminModeButton :size="'small'" />
 
       <template v-if="showSheetsFeature">
         <NButton
           secondary
           strong
           type="primary"
+          size="small"
           :disabled="!allowSave"
-          @click="() => emit('save-sheet')"
+          @click="handleClickSave"
         >
-          <carbon:save class="h-5 w-5 -ml-1" />
+          <carbon:save class="-ml-1" />
           <span class="ml-1">{{ $t("common.save") }}</span>
-          <span class="hidden sm:inline ml-1">
+          <span v-show="showShortcutText" class="ml-1">
             ({{ keyboardShortcutStr("cmd_or_ctrl+S") }})
           </span>
         </NButton>
@@ -68,6 +76,7 @@
         >
           <template #trigger>
             <NButton
+              size="small"
               :disabled="
                 isEmptyStatement ||
                 tabStore.isDisconnected ||
@@ -75,7 +84,7 @@
               "
               @click="handleShareButtonClick"
             >
-              <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
+              <carbon:share class="" /> &nbsp; {{ $t("common.share") }}
               <FeatureBadge
                 :feature="'bb.feature.shared-sql-script'"
                 custom-class="ml-2"
@@ -91,14 +100,15 @@
   </div>
 
   <FeatureModal
-    v-if="state.requiredFeatureName"
+    :open="state.requiredFeatureName"
     :feature="state.requiredFeatureName"
     @cancel="state.requiredFeatureName = undefined"
   />
 </template>
 
 <script lang="ts" setup>
-import { computed, defineEmits, reactive } from "vue";
+import { useElementSize } from "@vueuse/core";
+import { computed, defineEmits, reactive, ref } from "vue";
 import {
   useTabStore,
   useSQLEditorStore,
@@ -109,16 +119,16 @@ import {
 } from "@/store";
 import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
-import SharePopover from "./SharePopover.vue";
-import AdminModeButton from "./AdminModeButton.vue";
 import { formatEngineV1, keyboardShortcutStr } from "@/utils";
+import { useSQLEditorContext } from "../context";
+import AdminModeButton from "./AdminModeButton.vue";
+import SharePopover from "./SharePopover.vue";
 
 interface LocalState {
   requiredFeatureName?: FeatureType;
 }
 
 const emit = defineEmits<{
-  (e: "save-sheet", content?: string): void;
   (
     e: "execute",
     sql: string,
@@ -133,6 +143,9 @@ const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 const uiStateStore = useUIStateStore();
 const webTerminalStore = useWebTerminalStore();
+const { events } = useSQLEditorContext();
+const containerRef = ref<HTMLDivElement>();
+const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 
 const connection = computed(() => tabStore.currentTab.connection);
@@ -229,9 +242,19 @@ const handleClearScreen = () => {
   emit("clear-screen");
 };
 
+const handleClickSave = () => {
+  events.emit("save-sheet", {
+    title: tabStore.currentTab.name,
+  });
+};
+
 const handleShareButtonClick = () => {
   if (!hasSharedSQLScriptFeature.value) {
     state.requiredFeatureName = "bb.feature.shared-sql-script";
   }
 };
+
+const showShortcutText = computed(() => {
+  return containerWidth.value > 800;
+});
 </script>

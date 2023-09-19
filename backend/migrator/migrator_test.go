@@ -3,12 +3,12 @@ package migrator
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"path"
 	"testing"
 
 	"github.com/blang/semver/v4"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -50,7 +50,7 @@ func TestGetMinorMigrationVersions(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		migrateVersions, _, _ := getMinorMigrationVersions(test.names, test.currentVersion)
+		migrateVersions, _ := getMinorMigrationVersions(test.names, test.currentVersion)
 		require.Equal(t, test.want, migrateVersions)
 	}
 }
@@ -146,7 +146,7 @@ var (
 )
 
 func TestMigrationCompatibility(t *testing.T) {
-	log.SetLevel(zap.DebugLevel)
+	log.GLogLevel.Set(slog.LevelDebug)
 	pgDir := t.TempDir()
 	pgBinDir, err := postgres.Install(path.Join(pgDir, "resource"))
 	pgDataDir := path.Join(pgDir, "data")
@@ -241,5 +241,5 @@ func TestMigrationCompatibility(t *testing.T) {
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("2.4.0"), releaseVersion)
+	require.Equal(t, semver.MustParse("2.8.4"), releaseVersion)
 }

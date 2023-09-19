@@ -5,27 +5,29 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/pkg/errors"
-
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var (
-	_ db.Driver = (*Driver)(nil)
-)
+var _ db.Driver = (*Driver)(nil)
 
 func init() {
 	db.Register(db.MongoDB, newDriver)
@@ -86,7 +88,7 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a statement, always returns 0 as the number of rows affected because we execute the statement by mongosh, it's hard to catch the row effected number.
-func (driver *Driver) Execute(_ context.Context, statement string, _ bool, _ db.ExecuteOptions) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, _ db.ExecuteOptions) (int64, error) {
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB, we execute the statement in mongosh, which is a shell for MongoDB.
 	// There are some ways to execute the statement in mongosh:
@@ -117,42 +119,13 @@ func (driver *Driver) Execute(_ context.Context, statement string, _ bool, _ db.
 		"--file",
 		tempFile.Name(),
 	}
-	// We don't use the CommandContext here because the statement may take a long time to execute.
-	mongoshCmd := exec.Command(mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
+	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
 	var errContent bytes.Buffer
 	mongoshCmd.Stderr = &errContent
 	if err := mongoshCmd.Run(); err != nil {
 		return 0, errors.Wrapf(err, "failed to execute statement in mongosh: %s", errContent.String())
 	}
 	return 0, nil
-}
-
-// QueryConn querys statements and returns the result.
-func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]any, error) {
-	connectionURI := getMongoDBConnectionURI(driver.connCfg)
-	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
-	// 1. Query always short, so it's safe to execute in the command line.
-	// 2. We cannot catch the output if we use the --file option.
-
-	mongoshArgs := []string{
-		connectionURI,
-		"--quiet",
-		"--eval",
-		statement,
-	}
-
-	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
-	var errContent bytes.Buffer
-	var outContent bytes.Buffer
-	mongoshCmd.Stderr = &errContent
-	mongoshCmd.Stdout = &outContent
-	if err := mongoshCmd.Run(); err != nil {
-		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: %s", errContent.String())
-	}
-	field := []string{"result"}
-	types := []string{"TEXT"}
-	rows := [][]any{{outContent.String()}}
-	return []any{field, types, rows}, nil
 }
 
 // Dump dumps the database.
@@ -168,66 +141,56 @@ func (*Driver) Restore(_ context.Context, _ io.Reader) error {
 // getMongoDBConnectionURI returns the MongoDB connection URI.
 // https://www.mongodb.com/docs/manual/reference/connection-string/
 func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
-	connectionURI := "mongodb://"
+	u := &url.URL{
+		Scheme: "mongodb",
+		// In RFC, there can be no tailing slash('/') in the path if the path is empty and the query is not empty.
+		// For mongosh, it can handle this case correctly, but for driver, it will throw the error likes "error parsing uri: must have a / before the query ?".
+		Path: "/",
+	}
 	if connConfig.SRV {
-		connectionURI = "mongodb+srv://"
+		u.Scheme = "mongodb+srv"
 	}
 	if connConfig.Username != "" {
-		percentEncodingUsername := replaceCharacterWithPercentEncoding(connConfig.Username)
-		percentEncodingPassword := replaceCharacterWithPercentEncoding(connConfig.Password)
-		connectionURI = fmt.Sprintf("%s%s:%s@", connectionURI, percentEncodingUsername, percentEncodingPassword)
+		u.User = url.UserPassword(connConfig.Username, connConfig.Password)
 	}
-	connectionURI = fmt.Sprintf("%s%s", connectionURI, connConfig.Host)
+	u.Host = connConfig.Host
 	if connConfig.Port != "" {
-		connectionURI = fmt.Sprintf("%s:%s", connectionURI, connConfig.Port)
+		u.Host = fmt.Sprintf("%s:%s", u.Host, connConfig.Port)
 	}
 	if connConfig.Database != "" {
-		connectionURI = fmt.Sprintf("%s/%s", connectionURI, connConfig.Database)
+		u.Path = connConfig.Database
 	}
-	// We use admin as the default authentication database.
-	// https://www.mongodb.com/docs/manual/reference/connection-string/#mongodb-urioption-urioption.authSource
-	authenticationDatabase := connConfig.AuthenticationDatabase
-	if authenticationDatabase == "" {
-		authenticationDatabase = "admin"
+	authDatabase := "admin"
+	if connConfig.AuthenticationDatabase != "" {
+		authDatabase = connConfig.AuthenticationDatabase
 	}
 
-	if connConfig.Database == "" {
-		connectionURI = fmt.Sprintf("%s/", connectionURI)
-	}
-	connectionURI = fmt.Sprintf("%s?authSource=%s", connectionURI, authenticationDatabase)
-
-	return connectionURI
+	u.RawQuery = fmt.Sprintf("authSource=%s", authDatabase)
+	return u.String()
 }
 
-func replaceCharacterWithPercentEncoding(s string) string {
-	m := map[string]string{
-		":": `%3A`,
-		"/": `%2F`,
-		"?": `%3F`,
-		"#": `%23`,
-		"[": `%5B`,
-		"]": `%5D`,
-		"@": `%40`,
-	}
-	for k, v := range m {
-		s = strings.ReplaceAll(s, k, v)
-	}
-	return s
-}
-
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	simpleStatement := isMongoStatement(statement)
 	startTime := time.Now()
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
 	// 1. Query always short, so it's safe to execute in the command line.
 	// 2. We cannot catch the output if we use the --file option.
 
+	evalArg := statement
+	if simpleStatement {
+		limit := ""
+		if queryContext.Limit > 0 {
+			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
+		}
+		evalArg = fmt.Sprintf("a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s))} else {print(EJSON.stringify(a))}", strings.TrimRight(statement, " \t\n\r\f;"), limit)
+	}
 	mongoshArgs := []string{
 		connectionURI,
 		"--quiet",
 		"--eval",
-		statement,
+		evalArg,
 	}
 
 	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
@@ -238,23 +201,101 @@ func (driver *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement str
 	if err := mongoshCmd.Run(); err != nil {
 		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: %s", errContent.String())
 	}
-	field := []string{"result"}
-	types := []string{"TEXT"}
-	rows := []*v1pb.QueryRow{{
-		Values: []*v1pb.RowValue{{
-			Kind: &v1pb.RowValue_StringValue{StringValue: outContent.String()},
-		}},
-	}}
+
+	if simpleStatement {
+		// We make best-effort attempt to parse the content and fallback to single bulk result on failure.
+		result, err := getSimpleStatementResult(outContent.Bytes())
+		if err != nil {
+			slog.Error("failed to get simple statement result", slog.String("content", outContent.String()), log.BBError(err))
+		} else {
+			result.Latency = durationpb.New(time.Since(startTime))
+			result.Statement = statement
+			return []*v1pb.QueryResult{result}, nil
+		}
+	}
+
 	return []*v1pb.QueryResult{{
-		ColumnNames:     field,
-		ColumnTypeNames: types,
-		Rows:            rows,
-		Latency:         durationpb.New(time.Since(startTime)),
-		Statement:       statement,
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows: []*v1pb.QueryRow{{
+			Values: []*v1pb.RowValue{{
+				Kind: &v1pb.RowValue_StringValue{StringValue: outContent.String()},
+			}},
+		}},
+		Latency:   durationpb.New(time.Since(startTime)),
+		Statement: statement,
 	}}, nil
+}
+
+func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
+	var a any
+	if err := json.Unmarshal(data, &a); err != nil {
+		return nil, err
+	}
+	var rows []any
+	aa, ok := a.([]any)
+	if ok {
+		rows = aa
+	} else {
+		rows = []any{a}
+	}
+
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"_id", "result"},
+		ColumnTypeNames: []string{"TEXT", "TEXT"},
+	}
+	for _, v := range rows {
+		id := ""
+		m, ok := v.(map[string]any)
+		if ok {
+			// Flatten "_id" object.
+			idObj, ok := m["_id"]
+			if ok {
+				objIDObj, ok := idObj.(map[string]any)
+				if ok {
+					idStr, ok := objIDObj["$oid"].(string)
+					if ok {
+						id = idStr
+					}
+				}
+				if id == "" {
+					r, err := json.MarshalIndent(idObj, "", "	")
+					if err != nil {
+						return nil, err
+					}
+					id = string(r)
+				}
+			}
+
+			// Remove "_id" from result.
+			delete(m, "_id")
+			v = m
+		}
+
+		r, err := json.MarshalIndent(v, "", "	")
+		if err != nil {
+			return nil, err
+		}
+		result.Rows = append(result.Rows, &v1pb.QueryRow{
+			Values: []*v1pb.RowValue{
+				{Kind: &v1pb.RowValue_StringValue{StringValue: id}},
+				{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}},
+			},
+		})
+	}
+	return result, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.
 func (driver *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return driver.QueryConn2(ctx, nil, statement, nil)
+	return driver.QueryConn(ctx, nil, statement, nil)
+}
+
+func isMongoStatement(statement string) bool {
+	if _, err := parser.ParseMongo(statement); err == nil {
+		return true
+	}
+	statement = strings.TrimLeft(statement, " \n\t")
+	statement = strings.ToLower(statement)
+	return strings.HasPrefix(statement, "db.")
 }

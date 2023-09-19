@@ -1,9 +1,11 @@
-import { isUndefined } from "lodash-es";
-
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
+  getUserEmailFromIdentifier,
+  getProjectAndSheetId,
+  getSheetPathByLegacyProject,
+} from "@/store/modules/v1/common";
+import {
   Task,
-  SheetIssueBacktracePayload,
   TaskDatabaseCreatePayload,
   TaskDatabaseDataUpdatePayload,
   TaskDatabaseSchemaUpdateGhostSyncPayload,
@@ -11,17 +13,18 @@ import {
   TaskDatabaseSchemaUpdateSDLPayload,
   SheetId,
 } from "@/types";
+import { Sheet, Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 import {
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
   isMemberOfProjectV1,
 } from "../../utils";
-import { Sheet, Sheet_Visibility } from "@/types/proto/v1/sheet_service";
-import {
-  getUserEmailFromIdentifier,
-  getProjectAndSheetId,
-  getSheetPathByLegacyProject,
-} from "@/store/modules/v1/common";
+
+export const extractSheetUID = (name: string) => {
+  const pattern = /(?:^|\/)sheets\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "-1";
+};
 
 export const isSheetReadableV1 = (sheet: Sheet) => {
   const currentUserV1 = useCurrentUserV1();
@@ -61,11 +64,6 @@ export const isSheetReadableV1 = (sheet: Sheet) => {
 };
 
 export const isSheetWritableV1 = (sheet: Sheet) => {
-  // If the sheet is linked to an issue, it's NOT writable
-  if (getSheetIssueBacktracePayloadV1(sheet)) {
-    return false;
-  }
-
   const currentUserV1 = useCurrentUserV1();
 
   // writable to
@@ -108,21 +106,6 @@ export const isSheetWritableV1 = (sheet: Sheet) => {
   return false;
 };
 
-export const getSheetIssueBacktracePayloadV1 = (sheet: Sheet) => {
-  const maybePayload = JSON.parse(
-    sheet.payload ?? "{}"
-  ) as SheetIssueBacktracePayload;
-  if (
-    maybePayload.type === "bb.sheet.issue-backtrace" &&
-    !isUndefined(maybePayload.issueId) &&
-    !isUndefined(maybePayload.issueName)
-  ) {
-    return maybePayload;
-  }
-
-  return undefined;
-};
-
 export const sheetNameOfTask = (task: Task) => {
   const project = task.database?.project;
   if (!project) {
@@ -159,4 +142,13 @@ export const sheetNameOfTask = (task: Task) => {
   }
 
   return getSheetPathByLegacyProject(project, sheetId);
+};
+
+export const setSheetStatement = (sheet: Sheet, statement: string) => {
+  sheet.content = new TextEncoder().encode(statement);
+  sheet.contentSize = statement.length;
+};
+
+export const getSheetStatement = (sheet: Sheet) => {
+  return new TextDecoder().decode(sheet.content);
 };

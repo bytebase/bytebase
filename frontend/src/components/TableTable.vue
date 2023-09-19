@@ -9,11 +9,11 @@
     :custom-footer="true"
     @click-row="clickTable"
   >
-    <template #body="{ rowData: table }">
-      <BBTableCell v-if="hasSchemaProperty" :left-padding="4" class="w-[10%]">
+    <template #body="{ rowData: table }: { rowData: TableMetadata }">
+      <BBTableCell v-if="hasSchemaProperty" :left-padding="4" class="w-8">
         {{ schemaName }}
       </BBTableCell>
-      <BBTableCell :left-padding="hasSchemaProperty ? 2 : 4">
+      <BBTableCell :left-padding="hasSchemaProperty ? 2 : 4" class="w-16">
         <div class="flex items-center space-x-2">
           <EllipsisText>{{ table.name }}</EllipsisText>
           <BBBadge
@@ -24,17 +24,20 @@
           />
         </div>
       </BBTableCell>
-      <BBTableCell v-if="hasEngineProperty" class="w-[14%]">
+      <BBTableCell v-if="hasEngineProperty" class="w-8">
         {{ table.engine }}
       </BBTableCell>
-      <BBTableCell class="w-[14%]">
+      <BBTableCell class="w-8">
         {{ table.rowCount }}
       </BBTableCell>
-      <BBTableCell class="w-[14%]">
+      <BBTableCell class="w-8">
         {{ bytesToString(table.dataSize) }}
       </BBTableCell>
-      <BBTableCell class="w-[14%]">
+      <BBTableCell class="w-8">
         {{ bytesToString(table.indexSize) }}
+      </BBTableCell>
+      <BBTableCell class="w-16 break-all">
+        {{ table.userComment }}
       </BBTableCell>
     </template>
 
@@ -53,21 +56,31 @@
       </tfoot>
     </template>
   </BBTable>
+
+  <TableDetailDrawer
+    :show="!!state.selectedTableName"
+    :database-name="database.name"
+    :schema-name="schemaName"
+    :table-name="state.selectedTableName ?? ''"
+    @dismiss="state.selectedTableName = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
-import { useRouter } from "vue-router";
+import { computed, PropType, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
+import { BBTableColumn } from "@/bbkit";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { ComposedDatabase } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
-import { bytesToString, databaseV1Slug, isGhostTable } from "@/utils";
-import EllipsisText from "@/components/EllipsisText.vue";
 import { Engine } from "@/types/proto/v1/common";
-import { BBTableColumn } from "@/bbkit";
+import { bytesToString, isGhostTable } from "@/utils";
+import TableDetailDrawer from "./TableDetailDrawer.vue";
 
 type LocalState = {
   showReservedTableList: boolean;
+  selectedTableName?: string;
 };
 
 const props = defineProps({
@@ -85,22 +98,31 @@ const props = defineProps({
   },
 });
 
-const router = useRouter();
 const { t } = useI18n();
-
+const route = useRoute();
 const state = reactive<LocalState>({
   showReservedTableList: false,
 });
 
+onMounted(() => {
+  const table = route.query.table as string;
+  if (table) {
+    state.selectedTableName = table;
+  }
+});
+
 const engine = computed(() => props.database.instanceEntity.engine);
 
-const isPostgres = computed(() => engine.value === Engine.POSTGRES);
+const isPostgres = computed(
+  () => engine.value === Engine.POSTGRES || engine.value === Engine.RISINGWAVE
+);
 
 const hasSchemaProperty = computed(() => {
   return (
     isPostgres.value ||
     engine.value === Engine.SNOWFLAKE ||
     engine.value === Engine.ORACLE ||
+    engine.value === Engine.DM ||
     engine.value === Engine.MSSQL
   );
 });
@@ -128,6 +150,9 @@ const columnList = computed(() => {
   const INDEX_SIZE: BBTableColumn = {
     title: t("database.index-size"),
   };
+  const COMMENT: BBTableColumn = {
+    title: t("database.comment"),
+  };
   const columns: BBTableColumn[] = [];
   if (hasSchemaProperty.value) {
     columns.push(SCHEMA);
@@ -136,7 +161,7 @@ const columnList = computed(() => {
   if (hasEngineProperty.value) {
     columns.push(ENGINE);
   }
-  columns.push(ROW_COUNT_EST, DATA_SIZE, INDEX_SIZE);
+  columns.push(ROW_COUNT_EST, DATA_SIZE, INDEX_SIZE, COMMENT);
 
   return columns;
 });
@@ -159,17 +184,6 @@ const mixedTableList = computed(() => {
 });
 
 const clickTable = (_: number, row: number, e: MouseEvent) => {
-  const table = mixedTableList.value[row];
-  let url = `/db/${databaseV1Slug(props.database)}/table/${encodeURIComponent(
-    table.name
-  )}`;
-  if (props.schemaName !== "") {
-    url = url + `?schema=${encodeURIComponent(props.schemaName)}`;
-  }
-  if (e.ctrlKey || e.metaKey) {
-    window.open(url, "_blank");
-  } else {
-    router.push(url);
-  }
+  state.selectedTableName = mixedTableList.value[row].name;
 };
 </script>

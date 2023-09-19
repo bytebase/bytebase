@@ -18,17 +18,18 @@
         </NButton>
       </div>
       <div
-        class="bb-grid-cell text-blue-600 hover:underline"
+        class="bb-grid-cell text-blue-600"
+        :class="item.issueId !== `${UNKNOWN_ID}` && 'hover:underline'"
         @click="gotoIssuePage(item)"
       >
-        {{ `#${item.issueId}` }}
+        {{ item.issueId === `${UNKNOWN_ID}` ? "/" : `#${item.issueId}` }}
       </div>
       <div class="bb-grid-cell">
         {{ item.database.databaseName }}
       </div>
       <div class="bb-grid-cell">
         <EnvironmentV1Name
-          :environment="item.database.instanceEntity.environmentEntity"
+          :environment="item.database.effectiveEnvironmentEntity"
         />
       </div>
       <div class="bb-grid-cell">
@@ -64,12 +65,14 @@
 import dayjs from "dayjs";
 import { computed, shallowRef } from "vue";
 import { useI18n } from "vue-i18n";
-import { ExportRecord } from "./types";
 import { BBGridColumn } from "@/bbkit";
-import ExportDataButton from "./ExportDataButton.vue";
-import { pushNotification, useIssueStore } from "@/store";
+import { InstanceV1Name } from "@/components/v2";
+import { issueServiceClient } from "@/grpcweb";
+import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { issueSlug } from "@/utils";
+import ExportDataButton from "./ExportDataButton.vue";
+import { ExportRecord } from "./types";
 
 defineProps<{
   exportRecords: ExportRecord[];
@@ -130,16 +133,22 @@ const toggleExpandRow = (item: ExportRecord) => {
 };
 
 const gotoIssuePage = async (item: ExportRecord) => {
-  const issue = await useIssueStore().getOrFetchIssueById(item.issueId);
-  if (issue.id === UNKNOWN_ID) {
+  const issueUID = String(item.issueId);
+  if (issueUID === `${UNKNOWN_ID}`) {
+    return;
+  }
+  const issue = await issueServiceClient.getIssue({
+    name: `projects/-/issues/${issueUID}`,
+  });
+  if (issue.uid === String(UNKNOWN_ID)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: `Issue #${issue.id} not found`,
+      title: `Issue #${issueUID} not found`,
     });
     return;
   }
 
-  window.open(`/issue/${issueSlug(issue.name, issue.id)}`, "_blank");
+  window.open(`/issue/${issueSlug(issue.title, issue.uid)}`, "_blank");
 };
 </script>

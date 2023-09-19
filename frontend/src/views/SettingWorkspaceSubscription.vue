@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto">
-    <div class="textinfolabel">
+    <div class="textinfolabel my-4">
       {{ $t("subscription.description") }}
       <a
         class="text-accent"
@@ -16,7 +16,7 @@
         </span>
       </span>
     </div>
-    <dl class="text-left grid grid-cols-2 gap-x-6 my-5 xl:grid-cols-4">
+    <dl class="text-left grid grid-cols-2 gap-x-6 my-4 xl:grid-cols-4">
       <div class="my-3">
         <dt class="flex text-gray-400">
           {{ $t("subscription.current") }}
@@ -39,11 +39,24 @@
           </div>
         </dd>
       </div>
-      <div class="my-3">
+      <div v-if="subscriptionStore.currentPlan === PlanType.FREE" class="my-3">
+        <dt class="text-gray-400">
+          {{ $t("subscription.max-instance-count") }}
+        </dt>
+        <dd
+          class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
+        >
+          <span class="group-hover:underline">{{
+            subscriptionStore.instanceCountLimit
+          }}</span>
+        </dd>
+      </div>
+      <div v-else class="my-3">
         <dt class="text-gray-400">
           {{ $t("subscription.instance-assignment.used-and-total-license") }}
         </dt>
         <dd
+          v-if="canManageSubscription"
           class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
           @click="state.showInstanceAssignmentDrawer = true"
         >
@@ -59,7 +72,10 @@
         </dt>
         <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
       </div>
-      <div v-if="subscriptionStore.canTrial" class="my-3">
+      <div
+        v-if="subscriptionStore.canTrial && canManageSubscription"
+        class="my-3"
+      >
         <dt class="text-gray-400">
           {{ $t("subscription.try-for-free") }}
         </dt>
@@ -101,7 +117,7 @@
         </dd>
       </div>
     </dl>
-    <div v-if="canManageSubscription" class="w-full mt-5 flex flex-col">
+    <div v-if="canManageSubscription" class="w-full mt-4 flex flex-col">
       <textarea
         id="license"
         v-model="state.license"
@@ -120,7 +136,7 @@
         {{ $t("subscription.upload-license") }}
       </button>
     </div>
-    <div class="sm:flex sm:flex-col sm:align-center pt-5 mt-5 border-t">
+    <div class="sm:flex sm:flex-col sm:align-center pt-5 mt-4 border-t">
       <div class="textinfolabel">
         {{ $t("subscription.plan-compare") }}
       </div>
@@ -139,18 +155,18 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import PricingTable from "../components/PricingTable/";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
   pushNotification,
   useCurrentUserV1,
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { storeToRefs } from "pinia";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import PricingTable from "../components/PricingTable/";
 
 interface LocalState {
   loading: boolean;
@@ -207,14 +223,14 @@ const uploadLicense = async () => {
   }
 };
 
-const { expireAt, isTrialing, isExpired, instanceCount } =
+const { expireAt, isTrialing, isExpired, instanceLicenseCount } =
   storeToRefs(subscriptionStore);
 
 const totalLicenseCount = computed((): string => {
-  if (instanceCount.value === Number.MAX_VALUE) {
+  if (instanceLicenseCount.value === Number.MAX_VALUE) {
     return t("subscription.unlimited");
   }
-  return `${instanceCount.value}`;
+  return `${instanceLicenseCount.value}`;
 });
 
 const activateLicenseCount = computed((): string => {

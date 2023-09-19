@@ -1,13 +1,13 @@
+import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { isEqual, isUndefined } from "lodash-es";
 import { externalVersionControlServiceClient } from "@/grpcweb";
+import { VCSId } from "@/types";
 import {
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
 import { externalVersionControlPrefix } from "./common";
-import { VCSId } from "@/types";
 
 export const useVCSV1Store = defineStore("vcs_v1", () => {
   const vcsMapByName = reactive(new Map<string, ExternalVersionControl>());

@@ -24,6 +24,8 @@ const (
 	GitHub Type = "GITHUB"
 	// Bitbucket is the VCS type for Bitbucket Cloud (bitbucket.org).
 	Bitbucket Type = "BITBUCKET"
+	// AzureDevOps is the VCS type for Azure DevOps.
+	AzureDevOps Type = "AZURE_DEVOPS"
 
 	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
 	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"
@@ -33,6 +35,24 @@ const (
 	// BytebaseAuthorEmail is the author email of bytebase.
 	BytebaseAuthorEmail = "support@bytebase.com"
 )
+
+// RefType is the type of a ref.
+type RefType string
+
+const (
+	// RefTypeBranch is the branch ref type.
+	RefTypeBranch RefType = "branch"
+	// RefTypeTag is the tag ref type.
+	RefTypeTag RefType = "tag"
+	// RefTypeCommit is the commit ref type.
+	RefTypeCommit RefType = "commit"
+)
+
+// RefInfo is the API message for a VCS ref.
+type RefInfo struct {
+	RefType RefType
+	RefName string
+}
 
 // OAuthToken is the API message for OAuthToken.
 type OAuthToken struct {
@@ -203,18 +223,13 @@ type Provider interface {
 	// oauthExchange: api message for exchanging oauth token
 	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*OAuthToken, error)
 
-	// Try to use this provider as an auth provider and fetch the user info from the OAuth context
-	//
-	// oauthCtx: OAuth context to write the file content
-	// instanceURL: VCS instance URL
-	TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*UserInfo, error)
 	// Fetch the commit data by id
 	//
 	// oauthCtx: OAuth context to fetch commit
 	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// externalRepositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// commitID: the commit ID
-	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*Commit, error)
+	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, externalRepositoryID, commitID string) (*Commit, error)
 	// Get the diff files list between two commits
 	//
 	// oauthCtx: OAuth context to fetch commit
@@ -258,7 +273,7 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
-	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*FileMeta, error)
+	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (*FileMeta, error)
 	// Reads the file content
 	//
 	// oauthCtx: OAuth context to read the file content
@@ -266,7 +281,7 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
-	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error)
+	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (string, error)
 	// GetBranch gets the given branch in the repository.
 	//
 	// oauthCtx: OAuth context to create the webhook

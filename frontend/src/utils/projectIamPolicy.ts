@@ -1,5 +1,5 @@
 import { ProjectRoleType } from "@/types";
-import type { IamPolicy } from "@/types/proto/v1/project_service";
+import type { IamPolicy } from "@/types/proto/v1/iam_policy";
 
 const tidyUpPolicy = (policy: IamPolicy) => {
   policy.bindings = policy.bindings.filter(

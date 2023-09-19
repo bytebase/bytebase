@@ -19,8 +19,8 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
-import IssueStatusIcon from "./Issue/IssueStatusIcon.vue";
 import { IssueStatus, IssueStatusTransitionType } from "../types";
+import IssueStatusIcon from "./Issue/IssueStatusIcon.vue";
 
 export default defineComponent({
   name: "IssueStatusSelect",

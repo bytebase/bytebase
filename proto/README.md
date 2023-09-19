@@ -2,6 +2,7 @@
 
 - Install buf: https://docs.buf.build/installation
 - Run: buf generate
+- Format: buf format -w
 
 Note:
 You may have command conflict for the `buf`: https://github.com/ohmyzsh/ohmyzsh/issues/11169

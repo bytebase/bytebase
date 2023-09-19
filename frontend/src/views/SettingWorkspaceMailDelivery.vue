@@ -1,5 +1,5 @@
 <template>
-  <div class="border-b textinfolabel p-2">
+  <div class="textinfolabel py-4">
     {{ $t("settings.mail-delivery.description") }}
     <a
       class="normal-link inline-flex items-center"
@@ -164,7 +164,7 @@
           <BBSpin v-if="state.isCreateOrUpdateLoading" class="ml-1" />
         </div>
       </div>
-      <div class="border-b mt-5"></div>
+      <div class="border-b mt-4"></div>
       <!-- Test Send Email To Someone -->
       <div class="w-full gap-4 mt-4 flex flex-row">
         <div class="min-w-max w-160">
@@ -198,18 +198,18 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { BBCheckbox, BBSelect, BBTextField } from "@/bbkit";
-import { pushNotification } from "@/store";
+import { cloneDeep, isEqual } from "lodash-es";
+import { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { cloneDeep, isEqual } from "lodash-es";
+import { BBCheckbox, BBSelect, BBTextField } from "@/bbkit";
+import { pushNotification } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
 import {
   SMTPMailDeliverySettingValue,
   SMTPMailDeliverySettingValue_Authentication,
   SMTPMailDeliverySettingValue_Encryption,
 } from "@/types/proto/v1/setting_service";
-import { ClientError } from "nice-grpc-web";
 
 interface LocalState {
   originMailDeliverySetting?: SMTPMailDeliverySettingValue;

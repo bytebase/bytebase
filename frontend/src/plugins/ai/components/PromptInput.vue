@@ -23,8 +23,8 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
 import { NInput } from "naive-ui";
+import { reactive } from "vue";
 
 type LocalState = {
   value: string;

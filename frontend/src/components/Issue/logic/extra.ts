@@ -1,6 +1,6 @@
-import { computed, nextTick } from "vue";
 import { cloneDeep, isEqual } from "lodash-es";
-
+import { computed, nextTick } from "vue";
+import type { InputField, OutputField } from "@/plugins";
 import {
   useCurrentUserV1,
   useIssueStore,
@@ -21,9 +21,8 @@ import type {
   TaskStatus,
   TaskStatusPatch,
 } from "@/types";
-import type { InputField, OutputField } from "@/plugins";
-import { useIssueLogic } from "./index";
 import { extractUserUID, hasWorkspacePermissionV1 } from "@/utils";
+import { useIssueLogic } from "./index";
 
 export const useExtraIssueLogic = () => {
   const {

@@ -41,9 +41,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		databaseCount = count
 	}
 
-	var databases []*storepb.DatabaseMetadata
+	var databases []*storepb.DatabaseSchemaMetadata
 	for i := 0; i < databaseCount; i++ {
-		databases = append(databases, &storepb.DatabaseMetadata{
+		databases = append(databases, &storepb.DatabaseSchemaMetadata{
 			Name: strconv.Itoa(i),
 		})
 	}
@@ -53,8 +53,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(context.Context) (*storepb.DatabaseMetadata, error) {
-	return &storepb.DatabaseMetadata{Name: d.databaseName}, nil
+func (d *Driver) SyncDBSchema(context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+	return &storepb.DatabaseSchemaMetadata{Name: d.databaseName}, nil
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {

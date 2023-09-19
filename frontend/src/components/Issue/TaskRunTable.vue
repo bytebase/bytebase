@@ -66,11 +66,10 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { BBTableColumn } from "@/bbkit/types";
+import { useDatabaseV1Store } from "@/store";
 import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "@/types";
 import { changeHistorySlug, databaseSlug, instanceSlug } from "@/utils";
-import { useDatabaseV1Store } from "@/store";
 
 type CommentLink = {
   title: string;
@@ -143,7 +142,7 @@ const comment = (taskRun: TaskRun): string => {
 
 const commentLink = (task: Task, taskRun: TaskRun): CommentLink => {
   if (taskRun.status == "DONE") {
-    switch (taskRun.type) {
+    switch (task.type) {
       case "bb.task.database.schema.baseline":
       case "bb.task.database.schema.update":
       case "bb.task.database.schema.update-sdl":

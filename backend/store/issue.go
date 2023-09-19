@@ -4,16 +4,32 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
+	"github.com/go-ego/gse"
+	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+var getSegmenter func() *gse.Segmenter
+
+func init() {
+	var segmenterDic gse.Segmenter
+	if err := segmenterDic.LoadDictEmbed("zh"); err != nil {
+		panic(errors.Wrapf(err, "failed to load segmenter dictionary"))
+	}
+	getSegmenter = func() *gse.Segmenter {
+		var segmenter gse.Segmenter
+		segmenter.Dict = segmenterDic.Dict
+		return &segmenter
+	}
+}
 
 // GetIssueByID gets an instance of Issue.
 func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
@@ -54,145 +70,6 @@ func (s *Store) FindIssueStripped(ctx context.Context, find *FindIssueMessage) (
 	return composedIssues, nil
 }
 
-// CreateIssueValidateOnly creates an issue for validation purpose
-// Do NOT write to the database.
-func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipelineCreate *api.PipelineCreate, create *IssueMessage, creatorID int) (*api.Issue, error) {
-	pipeline, err := s.createPipelineValidateOnly(ctx, pipelineCreate)
-	if err != nil {
-		return nil, err
-	}
-	issue := &api.Issue{
-		CreatorID:   creatorID,
-		CreatedTs:   time.Now().Unix(),
-		UpdaterID:   creatorID,
-		UpdatedTs:   time.Now().Unix(),
-		ProjectID:   create.Project.UID,
-		Name:        create.Title,
-		Status:      api.IssueOpen,
-		Type:        create.Type,
-		Description: create.Description,
-		AssigneeID:  create.Assignee.ID,
-		PipelineID:  &pipeline.ID,
-		Pipeline:    pipeline,
-	}
-
-	creator, err := s.GetPrincipalByID(ctx, issue.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	issue.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, issue.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	issue.Updater = updater
-
-	assignee, err := s.GetPrincipalByID(ctx, issue.AssigneeID)
-	if err != nil {
-		return nil, err
-	}
-	issue.Assignee = assignee
-
-	project, err := s.GetProjectByID(ctx, issue.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	issue.Project = project
-
-	return issue, nil
-}
-
-// createPipelineValidateOnly creates a pipeline for validation purpose
-// Do NOT write to the database.
-func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
-	creator, err := s.GetPrincipalByID(ctx, api.SystemBotID)
-	if err != nil {
-		return nil, err
-	}
-	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
-	// jsonapi resource relationships will collide different resources into the same bucket.
-	id := 0
-	ts := time.Now().Unix()
-	pipeline := &api.Pipeline{
-		ID:   id,
-		Name: create.Name,
-	}
-	for _, sc := range create.StageList {
-		id++
-		env, err := s.GetEnvironmentByID(ctx, sc.EnvironmentID)
-		if err != nil {
-			return nil, err
-		}
-		stage := &api.Stage{
-			ID:            id,
-			Name:          sc.Name,
-			PipelineID:    sc.PipelineID,
-			EnvironmentID: sc.EnvironmentID,
-			Environment:   env,
-		}
-		// We don't know IDs before inserting, so we use array index instead.
-		// indexBlockedByIndex[indexA] holds indices of the tasks that block taskList[indexA]
-		indexBlockedByIndex := make(map[int][]int)
-		for _, indexDAG := range sc.TaskIndexDAGList {
-			indexBlockedByIndex[indexDAG.ToIndex] = append(indexBlockedByIndex[indexDAG.ToIndex], indexDAG.FromIndex)
-		}
-		idOffset := id + 1
-		// The ID of sc.TaskList[index].ID equals index + idOffset.
-		for index, tc := range sc.TaskList {
-			id++
-			var blockedBy []string
-			for _, blockedByIndex := range indexBlockedByIndex[index] {
-				// Convert array index to ID.
-				blockedBy = append(blockedBy, strconv.Itoa(blockedByIndex+idOffset))
-			}
-			task := &api.Task{
-				ID:                id,
-				Name:              tc.Name,
-				Status:            tc.Status,
-				CreatorID:         api.SystemBotID,
-				Creator:           creator,
-				CreatedTs:         ts,
-				UpdaterID:         api.SystemBotID,
-				Updater:           creator,
-				UpdatedTs:         ts,
-				Type:              tc.Type,
-				Payload:           tc.Payload,
-				EarliestAllowedTs: tc.EarliestAllowedTs,
-				PipelineID:        pipeline.ID,
-				StageID:           stage.ID,
-				InstanceID:        tc.InstanceID,
-				DatabaseID:        tc.DatabaseID,
-				BlockedBy:         blockedBy,
-				Statement:         tc.Statement,
-			}
-			instance, err := s.GetInstanceByID(ctx, task.InstanceID)
-			if err != nil {
-				return nil, err
-			}
-			if instance == nil {
-				return nil, errors.Errorf("instance not found with ID %v", task.InstanceID)
-			}
-			task.Instance = instance
-			if task.DatabaseID != nil {
-				database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
-				if err != nil {
-					return nil, err
-				}
-				if database == nil {
-					return nil, errors.Errorf("database not found with ID %v", task.DatabaseID)
-				}
-				task.Database = database
-			}
-
-			stage.TaskList = append(stage.TaskList, task)
-		}
-		pipeline.StageList = append(pipeline.StageList, stage)
-	}
-
-	return pipeline, nil
-}
-
 //
 // private functions
 //
@@ -200,20 +77,19 @@ func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.Pipe
 // Note: MUST keep in sync with composeIssueValidateOnly.
 func (s *Store) composeIssue(ctx context.Context, issue *IssueMessage) (*api.Issue, error) {
 	composedIssue := &api.Issue{
-		ID:                    issue.UID,
-		CreatorID:             issue.Creator.ID,
-		CreatedTs:             issue.CreatedTime.Unix(),
-		UpdaterID:             issue.Updater.ID,
-		UpdatedTs:             issue.UpdatedTime.Unix(),
-		ProjectID:             issue.Project.UID,
-		PipelineID:            issue.PipelineUID,
-		Name:                  issue.Title,
-		Status:                issue.Status,
-		Type:                  issue.Type,
-		Description:           issue.Description,
-		AssigneeID:            issue.Assignee.ID,
-		AssigneeNeedAttention: issue.NeedAttention,
-		Payload:               issue.Payload,
+		ID:          issue.UID,
+		CreatorID:   issue.Creator.ID,
+		CreatedTs:   issue.CreatedTime.Unix(),
+		UpdaterID:   issue.Updater.ID,
+		UpdatedTs:   issue.UpdatedTime.Unix(),
+		ProjectID:   issue.Project.UID,
+		PipelineID:  issue.PipelineUID,
+		Name:        issue.Title,
+		Status:      issue.Status,
+		Type:        issue.Type,
+		Description: issue.Description,
+		AssigneeID:  issue.Assignee.ID,
+		Payload:     issue.Payload,
 	}
 
 	creator, err := s.GetPrincipalByID(ctx, issue.Creator.ID)
@@ -268,20 +144,19 @@ func (s *Store) composeIssue(ctx context.Context, issue *IssueMessage) (*api.Iss
 // for reducing the cost and payload of composing a full issue.
 func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (*api.Issue, error) {
 	composedIssue := &api.Issue{
-		ID:                    issue.UID,
-		CreatorID:             issue.Creator.ID,
-		CreatedTs:             issue.CreatedTime.Unix(),
-		UpdaterID:             issue.Updater.ID,
-		UpdatedTs:             issue.UpdatedTime.Unix(),
-		ProjectID:             issue.Project.UID,
-		PipelineID:            issue.PipelineUID,
-		Name:                  issue.Title,
-		Status:                issue.Status,
-		Type:                  issue.Type,
-		Description:           issue.Description,
-		AssigneeID:            issue.Assignee.ID,
-		AssigneeNeedAttention: issue.NeedAttention,
-		Payload:               issue.Payload,
+		ID:          issue.UID,
+		CreatorID:   issue.Creator.ID,
+		CreatedTs:   issue.CreatedTime.Unix(),
+		UpdaterID:   issue.Updater.ID,
+		UpdatedTs:   issue.UpdatedTime.Unix(),
+		ProjectID:   issue.Project.UID,
+		PipelineID:  issue.PipelineUID,
+		Name:        issue.Title,
+		Status:      issue.Status,
+		Type:        issue.Type,
+		Description: issue.Description,
+		AssigneeID:  issue.Assignee.ID,
+		Payload:     issue.Payload,
 	}
 
 	creator, err := s.GetPrincipalByID(ctx, issue.Creator.ID)
@@ -347,10 +222,6 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 	if err != nil {
 		return nil, err
 	}
-	taskCheckRuns, err := s.ListTaskCheckRuns(ctx, &TaskCheckRunFind{PipelineID: &pipeline.ID})
-	if err != nil {
-		return nil, err
-	}
 	var composedTasks []*api.Task
 	for _, task := range tasks {
 		composedTask := task.toTask()
@@ -366,7 +237,7 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 		composedTask.Updater = updater
 
 		for _, taskRun := range taskRuns {
-			if taskRun.TaskID == task.ID {
+			if taskRun.TaskUID == task.ID {
 				composedTaskRun := taskRun.toTaskRun()
 				creator, err := s.GetPrincipalByID(ctx, composedTaskRun.CreatorID)
 				if err != nil {
@@ -379,24 +250,6 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 				}
 				composedTaskRun.Updater = updater
 				composedTask.TaskRunList = append(composedTask.TaskRunList, composedTaskRun)
-			}
-		}
-		for _, taskCheckRun := range taskCheckRuns {
-			if taskCheckRun.TaskID == task.ID {
-				composedTaskCheckRun := taskCheckRun.toTaskCheckRun()
-				creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
-				if err != nil {
-					return nil, err
-				}
-				composedTaskCheckRun.Creator = creator
-				updater, err := s.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
-				if err != nil {
-					return nil, err
-				}
-				composedTaskCheckRun.Updater = updater
-				composedTaskCheckRun.CreatedTs = taskCheckRun.CreatedTs
-				composedTaskCheckRun.UpdatedTs = taskCheckRun.UpdatedTs
-				composedTask.TaskCheckRunList = append(composedTask.TaskCheckRunList, composedTaskCheckRun)
 			}
 		}
 
@@ -453,8 +306,7 @@ func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) 
 }
 
 func (s *Store) composeSimplePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
-	// Strip the task payload statement to reduce the response size.
-	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &pipeline.ID, StripPayload: true})
+	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &pipeline.ID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", pipeline.ID)
 	}
@@ -494,16 +346,16 @@ func (s *Store) composeSimplePipeline(ctx context.Context, pipeline *PipelineMes
 
 // IssueMessage is the mssage for issues.
 type IssueMessage struct {
-	Project       *ProjectMessage
-	Title         string
-	Status        api.IssueStatus
-	Type          api.IssueType
-	Description   string
-	Assignee      *UserMessage
-	NeedAttention bool
-	Payload       string
-	Subscribers   []*UserMessage
-	PipelineUID   *int
+	Project     *ProjectMessage
+	Title       string
+	Status      api.IssueStatus
+	Type        api.IssueType
+	Description string
+	Assignee    *UserMessage
+	Payload     string
+	Subscribers []*UserMessage
+	PipelineUID *int
+	PlanUID     *int64
 
 	// The following fields are output only and not used for create().
 	UID         int
@@ -522,38 +374,47 @@ type IssueMessage struct {
 	updatedTs      int64
 }
 
-// UpdateIssueMessage is the mssage for updating an issue.
+// UpdateIssueMessage is the message for updating an issue.
 type UpdateIssueMessage struct {
-	Title         *string
-	Status        *api.IssueStatus
-	Description   *string
-	Assignee      *UserMessage
-	NeedAttention *bool
-	Payload       *string
+	Title       *string
+	Status      *api.IssueStatus
+	Description *string
+	Assignee    *UserMessage
+	// PayloadUpsert upserts the presented top-level keys.
+	PayloadUpsert *storepb.IssuePayload
 	Subscribers   *[]*UserMessage
+
+	PipelineUID *int
 }
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
-	UID        *int
-	ProjectUID *int
-	PipelineID *int
+	UID                *int
+	ProjectResourceID  *string
+	InstanceResourceID *string
+	PlanUID            *int64
+	PipelineID         *int
 	// Find issues where principalID is either creator, assignee or subscriber.
 	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
 	// Only principleID or one of the following three fields can be set.
-	CreatorID     *int
-	AssigneeID    *int
-	SubscriberID  *int
-	NeedAttention *bool
+	CreatorID       *int
+	AssigneeID      *int
+	SubscriberID    *int
+	CreatedTsBefore *int64
+	CreatedTsAfter  *int64
 
 	StatusList []api.IssueStatus
+	TypeList   []api.IssueType
 	// If specified, only find issues whose ID is smaller that SinceID.
 	SinceID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
-	Limit *int
+	Limit  *int
+	Offset *int
 
 	Stripped bool
+
+	Query *string
 }
 
 // GetIssueV2 gets issue by issue UID.
@@ -597,21 +458,24 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		return nil, err
 	}
 
+	tsVector := getTsVector(fmt.Sprintf("%s %s", create.Title, create.Description))
+
 	query := `
 		INSERT INTO issue (
 			creator_id,
 			updater_id,
 			project_id,
 			pipeline_id,
+			plan_id,
 			name,
 			status,
 			type,
 			description,
 			assignee_id,
-			assignee_need_attention,
-			payload
+			payload,
+			ts_vector
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id, created_ts, updated_ts
 	`
 
@@ -626,13 +490,14 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		creatorID,
 		create.Project.UID,
 		create.PipelineUID,
+		create.PlanUID,
 		create.Title,
 		create.Status,
 		create.Type,
 		create.Description,
 		create.Assignee.ID,
-		create.NeedAttention,
 		create.Payload,
+		tsVector,
 	).Scan(
 		&create.UID,
 		&create.createdTs,
@@ -665,6 +530,10 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	}
 
 	set, args := []string{"updater_id = $1"}, []any{updaterID}
+
+	if v := patch.PipelineUID; v != nil {
+		set, args = append(set, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -677,12 +546,28 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	if v := patch.Assignee; v != nil {
 		set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
 	}
-	if v := patch.NeedAttention; v != nil {
-		set, args = append(set, fmt.Sprintf("assignee_need_attention = $%d", len(args)+1)), append(args, *v)
+	if v := patch.PayloadUpsert; v != nil {
+		p, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal patch.PayloadUpsert")
+		}
+		set, args = append(set, fmt.Sprintf("payload = payload || $%d", len(args)+1)), append(args, p)
 	}
-	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	if patch.Title != nil || patch.Description != nil {
+		title := oldIssue.Title
+		if patch.Title != nil {
+			title = *patch.Title
+		}
+		description := oldIssue.Description
+		if patch.Description != nil {
+			description = *patch.Description
+		}
+
+		tsVector := getTsVector(fmt.Sprintf("%s %s", title, description))
+		set = append(set, fmt.Sprintf("ts_vector = $%d", len(args)+1))
+		args = append(args, tsVector)
 	}
+
 	args = append(args, uid)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -789,6 +674,8 @@ func setSubscribers(ctx context.Context, tx *Tx, issueUID int, subscribers []*Us
 
 // ListIssueV2 returns the list of issues by find query.
 func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
+	orderByClause := "ORDER BY issue.id DESC"
+	from := "issue"
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.id = $%d", len(args)+1)), append(args, *v)
@@ -796,9 +683,22 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.ProjectUID; v != nil {
-		where, args = append(where, fmt.Sprintf("issue.project_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.PlanUID; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
 	}
+
+	join := []string{}
+	if v := find.ProjectResourceID; v != nil {
+		join = append(join, "LEFT JOIN project ON project.id = issue.project_id")
+		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.InstanceResourceID; v != nil {
+		join = append(join, "LEFT JOIN pipeline ON pipeline.id = issue.pipeline_id")
+		join = append(join, "LEFT JOIN task ON task.pipeline_id = pipeline.id")
+		join = append(join, "LEFT JOIN instance ON instance.id = task.instance_id")
+		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+
 	if v := find.PrincipalID; v != nil {
 		if find.CreatorID != nil || find.AssigneeID != nil || find.SubscriberID != nil {
 			return nil, &common.Error{Code: common.Invalid, Err: errors.New("principal_id cannot be used with creator_id, assignee_id, or subscriber_id")}
@@ -814,14 +714,25 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.AssigneeID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.assignee_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.NeedAttention; v != nil {
-		where, args = append(where, fmt.Sprintf("issue.assignee_need_attention = $%d", len(args)+1)), append(args, *v)
+	if v := find.CreatedTsBefore; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.created_ts < $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsAfter; v != nil {
+		where, args = append(where, fmt.Sprintf("issue.created_ts > $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.SubscriberID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.SinceID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.id <= $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Query; v != nil && *v != "" {
+		if tsQuery := getTsQuery(*v); tsQuery != "" {
+			from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
+			args = append(args, tsQuery)
+			where = append(where, "issue.ts_vector @@ query")
+			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
+		}
 	}
 	if len(find.StatusList) != 0 {
 		var list []string
@@ -831,9 +742,20 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		where = append(where, fmt.Sprintf("issue.status IN (%s)", strings.Join(list, ", ")))
 	}
-	limitClause := ""
+	if len(find.TypeList) != 0 {
+		var list []string
+		for _, issueType := range find.TypeList {
+			list = append(list, fmt.Sprintf("$%d", len(args)+1))
+			args = append(args, issueType)
+		}
+		where = append(where, fmt.Sprintf("issue.type IN (%s)", strings.Join(list, ", ")))
+	}
+	limitOffsetClause := ""
 	if v := find.Limit; v != nil {
-		limitClause = fmt.Sprintf(" LIMIT %d", *v)
+		limitOffsetClause = fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
 	var issues []*IssueMessage
@@ -843,41 +765,38 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
-		SELECT
-			issue.id,
-			issue.creator_id,
-			issue.created_ts,
-			issue.updater_id,
-			issue.updated_ts,
-			issue.project_id,
-			issue.pipeline_id,
-			issue.name,
-			issue.status,
-			issue.type,
-			issue.description,
-			issue.assignee_id,
-			issue.assignee_need_attention,
-			issue.payload,
-			ARRAY_AGG (
-				issue_subscriber.subscriber_id
-			) subscribers
-		FROM issue
-		LEFT JOIN issue_subscriber ON issue.id = issue_subscriber.issue_id
-		WHERE %s
-		GROUP BY issue.id
-		ORDER BY issue.id DESC
-		%s`, strings.Join(where, " AND "), limitClause),
-		args...,
-	)
+	query := fmt.Sprintf(`
+	SELECT
+		issue.id,
+		issue.creator_id,
+		issue.created_ts,
+		issue.updater_id,
+		issue.updated_ts,
+		issue.project_id,
+		issue.pipeline_id,
+		issue.plan_id,
+		issue.name,
+		issue.status,
+		issue.type,
+		issue.description,
+		issue.assignee_id,
+		issue.payload,
+		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers
+	FROM %s
+	%s
+	WHERE %s
+	%s
+	%s`, from, strings.Join(join, "\n"), strings.Join(where, " AND "), orderByClause, limitOffsetClause)
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var issue IssueMessage
-		var subscribers []sql.NullInt32
 		var pipelineUID sql.NullInt32
+		var subscriberUIDs pgtype.Int4Array
 		if err := rows.Scan(
 			&issue.UID,
 			&issue.creatorUID,
@@ -886,26 +805,23 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.updatedTs,
 			&issue.projectUID,
 			&pipelineUID,
+			&issue.PlanUID,
 			&issue.Title,
 			&issue.Status,
 			&issue.Type,
 			&issue.Description,
 			&issue.assigneeUID,
-			&issue.NeedAttention,
 			&issue.Payload,
-			pq.Array(&subscribers),
+			&subscriberUIDs,
 		); err != nil {
+			return nil, err
+		}
+		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
 			return nil, err
 		}
 		if pipelineUID.Valid {
 			v := int(pipelineUID.Int32)
 			issue.PipelineUID = &v
-		}
-		for _, subscriber := range subscribers {
-			if !subscriber.Valid {
-				continue
-			}
-			issue.subscriberUIDs = append(issue.subscriberUIDs, int(subscriber.Int32))
 		}
 		issues = append(issues, &issue)
 	}
@@ -954,4 +870,169 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 
 	return issues, nil
+}
+
+// BatchUpdateIssueStatuses updates the status of multiple issues.
+func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status api.IssueStatus, updaterID int) error {
+	var ids []string
+	for _, id := range issueUIDs {
+		ids = append(ids, fmt.Sprintf("%d", id))
+	}
+	query := fmt.Sprintf(`
+		UPDATE issue
+		SET status = $1, updater_id = $2
+		WHERE id IN (%s)
+		RETURNING id, pipeline_id;
+	`, strings.Join(ids, ","))
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, status, updaterID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to query")
+	}
+	defer rows.Close()
+
+	var issueIDs []int
+	var pipelineIDs []int
+	for rows.Next() {
+		var issueID int
+		var pipelineID sql.NullInt32
+		if err := rows.Scan(&issueID, &pipelineID); err != nil {
+			return errors.Wrapf(err, "failed to scan")
+		}
+		issueIDs = append(issueIDs, issueID)
+		if pipelineID.Valid {
+			pipelineIDs = append(pipelineIDs, int(pipelineID.Int32))
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return errors.Wrapf(err, "failed to scan")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit")
+	}
+
+	for _, issueID := range issueIDs {
+		s.issueCache.Delete(issueID)
+	}
+	for _, pipelineID := range pipelineIDs {
+		s.issueByPipelineCache.Delete(pipelineID)
+	}
+
+	return nil
+}
+
+func getTsVector(text string) string {
+	seg := getSegmenter()
+	parts := seg.CutTrim(text)
+	var tsVector strings.Builder
+	for i, part := range parts {
+		if i != 0 {
+			_, _ = tsVector.WriteString(" ")
+		}
+		_, _ = tsVector.WriteString(fmt.Sprintf("%s:%d", part, i+1))
+	}
+	return tsVector.String()
+}
+
+func getTsQuery(text string) string {
+	seg := getSegmenter()
+	parts := seg.Trim(seg.CutSearch(text))
+	// CutSearch returns empty for a single word.
+	if len(parts) == 0 {
+		parts = seg.CutTrim(text)
+	}
+	if len(parts) == 0 {
+		return fmt.Sprintf("%s:*", text)
+	}
+	var tsQuery strings.Builder
+	for i, part := range parts {
+		if i != 0 {
+			_, _ = tsQuery.WriteString("|")
+		}
+		_, _ = tsQuery.WriteString(fmt.Sprintf("%s:*", part))
+	}
+	return tsQuery.String()
+}
+
+func (s *Store) BackfillIssueTsVector(ctx context.Context) error {
+	chunkSize := 50
+	offset := 0
+	selectQuery := `
+		SELECT id, name, description
+		FROM issue
+		WHERE ts_vector IS NULL
+		ORDER BY id
+		LIMIT $1
+		OFFSET $2
+	`
+	updateStatement := `
+		UPDATE issue
+		SET ts_vector = $1
+		WHERE id = $2
+	`
+	disableTriggerStatement := "ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts"
+	enableTriggerStatement := "ALTER TABLE issue ENABLE TRIGGER update_issue_updated_ts"
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, disableTriggerStatement); err != nil {
+		return errors.Wrapf(err, "failed to disable trigger")
+	}
+
+	for {
+		var issues []*IssueMessage
+		if err := func() error {
+			rows, err := tx.QueryContext(ctx, selectQuery, chunkSize, offset)
+			if err != nil {
+				return errors.Wrapf(err, "failed to query")
+			}
+			defer rows.Close()
+			for rows.Next() {
+				var issue IssueMessage
+				if err := rows.Scan(&issue.UID, &issue.Title, &issue.Description); err != nil {
+					return errors.Wrapf(err, "failed to scan")
+				}
+				issues = append(issues, &issue)
+			}
+			if err := rows.Err(); err != nil {
+				return errors.Wrapf(err, "failed to scan")
+			}
+			return nil
+		}(); err != nil {
+			return err
+		}
+
+		if len(issues) == 0 {
+			break
+		}
+		offset += len(issues)
+
+		for _, issue := range issues {
+			tsVector := getTsVector(fmt.Sprintf("%s %s", issue.Title, issue.Description))
+			if _, err := tx.ExecContext(ctx, updateStatement, tsVector, issue.UID); err != nil {
+				return errors.Wrapf(err, "failed to update")
+			}
+		}
+	}
+
+	if _, err := tx.ExecContext(ctx, enableTriggerStatement); err != nil {
+		return errors.Wrapf(err, "failed to enable trigger")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit")
+	}
+
+	return nil
 }

@@ -1,7 +1,6 @@
 import { type Ref } from "vue";
-
-import { DEFAULT_PADDINGS, ZOOM_RANGE } from "../../common/const";
 import { useSchemaDiagramContext } from "../../common";
+import { DEFAULT_PADDINGS, ZOOM_RANGE } from "../../common/const";
 import { fitView } from "../libs/fitView";
 
 export const useFitView = (canvas: Ref<Element | undefined>) => {

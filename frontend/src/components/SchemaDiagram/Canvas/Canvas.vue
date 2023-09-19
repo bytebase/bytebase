@@ -53,15 +53,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, useSlots } from "vue";
 import { NButtonGroup, NButton } from "naive-ui";
+import { ref, useSlots } from "vue";
 import Square2x2 from "~icons/heroicons-outline/squares-2x2";
+import { pushNotification } from "@/store";
 import { useSchemaDiagramContext } from "../common";
+import { ZOOM_RANGE } from "../common/const";
+import DummyCanvas from "./DummyCanvas.vue";
 import ZoomButton from "./ZoomButton.vue";
 import { useDragCanvas, useFitView, useSetCenter } from "./composables";
-import DummyCanvas from "./DummyCanvas.vue";
-import { pushNotification } from "@/store";
-import { ZOOM_RANGE } from "../common/const";
 
 const slots = useSlots();
 

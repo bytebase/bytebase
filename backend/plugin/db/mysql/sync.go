@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -48,6 +49,17 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, err
 	}
 
+	lowerCaseTableNames := 0
+	lowerCaseTableNamesText, err := driver.getServerVariable(ctx, "lower_case_table_names")
+	if err != nil {
+		slog.Debug("failed to get lower_case_table_names variable", log.BBError(err))
+	} else {
+		lowerCaseTableNames, err = strconv.Atoi(lowerCaseTableNamesText)
+		if err != nil {
+			slog.Debug("failed to parse lower_case_table_names variable", log.BBError(err))
+		}
+	}
+
 	users, err := driver.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
@@ -77,9 +89,9 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}
 	defer rows.Close()
 
-	var databases []*storepb.DatabaseMetadata
+	var databases []*storepb.DatabaseSchemaMetadata
 	for rows.Next() {
-		database := &storepb.DatabaseMetadata{}
+		database := &storepb.DatabaseSchemaMetadata{}
 		if err := rows.Scan(
 			&database.Name,
 			&database.CharacterSet,
@@ -97,11 +109,14 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		Version:       version,
 		InstanceRoles: users,
 		Databases:     databases,
+		Metadata: &storepb.InstanceMetadata{
+			MysqlLowerCaseTableNames: int32(lowerCaseTableNames),
+		},
 	}, nil
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
@@ -366,7 +381,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
-	databaseMetadata := &storepb.DatabaseMetadata{
+	databaseMetadata := &storepb.DatabaseSchemaMetadata{
 		Name:    driver.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}
@@ -670,10 +685,10 @@ func mergeSlowLog(fingerprint string, statistics *storepb.SlowQueryStatisticsIte
 }
 
 func extractDatabase(defaultDB string, sql string) []string {
-	list, err := parser.ExtractDatabaseList(parser.MySQL, sql)
+	list, err := parser.ExtractDatabaseList(parser.MySQL, sql, "")
 	if err != nil {
 		// If we can't extract the database, we just use the default database.
-		log.Debug("extract database failed", zap.Error(err), zap.String("sql", sql))
+		slog.Debug("extract database failed", log.BBError(err), slog.String("sql", sql))
 		return []string{defaultDB}
 	}
 

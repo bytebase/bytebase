@@ -11,12 +11,11 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import type { TableMetadata } from "@/types/proto/store/database";
-import FocusIcon from "./FocusIcon.vue";
-import { expectedZoomRange, useSchemaDiagramContext } from ".";
-import { DEFAULT_PADDINGS } from "./const";
 import { VueClass } from "@/utils";
+import { expectedZoomRange, useSchemaDiagramContext } from ".";
+import FocusIcon from "./FocusIcon.vue";
+import { DEFAULT_PADDINGS } from "./const";
 
 const props = withDefaults(
   defineProps<{

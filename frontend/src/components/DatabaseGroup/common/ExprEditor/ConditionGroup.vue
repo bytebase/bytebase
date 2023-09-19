@@ -120,9 +120,8 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import { computed } from "vue";
 import { NButton, NSelect, NTooltip, type SelectOption } from "naive-ui";
-
+import { computed } from "vue";
 import {
   type ConditionExpr,
   type ConditionGroupExpr,
@@ -131,9 +130,9 @@ import {
   isConditionExpr,
   getOperatorListByFactor,
 } from "@/plugins/cel";
+import Condition from "./Condition.vue";
 import { useExprEditorContext } from "./context";
 import { StringFactorList } from "./factor";
-import Condition from "./Condition.vue";
 
 const props = defineProps<{
   expr: ConditionGroupExpr;

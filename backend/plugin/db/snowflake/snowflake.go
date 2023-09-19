@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -19,7 +20,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	snow "github.com/snowflakedb/gosnowflake"
-	"go.uber.org/zap"
 )
 
 var (
@@ -46,43 +46,15 @@ func newDriver(db.DriverConfig) db.Driver {
 
 // Open opens a Snowflake driver.
 func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	prefixParts, loggedPrefixParts := []string{config.Username}, []string{config.Username}
-	if config.Password != "" {
-		prefixParts = append(prefixParts, config.Password)
-		loggedPrefixParts = append(loggedPrefixParts, "<<redacted password>>")
+	dsn, loggedDSN, err := buildSnowflakeDSN(config)
+	if err != nil {
+		return nil, err
 	}
 
-	var account, host string
-	// Host can also be account e.g. xma12345, or xma12345@host_ip where host_ip is the proxy server IP.
-	if strings.Contains(config.Host, "@") {
-		parts := strings.Split(config.Host, "@")
-		if len(parts) != 2 {
-			return nil, errors.Errorf("driver.Open() has invalid host %q", config.Host)
-		}
-		account, host = parts[0], parts[1]
-	} else {
-		account = config.Host
-	}
-
-	var params []string
-	var suffix string
-	if host != "" {
-		suffix = fmt.Sprintf("%s:%s", host, config.Port)
-		params = append(params, fmt.Sprintf("account=%s", account))
-	} else {
-		suffix = account
-	}
-
-	dsn := fmt.Sprintf("%s@%s/%s", strings.Join(prefixParts, ":"), suffix, config.Database)
-	loggedDSN := fmt.Sprintf("%s@%s/%s", strings.Join(loggedPrefixParts, ":"), suffix, config.Database)
-	if len(params) > 0 {
-		dsn = fmt.Sprintf("%s?%s", dsn, strings.Join(params, "&"))
-		loggedDSN = fmt.Sprintf("%s?%s", loggedDSN, strings.Join(params, "&"))
-	}
-	log.Debug("Opening Snowflake driver",
-		zap.String("dsn", loggedDSN),
-		zap.String("environment", connCtx.EnvironmentID),
-		zap.String("database", connCtx.InstanceID),
+	slog.Debug("Opening Snowflake driver",
+		slog.String("dsn", loggedDSN),
+		slog.String("environment", connCtx.EnvironmentID),
+		slog.String("database", connCtx.InstanceID),
 	)
 	db, err := sql.Open("snowflake", dsn)
 	if err != nil {
@@ -94,6 +66,38 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 	driver.databaseName = config.Database
 
 	return driver, nil
+}
+
+// buildSnowflakeDSN returns the Snowflake Golang DSN and a redacted version of the DSN.
+func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
+	snowConfig := &snow.Config{
+		Database: fmt.Sprintf(`"%s"`, config.Database),
+		User:     config.Username,
+		Password: config.Password,
+	}
+	// Host can also be account e.g. xma12345, or xma12345@host_ip where host_ip is the proxy server IP.
+	if strings.Contains(config.Host, "@") {
+		parts := strings.Split(config.Host, "@")
+		if len(parts) != 2 {
+			return "", "", errors.Errorf("expected one @ in the host at most, got %q", config.Host)
+		}
+		snowConfig.Account = parts[0]
+		snowConfig.Host = parts[1]
+	} else {
+		snowConfig.Account = config.Host
+	}
+	dsn, err := snow.DSN(snowConfig)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "failed to build Snowflake DSN")
+	}
+	snowConfig.Password = "xxxxxx"
+	redactedDSN, err := snow.DSN(snowConfig)
+	if err != nil {
+		// nolint
+		slog.Warn("failed to build redacted Snowflake DSN", log.BBError(err))
+		return dsn, "", nil
+	}
+	return dsn, redactedDSN, nil
 }
 
 // Close closes the driver.
@@ -249,19 +253,14 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, _ d
 	rowsAffected, err := result.RowsAffected()
 	// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 	if err != nil {
-		log.Debug("rowsAffected returns error", zap.Error(err))
+		slog.Debug("rowsAffected returns error", log.BBError(err))
 		return 0, nil
 	}
 	return rowsAffected, nil
 }
 
-// QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	return util.Query(ctx, db.Snowflake, conn, statement, queryContext)
-}
-
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// TODO(rebelice): support multiple queries in a single statement.
 	var results []*v1pb.QueryResult
 
@@ -278,7 +277,8 @@ func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement 
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+	// return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+	return fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", stmt, limit)
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
@@ -296,7 +296,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 	}
 
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.Snowflake, conn, stmt, queryContext)
+	result, err := util.Query(ctx, db.Snowflake, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

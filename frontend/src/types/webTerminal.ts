@@ -1,5 +1,5 @@
-import { SQLResultSet } from "./sql";
 import { ExecuteConfig, ExecuteOption } from "./tab";
+import { SQLResultSetV1 } from "./v1";
 
 export type WebTerminalQueryItem = {
   id: string;
@@ -9,6 +9,6 @@ export type WebTerminalQueryItem = {
     config: ExecuteConfig;
     option?: Partial<ExecuteOption>;
   };
-  queryResult?: SQLResultSet;
-  status: "IDLE" | "RUNNING" | "FINISHED" | "CANCELLED";
+  resultSet?: SQLResultSetV1;
+  status: "IDLE" | "RUNNING" | "FINISHED";
 };

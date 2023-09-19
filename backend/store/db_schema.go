@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -14,18 +15,57 @@ import (
 
 // DBSchema is the database schema including the metadata and schema (raw dump).
 type DBSchema struct {
-	Metadata *storepb.DatabaseMetadata
+	Metadata *storepb.DatabaseSchemaMetadata
 	Schema   []byte
 }
 
 // TableExists checks if the table exists.
-func (s *DBSchema) TableExists(schemaName string, tableName string) bool {
+func (s *DBSchema) TableExists(schemaName string, tableName string, ignoreCaseSensitive bool) bool {
+	if ignoreCaseSensitive {
+		schemaName = strings.ToLower(schemaName)
+		tableName = strings.ToLower(tableName)
+	}
 	for _, schema := range s.Metadata.Schemas {
-		if schema.Name != schemaName {
+		currentSchemaName := schema.Name
+		if ignoreCaseSensitive {
+			currentSchemaName = strings.ToLower(currentSchemaName)
+		}
+		if currentSchemaName != schemaName {
 			continue
 		}
 		for _, table := range schema.Tables {
-			if table.Name == tableName {
+			currentTableName := table.Name
+			if ignoreCaseSensitive {
+				currentTableName = strings.ToLower(currentTableName)
+			}
+			if currentTableName == tableName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// ViewExists checks if the view exists.
+func (s *DBSchema) ViewExists(schemaName string, name string, ignoreCaseSensitive bool) bool {
+	if ignoreCaseSensitive {
+		schemaName = strings.ToLower(schemaName)
+		name = strings.ToLower(name)
+	}
+	for _, schema := range s.Metadata.Schemas {
+		currentSchemaName := schema.Name
+		if ignoreCaseSensitive {
+			currentSchemaName = strings.ToLower(currentSchemaName)
+		}
+		if currentSchemaName != schemaName {
+			continue
+		}
+		for _, view := range schema.Views {
+			currentViewName := view.Name
+			if ignoreCaseSensitive {
+				currentViewName = strings.ToLower(currentViewName)
+			}
+			if currentViewName == name {
 				return true
 			}
 		}
@@ -100,8 +140,15 @@ func (s *DBSchema) FindIndex(schemaName string, tableName string, indexName stri
 
 // GetDBSchema gets the schema for a database.
 func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, error) {
-	if dbSchema, ok := s.dbSchemaCache.Load(databaseID); ok {
-		return dbSchema.(*DBSchema), nil
+	instanceCount := 0
+	s.instanceCache.Range(func(key, value any) bool {
+		instanceCount++
+		return true
+	})
+	if s.dbSchemaCache.MaxCost() != 1_000_000 || instanceCount <= 10 {
+		if dbSchema, ok := s.dbSchemaCache.Get(databaseID); ok {
+			return dbSchema.(*DBSchema), nil
+		}
 	}
 
 	// Build WHERE clause.
@@ -136,14 +183,14 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 		return nil, err
 	}
 
-	var databaseSchema storepb.DatabaseMetadata
+	var databaseSchema storepb.DatabaseSchemaMetadata
 	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err := decoder.Unmarshal(metadata, &databaseSchema); err != nil {
 		return nil, err
 	}
 	dbSchema.Metadata = &databaseSchema
 
-	s.dbSchemaCache.Store(databaseID, dbSchema)
+	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
 	return dbSchema, nil
 }
 
@@ -188,6 +235,6 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 		return err
 	}
 
-	s.dbSchemaCache.Store(databaseID, dbSchema)
+	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
 	return nil
 }

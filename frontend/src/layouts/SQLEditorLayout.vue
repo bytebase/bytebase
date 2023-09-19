@@ -1,11 +1,6 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
     <BannersWrapper />
-    <nav class="bg-white border-b border-block-border">
-      <div class="max-w-full mx-auto px-4">
-        <EditorHeader />
-      </div>
-    </nav>
     <!-- Suspense is experimental, be aware of the potential change -->
     <Suspense>
       <template #default>
@@ -29,12 +24,37 @@
 </template>
 
 <script lang="ts" setup>
-import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
-import { pushNotification, useActuatorV1Store } from "@/store";
-import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
+import { useLocalStorage } from "@vueuse/core";
+import { onMounted } from "vue";
+import { useRoute } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
+import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
+import {
+  pushNotification,
+  useActuatorV1Store,
+  useSQLEditorStore,
+} from "@/store";
+import { SQLEditorMode } from "@/types";
 
 const actuatorStore = useActuatorV1Store();
+const sqlEditorStore = useSQLEditorStore();
+const route = useRoute();
+
+onMounted(() => {
+  let mode = route.query.mode as SQLEditorMode;
+  const storage = useLocalStorage<SQLEditorMode>(
+    "bb.sql-editor.mode",
+    "BUNDLED"
+  );
+  if (mode != "BUNDLED" && mode != "STANDALONE") {
+    mode = storage.value;
+  }
+
+  storage.value = mode;
+  sqlEditorStore.setSQLEditorState({
+    mode,
+  });
+});
 
 const ping = () => {
   actuatorStore.fetchServerInfo().then((info) => {

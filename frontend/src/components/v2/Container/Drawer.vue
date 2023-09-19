@@ -4,6 +4,8 @@
     :show="show"
     :auto-focus="false"
     :trap-focus="false"
+    :close-on-esc="true"
+    v-bind="$attrs"
     @update:show="onUpdateShow"
   >
     <slot />
@@ -11,6 +13,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from "@vueuse/core";
 import { NDrawer } from "naive-ui";
 
 withDefaults(
@@ -33,4 +36,11 @@ const onUpdateShow = (show: boolean) => {
     emit("close");
   }
 };
+
+useEventListener("keydown", (e) => {
+  if (e.code == "Escape") {
+    emit("update:show", false);
+    emit("close");
+  }
+});
 </script>

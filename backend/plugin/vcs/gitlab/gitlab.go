@@ -314,51 +314,6 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	return repos, len(repos) >= apiPageSize, nil
 }
 
-// fetchUserInfoImpl fetches user information from the given resourceURI, which
-// should be either "user" or "users/{userID}".
-func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
-	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "GET")
-	}
-
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to read user info from URL %s", url)
-	} else if code >= 300 {
-		return nil, errors.Errorf("failed to read user info from URL %s, status code: %d, body: %s",
-			url,
-			code,
-			body,
-		)
-	}
-
-	var userInfo vcs.UserInfo
-	if err := json.Unmarshal([]byte(body), &userInfo); err != nil {
-		return nil, errors.Wrap(err, "unmarshal")
-	}
-	return &userInfo, err
-}
-
-// TryLogin tries to fetch the user info from the current OAuth context.
-func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, "user")
-}
-
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
@@ -641,8 +596,8 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 // ReadFileMeta reads the metadata of the given file in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
-	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
+	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, refInfo)
 	if err != nil {
 		return nil, errors.Wrap(err, "read file")
 	}
@@ -655,8 +610,8 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
-	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
+	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, refInfo)
 	if err != nil {
 		return "", errors.Wrap(err, "read file")
 	}
@@ -1185,11 +1140,11 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 //
 // TODO: The same GitLab API endpoint supports using the HEAD request to only
 // get the file metadata.
-func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*File, error) {
+func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*File, error) {
 	// GitLab is often deployed behind a reverse proxy, which may have compression enabled that is transparent to the GitLab instance.
 	// In such cases, the HTTP header "Content-Encoding" will, for example, be changed to "gzip" and makes the value of "Content-Length" untrustworthy.
 	// We can avoid dealing with this type of problem by using the raw API instead of the typical JSON API.
-	url := fmt.Sprintf("%s/projects/%s/repository/files/%s/raw?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref))
+	url := fmt.Sprintf("%s/projects/%s/repository/files/%s/raw?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(refInfo.RefName))
 	code, header, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -1261,6 +1216,7 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 		if err != nil {
 			return errors.Wrapf(err, "POST %s", url)
 		}
+		defer resp.Body.Close()
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {

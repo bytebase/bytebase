@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
-
+import { projectServiceClient } from "@/grpcweb";
 import {
   ComposedProject,
   emptyProject,
@@ -12,17 +12,20 @@ import {
   UNKNOWN_ID,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
-import { projectServiceClient } from "@/grpcweb";
-import { Project } from "@/types/proto/v1/project_service";
-import { useProjectIamPolicyStore } from "./projectIamPolicy";
-import { State } from "@/types/proto/v1/common";
 import { User } from "@/types/proto/v1/auth_service";
-import { useCurrentUserV1 } from "../auth";
+import { State } from "@/types/proto/v1/common";
+import { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import { useCurrentUserV1 } from "../auth";
 import { projectNamePrefix } from "./common";
+import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
+
+  const reset = () => {
+    projectMapByName.clear();
+  };
 
   // Getters
   const projectList = computed(() => {
@@ -142,6 +145,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 
   return {
+    reset,
     projectMapByName,
     projectList,
     getProjectList,

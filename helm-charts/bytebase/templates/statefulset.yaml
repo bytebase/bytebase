@@ -1,3 +1,4 @@
+{{- $external_url := index .Values.bytebase.option "external-url" -}}
 {{- $existingPgURLSecret := .Values.bytebase.option.existingPgURLSecret -}}
 {{- $existingPgURLSecretKey := .Values.bytebase.option.existingPgURLSecretKey -}}
 {{- $port := .Values.bytebase.option.port -}}
@@ -5,14 +6,14 @@
 {{- $data := .Values.bytebase.option.data -}}
 {{- $version := .Values.bytebase.version -}}
 {{- $registryMirrorHost := .Values.bytebase.registryMirrorHost -}}
+{{- $disable_sample := index .Values.bytebase.option "disable-sample" -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: bytebase
   namespace: {{ template "bytebase.namespace" . }}
   labels:
-    app.kubernetes.io/managed-by: helm
-    app: bytebase
+    {{- include "bytebase.labels" . | nindent 4}}
 spec:
   selector:
     matchLabels:
@@ -50,6 +51,12 @@ spec:
               {{ $data | quote }},
               "--port",
               {{ $port | quote }},
+              "--external-url",
+              # helm parser cannot handle the dash in the value, so we need to quote it, so we use $external_url instead of $external-url.
+              {{ $external_url | quote }},
+              {{ if $disable_sample }}
+              "--disable-sample",
+              {{ end }}
             ]
           ports:
             - containerPort: {{ $port }}
@@ -99,8 +106,7 @@ metadata:
   name: bytebase-volume
   namespace: {{ template "bytebase.namespace" . }}
   labels:
-    app.kubernetes.io/managed-by: helm
-    app: bytebase
+    {{- include "bytebase.labels" . | nindent 4}}
 spec:
   storageClassName: {{ .Values.bytebase.persistence.storageClass | quote }}
   accessModes:

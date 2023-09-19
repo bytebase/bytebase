@@ -13,7 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
+	"github.com/nyaruka/phonenumbers"
 	"github.com/pkg/errors"
 )
 
@@ -24,6 +26,10 @@ const (
 	MaxSheetSizeForTaskCheck = 10 * 1024 * 1024
 	// MaxSheetSizeForRollback is the maximum size of a sheet for rollback generator to run.
 	MaxSheetSizeForRollback = 8 * 1024 * 1024
+	// MaxSheetSizeForPlanCheckDML is the maximum size of a sheet for plan check to check DML changes.
+	MaxSheetSizeForPlanCheckDML = 512 * 1024
+	// MaxStatementSizeForSQLReview is the maximum size of the statement to do sql review checks in sql service.
+	MaxStatementSizeForSQLReview = 512 * 1024
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
@@ -76,14 +82,14 @@ func GetPostgresDataDir(dataDir string, demoName string) string {
 	// we reset the demo data when starting Bytebase and this can prevent accidentally removing the
 	// production data.
 	if demoName != "" {
-		return path.Join(dataDir, fmt.Sprintf("pgdata-demo/%s", demoName))
+		return path.Join(dataDir, "pgdata-demo", demoName)
 	}
 	return path.Join(dataDir, "pgdata")
 }
 
 // GetPostgresSampleDataDir returns the data directory of postgres sample instance.
-func GetPostgresSampleDataDir(dataDir string) string {
-	return path.Join(dataDir, "pgdata-sample")
+func GetPostgresSampleDataDir(dataDir string, subDir string) string {
+	return path.Join(dataDir, "pgdata-sample", subDir)
 }
 
 // GetPostgresSocketDir returns the postgres socket directory of Bytebase.
@@ -219,4 +225,61 @@ func NormalizeExternalURL(url string) (string, error) {
 		}
 	}
 	return r, nil
+}
+
+// ValidatePhone validates the phone number.
+func ValidatePhone(phone string) error {
+	phoneNumber, err := phonenumbers.Parse(phone, "")
+	if err != nil {
+		return err
+	}
+	if !phonenumbers.IsValidNumber(phoneNumber) {
+		return errors.New("invalid phone number")
+	}
+	return nil
+}
+
+// SanitizeUTF8String returns a copy of the string s with each run of invalid or unprintable UTF-8 byte sequences
+// replaced by its hexadecimal representation string.
+func SanitizeUTF8String(s string) string {
+	var b strings.Builder
+
+	for i, c := range s {
+		if c != utf8.RuneError {
+			continue
+		}
+
+		_, wid := utf8.DecodeRuneInString(s[i:])
+		if wid == 1 {
+			b.Grow(len(s))
+			_, _ = b.WriteString(s[:i])
+			s = s[i:]
+			break
+		}
+	}
+
+	// Fast path for unchanged input
+	if b.Cap() == 0 { // didn't call b.Grow above
+		return s
+	}
+
+	for i := 0; i < len(s); {
+		c := s[i]
+		// U+0000-U+0019 are control characters
+		if 0x20 <= c && c < utf8.RuneSelf {
+			i++
+			_ = b.WriteByte(c)
+			continue
+		}
+		_, wid := utf8.DecodeRuneInString(s[i:])
+		if wid == 1 {
+			i++
+			_, _ = b.WriteString(fmt.Sprintf("\\x%02x", c))
+			continue
+		}
+		_, _ = b.WriteString(s[i : i+wid])
+		i += wid
+	}
+
+	return b.String()
 }

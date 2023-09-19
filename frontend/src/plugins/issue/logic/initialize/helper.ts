@@ -1,5 +1,6 @@
 import { Ref } from "vue";
 import { TemplateType } from "@/plugins";
+import { useActuatorV1Store, useCurrentUser, useIssueStore } from "@/store";
 import {
   Issue,
   IssueCreate,
@@ -9,13 +10,12 @@ import {
   TaskDatabaseSchemaUpdatePayload,
   UNKNOWN_ID,
 } from "@/types";
-import { useActuatorV1Store, useCurrentUser, useIssueStore } from "@/store";
+import { isDatabaseRelatedIssueType } from "@/utils";
 import {
   BuildNewIssueContext,
   ESTABLISH_BASELINE_SQL,
   VALIDATE_ONLY_SQL,
 } from "../common";
-import { isDatabaseRelatedIssueType } from "@/utils";
 
 export class IssueCreateHelper {
   issueCreate: IssueCreate | null;

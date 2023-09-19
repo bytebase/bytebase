@@ -2,19 +2,22 @@
 <template>
   <div class="space-y-4">
     <div>
+      <div v-if="isDebug && getWebhookLink !== ''">
+        <label class="textlabel mt-2">
+          <i18n-t keypath="repository.our-webhook-link">
+            <template #webhookLink>
+              <a class="normal-link" :href="getWebhookLink" target="_blank">{{
+                getWebhookLink
+              }}</a>
+            </template>
+          </i18n-t>
+        </label>
+      </div>
       <div class="flex flex-row space-x-2 items-center">
         <label for="gitprovider" class="textlabel">
           {{ $t("repository.git-provider") }}
         </label>
-        <template v-if="vcsType === ExternalVersionControl_Type.GITLAB">
-          <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
-        </template>
-        <template v-if="vcsType === ExternalVersionControl_Type.GITHUB">
-          <img class="h-4 w-auto" src="../assets/github-logo.svg" />
-        </template>
-        <template v-if="vcsType === ExternalVersionControl_Type.BITBUCKET">
-          <img class="h-4 w-auto" src="../assets/bitbucket-logo.svg" />
-        </template>
+        <VCSIcon :type="vcsType" />
       </div>
       <input
         id="gitprovider"
@@ -321,11 +324,12 @@
       <BBAttention
         v-if="
           instanceWithoutLicense.length > 0 &&
+          subscriptionStore.currentPlan !== PlanType.FREE &&
           hasFeature('bb.feature.vcs-sql-review')
         "
         class="my-4"
         :style="`WARN`"
-        :title="$t('subscription.features.bb-feature-sql-review.title')"
+        :title="$t('subscription.features.bb-feature-vcs-sql-review.title')"
         :description="
           $t('subscription.instance-assignment.missing-license-for-instances', {
             count: instanceWithoutLicense.length,
@@ -348,8 +352,8 @@
       </div>
     </div>
     <FeatureModal
-      v-if="state.showFeatureModal"
       feature="bb.feature.vcs-sql-review"
+      :open="state.showFeatureModal"
       @cancel="state.showFeatureModal = false"
     />
   </div>
@@ -360,21 +364,24 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import {
   hasFeature,
   useSubscriptionV1Store,
   useDatabaseV1Store,
+  useActuatorV1Store,
 } from "@/store";
+import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
+import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 import {
   Project,
   TenantMode,
   SchemaChange,
   schemaChangeToJSON,
 } from "@/types/proto/v1/project_service";
-import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -458,13 +465,21 @@ const isProjectSchemaChangeTypeSDL = computed(() => {
 const canEnableSQLReview = computed(() => {
   return (
     props.vcsType == ExternalVersionControl_Type.GITHUB ||
-    props.vcsType === ExternalVersionControl_Type.GITLAB
+    props.vcsType === ExternalVersionControl_Type.GITLAB ||
+    props.vcsType === ExternalVersionControl_Type.AZURE_DEVOPS
   );
 });
 const enableSQLReviewTitle = computed(() => {
-  return props.vcsType === ExternalVersionControl_Type.GITLAB
-    ? t("repository.sql-review-ci-enable-gitlab")
-    : t("repository.sql-review-ci-enable-github");
+  switch (props.vcsType) {
+    case ExternalVersionControl_Type.GITLAB:
+      return t("repository.sql-review-ci-enable-gitlab");
+    case ExternalVersionControl_Type.GITHUB:
+      return t("repository.sql-review-ci-enable-github");
+    case ExternalVersionControl_Type.AZURE_DEVOPS:
+      return t("repository.sql-review-ci-enable-azure");
+    default:
+      return "";
+  }
 });
 
 const sampleFilePath = (
@@ -543,6 +558,18 @@ const sampleSchemaPath = (
   return result;
 };
 
+const getWebhookLink = computed(() => {
+  if (props.vcsType === ExternalVersionControl_Type.AZURE_DEVOPS) {
+    const parts = props.repositoryInfo.externalId.split("/");
+    if (parts.length !== 3) {
+      return "";
+    }
+    const [organization, project, _] = parts;
+    return `https://dev.azure.com/${organization}/${project}/_settings/serviceHooks`;
+  }
+  return "";
+});
+
 const fileOptionalPlaceholder = computed(() => {
   const tags = [] as string[];
   // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
@@ -587,4 +614,8 @@ const onSQLReviewCIToggle = (on: boolean) => {
     state.showFeatureModal = true;
   }
 };
+
+const actuatorStore = useActuatorV1Store();
+
+const isDebug = storeToRefs(actuatorStore).isDebug;
 </script>

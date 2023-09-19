@@ -7,193 +7,141 @@
       />
     </p>
     <BBStepTab
+      ref="bbStepTabRef"
       class="p-4 flex-1 overflow-hidden flex flex-col"
       :step-item-list="stepTabList"
       :show-cancel="false"
       :allow-next="allowNext"
       :finish-title="$t('database.sync-schema.preview-issue')"
-      :current-step="state.currentStep"
       pane-class="flex-1 overflow-y-auto"
       @cancel="cancelSetup"
       @try-change-step="tryChangeStep"
       @try-finish="tryFinishSetup"
     >
       <template #0>
-        <div
-          class="w-full mx-auto flex flex-col justify-start items-start space-y-4 my-8"
-        >
-          <div class="w-full flex flex-row justify-start items-center">
-            <span class="flex w-40 items-center">
-              {{ $t("database.sync-schema.select-project") }}
-            </span>
-            <ProjectSelect
-              class="!w-60 shrink-0"
-              :selected-id="state.projectId"
-              @select-project-id="handleSourceProjectSelect"
+        <div class="mb-4">
+          <NRadioGroup v-model:value="state.sourceSchemaType" class="space-x-4">
+            <NRadio
+              :value="'SCHEMA_HISTORY_VERSION'"
+              :label="$t('database.sync-schema.schema-history-version')"
             />
-          </div>
-          <div class="w-full flex flex-row justify-start items-center">
-            <span class="flex w-40 items-center shrink-0">
-              {{ $t("database.sync-schema.source-database") }}
-            </span>
-            <EnvironmentSelect
-              class="!w-60 mr-4 shrink-0"
-              name="environment"
-              :selected-id="state.sourceSchema.environmentId"
-              :select-default="false"
-              @select-environment-id="handleSourceEnvironmentSelect"
-            />
-            <DatabaseSelect
-              class="!w-128"
-              :selected-id="state.sourceSchema.databaseId ?? String(UNKNOWN_ID)"
-              :mode="'USER'"
-              :environment-id="state.sourceSchema.environmentId"
-              :project-id="state.projectId"
-              :engine-type-list="allowedEngineTypeList"
-              :sync-status="'OK'"
-              :customize-item="true"
-              @select-database-id="handleSourceDatabaseSelect"
-            >
-              <template #customizeItem="{ database: db }">
-                <div class="flex items-center">
-                  <InstanceV1EngineIcon :instance="db.instanceEntity" />
-                  <span class="mx-2">{{ db.databaseName }}</span>
-
-                  <span class="text-gray-400">
-                    ({{ instanceV1Name(db.instanceEntity) }})
-                  </span>
-                </div>
-              </template>
-            </DatabaseSelect>
-          </div>
-          <div class="w-full flex flex-row justify-start items-center">
-            <span class="flex w-40 items-center shrink-0">
-              {{ $t("database.sync-schema.schema-version.self") }}
-            </span>
-            <div
-              class="w-192 flex flex-row justify-start items-center relative"
-              :class="isValidId(state.projectId) ? '' : 'opacity-50'"
-            >
-              <BBSelect
-                class="w-full"
-                :selected-item="state.sourceSchema.changeHistory"
-                :item-list="
-                databaseChangeHistoryList(state.sourceSchema.databaseId as string)
-              "
-                :placeholder="$t('change-history.select')"
-                :show-prefix-item="databaseChangeHistoryList(state.sourceSchema.databaseId as string).length > 0"
-                @select-item="(changeHistory: ChangeHistory) => handleSchemaVersionSelect(changeHistory)"
-              >
-                <template
-                  #menuItem="{ item: changeHistory }: { item: ChangeHistory }"
-                >
-                  <div class="flex justify-between mr-2">
-                    <NEllipsis class="pr-2" :tooltip="false">
-                      {{ changeHistory.version }} -
-                      {{ changeHistory.description }}
-                    </NEllipsis>
-                    <span class="text-control-light">
-                      {{ humanizeDate(changeHistory.updateTime) }}
-                    </span>
-                  </div>
-                </template>
-                <template v-if="shouldShowMoreVersionButton" #suffixItem>
-                  <div
-                    class="w-full flex flex-row justify-start items-center pl-3 leading-8 text-accent cursor-pointer hover:opacity-80"
-                    @click.prevent.capture="
-                      () => (state.showFeatureModal = true)
-                    "
-                  >
-                    <heroicons-solid:sparkles class="w-4 h-auto mr-1" />
-                    {{ $t("database.sync-schema.more-version") }}
-                  </div>
-                </template>
-              </BBSelect>
-            </div>
-          </div>
+            <NRadio :value="'SCHEMA_DESIGN'" :label="$t('database.branch')" />
+            <NRadio :value="'RAW_SQL'" :label="$t('schema-editor.raw-sql')" />
+          </NRadioGroup>
         </div>
+        <DatabaseSchemaSelector
+          v-if="state.sourceSchemaType === 'SCHEMA_HISTORY_VERSION'"
+          :select-state="changeHistorySourceSchemaState"
+          @update="handleChangeHistorySchameVersionChanges"
+        />
+        <SchemaDesignSelector
+          v-if="state.sourceSchemaType === 'SCHEMA_DESIGN'"
+          :selected-schema-design="schemaDesignState.selectedSchemaDesign"
+          @select="
+            (schemaDesign) =>
+              (schemaDesignState.selectedSchemaDesign = schemaDesign)
+          "
+        />
+        <RawSQLEditor
+          v-if="state.sourceSchemaType === 'RAW_SQL'"
+          :project-id="rawSQLState.projectId"
+          :engine="rawSQLState.engine"
+          :statement="rawSQLState.statement"
+          :sheet-id="rawSQLState.sheetId"
+          @update="handleRawSQLStateChange"
+        />
       </template>
       <template #1>
         <SelectTargetDatabasesView
           ref="targetDatabaseViewRef"
-          :project-id="state.projectId!"
-          :source-schema="state.sourceSchema as any"
+          :project-id="projectId!"
+          :source-schema-type="state.sourceSchemaType"
+          :database-source-schema="(changeHistorySourceSchemaState as any)"
+          :schema-design-name="schemaDesignState.selectedSchemaDesign?.name"
+          :raw-sql-state="rawSQLState"
         />
       </template>
     </BBStepTab>
   </div>
-
-  <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.sync-schema-all-versions"
-    :instance="database?.instanceEntity"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { head, isNull, isUndefined } from "lodash-es";
-import { NEllipsis, useDialog } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
+import { isNull, isUndefined } from "lodash-es";
+import { NRadioGroup, NRadio, useDialog } from "naive-ui";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import {
-  useChangeHistoryStore,
-  useDatabaseV1Store,
-  useProjectV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { BBStepTab } from "@/bbkit";
+import { useProjectV1Store } from "@/store";
+import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
-import DatabaseSelect from "@/components/DatabaseSelect.vue";
-import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
 import { Engine } from "@/types/proto/v1/common";
-import { InstanceV1EngineIcon } from "@/components/v2";
-import { instanceV1Name } from "@/utils";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
+import RawSQLEditor from "./RawSQLEditor.vue";
+import SchemaDesignSelector from "./SchemaDesignSelector.vue";
+import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
 import {
-  ChangeHistory,
-  ChangeHistory_Type,
-} from "@/types/proto/v1/database_service";
+  ChangeHistorySourceSchema,
+  RawSQLState,
+  SourceSchemaType,
+} from "./types";
 
-const SELECT_SOURCE_DATABASE = 0;
+const SELECT_SOURCE_SCHEMA = 0;
 const SELECT_TARGET_DATABASE_LIST = 1;
 
-type Step = typeof SELECT_SOURCE_DATABASE | typeof SELECT_TARGET_DATABASE_LIST;
-
-interface SourceSchema {
-  environmentId?: string;
-  databaseId?: string;
-  changeHistory?: ChangeHistory;
-}
+type Step = typeof SELECT_SOURCE_SCHEMA | typeof SELECT_TARGET_DATABASE_LIST;
 
 interface LocalState {
+  sourceSchemaType: SourceSchemaType;
   currentStep: Step;
-  projectId?: string;
-  sourceSchema: SourceSchema;
-  showFeatureModal: boolean;
 }
-
-const allowedEngineTypeList: Engine[] = [Engine.MYSQL, Engine.POSTGRES];
-const allowedMigrationTypeList: ChangeHistory_Type[] = [
-  ChangeHistory_Type.BASELINE,
-  ChangeHistory_Type.MIGRATE,
-  ChangeHistory_Type.BRANCH,
-];
 
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
+const bbStepTabRef = ref<InstanceType<typeof BBStepTab>>();
 const projectStore = useProjectV1Store();
-const databaseStore = useDatabaseV1Store();
-const changeHistoryStore = useChangeHistoryStore();
-const subscriptionV1Store = useSubscriptionV1Store();
+const schemaDesignStore = useSchemaDesignStore();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
-  currentStep: SELECT_SOURCE_DATABASE,
-  sourceSchema: {},
-  showFeatureModal: false,
+  sourceSchemaType: "SCHEMA_HISTORY_VERSION",
+  currentStep: SELECT_SOURCE_SCHEMA,
 });
+const changeHistorySourceSchemaState = reactive<ChangeHistorySourceSchema>({});
+const schemaDesignState = reactive<{
+  selectedSchemaDesign?: SchemaDesign;
+}>({});
+const rawSQLState = reactive<RawSQLState>({
+  engine: Engine.MYSQL,
+  statement: "",
+});
+
+const projectId = computed(() => {
+  if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
+    return changeHistorySourceSchemaState.projectId;
+  } else if (state.sourceSchemaType === "SCHEMA_DESIGN") {
+    if (!schemaDesignState.selectedSchemaDesign) {
+      return undefined;
+    }
+    const [projectName] = getProjectAndSchemaDesignSheetId(
+      schemaDesignState.selectedSchemaDesign.name
+    );
+    const project = projectStore.getProjectByName(`projects/${projectName}`);
+    return project.uid;
+  } else {
+    return rawSQLState.projectId;
+  }
+});
+
+const handleChangeHistorySchameVersionChanges = (
+  schemaVersion: ChangeHistorySourceSchema
+) => {
+  Object.assign(changeHistorySourceSchemaState, schemaVersion);
+};
 
 const isValidId = (id: any): id is string => {
   if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
@@ -201,29 +149,6 @@ const isValidId = (id: any): id is string => {
   }
   return true;
 };
-
-const database = computed(() => {
-  const databaseId = state.sourceSchema.databaseId;
-  if (!isValidId(databaseId)) {
-    return;
-  }
-  return databaseStore.getDatabaseByUID(databaseId);
-});
-
-const hasSyncSchemaFeature = computed(() => {
-  return subscriptionV1Store.hasInstanceFeature(
-    "bb.feature.sync-schema-all-versions",
-    database.value?.instanceEntity
-  );
-});
-
-const shouldShowMoreVersionButton = computed(() => {
-  return (
-    !hasSyncSchemaFeature.value &&
-    databaseChangeHistoryList(state.sourceSchema.databaseId as string).length >
-      0
-  );
-});
 
 const stepTabList = computed(() => {
   return [
@@ -233,13 +158,21 @@ const stepTabList = computed(() => {
 });
 
 const allowNext = computed(() => {
-  if (state.currentStep === SELECT_SOURCE_DATABASE) {
-    return (
-      isValidId(state.sourceSchema.environmentId) &&
-      isValidId(state.sourceSchema.databaseId) &&
-      !isUndefined(state.sourceSchema.changeHistory) &&
-      hasSyncSchemaFeature.value
-    );
+  if (state.currentStep === SELECT_SOURCE_SCHEMA) {
+    if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
+      return (
+        isValidId(changeHistorySourceSchemaState.environmentId) &&
+        isValidId(changeHistorySourceSchemaState.databaseId) &&
+        !isUndefined(changeHistorySourceSchemaState.changeHistory)
+      );
+    } else if (state.sourceSchemaType === "SCHEMA_DESIGN") {
+      return !isUndefined(schemaDesignState.selectedSchemaDesign);
+    } else {
+      return (
+        !isUndefined(rawSQLState.projectId) &&
+        (rawSQLState.statement !== "" || !isUndefined(rawSQLState.sheetId))
+      );
+    }
   } else {
     if (!targetDatabaseViewRef.value) {
       return false;
@@ -258,53 +191,27 @@ const allowNext = computed(() => {
   }
 });
 
-const databaseChangeHistoryList = (databaseId: string) => {
-  const database = databaseStore.getDatabaseByUID(databaseId);
-  const list = changeHistoryStore
-    .changeHistoryListByDatabase(database.name)
-    .filter((changeHistory) =>
-      allowedMigrationTypeList.includes(changeHistory.type)
-    );
-
-  if (!hasSyncSchemaFeature.value) {
-    return list.length > 0 ? [head(list)] : [];
-  }
-  return list;
-};
-
-const handleSourceProjectSelect = async (projectId: string) => {
-  if (projectId !== state.projectId) {
-    state.sourceSchema.databaseId = String(UNKNOWN_ID);
-  }
-  state.projectId = projectId;
-};
-
-const handleSourceEnvironmentSelect = async (environmentId: string) => {
-  if (environmentId !== state.sourceSchema.environmentId) {
-    state.sourceSchema.databaseId = String(UNKNOWN_ID);
-  }
-  state.sourceSchema.environmentId = environmentId;
-};
-
-const handleSourceDatabaseSelect = async (databaseId: string) => {
-  if (isValidId(databaseId)) {
-    const database = databaseStore.getDatabaseByUID(databaseId);
-    if (!database) {
-      return;
-    }
-    state.projectId = database.projectEntity.uid;
-    state.sourceSchema.environmentId =
-      database.instanceEntity.environmentEntity.uid;
-    state.sourceSchema.databaseId = databaseId;
-
-    if (!hasSyncSchemaFeature.value) {
-      state.showFeatureModal = true;
+onMounted(async () => {
+  const schemaDesignName = router.currentRoute.value.query
+    .schemaDesignName as string;
+  if (schemaDesignName) {
+    try {
+      const schemaDesign = await schemaDesignStore.getOrFetchSchemaDesignByName(
+        schemaDesignName
+      );
+      if (schemaDesign) {
+        state.sourceSchemaType = "SCHEMA_DESIGN";
+        schemaDesignState.selectedSchemaDesign = schemaDesign;
+        bbStepTabRef.value?.changeStep(SELECT_TARGET_DATABASE_LIST);
+      }
+    } catch (error) {
+      // do nothing
     }
   }
-};
+});
 
-const handleSchemaVersionSelect = (changeHistory: ChangeHistory) => {
-  state.sourceSchema.changeHistory = changeHistory;
+const handleRawSQLStateChange = (state: RawSQLState) => {
+  Object.assign(rawSQLState, state);
 };
 
 const tryChangeStep = async (
@@ -356,8 +263,7 @@ const tryFinishSetup = async () => {
     .filter((item) => item.diff !== "");
   const databaseIdList = targetDatabaseDiffList.map((item) => item.id);
   const statementList = targetDatabaseDiffList.map((item) => item.diff);
-
-  const project = await projectStore.getOrFetchProjectByUID(state.projectId!);
+  const project = await projectStore.getOrFetchProjectByUID(projectId.value!);
 
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
@@ -367,7 +273,9 @@ const tryFinishSetup = async () => {
   };
   query.databaseList = databaseIdList.join(",");
   query.sqlList = JSON.stringify(statementList);
-  query.name = generateIssueName(targetDatabaseList.map((db) => db.name));
+  query.name = generateIssueName(
+    targetDatabaseList.map((db) => db.databaseName)
+  );
 
   const routeInfo = {
     name: "workspace.issue.detail",
@@ -398,46 +306,4 @@ const cancelSetup = () => {
     name: "workspace.home",
   });
 };
-
-watch(
-  () => [state.sourceSchema.databaseId],
-  async () => {
-    const databaseId = state.sourceSchema.databaseId;
-    if (!isValidId(databaseId)) {
-      state.sourceSchema.changeHistory = undefined;
-      return;
-    }
-
-    const database = databaseStore.getDatabaseByUID(databaseId);
-    if (database) {
-      const changeHistoryList = (
-        await changeHistoryStore.fetchChangeHistoryList({
-          parent: database.name,
-        })
-      ).filter((changeHistory) =>
-        allowedMigrationTypeList.includes(changeHistory.type)
-      );
-
-      if (changeHistoryList.length > 0) {
-        // Default select the first migration history.
-        state.sourceSchema.changeHistory = head(changeHistoryList);
-      } else {
-        // If database has no migration history, we will use its latest schema.
-        const schema = await databaseStore.fetchDatabaseSchema(
-          `${database.name}/schema`
-        );
-        state.sourceSchema.changeHistory = {
-          name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
-          uid: String(UNKNOWN_ID),
-          updateTime: new Date(),
-          schema: schema.schema,
-          version: "Latest version",
-          description: "the latest schema of database",
-        } as ChangeHistory;
-      }
-    } else {
-      state.sourceSchema.changeHistory = undefined;
-    }
-  }
-);
 </script>

@@ -1,6 +1,6 @@
 /* eslint-disable */
-import * as Long from "long";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { ApprovalStep } from "./approval";
 
 export const protobufPackage = "bytebase.store";
@@ -180,7 +180,7 @@ export function activityIssueCommentCreatePayload_ApprovalEvent_StatusToJSON(
 }
 
 export interface ActivityIssueApprovalNotifyPayload {
-  approvalStep?: ApprovalStep;
+  approvalStep?: ApprovalStep | undefined;
 }
 
 function createBaseActivityIssueCreatePayload(): ActivityIssueCreatePayload {
@@ -686,10 +686,10 @@ export const ActivityIssueApprovalNotifyPayload = {
   },
 };
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
@@ -719,8 +719,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

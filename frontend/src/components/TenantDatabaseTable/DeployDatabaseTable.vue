@@ -71,25 +71,31 @@
           <template v-else>{{ $t("label.empty-label-value") }}</template>
         </BBTableCell>
         <BBTableCell v-for="(dbList, i) in matrix.stages" :key="i">
-          <div class="flex flex-col items-center space-y-1">
+          <div
+            v-if="databaseList.length > 0"
+            class="flex flex-col items-start w-max mx-auto space-y-1"
+          >
             <DatabaseMatrixItem
               v-for="db in dbList"
               :key="db.id"
               :database="db"
             />
-            <span v-if="dbList.length === 0">-</span>
           </div>
+          <div v-if="dbList.length === 0" class="text-center">-</div>
         </BBTableCell>
 
         <BBTableCell v-if="hasRest">
-          <div class="flex flex-col items-center space-y-1">
+          <div
+            v-if="databaseList.length > 0"
+            class="flex flex-col items-start w-max mx-auto space-y-1"
+          >
             <DatabaseMatrixItem
               v-for="db in matrix.rest"
               :key="db.id"
               :database="db"
             />
-            <span v-if="matrix.rest.length === 0">-</span>
           </div>
+          <div v-if="matrix.rest.length === 0" class="text-center">-</div>
         </BBTableCell>
       </template>
     </BBTable>
@@ -98,18 +104,18 @@
 
 <script lang="ts" setup>
 import { groupBy } from "lodash-es";
+import { NPopover } from "naive-ui";
 import { computed, withDefaults } from "vue";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { DeploymentConfig } from "@/types/proto/v1/project_service";
 import type { ComposedDatabase, LabelKeyType } from "../../types";
 import {
   hidePrefix,
   getLabelValuesFromDatabaseV1List,
   getPipelineFromDeploymentScheduleV1,
 } from "../../utils";
-import { NPopover } from "naive-ui";
 import { DeploymentStage } from "../DeploymentConfigTool";
 import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";
-import { DeploymentConfig } from "@/types/proto/v1/project_service";
-import { Environment } from "@/types/proto/v1/environment_service";
 
 const props = withDefaults(
   defineProps<{

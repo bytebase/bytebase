@@ -15,8 +15,8 @@
 
 <script lang="ts" setup>
 import { PropType } from "vue";
-import { ProjectRepositoryConfig } from "../types";
 import { Project, SchemaChange } from "@/types/proto/v1/project_service";
+import { ProjectRepositoryConfig } from "../types";
 
 defineProps({
   config: {

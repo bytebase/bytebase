@@ -22,8 +22,8 @@
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onMounted, reactive, ref, watch, withDefaults } from "vue";
 import { isEmpty } from "lodash-es";
+import { nextTick, onMounted, reactive, ref, watch, withDefaults } from "vue";
 
 interface LocalState {
   text: string;

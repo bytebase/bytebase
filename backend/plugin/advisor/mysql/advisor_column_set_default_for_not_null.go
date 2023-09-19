@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/pingcap/tidb/parser/ast"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -28,10 +29,10 @@ type ColumnSetDefaultForNotNullAdvisor struct {
 }
 
 // Check checks for set default value for not null column.
-func (*ColumnSetDefaultForNotNullAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*ColumnSetDefaultForNotNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)

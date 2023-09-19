@@ -19,6 +19,8 @@ export const EngineTypeList = [
   "REDSHIFT",
   "MARIADB",
   "OCEANBASE",
+  "DM",
+  "RISINGWAVE",
 ] as const;
 
 export type EngineType = typeof EngineTypeList[number];
@@ -51,6 +53,10 @@ export function convertEngineType(type: EngineType): Engine {
       return Engine.MARIADB;
     case "OCEANBASE":
       return Engine.OCEANBASE;
+    case "DM":
+      return Engine.DM;
+    case "RISINGWAVE":
+      return Engine.RISINGWAVE;
   }
   return Engine.ENGINE_UNSPECIFIED;
 }
@@ -75,10 +81,14 @@ export function defaultCharset(type: EngineType): string {
       return "";
     case "ORACLE":
       return "UTF8";
+    case "DM":
+      return "UTF8";
     case "MSSQL":
       return "";
     case "REDSHIFT":
       return "UNICODE";
+    case "RISINGWAVE":
+      return "UTF8";
   }
 }
 
@@ -110,6 +120,10 @@ export function engineName(type: EngineType): string {
       return "MariaDB";
     case "OCEANBASE":
       return "OceanBase";
+    case "DM":
+      return "DM";
+    case "RISINGWAVE":
+      return "RisingWave";
   }
 }
 
@@ -127,6 +141,7 @@ export function defaultCollation(type: EngineType): string {
     // If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
     // install it.
     case "POSTGRES":
+    case "RISINGWAVE":
       return "";
     case "MONGODB":
       return "";
@@ -140,6 +155,8 @@ export function defaultCollation(type: EngineType): string {
       return "";
     case "REDSHIFT":
       return "";
+    case "DM":
+      return "BINARY_CI";
   }
 }
 

@@ -26,20 +26,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch } from "vue";
-import { head } from "lodash-es";
 import { Axios, AxiosResponse } from "axios";
-
+import { head } from "lodash-es";
+import { computed, reactive, watch } from "vue";
 import { useCurrentTab } from "@/store";
+import { engineNameV1 } from "@/utils";
+import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import { useConversationStore } from "../store";
+import { OpenAIMessage, OpenAIResponse } from "../types";
 import ActionBar from "./ActionBar.vue";
 import ChatView from "./ChatView";
 import DynamicSuggestions from "./DynamicSuggestions.vue";
-import PromptInput from "./PromptInput.vue";
 import HistoryPanel from "./HistoryPanel";
-import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
-import { OpenAIMessage, OpenAIResponse } from "../types";
-import { engineNameV1 } from "@/utils";
+import PromptInput from "./PromptInput.vue";
 
 type LocalState = {
   loading: boolean;
@@ -74,6 +73,8 @@ const requestAI = async (query: string) => {
     const engine = context.engine.value;
     const databaseMetadata = context.databaseMetadata.value;
     const prompts: string[] = [];
+    prompts.push(`### You are a db and SQL expert.`);
+    prompts.push(`### Your responses should be informative and terse.`);
     if (engine) {
       if (databaseMetadata) {
         prompts.push(

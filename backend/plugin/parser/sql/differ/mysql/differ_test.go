@@ -77,7 +77,7 @@ func TestExtractUnsupportObjNameAndType(t *testing.T) {
 
 	a := require.New(t)
 	for _, test := range tests {
-		gotName, gotTp, err := extractUnsupportObjNameAndType(test.stmt)
+		gotName, gotTp, err := extractUnsupportedObjectNameAndType(test.stmt)
 		a.NoError(err)
 		a.Equal(test.wantTp, gotTp)
 		a.Equal(test.wantName, gotName)
@@ -94,7 +94,7 @@ func testDiffWithoutDisableForeignKeyCheck(t *testing.T, testCases []testCase) {
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range testCases {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new, true /* ignoreCaseSensitive */)
 		a.NoError(err)
 		if len(out) > 0 {
 			a.Equal(disableFKCheckStmt, out[:len(disableFKCheckStmt)])

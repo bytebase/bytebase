@@ -1,4 +1,10 @@
 import { pullAt } from "lodash-es";
+import { defineStore } from "pinia";
+import { computed, unref, watchEffect } from "vue";
+import {
+  policyNamePrefix,
+  environmentNamePrefix,
+} from "@/store/modules/v1/common";
 import {
   PolicyId,
   SchemaPolicyRule,
@@ -6,26 +12,18 @@ import {
   IdType,
   MaybeRef,
   RuleType,
-  RuleLevel,
+  UNKNOWN_ID,
 } from "@/types";
-import { defineStore } from "pinia";
-import { usePolicyV1Store } from "./v1/policy";
-import { useEnvironmentV1Store } from "./v1/environment";
-import { computed, unref, watchEffect } from "vue";
-import { Engine } from "@/types/proto/v1/common";
+import { Environment } from "@/types/proto/v1/environment_service";
 import {
   PolicyType,
   Policy,
-  SQLReviewRuleLevel,
   policyTypeToJSON,
   SQLReviewPolicy as SQLReviewPolicyV1,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { Environment } from "@/types/proto/v1/environment_service";
-import {
-  policyNamePrefix,
-  environmentNamePrefix,
-} from "@/store/modules/v1/common";
+import { useEnvironmentV1Store } from "./v1/environment";
+import { usePolicyV1Store } from "./v1/policy";
 
 const getEnvironmentById = async (
   environmentId: IdType
@@ -44,26 +42,19 @@ const convertToSQLReviewPolicy = async (
     return;
   }
 
-  const ruleList = policy.sqlReviewPolicy.rules.map((r) => {
-    let level = RuleLevel.DISABLED;
-    switch (r.level) {
-      case SQLReviewRuleLevel.WARNING:
-        level = RuleLevel.WARNING;
-        break;
-      case SQLReviewRuleLevel.ERROR:
-        level = RuleLevel.ERROR;
-        break;
-    }
+  const ruleList: SchemaPolicyRule[] = [];
+  for (const r of policy.sqlReviewPolicy.rules) {
     const rule: SchemaPolicyRule = {
       type: r.type as RuleType,
-      level: level,
+      level: r.level,
+      engine: r.engine,
       comment: r.comment,
     };
     if (r.payload && r.payload !== "{}") {
       rule.payload = JSON.parse(r.payload);
     }
-    return rule;
-  });
+    ruleList.push(rule);
+  }
 
   const environment = await getEnvironmentById(policy.resourceUid);
 
@@ -140,20 +131,10 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       const sqlReviewPolicy: SQLReviewPolicyV1 = {
         name,
         rules: ruleList.map((r) => {
-          let level = SQLReviewRuleLevel.DISABLED;
-          switch (r.level) {
-            case RuleLevel.WARNING:
-              level = SQLReviewRuleLevel.WARNING;
-              break;
-            case RuleLevel.ERROR:
-              level = SQLReviewRuleLevel.ERROR;
-              break;
-          }
-
           return {
             type: r.type as string,
-            level,
-            engine: Engine.ENGINE_UNSPECIFIED,
+            level: r.level,
+            engine: r.engine,
             comment: r.comment,
             payload: r.payload ? JSON.stringify(r.payload) : "{}",
           };
@@ -224,21 +205,10 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         policy.sqlReviewPolicy = {
           name,
           rules: ruleList.map((r) => {
-            let level = SQLReviewRuleLevel.DISABLED;
-            switch (r.level) {
-              case RuleLevel.WARNING:
-                level = SQLReviewRuleLevel.WARNING;
-                break;
-              case RuleLevel.ERROR:
-                level = SQLReviewRuleLevel.ERROR;
-                break;
-            }
-
             return {
               type: r.type as string,
-              level,
-              // TODO:
-              engine: Engine.ENGINE_UNSPECIFIED,
+              level: r.level,
+              engine: r.engine,
               comment: r.comment,
               payload: r.payload ? JSON.stringify(r.payload) : "{}",
             };
@@ -314,7 +284,9 @@ export const useReviewPolicyByEnvironmentId = (
 ) => {
   const store = useSQLReviewStore();
   watchEffect(() => {
-    store.getOrFetchReviewPolicyByEnvironmentUID(unref(environmentId));
+    const uid = unref(environmentId);
+    if (uid === String(UNKNOWN_ID)) return;
+    store.getOrFetchReviewPolicyByEnvironmentUID(uid);
   });
 
   return computed(() =>

@@ -10,7 +10,6 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { BBCheckbox } from "@/bbkit";
 import type { RuleConfigComponent, RuleTemplate } from "@/types";
 import { getRuleLocalizationKey } from "@/types/sqlReview";

@@ -4,10 +4,10 @@ package pg
 
 import (
 	"fmt"
+	"log/slog"
 
-	"go.uber.org/zap"
+	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -28,10 +28,10 @@ type IndexPrimaryKeyTypeAllowlistAdvisor struct {
 }
 
 // Check checks for primary key type allowlist.
-func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	stmtList, errAdvice := parseStatement(statement)
-	if errAdvice != nil {
-		return errAdvice, nil
+func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	stmtList, ok := ctx.AST.([]ast.Node)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to Node")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -96,9 +96,9 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) Visit(in ast.Node) ast.Visit
 		if !allowType(checker.allowlist, column.Type) {
 			typeText, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, column.Type)
 			if err != nil {
-				log.Warn("Failed to deparse the PostgreSQL data type",
-					zap.String("columnName", column.ColumnName),
-					zap.String("originalSQL", in.Text()))
+				slog.Warn("Failed to deparse the PostgreSQL data type",
+					slog.String("columnName", column.ColumnName),
+					slog.String("originalSQL", in.Text()))
 				typeText = ""
 			}
 			checker.adviceList = append(checker.adviceList, advisor.Advice{

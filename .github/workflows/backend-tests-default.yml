@@ -8,19 +8,10 @@ on:
       - "release/*.*.*"
     paths-ignore:
       - "backend/**"
+      - "go.mod"
 
 jobs:
-  golangci-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - run: 'echo "Not required"'
-
   go-tests:
-    strategy:
-      matrix:
-        release-tags:
-          - "release,mysql"
-          - "mysql"
     runs-on: ubuntu-latest
     steps:
       - run: 'echo "Not required"'

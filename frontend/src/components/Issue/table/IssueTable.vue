@@ -110,7 +110,7 @@
         {{ humanizeTs(issue.updatedTs) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell w-36">
-        <CurrentApprover :issue="issue" />
+        <CurrentApprover :legacy-issue="issue" />
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell w-36">
         <div class="flex flex-row items-center">
@@ -119,6 +119,7 @@
             :username="
               issue.assignee ? issue.assignee.name : $t('common.unassigned')
             "
+            :email="issue.assignee?.email"
           />
           <span class="ml-2">
             {{ issue.assignee ? issue.assignee.name : $t("common.unassigned") }}
@@ -127,7 +128,11 @@
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell w-36">
         <div class="flex flex-row items-center">
-          <BBAvatar :size="'SMALL'" :username="issue.creator.name" />
+          <BBAvatar
+            :size="'SMALL'"
+            :username="issue.creator.name"
+            :email="issue.creator.email"
+          />
           <span class="ml-2">
             {{ issue.creator.name }}
           </span>
@@ -147,16 +152,18 @@
 <script lang="ts" setup>
 import { reactive, PropType, computed, watch, ref } from "vue";
 import { useRouter } from "vue-router";
-
 import type {
   BBTableColumn,
   BBStep,
   BBStepStatus,
   BBTableSectionDataSource,
 } from "@/bbkit/types";
-import type { Issue, IssueId, Task } from "@/types";
-import IssueStatusIcon from "@/components/Issue/IssueStatusIcon.vue";
+import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import BatchIssueActions from "@/components/Issue/BatchIssueActions.vue";
+import IssueStatusIcon from "@/components/Issue/IssueStatusIcon.vue";
+import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
+import { useCurrentUserV1 } from "@/store";
+import type { Issue, IssueId, Task } from "@/types";
 import {
   issueSlug,
   activeEnvironment,
@@ -166,9 +173,6 @@ import {
   isDatabaseRelatedIssueType,
   extractUserUID,
 } from "@/utils";
-import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
-import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
-import { useCurrentUserV1 } from "@/store";
 import { CurrentApprover } from "../review";
 
 type Mode = "ALL" | "PROJECT";
@@ -368,6 +372,16 @@ const clickIssue = (_: number, row: number, e: MouseEvent) => {
 };
 
 const clickIssueStep = (issue: Issue, step: BBStep) => {
+  if (!isDatabaseRelatedIssueType(issue.type)) {
+    router.push({
+      name: "workspace.issue.detail",
+      params: {
+        issueSlug: issueSlug(issue.name, issue.id),
+      },
+    });
+    return;
+  }
+
   const task = step.payload as Task;
   const stageIndex = issue.pipeline!.stageList.findIndex((item) => {
     return item.id == task.stage.id;

@@ -1,13 +1,13 @@
 import { defineStore } from "pinia";
 import { computed, ref, watchEffect } from "vue";
 import { UNKNOWN_USER_NAME } from "@/types";
-import { useCurrentUserV1 } from "./auth";
-import { usePolicyV1Store } from "./v1/policy";
 import {
   Policy,
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
+import { useCurrentUserV1 } from "./auth";
+import { usePolicyV1Store } from "./v1/policy";
 
 export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
   const policyMapByName = ref(new Map<string, Policy>());

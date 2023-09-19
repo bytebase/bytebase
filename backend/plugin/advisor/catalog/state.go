@@ -12,7 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func newDatabaseState(d *storepb.DatabaseMetadata, context *FinderContext) *DatabaseState {
+func newDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext) *DatabaseState {
 	database := &DatabaseState{
 		ctx:          context.Copy(),
 		name:         d.Name,

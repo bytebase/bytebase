@@ -1,0 +1,64 @@
+- statement: |-
+    CREATE TABLE MyTable
+    (
+        Id            INT REFERENCES Person(ID),
+        FullName      VARCHAR(10),
+        POSITION      VARCHAR(100)
+    );
+  want:
+    - status: WARN
+      code: 602
+      title: table.no-foreign-key
+      content: FOREIGN KEY is not allowed in the table MyTable.
+      line: 3
+      details: ""
+- statement: |-
+    CREATE TABLE Customer
+    (
+        Id            INT,
+        FullName      VARCHAR(10),
+        Position      VARCHAR(100),
+        FOREIGN KEY (Id) REFERENCES PERSON(Id)
+    );
+  want:
+    - status: WARN
+      code: 602
+      title: table.no-foreign-key
+      content: FOREIGN KEY is not allowed in the table Customer.
+      line: 6
+      details: ""
+- statement: |-
+    CREATE TABLE Customer
+    (
+        Id            INT,
+        FullName      VARCHAR(10),
+        Position      VARCHAR(100)
+    );
+    ALTER TABLE Customer ADD FOREIGN KEY (Id) REFERENCES Person(Id);
+  want:
+    - status: WARN
+      code: 602
+      title: table.no-foreign-key
+      content: FOREIGN KEY is not allowed in the table Customer.
+      line: 7
+      details: ""
+- statement: |-
+    CREATE TABLE Customer
+    (
+        Id            INT,
+        FullName      VARCHAR(10),
+        Position      VARCHAR(100)
+    );
+    CREATE TABLE Person
+    (
+        Id            INT,
+        FullName      VARCHAR(10),
+        Position      VARCHAR(100)
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""

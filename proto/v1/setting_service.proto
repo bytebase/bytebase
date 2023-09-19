@@ -5,9 +5,12 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
-import "v1/review_service.proto";
+import "v1/common.proto";
+import "v1/database_service.proto";
+import "v1/issue_service.proto";
 import "v1/subscription_service.proto";
 
 option go_package = "generated-go/v1";
@@ -101,6 +104,10 @@ message Value {
     WorkspaceApprovalSetting workspace_approval_setting_value = 6;
     WorkspaceTrialSetting workspace_trial_setting_value = 7;
     ExternalApprovalSetting external_approval_setting_value = 8;
+    SchemaTemplateSetting schema_template_setting_value = 9;
+    DataClassificationSetting data_classification_setting_value = 10;
+    SemanticTypesSetting semantic_types_setting_value = 11;
+    MaskingAlgorithmSetting masking_algorithm_setting_value = 12;
   }
 }
 
@@ -193,6 +200,31 @@ message WorkspaceProfileSetting {
 
   // The webhook URL for the GitOps workflow.
   string gitops_webhook_url = 5;
+
+  // The duration for token.
+  google.protobuf.Duration token_duration = 6;
+
+  // The setting of custom announcement
+  Announcement announcement = 7;
+}
+
+message Announcement {
+  // We support three levels of AlertLevel: INFO, WARNING, and ERROR.
+  enum AlertLevel {
+    ALERT_LEVEL_UNSPECIFIED = 0;
+    ALERT_LEVEL_INFO = 1;
+    ALERT_LEVEL_WARNING = 2;
+    ALERT_LEVEL_CRITICAL = 3;
+  }
+
+  // The alert level of announcemnt
+  AlertLevel level = 1;
+
+  // The text of announcemnt
+  string text = 2;
+
+  // The optional link, user can follow the link to check extra details
+  string link = 3;
 }
 
 message WorkspaceApprovalSetting {
@@ -216,6 +248,30 @@ message ExternalApprovalSetting {
   repeated Node nodes = 1;
 }
 
+message SchemaTemplateSetting {
+  message FieldTemplate {
+    string id = 1;
+
+    Engine engine = 2;
+
+    string category = 3;
+
+    ColumnMetadata column = 4;
+  }
+
+  repeated FieldTemplate field_templates = 1;
+
+  message ColumnType {
+    Engine engine = 1;
+
+    bool enabled = 2;
+
+    repeated string types = 3;
+  }
+
+  repeated ColumnType column_types = 2;
+}
+
 message WorkspaceTrialSetting {
   int32 instance_count = 1;
 
@@ -228,4 +284,67 @@ message WorkspaceTrialSetting {
   string org_name = 5;
 
   PlanType plan = 6;
+}
+
+message DataClassificationSetting {
+  message DataClassificationConfig {
+    // id is the uuid for classification. Each project can chose one classification config.
+    string id = 1;
+    string title = 2;
+
+    message Level {
+      string id = 1;
+      string title = 2;
+      string description = 3;
+    }
+
+    // levels is user defined level list for classification.
+    // The order for the level decides its priority.
+    repeated Level levels = 3;
+
+    message DataClassification {
+      // id is the classification id in [0-9]+-[0-9]+-[0-9]+ format.
+      string id = 1;
+      string title = 2;
+      string description = 3;
+      optional string level_id = 4;
+    }
+
+    // classification is the id - DataClassification map.
+    // The id should in [0-9]+-[0-9]+-[0-9]+ format.
+    map<string, DataClassification> classification = 4;
+  }
+  repeated DataClassificationConfig configs = 1;
+}
+
+message SemanticTypesSetting {
+  message SemanticType {
+    // id is the uuid for semantic type.
+    string id = 1;
+    // the title of the semantic type, it should not be empty.
+    string title = 2;
+    // the description of the semantic type, it can be empty.
+    string description = 3;
+    // the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm.
+    string partial_mask_algorithm_id = 4;
+    // the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm.
+    string full_mask_algorithm_id = 5;
+  }
+
+  repeated SemanticType types = 1;
+}
+
+message MaskingAlgorithmSetting {
+  message MaskingAlgorithm {
+    // id is the uuid for semantic type.
+    string id = 1;
+    // the title of the masking algorithm, it should not be empty.
+    string title = 2;
+    // the description of the masking algorithm, it can be empty.
+    string description = 3;
+    // If we need to support the custom masking algorithm, we need to define the payload to store
+    // the algorithm likes javascript code, python code, etc.
+  }
+
+  repeated MaskingAlgorithm algorithms = 1;
 }

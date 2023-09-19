@@ -1,28 +1,30 @@
 <template>
   <div
-    v-if="!tabStore.isDisconnected"
-    class="w-full block lg:flex justify-between items-start bg-white"
+    class="w-full flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap lg:justify-between items-start bg-white overflow-hidden"
   >
     <div
-      class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
+      v-if="!tabStore.isDisconnected"
+      class="flex justify-start items-center h-8 px-4 whitespace-nowrap shrink-0"
     >
-      <NPopover v-if="showReadonlyDatasourceWarning" trigger="hover">
+      <NPopover v-if="showReadonlyDatasourceHint" trigger="hover">
         <template #trigger>
-          <heroicons-outline:exclamation
-            class="h-6 w-6 flex-shrink-0 mr-2"
-            :class="[
-              isProductionEnvironment ? 'text-yellow-500' : 'text-yellow-500',
-            ]"
+          <heroicons-outline:information-circle
+            class="h-5 w-5 flex-shrink-0 mr-2 text-info"
           />
         </template>
         <p class="py-1">
-          {{ $t("instance.no-read-only-data-source-warn") }}
-          <span
-            class="underline text-accent cursor-pointer hover:opacity-80"
-            @click="gotoInstanceDetailPage"
-          >
-            {{ $t("sql-editor.create-read-only-data-source") }}
-          </span>
+          <template v-if="allowManageInstance">
+            {{ $t("instance.no-read-only-data-source-warn-for-owner-dba") }}
+            <span
+              class="underline text-accent cursor-pointer hover:opacity-80"
+              @click="gotoInstanceDetailPage"
+            >
+              {{ $t("sql-editor.create-read-only-data-source") }}
+            </span>
+          </template>
+          <template v-else>
+            {{ $t("instance.no-read-only-data-source-warn-for-developer") }}
+          </template>
         </p>
       </NPopover>
 
@@ -31,12 +33,11 @@
           v-if="selectedInstance.uid !== String(UNKNOWN_ID)"
           class="flex items-center"
         >
-          <span class="">{{ selectedInstance.environmentEntity.title }}</span>
           <ProductionEnvironmentV1Icon
-            :environment="selectedInstance.environmentEntity"
-            class="ml-1"
+            :environment="selectedEnvironment"
             :class="[isProductionEnvironment && '~!text-yellow-700']"
           />
+          <span class="ml-1">{{ selectedEnvironment.title }}</span>
         </div>
         <div
           v-if="selectedInstance.uid !== String(UNKNOWN_ID)"
@@ -67,32 +68,48 @@
 
     <div
       v-if="isProductionEnvironment"
-      class="flex justify-start items-center py-1 sm:py-0 sm:h-8 px-4 sm:rounded-bl text-white bg-error"
+      class="w-full lg:w-auto flex justify-start items-center py-1 sm:py-0 sm:h-8 px-4 text-white bg-error"
     >
-      {{ $t("sql-editor.sql-execute-in-production-environment") }}
+      <EllipsisText>
+        {{ $t("sql-editor.sql-execute-in-production-environment") }}
+      </EllipsisText>
+    </div>
+
+    <div
+      v-if="tabStore.isDisconnected && !currentTab.sheetName"
+      class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
+    >
+      <div class="text-sm text-control">
+        {{ $t("sql-editor.connection-holder") }}
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { NPopover } from "naive-ui";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
-
-import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
-import { TabMode, UNKNOWN_ID } from "@/types";
-import { instanceV1Slug } from "@/utils";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import EllipsisText from "@/components/EllipsisText.vue";
 import {
   InstanceV1EngineIcon,
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
+import {
+  useTabStore,
+  useDatabaseV1ByUID,
+  useInstanceV1ByUID,
+  useCurrentUserV1,
+} from "@/store";
+import { TabMode, UNKNOWN_ID } from "@/types";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { hasWorkspacePermissionV1, instanceV1Slug } from "@/utils";
 
 const router = useRouter();
 const tabStore = useTabStore();
-
-const connection = computed(() => tabStore.currentTab.connection);
+const currentTab = computed(() => tabStore.currentTab);
+const connection = computed(() => currentTab.value.connection);
 
 const { instance: selectedInstance } = useInstanceV1ByUID(
   computed(() => connection.value.instanceId)
@@ -102,9 +119,18 @@ const { database: selectedDatabaseV1 } = useDatabaseV1ByUID(
   computed(() => String(connection.value.databaseId))
 );
 
+const selectedEnvironment = computed(() => {
+  return connection.value.databaseId === `${UNKNOWN_ID}`
+    ? selectedInstance.value.environmentEntity
+    : selectedDatabaseV1.value.effectiveEnvironmentEntity;
+});
+
 const isProductionEnvironment = computed(() => {
-  const instance = selectedInstance.value;
-  return instance.environmentEntity.tier === EnvironmentTier.PROTECTED;
+  if (tabStore.isDisconnected) {
+    return false;
+  }
+
+  return selectedEnvironment.value.tier === EnvironmentTier.PROTECTED;
 });
 
 const isAdminMode = computed(() => {
@@ -119,11 +145,19 @@ const hasReadonlyDataSource = computed(() => {
   );
 });
 
-const showReadonlyDatasourceWarning = computed(() => {
+const showReadonlyDatasourceHint = computed(() => {
   return (
     !isAdminMode.value &&
     selectedInstance.value.uid !== String(UNKNOWN_ID) &&
     !hasReadonlyDataSource.value
+  );
+});
+
+const currentUserV1 = useCurrentUserV1();
+const allowManageInstance = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-instance",
+    currentUserV1.value.userRole
   );
 });
 

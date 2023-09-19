@@ -5,8 +5,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,7 +18,6 @@ import (
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -30,22 +31,6 @@ import (
 )
 
 var (
-	// ExcludedDatabaseList is the list of system or internal databases.
-	ExcludedDatabaseList = map[string]bool{
-		// Skip our internal "bytebase" database
-		"bytebase": true,
-		// Skip internal databases from cloud service providers
-		// see https://github.com/bytebase/bytebase/issues/30
-		// aws
-		"rdsadmin": true,
-		// gcp
-		"cloudsql":      true,
-		"cloudsqladmin": true,
-		// system templates.
-		"template0": true,
-		"template1": true,
-	}
-
 	// driverName is the driver name that our driver dependence register, now is "pgx".
 	driverName = "pgx"
 
@@ -181,7 +166,7 @@ func guessDSN(baseConnConfig *pgx.ConnConfig, username string) (string, *pgx.Con
 			defer db.Close()
 			return db.Ping()
 		}(); err != nil {
-			log.Debug("guessDSN attempt failed", zap.Error(err))
+			slog.Debug("guessDSN attempt failed", log.BBError(err))
 			continue
 		}
 		return guessDatabase, &connConfig, nil
@@ -216,8 +201,8 @@ func (driver *Driver) GetDB() *sql.DB {
 }
 
 // getDatabases gets all databases of an instance.
-func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseMetadata, error) {
-	var databases []*storepb.DatabaseMetadata
+func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
+	var databases []*storepb.DatabaseSchemaMetadata
 	rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
 	if err != nil {
 		return nil, err
@@ -225,7 +210,7 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseMeta
 	defer rows.Close()
 
 	for rows.Next() {
-		database := &storepb.DatabaseMetadata{}
+		database := &storepb.DatabaseSchemaMetadata{}
 		if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation); err != nil {
 			return nil, err
 		}
@@ -244,6 +229,25 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	// PostgreSQL supports it since 8.2.
 	// https://www.postgresql.org/docs/current/functions-info.html
 	query := "SHOW server_version_num"
+	var version string
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	versionNum, err := strconv.Atoi(version)
+	if err != nil {
+		return "", err
+	}
+	// https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION
+	const majorMultiplier = 10_000
+	version = fmt.Sprintf("%d.%d", versionNum/majorMultiplier, versionNum%majorMultiplier)
+	return version, nil
+}
+
+func (driver *Driver) getPGStatStatementsVersion(ctx context.Context) (string, error) {
+	query := "select extversion from pg_extension where extname = 'pg_stat_statements'"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
@@ -346,7 +350,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			log.Debug("rowsAffected returns error", zap.Error(err))
+			slog.Debug("rowsAffected returns error", log.BBError(err))
 		} else {
 			totalRowsAffected += rowsAffected
 		}
@@ -435,37 +439,8 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 	return owner, nil
 }
 
-// QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
-	if err != nil {
-		return nil, err
-	}
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
-
-	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
-	// https://github.com/postgres/postgres/blob/master/src/bin/psql/common.c#L969
-	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
-		sqlResult, err := conn.ExecContext(ctx, singleSQLs[0].Text)
-		if err != nil {
-			return nil, err
-		}
-		affectedRows, err := sqlResult.RowsAffected()
-		if err != nil {
-			return nil, err
-		}
-		field := []string{"Affected Rows"}
-		types := []string{"INT"}
-		rows := [][]any{{affectedRows}}
-		return []any{field, types, rows}, nil
-	}
-	return util.Query(ctx, db.Postgres, conn, statement, queryContext)
-}
-
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
 		return nil, err
@@ -502,7 +477,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 	}
 
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.Postgres, conn, stmt, queryContext)
+	result, err := util.Query(ctx, db.Postgres, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

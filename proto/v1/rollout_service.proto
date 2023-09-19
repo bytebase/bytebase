@@ -7,6 +7,7 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/database_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -42,13 +43,61 @@ service RolloutService {
     option (google.api.method_signature) = "name";
   }
 
-  rpc ListRolloutTaskRuns(ListPlansRequest) returns (ListPlansResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/rollouts"};
+  rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/rollouts"
+      body: "plan"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc PreviewRollout(PreviewRolloutRequest) returns (Rollout) {
+    option (google.api.http) = {
+      post: "/v1/{project=projects/*}:previewRollout",
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListTaskRuns(ListTaskRunsRequest) returns (ListTaskRunsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"};
     option (google.api.method_signature) = "parent";
   }
 
   rpc ListPlanCheckRuns(ListPlanCheckRunsRequest) returns (ListPlanCheckRunsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*}/planCheckRuns"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc RunPlanChecks(RunPlanChecksRequest) returns (RunPlanChecksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/plans/*}:runPlanChecks"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun",
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc BatchSkipTasks(BatchSkipTasksRequest) returns (BatchSkipTasksResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip",
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel",
+      body: "*"
+    };
     option (google.api.method_signature) = "parent";
   }
 }
@@ -117,16 +166,15 @@ message Plan {
   // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The resource name of the review associated with this plan.
-  // Format: projects/{project}/reviews/{review}
-  string review = 3;
+  // The resource name of the issue associated with this plan.
+  // Format: projects/{project}/issues/{issue}
+  string issue = 3;
 
   string title = 4;
   string description = 5;
 
   repeated Step steps = 6;
 
-  // FIXME(d/xz): support spec with deployment config
   message Step {
     repeated Spec specs = 1;
   }
@@ -147,31 +195,36 @@ message Plan {
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
     // Format: instances/{instance}
-    string target = 1;
+    string target = 1 [(google.api.field_behavior) = REQUIRED];
     // The name of the database to create.
-    string database = 2;
+    string database = 2 [(google.api.field_behavior) = REQUIRED];
     // table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
     // For example, in MongoDB, it only creates the database when we first store data in that database.
-    string table = 3;
+    string table = 3 [(google.api.field_behavior) = OPTIONAL];
     // character_set is the character set of the database.
-    string character_set = 4;
+    string character_set = 4 [(google.api.field_behavior) = OPTIONAL];
     // collation is the collation of the database.
-    string collation = 5;
+    string collation = 5 [(google.api.field_behavior) = OPTIONAL];
     // cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>".
-    string cluster = 6;
+    string cluster = 6 [(google.api.field_behavior) = OPTIONAL];
     // owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
-    string owner = 7;
+    string owner = 7 [(google.api.field_behavior) = OPTIONAL];
     // backup is the resource name of the backup.
     // Format: instances/{instance}/databases/{database}/backups/{backup-name}
-    string backup = 8;
+    string backup = 8 [(google.api.field_behavior) = OPTIONAL];
+    // The environment resource.
+    // Format: environments/prod where prod is the environment resource ID.
+    string environment = 9 [(google.api.field_behavior) = OPTIONAL];
     // labels of the database.
-    map<string, string> labels = 9;
+    map<string, string> labels = 10 [(google.api.field_behavior) = OPTIONAL];
   }
 
   message ChangeDatabaseConfig {
     // The resource name of the target.
     // Format: instances/{instance-id}/databases/{database-name}.
-    // Format: projects/{project}/deploymentConfig.
+    // Format: projects/{project}/databaseGroups/{databaseGroup}.
+    // Format: projects/{project}/deploymentConfigs/default. The plan should
+    // have a single step and single spec for the deployment configuration type.
     string target = 1;
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
@@ -206,9 +259,9 @@ message Plan {
       // rollback_from_task is the task from which the rollback SQL statement is generated for this task.
       // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
       string rollback_from_task = 1;
-      // rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task.
-      // Format: projects/{project}/reviews/{review}
-      string rollback_from_review = 2;
+      // rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
+      // Format: projects/{project}/issues/{issue}
+      string rollback_from_issue = 2;
     }
     optional RollbackDetail rollback_detail = 6;
   }
@@ -261,6 +314,54 @@ message ListPlanCheckRunsResponse {
   string next_page_token = 2;
 }
 
+message RunPlanChecksRequest {
+  // The plan to run plan checks.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RunPlanChecksResponse {}
+
+message BatchRunTasksRequest {
+  // The name of the parent of the tasks.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+  string parent = 1;
+  // The tasks to run.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  repeated string tasks = 2;
+
+  string reason = 3;
+}
+
+message BatchRunTasksResponse {}
+
+message BatchSkipTasksRequest {
+  // The name of the parent of the tasks.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+  string parent = 1;
+  // The tasks to skip.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  repeated string tasks = 2;
+
+  string reason = 3;
+}
+
+message BatchSkipTasksResponse {}
+
+message BatchCancelTaskRunsRequest {
+  // The name of the parent of the taskRuns.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  // Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
+  string parent = 1;
+  // The taskRuns to cancel.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  repeated string task_runs = 2;
+
+  string reason = 3;
+}
+
+message BatchCancelTaskRunsResponse {}
+
 message PlanCheckRun {
   // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
   string name = 1;
@@ -271,15 +372,13 @@ message PlanCheckRun {
   enum Type {
     TYPE_UNSPECIFIED = 0;
     DATABASE_STATEMENT_FAKE_ADVISE = 1;
-    DATABASE_STATEMENT_SYNTAX = 2;
-    DATABASE_STATEMENT_COMPATIBILITY = 3;
-    DATABASE_STATEMENT_ADVISE = 4;
-    DATABASE_STATEMENT_TYPE = 5;
-    DATABASE_STATEMENT_TYPE_REPORT = 6;
-    DATABASE_STATEMENT_AFFECTED_ROWS_REPORT = 7;
-    DATABASE_CONNECT = 8;
-    DATABASE_GHOST_SYNC = 9;
-    DATABASE_PITR_MYSQL = 10;
+    DATABASE_STATEMENT_COMPATIBILITY = 2;
+    DATABASE_STATEMENT_ADVISE = 3;
+    DATABASE_STATEMENT_TYPE = 4;
+    DATABASE_STATEMENT_SUMMARY_REPORT = 5;
+    DATABASE_CONNECT = 6;
+    DATABASE_GHOST_SYNC = 7;
+    DATABASE_PITR_MYSQL = 8;
   }
   Type type = 3;
 
@@ -294,31 +393,43 @@ message PlanCheckRun {
 
   // Format: instances/{instance}/databases/{database}
   string target = 5;
-  // Format: projects/{project}/sheets/{sheet}
-  string sheet = 6;
 
-  string detail = 7;
-  repeated Result results = 8;
+  repeated Result results = 7;
+  // error is set if the Status is FAILED.
+  string error = 8;
+
+  google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message Result {
-    enum Namespace {
-      NAMESPACE_UNSPECIFIED = 0;
-      BYTEBASE = 1;
-      ADVISOR = 2;
-    }
-    Namespace namespace = 1;
-    int64 code = 2;
     enum Status {
       STATUS_UNSPECIFIED = 0;
       ERROR = 1;
       WARNING = 2;
       SUCCESS = 3;
     }
-    Status status = 3;
-    string title = 4;
-    string content = 5;
-    int64 line = 6;
-    string detail = 7;
+    Status status = 1;
+    string title = 2;
+    string content = 3;
+    int64 code = 4;
+
+    oneof report {
+      SqlSummaryReport sql_summary_report = 5;
+      SqlReviewReport sql_review_report = 6;
+    }
+    message SqlSummaryReport {
+      int64 code = 1;
+      // statement_types are the types of statements that are found in the sql.
+      repeated string statement_types = 2;
+      int64 affected_rows = 3;
+      ChangedResources changed_resources = 4;
+    }
+    message SqlReviewReport {
+      int64 line = 1;
+      int64 column = 2;
+      string detail = 3;
+      // Code from sql review.
+      int64 code = 4;
+    }
   }
 }
 
@@ -326,6 +437,53 @@ message GetRolloutRequest {
   // The name of the rollout to retrieve.
   // Format: projects/{project}/rollouts/{rollout}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message CreateRolloutRequest {
+  // The parent project where this rollout will be created.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The plan used to create rollout.
+  string plan = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message PreviewRolloutRequest {
+  // The name of the project.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The plan used to preview rollout.
+  Plan plan = 2;
+}
+
+message ListTaskRunsRequest {
+  // The parent, which owns this collection of plans.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  // Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of taskRuns to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 taskRuns will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListRolloutTaskRuns` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListRolloutTaskRuns` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListTaskRunsResponse {
+  // The taskRuns from the specified request.
+  repeated TaskRun task_runs = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
 }
 
 message Rollout {
@@ -367,11 +525,11 @@ message Task {
 
   // A UUID4 string that uniquely identifies the Spec.
   // Could be empty if the rollout of the task does not have an associating plan.
-  string spec_id = 12;
+  string spec_id = 4;
 
   enum Status {
     STATUS_UNSPECIFIED = 0;
-    PENDING_APPROVAL = 1;
+    NOT_STARTED = 1;
     PENDING = 2;
     RUNNING = 3;
     DONE = 4;
@@ -380,8 +538,8 @@ message Task {
     SKIPPED = 7;
   }
   // Status is the status of the task.
-  // TODO(p0ny): migrate old task status and use this field as a summary of the task runs.
-  Status status = 13;
+  Status status = 5;
+  string skipped_reason = 15;
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
@@ -407,14 +565,23 @@ message Task {
     // use payload nil
     DATABASE_RESTORE_CUTOVER = 11;
   }
-  Type type = 4;
+  Type type = 6;
 
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-  repeated string blocked_by_tasks = 5;
+  repeated string blocked_by_tasks = 7;
 
   // Format: instances/{instance} if the task is DatabaseCreate.
   // Format: instances/{instance}/databases/{database}
-  string target = 6;
+  string target = 8;
+
+  oneof payload {
+    DatabaseCreate database_create = 9;
+    DatabaseSchemaBaseline database_schema_baseline = 10;
+    DatabaseSchemaUpdate database_schema_update = 11;
+    DatabaseDataUpdate database_data_update = 12;
+    DatabaseBackup database_backup = 13;
+    DatabaseRestoreRestore database_restore_restore = 14;
+  }
 
   message DatabaseCreate {
     // The project owning the database.
@@ -428,7 +595,8 @@ message Task {
     string sheet = 4;
     string character_set = 5;
     string collation = 6;
-    map<string, string> labels = 7;
+    string environment = 7;
+    map<string, string> labels = 8;
   }
 
   message DatabaseSchemaBaseline {
@@ -461,10 +629,10 @@ message Task {
     // the sheet that stores the generated rollback SQL statement.
     // Format: projects/{project}/sheets/{sheet}
     string rollback_sheet = 6;
-    // rollback_from_review is the resource name of the review that
+    // rollback_from_issue is the resource name of the issue that
     // the rollback SQL statement is generated from.
-    // Format: projects/{project}/reviews/{review}
-    string rollback_from_review = 7;
+    // Format: projects/{project}/issues/{issue}
+    string rollback_from_issue = 7;
     // rollback_from_task is the resource name of the task that
     // the rollback SQL statement is generated from.
     // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
@@ -493,29 +661,20 @@ message Task {
       google.protobuf.Timestamp point_in_time = 3;
     }
   }
-
-  oneof payload {
-    DatabaseCreate database_create = 7;
-    DatabaseSchemaBaseline database_schema_baseline = 8;
-    DatabaseSchemaUpdate database_schema_update = 9;
-    DatabaseDataUpdate database_data_update = 10;
-    DatabaseBackup database_backup = 14;
-    DatabaseRestoreRestore database_restore_restore = 11;
-  }
 }
 
 message TaskRun {
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun}
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string name = 1;
   // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Format: user:hello@world.com
+  // Format: user/hello@world.com
   string creator = 3;
-  // Format: user:hello@world.com
+  // Format: user/hello@world.com
   string updater = 4;
-  google.protobuf.Timestamp create_time = 5;
-  google.protobuf.Timestamp update_time = 6;
+  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 7;
 
@@ -526,7 +685,6 @@ message TaskRun {
     DONE = 3;
     FAILED = 4;
     CANCELED = 5;
-    SKIPPED = 6;
   }
   Status status = 8;
 

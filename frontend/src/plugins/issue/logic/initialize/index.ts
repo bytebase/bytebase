@@ -1,21 +1,21 @@
 import { computed, ref, Ref, watch } from "vue";
 import { type LocationQuery, useRoute, useRouter } from "vue-router";
-import { EMPTY_ID, Issue, IssueCreate, IssueType } from "@/types";
-import { SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
+import { defaultTemplate, templateForType } from "@/plugins";
 import {
   pushNotification,
   useDatabaseV1Store,
   useIssueStore,
   useProjectV1Store,
 } from "@/store";
+import { EMPTY_ID, Issue, IssueCreate, IssueType } from "@/types";
+import { SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
 import { idFromSlug } from "@/utils";
-import { defaultTemplate, templateForType } from "@/plugins";
 import { BuildNewIssueContext } from "../common";
-import { maybeBuildTenantDeployIssue } from "./tenant";
-import { maybeBuildGhostIssue } from "./ghost";
-import { buildNewStandardIssue } from "./standard";
 import { tryGetDefaultAssignee } from "./assignee";
+import { maybeBuildGhostIssue } from "./ghost";
 import { maybeBuildGrantRequestIssue } from "./grantRequest";
+import { buildNewStandardIssue } from "./standard";
+import { maybeBuildTenantDeployIssue } from "./tenant";
 
 export function useInitializeIssue(issueSlug: Ref<string>) {
   const issueStore = useIssueStore();

@@ -22,9 +22,8 @@
 </template>
 
 <script lang="ts" setup>
-import { watch } from "vue";
 import { NButton, NInputGroup } from "naive-ui";
-
+import { watch } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { FactorSelect, OperatorSelect, ValueInput } from "./components";
 import { useExprEditorContext } from "./context";

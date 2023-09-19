@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 )
 
 // PolicyType is the type or name of a policy.
@@ -31,6 +30,8 @@ const (
 	// DefaultPolicyID is the ID of the default policy.
 	DefaultPolicyID int = 0
 
+	// PolicyTypeWorkspaceIAM is the workspace IAM policy type.
+	PolicyTypeWorkspaceIAM PolicyType = "bb.policy.workspace-iam"
 	// PolicyTypePipelineApproval is the approval policy type.
 	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
 	// PolicyTypeBackupPlan is the backup plan policy type.
@@ -39,12 +40,16 @@ const (
 	PolicyTypeSQLReview PolicyType = "bb.policy.sql-review"
 	// PolicyTypeEnvironmentTier is the tier of an environment.
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
-	// PolicyTypeSensitiveData is the sensitive data policy type.
-	PolicyTypeSensitiveData PolicyType = "bb.policy.sensitive-data"
-	// PolicyTypeAccessControl is the access control policy type.
-	PolicyTypeAccessControl PolicyType = "bb.policy.access-control"
+	// PolicyTypeMasking is the masking policy type.
+	PolicyTypeMasking PolicyType = "bb.policy.masking"
+	// PolicyTypeMaskingException is the masking exception policy type.
+	PolicyTypeMaskingException PolicyType = "bb.policy.masking-exception"
 	// PolicyTypeSlowQuery is the slow query policy type.
 	PolicyTypeSlowQuery PolicyType = "bb.policy.slow-query"
+	// PolicyTypeDisableCopyData is the disable copy data policy type.
+	PolicyTypeDisableCopyData PolicyType = "bb.policy.disable-copy-data"
+	// PolicyTypeMaskingRule is the masking rule policy type.
+	PolicyTypeMaskingRule PolicyType = "bb.policy.masking-rule"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -85,13 +90,16 @@ const (
 var (
 	// AllowedResourceTypes includes allowed resource types for each policy type.
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
+		PolicyTypeWorkspaceIAM:     {PolicyResourceTypeWorkspace},
 		PolicyTypePipelineApproval: {PolicyResourceTypeEnvironment},
 		PolicyTypeBackupPlan:       {PolicyResourceTypeEnvironment},
 		PolicyTypeSQLReview:        {PolicyResourceTypeEnvironment},
 		PolicyTypeEnvironmentTier:  {PolicyResourceTypeEnvironment},
-		PolicyTypeSensitiveData:    {PolicyResourceTypeDatabase},
-		PolicyTypeAccessControl:    {PolicyResourceTypeEnvironment, PolicyResourceTypeDatabase},
+		PolicyTypeMasking:          {PolicyResourceTypeDatabase},
 		PolicyTypeSlowQuery:        {PolicyResourceTypeInstance},
+		PolicyTypeDisableCopyData:  {PolicyResourceTypeEnvironment},
+		PolicyTypeMaskingRule:      {PolicyResourceTypeWorkspace},
+		PolicyTypeMaskingException: {PolicyResourceTypeProject},
 	}
 )
 
@@ -181,12 +189,6 @@ func (p *EnvironmentTierPolicy) String() (string, error) {
 	return string(s), nil
 }
 
-// SensitiveDataPolicy is the policy configuration for sensitive data.
-// It is only applicable to database resource type.
-type SensitiveDataPolicy struct {
-	SensitiveDataList []SensitiveData `json:"sensitiveDataList"`
-}
-
 // SensitiveData is the value for sensitive data.
 type SensitiveData struct {
 	Schema string                `json:"schema"`
@@ -204,55 +206,6 @@ const (
 	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
 )
 
-// UnmarshalSensitiveDataPolicy will unmarshal payload to sensitive data policy.
-func UnmarshalSensitiveDataPolicy(payload string) (*SensitiveDataPolicy, error) {
-	var p SensitiveDataPolicy
-	if err := json.Unmarshal([]byte(payload), &p); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal sensitive data policy %q", payload)
-	}
-	return &p, nil
-}
-
-func (p *SensitiveDataPolicy) String() (string, error) {
-	s, err := json.Marshal(p)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
-
-// AccessControlPolicy is the policy configuration for data access control.
-// It is only applicable to database and environment resource type.
-// For environment resource type, DisallowRuleList defines the access control rule.
-// For database resource type, the AccessControlPolicy struct itself means allow to access.
-type AccessControlPolicy struct {
-	// Environment resource type specific fields.
-	DisallowRuleList []AccessControlRule `json:"disallowRuleList"`
-}
-
-// AccessControlRule is the disallow rule for access control policy.
-type AccessControlRule struct {
-	// FullDatabase will apply to the full database.
-	FullDatabase bool `json:"fullDatabase"`
-}
-
-// UnmarshalAccessControlPolicy will unmarshal payload to access control policy.
-func UnmarshalAccessControlPolicy(payload string) (*AccessControlPolicy, error) {
-	var p AccessControlPolicy
-	if err := json.Unmarshal([]byte(payload), &p); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal access control policy %q", payload)
-	}
-	return &p, nil
-}
-
-func (p *AccessControlPolicy) String() (string, error) {
-	s, err := json.Marshal(p)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
-
 // SlowQueryPolicy is the policy configuration for slow query.
 type SlowQueryPolicy struct {
 	Active bool `json:"active"`
@@ -269,6 +222,29 @@ func UnmarshalSlowQueryPolicy(payload string) (*SlowQueryPolicy, error) {
 
 // String will return the string representation of the policy.
 func (p *SlowQueryPolicy) String() (string, error) {
+	s, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
+// DisableCopyDataPolicy is the policy configuration for disabling copying data.
+type DisableCopyDataPolicy struct {
+	Active bool `json:"active"`
+}
+
+// UnmarshalDisableCopyDataPolicyPolicy will unmarshal payload to disable copy data policy.
+func UnmarshalDisableCopyDataPolicyPolicy(payload string) (*DisableCopyDataPolicy, error) {
+	var p DisableCopyDataPolicy
+	if err := json.Unmarshal([]byte(payload), &p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal disable copy data policy %q", payload)
+	}
+	return &p, nil
+}
+
+// String will return the string representation of the policy.
+func (p *DisableCopyDataPolicy) String() (string, error) {
 	s, err := json.Marshal(p)
 	if err != nil {
 		return "", err
@@ -303,112 +279,4 @@ func GetPolicyResourceType(resourceType string) (PolicyResourceType, error) {
 		return PolicyResourceTypeUnknown, errors.Errorf("invalid policy resource type %q", rt)
 	}
 	return rt, nil
-}
-
-// FlattenSQLReviewRulesWithEngine will map SQL review rules with engine.
-func FlattenSQLReviewRulesWithEngine(policy *advisor.SQLReviewPolicy) *advisor.SQLReviewPolicy {
-	var ruleList []*advisor.SQLReviewRule
-	for i, rule := range policy.RuleList {
-		if rule.Engine != "" {
-			ruleList = append(ruleList, policy.RuleList[i])
-		} else {
-			if advisor.RuleExists(rule.Type, db.MySQL) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.MySQL,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-			if advisor.RuleExists(rule.Type, db.TiDB) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.TiDB,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-			if advisor.RuleExists(rule.Type, db.MariaDB) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.MariaDB,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-			if advisor.RuleExists(rule.Type, db.Postgres) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.Postgres,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-			if advisor.RuleExists(rule.Type, db.Oracle) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.Oracle,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-			if advisor.RuleExists(rule.Type, db.OceanBase) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.OceanBase,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-			if advisor.RuleExists(rule.Type, db.Snowflake) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.Snowflake,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-		}
-	}
-
-	policy.RuleList = ruleList
-	return policy
-}
-
-// MergeSQLReviewRulesWithoutEngine will merge SQL review rules without engine.
-func MergeSQLReviewRulesWithoutEngine(payload string) string {
-	policy, err := UnmarshalSQLReviewPolicy(payload)
-	if err != nil {
-		return payload
-	}
-
-	ruleMap := make(map[advisor.SQLReviewRuleType]bool)
-	var ruleList []*advisor.SQLReviewRule
-	for _, rule := range policy.RuleList {
-		if _, exists := ruleMap[rule.Type]; exists {
-			continue
-		}
-		ruleMap[rule.Type] = true
-
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    rule.Type,
-			Level:   rule.Level,
-			Comment: rule.Comment,
-			Payload: rule.Payload,
-		})
-	}
-
-	policy.RuleList = ruleList
-	result, err := json.Marshal(policy)
-	if err != nil {
-		return payload
-	}
-	return string(result)
 }

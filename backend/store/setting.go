@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // FindSettingMessage is the message for finding setting.
@@ -34,7 +35,25 @@ type SettingMessage struct {
 	Name        api.SettingName
 	Value       string
 	Description string
+	CreatedTs   int64
 }
+
+var (
+	// Currently, we do not persist the algorithm setting, in order to use it conveniently, we hard code it here.
+	// TODO(zp): remove the following hard code when we persist the algorithm setting.
+	mockAlgorithmSetting = &v1pb.MaskingAlgorithmSetting{
+		Algorithms: []*v1pb.MaskingAlgorithmSetting_MaskingAlgorithm{
+			{
+				Id:    "substitution",
+				Title: "Substitution algorithm",
+			},
+			{
+				Id:    "hash-md5",
+				Title: "MD5 encryption",
+			},
+		},
+	}
+)
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
 func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
@@ -132,6 +151,46 @@ func (s *Store) GetWorkspaceExternalApprovalSetting(ctx context.Context) (*store
 	return payload, nil
 }
 
+// GetSchemaTemplateSetting gets the schema template setting.
+func (s *Store) GetSchemaTemplateSetting(ctx context.Context) (*storepb.SchemaTemplateSetting, error) {
+	settingName := api.SettingSchemaTemplate
+	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
+		Name: &settingName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+	}
+	if setting == nil {
+		return &storepb.SchemaTemplateSetting{}, nil
+	}
+
+	payload := new(storepb.SchemaTemplateSetting)
+	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
+		return nil, err
+	}
+	return payload, nil
+}
+
+// GetDataClassificationSetting gets the data classification setting.
+func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.DataClassificationSetting, error) {
+	settingName := api.SettingDataClassification
+	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
+		Name: &settingName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+	}
+	if setting == nil {
+		return &storepb.DataClassificationSetting{}, nil
+	}
+
+	payload := new(storepb.DataClassificationSetting)
+	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
+		return nil, err
+	}
+	return payload, nil
+}
+
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
 	s.settingCache = sync.Map{}
@@ -144,6 +203,21 @@ func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*Se
 			return setting.(*SettingMessage), nil
 		}
 	}
+
+	// TODO(zp): remove the following hard code when we persist the algorithm setting.
+	if find.Name != nil && *find.Name == api.SettingMaskingAlgorithms {
+		value, err := protojson.Marshal(mockAlgorithmSetting)
+		if err != nil {
+			return nil, err
+		}
+		setting := &SettingMessage{
+			Name:        api.SettingMaskingAlgorithms,
+			Value:       string(value),
+			Description: "",
+		}
+		return setting, nil
+	}
+
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
@@ -181,6 +255,19 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
+
+	// TODO(zp): remove the following hard code when we persist the algorithm setting.
+	value, err := protojson.Marshal(mockAlgorithmSetting)
+	if err != nil {
+		return nil, err
+	}
+	setting := &SettingMessage{
+		Name:        api.SettingMaskingAlgorithms,
+		Value:       string(value),
+		Description: "",
+	}
+	settings = append(settings, setting)
+
 	for _, setting := range settings {
 		s.settingCache.Store(setting.Name, setting)
 	}
@@ -189,6 +276,10 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
+	if update.Name == api.SettingMaskingAlgorithms {
+		return nil, errors.New("cannot update masking algorithm setting")
+	}
+
 	fields := []string{"creator_id", "updater_id", "name", "value"}
 	updateFields := []string{"value = EXCLUDED.value", "updater_id = EXCLUDED.updater_id"}
 	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []any{principalUID, principalUID, update.Name, update.Value}
@@ -202,7 +293,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 	query := `INSERT INTO setting (` + strings.Join(fields, ", ") + `) 
 		VALUES (` + strings.Join(valuePlaceholders, ", ") + `) 
 		ON CONFLICT (name) DO UPDATE SET ` + strings.Join(updateFields, ", ") + `
-		RETURNING name, value, description`
+		RETURNING name, value, description, created_ts`
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -215,6 +306,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 		&setting.Name,
 		&setting.Value,
 		&setting.Description,
+		&setting.CreatedTs,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", update.Name)}
@@ -231,6 +323,11 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 
 // CreateSettingIfNotExistV2 creates a new setting only if the named setting doesn't exist.
 func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMessage, principalUID int) (*SettingMessage, bool, error) {
+	// TODO(zp): remove the following hard code when we persist the algorithm setting.
+	if create.Name == api.SettingMaskingAlgorithms {
+		return nil, false, errors.New("cannot create masking algorithm setting")
+	}
+
 	if setting, ok := s.settingCache.Load(create.Name); ok {
 		return setting.(*SettingMessage), false, nil
 	}
@@ -257,12 +354,13 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 
 	query := `INSERT INTO setting (` + strings.Join(fields, ",") + `)
 		VALUES (` + strings.Join(valuesPlaceholders, ",") + `)
-		RETURNING name, value, description`
+		RETURNING name, value, description, created_ts`
 	var setting SettingMessage
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&setting.Name,
 		&setting.Value,
 		&setting.Description,
+		&setting.CreatedTs,
 	); err != nil {
 		return nil, false, err
 	}
@@ -276,6 +374,11 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 
 // DeleteSettingV2 deletes a setting by the name.
 func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error {
+	// TODO(zp): remove the following hard code when we persist the algorithm setting.
+	if name == api.SettingMaskingAlgorithms {
+		return errors.New("cannot delete masking algorithm setting")
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
@@ -303,7 +406,8 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 		SELECT
 			name,
 			value,
-			description
+			description,
+			created_ts
 		FROM setting
 		WHERE `+strings.Join(where, " AND "), args...)
 	if err != nil {
@@ -318,6 +422,7 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 			&settingMessage.Name,
 			&settingMessage.Value,
 			&settingMessage.Description,
+			&settingMessage.CreatedTs,
 		); err != nil {
 			return nil, err
 		}
@@ -328,44 +433,4 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 	}
 
 	return settingMessages, nil
-}
-
-// BackfillWorkspaceApprovalSetting backfills the condition field in the approval setting.
-func (s *Store) BackfillWorkspaceApprovalSetting(ctx context.Context) error {
-	setting, err := s.GetWorkspaceApprovalSetting(ctx)
-	if err != nil {
-		if strings.Contains(err.Error(), "cannot find settin") {
-			return nil
-		}
-		return err
-	}
-	hasChange := false
-	for _, rule := range setting.Rules {
-		if rule.Condition != nil && rule.Condition.Expression != "" {
-			continue
-		}
-		condition, err := common.ConvertParsedApproval(rule.Expression)
-		if err != nil {
-			return err
-		}
-		rule.Condition = condition
-		hasChange = true
-	}
-	if !hasChange {
-		return nil
-	}
-
-	bytes, err := protojson.Marshal(setting)
-	if err != nil {
-		return errors.Errorf("failed to marshal setting, error: %v", err)
-	}
-	storeSettingValue := string(bytes)
-	if _, err := s.UpsertSettingV2(ctx, &SetSettingMessage{
-		Name:  api.SettingWorkspaceApproval,
-		Value: storeSettingValue,
-	}, api.SystemBotID); err != nil {
-		return err
-	}
-
-	return nil
 }

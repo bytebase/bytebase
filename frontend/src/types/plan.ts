@@ -1,9 +1,9 @@
 import { useI18n } from "vue-i18n";
-import planData from "./plan.yaml";
 import {
   PlanType,
   planTypeFromJSON,
 } from "@/types/proto/v1/subscription_service";
+import planData from "./plan.yaml";
 
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
@@ -12,10 +12,13 @@ export type FeatureType =
   // Admin & Security
   | "bb.feature.sso"
   | "bb.feature.2fa"
+  | "bb.feature.secure-token"
   | "bb.feature.rbac"
   | "bb.feature.disallow-signup"
   | "bb.feature.watermark"
   | "bb.feature.audit-log"
+  | "bb.feature.issue-advanced-search"
+  | "bb.feature.announcement"
   // Branding
   | "bb.feature.branding"
   // Change Workflow
@@ -30,6 +33,7 @@ export type FeatureType =
   | "bb.feature.task-schedule-time"
   | "bb.feature.encrypted-secrets"
   | "bb.feature.database-grouping"
+  | "bb.feature.schema-template"
   // VCS Integration
   | "bb.feature.vcs-schema-write-back"
   | "bb.feature.vcs-sheet-sync"
@@ -37,6 +41,7 @@ export type FeatureType =
   // Database management
   | "bb.feature.pitr"
   | "bb.feature.read-replica-connection"
+  | "bb.feature.custom-instance-scan-interval"
   | "bb.feature.instance-ssh-connection"
   | "bb.feature.sync-schema-all-versions"
   | "bb.feature.index-advisor"
@@ -57,13 +62,13 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.im.approval",
   "bb.feature.schema-drift",
   "bb.feature.encrypted-secrets",
-  "bb.feature.sql-review",
   "bb.feature.task-schedule-time",
   "bb.feature.online-migration",
   // Database Management
   "bb.feature.pitr",
   "bb.feature.read-replica-connection",
   "bb.feature.instance-ssh-connection",
+  "bb.feature.custom-instance-scan-interval",
   "bb.feature.sync-schema-all-versions",
   "bb.feature.index-advisor",
   "bb.feature.database-grouping",
@@ -119,6 +124,19 @@ export const PLANS: Plan[] = planData.planList.map((raw: Plan) => ({
   ...raw,
   type: planTypeFromJSON(raw.type + 1),
 }));
+
+// TODO: it's better to get the count limit from the backend.
+export const userCountLimit = new Map<PlanType, number>([
+  [PlanType.FREE, 20],
+  [PlanType.TEAM, Number.MAX_VALUE],
+  [PlanType.ENTERPRISE, Number.MAX_VALUE],
+]);
+
+export const instanceCountLimit = new Map<PlanType, number>([
+  [PlanType.FREE, 10],
+  [PlanType.TEAM, 20],
+  [PlanType.ENTERPRISE, Number.MAX_VALUE],
+]);
 
 export const getFeatureLocalization = (feature: PlanFeature): PlanFeature => {
   const { t } = useI18n();

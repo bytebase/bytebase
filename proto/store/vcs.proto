@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/common.proto";
+
 option go_package = "generated-go/store";
 
 message PushEvent {
@@ -39,11 +41,4 @@ message FileCommit {
   string author_name = 6;
   string author_email = 7;
   string added = 8;
-}
-
-enum VcsType {
-  VCS_TYPE_UNSPECIFIED = 0;
-  GITLAB = 1;
-  GITHUB = 2;
-  BITBUCKET = 3;
 }

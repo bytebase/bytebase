@@ -54,9 +54,9 @@ import {
   watchEffect,
   defineComponent,
 } from "vue";
-import PrincipalAvatar from "../PrincipalAvatar.vue";
-import { Issue, IssueSubscriber } from "../../types";
 import { useCurrentUser, useIssueSubscriberStore } from "@/store";
+import { Issue, IssueSubscriber } from "../../types";
+import PrincipalAvatar from "../PrincipalAvatar.vue";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}

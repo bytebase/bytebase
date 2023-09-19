@@ -1,7 +1,7 @@
-import { App } from "vue";
-import { createI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
 import _ from "lodash-es";
+import { App } from "vue";
+import { createI18n } from "vue-i18n";
 
 const localPathPrefix = "../locales/";
 const validLocaleList = ["en-US", "zh-CN", "es-ES"];

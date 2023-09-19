@@ -1,6 +1,5 @@
 {
   "common": {
-    "when": "Cuando",
     "view": "Ver",
     "you": "tu",
     "general": "General",
@@ -77,6 +76,7 @@
     "updated": "Actualizado",
     "visit": "Visitar",
     "role": {
+      "self": "Rol",
       "dba": "DBA",
       "owner": "Propietario",
       "developer": "Desarrollador",
@@ -91,6 +91,7 @@
     "id": "ID",
     "name": "Nombre",
     "creator": "Creador",
+    "updater": "Actualizador",
     "version": "Versión",
     "issue": "Incidencia",
     "issues": "Incidencias",
@@ -195,9 +196,6 @@
     },
     "no-data": "Sin datos",
     "visibility": "Visibilidad",
-    "star": "Marcar Favorito",
-    "unstar": "Quitar Favorito",
-    "starred": "Favorito",
     "duplicate": "Duplicar",
     "clear-search": "Borrar búsqueda",
     "enable": "Habilitar",
@@ -241,7 +239,7 @@
     "active": "Activo",
     "added": "Agregado",
     "revoke": "Revocar",
-    "cannot-undo-this-action": "No se puede deshacer esta acción.",
+    "cannot-undo-this-action": "No se puede deshacer esta acción",
     "expand": "Expandir",
     "collapse": "Colapsar",
     "select": "Seleccionar",
@@ -253,9 +251,18 @@
       "years": "{years} años"
     },
     "expiration": "Expiración",
-    "configure": "Configure",
+    "configure": "Configurar",
     "database-groups": "Grupo de bases de datos",
-    "members": "Miembros"
+    "members": "Miembros",
+    "warehouse": "Almacén",
+    "schedule": "Horario",
+    "state": "Estado",
+    "condition": "Condición",
+    "search-user": "Buscar usuario",
+    "branches": "Ramas",
+    "merge": "Combinar",
+    "info": "Información",
+    "minutes": "Minutos"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -271,18 +278,19 @@
       "back": "volver"
     },
     "options": {
-      "placeholder": "Escriba un comando o búsqueda..."
+      "placeholder": "Escriba un comando o búsqueda…"
     },
     "preferences": {
       "common": "Preferencias",
-      "change-language": "Cambiar idioma..."
+      "change-language": "Cambiar idioma…"
     }
   },
   "task": {
     "checking": "Comprobando...",
     "run-task": "Ejecutar comprobaciones",
     "check-result": {
-      "title": "Resultado de la comprobación para {name}"
+      "title": "Resultado de la comprobación para {name}",
+      "title-general": "Comprobar resultado"
     },
     "check-type": {
       "fake": "Falso",
@@ -296,9 +304,11 @@
       "lgtm": "LGTM",
       "pitr": "PITR",
       "affected-rows": "Filas afectadas",
-      "sql-type": "Tipo de SQL"
+      "sql-type": "Tipo de SQL",
+      "summary-report": "Informe resumido"
     },
-    "earliest-allowed-time-hint": "'@:{'common.when'}' especifica el tiempo de ejecución esperado para esta tarea. Si este campo no está especificado, la tarea se ejecutará una vez que haya pasado todos los demás criterios de filtrado.",
+    "rollout-time": "Tiempo de lanzamiento",
+    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' especifica el tiempo de ejecución esperado para esta tarea. Si este campo no está especificado, la tarea se ejecutará una vez que haya pasado todos los demás criterios de filtrado.",
     "earliest-allowed-time-unset": "No establecido",
     "comment": "Comentario",
     "invoker": "Convocador",
@@ -340,8 +350,8 @@
       "preview-rollback-issue": "Vista previa de incidencia para reversión",
       "generating": "Generando",
       "empty-rollback-statement": "La declaración de reversión está vacía",
-      "cancel-generating": "Cancelar la generación de la reversión SQL",
-      "sql-rollback-tips": "Cuando se habilita, Bytebase mantendrá los registros de reversión para el cambio de datos\ny le permitirá crear una nueva incidencia para revertir este cambio. {link}"
+      "cancel-generating": "Cancelar la generación del SQL de reversión",
+      "sql-rollback-tips": "Cuando está habilitado, Bytebase mantendrá los registros de reversión para el cambio de datos\ny te permitirá crear una nueva incidencia para revertir este cambio.\nAdvertencia: Si la tabla no tiene una clave primaria. El SQL de reversión puede afectar\nfilas duplicadas. Por favor, confirma cuidadosamente antes de ejecutarlo.\n{enlace}"
     },
     "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual",
     "apply-change-to-all-pending-tasks": {
@@ -351,12 +361,20 @@
     },
     "execution-time": "Tiempo de ejecución",
     "run-checks": "Ejecutar comprobaciones",
-    "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual"
+    "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual",
+    "database-create": {
+      "pending": "(pendiente de crear)",
+      "created": "(creado)"
+    },
+    "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual",
+    "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
+    "cancel-task": "Cancelar tarea | Cancelar tareas"
   },
   "banner": {
     "update-license": "Actualizar licencia",
     "license-expires": "Su licencia para {plan} ha caducado el {expireAt}.",
     "trial-expires": "Su prueba gratuita para {plan} caducará en {days} días el {expireAt}.",
+    "trial-expired": "Su prueba gratuita de {plan} ha caducado.",
     "extend-trial": "Extender el tiempo de prueba",
     "deploy": "Auto Hospedaje",
     "cloud": "Registrarse para Cloud",
@@ -382,6 +400,10 @@
     },
     "attention": {
       "default": "Atención requerida"
+    },
+    "confirm-button": {
+      "sure-to-delete": "¿Estás seguro de que deseas eliminar?",
+      "cannot-undo": "Esta acción no se puede deshacer."
     }
   },
   "settings": {
@@ -399,7 +421,7 @@
       "subscription": "Suscripción",
       "labels": "Etiquetas",
       "debug-log": "Registro de Depuración",
-      "sensitive-data": "Anonimización de Datos",
+      "sensitive-data": "Enmascaramiento de Datos",
       "access-control": "Control de Acceso a Datos",
       "audit-log": "Registro de auditoría",
       "custom-roles": "Roles personalizados",
@@ -447,7 +469,7 @@
         "not-allow-edit": "Solo el propietario puede cambiar el rol",
         "not-allow-remove": "No se puede eliminar el último propietario",
         "project-role-provider-gitlab": "Mapeado desde el rol {rawRole} en el proyecto correspondiente de GitLab.",
-        "cannot-change-role-of-systembot": "No se puede cambiar el rol del bot del sistema"
+        "cannot-change-role-of-systembot-or-service-account": "No se puede cambiar el rol de la cuenta bot del sistema o de la cuenta de servicio"
       },
       "system-bot": "Bot del Sistema",
       "service-account": "Cuenta de Servicio",
@@ -456,7 +478,11 @@
       "reset-service-key-alert": "Esta acción no se puede deshacer. La clave antigua dejará de funcionar de inmediato. ¿Está seguro de que desea restablecer esta clave de servicio?",
       "service-key-copied": "Clave de Servicio copiada al portapapeles, por favor manténgala en secreto.",
       "create-as-service-account": "Crear como cuenta de servicio",
-      "show-inactive": "Mostrar miembros inactivos"
+      "show-inactive": "Mostrar miembros inactivos",
+      "remove-self-owner": {
+        "title": "¿Estás seguro de revocarte PROPIETARIO?",
+        "description": "Asegúrese de que los PROPIETARIOS restantes puedan iniciar sesión; de lo contrario, nadie podrá administrar los usuarios."
+      }
     },
     "im-integration": {
       "enable": "Habilitar",
@@ -482,21 +508,33 @@
         "resource-id": "ID de recurso",
         "resource-id-description": "Una cadena única y los caracteres válidos son /[a-z][0-9]-/",
         "domain": "Dominio",
-        "domain-description": "El nombre de dominio del proveedor de identidad.",
+        "domain-description": "El nombre de dominio del proveedor de identidad",
         "identity-provider-information": "Información del proveedor de identidad",
         "identity-provider-information-description": "La información es proporcionada por su proveedor de identidad.",
         "identity-provider-needed-information": "Cree su aplicación SSO con la siguiente información.",
         "endpoints": "Endpoints",
         "endpoints-description": "Las URL relacionadas proporcionadas por su proveedor de OAuth.",
         "auth-url-description": "El enlace a la página de inicio de sesión de OAuth",
-        "scopes-description": "Una lista separada por espacios de ámbitos que se llevarán al acceder a la URL de autenticación.",
-        "token-url-description": "La dirección API para obtener el token de acceso.",
-        "user-info-url-description": "La dirección API para obtener la información del usuario mediante el token de acceso.",
+        "scopes-description": "Una lista separada por espacios de ámbitos que se llevarán al acceder a la URL de autenticación",
+        "token-url-description": "La dirección API para obtener el token de acceso",
+        "user-info-url-description": "La dirección API para obtener la información del usuario mediante el token de acceso",
+        "connection-security": "Seguridad de la conexión",
+        "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados",
         "user-information-mapping": "Mapeo de información del usuario",
         "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase.",
-        "identifier": "Identificador de usuario Bytebase",
-        "display-name": "Nombre de visualización de usuario Bytebase",
-        "email": "Correo electrónico de usuario Bytebase"
+        "identifier": "Correo electrónico de usuario de Bytebase",
+        "identifier-tips": "Debe ser una cadena única. Y si no está en formato de correo electrónico, se empalmará con el dominio.",
+        "display-name": "Nombre para mostrar de usuario de Bytebase",
+        "phone": "Número de teléfono de usuario de Bytebase",
+        "auth-style": {
+          "self": "Estilo de autenticación",
+          "in-params": {
+            "self": "En parámetros"
+          },
+          "in-header": {
+            "self": "En encabezado"
+          }
+        }
       },
       "copy-redirect-url": "URL de redireccionamiento copiada al portapapeles."
     },
@@ -532,13 +570,14 @@
           "self": "URL externa",
           "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://. {viewDoc}"
         },
-        "config-updated": "La configuración se ha actualizado",
+        "config-updated": "La configuración se ha actualizado.",
         "plugin": {
           "openai": {
             "ai-augmentation": "Mejora IA",
             "openai-key": {
               "self": "Clave de API de OpenAI",
               "description": "Proporcione una clave de API de OpenAI para habilitar la capacidad ChatSQL en el Editor de SQL. {viewDoc}",
+              "find-my-key": "Encuentra mi llave",
               "placeholder": "Una clave de API de OpenAI generalmente comienza con sk-*****"
             },
             "openai-endpoint": {
@@ -546,20 +585,102 @@
               "description": "Proporcione una implementación privada del Punto de conexión de API de OpenAI."
             }
           }
+        },
+        "announcement": {
+          "self": "Anuncio",
+          "update-success": "Configuración de anuncios actualizada.",
+          "owner-or-dba-can-edit": "Solo el propietario del espacio de trabajo o el DBA pueden actualizar la configuración de anuncios."
+        },
+        "announcement-alert-level": {
+          "description": "Level",
+          "field": {
+            "info": "Común",
+            "warning": "Advertencia",
+            "critical": "Importante"
+          }
+        },
+        "announcement-text": {
+          "self": "Título",
+          "placeholder": "Título del anuncio de entrada"
+        },
+        "extra-link": {
+          "self": "Enlace",
+          "placeholder": "Enlace de anuncio de entrada"
+        },
+        "gitops-webhook-url": {
+          "self": "URL del webhook GitOps",
+          "description": "La URL utilizada para enviar webhooks de GitOps a la instancia de Bytebase."
+        },
+        "sign-in-frequency": {
+          "self": "Frecuencia de inicio de sesión",
+          "description": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente.",
+          "hours": "Horas",
+          "days": "Días",
+          "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto."
         }
       }
     },
     "sensitive-data": {
-      "description": "El resultado de la consulta de las siguientes columnas se muestra como \"******\". \nPuede marcar más columnas como datos sensibles en la página de detalles de la tabla.",
-      "remove-sensitive-column-tips": "¿Exponer esta columna?"
+      "description": "A las siguientes columnas se les asignan niveles de enmascaramiento explícitamente y tienen prioridad sobre la regla de enmascaramiento global.",
+      "remove-sensitive-column-tips": "¿Exponer esta columna?",
+      "sensitive-column-list": "Lista de columnas enmascaradas explícitas",
+      "global-masking-rule": "Regla de enmascaramiento global",
+      "grant-access": "Autorizará el acceso",
+      "never-expires": "Nunca expira",
+      "global-rules": {
+        "self": "Regla de enmascaramiento global",
+        "description": "Utilice la regla global para aplicar niveles de enmascaramiento por lotes, p. Todas las columnas denominadas \"correo electrónico\" se enmascararán con el nivel \"Parcial\".",
+        "condition-order": "Orden de condición",
+        "add-rule": "Agregar regla",
+        "re-order": "Reordenar",
+        "delete-rule-tip": "¿Eliminar esta regla?",
+        "check-rules": "Check global rules"
+      },
+      "semantic-types": {
+        "self": "Tipos semánticos",
+        "add-type": "Agregar tipo",
+        "table": {
+          "semantic-type": "Tipo semántico",
+          "description": "Descripción",
+          "full-masking-algorithm": "Algoritmo de enmascaramiento completo",
+          "partial-masking-algorithm": "Algoritmo de enmascaramiento parcial",
+          "delete": "¿Eliminar este tipo semántico?"
+        }
+      },
+      "column-detail": {
+        "masking-setting-for-column": "Configuración de enmascaramiento para \"{columna}\"",
+        "access-user-list": "Acceder a la lista de usuarios",
+        "access-user-list-desc": "Usuarios autorizados a acceder a datos desenmascarados.",
+        "remove-user-permission": "¿Quitar el permiso del usuario?",
+        "remove-sensitive-warning": "Expondrá la columna.",
+        "column-effective-masking-tips": "Esta columna no configura su propio nivel de enmascaramiento.\nMostramos su nivel de enmascaramiento efectivo con reglas de enmascaramiento globales. {link}"
+      },
+      "algorithms": {
+        "self": "Algoritmo de enmascaramiento",
+        "default": "Por defecto",
+        "default-desc": "Utilice *** como máscara de datos"
+      },
+      "masking-level": {
+        "self": "Nivel de enmascaramiento",
+        "selet-level": "Selecciona el nivel",
+        "masking_level_unspecified": "Siga las reglas globales de enmascaramiento",
+        "none": "Ninguna",
+        "partial": "Parcial",
+        "full": "Llena"
+      },
+      "action": {
+        "self": "Acción",
+        "query": "Consulta",
+        "export": "Exportar"
+      }
     },
     "access-control": {
-      "description": "Permitir a los desarrolladores ejecutar consultas para las siguientes bases de datos en ambientes de producción desde el Editor de SQL. {link}",
-      "add-rule": "Añadir regla",
-      "remove-policy-tips": "¿Eliminar esta regla?",
-      "inactive-rules": "Reglas inactivas",
-      "inactive-rules-description": "Estas reglas están inactivas porque el ambiente no es de producción.",
-      "no-database-in-production-environment": "Asegúrese de que hay bases de datos en el {production_environment}."
+      "description": "Configura un flujo de aprobación para controlar la consulta y exportación de datos. {link}",
+      "skip-approval": "Saltar aprobación manual",
+      "query-data": "Consulta de datos",
+      "export-data": "Exportación de datos",
+      "disallowed": "no permitido",
+      "copy-data-from-sql-editor": "Copiar datos del editor de SQL"
     },
     "release": {
       "new-version-available": "Nueva versión disponible",
@@ -685,8 +806,37 @@
     "add-a-comment": "Agregar un comentario",
     "edit-comment": "Editar comentario",
     "leave-a-comment": "Dejar un comentario...",
+    "comment-editor": {
+      "write": "Escribir",
+      "preview": "Vista previa",
+      "nothing-to-preview": "Nada para previsualizar",
+      "toolbar": {
+        "header": "Insertar texto de encabezado",
+        "bold": "Insertar texto en negrita",
+        "code": "Insertar fragmento de código SQL",
+        "link": "Insertar un enlace",
+        "hashtag": "Inserte el enlace del problema por id. Escriba la identificación del problema después del hashtag \"#\""
+      }
+    },
     "view-commit": "Ver commit",
-    "search-issue-name": "Buscar nombre de la incidencia",
+    "advanced-search": {
+      "self": "Búsqueda Avanzada",
+      "scope": {
+        "project": {
+          "title": "Proyecto",
+          "description": "Incluir solo ediciones de este proyecto"
+        },
+        "instance": {
+          "title": "Instancia",
+          "description": "Incluir solo problemas relacionados con la instancia"
+        },
+        "type": {
+          "title": "Tipo de cambio",
+          "description": "El tipo de cambio de base de datos para problemas"
+        }
+      }
+    },
+    "filter-issue-by-name": "Filtrar problema por nombre",
     "table": {
       "open": "Abierto",
       "closed": "Cerrado",
@@ -723,8 +873,8 @@
     "edit-sql-statement": "Editar declaración SQL",
     "upload-sql": "Cargar SQL",
     "upload-sql-as-sheet": "Cargar SQL como Hoja",
-    "statement-from-sheet-warning": "La declaración SQL actual proviene de una hoja. Es de solo lectura y solo se muestra parte de ella.",
-    "override-current-statement": "Anular la declaración SQL actual",
+    "statement-from-sheet-warning": "SQL está sobredimensionado y no se permite la edición en línea. \nPuede cargar un nuevo archivo SQL para sobrescribirlo.",
+    "overwrite-current-statement": "Sobrescribir la declaración SQL actual",
     "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
     "waiting-earliest-allowed-time": "Se ejecutará después de {time}",
     "batch-transition": {
@@ -773,12 +923,32 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
-      "customize": "personalice",
+      "custom": "personalice",
       "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez.",
       "export-method": "Método de exportación",
+      "request-sent": "Solicitud enviada",
       "please-select-database-first": "Por favor, seleccione primero la base de datos"
     },
-    "review-sent-back": "Revisión devuelta"
+    "review-sent-back": "Revisión devuelta",
+    "update-statement": {
+      "self": "Actualizar {type}",
+      "apply-current-change-to": "Aplicar el cambio actual a",
+      "target": {
+        "selected-task": "Tarea seleccionada",
+        "selected-stage": "Etapa seleccionada",
+        "all-tasks": "Todas las tareas"
+      },
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "En el modo por lotes, el cambio actual se aplicará a todas las tareas."
+    },
+    "not-editable-legacy-issue": "Este problema no es editable porque se creó en una versión anterior de Bytebase",
+    "action-anyway": "{action} de todos modos",
+    "disallow-edit-reasons": {
+      "issue-is-done": "La cuestión está hecha",
+      "issue-is-canceled": "La emisión está cancelada.",
+      "task-is-x-status": "La tarea es {status}",
+      "task-is-running-cancel-first": "La tarea se está ejecutando, cancele la tarea antes de cambiar este valor"
+    },
+    "you-are-not-allowed-to-change-this-value": "No tienes permitido cambiar este valor."
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -834,6 +1004,8 @@
     "views": "Vistas",
     "extensions": "Extensiones",
     "functions": "Funciones",
+    "streams": "Streams",
+    "tasks": "Tareas",
     "parent": "Padre",
     "last-successful-sync": "Última sincronización exitosa",
     "sync-status": "Estado de sincronización",
@@ -882,13 +1054,14 @@
     "show-how-to-create": "Mostrar cómo crear",
     "below-is-an-example-to-create-user-bytebase-with-password": "A continuación se muestra un ejemplo para crear el usuario 'bytebase {'@'}%' con contraseña",
     "your_db_pwd": "SU_DB_PWD",
-    "no-read-only-data-source-warn": "La instancia no ha configurado una conexión de solo lectura, por favor considere agregar una.",
+    "no-read-only-data-source-warn-for-owner-dba": "La instancia no ha configurado una conexión de solo lectura, por favor considere agregar una.",
+    "no-read-only-data-source-warn-for-developer": "La instancia no ha configurado una conexión de solo lectura, solicite a su DBA que agregue una.",
     "sentence": {
       "host": {
         "snowflake": "por ejemplo, host.docker.internal {'|'} <<ip>> {'|'} <<socket local>>"
       },
       "proxy": {
-        "snowflake": "Para el servidor proxy, agregue {'@'}PROXY_HOST y especifique PROXY_PORT en el puerto."
+        "snowflake": "Para el servidor proxy, agregue {'@'}PROXY_HOST y especifique PROXY_PORT en el puerto"
       },
       "console": {
         "snowflake": "La URL de la consola externa que administra esta instancia (por ejemplo, la consola de AWS RDS, la consola de la instancia de base de datos interna)"
@@ -946,7 +1119,24 @@
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "used-for-testing-connection": "Usado solo para probar conexiones",
-    "all": "Todas las instancias"
+    "all": "Todas las instancias",
+    "force-archive-description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán.",
+    "sync-mode": {
+      "self": "Modo de sincronización",
+      "database": {
+        "self": "Administrar basado en base de datos",
+        "description": "Toda la base de datos se trata como un objeto administrado, y CDB y PDB se consideran bases de datos distintas. (Admite modo CDB y no CDB)"
+      },
+      "schema": {
+        "self": "Administrar según el esquema",
+        "description": "Cada esquema se trata como un objeto administrado. (Solo es compatible con el modo no CDB)"
+      }
+    },
+    "scan-interval": {
+      "self": "Intervalo de escaneo",
+      "default-never": "Predeterminado (nunca)",
+      "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías."
+    }
   },
   "environment": {
     "id": "ID del Entorno",
@@ -1011,7 +1201,7 @@
     "password-forgot": "Contraseña olvidada",
     "password-reset": {
       "title": "Restablecer su contraseña",
-      "content": "Ingrese su dirección de correo electrónico y le enviaremos un enlace para restablecer su contraseña.",
+      "content": "Ingrese su dirección de correo electrónico y le enviaremos un enlace para restablecer su contraseña",
       "send-reset-link": "Enviar enlace de restablecimiento",
       "return-to-sign-in": "Volver a iniciar sesión"
     },
@@ -1023,7 +1213,7 @@
     "rollout": {
       "name": "Política de implementación",
       "tip": "La política se aplica retrospectivamente a las incidencias.",
-      "info": "Para actualizar el esquema en la base de datos existente, esta configuración controla si la tarea requiere aprobación manual.",
+      "info": "Para implementar cambios en la base de datos, esta configuración controla si la implementación requiere aprobación manual.",
       "manual": "Implementar manual",
       "manual-info": "Requiere hacer clic en el botón \"Implementar\" manualmente, y luego se ejecutará el cambio.",
       "auto": "Implementar automático",
@@ -1045,14 +1235,15 @@
     },
     "environment-tier": {
       "name": "Nivel de entorno",
-      "description": "El entorno aparecerá de manera diferente a otros entornos.{newline}Por defecto, los desarrolladores no pueden ejecutar consultas en las bases de datos de este entorno utilizando el Editor de SQL.",
+      "description": "El entorno aparecerá de manera diferente a otros entornos.",
       "mark-env-as-production": "Marcar como entorno de producción"
     }
   },
   "change-history": {
     "self": "Historial de cambios",
-    "select": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase.",
+    "select": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase",
     "workflow": "Flujo de trabajo",
+    "change-type": "Tipo",
     "commit-info": "por {author} a las {time}",
     "no-schema-change": "esta migración no tiene cambios de esquema",
     "schema-drift": "Desviación de esquema",
@@ -1076,7 +1267,11 @@
     "establish-database-baseline": "Establecer línea base de \"{name}\"",
     "instance-missing-change-schema": "Esquema de historial de cambios faltante en la instancia \"{name}\".",
     "instance-bad-connection": "No se pudo conectar la instancia \"{name}\" para recuperar el historial de cambios.",
-    "contact-dba": "Por favor, contacte a su DBA para configurarlo"
+    "contact-dba": "Por favor, contacte a su DBA para configurarlo",
+    "export": "Exportar historial de cambios",
+    "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
+    "all-tables": "Todas las tablas",
+    "affected-tables": "Tablas afectadas"
   },
   "database": {
     "select": "Seleccionar base de datos",
@@ -1088,10 +1283,18 @@
     "search-database": "Buscar base de datos",
     "database-backup": "copia de seguridad de la base de datos",
     "transfer-project": "Transferir proyecto",
-    "alter-schema": "Modificar esquema",
-    "alter-schema-in-vcs": "Modificar esquema en VCS",
+    "edit-schema": "Modificar esquema",
+    "edit-schema-in-vcs": "Modificar esquema en VCS",
     "change-data": "Cambiar datos",
     "change-data-in-vcs": "Cambiar datos en VCS",
+    "branch": "Rama",
+    "branches": "Ramas",
+    "branching": "Ramificación",
+    "new-branch": "Nueva rama",
+    "branch-name": "Nombre de la rama",
+    "select-branch": "Seleccione una rama",
+    "delete-this-branch": "Eliminar esta rama",
+    "table-detail": "Detalle de la tabla",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
     "backup-name": "Nombre de la copia de seguridad",
     "create-backup": "Crear copia de seguridad",
@@ -1147,7 +1350,7 @@
     "columns": "Columnas",
     "data-type": "Tipo de dato",
     "indexes": "Índices",
-    "row-count-est": "Est. de cantidad de filas",
+    "row-count-est": "Cantidad est. de filas",
     "incorrect-project-warning": "El editor de SQL solo puede consultar bases de datos en proyectos disponibles para el usuario. Primero debe transferir esta base de datos a un proyecto.",
     "go-to-transfer": "Ir a transferir",
     "pitr": {
@@ -1190,10 +1393,12 @@
     "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
     "sync-schema": {
       "title": "Sincronizar esquema",
-      "description": "Bytebase admite la sincronización de una versión de esquema específica de una base de datos con otras.",
+      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino",
+      "schema-history-version": "Versión del historial de esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "select-project": "Seleccione el proyecto",
+      "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "Base de datos de origen",
       "source-schema": "Esquema de origen",
       "schema-version": {
@@ -1205,7 +1410,7 @@
       "no-diff": "Sin diff",
       "message": {
         "select-a-target-database-first": "Primero seleccione una base de datos de destino.",
-        "no-target-databases": "No hay bases de datos de destino.",
+        "no-target-databases": "No hay bases de datos destino",
         "no-diff-found": "No se encontraron diferencias."
       },
       "to-database": "Aplicar a base de datos",
@@ -1235,7 +1440,7 @@
     "should-follow-database-name-template": "Debe seguir la plantilla de nombre de base de datos de inquilino",
     "all": "Todas las bases de datos",
     "unassigned": "No asignado",
-    "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Alter Schema no se aplica a las bases de datos sin esquema).",
+    "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Editar Schema no se aplica a las bases de datos sin esquema.)",
     "secret": {
       "self": "Secreto",
       "new": "Nuevo secreto",
@@ -1261,8 +1466,14 @@
       "errors": {
         "select-target-project": "Seleccionar proyecto de destino",
         "select-at-least-one-database": "Seleccione al menos una base de datos"
-      }
-    }
+      },
+      "select-target-project": "Seleccionar proyecto de destino"
+    },
+    "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
+    "classification": {
+      "self": "Clasificación"
+    },
+    "recent": "Reciente"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
@@ -1283,6 +1494,7 @@
     "sql-review-ci-enable": "Habilitar la revisión de SQL CI",
     "sql-review-ci-enable-gitlab": "Habilitar la revisión de SQL CI a través de GitLab CI",
     "sql-review-ci-enable-github": "Habilitar la revisión de SQL CI a través de la acción de GitHub",
+    "sql-review-ci-enable-azure": "Habilite SQL Review CI a través de Azure DevOps Pipeline",
     "sql-review-ci-description": "Bytebase creará un {pr} para configurar la revisión de SQL CI en su repositorio. En cada {pr}, la política de revisión de SQL basada en el entorno verificará los archivos modificados que coincidan con el \"{pathTemplate}\".",
     "sql-review-ci-setup": "Configurar revisión de SQL CI",
     "sql-review-ci-setup-failed": "Error al configurar la revisión de SQL CI",
@@ -1304,7 +1516,7 @@
     "restore-ui-workflow-description": "Al usar el flujo de trabajo de UI, el desarrollador envía directamente un ticket de revisión de SQL desde la consola de Bytebase y espera a que el DBA o el desarrollador asignado revise. Bytebase aplica el cambio de SQL después de la aprobación de la revisión.",
     "restore-ui-workflow-success": "Restaurado con éxito al flujo de trabajo de UI",
     "update-gitops-config-success": "Configuración @:common.gitops actualizada correctamente",
-    "setup-wizard-guide": "Si encuentras errores durante el proceso, consulta nuestra {guide}.",
+    "setup-wizard-guide": "Si encuentras errores durante el proceso, consulta nuestra {guide}",
     "add-git-provider": "Agregar proveedor de Git",
     "choose-git-provider": "Elegir proveedor de Git",
     "select-repository": "Seleccionar repositorio",
@@ -1316,7 +1528,9 @@
     "select-repository-attention-github": "Bytebase solo enumera los repositorios de GitHub en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
     "select-repository-attention-bitbucket": "Bytebase solo enumera los repositorios de Bitbucket en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
     "select-repository-search": "Buscar repositorio",
-    "linked": "Repositorios vinculados"
+    "linked": "Repositorios vinculados",
+    "select-repository-attention-azure-devops": "Bytebase solo enumera los repositorios de Azure DevOps en la organización a la que se otorga acceso a aplicaciones de terceros a través de OAuth. \nSi no ve el repositorio que desea, vaya a Organización -> Configuración de la organización -> Políticas para habilitar el acceso a aplicaciones de terceros.",
+    "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}."
   },
   "workflow": {
     "current-workflow": "Flujo de trabajo actual",
@@ -1330,7 +1544,7 @@
   },
   "anomaly": {
     "attention-title": "Detección de anomalías",
-    "attention-desc": "Bytebase escanea periódicamente los recursos administrados y lista las anomalías detectadas aquí. La lista se actualiza aproximadamente cada 10 minutos.",
+    "attention-desc": "Bytebase detecta periódicamente anomalías según el intervalo de escaneo de la instancia y muestra los hallazgos aquí.",
     "table-search-placeholder": "Buscar {type} o entorno",
     "table-placeholder": "¡Hurra, no se detectaron anomalías de {type}!",
     "tooltip": "{env} tiene {criticalCount} anomalías CRÍTICAS, {highCount} anomalías ALTAS y {mediumCount} anomalías MEDIA",
@@ -1436,6 +1650,10 @@
         "issue-approval-notify": {
           "title": "Notificación de aprobación de incidencia",
           "label": "Cuando se aprueba o rechaza una incidencia"
+        },
+        "issue-task-run-status-change": {
+          "title": "Cambio de estado de ejecución de tarea de incidencia",
+          "label": "Cuando cambia el estado de la ejecución de la tarea que encierra la incidencia"
         }
       }
     },
@@ -1460,13 +1678,16 @@
         "btn-text": "Restaurar este @.lower:{'common.project'}"
       },
       "schema-change-type": "Tipo de cambio de esquema",
-      "select-schema-change-type-ddl": "Migración basada en imperativo. Por ejemplo, ALTER TABLE",
-      "select-schema-change-type-sdl": "Migración basada en declaración de estado. Por ejemplo, CREATE TABLE",
+      "select-schema-change-type-ddl": "Imperativo: especifique el cambio con cualquier declaración DDL.",
+      "select-schema-change-type-sdl": "Declarativo: especifique el esquema deseado. Utilice únicamente CREAR TABLA/ÍNDICE.",
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos."
     },
     "members": {
+      "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el propietario del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "add-member": "Agregar miembro",
       "revoke-member": "Revocar miembro",
+      "revoke-access": "Revocar acceso",
+      "grant-access": "Conceder acceso",
       "edit": "Editar miembro - {member}",
       "view-by-principals": "Ver por responsables",
       "view-by-roles": "Ver por roles",
@@ -1477,8 +1698,17 @@
       "select-users": "Seleccionar usuarios",
       "assign-role": "Asignar rol",
       "never-expires": "Nunca caduca",
+      "expired": "Caducada",
+      "role-description": "El rol de un miembro determina qué puede hacer en el proyecto.",
       "role-never-expires": "Este rol nunca expira.",
-      "add-more": "Más información"
+      "add-more": "Más información",
+      "role-name": "Nombre del rol",
+      "condition-name": "Nombre de la condición",
+      "users": "Usuarios",
+      "roles": "Roles",
+      "search-member": "Buscar miembro",
+      "revoke-members": "Revocar miembros",
+      "clean-up-expired-roles": "Limpiar roles caducados"
     },
     "mode": {
       "standard": "Modo Estándar",
@@ -1506,22 +1736,25 @@
       "add-git-provider": {
         "self": "Agregar un proveedor de Git",
         "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS. A continuación se muestran los pasos para configurar esto, también puede seguir nuestra {guide}.",
-        "gitlab-self-host": "Autoalojamiento de GitLab",
+        "gitlab-self-host": "GitLab autohospedado",
         "gitlab-self-host-admin-requirement": "Debe ser un administrador de su instancia de GitLab elegida para configurar esto. De lo contrario, debe solicitar al administrador de su instancia de GitLab que registre Bytebase como una aplicación OAuth de instancia de GitLab y luego proporcionarle ese ID de aplicación y secreto para completar en el paso 'información de la aplicación OAuth'.",
         "gitlab-com-admin-requirement": "Su cuenta debe tener acceso de administrador a cualquiera de los repositorios que se van a vincular. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de a un usuario humano.",
+        "github-self-host-ee": "Autohospedado de GitHub Enterprise Edition (EE)",
         "github-com-admin-requirement": "Debe ser administrador de la organización de GitHub elegida para configurar esto. De lo contrario, debe solicitar al administrador de su organización de GitHub que registre Bytebase como una aplicación OAuth de organización de GitHub y luego proporcionarle ese ID de aplicación y secreto para completar en el paso 'información de la aplicación OAuth'.",
         "bitbucket-admin-requirement": "Necesitas ser administrador de tu espacio de trabajo de Bitbucket elegido para configurar esto. De lo contrario, debes pedirle al administrador de tu espacio de trabajo de Bitbucket que registre Bytebase como una aplicación OAuth para todo el espacio de trabajo de Bitbucket, y luego proporcionarte la ID de la aplicación y la clave secreta para que las ingreses en el paso 'Información de la aplicación OAuth'.",
+        "azure-devops-service": "Servicio Azure DevOps",
+        "azure-admin-requirement": "Necesitas ser administrador de la organización de Azure DevOps que haya elegido para configurar esto. De lo contrario, debe pedirle al administrador del espacio de trabajo de Bitbucket que registre Bytebase como una aplicación de OAuth para toda la organización de Azure DevOps y luego proporcionarle el ID de la aplicación y el secreto del cliente para completar en el paso 'Información de la aplicación de OAuth'.",
         "oauth-info-correct": "La información de OAuth verificada es correcta",
         "check-oauth-info-match": "Por favor asegúrate de que la clave secreta coincida con la de tu instancia de GitLab de la aplicación.",
         "add-success": "Proveedor de Git {vcs} agregado exitosamente",
         "choose": "Elige proveedor de Git",
-        "gitlab-self-host-ce-ee": "Autohospedado de GitLab Enterprise Edition (EE) o Community Edition (CE)",
         "basic-info": {
           "self": "Información básica",
           "gitlab-instance-url": "URL de la instancia de GitLab",
           "gitlab-instance-url-label": "La URL de la instancia VCS. Asegúrate de que esta instancia y Bytebase sean accesibles desde la red.",
           "github-instance-url": "URL de la instancia de GitHub",
           "bitbucket-instance-url": "URL de la instancia de Bitbucket",
+          "azure-instance-url": "URL de la instancia de Azure DevOps",
           "instance-url-error": "La URL de la instancia debe comenzar con https:// o http://",
           "display-name": "Nombre para mostrar",
           "display-name-label": "Un nombre opcional para identificar entre diferentes configuraciones que utilizan el mismo proveedor de Git."
@@ -1533,13 +1766,17 @@
           "gitlab-self-host-visit-admin-page": "Vaya a la página de administrador haciendo clic en el icono de llave inglesa, luego vaya a la sección \"Aplicaciones\" y haga clic en el botón \"Nueva aplicación\".",
           "gitlab-com-register-oauth-application": "Registrar Bytebase como una aplicación OAuth de usuario de GitLab.",
           "gitlab-com-login": "Inicie sesión como la cuenta que desea que Bytebase actúe. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de un usuario humano.",
+          "azure-devops-login": "Inicie sesión con la cuenta con la que desee que actúe Bytebase. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de un usuario humano.",
           "gitlab-com-visit-application-page": "Vaya a la página de Preferencias -> Aplicaciones. Puede acceder a ella a través de su foto de perfil en la esquina superior derecha.",
+          "azure-devops-visit-application-page": "Ir a la página de aplicaciones.",
           "gitlab-paste-oauth-info": "Pegue la ID de la aplicación y la clave secreta de la aplicación recién creada en los campos a continuación.",
+          "azure-paste-oauth-info": "Pegue el ID de la aplicación y el secreto del cliente de la aplicación que acaba de crear en los campos a continuación.",
           "github-register-oauth-application": "Registrar Bytebase como una aplicación OAuth de organización en GitHub.",
           "github-login-as-admin": "Inicie sesión como usuario administrador de la organización en GitHub.com. La cuenta debe ser un administrador de la organización de GitHub (capaz de acceder a la página de Configuración de la organización).",
           "github-visit-admin-page": "Vaya a la página de Configuración, luego vaya a la sección \"Configuración de desarrollador > Aplicaciones OAuth\" y haga clic en el botón \"Registrar una aplicación\".",
           "github-paste-oauth-info": "Pegue el ID de cliente y el secreto de cliente de la aplicación recién creada en los campos a continuación.",
           "bitbucket-register-oauth-application": "Registrar Bytebase como un consumidor OAuth de toda la organización de Bitbucket.",
+          "azure-register-oauth-application": "Registre Bytebase como consumidor de OAuth de toda la organización de Azure DevOps.",
           "bitbucket-login-as-admin": "Inicie sesión como usuario administrador de la organización en Bitbucket.org. La cuenta debe ser un administrador de la organización de Bitbucket (capaz de acceder a la página de Configuración de la organización).",
           "bitbucket-visit-admin-page": "Vaya a la página de Configuración, luego vaya a la sección \"APPS AND FEATURES > OAuth consumers\" y haga clic en el botón \"Add a consumer\".",
           "bitbucket-paste-oauth-info": "Pegue la Clave y el Secreto del consumidor recién creado en los campos a continuación.",
@@ -1552,7 +1789,8 @@
           "github-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 20 caracteres",
           "github-secret-error": "El secreto debe ser una cadena alfanumérica de 40 caracteres",
           "bitbucket-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 18 caracteres",
-          "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres"
+          "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres",
+          "github-enterprise-login-as-admin": "Inicia sesión en tu sitio GitHub Enterprise como administrador de la organización. Esta cuenta debe ser un administrador de organización de GitHub (con acceso a la página de configuración de la organización)."
         },
         "confirm": {
           "confirm-info": "Confirmar la información",
@@ -1631,7 +1869,7 @@
     "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "También vinculamos la base de datos concedida a la incidencia solicitada '{0}'.",
     "new-data-source": "Nuevo origen de datos",
     "connection-name-string-copied-to-clipboard": "Cadena de nombre de conexión {0} copiada al portapapeles.",
-    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC no puede conectar al socket {0}",
+    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC no puede conectar al socket {0} ",
     "ssl-type": {
       "ca": "@:{'data-source.ssl.ca-cert'}",
       "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
@@ -1647,14 +1885,21 @@
       "port": "Puerto",
       "user": "Nombre de usuario",
       "password": "Contraseña",
-      "ssh-key": "Clave del SSH"
+      "ssh-key": "Clave del SSH",
+      "tunnel": "Túnel",
+      "private-key": "Clave Privada"
     },
     "ssl-connection": "Conexión SSL",
     "ssh-connection": "Conexión SSH",
     "read-replica-host": "Anfitrión de réplica de lectura",
     "read-replica-port": "Puerto de réplica de lectura",
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
-    "connection-string-schema": "Esquema de cadena de conexión"
+    "connection-string-schema": "Esquema de cadena de conexión",
+    "ssh-type": {
+      "tunnel": "@:{'data-source.ssh.tunnel'}",
+      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
+      "none": "Ninguno"
+    }
   },
   "setting": {
     "project": {
@@ -1677,14 +1922,15 @@
     "loading-data": "Cargando datos...",
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
     "no-rows-found": "No se encontraron filas",
-    "download-as-csv": "Descargar como CSV",
-    "download-as-json": "Descargar como JSON",
+    "download-as-file": "Descargar como {file}",
     "only-select-allowed": "Solo se permiten declaraciones {select} para ejecutar.",
-    "want-to-action": "Si desea {want}, haga clic en el botón {action} y envíe una incidencia.",
+    "want-to-action": "Si desea {want}, haga clic en el botón {action} {reaction}.",
+    "and-submit-an-issue": "y enviar un problema",
+    "to-enable-admin-mode": "para habilitar el modo administrador",
     "table-schema-placeholder": "Seleccione una tabla para ver su esquema",
     "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
     "notify-multiple-statements": "Se detectaron múltiples declaraciones SQL. El Editor de SQL solo ejecuta la primera declaración. Puede seleccionar otra declaración y ejecutarla individualmente.",
-    "goto-alter-schema-hint": "Seleccione una conexión de base de datos desde la parte superior del editor",
+    "goto-edit-schema-hint": "Seleccione una conexión de base de datos desde la parte superior del editor",
     "notify-invalid-sql-statement": "Declaración SQL inválida.",
     "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
     "rows": "fila | filas",
@@ -1707,9 +1953,8 @@
       "sheet-is-read-only": "La hoja compartida es solo de lectura."
     },
     "view-all-tabs": "Ver todas las pestañas",
-    "sheet": "Hoja",
     "sheets": "Hojas",
-    "connection-holder": "Haz clic en los nodos del panel izquierdo para comenzar",
+    "connection-holder": "Asocie una base de datos primero desde el Panel de base de datos a la izquierda",
     "link-access": "Acceso al enlace",
     "private": "Privado",
     "private-desc": "Solo tú puedes acceder a esta hoja",
@@ -1740,7 +1985,28 @@
     "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "run-selected": "Ejecutar selección",
     "clear-screen": "Limpiar pantalla",
-    "query-time": "Tiempo de consulta"
+    "query-time": "Tiempo de consulta",
+    "request-query": "Solicitar consulta",
+    "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
+    "sheet": {
+      "choose-sheet": "Elegir hoja",
+      "self": "Hoja",
+      "connection": "Conexión"
+    },
+    "tab": {
+      "unsaved": "No guardado",
+      "context-menu": {
+        "actions": {
+          "close": "Cerca",
+          "close-others": "cerrar otros",
+          "close-to-the-right": "Cerca de la derecha",
+          "close-saved": "Cerrar guardado",
+          "close-all": "Cierra todo",
+          "rename": "Rebautizar"
+        }
+      }
+    },
+    "filter-by-name": "Filtrar por nombre"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -1759,6 +2025,7 @@
       "drop-table": "Eliminar tabla",
       "restore": "Restaurar",
       "add-column": "Agregar columna",
+      "add-from-template": "Añadir desde plantilla",
       "drop-column": "Eliminar columna",
       "sql-preview": "Vista previa SQL",
       "reset": "Restablecer",
@@ -1789,7 +2056,9 @@
       "default": "Valor predeterminado",
       "comment": "Comentario",
       "not-null": "No nulo",
-      "primary": "Primaria"
+      "primary": "Primaria",
+      "foreign-key": "Clave foránea",
+      "classification": "Clasificación"
     },
     "nothing-changed": "Nada ha cambiado",
     "message": {
@@ -1832,7 +2101,7 @@
     "setting": {
       "description": "Una etiqueta es un par clave-valor que le ayuda a identificar el inquilino para una base de datos. {link}."
     },
-    "db-name-template-tips": "Si tus bases de datos de inquilinos siguen una plantilla de nombres, puedes especificarla aquí. Por ejemplo, si las bases de datos se llaman db1__SH, db1__BJ, db1__GZ, entonces la plantilla podría ser {placeholder}. {link}.",
+    "db-name-template-tips": "Especifique una plantilla para aplicar la denominación de la base de datos. Por ejemplo, si su base de datos db1 está dividida geográficamente en EE. UU., Asia y Europa y desea aplicar nombres como db1__US, db1__ASIA, db1__EU, entonces la plantilla podría ser {placeholder}. {link}.",
     "confirm-change": "¿Estás seguro de cambiar '{label}'?",
     "parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
     "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}."
@@ -1857,7 +2126,7 @@
       "subscription-page": "página de suscripción",
       "subscription": "Visite la {page} para conocer estas funciones y nuestros planes."
     },
-    "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de equipo/empresa.",
+    "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
     "upload-license": "Subir licencia",
     "upgrade-trial-button": "Actualizar prueba",
     "start-n-days-trial": "Comienza una prueba de {days} días (no se requiere tarjeta de crédito)",
@@ -1869,6 +2138,7 @@
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
     "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
+    "contact-to-upgrade": "Comuníquese con el propietario de su espacio de trabajo o DBA para actualizar el plan",
     "upgrade-now": "Actualizar ahora",
     "instance-assignment": {
       "license": "Licencia",
@@ -1879,7 +2149,8 @@
       "manage-license": "Administrar licencia",
       "used-and-total-license": "Licencia asignada / total",
       "success-notification": "Actualizar correctamente la asignación de licencia",
-      "missing-license-for-instances": "Tienes {count} instancias ({name}) a las que les falta la licencia requerida para desbloquear esta función."
+      "missing-license-for-instances": "Tienes {count} instancias ({name}) a las que les falta la licencia requerida para desbloquear esta función.",
+      "missing-license-for-feature": "Falta la licencia de instancia para habilitar {feature}. Haga clic para asignar ahora."
     },
     "update": {
       "success": {
@@ -1894,7 +2165,7 @@
     "plan-features": "{plan} función",
     "overuse-warning": "{neededPlan} puede estar restringido en {currentPlan}, actualice ahora para asegurar un uso adecuado.",
     "overuse-modal": {
-      "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones.",
+      "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones:",
       "instance-count-exceeds": "El número de instancias {count} excedió el límite {limit}"
     },
     "features": {
@@ -1908,6 +2179,13 @@
         "remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias.",
         "runoutof": "Te has quedado sin tu cuota de instancias {total}.",
         "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
+      },
+      "bb-feature-user-count": {
+        "title": "Límite de conteo de usuarios",
+        "desc": "Ha alcanzado el límite máximo de recuento de usuarios. Actualice para obtener una cuota de usuario ilimitada.",
+        "remaining": "Su cuota total de usuarios es {total}, solo quedan {count} usuarios.",
+        "runoutof": "Se ha quedado sin su cuota de usuario {total}.",
+        "upgrade": "@:{'subscription.upgrade'} para obtener una cuota de usuario ilimitada."
       },
       "bb-feature-multi-tenancy": {
         "title": "Modo Lote",
@@ -1930,8 +2208,8 @@
         "desc": "Marque las columnas de la tabla como datos sensibles y el resultado de la consulta de ellos se mostrará como \"******\"."
       },
       "bb-feature-access-control": {
-        "title": "Control de acceso",
-        "desc": "Cambie el permiso de consulta para bases de datos en entornos de producción."
+        "title": "Control de acceso a datos",
+        "desc": "Configura un flujo de aprobación para controlar la consulta y exportación de datos."
       },
       "bb-feature-lgtm": {
         "title": "Verificación LGTM",
@@ -1967,7 +2245,7 @@
       },
       "bb-feature-custom-role": {
         "title": "Roles personalizados",
-        "desc": "Definición de roles personalizados, y puede aplicarlos a los miembros del proyecto."
+        "desc": "Definición de roles personalizados. Puede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado."
       },
       "bb-feature-watermark": {
         "title": "Marca de agua",
@@ -1979,7 +2257,7 @@
       },
       "bb-feature-schema-drift": {
         "title": "Desviación de esquema",
-        "desc": "@:{'subscription.upgrade'} para desbloquear la detección automática de desviación de esquema."
+        "desc": "Detecte cambios de esquema fuera de banda e informe la desviación del esquema."
       },
       "bb-feature-branding": {
         "title": "Personalización",
@@ -2021,25 +2299,52 @@
         "title": "Script SQL compartido",
         "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
       },
+      "bb-feature-announcement": {
+        "title": "Anuncio personalizado",
+        "desc": "Configurar un banner de anuncio."
+      },
       "bb-feature-encrypted-secrets": {
         "title": "Secretos Encriptados",
         "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
       },
       "bb-feature-database-grouping": {
         "title": "Grupo de base de datos",
-        "desc": "El grupo de base de datos le permite aplicar operaciones por lotes a las base de datos del grupo de base de datos"
+        "desc": "El grupo de base de datos le permite aplicar operaciones por lotes a las base de datos del grupo de base de datos."
       },
       "bb-feature-disallow-signup": {
         "title": "Deshabilitar el registro de autoservicio",
         "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el propietario del espacio de trabajo."
+      },
+      "bb-feature-instance-ssh-connection": {
+        "title": "Instancia de Conexión SSH",
+        "desc": "Conéctese a una instancia a través de SSH."
+      },
+      "bb-feature-schema-template": {
+        "title": "Plantilla de esquema",
+        "desc": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
+      },
+      "bb-feature-secure-token": {
+        "title": "Frecuencia de inicio de sesión",
+        "desc": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente."
+      },
+      "bb-feature-issue-advanced-search": {
+        "title": "Búsqueda avanzada de problemas",
+        "desc": "Acceda a un historial de problemas ilimitado con búsqueda avanzada de problemas."
+      },
+      "bb-feature-custom-instance-scan-interval": {
+        "title": "Intervalo de escaneo de instancia personalizado",
+        "desc": "Personalice el esquema y el intervalo de escaneo de anomalías, por ejemplo"
       }
     }
   },
   "sheet": {
     "self": "Hojas",
     "my-sheets": "Mis Hojas",
+    "mine": "Mío",
+    "star": "Marcar Favorito",
+    "unstar": "Quitar Favorito",
+    "starred": "Favorito",
     "shared-with-me": "Compartido conmigo",
-    "starred": "Marcado como favorito",
     "actions": {
       "sync-from-vcs": "Sincronizar scripts SQL desde VCS"
     },
@@ -2050,7 +2355,13 @@
     },
     "linked-issue": "Incidencia vinculada",
     "from-issue-warning": "La hoja proviene de la incidencia {issue} en modo de solo lectura. {oversize}",
-    "content-oversize-warning": "Mostrar solo parte de la hoja debido al tamaño excesivo."
+    "content-oversize-warning": "SQL está sobredimensionado y no se permite la edición en línea.",
+    "notifications": {
+      "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
+    },
+    "sheets": "Hojas",
+    "search-sheets": "Hojas de búsqueda",
+    "sheet": "Hoja"
   },
   "engine": {
     "mysql": "MySQL",
@@ -2112,7 +2423,8 @@
     },
     "enabled-rules": "Reglas habilitadas",
     "rule-detail": "Detalle de la regla",
-    "view-definition": "Ver definición"
+    "view-definition": "Ver definición",
+    "other-engines": "Otros motores"
   },
   "debug-log": {
     "title": "Registro de depuración",
@@ -2164,7 +2476,8 @@
         "member-role-update": "Actualizar rol del miembro del proyecto",
         "database-transfer": "Transferir base de datos"
       },
-      "sql-editor-query": "Consulta del editor de SQL"
+      "sql-editor-query": "Consulta del editor de SQL",
+      "sql-export": "Exportar SQL"
     }
   },
   "onboarding-guide": {
@@ -2303,7 +2616,8 @@
           "suggest-prompt": "Sugiriendo promts...",
           "more": "Más",
           "no-more": "No más"
-        }
+        },
+        "view-history-conversations": "Ver historial de conversaciones"
       },
       "preset-suggestion": {
         "1": "¿Qué departamento tiene más empleados?",
@@ -2311,7 +2625,10 @@
         "3": "¿Cuál es la proporción de género en cada departamento?"
       },
       "statement-copied": "Declaración copiada al portapapeles",
-      "dont-show-again": "No mostrar de nuevo"
+      "dont-show-again": "No mostrar de nuevo",
+      "chat-sql": "ChatSQL",
+      "disable-chat-sql": "Deshabilitar ChatSQL",
+      "enable-chat-sql": "Habilitar ChatSQL"
     }
   },
   "custom-approval": {
@@ -2344,15 +2661,9 @@
         "namespace": {
           "dml": "DML",
           "ddl": "DDL",
-          "create_database": "Crear base de datos"
-        },
-        "factor": {
-          "affected_rows": "Filas afectadas",
-          "environment_id": "ID de entorno",
-          "project_id": "ID de proyecto",
-          "database_name": "Nombre de base de datos",
-          "db_engine": "Motor de base de datos",
-          "sql_type": "Tipo SQL"
+          "create_database": "Crear base de datos",
+          "query": "Solicitar consulta",
+          "export": "Solicitar exportación"
         }
       },
       "condition": {
@@ -2398,8 +2709,8 @@
     },
     "approval-flow": {
       "self": "Flujo de aprobación",
-      "description": "Para cada tipo de operación, configure una condición personalizada, un riesgo y un flujo de aprobación.",
-      "approval-flows": "Flujos de aprobación",
+      "description": "Para cada tipo de operación, configure una condición personalizada, un riesgo y un flujo de aprobación. ",
+      "approval-flows": "Flujos de Aprobación",
       "approval-nodes": "Nodos de aprobación",
       "type": {
         "system": "Sistema",
@@ -2470,7 +2781,9 @@
       "generating-approval-flow": "Generando flujo de aprobación",
       "approved-issue": "incidencia aprobada",
       "disallow-approve-reason": {
-        "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no pasaron"
+        "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no pasaron",
+        "some-task-checks-are-still-running": "Algunas comprobaciones de tareas aún se están ejecutando",
+        "x-field-is-required": "{field} se requiere"
       },
       "send-back": "Enviar de vuelta",
       "send-back-issue": "¿Devolver el problema?",
@@ -2478,14 +2791,14 @@
       "re-request-review-issue": "¿Volver a solicitar revisión?",
       "sent-back-issue": "Problema devuelto",
       "re-requested-review": "revisión de problema nuevamente solicitada",
-      "no-one-matches-role": "Nadie coincide con el rol, comuníquese con el propietario del proyecto para asignar uno."
+      "no-one-matches-role": "Nadie coincide con el rol, comuníquese con el propietario del proyecto para asignar uno.",
+      "any-n-role-can-approve": "Cualquier {role} puede aprobar"
     },
     "send-back": "Enviar de vuelta"
   },
   "slow-query": {
     "self": "Consulta lenta",
     "slow-queries": "Consultas lentas",
-    "report-slow-query": "Reportar consulta lenta",
     "report": "Reportar",
     "last-query-time": "Hora de la última consulta",
     "database-name": "Nombre de la base de datos",
@@ -2499,13 +2812,13 @@
     "avg-rows-examined": "Promedio de filas examinadas",
     "max-rows-sent": "Máximo de filas enviadas",
     "avg-rows-sent": "Promedio de filas enviadas",
-    "rows-sent-avg": "Promedio de filas enviadas",
+    "rows-sent-avg": "Prom. de filas enviadas",
     "query-start-time": "Hora de inicio de la consulta",
     "rows-examined": "Filas examinadas",
     "rows-sent": "Filas enviadas",
     "lock-time": "Tiempo de bloqueo",
     "query-time": "Tiempo de consulta",
-    "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias.\nPara una instancia de MySQL, {slow_query} debe estar habilitado primero.\nPara una instancia de PostgreSQL, {pg_stat_statements} debe estar habilitado primero en cada base de datos.",
+    "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias. Para una instancia de MySQL, slow_query debe estar habilitado primero. Para una instancia de PostgreSQL, solo se recopilarán las consultas lentas si se habilita pg_stat_statements en la base de datos.",
     "sync-job-started": "Se iniciaron trabajos de sincronización. Espere a que los trabajos se completen.",
     "detail": "Detalles de la consulta lenta",
     "filter": {
@@ -2517,6 +2830,47 @@
       "suggestion": "Sugerencia",
       "create-index": "Crear índice",
       "setup-openai-key-to-enable": "Configure la clave de OpenAI para habilitar el asesor de índices"
+    },
+    "no-log-placeholder": {
+      "admin": "Haga clic en el botón \"Configurar\" para obtener consultas lentas de las instancias de la base de datos o haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas de inmediato",
+      "developer": "Haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas inmediatamente o comuníquese con los propietarios/DBA de Bytebase para configurar consultas lentas"
+    }
+  },
+  "schema-template": {
+    "self": "Plantilla de esquema",
+    "field-template": {
+      "self": "Plantilla de campo",
+      "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
+    },
+    "column-type-restriction": {
+      "self": "Restricción de tipos de columna",
+      "description": "Para cada motor de base de datos, puede limitar los tipos de columna permitidos.",
+      "allow-all": "Permitir todos los tipos",
+      "allow-limited-types": "Permitir solo algunos tipos",
+      "back-to-edit": "Volver a editar",
+      "add-and-save": "Agregar y guardar",
+      "messages": {
+        "unable-to-update": "No se puede actualizar la restricción",
+        "following-column-types-are-used": "Los siguientes tipos de columna todavía se usan en la plantilla de campos.",
+        "one-allowed-type-per-line": "Un tipo permitido por línea"
+      }
+    },
+    "add-field": "Agregar plantilla de campo",
+    "search-by-name-or-comment": "Buscar por nombre o comentario",
+    "form": {
+      "category": "Categoría",
+      "category-desc": "Seleccione una categoría existente o cree una nueva",
+      "unclassified": "Desclasificada",
+      "column-name": "Nombre de la columna",
+      "column-type": "Tipo de columna",
+      "default-value": "Valor por defecto",
+      "comment": "Comentario",
+      "nullable": "Anulable"
+    },
+    "classification": {
+      "self": "Clasificación de datos",
+      "select": "Seleccionar clasificación",
+      "search": "Clasificación de búsqueda"
     }
   },
   "principal": {
@@ -2525,7 +2879,7 @@
   "role": {
     "self": "Rol",
     "setting": {
-      "description": "Definir roles personalizados y aplicarlos a los miembros del proyecto.",
+      "description": "Definición de roles personalizados. Puede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado.",
       "add": "Agregar rol",
       "edit": "Editar rol",
       "title-placeholder": "Ingrese el título del rol",
@@ -2558,7 +2912,7 @@
     "expired-tip": "El papel puede haber expirado."
   },
   "database-group": {
-    "self": "Grupo de bases de datos",
+    "self": "Grupo de Bases de Datos",
     "create": "Crear grupo de bases de datos",
     "edit": "Editar grupo de bases de datos",
     "matched-database": "Base de datos coincidente",
@@ -2584,5 +2938,66 @@
   },
   "export-center": {
     "self": "centro de exportacion"
+  },
+  "schema-designer": {
+    "self": "Diseñador de esquemas",
+    "schema-design": "Esquema diseñar",
+    "schema-design-list": "Lista de Diseñar esquema",
+    "existing-schema-design": "Diseño de esquema existente",
+    "new-schema-design": "Nuevo diseño de esquema",
+    "baseline-database": "Base de datos de referencia",
+    "schema-version": "Versión del esquema",
+    "personal-draft": "Borrador personal",
+    "baseline-version": "Versión de referencia",
+    "new-branch": "Nueva rama",
+    "parent-branch": "Rama principal",
+    "save-draft": "Guardar borrador",
+    "merge-branch": "Fusionar rama",
+    "delete-branch-after-merged": "Eliminar rama después de la fusión",
+    "diff-editor": {
+      "self": "Editor de diferencias",
+      "resolve": "Resolver",
+      "latest-schema": "Último esquema",
+      "editing-schema": "Editando esquema",
+      "auto-merge-failed": "Falló la fusión automática",
+      "need-to-resolve-conflicts": "El diseño del esquema ha sido actualizado por otros. Debe resolver los conflictos antes de poder fusionar.",
+      "resolve-and-merge-again": "Resolver y fusionar nuevamente",
+      "discard-changes": "Descartar cambios",
+      "action-confirm": "Acción confirmada",
+      "duplicated-branch-name-found": "Se encontró un nombre de rama duplicado. Por favor, elige otro.",
+      "discard-changes-confirm": "¿Estás seguro de que quieres descartar todas las modificaciones?"
+    },
+    "tables": "Tablas",
+    "search-tables": "Buscar tablas",
+    "use-tips": "Selecciona las tablas a diseñar",
+    "apply-to-database": "Aplicar cambio a la base de datos",
+    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL)",
+    "message": {
+      "created-succeed": "Diseño de esquema creado con éxito",
+      "updated-succeed": "Diseño de esquema actualizado con éxito",
+      "merge-to-main-successfully": "Fusionar con el principal exitosamente",
+      "updated-time-by-user": "Actualizado por {user} en {time}"
+    },
+    "action": {
+      "use-the-existing-branch": "Usar la rama existente",
+      "create-new-branch": "Crear nueva rama",
+      "filter-by-name": "Filtrar por nombre"
+    }
+  },
+  "cel": {
+    "factor": {
+      "affected_rows": "Filas afectadas",
+      "environment_id": "ID de entorno",
+      "project_id": "ID de proyecto",
+      "instance_id": "ID de instancia",
+      "database_name": "Nombre de base de datos",
+      "db_engine": "Motor de base de datos",
+      "sql_type": "Tipo SQL",
+      "expiration_days": "Días de caducidad",
+      "export_rows": "Exportar filas",
+      "table_name": "Nombre de la tabla",
+      "column_name": "Nombre de columna",
+      "classification_level": "Nivel de clasificación"
+    }
   }
 }

@@ -37,25 +37,27 @@
         </slot>
       </div>
     </div>
-    <div
-      v-if="actionText != ''"
-      class="flex items-center justify-end mt-2 md:mt-0 md:ml-2"
-    >
-      <button
-        type="button"
-        class="btn-primary whitespace-nowrap"
-        @click.prevent="$emit('click-action')"
+    <slot name="action">
+      <div
+        v-if="actionText != ''"
+        class="flex items-center justify-end mt-2 md:mt-0 md:ml-2"
       >
-        {{ $t(actionText) }}
-      </button>
-    </div>
+        <button
+          type="button"
+          class="btn-primary whitespace-nowrap"
+          @click.prevent="$emit('click-action')"
+        >
+          {{ $t(actionText) }}
+        </button>
+      </div>
+    </slot>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, withDefaults } from "vue";
-import { BBAttentionSide, BBAttentionStyle } from "./types";
 import { useI18n } from "vue-i18n";
+import { BBAttentionSide, BBAttentionStyle } from "./types";
 
 const props = withDefaults(
   defineProps<{

@@ -31,13 +31,6 @@
           {{ projectWebhook.title }}
         </h3>
       </div>
-      <button
-        type="button"
-        class="btn-normal whitespace-nowrap items-center"
-        @click.prevent="testWebhook"
-      >
-        {{ $t("project.webhook.test-webhook") }}
-      </button>
     </div>
     <ProjectWebhookForm
       class="pt-4"
@@ -51,18 +44,11 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-
+import { useProjectV1Store, useProjectWebhookV1Store } from "@/store";
+import { emptyProjectWebhook } from "@/types";
+import { Webhook_Type } from "@/types/proto/v1/project_service";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
-import {
-  pushNotification,
-  useProjectV1Store,
-  useProjectWebhookV1Store,
-  useGracefulRequest,
-} from "@/store";
-import { Webhook_Type } from "@/types/proto/v1/project_service";
-import { emptyProjectWebhook } from "@/types";
 
 const props = defineProps({
   projectSlug: {
@@ -79,7 +65,6 @@ const props = defineProps({
   },
 });
 
-const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const projectWebhookV1Store = useProjectWebhookV1Store();
 
@@ -94,29 +79,4 @@ const projectWebhook = computed(() => {
     emptyProjectWebhook()
   );
 });
-
-const testWebhook = () => {
-  useGracefulRequest(async () => {
-    const result = await useProjectWebhookV1Store().testProjectWebhook(
-      project.value,
-      projectWebhook.value
-    );
-
-    if (result.error) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("project.webhook.fail-tested-title"),
-        description: result.error,
-        manualHide: true,
-      });
-    } else {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("project.webhook.success-tested-prompt"),
-      });
-    }
-  });
-};
 </script>

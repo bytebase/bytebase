@@ -1,9 +1,9 @@
-import type { ExecuteCommandParams } from "monaco-languageclient";
-import { MonacoLanguageClient, MonacoServices } from "monaco-languageclient";
-import { StandaloneServices } from "@codingame/monaco-vscode-api/services";
 import getMessageServiceOverride from "@codingame/monaco-vscode-api/service-override/messages";
+import { StandaloneServices } from "@codingame/monaco-vscode-api/services";
 import { createLanguageServerWorker } from "@sql-lsp/server";
 import { ConnectionScope, Schema, SQLDialect } from "@sql-lsp/types";
+import type { ExecuteCommandParams } from "monaco-languageclient";
+import { MonacoLanguageClient, MonacoServices } from "monaco-languageclient";
 import { createLanguageClient } from "./createLanguageClient";
 
 type LocalStage = {

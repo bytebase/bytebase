@@ -4,12 +4,12 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"math"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -81,11 +81,13 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 
 	license := s.loadLicense(ctx)
 	if license == nil {
+		s.store.RefreshSwap(false)
 		return enterpriseAPI.Subscription{
 			Plan: api.FREE,
 			// -1 means not expire, just for free plan
-			ExpiresTs:     -1,
-			InstanceCount: config.MaximumInstanceForFreePlan,
+			ExpiresTs: -1,
+			// Instance license count.
+			InstanceCount: 0,
 		}
 	}
 
@@ -98,6 +100,9 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 		Trialing:      license.Trialing,
 		OrgID:         license.OrgID(),
 		OrgName:       license.OrgName,
+	}
+	if !license.Trialing && license.Plan != api.FREE {
+		s.store.RefreshSwap(true)
 	}
 	return *s.cachedSubscription
 }
@@ -112,6 +117,11 @@ func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) error {
 
 // IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.
 func (s *LicenseService) IsFeatureEnabledForInstance(feature api.FeatureType, instance *store.InstanceMessage) error {
+	plan := s.GetEffectivePlan()
+	// DONOT check instance license fo FREE plan.
+	if plan == api.FREE {
+		return s.IsFeatureEnabled(feature)
+	}
 	if err := s.IsFeatureEnabled(feature); err != nil {
 		return err
 	}
@@ -145,12 +155,23 @@ func (s *LicenseService) GetEffectivePlan() api.PlanType {
 }
 
 // GetPlanLimitValue gets the limit value for the plan.
-func (s *LicenseService) GetPlanLimitValue(name api.PlanLimit) int64 {
-	v, ok := api.PlanLimitValues[name]
+func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterpriseAPI.PlanLimit) int64 {
+	v, ok := enterpriseAPI.PlanLimitValues[name]
 	if !ok {
 		return 0
 	}
-	return v[s.GetEffectivePlan()]
+
+	subscription := s.LoadSubscription(ctx)
+
+	limit := v[subscription.Plan]
+	if subscription.Trialing {
+		limit = v[api.FREE]
+	}
+
+	if limit == -1 {
+		return math.MaxInt64
+	}
+	return limit
 }
 
 // RefreshCache will invalidate and refresh the subscription cache.
@@ -188,26 +209,26 @@ func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.Licen
 func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License {
 	license, err := s.findEnterpriseLicense(ctx)
 	if err != nil {
-		log.Debug("failed to load enterprise license", zap.Error(err))
+		slog.Debug("failed to load enterprise license", log.BBError(err))
 	}
 	if license == nil {
 		license, err = s.findTrialingLicense(ctx)
 		if err != nil {
-			log.Debug("failed to load trialing license", zap.Error(err))
+			slog.Debug("failed to load trialing license", log.BBError(err))
 		}
 	}
 
 	if license == nil {
 		license, err = s.fetchLicense(ctx)
 		if err != nil {
-			log.Debug("failed to fetch license", zap.Error(err))
+			slog.Debug("failed to fetch license", log.BBError(err))
 		}
 	}
 	if license == nil {
 		return nil
 	}
 	if err := license.Valid(); err != nil {
-		log.Debug("license is invalid", zap.Error(err))
+		slog.Debug("license is invalid", log.BBError(err))
 		return nil
 	}
 
@@ -238,11 +259,11 @@ func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterprise
 			return nil, errors.Wrapf(err, "failed to parse enterprise license")
 		}
 		if license != nil {
-			log.Debug(
+			slog.Debug(
 				"Load valid license",
-				zap.String("plan", license.Plan.String()),
-				zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
-				zap.Int("instanceCount", license.InstanceCount),
+				slog.String("plan", license.Plan.String()),
+				slog.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
+				slog.Int("instanceCount", license.InstanceCount),
 			)
 			return license, nil
 		}
@@ -263,6 +284,10 @@ func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAP
 		var data enterpriseAPI.License
 		if err := json.Unmarshal([]byte(setting.Value), &data); err != nil {
 			return nil, errors.Wrapf(err, "failed to parse trial license")
+		}
+		data.InstanceCount = enterpriseAPI.InstanceLimitForTrial
+		if time.Now().AddDate(0, 0, -enterpriseAPI.TrialDaysLimit).Unix() >= setting.CreatedTs {
+			return nil, nil
 		}
 		return &data, nil
 	}

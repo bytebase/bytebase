@@ -124,6 +124,7 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep, isEmpty } from "lodash-es";
 import {
   computed,
   onBeforeMount,
@@ -133,27 +134,26 @@ import {
   toRef,
   watch,
 } from "vue";
-import { cloneDeep, isEmpty } from "lodash-es";
+import {
+  DatabaseLabelForm,
+  DatabaseNameTemplateTips,
+  useDBNameTemplateInputState,
+} from "@/components/CreateDatabasePrepForm";
+import { isPITRAvailableOnInstanceV1 } from "@/plugins/pitr";
+import {
+  useDBSchemaV1Store,
+  useProjectV1ByUID,
+  useInstanceV1Store,
+} from "@/store";
 import {
   ComposedInstance,
   ComposedDatabase,
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
 } from "@/types";
-import { CreatePITRDatabaseContext } from "./utils";
-import {
-  DatabaseLabelForm,
-  DatabaseNameTemplateTips,
-  useDBNameTemplateInputState,
-} from "@/components/CreateDatabasePrepForm";
-import {
-  useDBSchemaV1Store,
-  useProjectV1ByUID,
-  useInstanceV1Store,
-} from "@/store";
-import { isPITRAvailableOnInstanceV1 } from "@/plugins/pitr";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { Engine } from "@/types/proto/v1/common";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import { CreatePITRDatabaseContext } from "./utils";
 
 interface LocalState {
   context: CreatePITRDatabaseContext;

@@ -1,4 +1,9 @@
 import { computed } from "vue";
+import { useEnvironmentV1Store } from "@/store";
+import {
+  usePolicyByParentAndType,
+  defaultApprovalStrategy,
+} from "@/store/modules/v1/policy";
 import {
   Issue,
   IssueCreate,
@@ -6,27 +11,23 @@ import {
   Pipeline,
   SYSTEM_BOT_ID,
 } from "@/types";
-import { useIssueLogic } from ".";
-import {
-  isDatabaseRelatedIssueType,
-  isOwnerOfProjectV1,
-  hasWorkspacePermissionV1,
-  extractUserUID,
-} from "@/utils";
+import { User } from "@/types/proto/v1/auth_service";
+import { DeploymentType } from "@/types/proto/v1/deployment";
+import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
   Policy,
   PolicyType,
   ApprovalStrategy,
   ApprovalGroup,
 } from "@/types/proto/v1/org_policy_service";
-import { DeploymentType } from "@/types/proto/v1/deployment";
+import { Project } from "@/types/proto/v1/project_service";
 import {
-  usePolicyByParentAndType,
-  defaultApprovalStrategy,
-} from "@/store/modules/v1/policy";
-import { useEnvironmentV1Store } from "@/store";
-import { IamPolicy, Project } from "@/types/proto/v1/project_service";
-import { User } from "@/types/proto/v1/auth_service";
+  isDatabaseRelatedIssueType,
+  isOwnerOfProjectV1,
+  hasWorkspacePermissionV1,
+  extractUserUID,
+} from "@/utils";
+import { useIssueLogic } from ".";
 
 export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   const { create, issue, activeStageOfPipeline } = useIssueLogic();

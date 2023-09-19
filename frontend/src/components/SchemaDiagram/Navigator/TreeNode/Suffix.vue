@@ -12,8 +12,8 @@
 </template>
 
 <script lang="ts" setup>
-import type { TreeNode } from "../types";
 import { FocusButton } from "../../common";
+import type { TreeNode } from "../types";
 
 defineProps<{
   node: TreeNode;

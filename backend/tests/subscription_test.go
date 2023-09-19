@@ -2,10 +2,10 @@ package tests
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -17,12 +17,12 @@ type trial struct {
 	expectInstanceCount int32
 	plan                v1pb.PlanType
 	expectPlan          v1pb.PlanType
-	Days                int32
+	days                int32
 }
 
 func TestSubscription(t *testing.T) {
 	a := require.New(t)
-	log.SetLevel(zapcore.DebugLevel)
+	log.GLogLevel.Set(slog.LevelDebug)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
@@ -33,30 +33,32 @@ func TestSubscription(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	subscription, err := ctl.getSubscription()
+	err = ctl.removeLicense(ctx)
+	a.NoError(err)
+	subscription, err := ctl.getSubscription(ctx)
 	a.NoError(err)
 	a.Equal(v1pb.PlanType_FREE, subscription.Plan)
 
 	trialList := []trial{
 		{
 			// Test trial the TEAM plan.
-			instanceCount:       20,
-			expectInstanceCount: 20,
+			instanceCount:       10,
+			expectInstanceCount: 10,
 			plan:                v1pb.PlanType_ENTERPRISE,
 			expectPlan:          v1pb.PlanType_ENTERPRISE,
-			Days:                7,
+			days:                7,
 		},
 	}
 
 	for _, trial := range trialList {
-		err = ctl.trialPlan(&v1pb.TrialSubscription{
+		err = ctl.trialPlan(ctx, &v1pb.TrialSubscription{
 			InstanceCount: trial.instanceCount,
 			Plan:          trial.plan,
-			Days:          trial.Days,
+			Days:          trial.days,
 		})
 		a.NoError(err)
 
-		subscription, err = ctl.getSubscription()
+		subscription, err = ctl.getSubscription(ctx)
 		a.NoError(err)
 		a.Equal(trial.expectPlan, subscription.Plan)
 		a.Equal(trial.expectInstanceCount, subscription.InstanceCount)

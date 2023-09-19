@@ -8,52 +8,47 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/metric"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by row_status, visibility, source and type.
-func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Context) ([]*metric.SheetCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
+// SheetVisibility is the visibility of a sheet.
+type SheetVisibility string
 
-	rows, err := tx.QueryContext(ctx, `
-		SELECT row_status, visibility, source, type, COUNT(*) AS count
-		FROM sheet
-		GROUP BY row_status, visibility, source, type`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+const (
+	// PrivateSheet is the sheet visibility for PRIVATE. Only sheet OWNER can read/write.
+	PrivateSheet SheetVisibility = "PRIVATE"
+	// ProjectSheet is the sheet visibility for PROJECT. Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
+	ProjectSheet SheetVisibility = "PROJECT"
+	// PublicSheet is the sheet visibility for PUBLIC. Sheet OWNER can read/write, and all others can read.
+	PublicSheet SheetVisibility = "PUBLIC"
+)
 
-	var res []*metric.SheetCountMetric
-	for rows.Next() {
-		var sheetCount metric.SheetCountMetric
-		if err := rows.Scan(
-			&sheetCount.RowStatus,
-			&sheetCount.Visibility,
-			&sheetCount.Source,
-			&sheetCount.Type,
-			&sheetCount.Count,
-		); err != nil {
-			return nil, err
-		}
-		res = append(res, &sheetCount)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
+// SheetSource is the type of sheet origin source.
+type SheetSource string
 
-	return res, nil
-}
+const (
+	// SheetFromBytebase is the sheet created by Bytebase. e.g. SQL Editor.
+	SheetFromBytebase SheetSource = "BYTEBASE"
+	// SheetFromBytebaseArtifact is the artifact sheet.
+	SheetFromBytebaseArtifact SheetSource = "BYTEBASE_ARTIFACT"
+	// SheetFromGitLab is the sheet synced from GitLab (for both GitLab.com and self-hosted GitLab).
+	SheetFromGitLab SheetSource = "GITLAB"
+	// SheetFromGitHub is the sheet synced from GitHub (for both GitHub.com and GitHub Enterprise).
+	SheetFromGitHub SheetSource = "GITHUB"
+	// SheetFromBitbucket is the sheet synced from Bitbucket.
+	SheetFromBitbucket SheetSource = "BITBUCKET"
+)
+
+// SheetType is the type of sheet.
+type SheetType string
+
+const (
+	// SheetForSQL is the sheet that used for saving SQL statements.
+	SheetForSQL SheetType = "SQL"
+)
 
 // SheetMessage is the message for a sheet.
 type SheetMessage struct {
@@ -68,10 +63,10 @@ type SheetMessage struct {
 
 	Name       string
 	Statement  string
-	Visibility api.SheetVisibility
-	Source     api.SheetSource
-	Type       api.SheetType
-	Payload    string
+	Visibility SheetVisibility
+	Source     SheetSource
+	Type       SheetType
+	Payload    *storepb.SheetPayload
 
 	// Output only fields
 	UID         int
@@ -82,7 +77,7 @@ type SheetMessage struct {
 	Pinned      bool
 
 	// Internal fields
-	rowStatus api.RowStatus
+	rowStatus RowStatus
 	createdTs int64
 	updatedTs int64
 }
@@ -92,7 +87,7 @@ type FindSheetMessage struct {
 	UID *int
 
 	// Standard fields
-	RowStatus *api.RowStatus
+	RowStatus *RowStatus
 
 	// Used to find the creator's sheet list.
 	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
@@ -110,10 +105,11 @@ type FindSheetMessage struct {
 
 	// Domain fields
 	Name         *string
-	Visibilities []api.SheetVisibility
-	Source       *api.SheetSource
-	Type         *api.SheetType
-	Payload      *string
+	Visibilities []SheetVisibility
+	Source       *SheetSource
+	NotSource    *SheetSource
+	Type         *SheetType
+	PayloadType  *string
 	// Used to find (un)starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
 	// For now, we only need the starred sheets.
 	OrganizerPrincipalIDStarred    *int
@@ -123,13 +119,25 @@ type FindSheetMessage struct {
 	PrincipalID *int
 }
 
+// PatchSheetMessage is the message to patch a sheet.
+type PatchSheetMessage struct {
+	UID         int
+	UpdaterID   int
+	Name        *string
+	Statement   *string
+	Visibility  *string
+	ProjectUID  *int
+	DatabaseUID *int
+	Payload     *storepb.SheetPayload
+}
+
 // GetSheetStatementByID gets the statement of a sheet by ID.
 func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
 	if statement, ok := s.sheetStatementCache.Get(id); ok {
-		return statement, nil
+		return statement.(string), nil
 	}
 
-	sheets, err := s.ListSheetsV2(ctx, &FindSheetMessage{UID: &id, LoadFull: true}, api.SystemBotID)
+	sheets, err := s.ListSheets(ctx, &FindSheetMessage{UID: &id, LoadFull: true}, SystemBotID)
 	if err != nil {
 		return "", err
 	}
@@ -140,13 +148,13 @@ func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, erro
 		return "", errors.Errorf("expected 1 sheet, got %d", len(sheets))
 	}
 	statement := sheets[0].Statement
-	s.sheetStatementCache.Set(id, statement, 10*time.Minute)
+	s.sheetStatementCache.SetWithTTL(id, statement, int64(len(statement)), time.Hour)
 	return statement, nil
 }
 
-// GetSheetV2 gets a sheet.
-func (s *Store) GetSheetV2(ctx context.Context, find *FindSheetMessage, currentPrincipalID int) (*SheetMessage, error) {
-	sheets, err := s.ListSheetsV2(ctx, find, currentPrincipalID)
+// GetSheet gets a sheet.
+func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage, currentPrincipalID int) (*SheetMessage, error) {
+	sheets, err := s.ListSheets(ctx, find, currentPrincipalID)
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +169,8 @@ func (s *Store) GetSheetV2(ctx context.Context, find *FindSheetMessage, currentP
 	return sheet, nil
 }
 
-// ListSheetsV2 returns a list of sheets.
-func (s *Store) ListSheetsV2(ctx context.Context, find *FindSheetMessage, currentPrincipalID int) ([]*SheetMessage, error) {
+// ListSheets returns a list of sheets.
+func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentPrincipalID int) ([]*SheetMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 
 	if v := find.UID; v != nil {
@@ -209,8 +217,14 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *FindSheetMessage, curren
 	if v := find.Source; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.source = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.NotSource; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.source != $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.type = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.PayloadType; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.payload->>'type' = $%d", len(args)+1)), append(args, *v)
 	}
 	statementField := fmt.Sprintf("LEFT(sheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
@@ -255,6 +269,7 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *FindSheetMessage, curren
 	var sheets []*SheetMessage
 	for rows.Next() {
 		var sheet SheetMessage
+		var payload []byte
 		if err := rows.Scan(
 			&sheet.UID,
 			&sheet.rowStatus,
@@ -269,13 +284,18 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *FindSheetMessage, curren
 			&sheet.Visibility,
 			&sheet.Source,
 			&sheet.Type,
-			&sheet.Payload,
+			&payload,
 			&sheet.Size,
 			&sheet.Starred,
 			&sheet.Pinned,
 		); err != nil {
 			return nil, err
 		}
+		sheetPayload := &storepb.SheetPayload{}
+		if err := protojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
+			return nil, err
+		}
+		sheet.Payload = sheetPayload
 
 		sheets = append(sheets, &sheet)
 	}
@@ -294,13 +314,17 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *FindSheetMessage, curren
 	return sheets, nil
 }
 
-// CreateSheetV2 creates a new sheet.
-func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*SheetMessage, error) {
-	if create.Payload == "" {
-		create.Payload = "{}"
+// CreateSheet creates a new sheet.
+func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMessage, error) {
+	if create.Payload == nil {
+		create.Payload = &storepb.SheetPayload{}
+	}
+	payload, err := protojson.Marshal(create.Payload)
+	if err != nil {
+		return nil, err
 	}
 
-	query := fmt.Sprintf(`
+	query := `
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
@@ -314,17 +338,15 @@ func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*Sheet
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement), payload
-	`, common.MaxSheetSize)
+		RETURNING id, row_status, created_ts, updated_ts, LENGTH(statement)
+	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-	databaseID := sql.NullInt32{}
-	var sheet SheetMessage
-
+	create.UpdaterID = create.CreatorID
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
@@ -335,23 +357,13 @@ func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*Sheet
 		create.Visibility,
 		create.Source,
 		create.Type,
-		create.Payload,
+		payload,
 	).Scan(
-		&sheet.UID,
-		&sheet.rowStatus,
-		&sheet.CreatorID,
-		&sheet.createdTs,
-		&sheet.UpdaterID,
-		&sheet.updatedTs,
-		&sheet.ProjectUID,
-		&databaseID,
-		&sheet.Name,
-		&sheet.Statement,
-		&sheet.Visibility,
-		&sheet.Source,
-		&sheet.Type,
-		&sheet.Size,
-		&sheet.Payload,
+		&create.UID,
+		&create.rowStatus,
+		&create.createdTs,
+		&create.updatedTs,
+		&create.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -362,37 +374,20 @@ func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*Sheet
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	if databaseID.Valid {
-		value := int(databaseID.Int32)
-		sheet.DatabaseUID = &value
-	}
-	sheet.CreatedTime = time.Unix(sheet.createdTs, 0)
-	sheet.UpdatedTime = time.Unix(sheet.updatedTs, 0)
+	create.CreatedTime = time.Unix(create.createdTs, 0)
+	create.UpdatedTime = time.Unix(create.updatedTs, 0)
 
-	return &sheet, nil
+	return create, nil
 }
 
-// PatchSheetMessage is the message to patch a sheet.
-type PatchSheetMessage struct {
-	UID         int
-	UpdaterID   int
-	Name        *string
-	Statement   *string
-	Visibility  *string
-	ProjectUID  *int
-	DatabaseUID *int
-	// TODO(zp): update the payload.
-	Payload *string
-}
-
-// PatchSheetV2 updates a sheet.
-func (s *Store) PatchSheetV2(ctx context.Context, patch *PatchSheetMessage) (*SheetMessage, error) {
+// PatchSheet updates a sheet.
+func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*SheetMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	sheet, err := patchSheetImplV2(ctx, tx, patch)
+	sheet, err := patchSheetImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, err
 	}
@@ -400,13 +395,13 @@ func (s *Store) PatchSheetV2(ctx context.Context, patch *PatchSheetMessage) (*Sh
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	s.sheetStatementCache.Invalidate(patch.UID)
+	s.sheetStatementCache.Del(patch.UID)
 
 	return sheet, nil
 }
 
-// DeleteSheetV2 deletes an existing sheet by ID.
-func (s *Store) DeleteSheetV2(ctx context.Context, sheetUID int) error {
+// DeleteSheet deletes an existing sheet by ID.
+func (s *Store) DeleteSheet(ctx context.Context, sheetUID int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -421,13 +416,13 @@ func (s *Store) DeleteSheetV2(ctx context.Context, sheetUID int) error {
 		return err
 	}
 
-	s.sheetStatementCache.Invalidate(sheetUID)
+	s.sheetStatementCache.Del(sheetUID)
 
 	return nil
 }
 
-// patchSheetImplV2 updates a sheet's name/statement/visibility.
-func patchSheetImplV2(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*SheetMessage, error) {
+// patchSheetImpl updates a sheet's name/statement/visibility/payload/database_id/project_id.
+func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*SheetMessage, error) {
 	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -439,7 +434,11 @@ func patchSheetImplV2(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*S
 		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+		payload, err := protojson.Marshal(patch.Payload)
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
 	}
 	if v := patch.DatabaseUID; v != nil {
 		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
@@ -451,6 +450,7 @@ func patchSheetImplV2(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*S
 	args = append(args, patch.UID)
 
 	var sheet SheetMessage
+	var payload []byte
 	databaseID := sql.NullInt32{}
 
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
@@ -474,7 +474,7 @@ func patchSheetImplV2(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*S
 		&sheet.Visibility,
 		&sheet.Source,
 		&sheet.Type,
-		&sheet.Payload,
+		&payload,
 		&sheet.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -482,6 +482,11 @@ func patchSheetImplV2(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*S
 		}
 		return nil, err
 	}
+	sheetPayload := &storepb.SheetPayload{}
+	if err := protojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
+		return nil, err
+	}
+	sheet.Payload = sheetPayload
 
 	if databaseID.Valid {
 		value := int(databaseID.Int32)

@@ -3,8 +3,8 @@
 </template>
 
 <script lang="ts">
-import { useInstanceV1Store } from "@/store";
 import { defineComponent, watchEffect } from "vue";
+import { useInstanceV1Store } from "@/store";
 import { idFromSlug } from "../utils";
 
 export default defineComponent({

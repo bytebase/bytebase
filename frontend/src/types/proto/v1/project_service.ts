@@ -1,12 +1,11 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
-import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
 import { State, stateFromJSON, stateToJSON } from "./common";
 import { ProjectGitOpsInfo } from "./externalvs_service";
+import { IamPolicy } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -407,7 +406,9 @@ export interface SearchProjectsResponse {
 
 export interface CreateProjectRequest {
   /** The project to create. */
-  project?: Project;
+  project?:
+    | Project
+    | undefined;
   /**
    * The ID to use for the project, which will become the final component of
    * the project's resource name.
@@ -425,9 +426,11 @@ export interface UpdateProjectRequest {
    * The project's `name` field is used to identify the project to update.
    * Format: projects/{project}
    */
-  project?: Project;
+  project?:
+    | Project
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteProjectRequest {
@@ -468,7 +471,7 @@ export interface BatchGetIamPolicyResponse {
 
 export interface BatchGetIamPolicyResponse_PolicyResult {
   project: string;
-  policy?: IamPolicy;
+  policy?: IamPolicy | undefined;
 }
 
 export interface SetIamPolicyRequest {
@@ -477,26 +480,30 @@ export interface SetIamPolicyRequest {
    * Format: projects/{project}
    */
   project: string;
-  policy?: IamPolicy;
+  policy?: IamPolicy | undefined;
 }
 
 export interface GetDeploymentConfigRequest {
   /**
    * The name of the resource.
-   * Format: projects/{project}/deploymentConfig
+   * Format: projects/{project}/deploymentConfigs/default.
    */
   name: string;
 }
 
 export interface UpdateDeploymentConfigRequest {
-  config?: DeploymentConfig;
+  config?: DeploymentConfig | undefined;
 }
 
 export interface UpdateProjectGitOpsInfoRequest {
   /** The binding for the project and external version control. */
-  projectGitopsInfo?: ProjectGitOpsInfo;
+  projectGitopsInfo?:
+    | ProjectGitOpsInfo
+    | undefined;
   /** The mask of the fields to be updated. */
-  updateMask?: string[];
+  updateMask?:
+    | string[]
+    | undefined;
   /** If true, the gitops will be created if it does not exist. */
   allowMissing: boolean;
 }
@@ -547,41 +554,9 @@ export interface Project {
   visibility: Visibility;
   tenantMode: TenantMode;
   dbNameTemplate: string;
-  schemaVersion: SchemaVersion;
   schemaChange: SchemaChange;
   webhooks: Webhook[];
-}
-
-export interface IamPolicy {
-  /**
-   * Collection of binding.
-   * A binding binds one or more project members to a single project role.
-   */
-  bindings: Binding[];
-}
-
-export interface Binding {
-  /**
-   * The project role that is assigned to the members.
-   * Format: roles/{role}
-   */
-  role: string;
-  /**
-   * Specifies the principals requesting access for a Bytebase resource.
-   * `members` can have the following values:
-   *
-   * * `user:{emailid}`: An email address that represents a specific Bytebase
-   *    account. For example, `alice@example.com` .
-   */
-  members: string[];
-  /**
-   * The condition that is associated with this binding.
-   * If the condition evaluates to true, then this binding applies to the current request.
-   * If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
-   */
-  condition?: Expr;
-  /** The parsed expression of the condition. */
-  parsedExpr?: ParsedExpr;
+  dataClassificationConfigId: string;
 }
 
 export interface AddWebhookRequest {
@@ -591,19 +566,21 @@ export interface AddWebhookRequest {
    */
   project: string;
   /** The webhook to add. */
-  webhook?: Webhook;
+  webhook?: Webhook | undefined;
 }
 
 export interface UpdateWebhookRequest {
   /** The webhook to modify. */
-  webhook?: Webhook;
+  webhook?:
+    | Webhook
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface RemoveWebhookRequest {
   /** The webhook to remove. Identified by its url. */
-  webhook?: Webhook;
+  webhook?: Webhook | undefined;
 }
 
 export interface TestWebhookRequest {
@@ -613,7 +590,7 @@ export interface TestWebhookRequest {
    */
   project: string;
   /** The webhook to test. Identified by its url. */
-  webhook?: Webhook;
+  webhook?: Webhook | undefined;
 }
 
 export interface TestWebhookResponse {
@@ -719,12 +696,12 @@ export function webhook_TypeToJSON(object: Webhook_Type): string {
 export interface DeploymentConfig {
   /**
    * The name of the resource.
-   * Format: projects/{project}/deploymentConfig
+   * Format: projects/{project}/deploymentConfigs/default.
    */
   name: string;
   /** The title of the deployment config. */
   title: string;
-  schedule?: Schedule;
+  schedule?: Schedule | undefined;
 }
 
 export interface Schedule {
@@ -734,11 +711,11 @@ export interface Schedule {
 export interface ScheduleDeployment {
   /** The title of the deployment (stage) in a schedule. */
   title: string;
-  spec?: DeploymentSpec;
+  spec?: DeploymentSpec | undefined;
 }
 
 export interface DeploymentSpec {
-  labelSelector?: LabelSelector;
+  labelSelector?: LabelSelector | undefined;
 }
 
 export interface LabelSelector {
@@ -775,6 +752,8 @@ export enum Activity_Type {
   TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5,
   /** TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
   TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE = 6,
+  /** TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. */
+  TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22,
   /** TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT - TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. */
   TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT = 7,
   /** TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. */
@@ -805,8 +784,6 @@ export enum Activity_Type {
   TYPE_PROJECT_MEMBER_CREATE = 16,
   /** TYPE_PROJECT_MEMBER_DELETE - TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project. */
   TYPE_PROJECT_MEMBER_DELETE = 17,
-  /** TYPE_PROJECT_MEMBER_ROLE_UPDATE - TYPE_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. */
-  TYPE_PROJECT_MEMBER_ROLE_UPDATE = 18,
   /**
    * TYPE_SQL_EDITOR_QUERY - SQL Editor related activity types.
    * TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
@@ -846,6 +823,9 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 6:
     case "TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE":
       return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE;
+    case 22:
+    case "TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE":
+      return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE;
     case 7:
     case "TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT":
       return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT;
@@ -879,9 +859,6 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 17:
     case "TYPE_PROJECT_MEMBER_DELETE":
       return Activity_Type.TYPE_PROJECT_MEMBER_DELETE;
-    case 18:
-    case "TYPE_PROJECT_MEMBER_ROLE_UPDATE":
-      return Activity_Type.TYPE_PROJECT_MEMBER_ROLE_UPDATE;
     case 19:
     case "TYPE_SQL_EDITOR_QUERY":
       return Activity_Type.TYPE_SQL_EDITOR_QUERY;
@@ -913,6 +890,8 @@ export function activity_TypeToJSON(object: Activity_Type): string {
       return "TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE";
     case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE:
       return "TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE";
+    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
+      return "TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE";
     case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT:
       return "TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT";
     case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE:
@@ -935,8 +914,6 @@ export function activity_TypeToJSON(object: Activity_Type): string {
       return "TYPE_PROJECT_MEMBER_CREATE";
     case Activity_Type.TYPE_PROJECT_MEMBER_DELETE:
       return "TYPE_PROJECT_MEMBER_DELETE";
-    case Activity_Type.TYPE_PROJECT_MEMBER_ROLE_UPDATE:
-      return "TYPE_PROJECT_MEMBER_ROLE_UPDATE";
     case Activity_Type.TYPE_SQL_EDITOR_QUERY:
       return "TYPE_SQL_EDITOR_QUERY";
     case Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE:
@@ -998,7 +975,9 @@ export interface CreateDatabaseGroupRequest {
    */
   parent: string;
   /** The database group to create. */
-  databaseGroup?: DatabaseGroup;
+  databaseGroup?:
+    | DatabaseGroup
+    | undefined;
   /**
    * The ID to use for the database group, which will become the final component of
    * the database group's resource name.
@@ -1018,9 +997,11 @@ export interface UpdateDatabaseGroupRequest {
    * The database group's `name` field is used to identify the database group to update.
    * Format: projects/{project}/databaseGroups/{databaseGroup}
    */
-  databaseGroup?: DatabaseGroup;
+  databaseGroup?:
+    | DatabaseGroup
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteDatabaseGroupRequest {
@@ -1043,7 +1024,9 @@ export interface DatabaseGroup {
    */
   databasePlaceholder: string;
   /** The condition that is associated with this database group. */
-  databaseExpr?: Expr;
+  databaseExpr?:
+    | Expr
+    | undefined;
   /** The list of databases that match the database group condition. */
   matchedDatabases: DatabaseGroup_Database[];
   /** The list of databases that match the database group condition. */
@@ -1065,7 +1048,9 @@ export interface CreateSchemaGroupRequest {
    */
   parent: string;
   /** The schema group to create. */
-  schemaGroup?: SchemaGroup;
+  schemaGroup?:
+    | SchemaGroup
+    | undefined;
   /**
    * The ID to use for the schema group, which will become the final component of
    * the schema group's resource name.
@@ -1085,9 +1070,11 @@ export interface UpdateSchemaGroupRequest {
    * The schema group's `name` field is used to identify the schema group to update.
    * Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
    */
-  schemaGroup?: SchemaGroup;
+  schemaGroup?:
+    | SchemaGroup
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteSchemaGroupRequest {
@@ -1151,7 +1138,9 @@ export interface SchemaGroup {
    * The table condition that is associated with this schema group.
    * The table_placeholder in the sheet script will be rendered to the actual table name.
    */
-  tableExpr?: Expr;
+  tableExpr?:
+    | Expr
+    | undefined;
   /**
    * The table placeholder used for rendering. For example, if set to "tbl", all the table name
    * "tbl" in the SQL script will be rendered to the actual table name.
@@ -2608,9 +2597,9 @@ function createBaseProject(): Project {
     visibility: 0,
     tenantMode: 0,
     dbNameTemplate: "",
-    schemaVersion: 0,
     schemaChange: 0,
     webhooks: [],
+    dataClassificationConfigId: "",
   };
 }
 
@@ -2643,14 +2632,14 @@ export const Project = {
     if (message.dbNameTemplate !== "") {
       writer.uint32(74).string(message.dbNameTemplate);
     }
-    if (message.schemaVersion !== 0) {
-      writer.uint32(80).int32(message.schemaVersion);
-    }
     if (message.schemaChange !== 0) {
-      writer.uint32(88).int32(message.schemaChange);
+      writer.uint32(80).int32(message.schemaChange);
     }
     for (const v of message.webhooks) {
-      Webhook.encode(v!, writer.uint32(98).fork()).ldelim();
+      Webhook.encode(v!, writer.uint32(90).fork()).ldelim();
+    }
+    if (message.dataClassificationConfigId !== "") {
+      writer.uint32(98).string(message.dataClassificationConfigId);
     }
     return writer;
   },
@@ -2730,21 +2719,21 @@ export const Project = {
             break;
           }
 
-          message.schemaVersion = reader.int32() as any;
+          message.schemaChange = reader.int32() as any;
           continue;
         case 11:
-          if (tag !== 88) {
+          if (tag !== 90) {
             break;
           }
 
-          message.schemaChange = reader.int32() as any;
+          message.webhooks.push(Webhook.decode(reader, reader.uint32()));
           continue;
         case 12:
           if (tag !== 98) {
             break;
           }
 
-          message.webhooks.push(Webhook.decode(reader, reader.uint32()));
+          message.dataClassificationConfigId = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2766,9 +2755,11 @@ export const Project = {
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : 0,
       dbNameTemplate: isSet(object.dbNameTemplate) ? String(object.dbNameTemplate) : "",
-      schemaVersion: isSet(object.schemaVersion) ? schemaVersionFromJSON(object.schemaVersion) : 0,
       schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
       webhooks: Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
+      dataClassificationConfigId: isSet(object.dataClassificationConfigId)
+        ? String(object.dataClassificationConfigId)
+        : "",
     };
   },
 
@@ -2783,13 +2774,14 @@ export const Project = {
     message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
     message.tenantMode !== undefined && (obj.tenantMode = tenantModeToJSON(message.tenantMode));
     message.dbNameTemplate !== undefined && (obj.dbNameTemplate = message.dbNameTemplate);
-    message.schemaVersion !== undefined && (obj.schemaVersion = schemaVersionToJSON(message.schemaVersion));
     message.schemaChange !== undefined && (obj.schemaChange = schemaChangeToJSON(message.schemaChange));
     if (message.webhooks) {
       obj.webhooks = message.webhooks.map((e) => e ? Webhook.toJSON(e) : undefined);
     } else {
       obj.webhooks = [];
     }
+    message.dataClassificationConfigId !== undefined &&
+      (obj.dataClassificationConfigId = message.dataClassificationConfigId);
     return obj;
   },
 
@@ -2808,175 +2800,9 @@ export const Project = {
     message.visibility = object.visibility ?? 0;
     message.tenantMode = object.tenantMode ?? 0;
     message.dbNameTemplate = object.dbNameTemplate ?? "";
-    message.schemaVersion = object.schemaVersion ?? 0;
     message.schemaChange = object.schemaChange ?? 0;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseIamPolicy(): IamPolicy {
-  return { bindings: [] };
-}
-
-export const IamPolicy = {
-  encode(message: IamPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.bindings) {
-      Binding.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): IamPolicy {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIamPolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.bindings.push(Binding.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): IamPolicy {
-    return { bindings: Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [] };
-  },
-
-  toJSON(message: IamPolicy): unknown {
-    const obj: any = {};
-    if (message.bindings) {
-      obj.bindings = message.bindings.map((e) => e ? Binding.toJSON(e) : undefined);
-    } else {
-      obj.bindings = [];
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<IamPolicy>): IamPolicy {
-    return IamPolicy.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<IamPolicy>): IamPolicy {
-    const message = createBaseIamPolicy();
-    message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseBinding(): Binding {
-  return { role: "", members: [], condition: undefined, parsedExpr: undefined };
-}
-
-export const Binding = {
-  encode(message: Binding, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.role !== "") {
-      writer.uint32(10).string(message.role);
-    }
-    for (const v of message.members) {
-      writer.uint32(18).string(v!);
-    }
-    if (message.condition !== undefined) {
-      Expr.encode(message.condition, writer.uint32(26).fork()).ldelim();
-    }
-    if (message.parsedExpr !== undefined) {
-      ParsedExpr.encode(message.parsedExpr, writer.uint32(34).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Binding {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBinding();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.role = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.members.push(reader.string());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.condition = Expr.decode(reader, reader.uint32());
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.parsedExpr = ParsedExpr.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Binding {
-    return {
-      role: isSet(object.role) ? String(object.role) : "",
-      members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
-      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
-      parsedExpr: isSet(object.parsedExpr) ? ParsedExpr.fromJSON(object.parsedExpr) : undefined,
-    };
-  },
-
-  toJSON(message: Binding): unknown {
-    const obj: any = {};
-    message.role !== undefined && (obj.role = message.role);
-    if (message.members) {
-      obj.members = message.members.map((e) => e);
-    } else {
-      obj.members = [];
-    }
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
-    message.parsedExpr !== undefined &&
-      (obj.parsedExpr = message.parsedExpr ? ParsedExpr.toJSON(message.parsedExpr) : undefined);
-    return obj;
-  },
-
-  create(base?: DeepPartial<Binding>): Binding {
-    return Binding.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<Binding>): Binding {
-    const message = createBaseBinding();
-    message.role = object.role ?? "";
-    message.members = object.members?.map((e) => e) || [];
-    message.condition = (object.condition !== undefined && object.condition !== null)
-      ? Expr.fromPartial(object.condition)
-      : undefined;
-    message.parsedExpr = (object.parsedExpr !== undefined && object.parsedExpr !== null)
-      ? ParsedExpr.fromPartial(object.parsedExpr)
-      : undefined;
+    message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";
     return message;
   },
 };
@@ -5718,9 +5544,9 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              40,
+              43,
               18,
-              38,
+              41,
               47,
               118,
               49,
@@ -5758,6 +5584,9 @@ export const ProjectServiceDefinition = {
               102,
               105,
               103,
+              115,
+              47,
+              42,
               125,
             ]),
           ],
@@ -5774,7 +5603,7 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              55,
+              58,
               58,
               6,
               99,
@@ -5784,7 +5613,7 @@ export const ProjectServiceDefinition = {
               105,
               103,
               50,
-              45,
+              48,
               47,
               118,
               49,
@@ -5829,6 +5658,9 @@ export const ProjectServiceDefinition = {
               102,
               105,
               103,
+              115,
+              47,
+              42,
               125,
             ]),
           ],
@@ -7207,200 +7039,6 @@ export const ProjectServiceDefinition = {
     },
   },
 } as const;
-
-export interface ProjectServiceImplementation<CallContextExt = {}> {
-  getProject(request: GetProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  listProjects(
-    request: ListProjectsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListProjectsResponse>>;
-  /** Search for projects that the caller has both projects.get permission on, and also satisfy the specified query. */
-  searchProjects(
-    request: SearchProjectsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchProjectsResponse>>;
-  createProject(request: CreateProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  updateProject(request: UpdateProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  deleteProject(request: DeleteProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  undeleteProject(
-    request: UndeleteProjectRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Project>>;
-  getIamPolicy(request: GetIamPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<IamPolicy>>;
-  batchGetIamPolicy(
-    request: BatchGetIamPolicyRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchGetIamPolicyResponse>>;
-  setIamPolicy(request: SetIamPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<IamPolicy>>;
-  getDeploymentConfig(
-    request: GetDeploymentConfigRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DeploymentConfig>>;
-  updateDeploymentConfig(
-    request: UpdateDeploymentConfigRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DeploymentConfig>>;
-  addWebhook(request: AddWebhookRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  updateWebhook(request: UpdateWebhookRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  removeWebhook(request: RemoveWebhookRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  testWebhook(
-    request: TestWebhookRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<TestWebhookResponse>>;
-  updateProjectGitOpsInfo(
-    request: UpdateProjectGitOpsInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ProjectGitOpsInfo>>;
-  unsetProjectGitOpsInfo(
-    request: UnsetProjectGitOpsInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-  setupProjectSQLReviewCI(
-    request: SetupSQLReviewCIRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SetupSQLReviewCIResponse>>;
-  getProjectGitOpsInfo(
-    request: GetProjectGitOpsInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ProjectGitOpsInfo>>;
-  listDatabaseGroups(
-    request: ListDatabaseGroupsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListDatabaseGroupsResponse>>;
-  getDatabaseGroup(
-    request: GetDatabaseGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseGroup>>;
-  createDatabaseGroup(
-    request: CreateDatabaseGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseGroup>>;
-  updateDatabaseGroup(
-    request: UpdateDatabaseGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseGroup>>;
-  deleteDatabaseGroup(
-    request: DeleteDatabaseGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-  listSchemaGroups(
-    request: ListSchemaGroupsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSchemaGroupsResponse>>;
-  getSchemaGroup(
-    request: GetSchemaGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaGroup>>;
-  createSchemaGroup(
-    request: CreateSchemaGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaGroup>>;
-  updateSchemaGroup(
-    request: UpdateSchemaGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaGroup>>;
-  deleteSchemaGroup(
-    request: DeleteSchemaGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-}
-
-export interface ProjectServiceClient<CallOptionsExt = {}> {
-  getProject(request: DeepPartial<GetProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  listProjects(
-    request: DeepPartial<ListProjectsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListProjectsResponse>;
-  /** Search for projects that the caller has both projects.get permission on, and also satisfy the specified query. */
-  searchProjects(
-    request: DeepPartial<SearchProjectsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchProjectsResponse>;
-  createProject(request: DeepPartial<CreateProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  updateProject(request: DeepPartial<UpdateProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  deleteProject(request: DeepPartial<DeleteProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  undeleteProject(
-    request: DeepPartial<UndeleteProjectRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Project>;
-  getIamPolicy(request: DeepPartial<GetIamPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<IamPolicy>;
-  batchGetIamPolicy(
-    request: DeepPartial<BatchGetIamPolicyRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchGetIamPolicyResponse>;
-  setIamPolicy(request: DeepPartial<SetIamPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<IamPolicy>;
-  getDeploymentConfig(
-    request: DeepPartial<GetDeploymentConfigRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DeploymentConfig>;
-  updateDeploymentConfig(
-    request: DeepPartial<UpdateDeploymentConfigRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DeploymentConfig>;
-  addWebhook(request: DeepPartial<AddWebhookRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  updateWebhook(request: DeepPartial<UpdateWebhookRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  removeWebhook(request: DeepPartial<RemoveWebhookRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  testWebhook(
-    request: DeepPartial<TestWebhookRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<TestWebhookResponse>;
-  updateProjectGitOpsInfo(
-    request: DeepPartial<UpdateProjectGitOpsInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ProjectGitOpsInfo>;
-  unsetProjectGitOpsInfo(
-    request: DeepPartial<UnsetProjectGitOpsInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-  setupProjectSQLReviewCI(
-    request: DeepPartial<SetupSQLReviewCIRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SetupSQLReviewCIResponse>;
-  getProjectGitOpsInfo(
-    request: DeepPartial<GetProjectGitOpsInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ProjectGitOpsInfo>;
-  listDatabaseGroups(
-    request: DeepPartial<ListDatabaseGroupsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListDatabaseGroupsResponse>;
-  getDatabaseGroup(
-    request: DeepPartial<GetDatabaseGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseGroup>;
-  createDatabaseGroup(
-    request: DeepPartial<CreateDatabaseGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseGroup>;
-  updateDatabaseGroup(
-    request: DeepPartial<UpdateDatabaseGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseGroup>;
-  deleteDatabaseGroup(
-    request: DeepPartial<DeleteDatabaseGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-  listSchemaGroups(
-    request: DeepPartial<ListSchemaGroupsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSchemaGroupsResponse>;
-  getSchemaGroup(
-    request: DeepPartial<GetSchemaGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaGroup>;
-  createSchemaGroup(
-    request: DeepPartial<CreateSchemaGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaGroup>;
-  updateSchemaGroup(
-    request: DeepPartial<UpdateSchemaGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaGroup>;
-  deleteSchemaGroup(
-    request: DeepPartial<DeleteSchemaGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

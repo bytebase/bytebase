@@ -1,11 +1,12 @@
 <template>
   <div
-    class="text-md font-normal"
+    class="text-md font-normal flex items-center gap-x-3"
     :class="[
       dark ? 'text-[var(--color-matrix-green-hover)]' : 'text-control-light',
     ]"
   >
-    {{ error }}
+    <span>{{ error }}</span>
+    <slot name="suffix" />
   </div>
 </template>
 

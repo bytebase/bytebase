@@ -18,17 +18,15 @@
 
 <script lang="ts" setup>
 import { PropType, toRef } from "vue";
-import {
-  RuleLevel,
-  RuleTemplate,
-  RuleConfigComponent,
-} from "@/types/sqlReview";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { RuleTemplate } from "@/types/sqlReview";
 import {
   SQLRuleTable,
   SQLRuleFilter,
   useSQLRuleFilter,
   payloadValueListToComponentList,
 } from "./components/";
+import { PayloadForEngine } from "./components/RuleConfigComponents";
 
 const props = defineProps({
   selectedRuleList: {
@@ -42,9 +40,9 @@ const emit = defineEmits<{
   (
     event: "payload-change",
     rule: RuleTemplate,
-    componentList: RuleConfigComponent[]
+    update: Partial<RuleTemplate>
   ): void;
-  (event: "level-change", rule: RuleTemplate, level: RuleLevel): void;
+  (event: "level-change", rule: RuleTemplate, level: SQLReviewRuleLevel): void;
   (event: "comment-change", rule: RuleTemplate, comment: string): void;
 }>();
 
@@ -54,18 +52,14 @@ const {
   filteredRuleList,
 } = useSQLRuleFilter(toRef(props, "selectedRuleList"));
 
-const onPayloadChange = (
-  rule: RuleTemplate,
-  data: (string | number | boolean | string[])[]
-) => {
+const onPayloadChange = (rule: RuleTemplate, data: PayloadForEngine) => {
   if (!rule.componentList) {
     return;
   }
-  const componentList = payloadValueListToComponentList(rule, data);
-  emit("payload-change", rule, componentList);
+  emit("payload-change", rule, payloadValueListToComponentList(rule, data));
 };
 
-const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
+const onLevelChange = (rule: RuleTemplate, level: SQLReviewRuleLevel) => {
   emit("level-change", rule, level);
 };
 

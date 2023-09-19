@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/protobuf/duration.proto";
 import "google/type/expr.proto";
 import "store/approval.proto";
 
@@ -10,18 +11,15 @@ option go_package = "generated-go/store";
 message IssuePayload {
   IssuePayloadApproval approval = 1;
   GrantRequest grant_request = 2;
-  Grouping grouping = 3;
-}
-
-message Grouping {
-  // The group name, format projects/{project}/database_groups/{database_group}
-  string database_group_name = 1;
 }
 
 message GrantRequest {
-  // The requested role, e.g. roles/EXPORTER.
+  // The requested role.
+  // Format: roles/EXPORTER.
   string role = 1;
-  // The requested user, e.g. users/hello@bytebase.com.
+  // The user to be granted.
+  // Format: users/{userUID}.
   string user = 2;
   google.type.Expr condition = 3;
+  google.protobuf.Duration expiration = 4;
 }

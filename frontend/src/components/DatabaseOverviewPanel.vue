@@ -137,6 +137,26 @@
             :function-list="functionList"
           />
         </template>
+
+        <template v-if="databaseEngine === Engine.SNOWFLAKE">
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.streams") }}
+          </div>
+          <StreamTable
+            :database="database"
+            :schema-name="state.selectedSchemaName"
+            :stream-list="streamList"
+          />
+
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.tasks") }}
+          </div>
+          <TaskTable
+            :database="database"
+            :schema-name="state.selectedSchemaName"
+            :task-list="taskList"
+          />
+        </template>
       </template>
     </div>
   </div>
@@ -144,16 +164,19 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { computed, reactive, watchEffect, PropType } from "vue";
-import { ComposedDatabase, DataSource } from "../types";
+import { computed, reactive, watchEffect, PropType, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { useAnomalyV1List, useDBSchemaV1Store } from "@/store";
+import { Anomaly } from "@/types/proto/v1/anomaly_service";
+import { Engine, State } from "@/types/proto/v1/common";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyTable.vue";
+import FunctionTable from "../components/FunctionTable.vue";
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
-import FunctionTable from "../components/FunctionTable.vue";
-import { Engine, State } from "@/types/proto/v1/common";
-import { Anomaly } from "@/types/proto/v1/anomaly_service";
+import { ComposedDatabase, DataSource } from "../types";
+import StreamTable from "./StreamTable.vue";
+import TaskTable from "./TaskTable.vue";
 
 interface LocalState {
   selectedSchemaName: string;
@@ -166,9 +189,16 @@ const props = defineProps({
     type: Object as PropType<ComposedDatabase>,
   },
 });
-
+const route = useRoute();
 const state = reactive<LocalState>({
   selectedSchemaName: "",
+});
+
+onMounted(() => {
+  const schema = route.query.schema as string;
+  if (schema) {
+    state.selectedSchemaName = schema;
+  }
 });
 
 const dbSchemaStore = useDBSchemaV1Store();
@@ -182,15 +212,32 @@ const hasSchemaProperty = computed(() => {
     databaseEngine.value === Engine.POSTGRES ||
     databaseEngine.value === Engine.SNOWFLAKE ||
     databaseEngine.value === Engine.ORACLE ||
+    databaseEngine.value === Engine.DM ||
     databaseEngine.value === Engine.MSSQL ||
-    databaseEngine.value === Engine.REDSHIFT
+    databaseEngine.value === Engine.REDSHIFT ||
+    databaseEngine.value === Engine.RISINGWAVE
   );
 });
 
 const prepareDatabaseMetadata = async () => {
   await dbSchemaStore.getOrFetchDatabaseMetadata(props.database.name);
   if (hasSchemaProperty.value && schemaList.value.length > 0) {
-    state.selectedSchemaName = head(schemaList.value)?.name || "";
+    const schemaInQuery = route.query.schema as string;
+    if (
+      schemaInQuery &&
+      schemaList.value.find((schema) => schema.name === schemaInQuery)
+    ) {
+      state.selectedSchemaName = schemaInQuery;
+    } else {
+      const publicSchema = schemaList.value.find(
+        (schema) => schema.name.toLowerCase() === "public"
+      );
+      if (publicSchema) {
+        state.selectedSchemaName = publicSchema.name;
+      } else {
+        state.selectedSchemaName = head(schemaList.value)?.name || "";
+      }
+    }
   }
 };
 
@@ -258,5 +305,33 @@ const functionList = computed(() => {
     );
   }
   return dbSchemaStore.getFunctionList(props.database.name);
+});
+
+const streamList = computed(() => {
+  if (hasSchemaProperty.value) {
+    return (
+      schemaList.value.find(
+        (schema) => schema.name === state.selectedSchemaName
+      )?.streams || []
+    );
+  }
+  return dbSchemaStore
+    .getDatabaseMetadata(props.database.name)
+    .schemas.map((schema) => schema.streams)
+    .flat();
+});
+
+const taskList = computed(() => {
+  if (hasSchemaProperty.value) {
+    return (
+      schemaList.value.find(
+        (schema) => schema.name === state.selectedSchemaName
+      )?.tasks || []
+    );
+  }
+  return dbSchemaStore
+    .getDatabaseMetadata(props.database.name)
+    .schemas.map((schema) => schema.tasks)
+    .flat();
 });
 </script>

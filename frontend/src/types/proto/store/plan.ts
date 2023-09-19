@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.store";
@@ -14,7 +14,9 @@ export interface PlanConfig_Step {
 
 export interface PlanConfig_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
-  earliestAllowedTime?: Date;
+  earliestAllowedTime?:
+    | Date
+    | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
   createDatabaseConfig?: PlanConfig_CreateDatabaseConfig | undefined;
@@ -43,7 +45,16 @@ export interface PlanConfig_CreateDatabaseConfig {
   cluster: string;
   /** owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>". */
   owner: string;
+  /**
+   * backup is the resource name of the backup.
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
+   */
   backup: string;
+  /**
+   * The environment resource.
+   * Format: environments/prod where prod is the environment resource ID.
+   */
+  environment: string;
   /** labels of the database. */
   labels: { [key: string]: string };
 }
@@ -57,7 +68,9 @@ export interface PlanConfig_ChangeDatabaseConfig {
   /**
    * The resource name of the target.
    * Format: instances/{instance-id}/databases/{database-name}.
-   * Format: projects/{project}/deploymentConfig.
+   * Format: projects/{project}/databaseGroups/{databaseGroup}.
+   * Format: projects/{project}/deploymentConfigs/default. The plan should
+   * have a single step and single spec for the deployment configuration type.
    */
   target: string;
   /**
@@ -157,10 +170,10 @@ export interface PlanConfig_ChangeDatabaseConfig_RollbackDetail {
    */
   rollbackFromTask: string;
   /**
-   * rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task.
-   * Format: projects/{project}/reviews/{review}
+   * rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
+   * Format: projects/{project}/issues/{issue}
    */
-  rollbackFromReview: string;
+  rollbackFromIssue: string;
 }
 
 export interface PlanConfig_RestoreDatabaseConfig {
@@ -451,6 +464,7 @@ function createBasePlanConfig_CreateDatabaseConfig(): PlanConfig_CreateDatabaseC
     cluster: "",
     owner: "",
     backup: "",
+    environment: "",
     labels: {},
   };
 }
@@ -481,8 +495,11 @@ export const PlanConfig_CreateDatabaseConfig = {
     if (message.backup !== "") {
       writer.uint32(66).string(message.backup);
     }
+    if (message.environment !== "") {
+      writer.uint32(74).string(message.environment);
+    }
     Object.entries(message.labels).forEach(([key, value]) => {
-      PlanConfig_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
+      PlanConfig_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(82).fork()).ldelim();
     });
     return writer;
   },
@@ -555,9 +572,16 @@ export const PlanConfig_CreateDatabaseConfig = {
             break;
           }
 
-          const entry9 = PlanConfig_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
-          if (entry9.value !== undefined) {
-            message.labels[entry9.key] = entry9.value;
+          message.environment = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          const entry10 = PlanConfig_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
+          if (entry10.value !== undefined) {
+            message.labels[entry10.key] = entry10.value;
           }
           continue;
       }
@@ -579,6 +603,7 @@ export const PlanConfig_CreateDatabaseConfig = {
       cluster: isSet(object.cluster) ? String(object.cluster) : "",
       owner: isSet(object.owner) ? String(object.owner) : "",
       backup: isSet(object.backup) ? String(object.backup) : "",
+      environment: isSet(object.environment) ? String(object.environment) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -598,6 +623,7 @@ export const PlanConfig_CreateDatabaseConfig = {
     message.cluster !== undefined && (obj.cluster = message.cluster);
     message.owner !== undefined && (obj.owner = message.owner);
     message.backup !== undefined && (obj.backup = message.backup);
+    message.environment !== undefined && (obj.environment = message.environment);
     obj.labels = {};
     if (message.labels) {
       Object.entries(message.labels).forEach(([k, v]) => {
@@ -621,6 +647,7 @@ export const PlanConfig_CreateDatabaseConfig = {
     message.cluster = object.cluster ?? "";
     message.owner = object.owner ?? "";
     message.backup = object.backup ?? "";
+    message.environment = object.environment ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = String(value);
@@ -831,7 +858,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
 };
 
 function createBasePlanConfig_ChangeDatabaseConfig_RollbackDetail(): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
-  return { rollbackFromTask: "", rollbackFromReview: "" };
+  return { rollbackFromTask: "", rollbackFromIssue: "" };
 }
 
 export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
@@ -842,8 +869,8 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
     if (message.rollbackFromTask !== "") {
       writer.uint32(10).string(message.rollbackFromTask);
     }
-    if (message.rollbackFromReview !== "") {
-      writer.uint32(18).string(message.rollbackFromReview);
+    if (message.rollbackFromIssue !== "") {
+      writer.uint32(18).string(message.rollbackFromIssue);
     }
     return writer;
   },
@@ -867,7 +894,7 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
             break;
           }
 
-          message.rollbackFromReview = reader.string();
+          message.rollbackFromIssue = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -881,14 +908,14 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
   fromJSON(object: any): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
     return {
       rollbackFromTask: isSet(object.rollbackFromTask) ? String(object.rollbackFromTask) : "",
-      rollbackFromReview: isSet(object.rollbackFromReview) ? String(object.rollbackFromReview) : "",
+      rollbackFromIssue: isSet(object.rollbackFromIssue) ? String(object.rollbackFromIssue) : "",
     };
   },
 
   toJSON(message: PlanConfig_ChangeDatabaseConfig_RollbackDetail): unknown {
     const obj: any = {};
     message.rollbackFromTask !== undefined && (obj.rollbackFromTask = message.rollbackFromTask);
-    message.rollbackFromReview !== undefined && (obj.rollbackFromReview = message.rollbackFromReview);
+    message.rollbackFromIssue !== undefined && (obj.rollbackFromIssue = message.rollbackFromIssue);
     return obj;
   },
 
@@ -903,7 +930,7 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
   ): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
     const message = createBasePlanConfig_ChangeDatabaseConfig_RollbackDetail();
     message.rollbackFromTask = object.rollbackFromTask ?? "";
-    message.rollbackFromReview = object.rollbackFromReview ?? "";
+    message.rollbackFromIssue = object.rollbackFromIssue ?? "";
     return message;
   },
 };

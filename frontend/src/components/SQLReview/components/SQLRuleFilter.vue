@@ -9,7 +9,7 @@
       @toggle-checked-level="$emit('toggle-checked-level', $event)"
     />
     <div
-      class="flex justify-between items-center border-t border-control-border pt-4"
+      class="flex flex-col lg:flex-row items-start justify-between gap-y-3 lg:items-center border-t border-control-border pt-4"
     >
       <SQLReviewCategoryTabFilter
         :selected="params.selectedCategory"
@@ -18,6 +18,7 @@
       />
       <BBTableSearch
         ref="searchField"
+        class="w-full lg:w-auto"
         :placeholder="$t('sql-review.search-rule-name')"
         @change-text="$emit('change-search-text', $event)"
       />
@@ -28,15 +29,11 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
-import {
-  convertToCategoryList,
-  RuleLevel,
-  RuleTemplate,
-  SchemaRuleEngineType,
-} from "@/types";
-import type { CategoryFilterItem } from "./SQLReviewCategoryTabFilter.vue";
+import { convertToCategoryList, RuleTemplate } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import SQLReviewCategorySummaryFilter from "./SQLReviewCategorySummaryFilter.vue";
+import type { CategoryFilterItem } from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewCategoryTabFilter from "./SQLReviewCategoryTabFilter.vue";
 import { SQLRuleFilterParams } from "./useSQLRuleFilter";
 
@@ -46,8 +43,8 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  (event: "toggle-checked-engine", engine: SchemaRuleEngineType): void;
-  (event: "toggle-checked-level", level: RuleLevel): void;
+  (event: "toggle-checked-engine", engine: Engine): void;
+  (event: "toggle-checked-level", level: SQLReviewRuleLevel): void;
   (event: "change-category", category: string | undefined): void;
   (event: "change-search-text", keyword: string): void;
 }>();

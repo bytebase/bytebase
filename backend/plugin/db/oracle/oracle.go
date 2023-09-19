@@ -5,6 +5,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -12,7 +14,6 @@ import (
 	// Import go-ora Oracle driver.
 	"github.com/pkg/errors"
 	go_ora "github.com/sijms/go-ora/v2"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -32,16 +33,18 @@ func init() {
 
 // Driver is the Oracle driver.
 type Driver struct {
-	db           *sql.DB
-	databaseName string
+	db               *sql.DB
+	databaseName     string
+	serviceName      string
+	schemaTenantMode bool
 }
 
 func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
-// Open opens a Snowflake driver.
-func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+// Open opens a Oracle driver.
+func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
@@ -55,8 +58,15 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	if err != nil {
 		return nil, err
 	}
+	if config.SchemaTenantMode && config.Database != "" {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.Database)); err != nil {
+			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.Database)
+		}
+	}
 	driver.db = db
 	driver.databaseName = config.Database
+	driver.serviceName = config.ServiceName
+	driver.schemaTenantMode = config.SchemaTenantMode
 	return driver, nil
 }
 
@@ -107,7 +117,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			log.Debug("rowsAffected returns error", zap.Error(err))
+			slog.Debug("rowsAffected returns error", log.BBError(err))
 		} else {
 			totalRowsAffected += rowsAffected
 		}
@@ -130,13 +140,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	return totalRowsAffected, nil
 }
 
-// QueryConn querys a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	return util.Query(ctx, db.Oracle, conn, statement, queryContext)
-}
-
-// QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.Oracle, statement)
 	if err != nil {
 		return nil, err
@@ -178,7 +183,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 	}
 
 	startTime := time.Now()
-	result, err := util.Query2(ctx, db.Oracle, conn, stmt, queryContext)
+	result, err := util.Query(ctx, db.Oracle, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}
@@ -190,4 +195,17 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, parser.Oracle, conn, statement)
+}
+
+func (driver *Driver) getMajorVersion(ctx context.Context) (int, error) {
+	var banner string
+	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'DM%'").Scan(&banner); err != nil {
+		return 0, err
+	}
+	re := regexp.MustCompile(`(\d+)`)
+	match := re.FindStringSubmatch(banner)
+	if len(match) > 0 {
+		return strconv.Atoi(match[0])
+	}
+	return 0, errors.Errorf("failed to parse major version from banner: %s", banner)
 }

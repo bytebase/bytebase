@@ -27,13 +27,12 @@
 
 <script lang="ts" setup>
 import { PropType, reactive, watchEffect } from "vue";
-
-import { ChangeHistoryTable } from "@/components/ChangeHistory";
-import { ComposedDatabase } from "@/types";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import { databaseV1Slug } from "@/utils";
+import { ChangeHistoryTable } from "@/components/ChangeHistory";
 import { useChangeHistoryStore } from "@/store";
+import { ComposedDatabase } from "@/types";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
+import { databaseV1Slug } from "@/utils";
 
 // Show at most 5 recent migration history for each database
 const MAX_MIGRATION_HISTORY_COUNT = 5;
@@ -68,7 +67,7 @@ const fetchChangeHistory = async (databaseList: ComposedDatabase[]) => {
     if (changeHistoryList.length > 0) {
       state.databaseSectionList.push(database);
 
-      const title = `${database.databaseName} (${database.instanceEntity.environmentEntity.title})`;
+      const title = `${database.databaseName} (${database.effectiveEnvironmentEntity.title})`;
       const index = state.changeHistorySectionList.findIndex(
         (item: BBTableSectionDataSource<ChangeHistory>) => {
           return item.title == title;

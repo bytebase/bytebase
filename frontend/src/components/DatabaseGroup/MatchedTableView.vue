@@ -69,9 +69,9 @@
 
 <script lang="ts" setup>
 import { reactive } from "vue";
+import BBLoader from "@/bbkit/BBLoader.vue";
 import { ComposedSchemaGroupTable } from "@/types";
 import { DatabaseView } from "../v2";
-import BBLoader from "@/bbkit/BBLoader.vue";
 
 interface LocalState {
   showMatchedTableList: boolean;

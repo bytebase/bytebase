@@ -1,7 +1,7 @@
 <template>
   <div class="w-full mt-4 space-y-4">
     <FeatureAttention feature="bb.feature.audit-log" />
-    <div class="flex justify-end items-center mt-1">
+    <div class="flex justify-end items-center mt-1 space-x-2">
       <MemberSelect
         class="w-52"
         :disabled="!hasAuditLogFeature"
@@ -10,14 +10,15 @@
         :selected-id="selectedUserUID"
         @select-user-id="selectUser"
       />
-      <div class="w-52 ml-2">
+      <div class="w-52">
         <TypeSelect
           :disabled="!hasAuditLogFeature"
           :selected-type-list="selectedAuditTypeList"
+          :item-list="AuditActivityTypeList"
           @update-selected-type-list="selectAuditType"
         />
       </div>
-      <div class="w-112 ml-2">
+      <div class="w-112">
         <NDatePicker
           v-model:value="selectedTimeRange"
           type="datetimerange"
@@ -28,19 +29,20 @@
         >
         </NDatePicker>
       </div>
+      <DataExportButton
+        size="large"
+        :support-formats="[
+          ExportFormat.CSV,
+          ExportFormat.JSON,
+          ExportFormat.XLSX,
+        ]"
+        :disabled="!hasAuditLogFeature"
+        @export="handleExport"
+      />
     </div>
     <PagedActivityTable
       v-if="hasAuditLogFeature"
-      :activity-find="{
-        action:
-          selectedAuditTypeList.length > 0
-            ? selectedAuditTypeList
-            : AuditActivityTypeList,
-        creatorEmail: selectedUserEmail,
-        order: 'desc',
-        createdTsAfter: selectedTimeRange ? selectedTimeRange[0] : undefined,
-        createdTsBefore: selectedTimeRange ? selectedTimeRange[1] : undefined,
-      }"
+      :activity-find="activityFind"
       session-key="bb.page-audit-log-table.settings-audit-log-table"
       :page-size="10"
     >
@@ -93,18 +95,21 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { NGrid, NGi, NDatePicker } from "naive-ui";
 import dayjs from "dayjs";
+import { NGrid, NGi, NDatePicker } from "naive-ui";
+import { BinaryLike } from "node:crypto";
+import { reactive, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import { BBDialog } from "@/bbkit";
+import { featureToRef, useUserStore, useActivityV1Store } from "@/store";
 import {
   AuditActivityTypeList,
   UNKNOWN_ID,
   AuditActivityTypeI18nNameMap,
+  FindActivityMessage,
 } from "@/types";
-import { featureToRef, useUserStore } from "@/store";
+import { ExportFormat } from "@/types/proto/v1/common";
 import {
   LogEntity,
   LogEntity_Action,
@@ -121,6 +126,7 @@ const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
+const activityV1Store = useActivityV1Store();
 
 const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
 
@@ -253,5 +259,33 @@ const clearDatePicker = () => {
       createdTsBefore: Date.now(),
     },
   });
+};
+
+const activityFind = computed((): FindActivityMessage => {
+  return {
+    action:
+      selectedAuditTypeList.value.length > 0
+        ? selectedAuditTypeList.value
+        : AuditActivityTypeList,
+    creatorEmail: selectedUserEmail.value,
+    order: "desc",
+    createdTsAfter: selectedTimeRange.value
+      ? selectedTimeRange.value[0]
+      : undefined,
+    createdTsBefore: selectedTimeRange.value
+      ? selectedTimeRange.value[1]
+      : undefined,
+  };
+});
+
+const handleExport = async (
+  format: ExportFormat,
+  callback: (content: BinaryLike | Blob, format: ExportFormat) => void
+) => {
+  const content = await activityV1Store.exportData({
+    find: activityFind.value,
+    format,
+  });
+  callback(content, format);
 };
 </script>

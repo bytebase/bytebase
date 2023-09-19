@@ -49,18 +49,10 @@
 </template>
 
 <script setup lang="ts">
+import { cloneDeep } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { cloneDeep } from "lodash-es";
-
-import {
-  ComposedDatabase,
-  DEFAULT_PROJECT_V1_NAME,
-  PresetRoleType,
-  UNKNOWN_ID,
-} from "@/types";
 import { ProjectSelect } from "@/components/v2";
-import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -68,8 +60,15 @@ import {
   useGracefulRequest,
   useProjectV1Store,
 } from "@/store";
-import SelectDatabaseLabel from "./SelectDatabaseLabel.vue";
+import {
+  ComposedDatabase,
+  DEFAULT_PROJECT_V1_NAME,
+  PresetRoleType,
+  UNKNOWN_ID,
+} from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
+import SelectDatabaseLabel from "./SelectDatabaseLabel.vue";
 
 const props = defineProps<{
   database: ComposedDatabase;

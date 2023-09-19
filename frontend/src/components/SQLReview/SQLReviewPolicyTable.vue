@@ -72,18 +72,17 @@
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-
 import { BBButtonConfirm, BBCheckbox, BBGrid, BBGridColumn } from "@/bbkit";
+import { EnvironmentV1Name } from "@/components/v2";
 import {
   pushNotification,
   useCurrentUserV1,
   useSQLReviewStore,
   useEnvironmentV1List,
 } from "@/store";
-import { hasWorkspacePermissionV1, sqlReviewPolicySlug } from "@/utils";
 import { SQLReviewPolicy } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { EnvironmentV1Name } from "@/components/v2";
+import { hasWorkspacePermissionV1, sqlReviewPolicySlug } from "@/utils";
 
 type EnvironmentReviewPolicy = {
   environment: Environment;

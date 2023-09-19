@@ -40,13 +40,13 @@ type Finder struct {
 }
 
 // NewFinder creates a new finder.
-func NewFinder(database *storepb.DatabaseMetadata, ctx *FinderContext) *Finder {
+func NewFinder(database *storepb.DatabaseSchemaMetadata, ctx *FinderContext) *Finder {
 	return &Finder{Origin: newDatabaseState(database, ctx), Final: newDatabaseState(database, ctx)}
 }
 
 // NewEmptyFinder creates a finder with empty databse.
 func NewEmptyFinder(ctx *FinderContext) *Finder {
-	return &Finder{Origin: newDatabaseState(&storepb.DatabaseMetadata{}, ctx), Final: newDatabaseState(&storepb.DatabaseMetadata{}, ctx)}
+	return &Finder{Origin: newDatabaseState(&storepb.DatabaseSchemaMetadata{}, ctx), Final: newDatabaseState(&storepb.DatabaseSchemaMetadata{}, ctx)}
 }
 
 // WalkThrough does the walk through.

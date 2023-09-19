@@ -1,6 +1,5 @@
 import ELK, { LayoutOptions, type ElkNode } from "elkjs/lib/elk.bundled";
 import { groupBy } from "lodash-es";
-
 import type { Path, Rect } from "@/components/SchemaDiagram/types";
 import type { GraphEdgeItem, GraphNodeItem, Layout } from "../types";
 

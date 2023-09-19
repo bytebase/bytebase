@@ -20,7 +20,7 @@
                   {{ database.databaseName }}
 
                   <ProductionEnvironmentV1Icon
-                    :environment="database.instanceEntity.environmentEntity"
+                    :environment="environment"
                     :tooltip="true"
                     class="w-5 h-5"
                   />
@@ -45,7 +45,7 @@
                 >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
               >
               <EnvironmentV1Name
-                :environment="database.instanceEntity.environmentEntity"
+                :environment="environment"
                 icon-class="textinfolabel"
               />
             </dd>
@@ -134,7 +134,7 @@
             class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
           >
-            <span>{{ $t("database.alter-schema") }}</span>
+            <span>{{ $t("database.edit-schema") }}</span>
           </button>
         </div>
       </div>
@@ -173,7 +173,7 @@
         <DatabaseSlowQueryPanel :database="database" />
       </template>
       <template v-if="selectedTabItem?.hash === 'settings'">
-        <DatabaseSettingsPanel :database="database" />
+        <DatabaseSettingsPanel :database="database" :allow-edit="allowEdit" />
       </template>
     </div>
 
@@ -241,23 +241,49 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, watch, ref } from "vue";
-import { useRouter } from "vue-router";
 import dayjs from "dayjs";
-import { useI18n } from "vue-i18n";
 import { startCase } from "lodash-es";
 import { ClientError } from "nice-grpc-web";
-
+import { computed, onMounted, reactive, watch, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { useRoute } from "vue-router";
+import { BBTabFilterItem } from "@/bbkit/types";
+import { GhostDialog } from "@/components/AlterSchemaPrepForm";
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
 import DatabaseChangeHistoryPanel from "@/components/DatabaseChangeHistoryPanel.vue";
-import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
-import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
 import {
   DatabaseSettingsPanel,
   SQLEditorButtonV1,
 } from "@/components/DatabaseDetail";
-import { TransferSingleDatabase } from "@/components/TransferDatabaseForm";
 import { DatabaseLabelProps } from "@/components/DatabaseLabels";
+import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
+import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
+import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
+import { TransferSingleDatabase } from "@/components/TransferDatabaseForm";
+import {
+  EnvironmentV1Name,
+  InstanceV1Name,
+  ProductionEnvironmentV1Icon,
+  ProjectV1Name,
+} from "@/components/v2";
+import {
+  pushNotification,
+  useCurrentUserIamPolicy,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
+  useGracefulRequest,
+  useEnvironmentV1Store,
+} from "@/store";
+import {
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_V1_NAME,
+  ComposedDatabase,
+  unknownEnvironment,
+} from "@/types";
+import { State } from "@/types/proto/v1/common";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
@@ -269,31 +295,9 @@ import {
   instanceV1SupportSlowQuery,
   hasPermissionInProjectV1,
   instanceV1HasAlterSchema,
-  isDatabaseV1Accessible,
+  isDatabaseV1Queryable,
   allowUsingSchemaEditorV1,
 } from "@/utils";
-import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME, ComposedDatabase } from "@/types";
-import { BBTabFilterItem } from "@/bbkit/types";
-import { GhostDialog } from "@/components/AlterSchemaPrepForm";
-import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
-import {
-  pushNotification,
-  useCurrentUserIamPolicy,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-  useGracefulRequest,
-} from "@/store";
-import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import {
-  EnvironmentV1Name,
-  InstanceV1Name,
-  ProductionEnvironmentV1Icon,
-  ProjectV1Name,
-} from "@/components/v2";
-import { TenantMode } from "@/types/proto/v1/project_service";
-import { State } from "@/types/proto/v1/common";
 
 type DatabaseTabItem = {
   name: string;
@@ -346,7 +350,7 @@ const state = reactive<LocalState>({
   syncingSchema: false,
   showSchemaDiagram: false,
 });
-
+const route = useRoute();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
@@ -367,16 +371,8 @@ const hasSchemaDiagramFeature = computed((): boolean => {
   return instanceV1HasAlterSchema(database.value.instanceEntity);
 });
 
-const accessControlPolicy = usePolicyByParentAndType(
-  computed(() => ({
-    parentPath: database.value.name,
-    policyType: PolicyType.ACCESS_CONTROL,
-  }))
-);
 const allowQuery = computed(() => {
-  const policy = accessControlPolicy.value;
-  const list = policy ? [policy] : [];
-  return isDatabaseV1Accessible(database.value, list, currentUserV1.value);
+  return isDatabaseV1Queryable(database.value, currentUserV1.value);
 });
 
 // Project can be transferred if meets either of the condition below:
@@ -620,6 +616,7 @@ const selectTab = (index: number) => {
   router.replace({
     name: "workspace.database.detail",
     hash: "#" + item.hash,
+    query: route.query,
   });
 };
 
@@ -688,4 +685,12 @@ const syncDatabaseSchema = async () => {
     state.syncingSchema = false;
   }
 };
+
+const environment = computed(() => {
+  return (
+    useEnvironmentV1Store().getEnvironmentByName(
+      database.value.effectiveEnvironment
+    ) ?? unknownEnvironment()
+  );
+});
 </script>

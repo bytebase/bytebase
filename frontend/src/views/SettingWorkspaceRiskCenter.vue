@@ -1,4 +1,15 @@
 <template>
+  <FeatureAttentionForInstanceLicense
+    v-if="hasCustomApprovalFeature"
+    feature="bb.feature.custom-approval"
+    custom-class="my-4"
+  />
+  <FeatureAttention
+    v-else
+    feature="bb.feature.custom-approval"
+    custom-class="my-4"
+  />
+
   <div class="textinfolabel">
     {{ $t("custom-approval.risk.description") }}
     <a
@@ -21,23 +32,22 @@
   <RiskDialog />
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.custom-approval"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref, toRef } from "vue";
-
-import { featureToRef, useCurrentUserV1, useRiskStore } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   RiskCenter,
   RiskDialog,
   provideRiskCenterContext,
 } from "@/components/CustomApproval/Settings/components/RiskCenter";
 import { provideRiskFilter } from "@/components/CustomApproval/Settings/components/common";
+import { featureToRef, useCurrentUserV1, useRiskStore } from "@/store";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   ready: boolean;

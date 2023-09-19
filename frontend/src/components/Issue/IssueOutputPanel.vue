@@ -89,15 +89,15 @@
 </template>
 
 <script lang="ts" setup>
+import { toClipboard } from "@soerenmartius/vue3-clipboard";
+import { isEqual } from "lodash-es";
 import { computed, Ref } from "vue";
 import { useRouter } from "vue-router";
-import { isEqual } from "lodash-es";
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import DatabaseSelect from "../DatabaseSelect.vue";
-import { activeEnvironment } from "@/utils";
 import { OutputField, IssueContext } from "@/plugins";
-import { DatabaseId, Issue, UNKNOWN_ID } from "@/types";
 import { pushNotification, useCurrentUser } from "@/store";
+import { DatabaseId, Issue, UNKNOWN_ID } from "@/types";
+import { activeEnvironment } from "@/utils";
+import DatabaseSelect from "../DatabaseSelect.vue";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 
 const router = useRouter();

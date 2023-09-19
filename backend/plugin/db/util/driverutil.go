@@ -7,20 +7,14 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"math/big"
-	"reflect"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/google/uuid"
-	"github.com/paulmach/orb"
-	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/pkg/errors"
-	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -28,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -125,99 +120,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 }
 
 // Query will execute a readonly / SELECT query.
-// The result is then JSON marshaled and returned to the frontend.
-func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
-	readOnly := queryContext.ReadOnly
-	limit := queryContext.Limit
-	if !readOnly {
-		return queryAdmin(ctx, dbType, conn, statement, limit)
-	}
-
-	statement = strings.TrimRight(statement, " \n\t;")
-	// Limit SQL query result size.
-	if !strings.HasPrefix(statement, "EXPLAIN") && limit > 0 {
-		if dbType == db.MySQL || dbType == db.MariaDB {
-			// MySQL 5.7 doesn't support WITH clause.
-			statement = getMySQLStatementWithResultLimit(statement, limit)
-		} else if dbType == db.Oracle {
-			statement = getOracleStatementWithResultLimit(statement, limit)
-		} else if dbType == db.MSSQL {
-			statement = getMSSQLStatementWithResultLimit(statement, limit)
-		} else {
-			statement = getStatementWithResultLimit(statement, limit)
-		}
-	}
-
-	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
-	// https://github.com/pingcap/tidb/issues/34626
-	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
-	// Snowflake doesn't support READ ONLY transactions.
-	// https://github.com/snowflakedb/gosnowflake/blob/0450f0b16a4679b216baecd3fd6cdce739dbb683/connection.go#L166
-	if dbType == db.TiDB || dbType == db.ClickHouse || dbType == db.Snowflake || dbType == db.Spanner || dbType == db.Redis || dbType == db.Oracle || dbType == db.MSSQL {
-		readOnly = false
-	}
-	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, statement)
-	if err != nil {
-		return nil, FormatErrorWithQuery(err, statement)
-	}
-	defer rows.Close()
-
-	columnNames, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-
-	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
-	}
-
-	if len(fieldList) != 0 && len(fieldList) != len(columnNames) {
-		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
-	}
-
-	var fieldMaskInfo []bool
-	for i := range columnNames {
-		if len(fieldList) > 0 && fieldList[i].Sensitive {
-			fieldMaskInfo = append(fieldMaskInfo, true)
-		} else {
-			fieldMaskInfo = append(fieldMaskInfo, false)
-		}
-	}
-
-	columnTypes, err := rows.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
-	var columnTypeNames []string
-	for _, v := range columnTypes {
-		// DatabaseTypeName returns the database system name of the column type.
-		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
-		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
-	}
-
-	data, err := readRows(rows, dbType, columnTypes, columnTypeNames, fieldList)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return []any{columnNames, columnTypeNames, data, fieldMaskInfo}, nil
-}
-
-// Query2 will execute a readonly / SELECT query.
-// TODO(rebelice): remove Query function and rename Query2 to Query after frontend is ready to use the new API.
-func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
 	if err != nil {
 		return nil, err
@@ -247,13 +150,18 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
 	}
 
+	var fieldMaskingLevels []storepb.MaskingLevel
 	var fieldMaskInfo []bool
+	var fieldSensitiveInfo []bool
 	for i := range columnNames {
-		if len(fieldList) > 0 && fieldList[i].Sensitive {
-			fieldMaskInfo = append(fieldMaskInfo, true)
-		} else {
-			fieldMaskInfo = append(fieldMaskInfo, false)
+		maskingLevel := storepb.MaskingLevel_NONE
+		if len(fieldList) > i && queryContext.EnableSensitive {
+			maskingLevel = fieldList[i].MaskingLevel
 		}
+		fieldMaskingLevels = append(fieldMaskingLevels, maskingLevel)
+		sensitive := len(fieldList) > i && (maskingLevel == storepb.MaskingLevel_FULL || maskingLevel == storepb.MaskingLevel_PARTIAL)
+		fieldMaskInfo = append(fieldMaskInfo, sensitive && queryContext.EnableSensitive)
+		fieldSensitiveInfo = append(fieldSensitiveInfo, sensitive)
 	}
 
 	columnTypes, err := rows.ColumnTypes()
@@ -268,7 +176,7 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows2(rows, columnTypes, columnTypeNames, fieldList)
+	data, err := readRows(rows, columnTypeNames, fieldMaskingLevels)
 	if err != nil {
 		return nil, err
 	}
@@ -282,6 +190,7 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
 		Masked:          fieldMaskInfo,
+		Sensitive:       fieldSensitiveInfo,
 	}, nil
 }
 
@@ -308,7 +217,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 			}
 			affectedRows, err := sqlResult.RowsAffected()
 			if err != nil {
-				log.Info("rowsAffected returns error", zap.Error(err))
+				slog.Info("rowsAffected returns error", log.BBError(err))
 			}
 
 			field := []string{"Affected Rows"}
@@ -378,7 +287,7 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows2(rows, columnTypes, columnTypeNames, nil)
+	data, err := readRows(rows, columnTypeNames, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -394,60 +303,17 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	}, nil
 }
 
-// query will execute a query.
-func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, _ int) ([]any, error) {
-	rows, err := conn.QueryContext(ctx, statement)
-	if err != nil {
-		// TODO(d): ClickHouse will return "driver: bad connection" if we use non-SELECT statement for Query(). We need to ignore the error.
-		if dbType == db.ClickHouse {
-			return nil, nil
-		}
-		return nil, FormatErrorWithQuery(err, statement)
-	}
-	defer rows.Close()
-
-	columnNames, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-
-	columnTypes, err := rows.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
-	var columnTypeNames []string
-	for _, v := range columnTypes {
-		// DatabaseTypeName returns the database system name of the column type.
-		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
-		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
-	}
-
-	data, err := readRows(rows, dbType, columnTypes, columnTypeNames, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	// queryAdmin doesn't mask the sensitive fields.
-	// Return the all false boolean slice here as the placeholder.
-	sensitiveInfo := make([]bool, len(columnNames))
-	return []any{columnNames, columnTypeNames, data, sensitiveInfo}, nil
-}
-
-// TODO(rebelice): remove the readRows and rename readRows2 to readRows if legacy API is deprecated.
-func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]*v1pb.QueryRow, error) {
+func readRows(rows *sql.Rows, columnTypeNames []string, fieldMaskingLevels []storepb.MaskingLevel) ([]*v1pb.QueryRow, error) {
 	var data []*v1pb.QueryRow
-	if len(columnTypes) == 0 {
+	if len(columnTypeNames) == 0 {
 		// No rows.
 		// The oracle driver will panic if there is no rows such as EXPLAIN PLAN FOR statement.
 		return data, nil
 	}
 	for rows.Next() {
-		scanArgs := make([]any, len(columnTypes))
+		// wantBytesValue want to convert StringValue to BytesValue when columnTypeName is BIT or VARBIT
+		wantBytesValue := make([]bool, len(columnTypeNames))
+		scanArgs := make([]any, len(columnTypeNames))
 		for i, v := range columnTypeNames {
 			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
 			switch v {
@@ -459,6 +325,9 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 				scanArgs[i] = new(sql.NullInt64)
 			case "FLOAT":
 				scanArgs[i] = new(sql.NullFloat64)
+			case "BIT", "VARBIT":
+				wantBytesValue[i] = true
+				scanArgs[i] = new(sql.NullString)
 			default:
 				scanArgs[i] = new(sql.NullString)
 			}
@@ -469,33 +338,75 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 		}
 
 		var rowData v1pb.QueryRow
-		for i := range columnTypes {
-			if len(fieldList) > 0 && fieldList[i].Sensitive {
+		for i := range columnTypeNames {
+			if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_FULL {
 				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}})
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: v.Bool}})
+				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+					s := fmt.Sprintf("%t", v.Bool)
+					result := getMiddlePartOfString(s)
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+				} else {
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: v.Bool}})
+				}
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String}})
+				if wantBytesValue[i] {
+					if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+						result := getMiddlePartOfString(v.String)
+						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+					} else {
+						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: []byte(v.String)}})
+					}
+				} else {
+					if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+						result := getMiddlePartOfString(v.String)
+						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+					} else {
+						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String}})
+					}
+				}
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: v.Int64}})
+				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+					s := strconv.FormatInt(v.Int64, 10)
+					result := getMiddlePartOfString(s)
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+				} else {
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: v.Int64}})
+				}
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: v.Int32}})
+				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+					s := strconv.FormatInt(int64(v.Int32), 10)
+					result := getMiddlePartOfString(s)
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+				} else {
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: v.Int32}})
+				}
 				continue
 			}
 			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: v.Float64}})
+				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+					s := strconv.FormatFloat(v.Float64, 'f', -1, 64)
+					result := getMiddlePartOfString(s)
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
+				} else {
+					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: v.Float64}})
+				}
 				continue
 			}
 			// If none of them match, set nil to its value.
-			rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
+			if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "**UL**"}})
+			} else {
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
+			}
 		}
 
 		data = append(data, &rowData)
@@ -504,67 +415,28 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 	return data, nil
 }
 
-func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]any, error) {
-	if dbType == db.ClickHouse {
-		return readRowsForClickhouse(rows, columnTypes, columnTypeNames, fieldList)
+func paddingAsterisk(s string) string {
+	return fmt.Sprintf("**%s**", s)
+}
+
+// getMiddlePartOfString will get the middle part of the string.
+func getMiddlePartOfString(stmt string) string {
+	if len(stmt) == 0 || len(stmt) == 1 {
+		return ""
 	}
-	data := []any{}
-	for rows.Next() {
-		scanArgs := make([]any, len(columnTypes))
-		for i, v := range columnTypeNames {
-			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
-			switch v {
-			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
-				scanArgs[i] = new(sql.NullString)
-			case "BOOL":
-				scanArgs[i] = new(sql.NullBool)
-			case "INT", "INTEGER":
-				scanArgs[i] = new(sql.NullInt64)
-			case "FLOAT":
-				scanArgs[i] = new(sql.NullFloat64)
-			default:
-				scanArgs[i] = new(sql.NullString)
-			}
-		}
-
-		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, err
-		}
-
-		rowData := []any{}
-		for i := range columnTypes {
-			if len(fieldList) > 0 && fieldList[i].Sensitive {
-				rowData = append(rowData, "******")
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
-				rowData = append(rowData, v.Bool)
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
-				rowData = append(rowData, v.String)
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
-				rowData = append(rowData, v.Int64)
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
-				rowData = append(rowData, v.Int32)
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
-				rowData = append(rowData, v.Float64)
-				continue
-			}
-			// If none of them match, set nil to its value.
-			rowData = append(rowData, nil)
-		}
-
-		data = append(data, rowData)
+	if len(stmt) == 2 || len(stmt) == 3 {
+		return string(stmt[1])
 	}
 
-	return data, nil
+	s := []rune(stmt)
+	if len(s)%4 != 0 {
+		s = s[:len(s)/4*4]
+	}
+
+	var ret []rune
+	ret = append(ret, s[len(s)/4:len(s)/2]...)
+	ret = append(ret, s[len(s)/2:len(s)/4*3]...)
+	return string(ret)
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {
@@ -573,15 +445,6 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 
 func getMySQLStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
-}
-
-func getOracleStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit)
-}
-
-func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
-	// TODO(d): support SELECT 1 (mssql: No column name was specified for column 1 of 'result').
-	return fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, limit)
 }
 
 // FindMigrationHistoryList will find the list of migration history.
@@ -722,213 +585,4 @@ func ConvertYesNo(s string) (bool, error) {
 	default:
 		return false, errors.Errorf("unrecognized isNullable type %q", s)
 	}
-}
-
-func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]any, error) {
-	data := []any{}
-
-	for rows.Next() {
-		cols := make([]any, len(columnTypes))
-		for i, name := range columnTypeNames {
-			// The ClickHouse driver uses *Type rather than sql.NullType to scan nullable fields
-			// as described in https://github.com/ClickHouse/clickhouse-go/issues/754
-			// TODO: remove this workaround once fixed.
-			if strings.HasPrefix(name, "TUPLE") || strings.HasPrefix(name, "ARRAY") || strings.HasPrefix(name, "MAP") {
-				// For TUPLE, ARRAY, MAP type in ClickHouse, we pass any and the driver will do the rest.
-				var it any
-				cols[i] = &it
-			} else {
-				// We use ScanType to get the correct *Type and then do type assertions
-				// following https://github.com/ClickHouse/clickhouse-go/blob/main/TYPES.md
-				cols[i] = reflect.New(columnTypes[i].ScanType()).Interface()
-			}
-		}
-
-		if err := rows.Scan(cols...); err != nil {
-			return nil, err
-		}
-
-		rowData := []any{}
-		for i := range cols {
-			if len(fieldList) > 0 && fieldList[i].Sensitive {
-				rowData = append(rowData, "******")
-				continue
-			}
-
-			// handle TUPLE ARRAY MAP
-			if v, ok := cols[i].(*any); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-
-			// not nullable
-			if v, ok := cols[i].(*int); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*int8); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*int16); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*int32); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*int64); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*uint); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*uint8); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*uint16); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*uint32); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*uint64); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*float32); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*float64); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*string); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*bool); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*time.Time); ok && v != nil {
-				rowData = append(rowData, *v)
-				continue
-			}
-			if v, ok := cols[i].(*big.Int); ok && v != nil {
-				rowData = append(rowData, v.String())
-				continue
-			}
-			if v, ok := cols[i].(*decimal.Decimal); ok && v != nil {
-				rowData = append(rowData, v.String())
-				continue
-			}
-			if v, ok := cols[i].(*uuid.UUID); ok && v != nil {
-				rowData = append(rowData, v.String())
-				continue
-			}
-			if v, ok := cols[i].(*orb.Point); ok && v != nil {
-				rowData = append(rowData, wkt.MarshalString(*v))
-				continue
-			}
-			if v, ok := cols[i].(*orb.Polygon); ok && v != nil {
-				rowData = append(rowData, wkt.MarshalString(*v))
-				continue
-			}
-			if v, ok := cols[i].(*orb.Ring); ok && v != nil {
-				rowData = append(rowData, wkt.MarshalString(*v))
-				continue
-			}
-			if v, ok := cols[i].(*orb.MultiPolygon); ok && v != nil {
-				rowData = append(rowData, wkt.MarshalString(*v))
-				continue
-			}
-
-			// nullable
-			if v, ok := cols[i].(**int); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**int8); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**int16); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**int32); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**int64); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**uint); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**uint8); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**uint16); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**uint32); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**uint64); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**float32); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**float64); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**string); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**bool); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**time.Time); ok && *v != nil {
-				rowData = append(rowData, **v)
-				continue
-			}
-			if v, ok := cols[i].(**big.Int); ok && *v != nil {
-				rowData = append(rowData, (*v).String())
-				continue
-			}
-			if v, ok := cols[i].(**decimal.Decimal); ok && *v != nil {
-				rowData = append(rowData, (*v).String())
-				continue
-			}
-			if v, ok := cols[i].(**uuid.UUID); ok && *v != nil {
-				rowData = append(rowData, (*v).String())
-				continue
-			}
-			rowData = append(rowData, nil)
-		}
-
-		data = append(data, rowData)
-	}
-
-	return data, nil
 }

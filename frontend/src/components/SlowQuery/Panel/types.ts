@@ -5,8 +5,8 @@ import {
   ListSlowQueriesRequest,
 } from "@/types/proto/v1/database_service";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { Project } from "@/types/proto/v1/project_service";
 import { Instance } from "@/types/proto/v1/instance_service";
+import { Project } from "@/types/proto/v1/project_service";
 
 export type SlowQueryFilterParams = {
   project: Project | undefined; // undefined to "All"

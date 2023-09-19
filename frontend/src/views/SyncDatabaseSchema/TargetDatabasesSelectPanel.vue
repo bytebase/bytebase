@@ -123,7 +123,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, PropType } from "vue";
 import {
   NCollapse,
   NCollapseItem,
@@ -131,39 +130,23 @@ import {
   NDrawer,
   NDrawerContent,
 } from "naive-ui";
-import {
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
-import { ComposedDatabase } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import { computed, reactive } from "vue";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
-import { State } from "@/types/proto/v1/common";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { ComposedDatabase } from "@/types";
+import { Engine, State } from "@/types/proto/v1/common";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 type LocalState = {
   searchText: string;
   selectedDatabaseList: ComposedDatabase[];
 };
 
-const props = defineProps({
-  projectId: {
-    type: String,
-    required: true,
-  },
-  environmentId: {
-    type: String,
-    required: true,
-  },
-  databaseId: {
-    type: String as PropType<string>,
-    required: true,
-  },
-  selectedDatabaseIdList: {
-    type: Array as PropType<string[]>,
-    required: true,
-  },
-});
+const props = defineProps<{
+  projectId: string;
+  engine: Engine;
+  selectedDatabaseIdList: string[];
+}>();
 
 const emit = defineEmits<{
   (event: "close"): void;
@@ -179,24 +162,15 @@ const state = reactive<LocalState>({
   }),
 });
 
-const sourceDatabase = computed(() => {
-  return databaseStore.getDatabaseByUID(props.databaseId);
-});
-
 const databaseListGroupByEnvironment = computed(() => {
-  const project = useProjectV1Store().getProjectByUID(props.projectId);
   const databaseList =
-    databaseStore
-      .databaseListByProject(project.name)
+    databaseStore.databaseList
+      .filter((db) => db.projectEntity.uid === props.projectId)
       .filter((db) => db.databaseName.includes(state.searchText))
-      .filter(
-        (db) =>
-          db.instanceEntity.engine ===
-          sourceDatabase.value.instanceEntity.engine
-      ) || [];
+      .filter((db) => db.instanceEntity.engine === props.engine) || [];
   const listByEnv = environmentV1Store.environmentList.map((environment) => {
     const list = databaseList.filter(
-      (db) => db.instanceEntity.environment === environment.name
+      (db) => db.effectiveEnvironment === environment.name
     );
     return {
       environment,
@@ -235,7 +209,7 @@ const toggleAllDatabasesSelectionForEnvironment = (
   on: boolean
 ) => {
   databaseList
-    .filter((db) => db.instanceEntity.environment === environment.name)
+    .filter((db) => db.effectiveEnvironment === environment.name)
     .forEach((db) => toggleDatabaseSelected(db.uid, on));
 };
 
@@ -245,7 +219,7 @@ const getAllSelectionStateForEnvironment = (
 ): { checked: boolean; indeterminate: boolean } => {
   const set = new Set(
     state.selectedDatabaseList
-      .filter((db) => db.instanceEntity.environment === environment.name)
+      .filter((db) => db.effectiveEnvironment === environment.name)
       .map((db) => db.uid)
   );
   const checked = databaseList.every((db) => set.has(db.uid));
@@ -263,7 +237,7 @@ const getSelectionStateSummaryForEnvironment = (
 ) => {
   const set = new Set(
     state.selectedDatabaseList
-      .filter((db) => db.instanceEntity.environment === environment.name)
+      .filter((db) => db.effectiveEnvironment === environment.name)
       .map((db) => db.uid)
   );
   const selected = databaseList.filter((db) => set.has(db.uid)).length;

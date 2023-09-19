@@ -103,6 +103,18 @@ ruleList:
         - updated_ts
         - creator_id
         - updater_id
+  - type: column.required
+    level: WARNING
+    engine: SNOWFLAKE
+    payload:
+      list:
+        - ID
+  - type: column.required
+    level: WARNING
+    engine: ORACLE
+    payload:
+      list:
+        - ID
   - type: column.type-disallow-list
     level: ERROR
     payload:

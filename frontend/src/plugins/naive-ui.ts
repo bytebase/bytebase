@@ -1,4 +1,3 @@
-import type { App } from "vue";
 import {
   create,
   NAlert,
@@ -28,6 +27,7 @@ import {
   NUpload,
   NUploadDragger,
 } from "naive-ui";
+import type { App } from "vue";
 
 const naive = create({
   components: [

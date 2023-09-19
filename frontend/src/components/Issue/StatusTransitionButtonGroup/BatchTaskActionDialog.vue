@@ -19,11 +19,10 @@
 <script setup lang="ts">
 import { Ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-
 import { Issue, Task } from "@/types";
 import { TaskStatusTransition } from "@/utils";
-import BatchTaskActionForm from "./BatchTaskActionForm.vue";
 import { useIssueLogic } from "../logic";
+import BatchTaskActionForm from "./BatchTaskActionForm.vue";
 
 const props = defineProps<{
   transition: TaskStatusTransition;
@@ -38,11 +37,13 @@ const { t } = useI18n();
 const issueLogic = useIssueLogic();
 const issue = issueLogic.issue as Ref<Issue>;
 
-const title = computed(() => {
-  return t("task.skip-failed-in-current-stage");
-});
-
 const okText = computed(() => {
   return t(props.transition.buttonName);
+});
+
+const title = computed(() => {
+  return t("task.action-failed-in-current-stage", {
+    action: okText.value,
+  });
 });
 </script>

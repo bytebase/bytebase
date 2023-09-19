@@ -38,7 +38,11 @@
       </BBTableCell>
       <BBTableCell class="w-[12%]">
         <div class="flex flex-row items-center">
-          <BBAvatar :size="'SMALL'" :username="getUser(activity)?.title" />
+          <BBAvatar
+            :size="'SMALL'"
+            :username="getUser(activity)?.title"
+            :email="getUser(activity)?.email"
+          />
           <span class="ml-2">{{ getUser(activity)?.title }}</span>
         </div>
       </BBTableCell>
@@ -49,11 +53,11 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTableColumn } from "../../bbkit/types";
+import { useUserStore } from "@/store";
 import { activityName } from "@/types";
 import { LogEntity, LogEntity_Level } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
-import { useUserStore } from "@/store";
+import { BBTableColumn } from "../../bbkit/types";
 
 defineProps({
   activityList: {

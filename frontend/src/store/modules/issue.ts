@@ -1,6 +1,6 @@
+import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch, WatchCallback, watchEffect } from "vue";
-import axios from "axios";
 import {
   empty,
   EMPTY_ID,
@@ -22,9 +22,9 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { isDatabaseRelatedIssueType } from "@/utils";
-import { getPrincipalFromIncludedList } from "./principal";
 import { useLegacyDatabaseStore } from "./database";
 import { usePipelineStore } from "./pipeline";
+import { getPrincipalFromIncludedList } from "./principal";
 import { useLegacyProjectStore } from "./project";
 import { convertEntityList } from "./utils";
 import {
@@ -66,20 +66,23 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
 
   // Compose issue pipeline.
   if (isDatabaseRelatedIssueType(result.type)) {
-    const pipelineStore = usePipelineStore();
-    const pipelineId = (
-      issue.relationships!.pipeline.data as ResourceIdentifier
-    ).id;
     let pipeline = unknown("PIPELINE") as Pipeline;
-    pipeline.id = parseInt(pipelineId);
+    if (issue.relationships?.pipeline?.data) {
+      const pipelineStore = usePipelineStore();
+      const pipelineId = (
+        issue.relationships!.pipeline.data as ResourceIdentifier
+      ).id;
+      pipeline.id = parseInt(pipelineId);
 
-    for (const item of includedList || []) {
-      if (
-        item.type == "pipeline" &&
-        issue.relationships!.pipeline.data &&
-        (issue.relationships!.pipeline.data as ResourceIdentifier).id == item.id
-      ) {
-        pipeline = pipelineStore.convert(item, includedList);
+      for (const item of includedList || []) {
+        if (
+          item.type == "pipeline" &&
+          issue.relationships!.pipeline.data &&
+          (issue.relationships!.pipeline.data as ResourceIdentifier).id ==
+            item.id
+        ) {
+          pipeline = pipelineStore.convert(item, includedList);
+        }
       }
     }
     result.pipeline = pipeline;

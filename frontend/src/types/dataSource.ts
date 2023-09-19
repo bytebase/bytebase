@@ -1,6 +1,5 @@
 // For now the ADMIN requires the same database privilege as RW.
 // The seperation is to make it explicit which one serves as the ADMIN data source,
-
 import {
   DatabaseId,
   DataSourceId,

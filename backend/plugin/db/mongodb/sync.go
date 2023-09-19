@@ -3,17 +3,16 @@ package mongodb
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -62,13 +61,13 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	if err != nil {
 		return nil, err
 	}
-	var databases []*storepb.DatabaseMetadata
+	var databases []*storepb.DatabaseSchemaMetadata
 	databaseNames, err := driver.getNonSystemDatabaseList(ctx)
 	if err != nil {
 		return nil, err
 	}
 	for _, databaseName := range databaseNames {
-		databases = append(databases, &storepb.DatabaseMetadata{
+		databases = append(databases, &storepb.DatabaseSchemaMetadata{
 			Name: databaseName,
 		})
 	}
@@ -81,7 +80,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs the database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
@@ -125,7 +124,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		}
 		dataSize64, err := convertEmptyInterfaceToInt64(dataSize)
 		if err != nil {
-			log.Debug("Failed to convert dataSize to int64", zap.Any("dataSize", dataSize))
+			slog.Debug("Failed to convert dataSize to int64", slog.Any("dataSize", dataSize))
 		}
 
 		totalIndexSize, ok := commandResult["totalIndexSize"]
@@ -134,7 +133,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		}
 		totalIndexSize64, err := convertEmptyInterfaceToInt64(totalIndexSize)
 		if err != nil {
-			log.Debug("Failed to convert totalIndexSize to int64", zap.Any("totalIndexSize", totalIndexSize))
+			slog.Debug("Failed to convert totalIndexSize to int64", slog.Any("totalIndexSize", totalIndexSize))
 		}
 
 		// Get collection indexes.
@@ -159,7 +158,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{Name: viewName})
 	}
 
-	return &storepb.DatabaseMetadata{
+	return &storepb.DatabaseSchemaMetadata{
 		Name:    driver.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil

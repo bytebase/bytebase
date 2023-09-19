@@ -257,16 +257,16 @@
     </div>
   </BBModal>
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.vcs-sql-review"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, watch } from "vue";
+import { cloneDeep } from "lodash-es";
 import isEmpty from "lodash-es/isEmpty";
-import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
+import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   hasFeature,
@@ -274,13 +274,14 @@ import {
   useProjectV1Store,
   useRepositoryV1Store,
 } from "@/store";
-import { Project, SchemaChange } from "@/types/proto/v1/project_service";
-import { cloneDeep } from "lodash-es";
+import { getVCSUid } from "@/store/modules/v1/common";
 import {
   ProjectGitOpsInfo,
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
+import { Project, SchemaChange } from "@/types/proto/v1/project_service";
+import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -377,7 +378,8 @@ const supportSQLReviewCI = computed(() => {
   const { type } = props.vcs;
   return (
     type == ExternalVersionControl_Type.GITHUB ||
-    type === ExternalVersionControl_Type.GITLAB
+    type === ExternalVersionControl_Type.GITLAB ||
+    type === ExternalVersionControl_Type.AZURE_DEVOPS
   );
 });
 
@@ -475,6 +477,9 @@ const doUpdate = async () => {
     state.repositoryConfig.enableSQLReviewCI;
 
   const repositoryPatch: Partial<ProjectGitOpsInfo> = {};
+
+  repositoryPatch.vcsUid = `${getVCSUid(props.vcs.name)}`;
+
   if (props.repository.branchFilter != state.repositoryConfig.branchFilter) {
     repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
   }

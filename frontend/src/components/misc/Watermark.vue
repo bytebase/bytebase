@@ -19,12 +19,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { NWatermark } from "naive-ui";
-
+import { computed } from "vue";
 import { featureToRef, useCurrentUserV1 } from "@/store";
-import { UNKNOWN_USER_NAME } from "@/types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { UNKNOWN_USER_NAME } from "@/types";
 import { extractUserUID } from "@/utils";
 
 const GAP = 320;

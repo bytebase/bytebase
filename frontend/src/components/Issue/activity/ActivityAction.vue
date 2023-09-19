@@ -45,9 +45,7 @@
       <slot name="subject-suffix"></slot>
     </div>
     <div class="mt-2 text-sm text-control whitespace-pre-wrap">
-      <slot name="comment">
-        <Comment :activity="activity" />
-      </slot>
+      <slot name="comment" />
 
       <template
         v-if="
@@ -73,11 +71,10 @@ import {
   ActivityTaskFileCommitPayload,
   SYSTEM_BOT_EMAIL,
 } from "@/types";
-import Comment from "./Comment";
-import ActionCreator from "./ActionCreator.vue";
-import ActionSentence from "./ActionSentence.vue";
 import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
+import ActionCreator from "./ActionCreator.vue";
+import ActionSentence from "./ActionSentence.vue";
 
 defineProps<{
   issue: Issue;

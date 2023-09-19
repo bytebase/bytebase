@@ -1,13 +1,12 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 
 export const protobufPackage = "bytebase.v1";
 
 export interface CreateBookmarkRequest {
   /** The bookmark to create. */
-  bookmark?: Bookmark;
+  bookmark?: Bookmark | undefined;
 }
 
 export interface DeleteBookmarkRequest {
@@ -513,33 +512,6 @@ export const BookmarkServiceDefinition = {
     },
   },
 } as const;
-
-export interface BookmarkServiceImplementation<CallContextExt = {}> {
-  /** CreateBookmark creates a new bookmark. */
-  createBookmark(request: CreateBookmarkRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Bookmark>>;
-  /** DeleteBookmark deletes a bookmark. */
-  deleteBookmark(request: DeleteBookmarkRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  /** ListBookmarks lists bookmarks. */
-  listBookmarks(
-    request: ListBookmarksRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListBookmarksResponse>>;
-}
-
-export interface BookmarkServiceClient<CallOptionsExt = {}> {
-  /** CreateBookmark creates a new bookmark. */
-  createBookmark(
-    request: DeepPartial<CreateBookmarkRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Bookmark>;
-  /** DeleteBookmark deletes a bookmark. */
-  deleteBookmark(request: DeepPartial<DeleteBookmarkRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  /** ListBookmarks lists bookmarks. */
-  listBookmarks(
-    request: DeepPartial<ListBookmarksRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListBookmarksResponse>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

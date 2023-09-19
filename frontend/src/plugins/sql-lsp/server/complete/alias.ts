@@ -1,8 +1,8 @@
-import { uniq } from "lodash-es";
 import type { TableNode } from "@joe-re/sql-parser";
 import type { SQLDialect, Table } from "@sql-lsp/types";
-import { getTableNameFromTableNode } from "./utils";
+import { uniq } from "lodash-es";
 import { createColumnCandidatesByAlias } from "./candidates";
+import { getTableNameFromTableNode } from "./utils";
 
 export class AliasMapping {
   tableList: Table[];

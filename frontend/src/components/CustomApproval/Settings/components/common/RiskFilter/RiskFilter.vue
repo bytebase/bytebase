@@ -31,9 +31,8 @@
 
 <script lang="ts" setup>
 import { NInput } from "naive-ui";
-
-import SourceFilter from "./SourceFilter.vue";
 import LevelFilter from "./LevelFilter.vue";
+import SourceFilter from "./SourceFilter.vue";
 import { useRiskFilter } from "./context";
 
 defineProps<{

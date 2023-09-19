@@ -13,8 +13,8 @@
 
 <script lang="ts" setup>
 import { computed, reactive, PropType, watch } from "vue";
-import { BBTabFilter, type BBTabFilterItem } from "@/bbkit";
 import { useI18n } from "vue-i18n";
+import { BBTabFilter, type BBTabFilterItem } from "@/bbkit";
 import { CategoryType } from "@/types/sqlReview";
 
 export interface CategoryFilterItem {

@@ -32,7 +32,7 @@ func NewRiskService(store *store.Store, licenseService enterpriseAPI.LicenseServ
 
 func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
 	return &v1pb.Risk{
-		Name:      fmt.Sprintf("%s%v", riskPrefix, risk.ID),
+		Name:      fmt.Sprintf("%s%v", common.RiskPrefix, risk.ID),
 		Uid:       fmt.Sprintf("%v", risk.ID),
 		Source:    convertToSource(risk.Source),
 		Title:     risk.Name,
@@ -92,7 +92,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	riskID, err := getRiskID(request.Risk.Name)
+	riskID, err := common.GetRiskID(request.Risk.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -135,7 +135,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 // DeleteRisk deletes a risk.
 func (s *RiskService) DeleteRisk(ctx context.Context, request *v1pb.DeleteRiskRequest) (*emptypb.Empty, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	riskID, err := getRiskID(request.Name)
+	riskID, err := common.GetRiskID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -171,6 +171,10 @@ func convertToSource(source store.RiskSource) v1pb.Risk_Source {
 		return v1pb.Risk_DDL
 	case store.RiskSourceDatabaseDataUpdate:
 		return v1pb.Risk_DML
+	case store.RiskRequestQuery:
+		return v1pb.Risk_QUERY
+	case store.RiskRequestExport:
+		return v1pb.Risk_EXPORT
 	}
 	return v1pb.Risk_SOURCE_UNSPECIFIED
 }
@@ -183,6 +187,10 @@ func convertSource(source v1pb.Risk_Source) store.RiskSource {
 		return store.RiskSourceDatabaseSchemaUpdate
 	case v1pb.Risk_DML:
 		return store.RiskSourceDatabaseDataUpdate
+	case v1pb.Risk_QUERY:
+		return store.RiskRequestQuery
+	case v1pb.Risk_EXPORT:
+		return store.RiskRequestExport
 	}
 	return store.RiskSourceUnknown
 }

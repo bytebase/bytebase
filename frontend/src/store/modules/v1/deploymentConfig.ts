@@ -1,8 +1,8 @@
+import { defineStore } from "pinia";
+import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import { MaybeRef, ResourceId } from "@/types";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
-import { defineStore } from "pinia";
-import { computed, reactive, ref, unref, watchEffect } from "vue";
 
 export const useDeploymentConfigV1Store = defineStore(
   "deploymentConfig_v1",
@@ -12,7 +12,7 @@ export const useDeploymentConfigV1Store = defineStore(
     );
 
     const fetchDeploymentConfigByProjectName = async (project: ResourceId) => {
-      const name = `${project}/deploymentConfig`;
+      const name = `${project}/deploymentConfigs/default`;
       try {
         const deploymentConfig = await projectServiceClient.getDeploymentConfig(
           {

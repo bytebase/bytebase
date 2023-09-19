@@ -3,6 +3,14 @@
     <div class="flex items-center justify-between gap-x-6">
       <div class="flex-1 textinfolabel">
         {{ $t("role.setting.description") }}
+        <a
+          href="https://www.bytebase.com/docs/administration/custom-roles?source=console"
+          class="normal-link text-sm inline-flex flex-row items-center"
+          target="_blank"
+        >
+          {{ $t("common.learn-more") }}
+          <heroicons-outline:external-link class="w-4 h-4" />
+        </a>
       </div>
       <div>
         <NButton type="primary" :disabled="!allowAdmin" @click="addRole">
@@ -32,21 +40,20 @@
     />
 
     <FeatureModal
-      v-if="showFeatureModal"
       feature="bb.feature.custom-role"
+      :open="showFeatureModal"
       @cancel="showFeatureModal = false"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from "vue";
 import { NButton } from "naive-ui";
-
-import { RoleTable, RolePanel } from "./components";
+import { computed, onMounted, reactive, ref } from "vue";
 import { featureToRef, useRoleStore } from "@/store";
 import { Role } from "@/types/proto/v1/role_service";
 import { useWorkspacePermissionV1 } from "@/utils";
+import { RoleTable, RolePanel } from "./components";
 import { provideCustomRoleSettingContext } from "./context";
 
 type LocalState = {

@@ -1,6 +1,7 @@
-import { computed, unref } from "vue";
 import { keyBy } from "lodash-es";
-
+import { computed, unref } from "vue";
+import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
+import { Instance as InstanceV1 } from "@/types/proto/v1/instance_service";
 import {
   EngineType,
   Environment,
@@ -10,8 +11,6 @@ import {
   languageOfEngineV1,
   MaybeRef,
 } from "../types";
-import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
-import { Instance as InstanceV1 } from "@/types/proto/v1/instance_service";
 
 export const supportedEngineList = () => {
   const engines: EngineType[] = [
@@ -28,6 +27,8 @@ export const supportedEngineList = () => {
     "MARIADB",
     "MSSQL",
     "REDSHIFT",
+    "DM",
+    "RISINGWAVE",
   ];
   return engines;
 };
@@ -136,6 +137,7 @@ export const instanceHasCreateDatabase = (
   const engine = engineOfInstance(instanceOrEngine);
   if (engine === "REDIS") return false;
   if (engine === "ORACLE") return false;
+  if (engine === "DM") return false;
   return true;
 };
 
@@ -161,6 +163,7 @@ export const instanceHasSSL = (
     "ORACLE",
     "MARIADB",
     "OCEANBASE",
+    "DM",
   ].includes(engine);
 };
 

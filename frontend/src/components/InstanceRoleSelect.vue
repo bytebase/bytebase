@@ -1,23 +1,28 @@
 <template>
-  <BBSelect
-    :selected-item="selectedInstanceRole"
-    :item-list="filteredInstanceUserList"
+  <NSelect
+    v-bind="$attrs"
+    :value="role"
+    :options="options"
     :placeholder="$t('instance.select-database-user')"
-    :show-prefix-item="true"
-    @select-item="handleSelectItem"
-  >
-    <template #menuItem="{ item: instance }: { item: InstanceRole }">
-      {{ instance.roleName }}
-    </template>
-  </BBSelect>
+    :filter="filterByTitle"
+    :filterable="true"
+    :virtual-scroll="true"
+    :fallback-option="false"
+    @update:value="$emit('update:instance-role', $event)"
+  />
 </template>
 
 <script lang="ts" setup>
+import { SelectOption } from "naive-ui";
 import { PropType, computed, ref, watch } from "vue";
-
+import { useInstanceV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { InstanceRole } from "@/types/proto/v1/instance_role_service";
-import { useInstanceV1Store } from "@/store";
+
+interface InstanceRoleSelectOption extends SelectOption {
+  value: string;
+  instanceRole: InstanceRole;
+}
 
 const props = defineProps({
   role: {
@@ -35,41 +40,43 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (event: "select", role: string | undefined): void;
+  (event: "update:instance-role", role: string | undefined): void;
 }>();
 
 const instanceV1Store = useInstanceV1Store();
-const selectedInstanceRole = ref<InstanceRole>();
 const instanceRoleList = ref<InstanceRole[]>([]);
 
 watch(
   () => props.instanceId,
   async () => {
-    selectedInstanceRole.value = undefined;
     const instance = instanceV1Store.getInstanceByUID(props.instanceId);
     instanceRoleList.value = await instanceV1Store.fetchInstanceRoleListByName(
       instance.name
     );
-    emit("select", undefined);
+    emit("update:instance-role", undefined);
   },
   { immediate: true }
 );
 
-watch(
-  () => props.role,
-  () => {
-    selectedInstanceRole.value = instanceRoleList.value.find(
-      (user) => user.name === props.role
-    );
-  }
-);
+const options = computed(() => {
+  return filteredInstanceRoleList.value.map<InstanceRoleSelectOption>(
+    (instanceRole) => {
+      return {
+        instanceRole,
+        value: instanceRole.name,
+        label: instanceRole.roleName,
+      };
+    }
+  );
+});
 
-const filteredInstanceUserList = computed(() => {
+const filteredInstanceRoleList = computed(() => {
   if (!props.filter) return instanceRoleList.value;
   return instanceRoleList.value.filter(props.filter);
 });
 
-const handleSelectItem = (instanceRole: InstanceRole) => {
-  emit("select", instanceRole.name);
+const filterByTitle = (pattern: string, option: SelectOption) => {
+  const { instanceRole } = option as InstanceRoleSelectOption;
+  return instanceRole.roleName.toLowerCase().includes(pattern.toLowerCase());
 };
 </script>

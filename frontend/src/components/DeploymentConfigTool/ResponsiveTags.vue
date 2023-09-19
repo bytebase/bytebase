@@ -10,6 +10,7 @@
 </template>
 
 <script lang="ts">
+import { useResizeObserver, useWindowSize } from "@vueuse/core";
 import {
   computed,
   defineComponent,
@@ -19,7 +20,6 @@ import {
   ref,
   watch,
 } from "vue";
-import { useResizeObserver, useWindowSize } from "@vueuse/core";
 
 export default defineComponent({
   name: "ResponsiveTags",

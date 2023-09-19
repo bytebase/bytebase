@@ -75,15 +75,15 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useVerticalScrollState } from "@/composables/useScrollState";
+import { useDatabaseV1Store } from "@/store";
 import type { Pipeline, Stage, StageCreate, Task, TaskCreate } from "@/types";
 import { activeTask, taskSlug } from "@/utils";
-import TaskStatusIcon from "./TaskStatusIcon.vue";
-import { useDatabaseV1Store } from "@/store";
 import PipelineStageList from "./PipelineStageList.vue";
-import TaskProgressPie from "./TaskProgressPie.vue";
 import { TaskExtraActionsButton } from "./StatusTransitionButtonGroup";
+import TaskProgressPie from "./TaskProgressPie.vue";
+import TaskStatusIcon from "./TaskStatusIcon.vue";
 import { useIssueLogic } from "./logic";
-import { useVerticalScrollState } from "@/composables/useScrollState";
 
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();

@@ -1,4 +1,4 @@
-# DO NOT run docker build against this file directly. Instead using ./build_docker.sh as that
+# DO NOT run docker build against this file directly. Instead using ./build_bytebase_docker.sh as that
 # one sets the various ARG used in the Dockerfile
 
 # After build
@@ -7,6 +7,7 @@
 
 FROM node:18 as frontend
 
+ARG TARGETARCH
 ARG RELEASE="release"
 
 RUN npm i -g pnpm
@@ -20,15 +21,18 @@ RUN pnpm install --frozen-lockfile
 COPY ./frontend/ .
 # Copy the SQL review config files to the frontend
 COPY ./backend/plugin/advisor/config/ ./src/types
+COPY ./backend/enterprise/api/plan.yaml ./src/types/
 
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.20.5 as backend
+FROM golang:1.21.1 as backend
+ADD go.mod go.sum /
+RUN go mod download
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.20.5"
+ARG GO_VERSION="1.21.1"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
@@ -36,7 +40,11 @@ ARG BUILD_USER="unknown"
 ARG RELEASE="release"
 
 # Need gcc for CGO_ENABLED=1
-RUN apt-get install -y gcc
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+  apt-get update && apt-get install -y gcc-aarch64-linux-gnu; \
+else \
+  apt-get install -y gcc ;\
+fi
 
 WORKDIR /backend-build
 
@@ -49,14 +57,17 @@ COPY ./scripts/VERSION .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
-RUN VERSION=`cat ./VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+  CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; \
+fi && \
+    VERSION=`cat ./scripts/VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
     --tags "${RELEASE},embed_frontend" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
     ./backend/bin/server/main.go
 
 # Use debian because mysql requires glibc.
-FROM debian:bullseye-slim as monolithic
+FROM debian:bookworm-slim as monolithic
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"
@@ -87,7 +98,7 @@ COPY ./scripts/.psqlrc /root/.psqlrc
 
 # Our HEALTHCHECK instruction in dockerfile needs curl.
 # Install psmisc to use killall command in demo.sh used by render.com.
-RUN apt-get update && apt-get install -y locales curl psmisc postgresql-client procps
+RUN apt-get update && apt-get install -y locales curl psmisc postgresql-client procps libncurses5
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen

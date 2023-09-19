@@ -51,9 +51,9 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBTableSectionDataSource } from "@/bbkit/types";
 import { ComposedDatabase } from "@/types";
 import { IndexMetadata } from "@/types/proto/store/database";
-import { BBTableSectionDataSource } from "@/bbkit/types";
 import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps({

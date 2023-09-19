@@ -6,16 +6,24 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
+
+	tidbparser "github.com/pingcap/tidb/parser"
+	tidbast "github.com/pingcap/tidb/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+
+	// register pg parser.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
 
 // How to add a SQL review rule:
@@ -468,13 +476,261 @@ type SQLReviewCheckContext struct {
 	Driver    *sql.DB
 	Context   context.Context
 
+	// Snowflake specific fields
+	CurrentDatabase string
 	// Oracle specific fields
 	CurrentSchema string
 }
 
+func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []Advice) {
+	switch checkContext.DbType {
+	case db.MySQL, db.MariaDB, db.OceanBase, db.TiDB:
+		return mysqlSyntaxCheck(statement)
+	case db.Postgres:
+		return postgresSyntaxCheck(statement)
+	case db.Oracle:
+		return oracleSyntaxCheck(statement)
+	case db.Snowflake:
+		return snowflakeSyntaxCheck(statement)
+	case db.MSSQL:
+		return mssqlSyntaxCheck(statement)
+	}
+	return nil, []Advice{
+		{
+			Status:  Error,
+			Code:    Unsupported,
+			Title:   "Unsupported database type",
+			Content: fmt.Sprintf("Unsupported database type %s", checkContext.DbType),
+			Line:    1,
+		},
+	}
+}
+
+func mssqlSyntaxCheck(statement string) (any, []Advice) {
+	tree, err := parser.ParseTSQL(statement)
+	if err != nil {
+		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+			return nil, []Advice{
+				{
+					Status:  Warn,
+					Code:    StatementSyntaxError,
+					Title:   SyntaxErrorTitle,
+					Content: syntaxErr.Message,
+					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
+				},
+			}
+		}
+		return nil, []Advice{
+			{
+				Status:  Warn,
+				Code:    Internal,
+				Title:   "Parse error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	return tree, nil
+}
+
+func snowflakeSyntaxCheck(statement string) (any, []Advice) {
+	tree, err := parser.ParseSnowSQL(statement + ";")
+	if err != nil {
+		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+			return nil, []Advice{
+				{
+					Status:  Warn,
+					Code:    StatementSyntaxError,
+					Title:   SyntaxErrorTitle,
+					Content: syntaxErr.Message,
+					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
+				},
+			}
+		}
+		return nil, []Advice{
+			{
+				Status:  Warn,
+				Code:    Internal,
+				Title:   "Parse error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	return tree, nil
+}
+
+func oracleSyntaxCheck(statement string) (any, []Advice) {
+	tree, _, err := parser.ParsePLSQL(statement + ";")
+	if err != nil {
+		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+			return nil, []Advice{
+				{
+					Status:  Warn,
+					Code:    StatementSyntaxError,
+					Title:   SyntaxErrorTitle,
+					Content: syntaxErr.Message,
+					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
+				},
+			}
+		}
+		return nil, []Advice{
+			{
+				Status:  Warn,
+				Code:    Internal,
+				Title:   "Parse error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	return tree, nil
+}
+
+func postgresSyntaxCheck(statement string) (any, []Advice) {
+	nodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+	if err != nil {
+		if _, ok := err.(*parser.ConvertError); ok {
+			return nil, []Advice{
+				{
+					Status:  Error,
+					Code:    Internal,
+					Title:   "Parser conversion error",
+					Content: err.Error(),
+					Line:    calculatePostgresErrorLine(statement),
+				},
+			}
+		}
+		return nil, []Advice{
+			{
+				Status:  Error,
+				Code:    StatementSyntaxError,
+				Title:   SyntaxErrorTitle,
+				Content: err.Error(),
+				Line:    calculatePostgresErrorLine(statement),
+			},
+		}
+	}
+	var res []ast.Node
+	for _, node := range nodes {
+		if node != nil {
+			res = append(res, node)
+		}
+	}
+	return res, nil
+}
+
+func calculatePostgresErrorLine(statement string) int {
+	statementList, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	if err != nil {
+		// nolint:nilerr
+		return 1
+	}
+
+	for _, stmt := range statementList {
+		if _, err := parser.Parse(parser.Postgres, parser.ParseContext{}, stmt.Text); err != nil {
+			return stmt.LastLine
+		}
+	}
+
+	return 0
+}
+
+func newTiDBParser() *tidbparser.Parser {
+	p := tidbparser.New()
+
+	// To support MySQL8 window function syntax.
+	// See https://github.com/bytebase/bytebase/issues/175.
+	p.EnableWindowFunc(true)
+
+	return p
+}
+
+func mysqlSyntaxCheck(statement string) (any, []Advice) {
+	list, err := parser.SplitMySQL(statement)
+	if err != nil {
+		return nil, []Advice{
+			{
+				Status:  Warn,
+				Code:    Internal,
+				Title:   "Syntax error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	p := newTiDBParser()
+	var returnNodes []tidbast.StmtNode
+	var adviceList []Advice
+	for _, item := range list {
+		nodes, _, err := p.Parse(item.Text, "", "")
+		if err != nil {
+			// TiDB parser doesn't fully support MySQL syntax, so we need to use MySQL parser to parse the statement.
+			// But MySQL parser has some performance issue, so we only use it to parse the statement after TiDB parser failed.
+			if _, err := parser.ParseMySQL(item.Text); err != nil {
+				if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+					return nil, []Advice{
+						{
+							Status:  Error,
+							Code:    StatementSyntaxError,
+							Title:   SyntaxErrorTitle,
+							Content: syntaxErr.Message,
+							Line:    syntaxErr.Line,
+							Column:  syntaxErr.Column,
+						},
+					}
+				}
+				return nil, []Advice{
+					{
+						Status:  Warn,
+						Code:    Internal,
+						Title:   "Parse error",
+						Content: err.Error(),
+						Line:    1,
+					},
+				}
+			}
+			// If MySQL parser can parse the statement, but TiDB parser can't, we just ignore the statement.
+			continue
+		}
+
+		if len(nodes) != 1 {
+			continue
+		}
+
+		node := nodes[0]
+		node.SetText(nil, item.Text)
+		node.SetOriginTextPosition(item.LastLine)
+		if n, ok := node.(*tidbast.CreateTableStmt); ok {
+			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
+				return nil, append(adviceList, Advice{
+					Status:  Error,
+					Code:    Internal,
+					Title:   "Set line error",
+					Content: err.Error(),
+					Line:    item.LastLine,
+				})
+			}
+		}
+		returnNodes = append(returnNodes, node)
+	}
+
+	return returnNodes, adviceList
+}
+
 // SQLReviewCheck checks the statements with sql review rules.
 func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
-	var result []Advice
+	ast, result := syntaxCheck(statements, checkContext)
+	if ast == nil || len(ruleList) == 0 {
+		return result, nil
+	}
 
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
@@ -495,7 +751,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 		advisorType, err := getAdvisorTypeByRule(rule.Type, checkContext.DbType)
 		if err != nil {
 			if rule.Engine != "" {
-				log.Warn("not supported rule", zap.String("rule type", string(rule.Type)), zap.String("engine", string(rule.Engine)), zap.Error(err))
+				slog.Warn("not supported rule", slog.String("rule type", string(rule.Type)), slog.String("engine", string(rule.Engine)), log.BBError(err))
 			}
 			continue
 		}
@@ -504,13 +760,15 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 			checkContext.DbType,
 			advisorType,
 			Context{
-				Charset:       checkContext.Charset,
-				Collation:     checkContext.Collation,
-				Rule:          rule,
-				Catalog:       finder,
-				Driver:        checkContext.Driver,
-				Context:       checkContext.Context,
-				CurrentSchema: checkContext.CurrentSchema,
+				Charset:         checkContext.Charset,
+				Collation:       checkContext.Collation,
+				AST:             ast,
+				Rule:            rule,
+				Catalog:         finder,
+				Driver:          checkContext.Driver,
+				Context:         checkContext.Context,
+				CurrentSchema:   checkContext.CurrentSchema,
+				CurrentDatabase: checkContext.CurrentDatabase,
 			},
 			statements,
 		)
@@ -691,7 +949,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 				return nil, errors.Errorf("invalid payload for ColumnIsReferencedByView, expect []string but found %T", walkThroughError.Payload)
 			}
 			if definition, err := getViewDefinition(checkContext, list); err != nil {
-				log.Warn("failed to get view definition", zap.Error(err))
+				slog.Warn("failed to get view definition", log.BBError(err))
 			} else {
 				details = definition
 			}
@@ -713,7 +971,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 				return nil, errors.Errorf("invalid payload for TableIsReferencedByView, expect []string but found %T", walkThroughError.Payload)
 			}
 			if definition, err := getViewDefinition(checkContext, list); err != nil {
-				log.Warn("failed to get view definition", zap.Error(err))
+				slog.Warn("failed to get view definition", log.BBError(err))
 			} else {
 				details = definition
 			}
@@ -727,11 +985,19 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			Line:    walkThroughError.Line,
 			Details: details,
 		})
+	case catalog.ErrorTypeInvalidColumnTypeForDefaultValue:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    InvalidColumnDefault,
+			Title:   "Invalid column default value",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
 	default:
 		res = append(res, Advice{
 			Status:  Error,
 			Code:    Internal,
-			Title:   "Failed to walk-through",
+			Title:   fmt.Sprintf("Failed to walk-through with code %d", walkThroughError.Type),
 			Content: walkThroughError.Content,
 			Line:    walkThroughError.Line,
 		})
@@ -801,6 +1067,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleWhereRequirement, nil
 		case db.Snowflake:
 			return SnowflakeWhereRequirement, nil
+		case db.MSSQL:
+			return MSSQLWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
@@ -819,6 +1087,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLNoSelectAll, nil
 		case db.Oracle:
 			return OracleNoSelectAll, nil
+		case db.Snowflake:
+			return SnowflakeNoSelectAll, nil
+		case db.MSSQL:
+			return MSSQLNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
@@ -826,6 +1098,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLMigrationCompatibility, nil
 		case db.Postgres:
 			return PostgreSQLMigrationCompatibility, nil
+		case db.Snowflake:
+			return SnowflakeMigrationCompatibility, nil
+		case db.MSSQL:
+			return MSSQLMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
@@ -837,6 +1113,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleNamingTableConvention, nil
 		case db.Snowflake:
 			return SnowflakeNamingTableConvention, nil
+		case db.MSSQL:
+			return MSSQLNamingTableConvention, nil
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
@@ -881,6 +1159,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleTableNamingNoKeyword, nil
 		case db.Snowflake:
 			return SnowflakeTableNamingNoKeyword, nil
+		case db.MSSQL:
+			return MSSQLTableNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierNoKeyword:
 		switch engine {
@@ -888,6 +1168,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleIdentifierNamingNoKeyword, nil
 		case db.Snowflake:
 			return SnowflakeIdentifierNamingNoKeyword, nil
+		case db.MSSQL:
+			return MSSQLIdentifierNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierCase:
 		switch engine {
@@ -906,6 +1188,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleColumnRequirement, nil
 		case db.Snowflake:
 			return SnowflakeColumnRequirement, nil
+		case db.MSSQL:
+			return MSSQLColumnRequirement, nil
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
@@ -917,6 +1201,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleColumnNoNull, nil
 		case db.Snowflake:
 			return SnowflakeColumnNoNull, nil
+		case db.MSSQL:
+			return MSSQLColumnNoNull, nil
 		}
 	case SchemaRuleColumnDisallowChangeType:
 		switch engine {
@@ -979,6 +1265,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleColumnMaximumVarcharLength, nil
 		case db.Snowflake:
 			return SnowflakeColumnMaximumVarcharLength, nil
+		case db.MSSQL:
+			return MSSQLColumnMaximumVarcharLength, nil
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {
@@ -1018,6 +1306,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleTableRequirePK, nil
 		case db.Snowflake:
 			return SnowflakeTableRequirePK, nil
+		case db.MSSQL:
+			return MSSQLTableRequirePK, nil
 		}
 	case SchemaRuleTableNoFK:
 		switch engine {
@@ -1029,6 +1319,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleTableNoFK, nil
 		case db.Snowflake:
 			return SnowflakeTableNoFK, nil
+		case db.MSSQL:
+			return MSSQLTableNoFK, nil
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {
@@ -1036,6 +1328,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLTableDropNamingConvention, nil
 		case db.Postgres:
 			return PostgreSQLTableDropNamingConvention, nil
+		case db.Snowflake:
+			return SnowflakeTableDropNamingConvention, nil
+		case db.MSSQL:
+			return MSSQLTableDropNamingConvention, nil
 		}
 	case SchemaRuleTableCommentConvention:
 		switch engine {

@@ -53,8 +53,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { useSubscriptionV1Store, pushNotification } from "@/store";
 import { planTypeToString } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";

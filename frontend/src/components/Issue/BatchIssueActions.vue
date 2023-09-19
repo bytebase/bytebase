@@ -123,6 +123,7 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { pushNotification, refreshIssueList, useIssueStore } from "@/store";
 import type {
   Issue,
   IssueStatusPatch,
@@ -130,7 +131,6 @@ import type {
   IssueStatusTransitionType,
 } from "@/types";
 import { ISSUE_STATUS_TRANSITION_LIST } from "@/types";
-import { pushNotification, refreshIssueList, useIssueStore } from "@/store";
 import { calcApplicableIssueStatusTransitionList } from "./logic";
 
 type RequestStats = {

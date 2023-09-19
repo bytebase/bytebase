@@ -1,5 +1,5 @@
 <template>
-  <div class="whitespace-pre-wrap w-full overflow-hidden">
+  <div class="whitespace-pre-wrap w-full overflow-hidden compact-sql-editor">
     <MonacoEditor
       ref="editorRef"
       class="w-full h-auto max-h-[360px]"
@@ -10,16 +10,15 @@
       :options="EDITOR_OPTIONS"
       @change="handleChange"
       @change-selection="handleChangeSelection"
-      @save="handleSaveSheet"
       @ready="handleEditorReady"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, ref, watch, watchEffect } from "vue";
 import { editor as Editor } from "monaco-editor";
-
+import { computed, nextTick, ref, watch, watchEffect } from "vue";
+import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
   useTabStore,
   useSQLEditorStore,
@@ -27,7 +26,6 @@ import {
   useDatabaseV1Store,
   useInstanceV1ByUID,
 } from "@/store";
-import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
   ComposedDatabase,
   dialectOfEngineV1,
@@ -57,7 +55,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (e: "save-sheet", content?: string): void;
   (e: "update:sql", sql: string): void;
   (
     e: "execute",
@@ -153,10 +150,6 @@ const handleChangeSelection = (value: string) => {
   tabStore.updateCurrentTab({
     selectedStatement: value,
   });
-};
-
-const handleSaveSheet = () => {
-  emit("save-sheet");
 };
 
 const handleEditorReady = async () => {
@@ -299,11 +292,12 @@ const handleEditorReady = async () => {
       const databaseList = selectedDatabase.value
         ? [selectedDatabase.value]
         : databaseStore.databaseListByInstance(selectedInstance.value.name);
+      // Only provide auto-complete context for those opened database.
       for (const database of databaseList) {
-        const tableList = await dbSchemaStore.getOrFetchTableList(
-          database.name
-        );
-        databaseMap.set(database, tableList);
+        const tableList = dbSchemaStore.getTableList(database.name);
+        if (tableList.length > 0) {
+          databaseMap.set(database, tableList);
+        }
       }
       const connectionScope = selectedDatabase.value ? "database" : "instance";
       editorRef.value?.setEditorAutoCompletionContextV1(
@@ -349,3 +343,9 @@ watch(
   (prompt) => (EDITOR_OPTIONS.value.lineNumbersMinChars = prompt.length + 1)
 );
 </script>
+
+<style lang="postcss">
+.compact-sql-editor .monaco-editor .line-numbers {
+  @apply pr-0;
+}
+</style>

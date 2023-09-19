@@ -2,107 +2,21 @@ package tests
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"fmt"
-	"math"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
-	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func TestRollback(t *testing.T) {
-	t.Parallel()
-	a := require.New(t)
-	ctx := context.Background()
-	database := "funny\ndatabase"
-
-	mysqlPort := getTestPort()
-	stopFn := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
-	defer stopFn()
-
-	sqlDB, err := connectTestMySQL(mysqlPort, "")
-	a.NoError(err)
-	defer sqlDB.Close()
-	_, err = sqlDB.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`; CREATE TABLE user (id INT PRIMARY KEY, name VARCHAR(64), balance INT);", database, database))
-	a.NoError(err)
-	_, err = sqlDB.ExecContext(ctx, "INSERT INTO user VALUES (1, 'alice\nalice', 100), (2, 'bob', 100), (3, 'cindy', 100);")
-	a.NoError(err)
-	_, err = sqlDB.ExecContext(ctx, "UPDATE user SET balance=90 WHERE id=1; UPDATE user SET balance=110 WHERE id=2; DELETE FROM user WHERE id=3;")
-	a.NoError(err)
-
-	resourceDir := t.TempDir()
-	binDir, err := mysqlutil.Install(resourceDir)
-	a.NoError(err)
-	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), database, binDir)
-	a.NoError(err)
-	defer driver.Close(ctx)
-
-	// Rotate to binlog.000002 so that it's easy to rollback the following transactions and check that the state is the same as now.
-	_, err = sqlDB.ExecContext(ctx, "FLUSH BINARY LOGS;")
-	a.NoError(err)
-	var threadID string
-	opts := db.ExecuteOptions{
-		BeginFunc: func(ctx context.Context, conn *sql.Conn) error {
-			return conn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&threadID)
-		},
-	}
-	_, err = driver.Execute(ctx, "UPDATE user SET balance=0;DELETE FROM user;", false, opts)
-	a.NoError(err)
-
-	// Restore data using generated rollback SQL.
-	mysqlDriver, ok := driver.(*mysql.Driver)
-	a.Equal(true, ok)
-	binlogFileList := []string{"binlog.000002"}
-	tableCatalog := map[string][]string{
-		"user": {"id", "name", "balance"},
-	}
-	const binlogSizeLimit = 8 * 1024 * 1024
-	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogSizeLimit, binlogFileList, 0, math.MaxInt64, threadID, tableCatalog)
-	a.NoError(err)
-	_, err = sqlDB.ExecContext(ctx, rollbackSQL)
-	a.NoError(err)
-
-	// Check for rollback state.
-	rows, err := sqlDB.QueryContext(ctx, "SELECT * FROM user;")
-	a.NoError(err)
-	defer rows.Close()
-	type record struct {
-		id      int
-		name    string
-		balance int
-	}
-	var records []record
-	for rows.Next() {
-		var r record
-		err = rows.Scan(&r.id, &r.name, &r.balance)
-		a.NoError(err)
-		records = append(records, r)
-	}
-	a.NoError(rows.Err())
-	want := []record{
-		{1, "alice\nalice", 90},
-		{2, "bob", 110},
-	}
-	a.Equal(want, records)
-}
-
 func TestCreateRollbackIssueMySQL(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	t.Parallel()
 
 	a := require.New(t)
@@ -123,14 +37,6 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopInstance()
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
-	a.NoError(err)
-
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -138,7 +44,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
@@ -147,14 +53,12 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
-	a.NoError(err)
-	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
 	dbMySQL, err := connectTestMySQL(mysqlPort, "")
@@ -168,7 +72,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	t.Log("Schema initialized.")
 
 	dmlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title: "migration statement sheet",
 			Content: []byte(`
@@ -181,35 +85,25 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	dmlSheetUID, err := strconv.Atoi(strings.TrimPrefix(dmlSheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-	a.NoError(err)
 
 	// Run a DML issue.
-	createContext, err := json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType:   db.Data,
-				DatabaseID:      databaseUID,
-				SheetID:         dmlSheetUID,
-				RollbackEnabled: true,
+	_, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target:          database.Name,
+							Sheet:           dmlSheet.Name,
+							Type:            v1pb.Plan_ChangeDatabaseConfig_DATA,
+							RollbackEnabled: true,
+						},
+					},
+				},
 			},
 		},
 	})
 	a.NoError(err)
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          "update data",
-		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	})
-	a.NoError(err)
-	t.Logf("Issue %d created.", issue.ID)
-	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
-	a.Len(issue.Pipeline.StageList, 1)
-	a.Len(issue.Pipeline.StageList[0].TaskList, 1)
 
 	// Check that the data is changed.
 	type record struct {
@@ -231,72 +125,30 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.Equal(want1, records1)
 
 	// wait for rollback SQL generation
-	for i := 0; i < 10; i++ {
-		issue, err := ctl.getIssue(issue.ID)
-		a.NoError(err)
-		a.Len(issue.Pipeline.StageList, 1)
-		a.Len(issue.Pipeline.StageList[0].TaskList, 1)
-		task := issue.Pipeline.StageList[0].TaskList[0]
-		var payload api.TaskDatabaseDataUpdatePayload
-		err = json.Unmarshal([]byte(task.Payload), &payload)
-		a.NoError(err)
-		if payload.RollbackSQLStatus == api.RollbackSQLStatusDone {
-			break
-		}
-		time.Sleep(3 * time.Second)
-	}
-
-	issue, err = ctl.getIssue(issue.ID)
+	rollbackTaskName, rollbackSheet, err := waitRollbackStatement(ctx, ctl.rolloutServiceClient, rollout.Name)
 	a.NoError(err)
-	a.Len(issue.Pipeline.StageList, 1)
-	a.Len(issue.Pipeline.StageList[0].TaskList, 1)
-	task := issue.Pipeline.StageList[0].TaskList[0]
-	var payload api.TaskDatabaseDataUpdatePayload
-	err = json.Unmarshal([]byte(task.Payload), &payload)
-	a.NoError(err)
-	a.Equal(api.RollbackSQLStatusDone, payload.RollbackSQLStatus)
 
 	// Run a rollback issue.
-	var rollbackIssue *api.Issue
-	rollbackCreateContext, err := json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Data,
-				DatabaseID:    databaseUID,
-				SheetID:       payload.RollbackSheetID,
-				RollbackDetail: &api.RollbackDetail{
-					IssueID: issue.ID,
-					TaskID:  task.ID,
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target: database.Name,
+							Sheet:  rollbackSheet,
+							Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
+							RollbackDetail: &v1pb.Plan_ChangeDatabaseConfig_RollbackDetail{
+								RollbackFromTask:  rollbackTaskName,
+								RollbackFromIssue: issue.Name,
+							},
+						},
+					},
 				},
 			},
 		},
 	})
 	a.NoError(err)
-
-	rollbackIssue, err = ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          "rollback",
-		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(rollbackCreateContext),
-	})
-	a.NoError(err)
-	t.Logf("Rollback issue %d created.", rollbackIssue.ID)
-
-	status, err = ctl.waitIssuePipeline(ctx, rollbackIssue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
-	// Re-query the issue to get the updated task, which has the RollbackFromIssueID and RollbackFromTaskID fields.
-	rollbackIssue, err = ctl.getIssue(rollbackIssue.ID)
-	a.NoError(err)
-	a.Len(rollbackIssue.Pipeline.StageList, 1)
-	a.Len(rollbackIssue.Pipeline.StageList[0].TaskList, 1)
-	rollbackTask := rollbackIssue.Pipeline.StageList[0].TaskList[0]
-	rollbackTaskPayload := &api.TaskDatabaseDataUpdatePayload{}
-	err = json.Unmarshal([]byte(rollbackTask.Payload), rollbackTaskPayload)
-	a.NoError(err)
-	a.Equal(issue.ID, rollbackTaskPayload.RollbackFromIssueID)
-	a.Equal(task.ID, rollbackTaskPayload.RollbackFromTaskID)
 
 	// Check that the data is restored.
 	rows2, err := dbMySQL.QueryContext(ctx, "SELECT * FROM t;")
@@ -315,9 +167,6 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 }
 
 func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	t.Parallel()
 
 	a := require.New(t)
@@ -338,14 +187,6 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopInstance()
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
-	a.NoError(err)
-
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -353,7 +194,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       t.Name(),
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
@@ -362,14 +203,12 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
-	a.NoError(err)
-	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
 	dbMySQL, err := connectTestMySQL(mysqlPort, "")
@@ -383,7 +222,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	t.Log("Schema initialized.")
 
 	dmlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title: "migration statement sheet",
 			Content: []byte(`
@@ -396,42 +235,35 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	dmlSheetUID, err := strconv.Atoi(strings.TrimPrefix(dmlSheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-	a.NoError(err)
 
 	// Run a DML issue with rollbackEnabled set to false.
-	createContext, err := json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Data,
-				DatabaseID:    databaseUID,
-				SheetID:       dmlSheetUID,
-				// RollbackEnabled: true,
+	plan, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target: database.Name,
+							Sheet:  dmlSheet.Name,
+							Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
+						},
+					},
+				},
 			},
 		},
 	})
 	a.NoError(err)
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          "update data",
-		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	})
-	a.NoError(err)
-	t.Logf("Issue %d created.", issue.ID)
-	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
-	a.Len(issue.Pipeline.StageList, 1)
-	a.Len(issue.Pipeline.StageList[0].TaskList, 1)
-	task := issue.Pipeline.StageList[0].TaskList[0]
 
 	// Patch rollbackEnabled to true.
-	rollbackEnabled := true
-	_, err = ctl.patchTask(api.TaskPatch{
-		RollbackEnabled: &rollbackEnabled,
-	}, issue.Pipeline.ID, task.ID)
+	for _, step := range plan.Steps {
+		for _, spec := range step.Specs {
+			spec.GetChangeDatabaseConfig().RollbackEnabled = true
+		}
+	}
+	_, err = ctl.rolloutServiceClient.UpdatePlan(ctx, &v1pb.UpdatePlanRequest{
+		Plan:       plan,
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"steps"}},
+	})
 	a.NoError(err)
 
 	// Check that the data is changed.
@@ -454,72 +286,30 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.Equal(want1, records1)
 
 	// wait for rollback SQL generation
-	for i := 0; i < 10; i++ {
-		issue, err := ctl.getIssue(issue.ID)
-		a.NoError(err)
-		a.Len(issue.Pipeline.StageList, 1)
-		a.Len(issue.Pipeline.StageList[0].TaskList, 1)
-		task := issue.Pipeline.StageList[0].TaskList[0]
-		var payload api.TaskDatabaseDataUpdatePayload
-		err = json.Unmarshal([]byte(task.Payload), &payload)
-		a.NoError(err)
-		if payload.RollbackSQLStatus == api.RollbackSQLStatusDone {
-			break
-		}
-		time.Sleep(3 * time.Second)
-	}
-
-	issue, err = ctl.getIssue(issue.ID)
+	rollbackTaskName, rollbackSheet, err := waitRollbackStatement(ctx, ctl.rolloutServiceClient, rollout.Name)
 	a.NoError(err)
-	a.Len(issue.Pipeline.StageList, 1)
-	a.Len(issue.Pipeline.StageList[0].TaskList, 1)
-	task = issue.Pipeline.StageList[0].TaskList[0]
-	var payload api.TaskDatabaseDataUpdatePayload
-	err = json.Unmarshal([]byte(task.Payload), &payload)
-	a.NoError(err)
-	a.Equal(api.RollbackSQLStatusDone, payload.RollbackSQLStatus)
 
 	// Run a rollback issue.
-	var rollbackIssue *api.Issue
-	rollbackCreateContext, err := json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType: db.Data,
-				DatabaseID:    databaseUID,
-				SheetID:       payload.RollbackSheetID,
-				RollbackDetail: &api.RollbackDetail{
-					IssueID: issue.ID,
-					TaskID:  task.ID,
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target: database.Name,
+							Sheet:  rollbackSheet,
+							Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
+							RollbackDetail: &v1pb.Plan_ChangeDatabaseConfig_RollbackDetail{
+								RollbackFromTask:  rollbackTaskName,
+								RollbackFromIssue: issue.Name,
+							},
+						},
+					},
 				},
 			},
 		},
 	})
 	a.NoError(err)
-
-	rollbackIssue, err = ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          "rollback",
-		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(rollbackCreateContext),
-	})
-	a.NoError(err)
-	t.Logf("Rollback issue %d created.", rollbackIssue.ID)
-
-	status, err = ctl.waitIssuePipeline(ctx, rollbackIssue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
-	// Re-query the issue to get the updated task, which has the RollbackFromIssueID and RollbackFromTaskID fields.
-	rollbackIssue, err = ctl.getIssue(rollbackIssue.ID)
-	a.NoError(err)
-	a.Len(rollbackIssue.Pipeline.StageList, 1)
-	a.Len(rollbackIssue.Pipeline.StageList[0].TaskList, 1)
-	rollbackTask := rollbackIssue.Pipeline.StageList[0].TaskList[0]
-	rollbackTaskPayload := &api.TaskDatabaseDataUpdatePayload{}
-	err = json.Unmarshal([]byte(rollbackTask.Payload), rollbackTaskPayload)
-	a.NoError(err)
-	a.Equal(issue.ID, rollbackTaskPayload.RollbackFromIssueID)
-	a.Equal(task.ID, rollbackTaskPayload.RollbackFromTaskID)
 
 	// Check that the data is restored.
 	rows2, err := dbMySQL.QueryContext(ctx, "SELECT * FROM t;")
@@ -538,9 +328,6 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 }
 
 func TestRollbackCanceled(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	t.Parallel()
 
 	a := require.New(t)
@@ -561,14 +348,6 @@ func TestRollbackCanceled(t *testing.T) {
 	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopInstance()
 
-	// Create a project.
-	project, err := ctl.createProject(ctx)
-	a.NoError(err)
-	projectUID, err := strconv.Atoi(project.Uid)
-	a.NoError(err)
-
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -576,7 +355,7 @@ func TestRollbackCanceled(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       t.Name(),
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
 		},
@@ -585,14 +364,12 @@ func TestRollbackCanceled(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "", nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
-	a.NoError(err)
-	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
 	dbMySQL, err := connectTestMySQL(mysqlPort, "")
@@ -606,7 +383,7 @@ func TestRollbackCanceled(t *testing.T) {
 	t.Log("Schema initialized.")
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
-		Parent: project.Name,
+		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
 			Title: "delete statement sheet",
 			Content: []byte(`
@@ -619,42 +396,36 @@ func TestRollbackCanceled(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
-	a.NoError(err)
 
 	// Run a DML issue.
-	createContext, err := json.Marshal(&api.MigrationContext{
-		DetailList: []*api.MigrationDetail{
-			{
-				MigrationType:   db.Data,
-				DatabaseID:      databaseUID,
-				SheetID:         sheetUID,
-				RollbackEnabled: true,
+	plan, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
+		{
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Target:          database.Name,
+							Sheet:           sheet.Name,
+							Type:            v1pb.Plan_ChangeDatabaseConfig_DATA,
+							RollbackEnabled: true,
+						},
+					},
+				},
 			},
 		},
 	})
 	a.NoError(err)
-	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     projectUID,
-		Name:          "update data",
-		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	})
-	a.NoError(err)
-	t.Logf("Issue %d created.", issue.ID)
-	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
-	a.Len(issue.Pipeline.StageList, 1)
-	a.Len(issue.Pipeline.StageList[0].TaskList, 1)
-	task := issue.Pipeline.StageList[0].TaskList[0]
 
 	// Cancel rollback SQL generation.
-	rollbackEnabled := false
-	_, err = ctl.patchTask(api.TaskPatch{
-		RollbackEnabled: &rollbackEnabled,
-	}, task.PipelineID, task.ID)
+	for _, step := range plan.Steps {
+		for _, spec := range step.Specs {
+			spec.GetChangeDatabaseConfig().RollbackEnabled = false
+		}
+	}
+	_, err = ctl.rolloutServiceClient.UpdatePlan(ctx, &v1pb.UpdatePlanRequest{
+		Plan:       plan,
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"steps"}},
+	})
 	a.NoError(err)
 
 	// Check that the data is changed.
@@ -676,13 +447,29 @@ func TestRollbackCanceled(t *testing.T) {
 	want1 := []record{{2, "unknown\nunknown"}, {3, "unknown\nunknown"}}
 	a.Equal(want1, records1)
 
-	issue, err = ctl.getIssue(issue.ID)
+	rollout, err = ctl.rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{Name: rollout.Name})
 	a.NoError(err)
-	a.Len(issue.Pipeline.StageList, 1)
-	a.Len(issue.Pipeline.StageList[0].TaskList, 1)
-	task = issue.Pipeline.StageList[0].TaskList[0]
-	var payload api.TaskDatabaseDataUpdatePayload
-	err = json.Unmarshal([]byte(task.Payload), &payload)
-	a.NoError(err)
-	a.Equal(false, payload.RollbackEnabled)
+	a.Len(rollout.Stages, 1)
+	a.Len(rollout.Stages[0].Tasks, 1)
+	task := rollout.Stages[0].Tasks[0]
+	a.Equal(false, task.GetDatabaseDataUpdate().RollbackEnabled)
+}
+
+func waitRollbackStatement(ctx context.Context, rolloutServiceClient v1pb.RolloutServiceClient, rolloutName string) (string, string, error) {
+	for i := 0; i < 30; i++ {
+		rollout, err := rolloutServiceClient.GetRollout(ctx, &v1pb.GetRolloutRequest{Name: rolloutName})
+		if err != nil {
+			return "", "", err
+		}
+		for _, stage := range rollout.Stages {
+			for _, task := range stage.Tasks {
+				dataUpdate := task.GetDatabaseDataUpdate()
+				if dataUpdate.RollbackSqlStatus == v1pb.Task_DatabaseDataUpdate_DONE {
+					return task.Name, dataUpdate.RollbackSheet, nil
+				}
+			}
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return "", "", errors.Errorf("failed to generate rollback statement")
 }

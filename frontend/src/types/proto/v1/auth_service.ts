@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
@@ -137,7 +136,7 @@ export interface ListUsersResponse {
 
 export interface CreateUserRequest {
   /** The user to create. */
-  user?: User;
+  user?: User | undefined;
 }
 
 export interface UpdateUserRequest {
@@ -147,9 +146,13 @@ export interface UpdateUserRequest {
    * The user's `name` field is used to identify the user to update.
    * Format: users/{user}
    */
-  user?: User;
+  user?:
+    | User
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?:
+    | string[]
+    | undefined;
   /** The otp_code is used to verify the user's identity by MFA. */
   otpCode?:
     | string
@@ -190,7 +193,9 @@ export interface LoginRequest {
    */
   idpName: string;
   /** The idp_context is using to get the user information from identity provider. */
-  idpContext?: IdentityProviderContext;
+  idpContext?:
+    | IdentityProviderContext
+    | undefined;
   /** The otp_code is used to verify the user's identity by MFA. */
   otpCode?:
     | string
@@ -1676,28 +1681,6 @@ export const AuthServiceDefinition = {
     },
   },
 } as const;
-
-export interface AuthServiceImplementation<CallContextExt = {}> {
-  getUser(request: GetUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
-  listUsers(request: ListUsersRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListUsersResponse>>;
-  createUser(request: CreateUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
-  updateUser(request: UpdateUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
-  deleteUser(request: DeleteUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  undeleteUser(request: UndeleteUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
-  login(request: LoginRequest, context: CallContext & CallContextExt): Promise<DeepPartial<LoginResponse>>;
-  logout(request: LogoutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-}
-
-export interface AuthServiceClient<CallOptionsExt = {}> {
-  getUser(request: DeepPartial<GetUserRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
-  listUsers(request: DeepPartial<ListUsersRequest>, options?: CallOptions & CallOptionsExt): Promise<ListUsersResponse>;
-  createUser(request: DeepPartial<CreateUserRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
-  updateUser(request: DeepPartial<UpdateUserRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
-  deleteUser(request: DeepPartial<DeleteUserRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  undeleteUser(request: DeepPartial<UndeleteUserRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
-  login(request: DeepPartial<LoginRequest>, options?: CallOptions & CallOptionsExt): Promise<LoginResponse>;
-  logout(request: DeepPartial<LogoutRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

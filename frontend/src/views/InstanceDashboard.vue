@@ -2,13 +2,13 @@
   <div class="flex flex-col">
     <FeatureAttention
       v-if="remainingInstanceCount <= 3"
-      custom-class="m-5"
+      custom-class="m-4"
       feature="bb.feature.instance-count"
       :description="instanceCountAttention"
     />
-    <div class="px-5 py-2 flex justify-between items-center">
+    <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
-        :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
+        :environment="selectedEnvironment?.name"
         :include-all="true"
         @update:environment="selectEnvironment"
       />
@@ -20,23 +20,20 @@
     </div>
     <InstanceV1Table
       :instance-list="filteredInstanceV1List"
-      :can-assign-license="true"
+      :can-assign-license="subscriptionStore.currentPlan !== PlanType.FREE"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
-import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-
+import { useRouter } from "vue-router";
 import {
   EnvironmentTabFilter,
   InstanceV1Table,
   SearchBox,
 } from "@/components/v2";
-import { UNKNOWN_ID } from "../types";
-import { sortInstanceV1ListByEnvironmentV1 } from "../utils";
 import {
   useUIStateStore,
   useSubscriptionV1Store,
@@ -45,6 +42,9 @@ import {
   useInstanceV1List,
   useInstanceV1Store,
 } from "@/store";
+import { PlanType } from "@/types/proto/v1/subscription_service";
+import { UNKNOWN_ENVIRONMENT_NAME } from "../types";
+import { sortInstanceV1ListByEnvironmentV1 } from "../utils";
 
 interface LocalState {
   searchText: string;
@@ -63,8 +63,9 @@ const state = reactive<LocalState>({
 });
 
 const selectedEnvironment = computed(() => {
-  const uid = router.currentRoute.value.query.environment as string;
-  if (uid) return useEnvironmentV1Store().getEnvironmentByUID(uid);
+  const environment = router.currentRoute.value.query.environment as string;
+  if (environment)
+    return useEnvironmentV1Store().getEnvironmentByName(environment);
   return undefined;
 });
 
@@ -77,11 +78,11 @@ onMounted(() => {
   }
 });
 
-const selectEnvironment = (uid: string | undefined) => {
-  if (uid && uid !== String(UNKNOWN_ID)) {
+const selectEnvironment = (environment: string | undefined) => {
+  if (environment && environment !== UNKNOWN_ENVIRONMENT_NAME) {
     router.replace({
       name: "workspace.instance",
-      query: { environment: uid },
+      query: { environment },
     });
   } else {
     router.replace({ name: "workspace.instance" });
@@ -95,7 +96,7 @@ const { instanceList: rawInstanceV1List } = useInstanceV1List(
 const filteredInstanceV1List = computed(() => {
   let list = [...rawInstanceV1List.value];
   const environment = selectedEnvironment.value;
-  if (environment && environment.uid !== String(UNKNOWN_ID)) {
+  if (environment && environment.name !== UNKNOWN_ENVIRONMENT_NAME) {
     list = list.filter((instance) => instance.environment === environment.name);
   }
   const keyword = state.searchText.trim().toLowerCase();
@@ -111,21 +112,23 @@ const filteredInstanceV1List = computed(() => {
 const remainingInstanceCount = computed((): number => {
   return Math.max(
     0,
-    subscriptionStore.instanceCount - instanceV1Store.activateInstanceCount
+    subscriptionStore.instanceCountLimit -
+      instanceV1Store.activeInstanceList.length
   );
 });
 
 const instanceCountAttention = computed((): string => {
   const upgrade = t("subscription.features.bb-feature-instance-count.upgrade");
   let status = "";
+
   if (remainingInstanceCount.value > 0) {
     status = t("subscription.features.bb-feature-instance-count.remaining", {
-      total: subscriptionStore.instanceCount,
+      total: subscriptionStore.instanceCountLimit,
       count: remainingInstanceCount.value,
     });
   } else {
     status = t("subscription.features.bb-feature-instance-count.runoutof", {
-      total: subscriptionStore.instanceCount,
+      total: subscriptionStore.instanceCountLimit,
     });
   }
 

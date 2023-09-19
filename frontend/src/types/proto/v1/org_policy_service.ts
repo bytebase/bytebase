@@ -1,22 +1,26 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { Expr } from "../google/type/expr";
+import { Engine, engineFromJSON, engineToJSON, MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
+import { IamPolicy } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
 
 export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0,
-  DEPLOYMENT_APPROVAL = 1,
-  BACKUP_PLAN = 2,
-  SQL_REVIEW = 3,
-  SENSITIVE_DATA = 4,
-  ACCESS_CONTROL = 5,
-  SLOW_QUERY = 6,
+  WORKSPACE_IAM = 1,
+  DEPLOYMENT_APPROVAL = 2,
+  BACKUP_PLAN = 3,
+  SQL_REVIEW = 4,
+  MASKING = 5,
+  SLOW_QUERY = 7,
+  DISABLE_COPY_DATA = 8,
+  MASKING_RULE = 9,
+  MASKING_EXCEPTION = 10,
   UNRECOGNIZED = -1,
 }
 
@@ -26,23 +30,32 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case "POLICY_TYPE_UNSPECIFIED":
       return PolicyType.POLICY_TYPE_UNSPECIFIED;
     case 1:
+    case "WORKSPACE_IAM":
+      return PolicyType.WORKSPACE_IAM;
+    case 2:
     case "DEPLOYMENT_APPROVAL":
       return PolicyType.DEPLOYMENT_APPROVAL;
-    case 2:
+    case 3:
     case "BACKUP_PLAN":
       return PolicyType.BACKUP_PLAN;
-    case 3:
+    case 4:
     case "SQL_REVIEW":
       return PolicyType.SQL_REVIEW;
-    case 4:
-    case "SENSITIVE_DATA":
-      return PolicyType.SENSITIVE_DATA;
     case 5:
-    case "ACCESS_CONTROL":
-      return PolicyType.ACCESS_CONTROL;
-    case 6:
+    case "MASKING":
+      return PolicyType.MASKING;
+    case 7:
     case "SLOW_QUERY":
       return PolicyType.SLOW_QUERY;
+    case 8:
+    case "DISABLE_COPY_DATA":
+      return PolicyType.DISABLE_COPY_DATA;
+    case 9:
+    case "MASKING_RULE":
+      return PolicyType.MASKING_RULE;
+    case 10:
+    case "MASKING_EXCEPTION":
+      return PolicyType.MASKING_EXCEPTION;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -54,18 +67,24 @@ export function policyTypeToJSON(object: PolicyType): string {
   switch (object) {
     case PolicyType.POLICY_TYPE_UNSPECIFIED:
       return "POLICY_TYPE_UNSPECIFIED";
+    case PolicyType.WORKSPACE_IAM:
+      return "WORKSPACE_IAM";
     case PolicyType.DEPLOYMENT_APPROVAL:
       return "DEPLOYMENT_APPROVAL";
     case PolicyType.BACKUP_PLAN:
       return "BACKUP_PLAN";
     case PolicyType.SQL_REVIEW:
       return "SQL_REVIEW";
-    case PolicyType.SENSITIVE_DATA:
-      return "SENSITIVE_DATA";
-    case PolicyType.ACCESS_CONTROL:
-      return "ACCESS_CONTROL";
+    case PolicyType.MASKING:
+      return "MASKING";
     case PolicyType.SLOW_QUERY:
       return "SLOW_QUERY";
+    case PolicyType.DISABLE_COPY_DATA:
+      return "DISABLE_COPY_DATA";
+    case PolicyType.MASKING_RULE:
+      return "MASKING_RULE";
+    case PolicyType.MASKING_EXCEPTION:
+      return "MASKING_EXCEPTION";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -252,39 +271,6 @@ export function backupPlanScheduleToJSON(object: BackupPlanSchedule): string {
   }
 }
 
-export enum SensitiveDataMaskType {
-  MASK_TYPE_UNSPECIFIED = 0,
-  DEFAULT = 1,
-  UNRECOGNIZED = -1,
-}
-
-export function sensitiveDataMaskTypeFromJSON(object: any): SensitiveDataMaskType {
-  switch (object) {
-    case 0:
-    case "MASK_TYPE_UNSPECIFIED":
-      return SensitiveDataMaskType.MASK_TYPE_UNSPECIFIED;
-    case 1:
-    case "DEFAULT":
-      return SensitiveDataMaskType.DEFAULT;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return SensitiveDataMaskType.UNRECOGNIZED;
-  }
-}
-
-export function sensitiveDataMaskTypeToJSON(object: SensitiveDataMaskType): string {
-  switch (object) {
-    case SensitiveDataMaskType.MASK_TYPE_UNSPECIFIED:
-      return "MASK_TYPE_UNSPECIFIED";
-    case SensitiveDataMaskType.DEFAULT:
-      return "DEFAULT";
-    case SensitiveDataMaskType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export enum SQLReviewRuleLevel {
   LEVEL_UNSPECIFIED = 0,
   ERROR = 1,
@@ -340,7 +326,7 @@ export interface CreatePolicyRequest {
    */
   parent: string;
   /** The policy to create. */
-  policy?: Policy;
+  policy?: Policy | undefined;
   type: PolicyType;
 }
 
@@ -355,9 +341,13 @@ export interface UpdatePolicyRequest {
    * Instance resource name: instances/instance-id.
    * Database resource name: instances/instance-id/databases/database-name.
    */
-  policy?: Policy;
+  policy?:
+    | Policy
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?:
+    | string[]
+    | undefined;
   /**
    * If set to true, and the policy is not found, a new policy will be created.
    * In this situation, `update_mask` is ignored.
@@ -437,12 +427,15 @@ export interface Policy {
   uid: string;
   inheritFromParent: boolean;
   type: PolicyType;
+  workspaceIamPolicy?: IamPolicy | undefined;
   deploymentApprovalPolicy?: DeploymentApprovalPolicy | undefined;
   backupPlanPolicy?: BackupPlanPolicy | undefined;
-  sensitiveDataPolicy?: SensitiveDataPolicy | undefined;
-  accessControlPolicy?: AccessControlPolicy | undefined;
+  maskingPolicy?: MaskingPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
   slowQueryPolicy?: SlowQueryPolicy | undefined;
+  disableCopyDataPolicy?: DisableCopyDataPolicy | undefined;
+  maskingRulePolicy?: MaskingRulePolicy | undefined;
+  maskingExceptionPolicy?: MaskingExceptionPolicy | undefined;
   enforce: boolean;
   /** The resource type for the policy. */
   resourceType: PolicyResourceType;
@@ -463,30 +456,31 @@ export interface DeploymentApprovalStrategy {
 
 export interface BackupPlanPolicy {
   schedule: BackupPlanSchedule;
-  retentionDuration?: Duration;
+  retentionDuration?: Duration | undefined;
 }
 
 export interface SlowQueryPolicy {
   active: boolean;
 }
 
-export interface SensitiveDataPolicy {
-  sensitiveData: SensitiveData[];
+export interface DisableCopyDataPolicy {
+  active: boolean;
 }
 
-export interface SensitiveData {
+export interface MaskingPolicy {
+  maskData: MaskData[];
+}
+
+export interface MaskData {
   schema: string;
   table: string;
   column: string;
-  maskType: SensitiveDataMaskType;
-}
-
-export interface AccessControlPolicy {
-  disallowRules: AccessControlRule[];
-}
-
-export interface AccessControlRule {
-  fullDatabase: boolean;
+  semanticTypeId: string;
+  /** The full masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. */
+  fullMaskingAlgorithmId: string;
+  /** The partial masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. */
+  partialMaskingAlgorithmId: string;
+  maskingLevel: MaskingLevel;
 }
 
 export interface SQLReviewPolicy {
@@ -500,6 +494,80 @@ export interface SQLReviewRule {
   payload: string;
   engine: Engine;
   comment: string;
+}
+
+/** MaskingExceptionPolicy is the allowlist of users who can access sensitive data. */
+export interface MaskingExceptionPolicy {
+  maskingExceptions: MaskingExceptionPolicy_MaskingException[];
+}
+
+export interface MaskingExceptionPolicy_MaskingException {
+  /** action is the action that the user can access sensitive data. */
+  action: MaskingExceptionPolicy_MaskingException_Action;
+  /** Level is the masking level that the user can access sensitive data. */
+  maskingLevel: MaskingLevel;
+  /**
+   * Member is the principal who bind to this exception policy instance.
+   *
+   * * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+   */
+  member: string;
+  /** The condition that is associated with this exception policy instance. */
+  condition?: Expr | undefined;
+}
+
+export enum MaskingExceptionPolicy_MaskingException_Action {
+  ACTION_UNSPECIFIED = 0,
+  QUERY = 1,
+  EXPORT = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function maskingExceptionPolicy_MaskingException_ActionFromJSON(
+  object: any,
+): MaskingExceptionPolicy_MaskingException_Action {
+  switch (object) {
+    case 0:
+    case "ACTION_UNSPECIFIED":
+      return MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED;
+    case 1:
+    case "QUERY":
+      return MaskingExceptionPolicy_MaskingException_Action.QUERY;
+    case 2:
+    case "EXPORT":
+      return MaskingExceptionPolicy_MaskingException_Action.EXPORT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return MaskingExceptionPolicy_MaskingException_Action.UNRECOGNIZED;
+  }
+}
+
+export function maskingExceptionPolicy_MaskingException_ActionToJSON(
+  object: MaskingExceptionPolicy_MaskingException_Action,
+): string {
+  switch (object) {
+    case MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED:
+      return "ACTION_UNSPECIFIED";
+    case MaskingExceptionPolicy_MaskingException_Action.QUERY:
+      return "QUERY";
+    case MaskingExceptionPolicy_MaskingException_Action.EXPORT:
+      return "EXPORT";
+    case MaskingExceptionPolicy_MaskingException_Action.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface MaskingRulePolicy {
+  rules: MaskingRulePolicy_MaskingRule[];
+}
+
+export interface MaskingRulePolicy_MaskingRule {
+  /** A unique identifier for a node in UUID format. */
+  id: string;
+  condition?: Expr | undefined;
+  maskingLevel: MaskingLevel;
 }
 
 function createBaseCreatePolicyRequest(): CreatePolicyRequest {
@@ -978,12 +1046,15 @@ function createBasePolicy(): Policy {
     uid: "",
     inheritFromParent: false,
     type: 0,
+    workspaceIamPolicy: undefined,
     deploymentApprovalPolicy: undefined,
     backupPlanPolicy: undefined,
-    sensitiveDataPolicy: undefined,
-    accessControlPolicy: undefined,
+    maskingPolicy: undefined,
     sqlReviewPolicy: undefined,
     slowQueryPolicy: undefined,
+    disableCopyDataPolicy: undefined,
+    maskingRulePolicy: undefined,
+    maskingExceptionPolicy: undefined,
     enforce: false,
     resourceType: 0,
     resourceUid: "",
@@ -1004,32 +1075,41 @@ export const Policy = {
     if (message.type !== 0) {
       writer.uint32(40).int32(message.type);
     }
+    if (message.workspaceIamPolicy !== undefined) {
+      IamPolicy.encode(message.workspaceIamPolicy, writer.uint32(50).fork()).ldelim();
+    }
     if (message.deploymentApprovalPolicy !== undefined) {
-      DeploymentApprovalPolicy.encode(message.deploymentApprovalPolicy, writer.uint32(50).fork()).ldelim();
+      DeploymentApprovalPolicy.encode(message.deploymentApprovalPolicy, writer.uint32(58).fork()).ldelim();
     }
     if (message.backupPlanPolicy !== undefined) {
-      BackupPlanPolicy.encode(message.backupPlanPolicy, writer.uint32(58).fork()).ldelim();
+      BackupPlanPolicy.encode(message.backupPlanPolicy, writer.uint32(66).fork()).ldelim();
     }
-    if (message.sensitiveDataPolicy !== undefined) {
-      SensitiveDataPolicy.encode(message.sensitiveDataPolicy, writer.uint32(66).fork()).ldelim();
-    }
-    if (message.accessControlPolicy !== undefined) {
-      AccessControlPolicy.encode(message.accessControlPolicy, writer.uint32(74).fork()).ldelim();
+    if (message.maskingPolicy !== undefined) {
+      MaskingPolicy.encode(message.maskingPolicy, writer.uint32(74).fork()).ldelim();
     }
     if (message.sqlReviewPolicy !== undefined) {
-      SQLReviewPolicy.encode(message.sqlReviewPolicy, writer.uint32(82).fork()).ldelim();
+      SQLReviewPolicy.encode(message.sqlReviewPolicy, writer.uint32(90).fork()).ldelim();
     }
     if (message.slowQueryPolicy !== undefined) {
-      SlowQueryPolicy.encode(message.slowQueryPolicy, writer.uint32(90).fork()).ldelim();
+      SlowQueryPolicy.encode(message.slowQueryPolicy, writer.uint32(98).fork()).ldelim();
+    }
+    if (message.disableCopyDataPolicy !== undefined) {
+      DisableCopyDataPolicy.encode(message.disableCopyDataPolicy, writer.uint32(130).fork()).ldelim();
+    }
+    if (message.maskingRulePolicy !== undefined) {
+      MaskingRulePolicy.encode(message.maskingRulePolicy, writer.uint32(138).fork()).ldelim();
+    }
+    if (message.maskingExceptionPolicy !== undefined) {
+      MaskingExceptionPolicy.encode(message.maskingExceptionPolicy, writer.uint32(146).fork()).ldelim();
     }
     if (message.enforce === true) {
-      writer.uint32(96).bool(message.enforce);
+      writer.uint32(104).bool(message.enforce);
     }
     if (message.resourceType !== 0) {
-      writer.uint32(104).int32(message.resourceType);
+      writer.uint32(112).int32(message.resourceType);
     }
     if (message.resourceUid !== "") {
-      writer.uint32(114).string(message.resourceUid);
+      writer.uint32(122).string(message.resourceUid);
     }
     return writer;
   },
@@ -1074,59 +1154,80 @@ export const Policy = {
             break;
           }
 
-          message.deploymentApprovalPolicy = DeploymentApprovalPolicy.decode(reader, reader.uint32());
+          message.workspaceIamPolicy = IamPolicy.decode(reader, reader.uint32());
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.backupPlanPolicy = BackupPlanPolicy.decode(reader, reader.uint32());
+          message.deploymentApprovalPolicy = DeploymentApprovalPolicy.decode(reader, reader.uint32());
           continue;
         case 8:
           if (tag !== 66) {
             break;
           }
 
-          message.sensitiveDataPolicy = SensitiveDataPolicy.decode(reader, reader.uint32());
+          message.backupPlanPolicy = BackupPlanPolicy.decode(reader, reader.uint32());
           continue;
         case 9:
           if (tag !== 74) {
             break;
           }
 
-          message.accessControlPolicy = AccessControlPolicy.decode(reader, reader.uint32());
-          continue;
-        case 10:
-          if (tag !== 82) {
-            break;
-          }
-
-          message.sqlReviewPolicy = SQLReviewPolicy.decode(reader, reader.uint32());
+          message.maskingPolicy = MaskingPolicy.decode(reader, reader.uint32());
           continue;
         case 11:
           if (tag !== 90) {
             break;
           }
 
-          message.slowQueryPolicy = SlowQueryPolicy.decode(reader, reader.uint32());
+          message.sqlReviewPolicy = SQLReviewPolicy.decode(reader, reader.uint32());
           continue;
         case 12:
-          if (tag !== 96) {
+          if (tag !== 98) {
             break;
           }
 
-          message.enforce = reader.bool();
+          message.slowQueryPolicy = SlowQueryPolicy.decode(reader, reader.uint32());
+          continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.disableCopyDataPolicy = DisableCopyDataPolicy.decode(reader, reader.uint32());
+          continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.maskingRulePolicy = MaskingRulePolicy.decode(reader, reader.uint32());
+          continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.maskingExceptionPolicy = MaskingExceptionPolicy.decode(reader, reader.uint32());
           continue;
         case 13:
           if (tag !== 104) {
             break;
           }
 
-          message.resourceType = reader.int32() as any;
+          message.enforce = reader.bool();
           continue;
         case 14:
-          if (tag !== 114) {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.resourceType = reader.int32() as any;
+          continue;
+        case 15:
+          if (tag !== 122) {
             break;
           }
 
@@ -1147,18 +1248,23 @@ export const Policy = {
       uid: isSet(object.uid) ? String(object.uid) : "",
       inheritFromParent: isSet(object.inheritFromParent) ? Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
+      workspaceIamPolicy: isSet(object.workspaceIamPolicy) ? IamPolicy.fromJSON(object.workspaceIamPolicy) : undefined,
       deploymentApprovalPolicy: isSet(object.deploymentApprovalPolicy)
         ? DeploymentApprovalPolicy.fromJSON(object.deploymentApprovalPolicy)
         : undefined,
       backupPlanPolicy: isSet(object.backupPlanPolicy) ? BackupPlanPolicy.fromJSON(object.backupPlanPolicy) : undefined,
-      sensitiveDataPolicy: isSet(object.sensitiveDataPolicy)
-        ? SensitiveDataPolicy.fromJSON(object.sensitiveDataPolicy)
-        : undefined,
-      accessControlPolicy: isSet(object.accessControlPolicy)
-        ? AccessControlPolicy.fromJSON(object.accessControlPolicy)
-        : undefined,
+      maskingPolicy: isSet(object.maskingPolicy) ? MaskingPolicy.fromJSON(object.maskingPolicy) : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
       slowQueryPolicy: isSet(object.slowQueryPolicy) ? SlowQueryPolicy.fromJSON(object.slowQueryPolicy) : undefined,
+      disableCopyDataPolicy: isSet(object.disableCopyDataPolicy)
+        ? DisableCopyDataPolicy.fromJSON(object.disableCopyDataPolicy)
+        : undefined,
+      maskingRulePolicy: isSet(object.maskingRulePolicy)
+        ? MaskingRulePolicy.fromJSON(object.maskingRulePolicy)
+        : undefined,
+      maskingExceptionPolicy: isSet(object.maskingExceptionPolicy)
+        ? MaskingExceptionPolicy.fromJSON(object.maskingExceptionPolicy)
+        : undefined,
       enforce: isSet(object.enforce) ? Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType) ? policyResourceTypeFromJSON(object.resourceType) : 0,
       resourceUid: isSet(object.resourceUid) ? String(object.resourceUid) : "",
@@ -1171,21 +1277,28 @@ export const Policy = {
     message.uid !== undefined && (obj.uid = message.uid);
     message.inheritFromParent !== undefined && (obj.inheritFromParent = message.inheritFromParent);
     message.type !== undefined && (obj.type = policyTypeToJSON(message.type));
+    message.workspaceIamPolicy !== undefined &&
+      (obj.workspaceIamPolicy = message.workspaceIamPolicy ? IamPolicy.toJSON(message.workspaceIamPolicy) : undefined);
     message.deploymentApprovalPolicy !== undefined && (obj.deploymentApprovalPolicy = message.deploymentApprovalPolicy
       ? DeploymentApprovalPolicy.toJSON(message.deploymentApprovalPolicy)
       : undefined);
     message.backupPlanPolicy !== undefined &&
       (obj.backupPlanPolicy = message.backupPlanPolicy ? BackupPlanPolicy.toJSON(message.backupPlanPolicy) : undefined);
-    message.sensitiveDataPolicy !== undefined && (obj.sensitiveDataPolicy = message.sensitiveDataPolicy
-      ? SensitiveDataPolicy.toJSON(message.sensitiveDataPolicy)
-      : undefined);
-    message.accessControlPolicy !== undefined && (obj.accessControlPolicy = message.accessControlPolicy
-      ? AccessControlPolicy.toJSON(message.accessControlPolicy)
-      : undefined);
+    message.maskingPolicy !== undefined &&
+      (obj.maskingPolicy = message.maskingPolicy ? MaskingPolicy.toJSON(message.maskingPolicy) : undefined);
     message.sqlReviewPolicy !== undefined &&
       (obj.sqlReviewPolicy = message.sqlReviewPolicy ? SQLReviewPolicy.toJSON(message.sqlReviewPolicy) : undefined);
     message.slowQueryPolicy !== undefined &&
       (obj.slowQueryPolicy = message.slowQueryPolicy ? SlowQueryPolicy.toJSON(message.slowQueryPolicy) : undefined);
+    message.disableCopyDataPolicy !== undefined && (obj.disableCopyDataPolicy = message.disableCopyDataPolicy
+      ? DisableCopyDataPolicy.toJSON(message.disableCopyDataPolicy)
+      : undefined);
+    message.maskingRulePolicy !== undefined && (obj.maskingRulePolicy = message.maskingRulePolicy
+      ? MaskingRulePolicy.toJSON(message.maskingRulePolicy)
+      : undefined);
+    message.maskingExceptionPolicy !== undefined && (obj.maskingExceptionPolicy = message.maskingExceptionPolicy
+      ? MaskingExceptionPolicy.toJSON(message.maskingExceptionPolicy)
+      : undefined);
     message.enforce !== undefined && (obj.enforce = message.enforce);
     message.resourceType !== undefined && (obj.resourceType = policyResourceTypeToJSON(message.resourceType));
     message.resourceUid !== undefined && (obj.resourceUid = message.resourceUid);
@@ -1202,6 +1315,9 @@ export const Policy = {
     message.uid = object.uid ?? "";
     message.inheritFromParent = object.inheritFromParent ?? false;
     message.type = object.type ?? 0;
+    message.workspaceIamPolicy = (object.workspaceIamPolicy !== undefined && object.workspaceIamPolicy !== null)
+      ? IamPolicy.fromPartial(object.workspaceIamPolicy)
+      : undefined;
     message.deploymentApprovalPolicy =
       (object.deploymentApprovalPolicy !== undefined && object.deploymentApprovalPolicy !== null)
         ? DeploymentApprovalPolicy.fromPartial(object.deploymentApprovalPolicy)
@@ -1209,11 +1325,8 @@ export const Policy = {
     message.backupPlanPolicy = (object.backupPlanPolicy !== undefined && object.backupPlanPolicy !== null)
       ? BackupPlanPolicy.fromPartial(object.backupPlanPolicy)
       : undefined;
-    message.sensitiveDataPolicy = (object.sensitiveDataPolicy !== undefined && object.sensitiveDataPolicy !== null)
-      ? SensitiveDataPolicy.fromPartial(object.sensitiveDataPolicy)
-      : undefined;
-    message.accessControlPolicy = (object.accessControlPolicy !== undefined && object.accessControlPolicy !== null)
-      ? AccessControlPolicy.fromPartial(object.accessControlPolicy)
+    message.maskingPolicy = (object.maskingPolicy !== undefined && object.maskingPolicy !== null)
+      ? MaskingPolicy.fromPartial(object.maskingPolicy)
       : undefined;
     message.sqlReviewPolicy = (object.sqlReviewPolicy !== undefined && object.sqlReviewPolicy !== null)
       ? SQLReviewPolicy.fromPartial(object.sqlReviewPolicy)
@@ -1221,6 +1334,17 @@ export const Policy = {
     message.slowQueryPolicy = (object.slowQueryPolicy !== undefined && object.slowQueryPolicy !== null)
       ? SlowQueryPolicy.fromPartial(object.slowQueryPolicy)
       : undefined;
+    message.disableCopyDataPolicy =
+      (object.disableCopyDataPolicy !== undefined && object.disableCopyDataPolicy !== null)
+        ? DisableCopyDataPolicy.fromPartial(object.disableCopyDataPolicy)
+        : undefined;
+    message.maskingRulePolicy = (object.maskingRulePolicy !== undefined && object.maskingRulePolicy !== null)
+      ? MaskingRulePolicy.fromPartial(object.maskingRulePolicy)
+      : undefined;
+    message.maskingExceptionPolicy =
+      (object.maskingExceptionPolicy !== undefined && object.maskingExceptionPolicy !== null)
+        ? MaskingExceptionPolicy.fromPartial(object.maskingExceptionPolicy)
+        : undefined;
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? 0;
     message.resourceUid = object.resourceUid ?? "";
@@ -1522,31 +1646,31 @@ export const SlowQueryPolicy = {
   },
 };
 
-function createBaseSensitiveDataPolicy(): SensitiveDataPolicy {
-  return { sensitiveData: [] };
+function createBaseDisableCopyDataPolicy(): DisableCopyDataPolicy {
+  return { active: false };
 }
 
-export const SensitiveDataPolicy = {
-  encode(message: SensitiveDataPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.sensitiveData) {
-      SensitiveData.encode(v!, writer.uint32(10).fork()).ldelim();
+export const DisableCopyDataPolicy = {
+  encode(message: DisableCopyDataPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.active === true) {
+      writer.uint32(8).bool(message.active);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SensitiveDataPolicy {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DisableCopyDataPolicy {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSensitiveDataPolicy();
+    const message = createBaseDisableCopyDataPolicy();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.sensitiveData.push(SensitiveData.decode(reader, reader.uint32()));
+          message.active = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1557,41 +1681,101 @@ export const SensitiveDataPolicy = {
     return message;
   },
 
-  fromJSON(object: any): SensitiveDataPolicy {
-    return {
-      sensitiveData: Array.isArray(object?.sensitiveData)
-        ? object.sensitiveData.map((e: any) => SensitiveData.fromJSON(e))
-        : [],
-    };
+  fromJSON(object: any): DisableCopyDataPolicy {
+    return { active: isSet(object.active) ? Boolean(object.active) : false };
   },
 
-  toJSON(message: SensitiveDataPolicy): unknown {
+  toJSON(message: DisableCopyDataPolicy): unknown {
     const obj: any = {};
-    if (message.sensitiveData) {
-      obj.sensitiveData = message.sensitiveData.map((e) => e ? SensitiveData.toJSON(e) : undefined);
-    } else {
-      obj.sensitiveData = [];
-    }
+    message.active !== undefined && (obj.active = message.active);
     return obj;
   },
 
-  create(base?: DeepPartial<SensitiveDataPolicy>): SensitiveDataPolicy {
-    return SensitiveDataPolicy.fromPartial(base ?? {});
+  create(base?: DeepPartial<DisableCopyDataPolicy>): DisableCopyDataPolicy {
+    return DisableCopyDataPolicy.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SensitiveDataPolicy>): SensitiveDataPolicy {
-    const message = createBaseSensitiveDataPolicy();
-    message.sensitiveData = object.sensitiveData?.map((e) => SensitiveData.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<DisableCopyDataPolicy>): DisableCopyDataPolicy {
+    const message = createBaseDisableCopyDataPolicy();
+    message.active = object.active ?? false;
     return message;
   },
 };
 
-function createBaseSensitiveData(): SensitiveData {
-  return { schema: "", table: "", column: "", maskType: 0 };
+function createBaseMaskingPolicy(): MaskingPolicy {
+  return { maskData: [] };
 }
 
-export const SensitiveData = {
-  encode(message: SensitiveData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const MaskingPolicy = {
+  encode(message: MaskingPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.maskData) {
+      MaskData.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.maskData.push(MaskData.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingPolicy {
+    return { maskData: Array.isArray(object?.maskData) ? object.maskData.map((e: any) => MaskData.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: MaskingPolicy): unknown {
+    const obj: any = {};
+    if (message.maskData) {
+      obj.maskData = message.maskData.map((e) => e ? MaskData.toJSON(e) : undefined);
+    } else {
+      obj.maskData = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingPolicy>): MaskingPolicy {
+    return MaskingPolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingPolicy>): MaskingPolicy {
+    const message = createBaseMaskingPolicy();
+    message.maskData = object.maskData?.map((e) => MaskData.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMaskData(): MaskData {
+  return {
+    schema: "",
+    table: "",
+    column: "",
+    semanticTypeId: "",
+    fullMaskingAlgorithmId: "",
+    partialMaskingAlgorithmId: "",
+    maskingLevel: 0,
+  };
+}
+
+export const MaskData = {
+  encode(message: MaskData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.schema !== "") {
       writer.uint32(10).string(message.schema);
     }
@@ -1601,16 +1785,25 @@ export const SensitiveData = {
     if (message.column !== "") {
       writer.uint32(26).string(message.column);
     }
-    if (message.maskType !== 0) {
-      writer.uint32(32).int32(message.maskType);
+    if (message.semanticTypeId !== "") {
+      writer.uint32(34).string(message.semanticTypeId);
+    }
+    if (message.fullMaskingAlgorithmId !== "") {
+      writer.uint32(42).string(message.fullMaskingAlgorithmId);
+    }
+    if (message.partialMaskingAlgorithmId !== "") {
+      writer.uint32(50).string(message.partialMaskingAlgorithmId);
+    }
+    if (message.maskingLevel !== 0) {
+      writer.uint32(56).int32(message.maskingLevel);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SensitiveData {
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskData {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSensitiveData();
+    const message = createBaseMaskData();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1636,11 +1829,32 @@ export const SensitiveData = {
           message.column = reader.string();
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag !== 34) {
             break;
           }
 
-          message.maskType = reader.int32() as any;
+          message.semanticTypeId = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.fullMaskingAlgorithmId = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.partialMaskingAlgorithmId = reader.string();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.maskingLevel = reader.int32() as any;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1651,154 +1865,46 @@ export const SensitiveData = {
     return message;
   },
 
-  fromJSON(object: any): SensitiveData {
+  fromJSON(object: any): MaskData {
     return {
       schema: isSet(object.schema) ? String(object.schema) : "",
       table: isSet(object.table) ? String(object.table) : "",
       column: isSet(object.column) ? String(object.column) : "",
-      maskType: isSet(object.maskType) ? sensitiveDataMaskTypeFromJSON(object.maskType) : 0,
+      semanticTypeId: isSet(object.semanticTypeId) ? String(object.semanticTypeId) : "",
+      fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId) ? String(object.fullMaskingAlgorithmId) : "",
+      partialMaskingAlgorithmId: isSet(object.partialMaskingAlgorithmId)
+        ? String(object.partialMaskingAlgorithmId)
+        : "",
+      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
     };
   },
 
-  toJSON(message: SensitiveData): unknown {
+  toJSON(message: MaskData): unknown {
     const obj: any = {};
     message.schema !== undefined && (obj.schema = message.schema);
     message.table !== undefined && (obj.table = message.table);
     message.column !== undefined && (obj.column = message.column);
-    message.maskType !== undefined && (obj.maskType = sensitiveDataMaskTypeToJSON(message.maskType));
+    message.semanticTypeId !== undefined && (obj.semanticTypeId = message.semanticTypeId);
+    message.fullMaskingAlgorithmId !== undefined && (obj.fullMaskingAlgorithmId = message.fullMaskingAlgorithmId);
+    message.partialMaskingAlgorithmId !== undefined &&
+      (obj.partialMaskingAlgorithmId = message.partialMaskingAlgorithmId);
+    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
     return obj;
   },
 
-  create(base?: DeepPartial<SensitiveData>): SensitiveData {
-    return SensitiveData.fromPartial(base ?? {});
+  create(base?: DeepPartial<MaskData>): MaskData {
+    return MaskData.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SensitiveData>): SensitiveData {
-    const message = createBaseSensitiveData();
+  fromPartial(object: DeepPartial<MaskData>): MaskData {
+    const message = createBaseMaskData();
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     message.column = object.column ?? "";
-    message.maskType = object.maskType ?? 0;
-    return message;
-  },
-};
-
-function createBaseAccessControlPolicy(): AccessControlPolicy {
-  return { disallowRules: [] };
-}
-
-export const AccessControlPolicy = {
-  encode(message: AccessControlPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.disallowRules) {
-      AccessControlRule.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): AccessControlPolicy {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAccessControlPolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.disallowRules.push(AccessControlRule.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AccessControlPolicy {
-    return {
-      disallowRules: Array.isArray(object?.disallowRules)
-        ? object.disallowRules.map((e: any) => AccessControlRule.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: AccessControlPolicy): unknown {
-    const obj: any = {};
-    if (message.disallowRules) {
-      obj.disallowRules = message.disallowRules.map((e) => e ? AccessControlRule.toJSON(e) : undefined);
-    } else {
-      obj.disallowRules = [];
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<AccessControlPolicy>): AccessControlPolicy {
-    return AccessControlPolicy.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<AccessControlPolicy>): AccessControlPolicy {
-    const message = createBaseAccessControlPolicy();
-    message.disallowRules = object.disallowRules?.map((e) => AccessControlRule.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseAccessControlRule(): AccessControlRule {
-  return { fullDatabase: false };
-}
-
-export const AccessControlRule = {
-  encode(message: AccessControlRule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.fullDatabase === true) {
-      writer.uint32(8).bool(message.fullDatabase);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): AccessControlRule {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAccessControlRule();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.fullDatabase = reader.bool();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AccessControlRule {
-    return { fullDatabase: isSet(object.fullDatabase) ? Boolean(object.fullDatabase) : false };
-  },
-
-  toJSON(message: AccessControlRule): unknown {
-    const obj: any = {};
-    message.fullDatabase !== undefined && (obj.fullDatabase = message.fullDatabase);
-    return obj;
-  },
-
-  create(base?: DeepPartial<AccessControlRule>): AccessControlRule {
-    return AccessControlRule.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<AccessControlRule>): AccessControlRule {
-    const message = createBaseAccessControlRule();
-    message.fullDatabase = object.fullDatabase ?? false;
+    message.semanticTypeId = object.semanticTypeId ?? "";
+    message.fullMaskingAlgorithmId = object.fullMaskingAlgorithmId ?? "";
+    message.partialMaskingAlgorithmId = object.partialMaskingAlgorithmId ?? "";
+    message.maskingLevel = object.maskingLevel ?? 0;
     return message;
   },
 };
@@ -1984,6 +2090,322 @@ export const SQLReviewRule = {
     message.payload = object.payload ?? "";
     message.engine = object.engine ?? 0;
     message.comment = object.comment ?? "";
+    return message;
+  },
+};
+
+function createBaseMaskingExceptionPolicy(): MaskingExceptionPolicy {
+  return { maskingExceptions: [] };
+}
+
+export const MaskingExceptionPolicy = {
+  encode(message: MaskingExceptionPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.maskingExceptions) {
+      MaskingExceptionPolicy_MaskingException.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingExceptionPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingExceptionPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.maskingExceptions.push(MaskingExceptionPolicy_MaskingException.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingExceptionPolicy {
+    return {
+      maskingExceptions: Array.isArray(object?.maskingExceptions)
+        ? object.maskingExceptions.map((e: any) => MaskingExceptionPolicy_MaskingException.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MaskingExceptionPolicy): unknown {
+    const obj: any = {};
+    if (message.maskingExceptions) {
+      obj.maskingExceptions = message.maskingExceptions.map((e) =>
+        e ? MaskingExceptionPolicy_MaskingException.toJSON(e) : undefined
+      );
+    } else {
+      obj.maskingExceptions = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingExceptionPolicy>): MaskingExceptionPolicy {
+    return MaskingExceptionPolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingExceptionPolicy>): MaskingExceptionPolicy {
+    const message = createBaseMaskingExceptionPolicy();
+    message.maskingExceptions =
+      object.maskingExceptions?.map((e) => MaskingExceptionPolicy_MaskingException.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMaskingExceptionPolicy_MaskingException(): MaskingExceptionPolicy_MaskingException {
+  return { action: 0, maskingLevel: 0, member: "", condition: undefined };
+}
+
+export const MaskingExceptionPolicy_MaskingException = {
+  encode(message: MaskingExceptionPolicy_MaskingException, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.action !== 0) {
+      writer.uint32(8).int32(message.action);
+    }
+    if (message.maskingLevel !== 0) {
+      writer.uint32(16).int32(message.maskingLevel);
+    }
+    if (message.member !== "") {
+      writer.uint32(26).string(message.member);
+    }
+    if (message.condition !== undefined) {
+      Expr.encode(message.condition, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingExceptionPolicy_MaskingException {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingExceptionPolicy_MaskingException();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.action = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.maskingLevel = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.member = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingExceptionPolicy_MaskingException {
+    return {
+      action: isSet(object.action) ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action) : 0,
+      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
+      member: isSet(object.member) ? String(object.member) : "",
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+    };
+  },
+
+  toJSON(message: MaskingExceptionPolicy_MaskingException): unknown {
+    const obj: any = {};
+    message.action !== undefined && (obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action));
+    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
+    message.member !== undefined && (obj.member = message.member);
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
+    return MaskingExceptionPolicy_MaskingException.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
+    const message = createBaseMaskingExceptionPolicy_MaskingException();
+    message.action = object.action ?? 0;
+    message.maskingLevel = object.maskingLevel ?? 0;
+    message.member = object.member ?? "";
+    message.condition = (object.condition !== undefined && object.condition !== null)
+      ? Expr.fromPartial(object.condition)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseMaskingRulePolicy(): MaskingRulePolicy {
+  return { rules: [] };
+}
+
+export const MaskingRulePolicy = {
+  encode(message: MaskingRulePolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.rules) {
+      MaskingRulePolicy_MaskingRule.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingRulePolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingRulePolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rules.push(MaskingRulePolicy_MaskingRule.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingRulePolicy {
+    return {
+      rules: Array.isArray(object?.rules)
+        ? object.rules.map((e: any) => MaskingRulePolicy_MaskingRule.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MaskingRulePolicy): unknown {
+    const obj: any = {};
+    if (message.rules) {
+      obj.rules = message.rules.map((e) => e ? MaskingRulePolicy_MaskingRule.toJSON(e) : undefined);
+    } else {
+      obj.rules = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingRulePolicy>): MaskingRulePolicy {
+    return MaskingRulePolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingRulePolicy>): MaskingRulePolicy {
+    const message = createBaseMaskingRulePolicy();
+    message.rules = object.rules?.map((e) => MaskingRulePolicy_MaskingRule.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMaskingRulePolicy_MaskingRule(): MaskingRulePolicy_MaskingRule {
+  return { id: "", condition: undefined, maskingLevel: 0 };
+}
+
+export const MaskingRulePolicy_MaskingRule = {
+  encode(message: MaskingRulePolicy_MaskingRule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.condition !== undefined) {
+      Expr.encode(message.condition, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.maskingLevel !== 0) {
+      writer.uint32(24).int32(message.maskingLevel);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingRulePolicy_MaskingRule {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingRulePolicy_MaskingRule();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maskingLevel = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingRulePolicy_MaskingRule {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+      maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
+    };
+  },
+
+  toJSON(message: MaskingRulePolicy_MaskingRule): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingRulePolicy_MaskingRule>): MaskingRulePolicy_MaskingRule {
+    return MaskingRulePolicy_MaskingRule.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingRulePolicy_MaskingRule>): MaskingRulePolicy_MaskingRule {
+    const message = createBaseMaskingRulePolicy_MaskingRule();
+    message.id = object.id ?? "";
+    message.condition = (object.condition !== undefined && object.condition !== null)
+      ? Expr.fromPartial(object.condition)
+      : undefined;
+    message.maskingLevel = object.maskingLevel ?? 0;
     return message;
   },
 };
@@ -3109,28 +3531,6 @@ export const OrgPolicyServiceDefinition = {
     },
   },
 } as const;
-
-export interface OrgPolicyServiceImplementation<CallContextExt = {}> {
-  getPolicy(request: GetPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
-  listPolicies(
-    request: ListPoliciesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListPoliciesResponse>>;
-  createPolicy(request: CreatePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
-  updatePolicy(request: UpdatePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
-  deletePolicy(request: DeletePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-}
-
-export interface OrgPolicyServiceClient<CallOptionsExt = {}> {
-  getPolicy(request: DeepPartial<GetPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
-  listPolicies(
-    request: DeepPartial<ListPoliciesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListPoliciesResponse>;
-  createPolicy(request: DeepPartial<CreatePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
-  updatePolicy(request: DeepPartial<UpdatePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
-  deletePolicy(request: DeepPartial<DeletePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

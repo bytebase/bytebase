@@ -7,21 +7,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
-
-	"github.com/pkg/errors"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -34,7 +37,6 @@ type SettingService struct {
 	profile        *config.Profile
 	licenseService enterpriseAPI.LicenseService
 	stateCfg       *state.State
-	feishuProvider *feishu.Provider
 }
 
 // NewSettingService creates a new setting service.
@@ -43,14 +45,12 @@ func NewSettingService(
 	profile *config.Profile,
 	licenseService enterpriseAPI.LicenseService,
 	stateCfg *state.State,
-	feishuProvider *feishu.Provider,
 ) *SettingService {
 	return &SettingService{
 		store:          store,
 		profile:        profile,
 		licenseService: licenseService,
 		stateCfg:       stateCfg,
-		feishuProvider: feishuProvider,
 	}
 }
 
@@ -65,14 +65,17 @@ var whitelistSettings = []api.SettingName{
 	api.SettingWorkspaceMailDelivery,
 	api.SettingWorkspaceProfile,
 	api.SettingWorkspaceExternalApproval,
+	api.SettingEnterpriseTrial,
+	api.SettingSchemaTemplate,
+	api.SettingDataClassification,
+	api.SettingSemanticTypes,
+	api.SettingMaskingAlgorithms,
 }
 
-var (
-	//go:embed mail_templates/testmail/template.html
-	//go:embed mail_templates/testmail/statics/logo-full.png
-	//go:embed mail_templates/testmail/statics/banner.png
-	testEmailFs embed.FS
-)
+//go:embed mail_templates/testmail/template.html
+//go:embed mail_templates/testmail/statics/logo-full.png
+//go:embed mail_templates/testmail/statics/banner.png
+var testEmailFs embed.FS
 
 // ListSettings lists all settings.
 func (s *SettingService) ListSettings(ctx context.Context, _ *v1pb.ListSettingsRequest) (*v1pb.ListSettingsResponse, error) {
@@ -97,7 +100,7 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *v1pb.ListSettingsR
 
 // GetSetting gets the setting by name.
 func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettingRequest) (*v1pb.Setting, error) {
-	settingName, err := getSettingName(request.Name)
+	settingName, err := common.GetSettingName(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "setting name is invalid: %v", err)
 	}
@@ -128,7 +131,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 
 // SetSetting set the setting by name.
 func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettingRequest) (*v1pb.Setting, error) {
-	settingName, err := getSettingName(request.Setting.Name)
+	settingName, err := common.GetSettingName(request.Setting.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -138,8 +141,12 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	if s.profile.IsFeatureUnavailable(settingName) {
 		return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 	}
-
 	apiSettingName := api.SettingName(settingName)
+	// TODO(zp): remove the following hard code when we persist the algorithm setting.
+	if apiSettingName == api.SettingMaskingAlgorithms {
+		return nil, status.Errorf(codes.InvalidArgument, "setting masking algorithm is not available")
+	}
+
 	var storeSettingValue string
 	switch apiSettingName {
 	case api.SettingWorkspaceProfile:
@@ -165,6 +172,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
+		if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
+			return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
+		}
 		storeSettingValue = string(bytes)
 	case api.SettingWorkspaceApproval:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval); err != nil {
@@ -182,7 +192,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			}
 
 			creatorID := 0
-			email, err := getUserEmail(rule.Template.Creator)
+			email, err := common.GetUserEmail(rule.Template.Creator)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to get creator: %v", err))
 			}
@@ -312,32 +322,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			if err := s.licenseService.IsFeatureEnabled(api.FeatureIMApproval); err != nil {
 				return nil, status.Errorf(codes.PermissionDenied, err.Error())
 			}
-
 			if payload.AppID == "" || payload.AppSecret == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "application ID and secret cannot be empty")
 			}
-
-			p := s.feishuProvider
-			// clear token cache so that we won't use the previous token.
-			p.ClearTokenCache()
-
-			// check bot info
-			if _, err := p.GetBotID(ctx, feishu.TokenCtx{
-				AppID:     payload.AppID,
-				AppSecret: payload.AppSecret,
-			}); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get bot id. Hint: check if bot is enabled")
-			}
-
-			// create approval definition
-			approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
-				AppID:     payload.AppID,
-				AppSecret: payload.AppSecret,
-			}, "")
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to create approval definition: %v", err)
-			}
-			payload.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
 		}
 
 		s, err := json.Marshal(payload)
@@ -394,6 +381,106 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
 		}
 		storeSettingValue = string(bytes)
+	case api.SettingEnterpriseTrial:
+		return nil, status.Errorf(codes.InvalidArgument, "cannot set setting %s", settingName)
+	case api.SettingSchemaTemplate:
+		oldSetting, err := s.store.GetSchemaTemplateSetting(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get schema template setting: %v", err)
+		}
+		oldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
+		for _, template := range convertToSchemaTemplateSetting(oldSetting).FieldTemplates {
+			oldTemplateMap[template.Id] = template
+		}
+
+		schemaTemplateSetting := request.Setting.Value.GetSchemaTemplateSettingValue()
+		if schemaTemplateSetting == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "value cannot be nil when setting schema template setting")
+		}
+
+		// validate the changed template
+		for _, template := range schemaTemplateSetting.FieldTemplates {
+			oldTemplate, ok := oldTemplateMap[template.Id]
+			if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
+				continue
+			}
+			engineType := parser.EngineType(template.Engine.String())
+			var defaultVal string
+			if template.Column.Default != nil {
+				defaultVal = template.Column.Default.Value
+			}
+			validateResultList, err := edit.ValidateDatabaseEdit(engineType, &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				CreateTableList: []*api.CreateTableContext{
+					{
+						Name: "validation",
+						Type: "BASE TABLE",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     template.Column.Name,
+								Type:     template.Column.Type,
+								Default:  &defaultVal,
+								Nullable: template.Column.Nullable,
+								Comment:  template.Column.Comment,
+							},
+						},
+					},
+				},
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to validate template, error: %v", err)
+			}
+			if len(validateResultList) != 0 {
+				return nil, status.Errorf(codes.InvalidArgument, validateResultList[0].Message)
+			}
+		}
+
+		payload := new(storepb.SchemaTemplateSetting)
+		if err := convertV1PbToStorePb(schemaTemplateSetting, payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+		bytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
+		}
+		storeSettingValue = string(bytes)
+	case api.SettingDataClassification:
+		payload := new(storepb.DataClassificationSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetDataClassificationSettingValue(), payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+		// it's a temporary solution to limit only 1 classification config before we support manage it in the UX.
+		if len(payload.Configs) > 1 {
+			return nil, status.Errorf(codes.InvalidArgument, "only support define 1 classification config for now")
+		}
+		bytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
+	case api.SettingSemanticTypes:
+		storeSemanticTypesSetting := new(storepb.SemanticTypesSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetSemanticTypesSettingValue(), storeSemanticTypesSetting); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+		idMap := make(map[string]any)
+		for _, tp := range storeSemanticTypesSetting.Types {
+			if !isValidUUID(tp.Id) {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid semantic type id format: %s", tp.Id)
+			}
+			if tp.Title == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "category title cannot be empty: %s", tp.Id)
+			}
+			if _, ok := idMap[tp.Id]; ok {
+				return nil, status.Errorf(codes.InvalidArgument, "duplicate semantic type id: %s", tp.Id)
+			}
+			idMap[tp.Id] = any(nil)
+		}
+		bytes, err := protojson.Marshal(storeSemanticTypesSetting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
@@ -409,6 +496,26 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
+
+	// it's a temporary solution to map the classification to all projects before we support it in the UX.
+	if apiSettingName == api.SettingDataClassification && len(settingMessage.Value.GetDataClassificationSettingValue().Configs) == 1 {
+		classificationID := settingMessage.Value.GetDataClassificationSettingValue().Configs[0].Id
+		projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: false})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to list projects with error: %v", err.Error())
+		}
+		for _, project := range projects {
+			patch := &store.UpdateProjectMessage{
+				UpdaterID:                  ctx.Value(common.PrincipalIDContextKey).(int),
+				ResourceID:                 project.ResourceID,
+				DataClassificationConfigID: &classificationID,
+			}
+			if _, err = s.store.UpdateProjectV2(ctx, patch); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to patch project %s with error: %v", project.Title, err.Error())
+			}
+		}
+	}
+
 	return settingMessage, nil
 }
 
@@ -424,7 +531,7 @@ func convertV1PbToStorePb(inputPB, outputPB protoreflect.ProtoMessage) error {
 }
 
 func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *store.SettingMessage) (*v1pb.Setting, error) {
-	settingName := fmt.Sprintf("%s%s", settingNamePrefix, setting.Name)
+	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, setting.Name)
 	switch setting.Name {
 	case api.SettingWorkspaceMailDelivery:
 		storeValue := new(storepb.SMTPMailDeliverySetting)
@@ -514,7 +621,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
 			}
 			if creator != nil {
-				template.Creator = fmt.Sprintf("%s%s", userNamePrefix, creator.Email)
+				template.Creator = fmt.Sprintf("%s%s", common.UserNamePrefix, creator.Email)
 			}
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
 				Condition: rule.Condition,
@@ -543,6 +650,60 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
+	case api.SettingSchemaTemplate:
+		storeValue := new(storepb.SchemaTemplateSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting values for %s with error: %v", setting.Name, err)
+		}
+		v1Value := convertToSchemaTemplateSetting(storeValue)
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_SchemaTemplateSettingValue{
+					SchemaTemplateSettingValue: v1Value,
+				},
+			},
+		}, nil
+	case api.SettingDataClassification:
+		v1Value := new(v1pb.DataClassificationSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_DataClassificationSettingValue{
+					DataClassificationSettingValue: v1Value,
+				},
+			},
+		}, nil
+	case api.SettingSemanticTypes:
+		v1Value := new(v1pb.SemanticTypesSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_SemanticTypesSettingValue{
+					SemanticTypesSettingValue: v1Value,
+				},
+			},
+		}, nil
+	case api.SettingMaskingAlgorithms:
+		v1Value := new(v1pb.MaskingAlgorithmSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_MaskingAlgorithmSettingValue{
+					MaskingAlgorithmSettingValue: v1Value,
+				},
+			},
+		}, nil
+
 	default:
 		return &v1pb.Setting{
 			Name: settingName,
@@ -774,6 +935,38 @@ func convertToExternalApprovalSettingNode(o *storepb.ExternalApprovalSetting_Nod
 	}
 }
 
+func convertToSchemaTemplateSetting(s *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
+	v1FieldTemplates := []*v1pb.SchemaTemplateSetting_FieldTemplate{}
+	v1ColumnTypes := []*v1pb.SchemaTemplateSetting_ColumnType{}
+	for _, template := range s.FieldTemplates {
+		v1FieldTemplates = append(v1FieldTemplates, &v1pb.SchemaTemplateSetting_FieldTemplate{
+			Id:       template.Id,
+			Engine:   v1pb.Engine(template.Engine),
+			Category: template.Category,
+			Column: &v1pb.ColumnMetadata{
+				Name:           template.Column.Name,
+				Type:           template.Column.Type,
+				Default:        template.Column.Default,
+				Nullable:       template.Column.Nullable,
+				Comment:        template.Column.Comment,
+				Classification: template.Column.Classification,
+			},
+		})
+	}
+	for _, columnType := range s.ColumnTypes {
+		v1ColumnTypes = append(v1ColumnTypes, &v1pb.SchemaTemplateSetting_ColumnType{
+			Engine:  v1pb.Engine(columnType.Engine),
+			Enabled: columnType.Enabled,
+			Types:   columnType.Types,
+		})
+	}
+
+	return &v1pb.SchemaTemplateSetting{
+		FieldTemplates: v1FieldTemplates,
+		ColumnTypes:    v1ColumnTypes,
+	}
+}
+
 func convertExternalApprovalSetting(s *v1pb.ExternalApprovalSetting) *storepb.ExternalApprovalSetting {
 	return &storepb.ExternalApprovalSetting{
 		Nodes: convertExternalApprovalSettingNodes(s.Nodes),
@@ -798,7 +991,7 @@ func convertExternalApprovalSettingNode(o *v1pb.ExternalApprovalSetting_Node) *s
 
 // stripSensitiveData strips the sensitive data like password from the setting.value.
 func stripSensitiveData(setting *v1pb.Setting) (*v1pb.Setting, error) {
-	settingName, err := getSettingName(setting.Name)
+	settingName, err := common.GetSettingName(setting.Name)
 	if err != nil {
 		return nil, err
 	}

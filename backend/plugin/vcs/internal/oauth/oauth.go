@@ -7,10 +7,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 // TokenRefresher is a function to refresh the OAuth token and assign back to
@@ -18,6 +21,7 @@ import (
 type TokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
 
 func requester(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader) func() (*http.Response, error) {
+	//nolint:bodyclose
 	return requesterWithHeader(ctx, client, method, url, token, body, nil)
 }
 
@@ -64,12 +68,14 @@ func Post(ctx context.Context, client *http.Client, url string, token *string, b
 // additional header. It refreshes token and retries the request in the case of
 // the token has expired.
 func PostWithHeader(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher, header map[string]string) (code int, _ http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requesterWithHeader(ctx, client, http.MethodPost, url, token, body, header))
 }
 
 // Get makes a HTTP GET request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Get(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodGet, url, token, nil))
 }
 
@@ -77,24 +83,28 @@ func Get(ctx context.Context, client *http.Client, url string, token *string, to
 // additional header. It refreshes token and retries the request in the case of
 // the token has expired.
 func GetWithHeader(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher, header map[string]string) (code int, _ http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requesterWithHeader(ctx, client, http.MethodGet, url, token, nil, header))
 }
 
 // Put makes a HTTP PUT request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Put(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPut, url, token, body))
 }
 
 // Patch makes a HTTP PATCH request to the given URL using the token. It
 // refreshes token and retries the request in the case of the token has expired.
 func Patch(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPatch, url, token, body))
 }
 
 // Delete makes a HTTP DELETE request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Delete(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+	//nolint:bodyclose
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodDelete, url, token, nil))
 }
 
@@ -118,6 +128,9 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return 0, nil, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
+		}
+		if err := resp.Body.Close(); err != nil {
+			slog.Warn("failed to close resp body", log.BBError(err))
 		}
 
 		if err = getOAuthErrorDetails(resp.StatusCode, body); err != nil {
@@ -151,6 +164,11 @@ func (e oauthError) Error() string {
 // When it's error like 404, GitLab API doesn't return it as error so we keep
 // the similar behavior and let caller check the response status code.
 func getOAuthErrorDetails(code int, body []byte) error {
+	// Special case for Azure DevOps OAuth error.
+	if code == http.StatusNonAuthoritativeInfo && bytes.Contains(body, []byte("Azure DevOps Services | Sign In")) {
+		return &oauthError{}
+	}
+
 	if 200 <= code && code < 300 {
 		return nil
 	}

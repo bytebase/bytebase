@@ -70,29 +70,10 @@ VALUES
         1,
         102,
         'bb.policy.pipeline-approval',
-        '{"value":"MANUAL_APPROVAL_ALWAYS"}'
+        '{"value":"MANUAL_APPROVAL_NEVER"}'
     );
 
-INSERT INTO
-    policy (
-        id,
-        creator_id,
-        updater_id,
-        environment_id,
-        type,
-        payload
-    )
-VALUES
-    (
-        103,
-        1,
-        1,
-        102,
-        'bb.policy.backup-plan',
-        '{"schedule":"WEEKLY"}'
-    );
-
-ALTER SEQUENCE policy_id_seq RESTART WITH 104;
+ALTER SEQUENCE policy_id_seq RESTART WITH 103;
 
 -- Create label keys for `bb.location` and `bb.tenant`.
 INSERT INTO

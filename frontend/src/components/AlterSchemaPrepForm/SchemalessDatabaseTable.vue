@@ -18,11 +18,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import { NCheckbox } from "naive-ui";
-
+import { ref } from "vue";
 import { ComposedDatabase } from "@/types";
-import DatabaseV1Table from "../v2/Model/DatabaseV1Table.vue";
+import { DatabaseV1Table } from "../v2/";
 
 defineProps<{
   databaseList: ComposedDatabase[];

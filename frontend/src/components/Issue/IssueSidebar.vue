@@ -117,7 +117,7 @@
          -->
         <div>
           <h2 class="textlabel flex items-center">
-            <span class="mr-1">{{ $t("common.when") }}</span>
+            <span class="mr-1">{{ $t("task.rollout-time") }}</span>
             <NTooltip>
               <template #trigger>
                 <heroicons-outline:question-mark-circle class="h-4 w-4" />
@@ -176,11 +176,16 @@
             }
           "
         >
-          <div class="flex items-center">
+          <div class="flex items-center gap-x-1">
             <span>{{ databaseName }}</span>
+            <router-link
+              :to="`/environment/${environmentV1Slug(environment)}`"
+              class="col-span-2 text-sm font-medium text-main hover:underline"
+            >
+              ({{ environmentV1Name(environment) }})
+            </router-link>
             <SQLEditorButtonV1
               v-if="databaseEntity"
-              class="ml-1"
               :database="databaseEntity"
             />
           </div>
@@ -192,25 +197,24 @@
         <span class="mr-1">{{ $t("common.instance") }}</span>
         <InstanceV1EngineIcon :instance="instance" />
       </h2>
-      <router-link
-        v-if="allowManageInstance"
-        :to="`/instance/${instanceV1Slug(instance)}`"
-        class="col-span-2 text-sm font-medium text-main hover:underline"
-      >
-        {{ instanceV1Name(instance) }}
-      </router-link>
-      <span v-else class="col-span-2 text-sm font-medium text-main">
-        {{ instanceV1Name(instance) }}
-      </span>
-
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        {{ $t("common.environment") }}
-      </h2>
-      <EnvironmentV1Name
-        :environment="environment"
-        :link="true"
-        class="col-span-2 !text-sm !font-medium !text-main !hover:underline flex items-center"
-      />
+      <div class="flex gap-x-1">
+        <router-link
+          v-if="allowManageInstance"
+          :to="`/instance/${instanceV1Slug(instance)}`"
+          class="col-span-2 text-sm font-medium text-main hover:underline"
+        >
+          {{ instanceV1Name(instance) }}
+        </router-link>
+        <span v-else class="col-span-2 text-sm font-medium text-main">
+          {{ instanceV1Name(instance) }}
+        </span>
+        <router-link
+          :to="`/environment/${environmentV1Slug(instance.environmentEntity)}`"
+          class="col-span-2 text-sm font-medium text-main hover:underline"
+        >
+          ({{ environmentV1Name(instance.environmentEntity) }})
+        </router-link>
+      </div>
 
       <template v-for="label in visibleLabelList" :key="label.key">
         <h2
@@ -279,7 +283,7 @@
       @remove-subscriber-id="(subscriberId) => removeSubscriberId(subscriberId)"
     />
     <FeatureModal
-      v-if="state.showFeatureModal"
+      :open="state.showFeatureModal"
       :feature="'bb.feature.task-schedule-time'"
       :instance="database?.instanceEntity"
       @cancel="state.showFeatureModal = false"
@@ -288,23 +292,23 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, ref, watch, watchEffect } from "vue";
-import { isEqual } from "lodash-es";
-import { NDatePicker, NTooltip } from "naive-ui";
-import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-
-import StageSelect from "./StageSelect.vue";
-import TaskSelect from "./TaskSelect.vue";
-import IssueStatusIcon from "./IssueStatusIcon.vue";
-import { IssueReviewSidebarSection } from "./review";
-import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
-import TaskRollbackView from "./rollback/TaskRollbackView.vue";
-import PrincipalAvatar from "../PrincipalAvatar.vue";
-import MemberSelect from "../MemberSelect.vue";
-import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
+import { isEqual } from "lodash-es";
+import { NDatePicker, NTooltip } from "naive-ui";
+import { computed, PropType, reactive, ref, watch, watchEffect } from "vue";
+import { useRouter } from "vue-router";
+import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
+import { InstanceV1EngineIcon } from "@/components/v2";
+import { ProjectV1Name } from "@/components/v2";
 import { InputField } from "@/plugins";
+import {
+  featureToRef,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useProjectV1Store,
+} from "@/store";
 import {
   ComposedDatabase,
   Issue,
@@ -316,6 +320,8 @@ import {
   UNKNOWN_ID,
   ComposedInstance,
 } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
+import { Environment } from "@/types/proto/v1/environment_service";
 import {
   allTaskList,
   hasWorkspacePermissionV1,
@@ -326,15 +332,16 @@ import {
   extractUserUID,
   instanceV1Slug,
   instanceV1Name,
+  environmentV1Slug,
+  environmentV1Name,
   databaseV1Slug,
 } from "@/utils";
-import {
-  featureToRef,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import MemberSelect from "../MemberSelect.vue";
+import PrincipalAvatar from "../PrincipalAvatar.vue";
+import IssueStatusIcon from "./IssueStatusIcon.vue";
+import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
+import StageSelect from "./StageSelect.vue";
+import TaskSelect from "./TaskSelect.vue";
 import {
   allowUserToBeAssignee,
   allowUserToChangeAssignee,
@@ -342,10 +349,8 @@ import {
   useExtraIssueLogic,
   useIssueLogic,
 } from "./logic";
-import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
-import { Environment } from "@/types/proto/v1/environment_service";
-import { ProjectV1Name } from "@/components/v2";
-import { User } from "@/types/proto/v1/auth_service";
+import { IssueReviewSidebarSection } from "./review";
+import TaskRollbackView from "./rollback/TaskRollbackView.vue";
 
 dayjs.extend(isSameOrAfter);
 

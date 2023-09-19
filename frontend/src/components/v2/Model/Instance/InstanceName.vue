@@ -22,9 +22,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
-import type { Instance } from "@/types";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
+import type { Instance } from "@/types";
 import { instanceName, instanceSlug } from "@/utils";
 
 const props = withDefaults(

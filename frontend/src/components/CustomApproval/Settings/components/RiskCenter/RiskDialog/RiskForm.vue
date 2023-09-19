@@ -53,8 +53,9 @@
           <ExprEditor
             :expr="state.expr"
             :allow-admin="allowAdmin"
-            :allow-high-level-factors="false"
-            :risk-source="state.risk.source"
+            :factor-list="getFactorList(state.risk.source)"
+            :factor-support-dropdown="factorSupportDropdown"
+            :factor-options-map="getFactorOptionsMap(state.risk.source)"
             @update="$emit('update')"
           />
         </div>
@@ -90,23 +91,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
-import { NButton, NInput } from "naive-ui";
 import { cloneDeep } from "lodash-es";
-
-import { Risk } from "@/types/proto/v1/risk_service";
-import {
-  Expr as CELExpr,
-  ParsedExpr,
-} from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { Expr } from "@/types/proto/google/type/expr";
-import type { ConditionGroupExpr } from "@/plugins/cel";
-import { useRiskCenterContext } from "../context";
+import { NButton, NInput } from "naive-ui";
+import { computed, ref, watch } from "vue";
+import ExprEditor from "@/components/ExprEditor";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import RiskLevelSelect from "./RiskLevelSelect.vue";
-import RiskSourceSelect from "./RiskSourceSelect.vue";
-import ExprEditor from "../../common/ExprEditor";
-import RuleTemplateTable from "./RuleTemplateTable.vue";
+import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   resolveCELExpr,
   buildCELExpr,
@@ -114,9 +104,24 @@ import {
   validateSimpleExpr,
 } from "@/plugins/cel";
 import {
+  Expr as CELExpr,
+  ParsedExpr,
+} from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr } from "@/types/proto/google/type/expr";
+import { Risk } from "@/types/proto/v1/risk_service";
+import {
   convertCELStringToParsedExpr,
   convertParsedExprToCELString,
 } from "@/utils";
+import {
+  getFactorList,
+  getFactorOptionsMap,
+  factorSupportDropdown,
+} from "../../common/utils";
+import { useRiskCenterContext } from "../context";
+import RiskLevelSelect from "./RiskLevelSelect.vue";
+import RiskSourceSelect from "./RiskSourceSelect.vue";
+import RuleTemplateTable from "./RuleTemplateTable.vue";
 
 type LocalState = {
   risk: Risk;

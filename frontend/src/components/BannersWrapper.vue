@@ -19,6 +19,7 @@
   <template v-if="shouldShowExternalUrlBanner">
     <BannerExternalUrl />
   </template>
+  <BannerAnnouncement />
 </template>
 
 <script lang="ts" setup>
@@ -29,9 +30,11 @@ import {
   useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store/modules";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1, isDev } from "@/utils";
-import BannerDemo from "@/views/BannerDemo.vue";
+import BannerAnnouncement from "@/views/BannerAnnouncement.vue";
 import BannerDebug from "@/views/BannerDebug.vue";
+import BannerDemo from "@/views/BannerDemo.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
 import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
@@ -42,7 +45,8 @@ const subscriptionStore = useSubscriptionV1Store();
 
 const { isDemo, isReadonly, isDebug, needConfigureExternalUrl } =
   storeToRefs(actuatorStore);
-const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
+const { isExpired, isTrialing, currentPlan, existTrialLicense } =
+  storeToRefs(subscriptionStore);
 
 const shouldShowDemoBanner = computed(() => {
   // Only show demo banner if it's the default demo (as opposed to the feature demo).
@@ -63,7 +67,11 @@ const shouldShowDebugBanner = computed(() => {
 });
 
 const shouldShowSubscriptionBanner = computed(() => {
-  return isExpired.value || isTrialing.value;
+  return (
+    isExpired.value ||
+    isTrialing.value ||
+    (currentPlan.value === PlanType.FREE && existTrialLicense.value)
+  );
 });
 
 const shouldShowReadonlyBanner = computed(() => {

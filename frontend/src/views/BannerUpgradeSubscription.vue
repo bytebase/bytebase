@@ -76,6 +76,10 @@
 
 <script lang="ts" setup>
 import { reactive, watch, ref } from "vue";
+import { onMounted } from "vue";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import {
   useIdentityProviderStore,
   useInstanceV1Store,
@@ -87,16 +91,17 @@ import {
   useDBGroupStore,
   useDatabaseV1Store,
   useDatabaseSecretStore,
+  useActuatorV1Store,
 } from "@/store";
-import { onMounted } from "vue";
-import { computed } from "vue";
-import { FeatureType, planTypeToString } from "@/types";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
+import {
+  FeatureType,
+  planTypeToString,
+  defaultTokenDurationInHours,
+} from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
-import { useI18n } from "vue-i18n";
-import { PlanType } from "@/types/proto/v1/subscription_service";
-import { useRouter } from "vue-router";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   showModal: boolean;
@@ -111,6 +116,7 @@ const state = reactive<LocalState>({
   ready: false,
 });
 
+const actuatorStore = useActuatorV1Store();
 const idpStore = useIdentityProviderStore();
 const settingV1Store = useSettingV1Store();
 const instanceStore = useInstanceV1Store();
@@ -150,6 +156,16 @@ watch(
     if (settingV1Store.workspaceProfileSetting?.require2fa ?? false) {
       set.add("bb.feature.2fa");
     }
+    if (
+      !!settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds &&
+      settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds !=
+        defaultTokenDurationInHours * 60 * 60
+    ) {
+      set.add("bb.feature.secure-token");
+    }
+    if (settingV1Store.workspaceProfileSetting?.announcement?.text ?? false) {
+      set.add("bb.feature.announcement");
+    }
     const openAIKeySetting = settingV1Store.getSettingByName(
       "bb.plugin.openai.key"
     );
@@ -172,8 +188,8 @@ watch(
             policyType: PolicyType.BACKUP_PLAN,
           });
         if (
-          backupPolicy?.backupPlanPolicy?.schedule ??
-          defaultBackupSchedule !== defaultBackupSchedule
+          backupPolicy?.backupPlanPolicy?.schedule &&
+          backupPolicy?.backupPlanPolicy?.schedule !== defaultBackupSchedule
         ) {
           set.add("bb.feature.backup-policy");
         }
@@ -186,8 +202,9 @@ watch(
             policyType: PolicyType.DEPLOYMENT_APPROVAL,
           });
         if (
-          approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy ??
-          defaultApprovalStrategy !== defaultApprovalStrategy
+          approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy &&
+          approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy !==
+            defaultApprovalStrategy
         ) {
           set.add("bb.feature.approval-policy");
         }
@@ -240,6 +257,8 @@ const neededPlan = computed(() => {
 
 const showBanner = computed(() => {
   return (
+    // Do not show banner in demo mode
+    actuatorStore.serverInfo?.demoName == "" &&
     overUsedFeatureList.value.length > 0 &&
     neededPlan.value > subscriptionStore.currentPlan
   );

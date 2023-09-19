@@ -40,7 +40,7 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 		{
 			statement: `
 				select * from t;
-				create table table$1 (id int);
+				create table table$1 (id int)
 			`,
 			want: resData{
 				res: []SingleSQL{

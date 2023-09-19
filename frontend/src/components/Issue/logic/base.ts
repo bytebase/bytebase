@@ -1,6 +1,15 @@
-import { computed, Ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
 import { isEmpty } from "lodash-es";
+import { v4 as uuidv4 } from "uuid";
+import { computed, Ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import {
+  useIssueStore,
+  useProjectV1Store,
+  useSheetV1Store,
+  useSheetStatementByUID,
+  useDatabaseV1Store,
+} from "@/store";
+import { sheetNamePrefix } from "@/store/modules/v1/common";
 import {
   Issue,
   IssueCreate,
@@ -12,34 +21,25 @@ import {
   TaskStatus,
   UNKNOWN_ID,
 } from "@/types";
-import { useRoute, useRouter } from "vue-router";
-import {
-  activeStage,
-  activeTaskInStage,
-  idFromSlug,
-  indexFromSlug,
-  issueSlug,
-  maybeSetSheetBacktracePayloadByIssue,
-  sheetIdOfTask,
-  stageSlug,
-  taskSlug,
-} from "@/utils";
-import {
-  useIssueStore,
-  useProjectV1Store,
-  useSheetV1Store,
-  useSheetStatementByUid,
-  useDatabaseV1Store,
-} from "@/store";
-import { flattenTaskList, TaskTypeWithStatement } from "./common";
-import { maybeCreateBackTraceComments } from "../rollback/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { sheetNamePrefix } from "@/store/modules/v1/common";
 import {
   Sheet_Visibility,
   Sheet_Source,
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
+import {
+  activeStage,
+  activeTaskInStage,
+  extractSheetUID,
+  idFromSlug,
+  indexFromSlug,
+  issueSlug,
+  sheetIdOfTask,
+  stageSlug,
+  taskSlug,
+} from "@/utils";
+import { maybeCreateBackTraceComments } from "../rollback/common";
+import { flattenTaskList, TaskTypeWithStatement } from "./common";
 
 export const useBaseIssueLogic = (params: {
   create: Ref<boolean>;
@@ -69,7 +69,6 @@ export const useBaseIssueLogic = (params: {
 
     const createdIssue = await issueStore.createIssue(issue);
     await maybeCreateBackTraceComments(createdIssue);
-    await maybeSetSheetBacktracePayloadByIssue(createdIssue);
 
     // Use replace to omit the new issue url in the navigation history.
     router.replace(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
@@ -235,13 +234,13 @@ export const useBaseIssueLogic = (params: {
     if (create.value) {
       const taskCreate = task as TaskCreate;
       if (taskCreate.sheetId && taskCreate.sheetId !== UNKNOWN_ID) {
-        return useSheetStatementByUid(taskCreate.sheetId).value || "";
+        return useSheetStatementByUID(String(taskCreate.sheetId)).value || "";
       }
       return (task as TaskCreate).statement;
     }
     return (
-      useSheetStatementByUid(sheetIdOfTask(task as Task) || UNKNOWN_ID).value ||
-      ""
+      useSheetStatementByUID(String(sheetIdOfTask(task as Task) || UNKNOWN_ID))
+        .value || ""
     );
   });
 
@@ -314,7 +313,7 @@ export const useBaseIssueLogic = (params: {
                 payload: "{}",
               }
             );
-            taskItem.sheetId = sheetV1Store.getSheetUid(newSheet.name);
+            taskItem.sheetId = Number(extractSheetUID(newSheet.name));
           }
           taskItem.statement = "";
         } else {

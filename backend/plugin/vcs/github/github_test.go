@@ -589,7 +589,10 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", "master")
+	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", vcs.RefInfo{
+		RefType: vcs.RefTypeBranch,
+		RefName: "master",
+	})
 	require.NoError(t, err)
 
 	want := &vcs.FileMeta{
@@ -625,7 +628,10 @@ You can look around to get an idea how to structure your project and, when done,
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileContent(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", "master")
+	got, err := p.ReadFileContent(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", vcs.RefInfo{
+		RefType: vcs.RefTypeBranch,
+		RefName: "master",
+	})
 	require.NoError(t, err)
 
 	assert.Equal(t, want, got)

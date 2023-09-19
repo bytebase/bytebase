@@ -1,4 +1,6 @@
 <template>
+  <SheetConnectionIcon :tab="tab" class="w-4 h-4" />
+
   <template v-if="sheet">
     <heroicons-outline:user-group
       v-if="sheet.visibility === Sheet_Visibility.VISIBILITY_PROJECT"
@@ -16,11 +18,11 @@
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
-
+import { useSheetV1Store } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
-import { useSheetV1Store } from "@/store";
 import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
+import { SheetConnectionIcon } from "../../EditorCommon";
 
 const props = defineProps({
   tab: {

@@ -15,8 +15,9 @@
 <p align="center">
   <a href="https://demo.bytebase.com?source=github" target="_blank"><b>🔥 Live Demo</b></a> •
   <a href="https://bytebase.com/docs/get-started/install/overview" target="_blank"><b>⚙️ Install</b></a> •
-  <a href="https://bytebase.com/docs"><b>📚 Documentation</b></a> •
-  <a href="https://discord.gg/huyw7gRsyA"><b>🙋‍♀️ Get Instant Help</b></a>
+  <a href="https://bytebase.com/docs"><b>📚 Docs</b></a> •
+  <a href="https://discord.gg/huyw7gRsyA"><b>💬 Discord</b></a> •
+  <a href="https://www.bytebase.com/request-demo/"><b>🙋‍♀️ Book Demo</b></a>
 </p>
 
 <p align="center">
@@ -58,6 +59,12 @@
 
 <br />
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/fish.webp" />
+</p>
+
+<br />
+
 <p align="center" >
   <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/change-query-secure-govern.webp" />
 </p>
@@ -82,9 +89,9 @@
   Want to control the data access but don't know how?
 </p>
 
-|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |                                                                                                    |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| <b>All-in-one SQL Editor</b><br />Web-based IDE specifically for performing SQL specific tasks.<br /><br/><b>Data Anonymization</b><br />State-of-the-art [column level anonymization](https://www.bytebase.com/docs/sql-editor/anonymize-data) engine to cover complex situations like subquery, CTE.<br /><br /><b>Data Access Control</b><br />Organization level policy to centralize the [data access control](https://www.bytebase.com/docs/security/data-access-control). | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp" /> |
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| <b>All-in-one SQL Editor</b><br />Web-based IDE specifically for performing SQL specific tasks.<br /><br/><b>Data Masking</b><br />State-of-the-art [column level masking](https://www.bytebase.com/docs/sql-editor/mask-data) engine to cover complex situations like subquery, CTE.<br /><br /><b>Data Access Control</b><br />Organization level policy to centralize the [data access control](https://www.bytebase.com/docs/security/data-access-control). | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp" /> |
 
 <br />
 
@@ -166,24 +173,15 @@ our product experts.
 
 # 👩‍🏫 Tutorials
 
-- [How to Set Up Database CI/CD with GitHub](https://www.bytebase.com/blog/github-database-cicd-part-1-sql-review-github-actions)
-- [How to integrate SQL Review into Your GitLab or GitHub CI/CD](https://www.bytebase.com/blog/how-to-integrate-sql-review-into-gitlab-github-ci)
-- [How to Synchronize Database Schemas](https://www.bytebase.com/blog/how-to-synchronize-database-schemas)
-- [How to Configure Database Access Control and Data Anonymization for Developer](https://www.bytebase.com/blog/how-to-configure-database-access-control-and-data-anonymization-for-developer)
-- [Get Database Change Notification via Webhook](https://www.bytebase.com/blog/get-database-change-notification-via-webhook)
-- [How to Set Up Backup Monitoring with Better Uptime](https://www.bytebase.com/blog/how-to-use-bytebase-with-better-uptime)
+Product tutorials are available at https://www.bytebase.com/tutorial.
 
-## Manage database from cloud database vendors
+## Integrations
 
-- Manage Snowflake
-  - [Database Change Management with Snowflake](https://www.bytebase.com/blog/database-change-management-with-snowflake)
-  - [Database Change Management with Snowflake and GitHub](https://www.bytebase.com/blog/database-change-management-with-snowflake-and-github)
-- Manage TiDB
-  - [Database Change Management with TiDB](https://www.bytebase.com/blog/database-change-management-with-tidb)
-  - [Database Change Management with TiDB and GitHub](https://www.bytebase.com/blog/database-change-management-with-tidb-and-github)
 - [Manage Supabase PostgreSQL](https://www.bytebase.com/docs/how-to/integrations/supabase)
 - [Manage render PostgreSQL](https://www.bytebase.com/docs/how-to/integrations/render)
 - [Manage Neon database](https://www.bytebase.com/docs/how-to/integrations/neon)
+- [Deploy to sealos](https://www.bytebase.com/docs/get-started/install/deploy-to-sealos)
+- [Deploy to Rainbond](https://www.bytebase.com/docs/get-started/install/deploy-to-rainbond)
 
 <br />
 
@@ -265,7 +263,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
 ### Prerequisites
 
-- [Go](https://golang.org/doc/install) (1.20.5 or later)
+- [Go](https://golang.org/doc/install) (1.21.1 or later)
 - [pnpm](https://pnpm.io/installation)
 - [Air](https://github.com/bytebase/air) (**our forked repo @87187cc with the proper signal handling**). This is for backend live reload.
   ```bash
@@ -280,9 +278,17 @@ Below diagram describes a typical mapping between an engineering org and the cor
    git clone https://github.com/bytebase/bytebase
    ```
 
+1. Create an external Postgres database on localhost.
+
+  ```sql
+  CREATE USER bbdev SUPERUSER;
+  CREATE DATABASE bbdev;
+  ```
+
 1. Start backend using air (with live reload).
 
    ```bash
+   PG_URL=postgresql://bbdev@localhost/bbdev
    air -c scripts/.air.toml
    ```
 
@@ -306,32 +312,30 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
    Bytebase should now be running at http://localhost:3000 and change either frontend or backend code would trigger live reload.
 
+### Tips
+
+* Use [Code Inspector](https://en.inspector.fe-dev.cn/guide/start.html#method1-recommend) to locate
+frontend code from UI. Hold `Option + Shift` on Mac or `Alt + Shift` on Windows
+
+
 <br />
 
-# 🤺 Bytebase vs Alternatives
+# Bytebase vs Flyway, Liquibase
 
-<p align="center">
-    <img
-      align="center"
-      alt="Product Comparison"
-      src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/fish.webp"
-      style="width:100%;"
-    />
-</p>
-
-## Bytebase vs Flyway, Liquibase
+- [Bytebase vs Liquibase](https://www.bytebase.com/blog/bytebase-vs-liquibase/)
+- [Bytebase vs Flyway](https://www.bytebase.com/blog/bytebase-vs-flyway/)
 
 Either Flyway or Liquibase is a library and CLI focusing on schema change. While Bytebase is an one-stop
 solution covering the entire database development lifecycle for Developers and DBAs to collaborate.
 
 Another key difference is Bytebase **doesn't** support Oracle and SQL Server. This is a conscious
-decision we make so that we can focus on supporting other databases without good tooliing support.
+decision we make so that we can focus on supporting other databases without good tooling support.
 In particular, many of our users tell us Bytebase is by far the best (and sometimes the only) database
 tool that can support their PostgreSQL and ClickHouse use cases.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,liquibase/liquibase,flyway/flyway&type=Date)](https://star-history.com/#bytebase/bytebase&liquibase/liquibase&flyway/flyway&Date)
 
-## Bytebase vs Yearning, Archery
+# Bytebase vs Yearning, Archery
 
 Either Yearning or Archery provides a DBA operation portal. While Bytebase provides a collaboration
 workspace for DBAs and Developers, and brings DevOps practice to the Database Change Management (DCM).

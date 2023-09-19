@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-
 import { bookmarkServiceClient } from "@/grpcweb";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
 

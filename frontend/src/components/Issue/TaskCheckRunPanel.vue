@@ -74,8 +74,7 @@
     <SQLRuleEditDialog
       v-if="state.activeRule"
       :editable="false"
-      :rule="state.activeRule.rule"
-      :payload="state.activeRule.payload"
+      :rule="state.activeRule"
       :disabled="false"
       @cancel="state.activeRule = undefined"
     />
@@ -91,6 +90,9 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import type { BBTableColumn } from "@/bbkit";
+import { SQLRuleEditDialog } from "@/components/SQLReview/components";
+import { useReviewPolicyByEnvironmentId } from "@/store";
 import {
   TaskCheckStatus,
   TaskCheckRun,
@@ -104,22 +106,13 @@ import {
   Task,
   findRuleTemplate,
 } from "@/types";
-import type { BBTableColumn } from "@/bbkit";
 import { LocalizedSQLRuleErrorCodes } from "./const";
-import { SQLRuleEditDialog } from "@/components/SQLReview/components";
-import { PayloadValueType } from "../SQLReview/components/RuleConfigComponents";
-import { useReviewPolicyByEnvironmentId } from "@/store";
 
 interface ErrorCodeLink {
   title: string;
   target: string;
   url: string;
 }
-
-type PreviewSQLReviewRule = {
-  rule: RuleTemplate;
-  payload: PayloadValueType[];
-};
 
 type TableRow = {
   checkResult: TaskCheckResult;
@@ -129,7 +122,7 @@ type TableRow = {
 };
 
 type LocalState = {
-  activeRule: PreviewSQLReviewRule | undefined;
+  activeRule?: RuleTemplate;
   activeResultDefinition?: string;
 };
 
@@ -173,6 +166,7 @@ const checkResultList = computed((): TaskCheckResult[] => {
         content: props.taskCheckRun.result.detail,
         namespace: "bb.core",
         line: undefined,
+        column: undefined,
       },
     ];
   } else if (props.taskCheckRun.status == "CANCELED") {
@@ -184,6 +178,7 @@ const checkResultList = computed((): TaskCheckResult[] => {
         content: "",
         namespace: "bb.core",
         line: undefined,
+        column: undefined,
       },
     ];
   }
@@ -193,7 +188,7 @@ const checkResultList = computed((): TaskCheckResult[] => {
 
 const categoryAndTitle = (checkResult: TaskCheckResult): [string, string] => {
   if (checkResult.code === SQLReviewPolicyErrorCode.EMPTY_POLICY) {
-    const title = `${checkResult.title} (${checkResult.code})`;
+    const title = messageWithCode(checkResult.title, checkResult.code);
     return ["", title];
   }
   if (LocalizedSQLRuleErrorCodes.has(checkResult.code)) {
@@ -202,14 +197,18 @@ const categoryAndTitle = (checkResult: TaskCheckResult): [string, string] => {
       const ruleLocalization = getRuleLocalization(rule.type);
       const key = `sql-review.category.${rule.category.toLowerCase()}`;
       const category = t(key);
-      const title = `${ruleLocalization.title} (${checkResult.code})`;
+      const title = messageWithCode(ruleLocalization.title, checkResult.code);
       return [category, title];
     } else {
-      return ["", `${checkResult.title} (${checkResult.code})`];
+      return ["", messageWithCode(checkResult.title, checkResult.code)];
     }
   }
 
   return ["", checkResult.title];
+};
+
+const messageWithCode = (message: string, code: number) => {
+  return `${message} #${code}`;
 };
 
 const errorCodeLink = (
@@ -276,9 +275,9 @@ const COLUMN_LIST = computed((): BBTableColumn[] => {
 });
 
 const reviewPolicy = useReviewPolicyByEnvironmentId(
-  computed(() => props.task.instance.environment.id)
+  computed(() => String(props.task.instance.environment.id))
 );
-const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
+const getActiveRule = (type: RuleType): RuleTemplate | undefined => {
   const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
   if (!rule) {
     return undefined;
@@ -289,19 +288,7 @@ const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
     return undefined;
   }
   ruleTemplate.comment = rule.comment;
-  const { componentList } = ruleTemplate;
-  const payload = componentList.reduce<PayloadValueType[]>(
-    (list, component) => {
-      list.push(component.payload.value ?? component.payload.default);
-      return list;
-    },
-    []
-  );
-
-  return {
-    rule: ruleTemplate,
-    payload: payload,
-  };
+  return ruleTemplate;
 };
 const setActiveRule = (type: RuleType) => {
   state.activeRule = getActiveRule(type);

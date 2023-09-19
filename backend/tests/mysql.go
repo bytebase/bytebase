@@ -1,13 +1,10 @@
 //go:build mysql
-// +build mysql
 
 package tests
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
-	"testing"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -29,18 +26,4 @@ func connectTestMySQL(port int, database string) (*sql.DB, error) {
 	// We don't want to be bothered by the socket file conflicts here.
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/connecting.html
 	return sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s?multiStatements=true", port, database))
-}
-
-func getTestMySQLDriver(ctx context.Context, t *testing.T, port, database, binDir string) (db.Driver, error) {
-	connCfg := getMySQLConnectionConfig(port, database)
-	return db.Open(
-		ctx,
-		db.MySQL,
-		db.DriverConfig{
-			DbBinDir:  binDir,
-			BinlogDir: t.TempDir(),
-		},
-		connCfg,
-		db.ConnectionContext{},
-	)
 }

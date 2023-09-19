@@ -4,6 +4,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -69,7 +69,7 @@ var (
 		readonly bool
 		// saas means the Bytebase is running in SaaS mode, several features is only controlled by us instead of users under this mode.
 		saas bool
-		// demoName is the name of the demo and should be one of the subpath name in the ./store/demo/ directory.
+		// demoName is the name of the demo and should be one of the subpath name in the ../migrator/demo directory.
 		// empty means no demo.
 		demoName string
 		debug    bool
@@ -78,6 +78,8 @@ var (
 		pgURL string
 		// disableMetric is the flag to disable the metric collector.
 		disableMetric bool
+		// disableSample is the flag to disable the sample instance.
+		disableSample bool
 
 		// Cloud backup configs.
 		backupRegion     string
@@ -91,7 +93,7 @@ var (
 		Run: func(_ *cobra.Command, _ []string) {
 			start()
 
-			fmt.Print(byeBanner)
+			fmt.Printf("%s", byeBanner)
 		},
 	}
 )
@@ -117,7 +119,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "whether to run in SaaS mode")
-	// Must be one of the subpath name in the ./store/demo/ directory
+	// Must be one of the subpath name in the ../migrator/demo directory
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	// Support environment variable for deploying to render.com using its blueprint file.
@@ -125,6 +127,7 @@ func init() {
 	// It allows to pass the postgres connection string as an ENV to the service.
 	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", os.Getenv("PG_URL"), "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
+	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
 
 	// Cloud backup related flags.
 	// TODO(dragonly): Add GCS usages when it's supported.
@@ -183,26 +186,25 @@ func checkPort(port int) error {
 
 func start() {
 	if flags.debug {
-		log.SetLevel(zap.DebugLevel)
+		log.GLogLevel.Set(slog.LevelDebug)
 	}
-	defer log.Sync()
 
 	var err error
 
 	if flags.externalURL != "" {
 		flags.externalURL, err = common.NormalizeExternalURL(flags.externalURL)
 		if err != nil {
-			log.Error("invalid --external-url", zap.Error(err))
+			slog.Error("invalid --external-url", log.BBError(err))
 			return
 		}
 	}
 	if err := checkDataDir(); err != nil {
-		log.Error(err.Error())
+		slog.Error(err.Error())
 		return
 	}
 
 	if err := checkCloudBackupFlags(); err != nil {
-		log.Error("invalid flags for cloud backup", zap.Error(err))
+		slog.Error("invalid flags for cloud backup", log.BBError(err))
 		return
 	}
 
@@ -217,17 +219,17 @@ func start() {
 	// and then complain unable to bind port. Thus we cannot rely on checking /healthz. As a
 	// workaround, we check whether the port is available here.
 	if err := checkPort(flags.port); err != nil {
-		log.Error(fmt.Sprintf("server port %d is not available", flags.port), zap.Error(err))
+		slog.Error(fmt.Sprintf("server port %d is not available", flags.port), log.BBError(err))
 		return
 	}
 	if profile.UseEmbedDB() {
 		if err := checkPort(profile.DatastorePort); err != nil {
-			log.Error(fmt.Sprintf("database port %d is not available", profile.DatastorePort), zap.Error(err))
+			slog.Error(fmt.Sprintf("database port %d is not available", profile.DatastorePort), log.BBError(err))
 			return
 		}
 	}
 	if err := checkPort(profile.GrpcPort); err != nil {
-		log.Error(fmt.Sprintf("gRPC server port %d is not available", profile.GrpcPort), zap.Error(err))
+		slog.Error(fmt.Sprintf("gRPC server port %d is not available", profile.GrpcPort), log.BBError(err))
 		return
 	}
 
@@ -241,7 +243,7 @@ func start() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		sig := <-c
-		log.Info(fmt.Sprintf("%s received.", sig.String()))
+		slog.Info(fmt.Sprintf("%s received.", sig.String()))
 		if s != nil {
 			_ = s.Shutdown(ctx)
 		}
@@ -250,20 +252,16 @@ func start() {
 
 	s, err = server.NewServer(ctx, profile)
 	if err != nil {
-		log.Error("Cannot new server", zap.Error(err))
+		slog.Error("Cannot new server", log.BBError(err))
 		return
 	}
 
-	schemaVersion := ""
-	if s.SchemaVersion != nil {
-		schemaVersion = fmt.Sprintf("(schema version %v) ", s.SchemaVersion)
-	}
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s %shas started on port %d", profile.Version, schemaVersion, flags.port))
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started on port %d 🚀", profile.Version, flags.port))
 
 	// Execute program.
 	if err := s.Run(ctx, flags.port); err != nil {
 		if err != http.ErrServerClosed {
-			log.Error(err.Error())
+			slog.Error(err.Error())
 			_ = s.Shutdown(ctx)
 			cancel()
 		}

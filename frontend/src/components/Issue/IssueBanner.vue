@@ -44,14 +44,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, Ref } from "vue";
 import dayjs from "dayjs";
-
+import { computed, Ref } from "vue";
+import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 import { Issue } from "@/types";
+import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import { activeTask, isDatabaseRelatedIssueType } from "@/utils";
 import { useIssueLogic } from "./logic";
-import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
-import { Review_Approver_Status } from "@/types/proto/v1/review_service";
 
 const issueContext = useIssueLogic();
 const issue = issueContext.issue as Ref<Issue>;
@@ -60,13 +59,13 @@ const reviewContext = useIssueReviewContext();
 const showPendingReview = computed(() => {
   if (issueContext.create.value) return false;
   if (issue.value.status !== "OPEN") return false;
-  return reviewContext.status.value === Review_Approver_Status.PENDING;
+  return reviewContext.status.value === Issue_Approver_Status.PENDING;
 });
 
 const showRejectedReview = computed(() => {
   if (issueContext.create.value) return false;
   if (issue.value.status !== "OPEN") return false;
-  return reviewContext.status.value === Review_Approver_Status.REJECTED;
+  return reviewContext.status.value === Issue_Approver_Status.REJECTED;
 });
 
 const showCancelBanner = computed(() => {

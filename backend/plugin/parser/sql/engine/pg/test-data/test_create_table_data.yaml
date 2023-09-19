@@ -71,7 +71,7 @@
       c int,
       PRIMARY KEY(a, b, c),
       CONSTRAINT uk1 UNIQUE(a, b)
-    )
+    ) partition by range(a, b, (c+1))
   want: |-
     CREATE TABLE "t" (
         "a" integer,
@@ -79,4 +79,5 @@
         "c" integer,
         PRIMARY KEY ("a", "b", "c"),
         CONSTRAINT "uk1" UNIQUE ("a", "b")
-    );
+    )
+    PARTITION BY RANGE ("a", "b", (c + 1));

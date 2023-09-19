@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -21,8 +21,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
-
-const systemSchemas = "'information_schema', 'pg_catalog', 'pg_toast', '_timescaledb_cache', '_timescaledb_catalog', '_timescaledb_internal', '_timescaledb_config', 'timescaledb_information', 'timescaledb_experimental'"
 
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
@@ -42,10 +40,10 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	var filteredDatabases []*storepb.DatabaseMetadata
+	var filteredDatabases []*storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		// Skip all system databases
-		if _, ok := ExcludedDatabaseList[database.Name]; ok {
+		if IsSystemDatabase(database.Name) {
 			continue
 		}
 		filteredDatabases = append(filteredDatabases, database)
@@ -59,14 +57,14 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	var databaseMetadata *storepb.DatabaseMetadata
+	var databaseMetadata *storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		if database.Name == driver.databaseName {
 			databaseMetadata = database
@@ -83,7 +81,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	}
 	defer txn.Rollback()
 
-	schemaList, err := getSchemas(txn)
+	schemas, err := getSchemas(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
@@ -109,22 +107,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		return nil, err
 	}
 
-	schemaNameMap := make(map[string]bool)
-	for _, schemaName := range schemaList {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range tableMap {
-		schemaNameMap[schemaName] = true
-	}
-	for schemaName := range viewMap {
-		schemaNameMap[schemaName] = true
-	}
-	var schemaNames []string
-	for schemaName := range schemaNameMap {
-		schemaNames = append(schemaNames, schemaName)
-	}
-	sort.Strings(schemaNames)
-	for _, schemaName := range schemaNames {
+	for _, schemaName := range schemas {
 		var tables []*storepb.TableMetadata
 		var views []*storepb.ViewMetadata
 		var functions []*storepb.FunctionMetadata
@@ -167,7 +150,7 @@ FROM
 WHERE
 	n.nspname NOT IN(%s)
 	AND c.contype = 'f'
-ORDER BY fk_schema, fk_table, fk_name;`, systemSchemas)
+ORDER BY fk_schema, fk_table, fk_name;`, systemSchemaWhereClause)
 
 func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
@@ -285,7 +268,7 @@ var listSchemaQuery = fmt.Sprintf(`
 SELECT nspname
 FROM pg_catalog.pg_namespace
 WHERE nspname NOT IN (%s);
-`, systemSchemas)
+`, systemSchemaWhereClause)
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
 	rows, err := txn.Query(listSchemaQuery)
@@ -299,6 +282,9 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 		var schemaName string
 		if err := rows.Scan(&schemaName); err != nil {
 			return nil, err
+		}
+		if IsSystemSchema(schemaName) {
+			continue
 		}
 		result = append(result, schemaName)
 	}
@@ -318,7 +304,7 @@ SELECT tbl.schemaname, tbl.tablename,
 FROM pg_catalog.pg_tables tbl
 LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass` + fmt.Sprintf(`
 WHERE tbl.schemaname NOT IN (%s)
-ORDER BY tbl.schemaname, tbl.tablename;`, systemSchemas)
+ORDER BY tbl.schemaname, tbl.tablename;`, systemSchemaWhereClause)
 
 // getTables gets all tables of a database.
 func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
@@ -344,11 +330,13 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 
 	for rows.Next() {
 		table := &storepb.TableMetadata{}
-		// var tbl tableSchema
 		var schemaName string
 		var comment sql.NullString
 		if err := rows.Scan(&schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment); err != nil {
 			return nil, err
+		}
+		if IsSystemTable(table.Name) {
+			continue
 		}
 		if comment.Valid {
 			table.Comment = comment.String
@@ -382,7 +370,7 @@ SELECT
 	pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
 FROM INFORMATION_SCHEMA.COLUMNS AS cols` + fmt.Sprintf(`
 WHERE cols.table_schema NOT IN (%s)
-ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, systemSchemas)
+ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, systemSchemaWhereClause)
 
 // getTableColumns gets the columns of a table.
 func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
@@ -428,7 +416,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 
 var listViewQuery = `
 SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views` + fmt.Sprintf(`
-WHERE schemaname NOT IN (%s);`, systemSchemas)
+WHERE schemaname NOT IN (%s);`, systemSchemaWhereClause)
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
@@ -446,6 +434,11 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 		if err := rows.Scan(&schemaName, &view.Name, &def, &comment); err != nil {
 			return nil, err
 		}
+		// Skip system views.
+		if IsSystemView(view.Name) {
+			continue
+		}
+
 		// Return error on NULL view definition.
 		// https://github.com/bytebase/bytebase/issues/343
 		if !def.Valid {
@@ -534,8 +527,12 @@ func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
 	defer rows.Close()
 	for rows.Next() {
 		e := &storepb.ExtensionMetadata{}
-		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &e.Description); err != nil {
+		var description sql.NullString
+		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &description); err != nil {
 			return nil, err
+		}
+		if description.Valid {
+			e.Description = description.String
 		}
 		extensions = append(extensions, e)
 	}
@@ -556,7 +553,7 @@ SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
 	AND constraint_type = 'PRIMARY KEY') AS primary,
 	obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment` + fmt.Sprintf(`
 FROM pg_indexes AS idx WHERE idx.schemaname NOT IN (%s)
-ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, systemSchemas)
+ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, systemSchemaWhereClause)
 
 // getIndexes gets all indices of a database.
 func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
@@ -591,9 +588,6 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		index.Type = getIndexMethodType(statement)
 		index.Unique = node.Index.Unique
 		index.Expressions = node.Index.GetKeyNameList()
-		if err != nil {
-			return nil, err
-		}
 		if primary.Valid && primary.Int32 == 1 {
 			index.Primary = true
 		}
@@ -631,7 +625,7 @@ left join pg_namespace n on p.pronamespace = n.oid
 left join pg_language l on p.prolang = l.oid
 left join pg_type t on t.oid = p.prorettype ` + fmt.Sprintf(`
 where n.nspname not in (%s)
-order by function_schema, function_name;`, systemSchemas)
+order by function_schema, function_name;`, systemSchemaWhereClause)
 
 // getFunctions gets all functions of a database.
 func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
@@ -649,7 +643,7 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 			return nil, err
 		}
 		// Skip internal functions.
-		if strings.Contains(function.Definition, "$libdir/timescaledb") {
+		if IsSystemFunctions(function.Name, function.Definition) {
 			continue
 		}
 
@@ -661,6 +655,8 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 
 	return functionMap, nil
 }
+
+var statPluginVersion = semver.MustParse("1.8.0")
 
 // SyncSlowQuery syncs the slow query.
 func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
@@ -681,13 +677,19 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 	}
 
 	result := make(map[string]*storepb.SlowQueryStatistics)
-	version, err := driver.getVersion(ctx)
+	version, err := driver.getPGStatStatementsVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var query string
-	// Postgres 13 changed the column names of pg_stat_statements.
-	if version >= "130000" {
+	// pg_stat_statements version 1.8 changed the column names of pg_stat_statements.
+	// version is a string in the form of "major.minor".
+	// We need to check if the major version is greater than or equal to 1 and the minor version is greater than or equal to 8.
+	sv, err := semver.ParseTolerant(version)
+	if err != nil {
+		return nil, err
+	}
+	if sv.GTE(statPluginVersion) {
 		query = `
 		SELECT
 			pg_database.datname,

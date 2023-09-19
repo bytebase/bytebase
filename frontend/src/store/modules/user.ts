@@ -1,20 +1,20 @@
+import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { authServiceClient } from "@/grpcweb";
+import { Principal, PrincipalType, RoleType } from "@/types";
 import {
   UpdateUserRequest,
   User,
   userRoleToJSON,
   UserType,
 } from "@/types/proto/v1/auth_service";
-import { isEqual, isUndefined } from "lodash-es";
+import { State } from "@/types/proto/v1/common";
+import { extractUserUID } from "@/utils";
 import {
   getUserId,
   userNamePrefix,
   getUserEmailFromIdentifier,
 } from "./v1/common";
-import { Principal, PrincipalType, RoleType } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { extractUserUID } from "@/utils";
 
 interface UserState {
   userMapByName: Map<string, User>;
@@ -51,10 +51,15 @@ export const useUserStore = defineStore("user", {
       }
       return users;
     },
-    async fetchUser(name: string) {
-      const user = await authServiceClient.getUser({
-        name,
-      });
+    async fetchUser(name: string, silent = false) {
+      const user = await authServiceClient.getUser(
+        {
+          name,
+        },
+        {
+          silent,
+        }
+      );
       this.userMapByName.set(user.name, user);
       return user;
     },
@@ -75,22 +80,23 @@ export const useUserStore = defineStore("user", {
       this.userMapByName.set(user.name, user);
       return user;
     },
-    async getOrFetchUserByName(name: string) {
+    async getOrFetchUserByName(name: string, silent = false) {
       const cachedData = this.userMapByName.get(name);
       if (cachedData) {
         return cachedData;
       }
-      const user = await authServiceClient.getUser({
-        name,
-      });
+      const user = await this.fetchUser(name, silent);
       this.userMapByName.set(user.name, user);
       return user;
     },
     getUserByName(name: string) {
       return this.userMapByName.get(name);
     },
-    async getOrFetchUserById(uid: string) {
-      return await this.getOrFetchUserByName(getUserNameWithUserId(uid));
+    async getOrFetchUserById(uid: string, silent = false) {
+      return await this.getOrFetchUserByName(
+        getUserNameWithUserId(uid),
+        silent
+      );
     },
     getUserById(uid: string) {
       return this.userMapByName.get(getUserNameWithUserId(uid));

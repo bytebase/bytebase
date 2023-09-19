@@ -15,16 +15,15 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
-
 import { TableMetadata } from "@/types/proto/store/database";
 import type { VueClass } from "@/utils";
-import { Point, Rect, Path, ForeignKey } from "../types";
 import {
   segmentOverlap1D,
   SegmentOverlap1D,
   useGeometry,
   useSchemaDiagramContext,
 } from "../common";
+import { Point, Rect, Path, ForeignKey } from "../types";
 
 type Direction = "LEFT" | "RIGHT";
 type Segment1D = [number, number];

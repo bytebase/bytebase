@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
@@ -17,6 +18,13 @@ service LoggingService {
   rpc GetLog(GetLogRequest) returns (LogEntity) {
     option (google.api.http) = {get: "/v1/{name=logs/*}"};
     option (google.api.method_signature) = "name";
+  }
+
+  rpc ExportLogs(ExportLogsRequest) returns (ExportLogsResponse) {
+    option (google.api.http) = {
+      post: "/v1/logs:export"
+      body: "*"
+    };
   }
 }
 
@@ -74,6 +82,42 @@ message GetLogRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message ExportLogsRequest {
+  // Consistent with filter and order by in ListLogs.
+  // filter is the filter to apply on the list logs request,
+  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+  // The field only support in filter:
+  // - creator, example:
+  //    - creator = "users/{email}"
+  // - resource, example:
+  //    - resource = "projects/{project resource id}"
+  // - level, example:
+  //    - level = "INFO"
+  //    - level = "ERROR | WARN"
+  // - action, example:
+  //    - action = "ACTION_MEMBER_CREATE" | "ACTION_ISSUE_CREATE"
+  // - create_time, example:
+  //    - create_time <= "2022-01-01T12:00:00.000Z"
+  //    - create_time >= "2022-01-01T12:00:00.000Z"
+  // For example:
+  // List the logs of type 'ACTION_ISSUE_COMMENT_CREATE' in issue/123: 'action="ACTION_ISSUE_COMMENT_CREATE", resource="issue/123"'
+  string filter = 1;
+
+  // The order by of the log.
+  // Only support order by create_time.
+  // For example:
+  //  - order_by = "create_time asc"
+  //  - order_by = "create_time desc"
+  string order_by = 2;
+
+  // The export format.
+  ExportFormat format = 5;
+}
+
+message ExportLogsResponse {
+  bytes content = 1;
+}
+
 message LogEntity {
   // The name of the log.
   // Format: logs/{uid}
@@ -128,6 +172,8 @@ message LogEntity {
     ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34;
     // ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time.
     ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 35;
+    // ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, SUCCESS, FAILURE, CANCELED for now.
+    ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE = 36;
 
     // Project related activity types.
     // Enum value 41 - 60
@@ -138,12 +184,10 @@ message LogEntity {
     ACTION_PROJECT_MEMBER_CREATE = 42;
     // ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project.
     ACTION_PROJECT_MEMBER_DELETE = 43;
-    // ACTION_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER.
-    ACTION_PROJECT_MEMBER_ROLE_UPDATE = 44;
     // ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done.
-    ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 45;
+    ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 44;
     // ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another.
-    ACTION_PROJECT_DATABASE_TRANSFER = 46;
+    ACTION_PROJECT_DATABASE_TRANSFER = 45;
 
     // In instance resource only.
 

@@ -68,9 +68,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, shallowRef, watch } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 import { NPopover } from "naive-ui";
+import { computed, PropType, reactive, shallowRef, watch } from "vue";
 import { BBButtonType } from "./types";
 
 export type ButtonAction<T = unknown> = {

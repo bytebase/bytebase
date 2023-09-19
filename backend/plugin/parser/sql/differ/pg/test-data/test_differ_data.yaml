@@ -438,3 +438,14 @@
 
     ALTER TYPE "public"."enum1" ADD VALUE '7';
 
+- oldSchema: |
+    create extension abc with schema pg_catalog;
+    create table "public"."t1" ("a" int);
+  newSchema: create table "public"."t2" ("a" int);
+  diff: |+
+    DROP TABLE "public"."t1";
+
+    CREATE TABLE "public"."t2" (
+        "a" integer
+    );
+

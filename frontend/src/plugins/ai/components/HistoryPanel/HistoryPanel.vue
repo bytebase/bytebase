@@ -21,8 +21,8 @@
 
 <script lang="ts" setup>
 import { useAIContext, useCurrentChat } from "../../logic";
-import ConversationList from "./ConversationList.vue";
 import ChatView from "../ChatView";
+import ConversationList from "./ConversationList.vue";
 
 const { showHistoryDialog } = useAIContext();
 const { selected } = useCurrentChat();

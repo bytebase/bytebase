@@ -78,38 +78,6 @@ func TestGetProjectFilter(t *testing.T) {
 	}
 }
 
-func TestGetInstanceDatabaseID(t *testing.T) {
-	instanceID, err := getInstanceID("instances/i2")
-	require.NoError(t, err)
-	require.Equal(t, "i2", instanceID)
-
-	_, err = getInstanceID("instances/i2/databases/d3")
-	require.Error(t, err)
-}
-
-func TestGetRiskID(t *testing.T) {
-	tests := []struct {
-		name string
-		want int64
-	}{
-		{
-			name: "risks/1234",
-			want: 1234,
-		},
-		{
-			name: "risks/12345678901",
-			want: 12345678901,
-		},
-	}
-
-	a := require.New(t)
-	for _, test := range tests {
-		got, err := getRiskID(test.name)
-		a.NoError(err)
-		a.Equal(test.want, got)
-	}
-}
-
 func TestGetEBNFTokens(t *testing.T) {
 	testCases := []struct {
 		input   string
@@ -260,5 +228,30 @@ func TestParseOrderBy(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, test.want, got)
 		}
+	}
+}
+
+func TestGenerateEtag(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      string
+	}{
+		{
+			statement: "",
+			want:      "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+		},
+		{
+			statement: "test",
+			want:      "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3",
+		},
+		{
+			statement: "CREATE TABLE test;",
+			want:      "ecbe3800ad8d24592e2dc963ae63f96c608723db",
+		},
+	}
+
+	for _, test := range tests {
+		got := generateEtag([]byte(test.statement))
+		require.Equal(t, test.want, got)
 	}
 }

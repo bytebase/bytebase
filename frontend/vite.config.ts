@@ -1,11 +1,12 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import { resolve } from "path";
-import VueI18n from "@intlify/vite-plugin-vue-i18n";
-import Icons from "unplugin-icons/vite";
-import IconsResolver from "unplugin-icons/resolver";
-import Components from "unplugin-vue-components/vite";
+import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import yaml from "@rollup/plugin-yaml";
+import vue from "@vitejs/plugin-vue";
+import { CodeInspectorPlugin } from "code-inspector-plugin";
+import { resolve } from "path";
+import IconsResolver from "unplugin-icons/resolver";
+import Icons from "unplugin-icons/vite";
+import Components from "unplugin-vue-components/vite";
+import { defineConfig } from "vite";
 
 const SERVER_PORT = parseInt(process.env.PORT ?? "3000", 10) ?? 3000;
 const HTTPS_PORT = 443;
@@ -21,8 +22,9 @@ export default defineConfig(() => {
     plugins: [
       vue(),
       // https://github.com/intlify/vite-plugin-vue-i18n
-      VueI18n({
+      VueI18nPlugin({
         include: [resolve(__dirname, "src/locales/**")],
+        strictMessage: false,
       }),
       Components({
         dirs: [resolve("src/components"), resolve("src/bbkit")],
@@ -35,6 +37,9 @@ export default defineConfig(() => {
       }),
       Icons(),
       yaml(),
+      CodeInspectorPlugin({
+        bundler: "vite",
+      }),
     ],
     build: {
       rollupOptions: {
@@ -48,6 +53,11 @@ export default defineConfig(() => {
       port: SERVER_PORT,
       host: "0.0.0.0",
       proxy: {
+        "/v1:adminExecute": {
+          target: "ws://localhost:8080/",
+          changeOrigin: true,
+          ws: true,
+        },
         "/api": {
           target: "http://localhost:8080/api",
           changeOrigin: true,

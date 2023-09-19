@@ -17,7 +17,8 @@ type Profile struct {
 	// DatastorePort is the binding port for database instance for storing Bytebase metadata.
 	// Only applicable when using embedded PG (PgURL is empty).
 	DatastorePort int
-	// SampleDatabasePort is the binding port for sample database instance.
+	// SampleDatabasePort is the start binding port for sample database instance.
+	// If SampleDatabasePort is not 0, then we start 2 sample instance at SampleDatabasePort and SampleDatabasePort+1.
 	SampleDatabasePort int
 	// GrpcPort is the binding port for gRPC server.
 	GrpcPort int
@@ -35,8 +36,6 @@ type Profile struct {
 	DataDir string
 	// ResourceDir is the directory stores the resources including embedded postgres, mysqlutil, mongoutil and etc.
 	ResourceDir string
-	// Debug decides the log level
-	Debug bool
 	// DemoName specifies the demo name. Empty string means no demo.
 	DemoName string
 	// AppRunnerInterval is the interval for application runner.
@@ -50,10 +49,6 @@ type Profile struct {
 	BackupRegion         string
 	BackupBucket         string
 	BackupCredentialFile string
-
-	// IM integration related fields
-	// FeishuAPIURL is the URL of Feishu API server.
-	FeishuAPIURL string
 
 	// Version is the bytebase's server version
 	Version string

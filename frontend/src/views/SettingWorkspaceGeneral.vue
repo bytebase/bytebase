@@ -4,17 +4,19 @@
     <BrandingSetting />
     <SecuritySetting />
     <AIAugmentationSetting />
+    <AnnouncementSetting />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { onMounted } from "vue";
 import { storeToRefs } from "pinia";
+import { onMounted } from "vue";
 import {
   BrandingSetting,
   SecuritySetting,
   NetworkSetting,
   AIAugmentationSetting,
+  AnnouncementSetting,
 } from "@/components/GeneralSetting";
 import { useActuatorV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";

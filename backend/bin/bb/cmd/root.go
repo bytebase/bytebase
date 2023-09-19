@@ -3,8 +3,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-
-	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 // NewRootCmd creates the root command.
@@ -24,6 +22,5 @@ func NewRootCmd() *cobra.Command {
 
 // Execute is the execute command for root command.
 func Execute() (err error) {
-	defer log.Sync()
 	return NewRootCmd().Execute()
 }

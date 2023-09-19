@@ -38,13 +38,13 @@
 </template>
 
 <script setup lang="ts">
+import { NCheckbox } from "naive-ui";
 import { computed, ref } from "vue";
-
+import { restartAppRoot } from "@/AppRootContext";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasPermissionInProjectV1, hasWorkspacePermissionV1 } from "@/utils";
-import { NCheckbox } from "naive-ui";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -83,5 +83,7 @@ const archiveOrRestoreProject = async (archive: boolean) => {
   } else {
     await projectV1Store.restoreProject(props.project);
   }
+
+  restartAppRoot();
 };
 </script>

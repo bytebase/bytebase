@@ -4,11 +4,6 @@ import (
 	"encoding/json"
 )
 
-const (
-	// AllDatabaseName is the wild expression for all databases.
-	AllDatabaseName = "*"
-)
-
 // SyncStatus is the database sync status.
 type SyncStatus string
 
@@ -49,9 +44,8 @@ type DatabaseFind struct {
 	InstanceID *int
 
 	// Domain specific fields
-	Name               *string
-	IncludeAllDatabase bool
-	SyncStatus         *SyncStatus
+	Name       *string
+	SyncStatus *SyncStatus
 }
 
 func (find *DatabaseFind) String() string {

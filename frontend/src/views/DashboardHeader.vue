@@ -1,21 +1,27 @@
 <template>
-  <div class="flex items-center justify-between h-16 pl-2 pr-4">
+  <div class="flex items-center justify-between h-10 pl-2 pr-4">
     <div class="flex items-center">
       <BytebaseLogo class="block md:hidden" />
 
       <div class="hidden md:block">
         <div class="flex items-baseline space-x-1 whitespace-nowrap">
           <router-link
-            v-if="shouldShowIssueEntry"
             to="/issue"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/issue')"
             >{{ $t("common.issues") }}</router-link
           >
 
           <router-link
+            to="/branch"
+            class="bar-link px-2 py-1 rounded-md"
+            :class="getRouteLinkClass('/branch')"
+            >{{ $t("common.branches") }}</router-link
+          >
+
+          <router-link
             to="/project"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/project')"
             data-label="bb-header-project-button"
           >
@@ -24,7 +30,7 @@
 
           <router-link
             to="/db"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/db')"
             data-label="bb-dashboard-header-database-entry"
             >{{ $t("common.databases") }}</router-link
@@ -33,22 +39,16 @@
           <router-link
             v-if="shouldShowInstanceEntry"
             to="/instance"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/instance')"
             >{{ $t("common.instances") }}</router-link
           >
 
           <router-link
             to="/environment"
-            class="bar-link px-2 py-2 rounded-md"
+            class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/environment')"
             >{{ $t("common.environments") }}</router-link
-          >
-          <router-link
-            to="/setting/member"
-            class="bar-link px-2 py-2 rounded-md"
-            :class="getRouteLinkClass('/setting')"
-            >{{ $t("common.settings") }}</router-link
           >
         </div>
       </div>
@@ -111,16 +111,22 @@
         </div>
         <div
           v-if="currentPlan === PlanType.FREE"
-          class="flex justify-between items-center min-w-fit px-4 py-2 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
+          class="flex justify-between items-center min-w-fit px-4 py-1 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
           @click="handleWantHelp"
         >
           <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
-          <heroicons-outline:chat-bubble-left-right class="w-5 h-5" />
+          <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
         </div>
+        <a href="/sql-editor" target="_blank">
+          <heroicons-solid:terminal class="w-6 h-6" />
+        </a>
+        <router-link to="/setting/member" exact-active-class="">
+          <Settings class="w-6 h-6" />
+        </router-link>
         <router-link to="/inbox" exact-active-class="">
           <span
             v-if="inboxSummary.unread > 0"
-            class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
+            class="absolute rounded-full ml-4 -mt-1 h-2 w-2 bg-accent opacity-75"
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
@@ -154,35 +160,31 @@
       Open: "block", closed: "hidden"
   -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
-    <router-link
-      v-if="shouldShowIssueEntry"
-      to="/issue"
-      class="bar-link rounded-md block px-3 py-2"
-    >
+    <router-link to="/issue" class="bar-link rounded-md block px-3 py-1">
       {{ $t("common.issues") }}
     </router-link>
 
-    <router-link to="/project" class="bar-link rounded-md block px-3 py-2">
+    <router-link to="/project" class="bar-link rounded-md block px-3 py-1">
       {{ $t("common.projects") }}
     </router-link>
 
-    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">
+    <router-link to="/db" class="bar-link rounded-md block px-3 py-1">
       {{ $t("common.databases") }}
     </router-link>
 
-    <router-link to="/instance" class="bar-link rounded-md block px-3 py-2">{{
+    <router-link to="/instance" class="bar-link rounded-md block px-3 py-1">{{
       $t("common.instances")
     }}</router-link>
 
     <router-link
       to="/environment"
-      class="bar-link rounded-md block px-3 py-2"
+      class="bar-link rounded-md block px-3 py-1"
       >{{ $t("common.environments") }}</router-link
     >
 
     <router-link
       to="/setting/member"
-      class="bar-link rounded-md block px-3 py-2"
+      class="bar-link rounded-md block px-3 py-1"
       >{{ $t("common.settings") }}</router-link
     >
   </div>
@@ -199,18 +201,13 @@
   </BBModal>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { computed, reactive, watchEffect, defineComponent } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { Settings } from "lucide-vue-next";
+import { storeToRefs } from "pinia";
+import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-
-import BytebaseLogo from "../components/BytebaseLogo.vue";
-import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
-import ProfileDropdown from "../components/ProfileDropdown.vue";
-import { UNKNOWN_ID } from "../types";
-import { hasWorkspacePermissionV1, isDev } from "../utils";
-import { useLanguage } from "../composables/useLanguage";
+import { useRoute, useRouter } from "vue-router";
 import {
   useCurrentUser,
   useActuatorV1Store,
@@ -218,210 +215,177 @@ import {
   useInboxV1Store,
   useCurrentUserV1,
 } from "@/store";
-import { storeToRefs } from "pinia";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import BytebaseLogo from "../components/BytebaseLogo.vue";
+import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
+import ProfileDropdown from "../components/ProfileDropdown.vue";
+import { useLanguage } from "../composables/useLanguage";
+import { UNKNOWN_ID } from "../types";
+import { hasWorkspacePermissionV1, isDev } from "../utils";
 
 interface LocalState {
   showMobileMenu: boolean;
   showQRCodeModal: boolean;
 }
 
-export default defineComponent({
-  name: "DashboardHeader",
-  components: {
-    BytebaseLogo,
-    ProfileBrandingLogo,
-    ProfileDropdown,
-  },
-  setup() {
-    const { t, availableLocales } = useI18n();
-    const actuatorV1Store = useActuatorV1Store();
-    const inboxV1Store = useInboxV1Store();
-    const subscriptionStore = useSubscriptionV1Store();
-    const router = useRouter();
-    const route = useRoute();
-    const { setLocale, toggleLocales, locale } = useLanguage();
+const { t, availableLocales } = useI18n();
+const actuatorV1Store = useActuatorV1Store();
+const inboxV1Store = useInboxV1Store();
+const subscriptionStore = useSubscriptionV1Store();
+const router = useRouter();
+const route = useRoute();
+const { setLocale, toggleLocales, locale } = useLanguage();
 
-    const state = reactive<LocalState>({
-      showMobileMenu: false,
-      showQRCodeModal: false,
-    });
-
-    const currentUser = useCurrentUser();
-    const currentUserV1 = useCurrentUserV1();
-
-    const { currentPlan } = storeToRefs(subscriptionStore);
-
-    const getRouteLinkClass = (prefix: string): string[] => {
-      const { path } = route;
-      const isActiveRoute = path === prefix || path.startsWith(`${prefix}/`);
-      const classes: string[] = [];
-      if (isActiveRoute) {
-        classes.push("router-link-active", "bg-link-hover");
-      }
-      return classes;
-    };
-
-    const shouldShowIssueEntry = computed((): boolean => {
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-issue",
-        currentUserV1.value.userRole
-      );
-    });
-
-    const shouldShowInstanceEntry = computed(() => {
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-instance",
-        currentUserV1.value.userRole
-      );
-    });
-
-    const isDevFeatures = computed((): boolean => {
-      return isDev();
-    });
-
-    const prepareInboxSummary = () => {
-      // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
-        inboxV1Store.fetchInboxSummary();
-      }
-    };
-
-    watchEffect(prepareInboxSummary);
-
-    const inboxSummary = computed(() => {
-      return inboxV1Store.inboxSummary;
-    });
-
-    const kbarActions = computed(() => [
-      defineAction({
-        id: "bb.navigation.projects",
-        name: "Projects",
-        shortcut: ["g", "p"],
-        section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: "workspace.project" }),
-      }),
-      defineAction({
-        id: "bb.navigation.databases",
-        name: "Databases",
-        shortcut: ["g", "d"],
-        section: t("kbar.navigation"),
-        keywords: "navigation db",
-        perform: () => router.push({ name: "workspace.database" }),
-      }),
-      defineAction({
-        id: "bb.navigation.instances",
-        name: "Instances",
-        shortcut: ["g", "i"],
-        section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: "workspace.instance" }),
-      }),
-      defineAction({
-        id: "bb.navigation.environments",
-        name: "Environments",
-        shortcut: ["g", "e"],
-        section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: "workspace.environment" }),
-      }),
-      defineAction({
-        id: "bb.navigation.settings",
-        name: "Settings",
-        shortcut: ["g", "s"],
-        section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: "setting.workspace.member" }),
-      }),
-      defineAction({
-        id: "bb.navigation.inbox",
-        name: "Inbox",
-        shortcut: ["g", "m"],
-        section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: "setting.inbox" }),
-      }),
-    ]);
-    useRegisterActions(kbarActions);
-
-    const switchToFree = () => {
-      subscriptionStore.patchSubscription("");
-    };
-
-    const switchToTeam = () => {
-      subscriptionStore.patchSubscription(
-        import.meta.env.BB_DEV_TEAM_LICENSE as string
-      );
-    };
-
-    const switchToEnterprise = () => {
-      subscriptionStore.patchSubscription(
-        import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string
-      );
-    };
-
-    const { isDebug } = storeToRefs(actuatorV1Store);
-
-    const toggleDebug = () => {
-      actuatorV1Store.patchDebug({
-        debug: !isDebug.value,
-      });
-    };
-
-    const I18N_CHANGE_ACTION_ID_NAMESPACE = "bb.preferences.locale";
-    const i18nChangeAction = computed(() =>
-      defineAction({
-        // here `id` is "bb.preferences.locale"
-        id: I18N_CHANGE_ACTION_ID_NAMESPACE,
-        section: t("kbar.preferences.common"),
-        name: t("kbar.preferences.change-language"),
-        keywords: "language lang locale",
-      })
-    );
-    const i18nActions = computed(() => [
-      i18nChangeAction.value,
-      ...availableLocales.map((lang) => {
-        return defineAction({
-          // here `id` looks like "bb.preferences.locale.en"
-          id: `${I18N_CHANGE_ACTION_ID_NAMESPACE}.${lang}`,
-          name: lang,
-          parent: I18N_CHANGE_ACTION_ID_NAMESPACE,
-          keywords: `language lang locale ${lang}`,
-          perform: () => setLocale(lang),
-        });
-      }),
-    ]);
-    useRegisterActions(i18nActions);
-
-    const handleWantHelp = () => {
-      if (locale.value === "zh-CN") {
-        state.showQRCodeModal = true;
-      } else {
-        window.open(
-          "https://www.bytebase.com/docs/faq#how-to-reach-us",
-          "_blank"
-        );
-      }
-    };
-
-    return {
-      state,
-      getRouteLinkClass,
-      shouldShowInstanceEntry,
-      shouldShowIssueEntry,
-      currentPlan,
-      PlanType,
-      isDevFeatures,
-      inboxSummary,
-      switchToFree,
-      switchToTeam,
-      switchToEnterprise,
-      isDebug,
-      toggleDebug,
-      toggleLocales,
-      handleWantHelp,
-    };
-  },
+const state = reactive<LocalState>({
+  showMobileMenu: false,
+  showQRCodeModal: false,
 });
+
+const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
+
+const { currentPlan } = storeToRefs(subscriptionStore);
+
+const getRouteLinkClass = (prefix: string): string[] => {
+  const { path } = route;
+  const isActiveRoute = path === prefix || path.startsWith(`${prefix}/`);
+  const classes: string[] = [];
+  if (isActiveRoute) {
+    classes.push("router-link-active", "bg-link-hover");
+  }
+  return classes;
+};
+
+const shouldShowInstanceEntry = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-instance",
+    currentUserV1.value.userRole
+  );
+});
+
+const isDevFeatures = computed((): boolean => {
+  return isDev();
+});
+
+const prepareInboxSummary = () => {
+  // It will also be called when user logout
+  if (currentUser.value.id != UNKNOWN_ID) {
+    inboxV1Store.fetchInboxSummary();
+  }
+};
+
+watchEffect(prepareInboxSummary);
+
+const inboxSummary = computed(() => {
+  return inboxV1Store.inboxSummary;
+});
+
+const kbarActions = computed(() => [
+  defineAction({
+    id: "bb.navigation.projects",
+    name: "Projects",
+    shortcut: ["g", "p"],
+    section: t("kbar.navigation"),
+    keywords: "navigation",
+    perform: () => router.push({ name: "workspace.project" }),
+  }),
+  defineAction({
+    id: "bb.navigation.databases",
+    name: "Databases",
+    shortcut: ["g", "d"],
+    section: t("kbar.navigation"),
+    keywords: "navigation db",
+    perform: () => router.push({ name: "workspace.database" }),
+  }),
+  defineAction({
+    id: "bb.navigation.instances",
+    name: "Instances",
+    shortcut: ["g", "i"],
+    section: t("kbar.navigation"),
+    keywords: "navigation",
+    perform: () => router.push({ name: "workspace.instance" }),
+  }),
+  defineAction({
+    id: "bb.navigation.environments",
+    name: "Environments",
+    shortcut: ["g", "e"],
+    section: t("kbar.navigation"),
+    keywords: "navigation",
+    perform: () => router.push({ name: "workspace.environment" }),
+  }),
+  defineAction({
+    id: "bb.navigation.settings",
+    name: "Settings",
+    shortcut: ["g", "s"],
+    section: t("kbar.navigation"),
+    keywords: "navigation",
+    perform: () => router.push({ name: "setting.workspace.member" }),
+  }),
+  defineAction({
+    id: "bb.navigation.inbox",
+    name: "Inbox",
+    shortcut: ["g", "m"],
+    section: t("kbar.navigation"),
+    keywords: "navigation",
+    perform: () => router.push({ name: "setting.inbox" }),
+  }),
+]);
+useRegisterActions(kbarActions);
+
+const switchToFree = () => {
+  subscriptionStore.patchSubscription("");
+};
+
+const switchToTeam = () => {
+  subscriptionStore.patchSubscription(
+    import.meta.env.BB_DEV_TEAM_LICENSE as string
+  );
+};
+
+const switchToEnterprise = () => {
+  subscriptionStore.patchSubscription(
+    import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string
+  );
+};
+
+const { isDebug } = storeToRefs(actuatorV1Store);
+
+const toggleDebug = () => {
+  actuatorV1Store.patchDebug({
+    debug: !isDebug.value,
+  });
+};
+
+const I18N_CHANGE_ACTION_ID_NAMESPACE = "bb.preferences.locale";
+const i18nChangeAction = computed(() =>
+  defineAction({
+    // here `id` is "bb.preferences.locale"
+    id: I18N_CHANGE_ACTION_ID_NAMESPACE,
+    section: t("kbar.preferences.common"),
+    name: t("kbar.preferences.change-language"),
+    keywords: "language lang locale",
+  })
+);
+const i18nActions = computed(() => [
+  i18nChangeAction.value,
+  ...availableLocales.map((lang) => {
+    return defineAction({
+      // here `id` looks like "bb.preferences.locale.en"
+      id: `${I18N_CHANGE_ACTION_ID_NAMESPACE}.${lang}`,
+      name: lang,
+      parent: I18N_CHANGE_ACTION_ID_NAMESPACE,
+      keywords: `language lang locale ${lang}`,
+      perform: () => setLocale(lang),
+    });
+  }),
+]);
+useRegisterActions(i18nActions);
+
+const handleWantHelp = () => {
+  if (locale.value === "zh-CN") {
+    state.showQRCodeModal = true;
+  } else {
+    window.open("https://www.bytebase.com/docs/faq#how-to-reach-us", "_blank");
+  }
+};
 </script>

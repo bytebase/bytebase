@@ -1,10 +1,10 @@
-import { computed } from "vue";
 import { cloneDeep, isNaN, isNumber } from "lodash-es";
-import { useRoute } from "vue-router";
 import { v4 as uuidv4 } from "uuid";
-import { t } from "@/plugins/i18n";
-
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
+import { t } from "@/plugins/i18n";
+import { maybeApplyRollbackParams } from "@/plugins/issue/logic/initialize/standard";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -32,22 +32,21 @@ import {
   languageOfEngineV1,
   dialectOfEngineV1,
 } from "@/types";
-import { IssueLogic, useIssueLogic } from "./index";
-import {
-  defer,
-  extractUserUID,
-  getBacktracePayloadWithIssue,
-  isDev,
-  isTaskTriggeredByVCS,
-  taskCheckRunSummary,
-} from "@/utils";
-import { maybeApplyRollbackParams } from "@/plugins/issue/logic/initialize/standard";
 import {
   Sheet_Visibility,
   Sheet_Source,
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
-import { IssuePayload } from "@/types/proto/store/issue";
+import {
+  defer,
+  extractSheetUID,
+  extractUserUID,
+  hasWorkspacePermissionV1,
+  isDev,
+  isTaskTriggeredByVCS,
+  taskCheckRunSummary,
+} from "@/utils";
+import { IssueLogic, useIssueLogic } from "./index";
 
 export const useCommonLogic = () => {
   const {
@@ -190,19 +189,35 @@ export const useCommonLogic = () => {
     if (issueEntity.status !== "OPEN") {
       return false;
     }
-    if (
-      String(issueEntity.creator.id) !==
-      extractUserUID(currentUserV1.value.name)
-    ) {
-      if (isTaskTriggeredByVCS(selectedTask.value as Task)) {
-        // If an issue is triggered by VCS, its creator will be 1 (SYSTEM_BOT_ID)
-        // We should "Allow" current user to edit the statement (via VCS).
-        return true;
-      }
+
+    if (!isTaskEditable(selectedTask.value as Task)) {
       return false;
     }
 
-    return isTaskEditable(selectedTask.value as Task);
+    if (
+      String(issueEntity.creator.id) ===
+      extractUserUID(currentUserV1.value.name)
+    ) {
+      return true;
+    }
+
+    if (
+      hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-issue",
+        currentUserV1.value.userRole
+      )
+    ) {
+      // Workspace OWNER/DBA are always allowed to edit.
+      return true;
+    }
+
+    if (isTaskTriggeredByVCS(selectedTask.value as Task)) {
+      // If an issue is triggered by VCS, its creator will be 1 (SYSTEM_BOT_ID)
+      // We should "Allow" current user to edit the statement (via VCS).
+      return true;
+    }
+
+    return false;
   });
 
   const updateStatement = async (newStatement: string) => {
@@ -227,13 +242,10 @@ export const useCommonLogic = () => {
         visibility: Sheet_Visibility.VISIBILITY_PROJECT,
         source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
         type: Sheet_Type.TYPE_SQL,
-        payload: JSON.stringify(
-          getBacktracePayloadWithIssue(issue.value as Issue)
-        ),
       });
 
       const patchRequestList = patchingTaskList.map((task) => {
-        patchTask(task.id, { sheetId: sheetV1Store.getSheetUid(sheet.name) });
+        patchTask(task.id, { sheetId: Number(extractSheetUID(sheet.name)) });
       });
       await Promise.allSettled(patchRequestList);
     }
@@ -277,7 +289,7 @@ export const useCommonLogic = () => {
           type: Sheet_Type.TYPE_SQL,
           payload: "{}",
         });
-        migrationDetail.sheetId = sheetV1Store.getSheetUid(sheet.name);
+        migrationDetail.sheetId = Number(extractSheetUID(sheet.name));
       } else if (taskCreate.sheetId !== UNKNOWN_ID) {
         const sheetName = `${db.project}/sheets/${taskCreate.sheetId}`;
         const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);
@@ -403,15 +415,9 @@ export const isTaskEditable = (task: Task): boolean => {
   return false;
 };
 
-export const isGroupingChangeIssue = (issue: Issue): boolean => {
-  const route = useRoute();
-  if (route.query.databaseGroupName && route.query.databaseGroupName !== "") {
-    return true;
-  }
-  const groupName = (issue.payload as IssuePayload).grouping?.databaseGroupName;
-  if (groupName && groupName !== "") {
-    return true;
-  }
+// Deprecated in favor of IssueV1.
+// See https://github.com/bytebase/bytebase/pull/8054.
+export const isGroupingChangeIssue = (_: Issue): boolean => {
   return false;
 };
 

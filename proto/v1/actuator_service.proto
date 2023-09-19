@@ -130,4 +130,9 @@ message ActuatorInfo {
 
   // debug flag means if the debug mode is enabled.
   bool debug = 15;
+
+  // development_use_v2_scheduler flag means if the server uses the v2 task run scheduler.
+  // this flag is only used for development purpose and
+  // will be removed once we switch to the v2 scheduler.
+  bool development_use_v2_scheduler = 100;
 }

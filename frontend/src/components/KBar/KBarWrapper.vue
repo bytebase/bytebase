@@ -19,7 +19,6 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed } from "vue";
 import {
   KBarProvider,
   KBarPortal,
@@ -28,15 +27,16 @@ import {
   KBarSearch,
   defineAction,
 } from "@bytebase/vue-kbar";
-import { compareAction as compare } from "./utils";
-import { useRouter } from "vue-router";
-import RenderResults from "./RenderResults.vue";
-import KBarHelper from "./KBarHelper.vue";
-import KBarFooter from "./KBarFooter.vue";
+import { defineComponent, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useModalStackStatus } from "../../bbkit/BBModalStack.vue";
+import { useRouter } from "vue-router";
 import { useCurrentUserV1 } from "@/store";
 import { UNKNOWN_USER_NAME } from "@/types";
+import { useModalStackStatus } from "../../bbkit/BBModalStack.vue";
+import KBarFooter from "./KBarFooter.vue";
+import KBarHelper from "./KBarHelper.vue";
+import RenderResults from "./RenderResults.vue";
+import { compareAction as compare } from "./utils";
 
 export default defineComponent({
   name: "KBarWrapper",

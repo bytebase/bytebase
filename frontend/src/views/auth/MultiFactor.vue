@@ -65,10 +65,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useAuthStore } from "@/store";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "@/store";
 
 type MFAType = "OTP" | "RECOVERY_CODE";
 

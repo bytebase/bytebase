@@ -1,10 +1,17 @@
 <template>
+  <FeatureAttention
+    v-if="remainingUserCount <= 3"
+    custom-class="m-4"
+    feature="bb.feature.user-count"
+    :description="userCountAttention"
+  />
+
   <div class="w-full pb-4">
     <div v-if="allowAddOrInvite" class="w-full flex justify-center mb-6">
       <MemberAddOrInvite />
     </div>
 
-    <FeatureAttention custom-class="my-5" feature="bb.feature.rbac" />
+    <FeatureAttention custom-class="my-4" feature="bb.feature.rbac" />
 
     <div class="flex justify-between items-center">
       <div class="flex-1 flex space-x-2">
@@ -65,15 +72,20 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
 import { NCheckbox } from "naive-ui";
-
+import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { MemberAddOrInvite, UserTable } from "@/components/User/Settings";
 import { SearchBox } from "@/components/v2";
-import { hasWorkspacePermissionV1 } from "../utils";
-import { SYSTEM_BOT_USER_NAME, filterUserListByKeyword } from "../types";
-import { featureToRef, useCurrentUserV1, useUserStore } from "@/store";
+import {
+  useSubscriptionV1Store,
+  useCurrentUserV1,
+  useUserStore,
+} from "@/store";
+import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import { SYSTEM_BOT_USER_NAME, filterUserListByKeyword } from "../types";
+import { hasWorkspacePermissionV1 } from "../utils";
 
 type LocalState = {
   activeUserFilterText: string;
@@ -87,9 +99,13 @@ const state = reactive<LocalState>({
   showInactiveUserList: false,
 });
 
+const { t } = useI18n();
 const userStore = useUserStore();
 const currentUserV1 = useCurrentUserV1();
-const hasRBACFeature = featureToRef("bb.feature.rbac");
+const subscriptionV1Store = useSubscriptionV1Store();
+const hasRBACFeature = computed(() =>
+  subscriptionV1Store.hasFeature("bb.feature.rbac")
+);
 
 const activeUserList = computed(() => {
   const list = userStore.userList.filter((user) => user.state === State.ACTIVE);
@@ -132,5 +148,36 @@ const showUpgradeInfo = computed(() => {
       currentUserV1.value.userRole
     )
   );
+});
+
+const endUserList = computed(() => {
+  return userStore.activeUserList.filter(
+    (user) => user.userType === UserType.USER
+  );
+});
+
+const remainingUserCount = computed((): number => {
+  return Math.max(
+    0,
+    subscriptionV1Store.userCountLimit - endUserList.value.length
+  );
+});
+
+const userCountAttention = computed((): string => {
+  const upgrade = t("subscription.features.bb-feature-user-count.upgrade");
+  let status = "";
+
+  if (remainingUserCount.value > 0) {
+    status = t("subscription.features.bb-feature-user-count.remaining", {
+      total: subscriptionV1Store.userCountLimit,
+      count: remainingUserCount.value,
+    });
+  } else {
+    status = t("subscription.features.bb-feature-user-count.runoutof", {
+      total: subscriptionV1Store.userCountLimit,
+    });
+  }
+
+  return `${status} ${upgrade}`;
 });
 </script>

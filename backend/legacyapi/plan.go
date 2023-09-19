@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"math"
 )
 
 // PlanType is the type for a plan.
@@ -56,6 +55,9 @@ const (
 	Feature2FA FeatureType = "bb.feature.2fa"
 	// FeatureDisallowSignup allows user to change the disallow signup flag.
 	FeatureDisallowSignup FeatureType = "bb.feature.disallow-signup"
+	// FeatureSecureToken allows user to manage authentication token security.
+	FeatureSecureToken FeatureType = "bb.feature.secure-token"
+
 	// FeatureRBAC enables RBAC.
 	//
 	// - Workspace level RBAC
@@ -70,6 +72,12 @@ const (
 
 	// FeatureCustomRole enables customizing roles.
 	FeatureCustomRole FeatureType = "bb.feature.custom-role"
+
+	// FeatureIssueAdvancedSearch supports search issue with advanced filter.
+	FeatureIssueAdvancedSearch FeatureType = "bb.feature.issue-advanced-search"
+
+	// FeatureAnnouncement enable announcement banner setting.
+	FeatureAnnouncement FeatureType = "bb.feature.announcement"
 
 	// Branding.
 
@@ -114,6 +122,8 @@ const (
 	FeatureEncryptedSecrets FeatureType = "bb.feature.encrypted-secrets"
 	// FeatureDatabaseGrouping allows user to create database/schema groups.
 	FeatureDatabaseGrouping FeatureType = "bb.feature.database-grouping"
+	// FeatureSchemaTemplate allows user to create and use the schema template.
+	FeatureSchemaTemplate FeatureType = "bb.feature.schema-template"
 
 	// VCS Integration.
 
@@ -133,6 +143,8 @@ const (
 	FeatureReadReplicaConnection FeatureType = "bb.feature.read-replica-connection"
 	// FeatureInstanceSSHConnection provides SSH connection for instances.
 	FeatureInstanceSSHConnection FeatureType = "bb.feature.instance-ssh-connection"
+	// FeatureCustomInstanceScanInterval allows user to customize schema and anomaly scan interval per instance.
+	FeatureCustomInstanceScanInterval FeatureType = "bb.feature.custom-instance-scan-interval"
 	// FeatureSyncSchemaAllVersions allows user to sync the base database schema all versions into target database.
 	FeatureSyncSchemaAllVersions FeatureType = "bb.feature.sync-schema-all-versions"
 	// FeatureIndexAdvisor provides the index advisor for databases.
@@ -183,6 +195,8 @@ func (e FeatureType) Name() string {
 		return "2FA"
 	case FeatureDisallowSignup:
 		return "Disallow singup"
+	case FeatureSecureToken:
+		return "Secure token"
 	case FeatureRBAC:
 		return "RBAC"
 	case FeatureWatermark:
@@ -191,6 +205,10 @@ func (e FeatureType) Name() string {
 		return "Audit log"
 	case FeatureCustomRole:
 		return "Custom role"
+	case FeatureIssueAdvancedSearch:
+		return "Advanced search"
+	case FeatureAnnouncement:
+		return "Announcement"
 	// Branding
 	case FeatureBranding:
 		return "Branding"
@@ -215,6 +233,8 @@ func (e FeatureType) Name() string {
 		return "Encrypted secrets"
 	case FeatureDatabaseGrouping:
 		return "Database grouping"
+	case FeatureSchemaTemplate:
+		return "Schema template"
 	// VCS Integration
 	case FeatureVCSSchemaWriteBack:
 		return "Schema write-back"
@@ -229,6 +249,8 @@ func (e FeatureType) Name() string {
 		return "Read replica connection"
 	case FeatureInstanceSSHConnection:
 		return "Instance SSH connection"
+	case FeatureCustomInstanceScanInterval:
+		return "Custom instance scan interval"
 	case FeatureSyncSchemaAllVersions:
 		return "Synchronize schema all versions"
 	case FeatureIndexAdvisor:
@@ -277,13 +299,16 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 // plan in [FREE, TEAM, Enterprise].
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
-	FeatureSSO:            {false, false, true},
-	Feature2FA:            {false, false, true},
-	FeatureDisallowSignup: {false, false, true},
-	FeatureRBAC:           {true, true, true},
-	FeatureWatermark:      {false, false, true},
-	FeatureAuditLog:       {false, false, true},
-	FeatureCustomRole:     {false, false, true},
+	FeatureSSO:                 {false, false, true},
+	Feature2FA:                 {false, false, true},
+	FeatureDisallowSignup:      {false, false, true},
+	FeatureSecureToken:         {false, false, true},
+	FeatureRBAC:                {true, true, true},
+	FeatureWatermark:           {false, false, true},
+	FeatureAuditLog:            {false, false, true},
+	FeatureCustomRole:          {false, false, true},
+	FeatureIssueAdvancedSearch: {false, true, true},
+	FeatureAnnouncement:        {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
@@ -297,16 +322,18 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureTaskScheduleTime: {false, true, true},
 	FeatureEncryptedSecrets: {false, true, true},
 	FeatureDatabaseGrouping: {false, false, true},
+	FeatureSchemaTemplate:   {false, false, true},
 	// VCS Integration
 	FeatureVCSSchemaWriteBack:   {false, true, true},
 	FeatureVCSSheetSync:         {false, true, true},
 	FeatureVCSSQLReviewWorkflow: {true, true, true},
 	// Database management
-	FeaturePITR:                  {false, true, true},
-	FeatureReadReplicaConnection: {false, false, true},
-	FeatureInstanceSSHConnection: {false, false, true},
-	FeatureSyncSchemaAllVersions: {false, true, true},
-	FeatureIndexAdvisor:          {false, false, true},
+	FeaturePITR:                       {false, true, true},
+	FeatureReadReplicaConnection:      {false, false, true},
+	FeatureInstanceSSHConnection:      {false, false, true},
+	FeatureCustomInstanceScanInterval: {false, false, true},
+	FeatureSyncSchemaAllVersions:      {false, true, true},
+	FeatureIndexAdvisor:               {false, false, true},
 	// Policy Control
 	FeatureApprovalPolicy:        {false, true, true},
 	FeatureBackupPolicy:          {false, true, true},
@@ -325,7 +352,6 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	// Change Workflow
 	FeatureIMApproval:       true,
 	FeatureSchemaDrift:      true,
-	FeatureSQLReview:        true,
 	FeatureEncryptedSecrets: true,
 	FeatureTaskScheduleTime: true,
 	FeatureOnlineMigration:  true,
@@ -334,32 +360,16 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureVCSSQLReviewWorkflow: true,
 	FeatureMybatisSQLReview:     true,
 	// Database management
-	FeaturePITR:                  true,
-	FeatureReadReplicaConnection: true,
-	FeatureInstanceSSHConnection: true,
-	FeatureDatabaseGrouping:      true,
-	FeatureSyncSchemaAllVersions: true,
-	FeatureIndexAdvisor:          true,
+	FeaturePITR:                       true,
+	FeatureReadReplicaConnection:      true,
+	FeatureInstanceSSHConnection:      true,
+	FeatureCustomInstanceScanInterval: true,
+	FeatureDatabaseGrouping:           true,
+	FeatureSyncSchemaAllVersions:      true,
+	FeatureIndexAdvisor:               true,
 	// Policy Control
-	FeatureSensitiveData: true,
-	// TODO:
-	// FeatureCustomApproval: true,
-}
-
-// PlanLimit is the type for plan limits.
-type PlanLimit int
-
-const (
-	// PlanLimitMaximumTask is the key name for maximum number of tasks for a plan.
-	PlanLimitMaximumTask PlanLimit = iota
-	// PlanLimitMaximumEnvironment is the key name for maximum number of environments for a plan.
-	PlanLimitMaximumEnvironment
-)
-
-// PlanLimitValues is the plan limit value mapping.
-var PlanLimitValues = map[PlanLimit][3]int64{
-	PlanLimitMaximumTask:        {math.MaxInt64, math.MaxInt64, math.MaxInt64},
-	PlanLimitMaximumEnvironment: {math.MaxInt64, math.MaxInt64, math.MaxInt64},
+	FeatureSensitiveData:  true,
+	FeatureCustomApproval: true,
 }
 
 // Feature returns whether a particular feature is available in a particular plan.

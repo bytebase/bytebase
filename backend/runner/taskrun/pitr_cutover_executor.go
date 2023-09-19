@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -50,11 +50,12 @@ type PITRCutoverExecutor struct {
 }
 
 // RunOnce will run the PITR cutover task executor once.
-func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	log.Info("Run PITR cutover task", zap.String("task", task.Name))
+// TODO: support cancellation.
+func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	slog.Info("Run PITR cutover task", slog.String("task", task.Name))
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
-		log.Error("failed to fetch containing issue doing pitr cutover task", zap.Error(err))
+		slog.Error("failed to fetch containing issue doing pitr cutover task", log.BBError(err))
 		return true, nil, err
 	}
 	if issue == nil {
@@ -77,13 +78,13 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMe
 
 	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
 		TaskID:    task.ID,
-		OldStatus: task.Status,
+		OldStatus: api.TaskRunning,
 		NewStatus: api.TaskDone,
 		IssueName: issue.Title,
 		TaskName:  task.Name,
 	})
 	if err != nil {
-		log.Error("failed to marshal activity", zap.Error(err))
+		slog.Error("failed to marshal activity", log.BBError(err))
 		return terminated, result, nil
 	}
 
@@ -96,7 +97,7 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMe
 		Comment:      fmt.Sprintf("Restore database %s in instance %s successfully.", database.DatabaseName, instance.Title),
 	}
 	if _, err = exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
-		log.Error("cannot create an pitr activity", zap.Error(err))
+		slog.Error("cannot create an pitr activity", log.BBError(err))
 	}
 
 	return terminated, result, nil
@@ -111,7 +112,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	if err != nil {
 		return true, nil, err
 	}
-	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 	if err != nil {
 		return true, nil, err
 	}
@@ -131,7 +132,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	// RestorePITR will create the pitr database.
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
 	// database's migration history, and append a new BRANCH migration.
-	log.Debug("Appending new migration history record")
+	slog.Debug("Appending new migration history record")
 	m := &db.MigrationInfo{
 		InstanceID:     &task.InstanceID,
 		ReleaseVersion: profile.Version,
@@ -155,8 +156,8 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	}
 	defer driver.Close(ctx)
 
-	if _, _, err := utils.ExecuteMigrationDefault(ctx, exec.store, driver, m, "" /* pitr cutover */, db.ExecuteOptions{}); err != nil {
-		log.Error("Failed to add migration history record", zap.Error(err))
+	if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, exec.store, driver, m, "" /* pitr cutover */, nil, db.ExecuteOptions{}); err != nil {
+		slog.Error("Failed to add migration history record", log.BBError(err))
 		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
 
@@ -168,10 +169,10 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 
 	// Sync database schema after restore is completed.
 	if err := schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-		log.Error("failed to sync database schema",
-			zap.String("instanceName", instance.ResourceID),
-			zap.String("databaseName", database.DatabaseName),
-			zap.Error(err),
+		slog.Error("failed to sync database schema",
+			slog.String("instanceName", instance.ResourceID),
+			slog.String("databaseName", database.DatabaseName),
+			log.BBError(err),
 		)
 	}
 
@@ -196,7 +197,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, instance *store.
 					if retry == maxRetry {
 						return errors.Wrapf(err, "failed to do cutover for PostgreSQL after retried for %d times", maxRetry)
 					}
-					log.Debug("Failed to do cutover for PostgreSQL. Retry later.", zap.Error(err))
+					slog.Debug("Failed to do cutover for PostgreSQL. Retry later.", log.BBError(err))
 				} else {
 					return nil
 				}
@@ -226,13 +227,13 @@ func (exec *PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, instance 
 		return err
 	}
 	defer conn.Close()
-	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", databaseName))
+	slog.Debug("Swapping the original and PITR database", slog.String("originalDatabase", databaseName))
 	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, databaseName, issue.CreatedTime.Unix())
 	if err != nil {
-		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", databaseName), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
+		slog.Error("Failed to swap the original and PITR database", slog.String("originalDatabase", databaseName), slog.String("pitrDatabase", pitrDatabaseName), log.BBError(err))
 		return errors.Wrap(err, "failed to swap the original and PITR database")
 	}
-	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", databaseName), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
+	slog.Debug("Finished swapping the original and PITR database", slog.String("originalDatabase", databaseName), slog.String("pitrDatabase", pitrDatabaseName), slog.String("oldDatabase", pitrOldDatabaseName))
 	return nil
 }
 
@@ -261,7 +262,7 @@ func (exec *PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, instan
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", databaseName, pitrOldDatabaseName)); err != nil {
 			return errors.Wrapf(err, "failed to rename database %q to %q", databaseName, pitrOldDatabaseName)
 		}
-		log.Debug("Successfully renamed database", zap.String("from", databaseName), zap.String("to", pitrOldDatabaseName))
+		slog.Debug("Successfully renamed database", slog.String("from", databaseName), slog.String("to", pitrOldDatabaseName))
 	}
 
 	// The _pitr database may not exist.
@@ -283,7 +284,7 @@ func (exec *PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, instan
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, databaseName)); err != nil {
 			return errors.Wrapf(err, "failed to rename database %q to %q", pitrDatabaseName, databaseName)
 		}
-		log.Debug("Successfully renamed database", zap.String("from", pitrDatabaseName), zap.String("to", databaseName))
+		slog.Debug("Successfully renamed database", slog.String("from", pitrDatabaseName), slog.String("to", databaseName))
 	}
 
 	return nil

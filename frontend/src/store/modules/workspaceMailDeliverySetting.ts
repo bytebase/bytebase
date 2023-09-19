@@ -1,10 +1,10 @@
+import { defineStore } from "pinia";
+import { ref } from "vue";
 import { settingServiceClient } from "@/grpcweb";
 import {
   SMTPMailDeliverySettingValue,
   Setting,
 } from "@/types/proto/v1/setting_service";
-import { defineStore } from "pinia";
-import { ref } from "vue";
 
 const SETTING_NAME = "settings/bb.workspace.mail-delivery";
 

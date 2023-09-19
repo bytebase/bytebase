@@ -4,6 +4,7 @@ package sqlserver
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 // Server is the Bytebase server.
@@ -60,12 +60,12 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Display config
-	log.Info("-----Config BEGIN-----")
-	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
-	log.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
-	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
-	log.Info(fmt.Sprintf("workspaceID=%s", prof.WorkspaceID))
-	log.Info("-----Config END-------")
+	slog.Info("-----Config BEGIN-----")
+	slog.Info(fmt.Sprintf("mode=%s", prof.Mode))
+	slog.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
+	slog.Info(fmt.Sprintf("debug=%t", prof.Debug))
+	slog.Info(fmt.Sprintf("workspaceID=%s", prof.WorkspaceID))
+	slog.Info("-----Config END-------")
 
 	serverStarted := false
 	defer func() {
@@ -76,10 +76,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	e := echo.New()
 	e.Debug = prof.Debug
-	// Disallow to be embedded in an iFrame.
-	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
-		XFrameOptions: "DENY",
-	}))
 	s.e = e
 
 	// Middleware
@@ -123,8 +119,8 @@ func (s *Server) Run() error {
 
 // Shutdown will shut down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Info("Trying to stop Bytebase SQL Service ....")
-	log.Info("Trying to gracefully shutdown server")
+	slog.Info("Trying to stop Bytebase SQL Service ....")
+	slog.Info("Trying to gracefully shutdown server")
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -136,7 +132,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	log.Info("Bytebase SQL Service stopped properly")
+	slog.Info("Bytebase SQL Service stopped properly")
 
 	return nil
 }

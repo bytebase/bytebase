@@ -21,8 +21,8 @@ const (
 	trigger   objectType = "TRIGGER"
 )
 
-// extractUnsupportObjNameAndType extract the object name from the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statement and returns the object name and type.
-func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
+// extractUnsupportedObjectNameAndType extract the object name from the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statement and returns the object name and type.
+func extractUnsupportedObjectNameAndType(stmt string) (string, objectType, error) {
 	fs := []objectType{
 		function,
 		procedure,
@@ -61,6 +61,15 @@ func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
 func toString(node ast.Node) (string, error) {
 	var buf bytes.Buffer
 	restoreFlag := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat
+	if err := node.Restore(format.NewRestoreCtx(restoreFlag, &buf)); err != nil {
+		return "", errors.Wrapf(err, "cannot restore node %v", node)
+	}
+	return buf.String(), nil
+}
+
+func toLowerNameString(node ast.Node) (string, error) {
+	var buf bytes.Buffer
+	restoreFlag := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat | format.RestoreNameLowercase
 	if err := node.Restore(format.NewRestoreCtx(restoreFlag, &buf)); err != nil {
 		return "", errors.Wrapf(err, "cannot restore node %v", node)
 	}

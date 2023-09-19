@@ -21,7 +21,7 @@
 
 <script lang="ts">
 import { reactive } from "vue";
-import VCSSetupWizard from "../components/VCSSetupWizard.vue";
+import VCSSetupWizard from "@/components/VCS/VCSSetupWizard.vue";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}

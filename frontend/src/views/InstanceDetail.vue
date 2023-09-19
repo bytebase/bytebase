@@ -1,37 +1,43 @@
 <template>
-  <div class="py-4 space-y-4">
+  <div class="py-4 space-y-2">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
 
-    <div class="px-6 space-y-6">
-      <InstanceForm :instance="instance" />
-      <NTabs>
-        <template #suffix>
-          <div class="flex items-center gap-x-4">
-            <NButton
-              v-if="allowEdit"
-              :loading="state.syncingSchema"
-              @click.prevent="syncSchema"
-            >
-              <template v-if="state.syncingSchema">
-                {{ $t("instance.syncing") }}
-              </template>
-              <template v-else>
-                {{ $t("common.sync-now") }}
-              </template>
-            </NButton>
-            <NButton
-              v-if="
-                instance.state === State.ACTIVE &&
-                instanceV1HasCreateDatabase(instance)
-              "
-              type="primary"
-              @click.prevent="createDatabase"
-            >
-              {{ $t("instance.new-database") }}
-            </NButton>
-          </div>
-        </template>
+    <div class="px-6 flex items-center justify-between">
+      <div class="flex items-center gap-x-2">
+        <EngineIcon :engine="instance.engine" custom-class="!h-6" />
+        <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
+      </div>
+      <div class="flex items-center gap-x-4">
+        <NButton
+          v-if="allowEdit"
+          :loading="state.syncingSchema"
+          @click.prevent="syncSchema"
+        >
+          <template v-if="state.syncingSchema">
+            {{ $t("instance.syncing") }}
+          </template>
+          <template v-else>
+            {{ $t("common.sync-now") }}
+          </template>
+        </NButton>
+        <NButton
+          v-if="
+            instance.state === State.ACTIVE &&
+            instanceV1HasCreateDatabase(instance)
+          "
+          type="primary"
+          @click.prevent="createDatabase"
+        >
+          {{ $t("instance.new-database") }}
+        </NButton>
+      </div>
+    </div>
 
+    <div class="px-6">
+      <NTabs>
+        <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
+          <InstanceForm :instance="instance" />
+        </NTabPane>
         <NTabPane name="DATABASES" :tab="$t('common.databases')">
           <DatabaseV1Table
             mode="INSTANCE"
@@ -43,40 +49,6 @@
           <InstanceRoleTable :instance-role-list="instanceRoleList" />
         </NTabPane>
       </NTabs>
-      <template v-if="allowArchiveOrRestore">
-        <template v-if="instance.state === State.ACTIVE">
-          <BBButtonConfirm
-            :style="'ARCHIVE'"
-            :button-text="$t('instance.archive-this-instance')"
-            :ok-text="$t('common.archive')"
-            :require-confirm="true"
-            :confirm-title="
-              $t('instance.archive-instance-instance-name', [instance.title])
-            "
-            :confirm-description="
-              $t(
-                'instance.archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page'
-              )
-            "
-            @confirm="doArchive"
-          />
-        </template>
-        <template v-else-if="instance.state === State.DELETED">
-          <BBButtonConfirm
-            :style="'RESTORE'"
-            :button-text="$t('instance.restore-this-instance')"
-            :ok-text="$t('instance.restore')"
-            :require-confirm="true"
-            :confirm-title="
-              $t('instance.restore-instance-instance-name-to-normal-state', [
-                instance.title,
-              ])
-            "
-            :confirm-description="''"
-            @confirm="doRestore"
-          />
-        </template>
-      </template>
     </div>
   </div>
 
@@ -93,20 +65,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { useI18n } from "vue-i18n";
 import { ClientError } from "nice-grpc-web";
-
-import {
-  idFromSlug,
-  hasWorkspacePermissionV1,
-  instanceV1HasCreateDatabase,
-  isMemberOfProjectV1,
-} from "@/utils";
+import { computed, reactive, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
-import InstanceForm from "@/components/InstanceForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import { EngineIcon } from "@/components/Icon";
+import InstanceForm from "@/components/InstanceForm/";
 import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
 import {
   pushNotification,
@@ -114,10 +80,16 @@ import {
   useCurrentUserV1,
   useInstanceV1Store,
   useEnvironmentV1Store,
-  useGracefulRequest,
   useDatabaseV1Store,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
+import {
+  idFromSlug,
+  hasWorkspacePermissionV1,
+  instanceV1HasCreateDatabase,
+  isMemberOfProjectV1,
+  instanceV1Name,
+} from "@/utils";
 
 interface LocalState {
   showCreateDatabaseModal: boolean;
@@ -193,41 +165,6 @@ const allowEdit = computed(() => {
     )
   );
 });
-
-const allowArchiveOrRestore = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-instance",
-    currentUserV1.value.userRole
-  );
-});
-
-const doArchive = async () => {
-  await useGracefulRequest(async () => {
-    await instanceV1Store.archiveInstance(instance.value);
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("instance.successfully-archived-instance-updatedinstance-name", [
-        instance.value.title,
-      ]),
-    });
-  });
-};
-
-const doRestore = async () => {
-  await useGracefulRequest(async () => {
-    await instanceV1Store.restoreInstance(instance.value);
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("instance.successfully-archived-instance-updatedinstance-name", [
-        instance.value.title,
-      ]),
-    });
-  });
-};
 
 const syncSchema = async () => {
   state.syncingSchema = true;

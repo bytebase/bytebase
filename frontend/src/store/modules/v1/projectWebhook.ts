@@ -1,10 +1,9 @@
 import { defineStore } from "pinia";
 import { projectServiceClient } from "@/grpcweb";
-
-import { Project, Webhook } from "@/types/proto/v1/project_service";
-import { useProjectV1Store } from "./project";
 import { IdType } from "@/types";
+import { Project, Webhook } from "@/types/proto/v1/project_service";
 import { extractProjectWebhookID } from "@/utils";
+import { useProjectV1Store } from "./project";
 
 export const useProjectWebhookV1Store = defineStore("projectWebhook_v1", () => {
   const getProjectWebhookFromProjectById = (

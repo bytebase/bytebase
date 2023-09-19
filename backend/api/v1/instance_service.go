@@ -3,14 +3,14 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"strings"
 
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -87,6 +88,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, status.Errorf(codes.InvalidArgument, "invalid instance ID %v", request.InstanceId)
 	}
 
+	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
+	}
+
 	instanceMessage, err := s.convertToInstanceMessage(request.InstanceId, request.Instance)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -96,7 +101,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if request.ValidateOnly {
 		for _, ds := range instanceMessage.DataSources {
 			err := func() error {
-				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage.Engine, ds, "", "", 0, false /* datashare */, ds.Type == api.RO)
+				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage.Engine, ds, "", "", 0, false /* datashare */, ds.Type == api.RO, false /* schemaTenantMode */)
 				if err != nil {
 					return err
 				}
@@ -136,10 +141,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err == nil {
 		defer driver.Close(ctx)
-		if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
-			log.Warn("Failed to sync instance",
-				zap.String("instance", instance.ResourceID),
-				zap.Error(err))
+		if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+			slog.Warn("Failed to sync instance",
+				slog.String("instance", instance.ResourceID),
+				log.BBError(err))
 		}
 		// Sync all databases in the instance asynchronously.
 		s.stateCfg.InstanceDatabaseSyncChan <- instance
@@ -170,7 +175,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance.Name)
 	}
 
 	patch := &store.UpdateInstanceMessage{
@@ -192,8 +197,24 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			patch.DataSources = &datasourceList
 		case "activation":
 			patch.Activation = &request.Instance.Activation
+		case "options.schema_tenant_mode":
+			if patch.OptionsUpsert == nil {
+				patch.OptionsUpsert = &storepb.InstanceOptions{
+					SchemaTenantMode: request.Instance.Options.GetSchemaTenantMode(),
+				}
+			} else {
+				patch.OptionsUpsert.SchemaTenantMode = request.Instance.Options.GetSchemaTenantMode()
+			}
+		case "options.sync_interval":
+			if patch.OptionsUpsert == nil {
+				patch.OptionsUpsert = &storepb.InstanceOptions{
+					SyncInterval: request.Instance.Options.GetSyncInterval(),
+				}
+			} else {
+				patch.OptionsUpsert.SyncInterval = request.Instance.Options.GetSyncInterval()
+			}
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
+			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
 		}
 	}
 
@@ -212,19 +233,24 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	// TODO(d): sync instance databases.
+	if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+		slog.Warn("Failed to sync instance",
+			slog.String("instance", instance.ResourceID),
+			log.BBError(err))
+	}
+	// Sync all databases in the instance asynchronously.
+	s.stateCfg.InstanceDatabaseSyncChan <- instance
 
 	return convertToInstance(ins), nil
 }
 
-// SyncSlowQueries syncs slow queries for an instance.
-func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.SyncSlowQueriesRequest) (*emptypb.Empty, error) {
-	instance, err := s.getInstanceMessage(ctx, request.Instance)
+func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instanceName string) (*emptypb.Empty, error) {
+	instance, err := s.getInstanceMessage(ctx, instanceName)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", instanceName)
 	}
 
 	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
@@ -232,37 +258,55 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if slowQueryPolicy == nil || !slowQueryPolicy.Active {
-		return nil, status.Errorf(codes.FailedPrecondition, "slow query policy is not active for instance %q", request.Instance)
+		return nil, status.Errorf(codes.FailedPrecondition, "slow query policy is not active for instance %q", instanceName)
 	}
 
+	if err := s.syncSlowQueriesImpl(ctx, (*store.ProjectMessage)(nil), instance); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *store.ProjectMessage, instance *store.InstanceMessage) error {
 	switch instance.Engine {
 	case db.MySQL:
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		defer driver.Close(ctx)
 		if err := driver.CheckSlowQueryLogEnabled(ctx); err != nil {
-			return nil, status.Errorf(codes.FailedPrecondition, "slow query log is not enabled: %s", err.Error())
+			slog.Warn("slow query log is not enabled", slog.String("instance", instance.ResourceID), log.BBError(err))
+			return nil
 		}
 
 		// Sync slow queries for instance.
-		s.stateCfg.InstanceSlowQuerySyncChan <- instance.ResourceID
+		message := &state.InstanceSlowQuerySyncMessage{
+			InstanceID: instance.ResourceID,
+		}
+		if project != nil {
+			message.ProjectID = project.ResourceID
+		}
+		s.stateCfg.InstanceSlowQuerySyncChan <- message
 	case db.Postgres:
-		databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+		findDatabase := &store.FindDatabaseMessage{
 			InstanceID: &instance.ResourceID,
-		})
+		}
+		if project != nil {
+			findDatabase.ProjectID = &project.ResourceID
+		}
+		databases, err := s.store.ListDatabases(ctx, findDatabase)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
+			return status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
 		}
 
-		var firstDatabase string
-		var errs error
+		var enabledDatabases []*store.DatabaseMessage
 		for _, database := range databases {
 			if database.SyncState != api.OK {
 				continue
 			}
-			if _, exists := pg.ExcludedDatabaseList[database.DatabaseName]; exists {
+			if pg.IsSystemDatabase(database.DatabaseName) {
 				continue
 			}
 			if err := func() error {
@@ -273,29 +317,95 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 				defer driver.Close(ctx)
 				return driver.CheckSlowQueryLogEnabled(ctx)
 			}(); err != nil {
-				errs = multierr.Append(errs, err)
+				slog.Warn("slow query log is not enabled", slog.String("database", database.DatabaseName), log.BBError(err))
+				continue
 			}
 
-			if firstDatabase == "" {
-				firstDatabase = database.DatabaseName
-			}
+			enabledDatabases = append(enabledDatabases, database)
 		}
 
-		if errs != nil {
-			return nil, status.Errorf(codes.FailedPrecondition, "slow query log is not enabled: %s", errs.Error())
-		}
-
-		if firstDatabase == "" {
-			return nil, status.Errorf(codes.FailedPrecondition, "no database enabled pg_stat_statements")
+		if len(enabledDatabases) == 0 {
+			return nil
 		}
 
 		// Sync slow queries for instance.
-		s.stateCfg.InstanceSlowQuerySyncChan <- instance.ResourceID
+		message := &state.InstanceSlowQuerySyncMessage{
+			InstanceID: instance.ResourceID,
+		}
+		if project != nil {
+			message.ProjectID = project.ResourceID
+		}
+		s.stateCfg.InstanceSlowQuerySyncChan <- message
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine %q", instance.Engine)
+		return status.Errorf(codes.InvalidArgument, "unsupported engine %q", instance.Engine)
+	}
+	return nil
+}
+
+func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, projectName string) (*emptypb.Empty, error) {
+	project, err := s.getProjectMessage(ctx, projectName)
+	if err != nil {
+		return nil, err
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectName)
+	}
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &project.ResourceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
+	}
+
+	instanceMap := make(map[string]bool)
+	var errs error
+	for _, database := range databases {
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get instance %q: %s", database.InstanceID, err.Error())
+		}
+
+		switch instance.Engine {
+		case db.MySQL, db.Postgres:
+			if instance.Deleted {
+				continue
+			}
+
+			slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if slowQueryPolicy == nil || !slowQueryPolicy.Active {
+				continue
+			}
+
+			if _, ok := instanceMap[instance.ResourceID]; ok {
+				continue
+			}
+
+			if err := s.syncSlowQueriesImpl(ctx, project, instance); err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to sync slow queries for instance %q", instance.ResourceID))
+			}
+		default:
+			continue
+		}
+	}
+
+	if errs != nil {
+		return nil, status.Errorf(codes.Internal, "failed to sync slow queries for following instances: %s", errs.Error())
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+// SyncSlowQueries syncs slow queries for an instance.
+func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.SyncSlowQueriesRequest) (*emptypb.Empty, error) {
+	switch {
+	case strings.HasPrefix(request.Parent, common.InstanceNamePrefix):
+		return s.syncSlowQueriesForInstance(ctx, request.Parent)
+	case strings.HasPrefix(request.Parent, common.ProjectNamePrefix):
+		return s.syncSlowQueriesForProject(ctx, request.Parent)
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
+	}
 }
 
 // DeleteInstance deletes an instance.
@@ -305,7 +415,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
@@ -313,8 +423,10 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, err
 	}
 	if request.Force {
-		if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, api.DefaultProjectID, api.SystemBotID); err != nil {
-			return nil, err
+		if len(databases) > 0 {
+			if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, api.DefaultProjectID, api.SystemBotID); err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		var databaseNames []string
@@ -370,10 +482,10 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
-	if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+	if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
 		return nil, err
 	}
 	// Sync all databases in the instance asynchronously.
@@ -402,17 +514,19 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
 
-	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	for _, ds := range instance.DataSources {
+		if ds.ID == request.DataSource.Id {
+			return nil, status.Errorf(codes.NotFound, "data source already exists with the same name")
+		}
 	}
 
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance.Engine, dataSource, "", "", 0, false /* datashare */, dataSource.Type == api.RO)
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance.Engine, dataSource, "", "", 0, false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */)
 			if err != nil {
 				return err
 			}
@@ -426,6 +540,10 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 			return nil, err
 		}
 		return convertToInstance(instance), nil
+	}
+
+	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -451,30 +569,19 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	tp, err := convertDataSourceTp(request.DataSource.Type)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 
 	instance, err := s.getInstanceMessage(ctx, request.Instance)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
-
-	if tp == api.RO {
-		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
-		}
-	}
-
 	// We create a new variable dataSource to not modify existing data source in the memory.
 	var dataSource store.DataSourceMessage
 	found := false
 	for _, ds := range instance.DataSources {
-		if ds.Type == tp {
+		if ds.ID == request.DataSource.Id {
 			dataSource = *ds
 			found = true
 			break
@@ -484,11 +591,17 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.NotFound, "data source not found")
 	}
 
+	if dataSource.Type == api.RO {
+		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		}
+	}
+
 	patch := &store.UpdateDataSourceMessage{
-		UpdaterID:   ctx.Value(common.PrincipalIDContextKey).(int),
-		InstanceUID: instance.UID,
-		Type:        tp,
-		InstanceID:  instance.ResourceID,
+		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
+		InstanceUID:  instance.UID,
+		InstanceID:   instance.ResourceID,
+		DataSourceID: request.DataSource.Id,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -518,6 +631,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "port":
 			patch.Port = &request.DataSource.Port
 			dataSource.Port = request.DataSource.Port
+		case "database":
+			patch.Database = &request.DataSource.Database
+			dataSource.Database = request.DataSource.Database
 		case "srv":
 			patch.SRV = &request.DataSource.Srv
 			dataSource.SRV = request.DataSource.Srv
@@ -561,7 +677,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance.Engine, &dataSource, "", "", 0, false /* datashare */, dataSource.Type == api.RO)
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance.Engine, &dataSource, "", "", 0, false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */)
 			if err != nil {
 				return err
 			}
@@ -596,25 +712,35 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	if request.DataSource == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
 	}
-	// We only support remove RO type datasource to instance now, see more details in instance_service.proto.
-	if request.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
-		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
-	}
-
-	dataSource, err := s.convertToDataSourceMessage(request.DataSource)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
-	}
 
 	instance, err := s.getInstanceMessage(ctx, request.Instance)
 	if err != nil {
 		return nil, err
 	}
 	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
 
-	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.Type); err != nil {
+	// We create a new variable dataSource to not modify existing data source in the memory.
+	var dataSource store.DataSourceMessage
+	found := false
+	for _, ds := range instance.DataSources {
+		if ds.ID == request.DataSource.Id {
+			dataSource = *ds
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, status.Errorf(codes.NotFound, "data source not found")
+	}
+
+	// We only support remove RO type datasource to instance now, see more details in instance_service.proto.
+	if dataSource.Type != api.RO {
+		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
+	}
+
+	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -635,8 +761,36 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	return convertToInstance(instance), nil
 }
 
+func (s *InstanceService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
+	projectID, err := common.GetProjectID(name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	var project *store.ProjectMessage
+	projectUID, isNumber := isNumber(projectID)
+	if isNumber {
+		project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			UID:         &projectUID,
+			ShowDeleted: true,
+		})
+	} else {
+		project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID:  &projectID,
+			ShowDeleted: true,
+		})
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", name)
+	}
+
+	return project, nil
+}
+
 func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (*store.InstanceMessage, error) {
-	instanceID, err := getInstanceID(name)
+	instanceID, err := common.GetInstanceID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -673,7 +827,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 		}
 
 		dataSourceList = append(dataSourceList, &v1pb.DataSource{
-			Title:    ds.Title,
+			Id:       ds.ID,
 			Type:     dataSourceType,
 			Username: ds.Username,
 			// We don't return the password and SSLs on reads.
@@ -686,9 +840,8 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 			ServiceName:            ds.ServiceName,
 		})
 	}
-
 	return &v1pb.Instance{
-		Name:          fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID),
+		Name:          fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
 		Uid:           fmt.Sprintf("%d", instance.UID),
 		Title:         instance.Title,
 		Engine:        engine,
@@ -698,6 +851,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 		State:         convertDeletedToState(instance.Deleted),
 		Environment:   fmt.Sprintf("environments/%s", instance.EnvironmentID),
 		Activation:    instance.Activation,
+		Options:       convertToInstanceOptions(instance.Options),
 	}
 }
 
@@ -706,7 +860,7 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 	if err != nil {
 		return nil, err
 	}
-	environmentID, err := getEnvironmentID(instance.Environment)
+	environmentID, err := common.GetEnvironmentID(instance.Environment)
 	if err != nil {
 		return nil, err
 	}
@@ -719,6 +873,7 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 		DataSources:   datasources,
 		EnvironmentID: environmentID,
 		Activation:    instance.Activation,
+		Options:       convertInstanceOptions(instance.Options),
 	}, nil
 }
 
@@ -742,7 +897,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 	}
 
 	return &store.DataSourceMessage{
-		Title:                   dataSource.Title,
+		ID:                      dataSource.Id,
 		Type:                    dsType,
 		Username:                dataSource.Username,
 		ObfuscatedPassword:      common.Obfuscate(dataSource.Password, s.secret),
@@ -764,6 +919,20 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 	}, nil
 }
 
+func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
+	instanceLimit := s.licenseService.GetPlanLimitValue(ctx, enterpriseAPI.PlanLimitMaximumInstance)
+
+	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
+	if err != nil {
+		return status.Errorf(codes.Internal, err.Error())
+	}
+	if int64(count) >= instanceLimit {
+		return status.Errorf(codes.ResourceExhausted, "reached the maximum instance count %d", instanceLimit)
+	}
+
+	return nil
+}
+
 func convertDataSourceTp(tp v1pb.DataSourceType) (api.DataSourceType, error) {
 	var dsType api.DataSourceType
 	switch tp {
@@ -775,4 +944,26 @@ func convertDataSourceTp(tp v1pb.DataSourceType) (api.DataSourceType, error) {
 		return "", errors.Errorf("invalid data source type %v", tp)
 	}
 	return dsType, nil
+}
+
+func convertToInstanceOptions(options *storepb.InstanceOptions) *v1pb.InstanceOptions {
+	if options == nil {
+		return nil
+	}
+
+	return &v1pb.InstanceOptions{
+		SchemaTenantMode: options.SchemaTenantMode,
+		SyncInterval:     options.SyncInterval,
+	}
+}
+
+func convertInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOptions {
+	if options == nil {
+		return nil
+	}
+
+	return &storepb.InstanceOptions{
+		SchemaTenantMode: options.SchemaTenantMode,
+		SyncInterval:     options.SyncInterval,
+	}
 }

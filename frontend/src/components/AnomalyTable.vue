@@ -52,6 +52,7 @@
   </BBTable>
   <BBModal
     v-if="schemaDriftDetail"
+    class="!max-w-[calc(100%-40px)] overflow-auto"
     :title="`'${schemaDriftDetail.database.databaseName}' schema drift - ${schemaDriftDetail.payload?.recordVersion} vs Actual`"
     @close="dismissModal"
   >
@@ -73,18 +74,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
-import { useRouter } from "vue-router";
 import { CodeDiff } from "v-code-diff";
+import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTableSectionDataSource } from "../bbkit/types";
-import { UNKNOWN_ENVIRONMENT_NAME } from "../types";
-import {
-  databaseV1Slug,
-  instanceV1Slug,
-  humanizeTs,
-  extractDatabaseResourceName,
-} from "@/utils";
+import { useRouter } from "vue-router";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import { useEnvironmentV1Store } from "@/store";
 import {
@@ -92,6 +85,14 @@ import {
   Anomaly_AnomalyType,
   Anomaly_AnomalySeverity,
 } from "@/types/proto/v1/anomaly_service";
+import {
+  databaseV1Slug,
+  instanceV1Slug,
+  humanizeTs,
+  extractDatabaseResourceName,
+} from "@/utils";
+import { BBTableSectionDataSource } from "../bbkit/types";
+import { UNKNOWN_ENVIRONMENT_NAME } from "../types";
 
 type Action = {
   onClick: () => void;
@@ -99,7 +100,6 @@ type Action = {
 };
 
 interface LocalState {
-  showModal: boolean;
   selectedAnomaly?: Anomaly;
 }
 
@@ -117,9 +117,7 @@ defineProps({
 const router = useRouter();
 const { t } = useI18n();
 
-const state = reactive<LocalState>({
-  showModal: false,
-});
+const state = reactive<LocalState>({});
 
 const columnList = computed(() => [
   {
@@ -278,7 +276,6 @@ const action = (anomaly: Anomaly): Action => {
       return {
         onClick: () => {
           state.selectedAnomaly = anomaly;
-          state.showModal = true;
           useDatabaseV1Store().getOrFetchDatabaseByName(anomaly.resource);
         },
         title: t("anomaly.action.view-diff"),
@@ -293,7 +290,7 @@ const action = (anomaly: Anomaly): Action => {
 };
 
 const schemaDriftDetail = computed(() => {
-  if (state.showModal && state.selectedAnomaly) {
+  if (state.selectedAnomaly) {
     const anomaly = state.selectedAnomaly;
     const database = useDatabaseV1Store().getDatabaseByName(anomaly.resource);
     return {
@@ -306,7 +303,6 @@ const schemaDriftDetail = computed(() => {
 });
 
 const dismissModal = () => {
-  state.showModal = false;
   state.selectedAnomaly = undefined;
 };
 </script>

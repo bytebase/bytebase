@@ -4,11 +4,11 @@ package slowquerysync
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -52,40 +52,42 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(slowQuerySyncInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Slow query syncer started and will run every %s", slowQuerySyncInterval.String()))
+	slog.Debug(fmt.Sprintf("Slow query syncer started and will run every %s", slowQuerySyncInterval.String()))
 	for {
 		select {
 		case <-ctx.Done():
-			log.Debug("Slow query syncer received context cancellation")
+			slog.Debug("Slow query syncer received context cancellation")
 			return
-		case instanceResourceID := <-s.stateCfg.InstanceSlowQuerySyncChan:
-			log.Debug("Slow query syncer received instance slow query sync request", zap.String("instance", instanceResourceID))
-			s.syncSlowQuery(ctx, &instanceResourceID)
+		case message := <-s.stateCfg.InstanceSlowQuerySyncChan:
+			slog.Debug("Slow query syncer received instance slow query sync request", slog.String("instance", message.InstanceID), slog.String("project", message.ProjectID))
+			s.syncSlowQuery(ctx, message)
 		case <-ticker.C:
-			log.Debug("Slow query syncer received tick")
+			slog.Debug("Slow query syncer received tick")
 			s.syncSlowQuery(ctx, nil)
 		}
 	}
 }
 
-func (s *Syncer) syncSlowQuery(ctx context.Context, instanceResourceID *string) {
+func (s *Syncer) syncSlowQuery(ctx context.Context, message *state.InstanceSlowQuerySyncMessage) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
 			if !ok {
 				err = errors.Errorf("%v", r)
 			}
-			log.Error("slow query syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+			slog.Error("slow query syncer PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
 
 	find := &store.FindInstanceMessage{}
-	if instanceResourceID != nil {
-		find.ResourceID = instanceResourceID
+	project := ""
+	if message != nil {
+		find.ResourceID = &message.InstanceID
+		project = message.ProjectID
 	}
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
-		log.Error("Failed to list instances", zap.Error(err))
+		slog.Error("Failed to list instances", log.BBError(err))
 		return
 	}
 
@@ -97,17 +99,17 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, instanceResourceID *string) 
 		instanceWG.Add(1)
 		go func(instance *store.InstanceMessage) {
 			defer instanceWG.Done()
-			if err := s.syncInstanceSlowQuery(ctx, instance); err != nil {
-				log.Debug("Failed to sync instance slow query",
-					zap.String("instance", instance.ResourceID),
-					zap.Error(err))
+			if err := s.syncInstanceSlowQuery(ctx, instance, project); err != nil {
+				slog.Debug("Failed to sync instance slow query",
+					slog.String("instance", instance.ResourceID),
+					log.BBError(err))
 			}
 		}(instance)
 	}
 	instanceWG.Wait()
 }
 
-func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
+func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.InstanceMessage, project string) error {
 	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
 	if err != nil {
 		return err
@@ -120,13 +122,13 @@ func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.Inst
 	case db.MySQL:
 		return s.syncMySQLSlowQuery(ctx, instance)
 	case db.Postgres:
-		return s.syncPostgreSQLSlowQuery(ctx, instance)
+		return s.syncPostgreSQLSlowQuery(ctx, instance, project)
 	default:
 		return errors.Errorf("unsupported database engine: %s", instance.Engine)
 	}
 }
 
-func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
+func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage, project string) error {
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 
 	earliestDate := today.AddDate(0, 0, -retentionCycle)
@@ -135,19 +137,24 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		return err
 	}
 
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+	findDatabases := &store.FindDatabaseMessage{
 		InstanceID: &instance.ResourceID,
-	})
+	}
+	if project != "" {
+		findDatabases.ProjectID = &project
+	}
+	databases, err := s.store.ListDatabases(ctx, findDatabases)
 	if err != nil {
 		return err
 	}
 
-	var firstDatabase *store.DatabaseMessage
+	var enabledDatabases []*store.DatabaseMessage
+
 	for _, database := range databases {
 		if database.SyncState != api.OK {
 			continue
 		}
-		if _, exists := pg.ExcludedDatabaseList[database.DatabaseName]; exists {
+		if pg.IsSystemDatabase(database.DatabaseName) {
 			continue
 		}
 		if err := func() error {
@@ -158,23 +165,22 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			defer driver.Close(ctx)
 			return driver.CheckSlowQueryLogEnabled(ctx)
 		}(); err != nil {
-			log.Warn("pg_stat_statements is not enabled",
-				zap.String("instance", instance.ResourceID),
-				zap.String("database", database.DatabaseName),
-				zap.Int("databaseID", database.UID),
-				zap.Error(err))
+			slog.Warn("pg_stat_statements is not enabled",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", database.DatabaseName),
+				slog.Int("databaseID", database.UID),
+				log.BBError(err))
+			continue
 		}
 
-		if firstDatabase == nil {
-			firstDatabase = database
-		}
+		enabledDatabases = append(enabledDatabases, database)
 	}
 
-	if firstDatabase == nil {
+	if len(enabledDatabases) == 0 {
 		return errors.Errorf("no database is available for slow query sync in instance %s", instance.ResourceID)
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, firstDatabase)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, enabledDatabases[0])
 	if err != nil {
 		return err
 	}
@@ -193,7 +199,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 	latestLogDate = latestLogDate.Truncate(24 * time.Hour)
 	nextLogDate := latestLogDate.AddDate(0, 0, 1)
 
-	for _, database := range databases {
+	for _, database := range enabledDatabases {
 		statistics, exists := logMap[database.DatabaseName]
 		if !exists {
 			continue
@@ -206,11 +212,11 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			EndLogDate:   &nextLogDate,
 		})
 		if err != nil {
-			log.Warn("Failed to list slow query logs",
-				zap.String("instance", instance.ResourceID),
-				zap.String("database", database.DatabaseName),
-				zap.Int("databaseID", database.UID),
-				zap.Error(err))
+			slog.Warn("Failed to list slow query logs",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", database.DatabaseName),
+				slog.Int("databaseID", database.UID),
+				log.BBError(err))
 			logs = nil
 		}
 
@@ -226,11 +232,11 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			SlowLog:       statistics,
 			UpdaterID:     api.SystemBotID,
 		}); err != nil {
-			log.Warn("Failed to upsert slow query log",
-				zap.String("instance", instance.ResourceID),
-				zap.String("database", database.DatabaseName),
-				zap.Int("databaseID", database.UID),
-				zap.Error(err))
+			slog.Warn("Failed to upsert slow query log",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", database.DatabaseName),
+				slog.Int("databaseID", database.UID),
+				log.BBError(err))
 		}
 	}
 

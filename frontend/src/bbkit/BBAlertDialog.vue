@@ -91,7 +91,7 @@
             </div>
           </div>
         </div>
-        <div class="mt-5 flex flex-col space-y-4">
+        <div class="mt-4 flex flex-col space-y-4">
           <div class="flex justify-end">
             <button
               type="button"
@@ -124,10 +124,10 @@
 
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
-import { withDefaults, computed, reactive } from "vue";
 import { zindexable as vZindexable } from "vdirs";
-import { BBAlertStyle } from "./types";
+import { withDefaults, computed, reactive } from "vue";
 import { Defer, defer } from "@/utils";
+import { BBAlertStyle } from "./types";
 
 const props = withDefaults(
   defineProps<{

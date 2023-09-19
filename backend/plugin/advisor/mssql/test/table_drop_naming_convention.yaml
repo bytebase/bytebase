@@ -1,0 +1,24 @@
+- statement: DROP TABLE IF EXISTS [Foo_delete];
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: DROP TABLE Foo;
+  want:
+    - status: WARN
+      code: 603
+      title: table.drop-naming-convention
+      content: '[foo] mismatches drop table naming convention, naming format should be "_delete$"'
+      line: 1
+      details: ""
+- statement: DROP TABLE [Foo], [Bar_delete];
+  want:
+    - status: WARN
+      code: 603
+      title: table.drop-naming-convention
+      content: '[foo] mismatches drop table naming convention, naming format should be "_delete$"'
+      line: 1
+      details: ""

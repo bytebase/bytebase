@@ -61,21 +61,20 @@
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef, defineComponent, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 import { useTitle } from "@vueuse/core";
-
-import { RouteMapList } from "../types";
-import { databaseV1Slug, idFromSlug } from "../utils";
+import { computed, ComputedRef, defineComponent, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
 import {
   useRouterStore,
   useBookmarkV1Store,
   useProjectV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
+import { RouteMapList } from "../types";
+import { databaseV1Slug, idFromSlug } from "../utils";
 
 interface BreadcrumbItem {
   name: string;

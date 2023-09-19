@@ -1,20 +1,18 @@
+import { watchThrottled } from "@vueuse/core";
+import { pick } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, toRef, watch } from "vue";
-import { pick } from "lodash-es";
-import { watchThrottled } from "@vueuse/core";
-import type { TabInfo, CoreTabInfo, AnyTabInfo } from "@/types";
-import { UNKNOWN_ID, TabMode } from "@/types";
+import { TabInfo, CoreTabInfo, AnyTabInfo, TabMode } from "@/types";
 import {
   getDefaultTab,
   INITIAL_TAB,
   isTempTab,
   isSimilarTab,
   WebStorageHelper,
+  isDisconnectedTab,
 } from "@/utils";
-import { useInstanceV1Store } from "./v1/instance";
+import { useWebTerminalV1Store } from "./v1";
 import { useSheetV1Store } from "./v1/sheet";
-import { useWebTerminalStore } from "./webTerminal";
-import { Engine } from "@/types/proto/v1/common";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor.tab-list";
 const KEYS = {
@@ -39,7 +37,6 @@ type PersistentTabInfo = Pick<TabInfo, typeof PERSISTENT_TAB_FIELDS[number]>;
 
 export const useTabStore = defineStore("tab", () => {
   const storage = new WebStorageHelper("bb.sql-editor.tab-list", localStorage);
-  const instanceStore = useInstanceV1Store();
 
   // states
   // We store the tabIdList and the tabs separately.
@@ -59,16 +56,7 @@ export const useTabStore = defineStore("tab", () => {
     return tab ?? getDefaultTab();
   });
   const isDisconnected = computed((): boolean => {
-    const { instanceId, databaseId } = currentTab.value.connection;
-    if (instanceId === String(UNKNOWN_ID)) {
-      return true;
-    }
-    const instance = instanceStore.getInstanceByUID(instanceId);
-    if (instance.engine === Engine.MYSQL || instance.engine === Engine.TIDB) {
-      // Connecting to instance directly.
-      return false;
-    }
-    return databaseId === String(UNKNOWN_ID);
+    return isDisconnectedTab(currentTab.value);
   });
 
   // actions
@@ -97,6 +85,10 @@ export const useTabStore = defineStore("tab", () => {
       tabIdList.value.splice(index, 1);
       tabs.value.delete(id);
       storage.remove(KEYS.tab(id));
+
+      if (tab.mode === TabMode.Admin) {
+        useWebTerminalV1Store().clearQueryStateByTab(tab);
+      }
     }
   };
   const updateCurrentTab = (payload: AnyTabInfo) => {
@@ -129,7 +121,7 @@ export const useTabStore = defineStore("tab", () => {
       }
     }
   };
-  const selectOrAddTempTab = () => {
+  const selectOrAddTempTab = (newTab?: AnyTabInfo) => {
     if (isDisconnected.value) {
       return;
     }
@@ -140,7 +132,7 @@ export const useTabStore = defineStore("tab", () => {
     if (tempTab) {
       setCurrentTabId(tempTab.id);
     } else {
-      addTab();
+      addTab(newTab);
     }
   };
   const _cleanup = (tabIdList: string[]) => {
@@ -156,6 +148,15 @@ export const useTabStore = defineStore("tab", () => {
 
   // watchers
   const watchTab = (tab: TabInfo, immediate: boolean) => {
+    const dirtyFields = [
+      () => tab.name,
+      () => tab.sheetName,
+      () => tab.statement,
+    ];
+    watch(dirtyFields, () => {
+      tab.isFreshNew = false;
+    });
+
     // Use a throttled watcher to reduce the performance overhead when writing.
     watchThrottled(
       () => pick(tab, ...PERSISTENT_TAB_FIELDS),
@@ -163,23 +164,6 @@ export const useTabStore = defineStore("tab", () => {
         storage.save(KEYS.tab(tabPartial.id), tabPartial);
       },
       { deep: true, immediate, throttle: 100, trailing: true }
-    );
-
-    watch(
-      () => tab.mode,
-      (mode) => {
-        // When switched to read-only-mode, clear the tab's query list
-        // so we can re-init it next-time.
-        if (mode === TabMode.ReadOnly) {
-          useWebTerminalStore().clearQueryListByTab(tab);
-        }
-
-        // And we should clear the tab's query result
-        // so we won't carry the results in Admin mode to read-only mode.
-        // vice versa
-        tab.executeParams = undefined;
-        tab.queryResult = undefined;
-      }
     );
   };
 
@@ -291,4 +275,18 @@ const maybeMigrateLegacyTab = (
     storage.save(KEYS.tab(tab.id), tab);
   }
   return tab;
+};
+
+export const isTabClosable = (tab: TabInfo) => {
+  const { tabList } = useTabStore();
+
+  if (tabList.length > 1) {
+    // Not the only one tab
+    return true;
+  }
+  if (tabList.length === 1) {
+    // It's the only one tab, and it's closable if it's a sheet tab
+    return !!tab.sheetName;
+  }
+  return false;
 };

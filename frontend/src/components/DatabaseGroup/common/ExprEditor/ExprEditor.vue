@@ -7,8 +7,8 @@
 <script lang="ts" setup>
 import { toRef } from "vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
-import { ResourceType, provideExprEditorContext } from "./context";
 import ConditionGroup from "./ConditionGroup.vue";
+import { ResourceType, provideExprEditorContext } from "./context";
 
 const props = withDefaults(
   defineProps<{

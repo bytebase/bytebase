@@ -105,8 +105,8 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 	}
 
 	license := &enterpriseAPI.License{
-		InstanceCount: int(request.Trial.InstanceCount),
-		ExpiresTs:     time.Now().AddDate(0, 0, int(request.Trial.Days)).Unix(),
+		InstanceCount: enterpriseAPI.InstanceLimitForTrial,
+		ExpiresTs:     time.Now().AddDate(0, 0, enterpriseAPI.TrialDaysLimit).Unix(),
 		IssuedTs:      time.Now().Unix(),
 		Plan:          planType,
 		// the subject format for license should be {org id in hub}.{subscription id in hub}

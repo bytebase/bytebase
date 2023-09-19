@@ -1,5 +1,5 @@
 <template>
-  <label class="flex items-center text-sm h-6 ml-0.5 whitespace-nowrap">
+  <label class="flex items-center text-sm h-5 ml-0.5 whitespace-nowrap">
     <EnvironmentV1Name
       v-if="instance.uid !== String(UNKNOWN_ID)"
       :environment="instance.environmentEntity"
@@ -18,11 +18,10 @@
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
-
+import { EnvironmentV1Name } from "@/components/v2";
+import { useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
 import type { TabInfo } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
-import { EnvironmentV1Name } from "@/components/v2";
 
 const props = defineProps({
   tab: {

@@ -24,16 +24,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { NButton } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-
-import type { Role } from "@/types/proto/v1/role_service";
-import { useWorkspacePermissionV1 } from "@/utils";
 import { SpinnerButton } from "@/components/v2";
 import { useRoleStore } from "@/store";
-import { useCustomRoleSettingContext } from "../context";
 import { PresetRoleType, isCustomRole } from "@/types";
+import type { Role } from "@/types/proto/v1/role_service";
+import { useWorkspacePermissionV1 } from "@/utils";
+import { useCustomRoleSettingContext } from "../context";
 
 const props = defineProps<{
   role: Role;

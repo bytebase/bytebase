@@ -1,9 +1,9 @@
-import { defineStore } from "pinia";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { InboxMessage, InboxSummary } from "@/types/proto/v1/inbox_service";
 import { inboxServiceClient } from "@/grpcweb";
+import { InboxMessage, InboxSummary } from "@/types/proto/v1/inbox_service";
 
 dayjs.extend(utc);
 

@@ -1,9 +1,11 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
+import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
-import { ApprovalTemplate } from "./review_service";
+import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { ColumnMetadata } from "./database_service";
+import { ApprovalTemplate } from "./issue_service";
 import { PlanType, planTypeFromJSON, planTypeToJSON } from "./subscription_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -44,13 +46,15 @@ export interface GetSettingRequest {
 
 /** The response message for getting a setting. */
 export interface GetSettingResponse {
-  setting?: Setting;
+  setting?: Setting | undefined;
 }
 
 /** The request message for updating a setting. */
 export interface SetSettingRequest {
   /** The setting to update. */
-  setting?: Setting;
+  setting?:
+    | Setting
+    | undefined;
   /**
    * validate_only is a flag to indicate whether to validate the setting value,
    * server would not persist the setting value if it is true.
@@ -68,7 +72,7 @@ export interface Setting {
    */
   name: string;
   /** The value of the setting. */
-  value?: Value;
+  value?: Value | undefined;
 }
 
 /** The data in setting value. */
@@ -82,6 +86,10 @@ export interface Value {
   workspaceApprovalSettingValue?: WorkspaceApprovalSetting | undefined;
   workspaceTrialSettingValue?: WorkspaceTrialSetting | undefined;
   externalApprovalSettingValue?: ExternalApprovalSetting | undefined;
+  schemaTemplateSettingValue?: SchemaTemplateSetting | undefined;
+  dataClassificationSettingValue?: DataClassificationSetting | undefined;
+  semanticTypesSettingValue?: SemanticTypesSetting | undefined;
+  maskingAlgorithmSettingValue?: MaskingAlgorithmSetting | undefined;
 }
 
 export interface SMTPMailDeliverySettingValue {
@@ -216,7 +224,7 @@ export interface AppIMSetting {
   imType: AppIMSetting_IMType;
   appId: string;
   appSecret: string;
-  externalApproval?: AppIMSetting_ExternalApproval;
+  externalApproval?: AppIMSetting_ExternalApproval | undefined;
 }
 
 export enum AppIMSetting_IMType {
@@ -281,6 +289,67 @@ export interface WorkspaceProfileSetting {
   outboundIpList: string[];
   /** The webhook URL for the GitOps workflow. */
   gitopsWebhookUrl: string;
+  /** The duration for token. */
+  tokenDuration?:
+    | Duration
+    | undefined;
+  /** The setting of custom announcement */
+  announcement?: Announcement | undefined;
+}
+
+export interface Announcement {
+  /** The alert level of announcemnt */
+  level: Announcement_AlertLevel;
+  /** The text of announcemnt */
+  text: string;
+  /** The optional link, user can follow the link to check extra details */
+  link: string;
+}
+
+/** We support three levels of AlertLevel: INFO, WARNING, and ERROR. */
+export enum Announcement_AlertLevel {
+  ALERT_LEVEL_UNSPECIFIED = 0,
+  ALERT_LEVEL_INFO = 1,
+  ALERT_LEVEL_WARNING = 2,
+  ALERT_LEVEL_CRITICAL = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function announcement_AlertLevelFromJSON(object: any): Announcement_AlertLevel {
+  switch (object) {
+    case 0:
+    case "ALERT_LEVEL_UNSPECIFIED":
+      return Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED;
+    case 1:
+    case "ALERT_LEVEL_INFO":
+      return Announcement_AlertLevel.ALERT_LEVEL_INFO;
+    case 2:
+    case "ALERT_LEVEL_WARNING":
+      return Announcement_AlertLevel.ALERT_LEVEL_WARNING;
+    case 3:
+    case "ALERT_LEVEL_CRITICAL":
+      return Announcement_AlertLevel.ALERT_LEVEL_CRITICAL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Announcement_AlertLevel.UNRECOGNIZED;
+  }
+}
+
+export function announcement_AlertLevelToJSON(object: Announcement_AlertLevel): string {
+  switch (object) {
+    case Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED:
+      return "ALERT_LEVEL_UNSPECIFIED";
+    case Announcement_AlertLevel.ALERT_LEVEL_INFO:
+      return "ALERT_LEVEL_INFO";
+    case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
+      return "ALERT_LEVEL_WARNING";
+    case Announcement_AlertLevel.ALERT_LEVEL_CRITICAL:
+      return "ALERT_LEVEL_CRITICAL";
+    case Announcement_AlertLevel.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface WorkspaceApprovalSetting {
@@ -288,8 +357,8 @@ export interface WorkspaceApprovalSetting {
 }
 
 export interface WorkspaceApprovalSetting_Rule {
-  template?: ApprovalTemplate;
-  condition?: Expr;
+  template?: ApprovalTemplate | undefined;
+  condition?: Expr | undefined;
 }
 
 export interface ExternalApprovalSetting {
@@ -308,13 +377,100 @@ export interface ExternalApprovalSetting_Node {
   endpoint: string;
 }
 
+export interface SchemaTemplateSetting {
+  fieldTemplates: SchemaTemplateSetting_FieldTemplate[];
+  columnTypes: SchemaTemplateSetting_ColumnType[];
+}
+
+export interface SchemaTemplateSetting_FieldTemplate {
+  id: string;
+  engine: Engine;
+  category: string;
+  column?: ColumnMetadata | undefined;
+}
+
+export interface SchemaTemplateSetting_ColumnType {
+  engine: Engine;
+  enabled: boolean;
+  types: string[];
+}
+
 export interface WorkspaceTrialSetting {
   instanceCount: number;
-  expireTime?: Date;
-  issuedTime?: Date;
+  expireTime?: Date | undefined;
+  issuedTime?: Date | undefined;
   subject: string;
   orgName: string;
   plan: PlanType;
+}
+
+export interface DataClassificationSetting {
+  configs: DataClassificationSetting_DataClassificationConfig[];
+}
+
+export interface DataClassificationSetting_DataClassificationConfig {
+  /** id is the uuid for classification. Each project can chose one classification config. */
+  id: string;
+  title: string;
+  /**
+   * levels is user defined level list for classification.
+   * The order for the level decides its priority.
+   */
+  levels: DataClassificationSetting_DataClassificationConfig_Level[];
+  /**
+   * classification is the id - DataClassification map.
+   * The id should in [0-9]+-[0-9]+-[0-9]+ format.
+   */
+  classification: { [key: string]: DataClassificationSetting_DataClassificationConfig_DataClassification };
+}
+
+export interface DataClassificationSetting_DataClassificationConfig_Level {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface DataClassificationSetting_DataClassificationConfig_DataClassification {
+  /** id is the classification id in [0-9]+-[0-9]+-[0-9]+ format. */
+  id: string;
+  title: string;
+  description: string;
+  levelId?: string | undefined;
+}
+
+export interface DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
+  key: string;
+  value?: DataClassificationSetting_DataClassificationConfig_DataClassification | undefined;
+}
+
+export interface SemanticTypesSetting {
+  types: SemanticTypesSetting_SemanticType[];
+}
+
+export interface SemanticTypesSetting_SemanticType {
+  /** id is the uuid for semantic type. */
+  id: string;
+  /** the title of the semantic type, it should not be empty. */
+  title: string;
+  /** the description of the semantic type, it can be empty. */
+  description: string;
+  /** the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm. */
+  partialMaskAlgorithmId: string;
+  /** the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm. */
+  fullMaskAlgorithmId: string;
+}
+
+export interface MaskingAlgorithmSetting {
+  algorithms: MaskingAlgorithmSetting_MaskingAlgorithm[];
+}
+
+export interface MaskingAlgorithmSetting_MaskingAlgorithm {
+  /** id is the uuid for semantic type. */
+  id: string;
+  /** the title of the masking algorithm, it should not be empty. */
+  title: string;
+  /** the description of the masking algorithm, it can be empty. */
+  description: string;
 }
 
 function createBaseListSettingsRequest(): ListSettingsRequest {
@@ -731,6 +887,10 @@ function createBaseValue(): Value {
     workspaceApprovalSettingValue: undefined,
     workspaceTrialSettingValue: undefined,
     externalApprovalSettingValue: undefined,
+    schemaTemplateSettingValue: undefined,
+    dataClassificationSettingValue: undefined,
+    semanticTypesSettingValue: undefined,
+    maskingAlgorithmSettingValue: undefined,
   };
 }
 
@@ -759,6 +919,18 @@ export const Value = {
     }
     if (message.externalApprovalSettingValue !== undefined) {
       ExternalApprovalSetting.encode(message.externalApprovalSettingValue, writer.uint32(66).fork()).ldelim();
+    }
+    if (message.schemaTemplateSettingValue !== undefined) {
+      SchemaTemplateSetting.encode(message.schemaTemplateSettingValue, writer.uint32(74).fork()).ldelim();
+    }
+    if (message.dataClassificationSettingValue !== undefined) {
+      DataClassificationSetting.encode(message.dataClassificationSettingValue, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.semanticTypesSettingValue !== undefined) {
+      SemanticTypesSetting.encode(message.semanticTypesSettingValue, writer.uint32(90).fork()).ldelim();
+    }
+    if (message.maskingAlgorithmSettingValue !== undefined) {
+      MaskingAlgorithmSetting.encode(message.maskingAlgorithmSettingValue, writer.uint32(98).fork()).ldelim();
     }
     return writer;
   },
@@ -826,6 +998,34 @@ export const Value = {
 
           message.externalApprovalSettingValue = ExternalApprovalSetting.decode(reader, reader.uint32());
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.schemaTemplateSettingValue = SchemaTemplateSetting.decode(reader, reader.uint32());
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.dataClassificationSettingValue = DataClassificationSetting.decode(reader, reader.uint32());
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.semanticTypesSettingValue = SemanticTypesSetting.decode(reader, reader.uint32());
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.maskingAlgorithmSettingValue = MaskingAlgorithmSetting.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -857,6 +1057,18 @@ export const Value = {
       externalApprovalSettingValue: isSet(object.externalApprovalSettingValue)
         ? ExternalApprovalSetting.fromJSON(object.externalApprovalSettingValue)
         : undefined,
+      schemaTemplateSettingValue: isSet(object.schemaTemplateSettingValue)
+        ? SchemaTemplateSetting.fromJSON(object.schemaTemplateSettingValue)
+        : undefined,
+      dataClassificationSettingValue: isSet(object.dataClassificationSettingValue)
+        ? DataClassificationSetting.fromJSON(object.dataClassificationSettingValue)
+        : undefined,
+      semanticTypesSettingValue: isSet(object.semanticTypesSettingValue)
+        ? SemanticTypesSetting.fromJSON(object.semanticTypesSettingValue)
+        : undefined,
+      maskingAlgorithmSettingValue: isSet(object.maskingAlgorithmSettingValue)
+        ? MaskingAlgorithmSetting.fromJSON(object.maskingAlgorithmSettingValue)
+        : undefined,
     };
   },
 
@@ -887,6 +1099,22 @@ export const Value = {
     message.externalApprovalSettingValue !== undefined &&
       (obj.externalApprovalSettingValue = message.externalApprovalSettingValue
         ? ExternalApprovalSetting.toJSON(message.externalApprovalSettingValue)
+        : undefined);
+    message.schemaTemplateSettingValue !== undefined &&
+      (obj.schemaTemplateSettingValue = message.schemaTemplateSettingValue
+        ? SchemaTemplateSetting.toJSON(message.schemaTemplateSettingValue)
+        : undefined);
+    message.dataClassificationSettingValue !== undefined &&
+      (obj.dataClassificationSettingValue = message.dataClassificationSettingValue
+        ? DataClassificationSetting.toJSON(message.dataClassificationSettingValue)
+        : undefined);
+    message.semanticTypesSettingValue !== undefined &&
+      (obj.semanticTypesSettingValue = message.semanticTypesSettingValue
+        ? SemanticTypesSetting.toJSON(message.semanticTypesSettingValue)
+        : undefined);
+    message.maskingAlgorithmSettingValue !== undefined &&
+      (obj.maskingAlgorithmSettingValue = message.maskingAlgorithmSettingValue
+        ? MaskingAlgorithmSetting.toJSON(message.maskingAlgorithmSettingValue)
         : undefined);
     return obj;
   },
@@ -924,6 +1152,22 @@ export const Value = {
     message.externalApprovalSettingValue =
       (object.externalApprovalSettingValue !== undefined && object.externalApprovalSettingValue !== null)
         ? ExternalApprovalSetting.fromPartial(object.externalApprovalSettingValue)
+        : undefined;
+    message.schemaTemplateSettingValue =
+      (object.schemaTemplateSettingValue !== undefined && object.schemaTemplateSettingValue !== null)
+        ? SchemaTemplateSetting.fromPartial(object.schemaTemplateSettingValue)
+        : undefined;
+    message.dataClassificationSettingValue =
+      (object.dataClassificationSettingValue !== undefined && object.dataClassificationSettingValue !== null)
+        ? DataClassificationSetting.fromPartial(object.dataClassificationSettingValue)
+        : undefined;
+    message.semanticTypesSettingValue =
+      (object.semanticTypesSettingValue !== undefined && object.semanticTypesSettingValue !== null)
+        ? SemanticTypesSetting.fromPartial(object.semanticTypesSettingValue)
+        : undefined;
+    message.maskingAlgorithmSettingValue =
+      (object.maskingAlgorithmSettingValue !== undefined && object.maskingAlgorithmSettingValue !== null)
+        ? MaskingAlgorithmSetting.fromPartial(object.maskingAlgorithmSettingValue)
         : undefined;
     return message;
   },
@@ -1376,7 +1620,15 @@ export const AgentPluginSetting = {
 };
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
-  return { externalUrl: "", disallowSignup: false, require2fa: false, outboundIpList: [], gitopsWebhookUrl: "" };
+  return {
+    externalUrl: "",
+    disallowSignup: false,
+    require2fa: false,
+    outboundIpList: [],
+    gitopsWebhookUrl: "",
+    tokenDuration: undefined,
+    announcement: undefined,
+  };
 }
 
 export const WorkspaceProfileSetting = {
@@ -1395,6 +1647,12 @@ export const WorkspaceProfileSetting = {
     }
     if (message.gitopsWebhookUrl !== "") {
       writer.uint32(42).string(message.gitopsWebhookUrl);
+    }
+    if (message.tokenDuration !== undefined) {
+      Duration.encode(message.tokenDuration, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.announcement !== undefined) {
+      Announcement.encode(message.announcement, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -1441,6 +1699,20 @@ export const WorkspaceProfileSetting = {
 
           message.gitopsWebhookUrl = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.tokenDuration = Duration.decode(reader, reader.uint32());
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.announcement = Announcement.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1457,6 +1729,8 @@ export const WorkspaceProfileSetting = {
       require2fa: isSet(object.require2fa) ? Boolean(object.require2fa) : false,
       outboundIpList: Array.isArray(object?.outboundIpList) ? object.outboundIpList.map((e: any) => String(e)) : [],
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? String(object.gitopsWebhookUrl) : "",
+      tokenDuration: isSet(object.tokenDuration) ? Duration.fromJSON(object.tokenDuration) : undefined,
+      announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
     };
   },
 
@@ -1471,6 +1745,10 @@ export const WorkspaceProfileSetting = {
       obj.outboundIpList = [];
     }
     message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
+    message.tokenDuration !== undefined &&
+      (obj.tokenDuration = message.tokenDuration ? Duration.toJSON(message.tokenDuration) : undefined);
+    message.announcement !== undefined &&
+      (obj.announcement = message.announcement ? Announcement.toJSON(message.announcement) : undefined);
     return obj;
   },
 
@@ -1485,6 +1763,96 @@ export const WorkspaceProfileSetting = {
     message.require2fa = object.require2fa ?? false;
     message.outboundIpList = object.outboundIpList?.map((e) => e) || [];
     message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
+    message.tokenDuration = (object.tokenDuration !== undefined && object.tokenDuration !== null)
+      ? Duration.fromPartial(object.tokenDuration)
+      : undefined;
+    message.announcement = (object.announcement !== undefined && object.announcement !== null)
+      ? Announcement.fromPartial(object.announcement)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAnnouncement(): Announcement {
+  return { level: 0, text: "", link: "" };
+}
+
+export const Announcement = {
+  encode(message: Announcement, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.level !== 0) {
+      writer.uint32(8).int32(message.level);
+    }
+    if (message.text !== "") {
+      writer.uint32(18).string(message.text);
+    }
+    if (message.link !== "") {
+      writer.uint32(26).string(message.link);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Announcement {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAnnouncement();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.level = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.text = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.link = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Announcement {
+    return {
+      level: isSet(object.level) ? announcement_AlertLevelFromJSON(object.level) : 0,
+      text: isSet(object.text) ? String(object.text) : "",
+      link: isSet(object.link) ? String(object.link) : "",
+    };
+  },
+
+  toJSON(message: Announcement): unknown {
+    const obj: any = {};
+    message.level !== undefined && (obj.level = announcement_AlertLevelToJSON(message.level));
+    message.text !== undefined && (obj.text = message.text);
+    message.link !== undefined && (obj.link = message.link);
+    return obj;
+  },
+
+  create(base?: DeepPartial<Announcement>): Announcement {
+    return Announcement.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Announcement>): Announcement {
+    const message = createBaseAnnouncement();
+    message.level = object.level ?? 0;
+    message.text = object.text ?? "";
+    message.link = object.link ?? "";
     return message;
   },
 };
@@ -1775,6 +2143,279 @@ export const ExternalApprovalSetting_Node = {
   },
 };
 
+function createBaseSchemaTemplateSetting(): SchemaTemplateSetting {
+  return { fieldTemplates: [], columnTypes: [] };
+}
+
+export const SchemaTemplateSetting = {
+  encode(message: SchemaTemplateSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.fieldTemplates) {
+      SchemaTemplateSetting_FieldTemplate.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.columnTypes) {
+      SchemaTemplateSetting_ColumnType.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaTemplateSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaTemplateSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fieldTemplates.push(SchemaTemplateSetting_FieldTemplate.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.columnTypes.push(SchemaTemplateSetting_ColumnType.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaTemplateSetting {
+    return {
+      fieldTemplates: Array.isArray(object?.fieldTemplates)
+        ? object.fieldTemplates.map((e: any) => SchemaTemplateSetting_FieldTemplate.fromJSON(e))
+        : [],
+      columnTypes: Array.isArray(object?.columnTypes)
+        ? object.columnTypes.map((e: any) => SchemaTemplateSetting_ColumnType.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SchemaTemplateSetting): unknown {
+    const obj: any = {};
+    if (message.fieldTemplates) {
+      obj.fieldTemplates = message.fieldTemplates.map((e) =>
+        e ? SchemaTemplateSetting_FieldTemplate.toJSON(e) : undefined
+      );
+    } else {
+      obj.fieldTemplates = [];
+    }
+    if (message.columnTypes) {
+      obj.columnTypes = message.columnTypes.map((e) => e ? SchemaTemplateSetting_ColumnType.toJSON(e) : undefined);
+    } else {
+      obj.columnTypes = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaTemplateSetting>): SchemaTemplateSetting {
+    return SchemaTemplateSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaTemplateSetting>): SchemaTemplateSetting {
+    const message = createBaseSchemaTemplateSetting();
+    message.fieldTemplates = object.fieldTemplates?.map((e) => SchemaTemplateSetting_FieldTemplate.fromPartial(e)) ||
+      [];
+    message.columnTypes = object.columnTypes?.map((e) => SchemaTemplateSetting_ColumnType.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSchemaTemplateSetting_FieldTemplate(): SchemaTemplateSetting_FieldTemplate {
+  return { id: "", engine: 0, category: "", column: undefined };
+}
+
+export const SchemaTemplateSetting_FieldTemplate = {
+  encode(message: SchemaTemplateSetting_FieldTemplate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
+    }
+    if (message.category !== "") {
+      writer.uint32(26).string(message.category);
+    }
+    if (message.column !== undefined) {
+      ColumnMetadata.encode(message.column, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaTemplateSetting_FieldTemplate {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaTemplateSetting_FieldTemplate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.category = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.column = ColumnMetadata.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaTemplateSetting_FieldTemplate {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      category: isSet(object.category) ? String(object.category) : "",
+      column: isSet(object.column) ? ColumnMetadata.fromJSON(object.column) : undefined,
+    };
+  },
+
+  toJSON(message: SchemaTemplateSetting_FieldTemplate): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.category !== undefined && (obj.category = message.category);
+    message.column !== undefined && (obj.column = message.column ? ColumnMetadata.toJSON(message.column) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
+    return SchemaTemplateSetting_FieldTemplate.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
+    const message = createBaseSchemaTemplateSetting_FieldTemplate();
+    message.id = object.id ?? "";
+    message.engine = object.engine ?? 0;
+    message.category = object.category ?? "";
+    message.column = (object.column !== undefined && object.column !== null)
+      ? ColumnMetadata.fromPartial(object.column)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSchemaTemplateSetting_ColumnType(): SchemaTemplateSetting_ColumnType {
+  return { engine: 0, enabled: false, types: [] };
+}
+
+export const SchemaTemplateSetting_ColumnType = {
+  encode(message: SchemaTemplateSetting_ColumnType, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.engine !== 0) {
+      writer.uint32(8).int32(message.engine);
+    }
+    if (message.enabled === true) {
+      writer.uint32(16).bool(message.enabled);
+    }
+    for (const v of message.types) {
+      writer.uint32(26).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaTemplateSetting_ColumnType {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaTemplateSetting_ColumnType();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.types.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaTemplateSetting_ColumnType {
+    return {
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      enabled: isSet(object.enabled) ? Boolean(object.enabled) : false,
+      types: Array.isArray(object?.types) ? object.types.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: SchemaTemplateSetting_ColumnType): unknown {
+    const obj: any = {};
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.enabled !== undefined && (obj.enabled = message.enabled);
+    if (message.types) {
+      obj.types = message.types.map((e) => e);
+    } else {
+      obj.types = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaTemplateSetting_ColumnType>): SchemaTemplateSetting_ColumnType {
+    return SchemaTemplateSetting_ColumnType.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaTemplateSetting_ColumnType>): SchemaTemplateSetting_ColumnType {
+    const message = createBaseSchemaTemplateSetting_ColumnType();
+    message.engine = object.engine ?? 0;
+    message.enabled = object.enabled ?? false;
+    message.types = object.types?.map((e) => e) || [];
+    return message;
+  },
+};
+
 function createBaseWorkspaceTrialSetting(): WorkspaceTrialSetting {
   return { instanceCount: 0, expireTime: undefined, issuedTime: undefined, subject: "", orgName: "", plan: 0 };
 }
@@ -1898,6 +2539,829 @@ export const WorkspaceTrialSetting = {
   },
 };
 
+function createBaseDataClassificationSetting(): DataClassificationSetting {
+  return { configs: [] };
+}
+
+export const DataClassificationSetting = {
+  encode(message: DataClassificationSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.configs) {
+      DataClassificationSetting_DataClassificationConfig.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataClassificationSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataClassificationSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.configs.push(DataClassificationSetting_DataClassificationConfig.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataClassificationSetting {
+    return {
+      configs: Array.isArray(object?.configs)
+        ? object.configs.map((e: any) => DataClassificationSetting_DataClassificationConfig.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: DataClassificationSetting): unknown {
+    const obj: any = {};
+    if (message.configs) {
+      obj.configs = message.configs.map((e) =>
+        e ? DataClassificationSetting_DataClassificationConfig.toJSON(e) : undefined
+      );
+    } else {
+      obj.configs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataClassificationSetting>): DataClassificationSetting {
+    return DataClassificationSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DataClassificationSetting>): DataClassificationSetting {
+    const message = createBaseDataClassificationSetting();
+    message.configs = object.configs?.map((e) => DataClassificationSetting_DataClassificationConfig.fromPartial(e)) ||
+      [];
+    return message;
+  },
+};
+
+function createBaseDataClassificationSetting_DataClassificationConfig(): DataClassificationSetting_DataClassificationConfig {
+  return { id: "", title: "", levels: [], classification: {} };
+}
+
+export const DataClassificationSetting_DataClassificationConfig = {
+  encode(
+    message: DataClassificationSetting_DataClassificationConfig,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    for (const v of message.levels) {
+      DataClassificationSetting_DataClassificationConfig_Level.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    Object.entries(message.classification).forEach(([key, value]) => {
+      DataClassificationSetting_DataClassificationConfig_ClassificationEntry.encode(
+        { key: key as any, value },
+        writer.uint32(34).fork(),
+      ).ldelim();
+    });
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataClassificationSetting_DataClassificationConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataClassificationSetting_DataClassificationConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.levels.push(DataClassificationSetting_DataClassificationConfig_Level.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          const entry4 = DataClassificationSetting_DataClassificationConfig_ClassificationEntry.decode(
+            reader,
+            reader.uint32(),
+          );
+          if (entry4.value !== undefined) {
+            message.classification[entry4.key] = entry4.value;
+          }
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataClassificationSetting_DataClassificationConfig {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      levels: Array.isArray(object?.levels)
+        ? object.levels.map((e: any) => DataClassificationSetting_DataClassificationConfig_Level.fromJSON(e))
+        : [],
+      classification: isObject(object.classification)
+        ? Object.entries(object.classification).reduce<
+          { [key: string]: DataClassificationSetting_DataClassificationConfig_DataClassification }
+        >((acc, [key, value]) => {
+          acc[key] = DataClassificationSetting_DataClassificationConfig_DataClassification.fromJSON(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: DataClassificationSetting_DataClassificationConfig): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    if (message.levels) {
+      obj.levels = message.levels.map((e) =>
+        e ? DataClassificationSetting_DataClassificationConfig_Level.toJSON(e) : undefined
+      );
+    } else {
+      obj.levels = [];
+    }
+    obj.classification = {};
+    if (message.classification) {
+      Object.entries(message.classification).forEach(([k, v]) => {
+        obj.classification[k] = DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(v);
+      });
+    }
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<DataClassificationSetting_DataClassificationConfig>,
+  ): DataClassificationSetting_DataClassificationConfig {
+    return DataClassificationSetting_DataClassificationConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(
+    object: DeepPartial<DataClassificationSetting_DataClassificationConfig>,
+  ): DataClassificationSetting_DataClassificationConfig {
+    const message = createBaseDataClassificationSetting_DataClassificationConfig();
+    message.id = object.id ?? "";
+    message.title = object.title ?? "";
+    message.levels =
+      object.levels?.map((e) => DataClassificationSetting_DataClassificationConfig_Level.fromPartial(e)) || [];
+    message.classification = Object.entries(object.classification ?? {}).reduce<
+      { [key: string]: DataClassificationSetting_DataClassificationConfig_DataClassification }
+    >((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = DataClassificationSetting_DataClassificationConfig_DataClassification.fromPartial(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBaseDataClassificationSetting_DataClassificationConfig_Level(): DataClassificationSetting_DataClassificationConfig_Level {
+  return { id: "", title: "", description: "" };
+}
+
+export const DataClassificationSetting_DataClassificationConfig_Level = {
+  encode(
+    message: DataClassificationSetting_DataClassificationConfig_Level,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataClassificationSetting_DataClassificationConfig_Level {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataClassificationSetting_DataClassificationConfig_Level();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataClassificationSetting_DataClassificationConfig_Level {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+    };
+  },
+
+  toJSON(message: DataClassificationSetting_DataClassificationConfig_Level): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<DataClassificationSetting_DataClassificationConfig_Level>,
+  ): DataClassificationSetting_DataClassificationConfig_Level {
+    return DataClassificationSetting_DataClassificationConfig_Level.fromPartial(base ?? {});
+  },
+
+  fromPartial(
+    object: DeepPartial<DataClassificationSetting_DataClassificationConfig_Level>,
+  ): DataClassificationSetting_DataClassificationConfig_Level {
+    const message = createBaseDataClassificationSetting_DataClassificationConfig_Level();
+    message.id = object.id ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    return message;
+  },
+};
+
+function createBaseDataClassificationSetting_DataClassificationConfig_DataClassification(): DataClassificationSetting_DataClassificationConfig_DataClassification {
+  return { id: "", title: "", description: "", levelId: undefined };
+}
+
+export const DataClassificationSetting_DataClassificationConfig_DataClassification = {
+  encode(
+    message: DataClassificationSetting_DataClassificationConfig_DataClassification,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.levelId !== undefined) {
+      writer.uint32(34).string(message.levelId);
+    }
+    return writer;
+  },
+
+  decode(
+    input: _m0.Reader | Uint8Array,
+    length?: number,
+  ): DataClassificationSetting_DataClassificationConfig_DataClassification {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataClassificationSetting_DataClassificationConfig_DataClassification();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.levelId = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataClassificationSetting_DataClassificationConfig_DataClassification {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      levelId: isSet(object.levelId) ? String(object.levelId) : undefined,
+    };
+  },
+
+  toJSON(message: DataClassificationSetting_DataClassificationConfig_DataClassification): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    message.levelId !== undefined && (obj.levelId = message.levelId);
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<DataClassificationSetting_DataClassificationConfig_DataClassification>,
+  ): DataClassificationSetting_DataClassificationConfig_DataClassification {
+    return DataClassificationSetting_DataClassificationConfig_DataClassification.fromPartial(base ?? {});
+  },
+
+  fromPartial(
+    object: DeepPartial<DataClassificationSetting_DataClassificationConfig_DataClassification>,
+  ): DataClassificationSetting_DataClassificationConfig_DataClassification {
+    const message = createBaseDataClassificationSetting_DataClassificationConfig_DataClassification();
+    message.id = object.id ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.levelId = object.levelId ?? undefined;
+    return message;
+  },
+};
+
+function createBaseDataClassificationSetting_DataClassificationConfig_ClassificationEntry(): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
+  return { key: "", value: undefined };
+}
+
+export const DataClassificationSetting_DataClassificationConfig_ClassificationEntry = {
+  encode(
+    message: DataClassificationSetting_DataClassificationConfig_ClassificationEntry,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== undefined) {
+      DataClassificationSetting_DataClassificationConfig_DataClassification.encode(
+        message.value,
+        writer.uint32(18).fork(),
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: _m0.Reader | Uint8Array,
+    length?: number,
+  ): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataClassificationSetting_DataClassificationConfig_ClassificationEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = DataClassificationSetting_DataClassificationConfig_DataClassification.decode(
+            reader,
+            reader.uint32(),
+          );
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
+    return {
+      key: isSet(object.key) ? String(object.key) : "",
+      value: isSet(object.value)
+        ? DataClassificationSetting_DataClassificationConfig_DataClassification.fromJSON(object.value)
+        : undefined,
+    };
+  },
+
+  toJSON(message: DataClassificationSetting_DataClassificationConfig_ClassificationEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value
+      ? DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(message.value)
+      : undefined);
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<DataClassificationSetting_DataClassificationConfig_ClassificationEntry>,
+  ): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
+    return DataClassificationSetting_DataClassificationConfig_ClassificationEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial(
+    object: DeepPartial<DataClassificationSetting_DataClassificationConfig_ClassificationEntry>,
+  ): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
+    const message = createBaseDataClassificationSetting_DataClassificationConfig_ClassificationEntry();
+    message.key = object.key ?? "";
+    message.value = (object.value !== undefined && object.value !== null)
+      ? DataClassificationSetting_DataClassificationConfig_DataClassification.fromPartial(object.value)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSemanticTypesSetting(): SemanticTypesSetting {
+  return { types: [] };
+}
+
+export const SemanticTypesSetting = {
+  encode(message: SemanticTypesSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.types) {
+      SemanticTypesSetting_SemanticType.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticTypesSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSemanticTypesSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.types.push(SemanticTypesSetting_SemanticType.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SemanticTypesSetting {
+    return {
+      types: Array.isArray(object?.types)
+        ? object.types.map((e: any) => SemanticTypesSetting_SemanticType.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SemanticTypesSetting): unknown {
+    const obj: any = {};
+    if (message.types) {
+      obj.types = message.types.map((e) => e ? SemanticTypesSetting_SemanticType.toJSON(e) : undefined);
+    } else {
+      obj.types = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SemanticTypesSetting>): SemanticTypesSetting {
+    return SemanticTypesSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SemanticTypesSetting>): SemanticTypesSetting {
+    const message = createBaseSemanticTypesSetting();
+    message.types = object.types?.map((e) => SemanticTypesSetting_SemanticType.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSemanticTypesSetting_SemanticType(): SemanticTypesSetting_SemanticType {
+  return { id: "", title: "", description: "", partialMaskAlgorithmId: "", fullMaskAlgorithmId: "" };
+}
+
+export const SemanticTypesSetting_SemanticType = {
+  encode(message: SemanticTypesSetting_SemanticType, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.partialMaskAlgorithmId !== "") {
+      writer.uint32(34).string(message.partialMaskAlgorithmId);
+    }
+    if (message.fullMaskAlgorithmId !== "") {
+      writer.uint32(42).string(message.fullMaskAlgorithmId);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticTypesSetting_SemanticType {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSemanticTypesSetting_SemanticType();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.partialMaskAlgorithmId = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.fullMaskAlgorithmId = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SemanticTypesSetting_SemanticType {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      partialMaskAlgorithmId: isSet(object.partialMaskAlgorithmId) ? String(object.partialMaskAlgorithmId) : "",
+      fullMaskAlgorithmId: isSet(object.fullMaskAlgorithmId) ? String(object.fullMaskAlgorithmId) : "",
+    };
+  },
+
+  toJSON(message: SemanticTypesSetting_SemanticType): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    message.partialMaskAlgorithmId !== undefined && (obj.partialMaskAlgorithmId = message.partialMaskAlgorithmId);
+    message.fullMaskAlgorithmId !== undefined && (obj.fullMaskAlgorithmId = message.fullMaskAlgorithmId);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SemanticTypesSetting_SemanticType>): SemanticTypesSetting_SemanticType {
+    return SemanticTypesSetting_SemanticType.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SemanticTypesSetting_SemanticType>): SemanticTypesSetting_SemanticType {
+    const message = createBaseSemanticTypesSetting_SemanticType();
+    message.id = object.id ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.partialMaskAlgorithmId = object.partialMaskAlgorithmId ?? "";
+    message.fullMaskAlgorithmId = object.fullMaskAlgorithmId ?? "";
+    return message;
+  },
+};
+
+function createBaseMaskingAlgorithmSetting(): MaskingAlgorithmSetting {
+  return { algorithms: [] };
+}
+
+export const MaskingAlgorithmSetting = {
+  encode(message: MaskingAlgorithmSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.algorithms) {
+      MaskingAlgorithmSetting_MaskingAlgorithm.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingAlgorithmSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingAlgorithmSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.algorithms.push(MaskingAlgorithmSetting_MaskingAlgorithm.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingAlgorithmSetting {
+    return {
+      algorithms: Array.isArray(object?.algorithms)
+        ? object.algorithms.map((e: any) => MaskingAlgorithmSetting_MaskingAlgorithm.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MaskingAlgorithmSetting): unknown {
+    const obj: any = {};
+    if (message.algorithms) {
+      obj.algorithms = message.algorithms.map((e) =>
+        e ? MaskingAlgorithmSetting_MaskingAlgorithm.toJSON(e) : undefined
+      );
+    } else {
+      obj.algorithms = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingAlgorithmSetting>): MaskingAlgorithmSetting {
+    return MaskingAlgorithmSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingAlgorithmSetting>): MaskingAlgorithmSetting {
+    const message = createBaseMaskingAlgorithmSetting();
+    message.algorithms = object.algorithms?.map((e) => MaskingAlgorithmSetting_MaskingAlgorithm.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMaskingAlgorithmSetting_MaskingAlgorithm(): MaskingAlgorithmSetting_MaskingAlgorithm {
+  return { id: "", title: "", description: "" };
+}
+
+export const MaskingAlgorithmSetting_MaskingAlgorithm = {
+  encode(message: MaskingAlgorithmSetting_MaskingAlgorithm, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingAlgorithmSetting_MaskingAlgorithm {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingAlgorithmSetting_MaskingAlgorithm();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingAlgorithmSetting_MaskingAlgorithm {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+    };
+  },
+
+  toJSON(message: MaskingAlgorithmSetting_MaskingAlgorithm): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.title !== undefined && (obj.title = message.title);
+    message.description !== undefined && (obj.description = message.description);
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaskingAlgorithmSetting_MaskingAlgorithm>): MaskingAlgorithmSetting_MaskingAlgorithm {
+    return MaskingAlgorithmSetting_MaskingAlgorithm.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<MaskingAlgorithmSetting_MaskingAlgorithm>): MaskingAlgorithmSetting_MaskingAlgorithm {
+    const message = createBaseMaskingAlgorithmSetting_MaskingAlgorithm();
+    message.id = object.id ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    return message;
+  },
+};
+
 export type SettingServiceDefinition = typeof SettingServiceDefinition;
 export const SettingServiceDefinition = {
   name: "SettingService",
@@ -2015,24 +3479,6 @@ export const SettingServiceDefinition = {
   },
 } as const;
 
-export interface SettingServiceImplementation<CallContextExt = {}> {
-  listSettings(
-    request: ListSettingsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSettingsResponse>>;
-  getSetting(request: GetSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
-  setSetting(request: SetSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
-}
-
-export interface SettingServiceClient<CallOptionsExt = {}> {
-  listSettings(
-    request: DeepPartial<ListSettingsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSettingsResponse>;
-  getSetting(request: DeepPartial<GetSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
-  setSetting(request: DeepPartial<SetSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
-}
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -2060,6 +3506,10 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

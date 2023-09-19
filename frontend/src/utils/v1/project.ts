@@ -1,16 +1,16 @@
-import slug from "slug";
 import { orderBy, uniq } from "lodash-es";
-
+import slug from "slug";
+import { extractUserEmail, useUserStore } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME, PresetRoleType, UNKNOWN_ID } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { IamPolicy, Project } from "@/types/proto/v1/project_service";
+import { IamPolicy } from "@/types/proto/v1/iam_policy";
+import { Project } from "@/types/proto/v1/project_service";
 import {
   extractRoleResourceName,
   hasProjectPermission,
   ProjectPermissionType,
 } from "../role";
-import { extractUserEmail, useUserStore } from "@/store";
 
 export function projectV1Slug(project: Project): string {
   return [slug(project.title), project.uid].join("-");

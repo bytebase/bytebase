@@ -48,11 +48,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
-import { Path, Rect } from "../../types";
-import { curveMonotoneX, line as d3Line } from "d3-shape";
-import { calcBBox } from "../../common";
 import { useElementHover } from "@vueuse/core";
+import { curveMonotoneX, line as d3Line } from "d3-shape";
+import { computed, ref } from "vue";
+import { calcBBox } from "../../common";
+import { Path, Rect } from "../../types";
 
 const GLOW_WIDTH = 12;
 const PADDING = GLOW_WIDTH / 2;

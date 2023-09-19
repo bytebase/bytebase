@@ -56,7 +56,7 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 // @Tags  SQL review
 // @Produce  json
 // @Param  statement     body  string  true   "The SQL statement."
-// @Param  databaseType  body  string  true   "The database type."  Enums(MYSQL, POSTGRES, TIDB, OCEANBASE, SNOWFLAKE)
+// @Param  databaseType  body  string  true   "The database type."  Enums(MYSQL, POSTGRES, TIDB, OCEANBASE, SNOWFLAKE, MSSQL)
 // @Param  templateId    body  string  false  "The SQL check template id. Required if the config is not specified." Enums(bb.sql-review.prod, bb.sql-review.dev)
 // @Param  override      body  string  false  "The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/backend/plugin/advisor/config/sql-review.override.yaml for example. Required if the template is not specified."
 // @Success  200  {array}   advisor.Advice

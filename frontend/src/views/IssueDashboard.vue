@@ -1,12 +1,23 @@
 <template>
   <div class="flex flex-col">
-    <div class="px-4 py-2 flex justify-between items-center">
-      <EnvironmentTabFilter
-        :include-all="true"
-        :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
-        @update:environment="changeEnvironmentId($event)"
-      />
-      <div class="flex flex-row space-x-4">
+    <AdvancedSearch
+      custom-class="m-4"
+      :params="initSearchParams"
+      :autofocus="autofocus"
+      @update="onSearchParamsUpdate($event)"
+    />
+
+    <FeatureAttention
+      v-if="!!state.searchParams.query || state.searchParams.scopes.length > 0"
+      custom-class="m-4"
+      feature="bb.feature.issue-advanced-search"
+    />
+
+    <div class="px-2 flex items-center">
+      <div class="flex-1 overflow-hidden">
+        <TabFilter v-model:value="state.tab" :items="tabItemList" />
+      </div>
+      <div class="flex flex-row space-x-4 p-0.5">
         <NButton v-if="project" @click="goProject">
           {{ project.key }}
         </NButton>
@@ -19,113 +30,151 @@
             :include-all="allowSelectAllUsers"
             @update:user="changeUserUID"
           />
+          <NDatePicker
+            v-model:value="selectedTimeRange"
+            type="datetimerange"
+            size="medium"
+            :on-confirm="confirmDatePicker"
+            :on-clear="clearDatePicker"
+            clearable
+          >
+          </NDatePicker>
           <SearchBox
-            :value="state.searchText"
-            :placeholder="$t('issue.search-issue-name')"
-            :autofocus="true"
-            @update:value="changeSearchText($event)"
+            :value="state.filterText"
+            :placeholder="$t('issue.filter-issue-by-name')"
+            :autofocus="false"
+            @update:value="state.filterText = $event"
           />
         </NInputGroup>
       </div>
     </div>
 
-    <!-- show all OPEN issues with pageSize=10  -->
-    <PagedIssueTable
-      v-if="showOpen"
-      session-key="dashboard-open"
-      :issue-find="{
-        statusList: ['OPEN'],
-        principalId:
-          selectedUserUID && selectedUserUID !== String(UNKNOWN_ID)
-            ? selectedUserUID
-            : undefined,
-        projectId: selectedProjectId,
-      }"
-      :page-size="10"
-    >
-      <template #table="{ issueList, loading }">
-        <IssueTable
-          :left-bordered="false"
-          :right-bordered="false"
-          :top-bordered="true"
-          :bottom-bordered="true"
-          :show-placeholder="!loading"
-          :title="$t('issue.table.open')"
-          :issue-list="issueList.filter(filter)"
-        />
-      </template>
-    </PagedIssueTable>
+    <div v-show="state.tab === 'OPEN'" class="mt-2">
+      <!-- show all OPEN issues with pageSize=10  -->
+      <PagedIssueTableV1
+        session-key="dashboard-open"
+        method="SEARCH"
+        :issue-filter="{
+          ...issueFilter,
+          statusList: [IssueStatus.OPEN],
+        }"
+        :page-size="10"
+      >
+        <template #table="{ issueList, loading }">
+          <IssueTableV1
+            class="border-x-0"
+            :show-placeholder="!loading"
+            :issue-list="issueList.filter(filter)"
+            :highlight-text="state.searchParams.query"
+            title=""
+          />
+        </template>
+      </PagedIssueTableV1>
+    </div>
 
-    <!-- show all DONE and CANCELED issues with pageSize=10 -->
-    <PagedIssueTable
-      v-if="showClosed"
-      session-key="dashboard-closed"
-      :issue-find="{
-        statusList: ['DONE', 'CANCELED'],
-        principalId:
-          selectedUserUID && selectedUserUID !== String(UNKNOWN_ID)
-            ? selectedUserUID
-            : undefined,
-        projectId: selectedProjectId,
-      }"
-      :page-size="10"
-    >
-      <template #table="{ issueList, loading }">
-        <IssueTable
-          class="-mt-px"
-          :left-bordered="false"
-          :right-bordered="false"
-          :top-bordered="true"
-          :bottom-bordered="true"
-          :show-placeholder="!loading"
-          :title="$t('issue.table.closed')"
-          :issue-list="issueList.filter(filter)"
-        />
-      </template>
-    </PagedIssueTable>
+    <div v-show="state.tab === 'CLOSED'" class="mt-2">
+      <!-- show all DONE and CANCELED issues with pageSize=10 -->
+      <PagedIssueTableV1
+        v-if="showClosed"
+        session-key="dashboard-closed"
+        method="SEARCH"
+        :issue-filter="{
+          ...issueFilter,
+          statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
+        }"
+        :page-size="10"
+      >
+        <template #table="{ issueList, loading }">
+          <IssueTableV1
+            class="border-x-0"
+            :show-placeholder="!loading"
+            :issue-list="issueList.filter(filter)"
+            :highlight-text="state.searchParams.query"
+            title=""
+          />
+        </template>
+      </PagedIssueTableV1>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, watchEffect } from "vue";
+import dayjs from "dayjs";
+import { NInputGroup, NButton, NDatePicker } from "naive-ui";
+import { reactive, computed, watchEffect, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { NInputGroup, NButton } from "naive-ui";
-
-import { EnvironmentTabFilter, UserSelect, SearchBox } from "@/components/v2";
-import { IssueTable } from "../components/Issue";
-import { type Issue, UNKNOWN_ID } from "../types";
+import AdvancedSearch, { SearchParams } from "@/components/AdvancedSearch.vue";
+import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
+import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
+import { UserSelect, SearchBox, TabFilterItem } from "@/components/v2";
+import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
 import {
-  activeEnvironment,
+  projectNamePrefix,
+  userNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
+import { UNKNOWN_ID, IssueFilter, ComposedIssue } from "@/types";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
+import {
   extractUserUID,
   hasWorkspacePermissionV1,
-  isDatabaseRelatedIssueType,
   projectV1Slug,
-} from "../utils";
-import {
-  useCurrentUserV1,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
-import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
-import { Environment } from "@/types/proto/v1/environment_service";
+} from "@/utils";
+
+const TABS = ["OPEN", "CLOSED"] as const;
+
+type TabValue = typeof TABS[number];
 
 interface LocalState {
-  searchText: string;
+  tab: TabValue;
+  filterText: string;
+  searchParams: SearchParams;
 }
 
 const router = useRouter();
 const route = useRoute();
 
+const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
-const environmentV1Store = useEnvironmentV1Store();
 
 const statusList = computed((): string[] =>
   route.query.status ? (route.query.status as string).split(",") : []
 );
 
+const autofocus = computed((): boolean => {
+  return !!route.query.autofocus;
+});
+
+const initSearchParams = computed((): SearchParams => {
+  const projectName = project.value?.name ?? "";
+  const query = (route.query.query as string) ?? "";
+
+  if (!projectName) {
+    return {
+      query,
+      scopes: [],
+    };
+  }
+  return {
+    query,
+    scopes: [
+      {
+        id: "project",
+        value: projectName,
+      },
+    ],
+  };
+});
+
 const state = reactive<LocalState>({
-  searchText: "",
+  tab: "OPEN",
+  filterText: "",
+  searchParams: {
+    query: "",
+    scopes: [],
+  },
 });
 
 const project = computed(() => {
@@ -141,6 +190,25 @@ const showOpen = computed(
 const showClosed = computed(
   () => statusList.value.length === 0 || statusList.value.includes("closed")
 );
+
+const tabItemList = computed((): TabFilterItem<TabValue>[] => {
+  const OPEN: TabFilterItem<TabValue> = {
+    value: "OPEN",
+    label: t("issue.table.open"),
+  };
+  const CLOSED: TabFilterItem<TabValue> = {
+    value: "CLOSED",
+    label: t("issue.table.closed"),
+  };
+  const list: TabFilterItem<TabValue>[] = [];
+  if (showOpen.value) {
+    list.push(OPEN);
+  }
+  if (showClosed.value) {
+    list.push(CLOSED);
+  }
+  return list;
+});
 
 const allowFilterUsers = computed(() => {
   if (
@@ -176,11 +244,28 @@ const selectedUserUID = computed((): string => {
     : extractUserUID(currentUserV1.value.name); // default to current user otherwise
 });
 
-const selectedEnvironment = computed((): Environment | undefined => {
-  const { environment } = route.query;
-  return environment
-    ? environmentV1Store.getEnvironmentByUID(environment as string)
-    : undefined;
+const selectedTimeRange = computed((): [number, number] => {
+  const defaultTimeRange = [
+    dayjs().add(-60, "days").toDate().getTime(),
+    Date.now(),
+  ] as [number, number];
+  const createdTsAfter = route.query.createdTsAfter as string;
+  if (createdTsAfter) {
+    defaultTimeRange[0] = parseInt(createdTsAfter, 10);
+  }
+  const createdTsBefore = route.query.createdTsBefore as string;
+  if (createdTsBefore) {
+    defaultTimeRange[1] = parseInt(createdTsBefore, 10);
+  }
+  return defaultTimeRange;
+});
+
+const selectedUser = computed(() => {
+  const uid = selectedUserUID.value;
+  if (uid === String(UNKNOWN_ID)) {
+    return;
+  }
+  return useUserStore().getUserById(uid);
 });
 
 const selectedProjectId = computed((): string | undefined => {
@@ -188,45 +273,14 @@ const selectedProjectId = computed((): string | undefined => {
   return project ? (project as string) : undefined;
 });
 
-const filter = (issue: Issue) => {
-  if (selectedEnvironment.value) {
-    if (!isDatabaseRelatedIssueType(issue.type)) {
-      return false;
-    }
-    if (
-      String(activeEnvironment(issue.pipeline).id) !==
-      selectedEnvironment.value.uid
-    ) {
-      return false;
-    }
-  }
-  const keyword = state.searchText.trim();
+const filter = (issue: ComposedIssue) => {
+  const keyword = state.filterText.trim().toLowerCase();
   if (keyword) {
-    if (!issue.name.toLowerCase().includes(keyword)) {
+    if (!issue.title.toLowerCase().includes(keyword)) {
       return false;
     }
   }
   return true;
-};
-
-const changeEnvironmentId = (environment: string | undefined) => {
-  if (environment && environment !== String(UNKNOWN_ID)) {
-    router.replace({
-      name: "workspace.issue",
-      query: {
-        ...route.query,
-        environment,
-      },
-    });
-  } else {
-    router.replace({
-      name: "workspace.issue",
-      query: {
-        ...route.query,
-        environment: undefined,
-      },
-    });
-  }
 };
 
 const changeUserUID = (user: string | undefined) => {
@@ -242,8 +296,26 @@ const changeUserUID = (user: string | undefined) => {
   });
 };
 
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
+const confirmDatePicker = (value: [number, number]) => {
+  router.replace({
+    name: "workspace.issue",
+    query: {
+      ...route.query,
+      createdTsAfter: value[0],
+      createdTsBefore: value[1],
+    },
+  });
+};
+
+const clearDatePicker = () => {
+  router.replace({
+    name: "workspace.issue",
+    query: {
+      ...route.query,
+      createdTsAfter: 0,
+      createdTsBefore: Date.now(),
+    },
+  });
 };
 
 const goProject = () => {
@@ -260,5 +332,42 @@ watchEffect(() => {
   if (selectedProjectId.value) {
     projectV1Store.getOrFetchProjectByUID(selectedProjectId.value);
   }
+});
+
+onMounted(() => {
+  state.searchParams = initSearchParams.value;
+});
+
+const onSearchParamsUpdate = (params: SearchParams) => {
+  state.searchParams = params;
+};
+
+const issueFilter = computed((): IssueFilter => {
+  const { query, scopes } = state.searchParams;
+  const projectScope = scopes.find((s) => s.id === "project");
+  const instanceScope = scopes.find((s) => s.id === "instance");
+  const typeScope = scopes.find((s) => s.id === "type");
+
+  let instance = "";
+  if (instanceScope) {
+    instance = `${instanceNamePrefix}${instanceScope.value}`;
+  }
+  let principal = "";
+  if (selectedUser.value) {
+    principal = `${userNamePrefix}${selectedUser.value.email}`;
+  }
+  return {
+    query,
+    principal,
+    instance,
+    project: `${projectNamePrefix}${projectScope?.value ?? "-"}`,
+    createdTsAfter: selectedTimeRange.value
+      ? selectedTimeRange.value[0]
+      : undefined,
+    createdTsBefore: selectedTimeRange.value
+      ? selectedTimeRange.value[1]
+      : undefined,
+    type: typeScope?.value,
+  };
 });
 </script>

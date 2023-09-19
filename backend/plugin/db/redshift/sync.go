@@ -5,17 +5,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -39,7 +38,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	var filteredDatabases []*storepb.DatabaseMetadata
+	var filteredDatabases []*storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		// Skip all system databases
 		if _, ok := excludedDatabaseList[database.Name]; ok {
@@ -134,14 +133,14 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	var databaseMetadata *storepb.DatabaseMetadata
+	var databaseMetadata *storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		if database.Name == driver.databaseName {
 			databaseMetadata = database
@@ -152,9 +151,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 	}
 
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database connection for %q", driver.databaseName)
-	}
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -697,9 +693,6 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		index.Type = getIndexMethodType(statement)
 		index.Unique = node.Index.Unique
 		index.Expressions = node.Index.GetKeyNameList()
-		if err != nil {
-			return nil, err
-		}
 		if primary.Valid && primary.Int32 == 1 {
 			index.Primary = true
 		}
@@ -751,7 +744,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	// We will just return the version string as is.
 	pgVersion, redshiftVersion, err := getPgVersionAndRedshiftVersion(version)
 	if err != nil {
-		log.Debug("Failed to parse version string", zap.String("version", version))
+		slog.Debug("Failed to parse version string", slog.String("version", version))
 		// nolint
 		return version, nil
 	}
@@ -790,7 +783,7 @@ func buildRedshiftVersionString(redshiftVersion, postgresVersion string) string 
 }
 
 // getDatabases gets all databases of an instance.
-func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseMetadata, error) {
+func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	consumerDatabases := make(map[string]bool)
 	dsRows, err := driver.db.QueryContext(ctx, `
 		SELECT consumer_database FROM SVV_DATASHARES WHERE share_type = 'INBOUND';
@@ -811,7 +804,7 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseMeta
 		return nil, err
 	}
 
-	var databases []*storepb.DatabaseMetadata
+	var databases []*storepb.DatabaseSchemaMetadata
 	rows, err := driver.db.QueryContext(ctx, `
 		SELECT datname,
 		pg_encoding_to_char(encoding)
@@ -823,7 +816,7 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseMeta
 	defer rows.Close()
 
 	for rows.Next() {
-		database := storepb.DatabaseMetadata{}
+		database := storepb.DatabaseSchemaMetadata{}
 		if err := rows.Scan(&database.Name, &database.CharacterSet); err != nil {
 			return nil, err
 		}

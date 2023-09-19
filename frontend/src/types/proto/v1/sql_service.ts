@@ -1,12 +1,22 @@
 /* eslint-disable */
-import * as Long from "long";
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
-import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { Engine, engineFromJSON, engineToJSON, ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
+import { DatabaseMetadata } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
+
+export interface DifferPreviewRequest {
+  engine: Engine;
+  oldSchema: string;
+  newMetadata?: DatabaseMetadata | undefined;
+}
+
+export interface DifferPreviewResponse {
+  schema: string;
+}
 
 export interface AdminExecuteRequest {
   /**
@@ -24,6 +34,8 @@ export interface AdminExecuteRequest {
   statement: string;
   /** The maximum number of rows to return. */
   limit: number;
+  /** The timeout for the request. */
+  timeout?: Duration | undefined;
 }
 
 export interface AdminExecuteResponse {
@@ -48,46 +60,12 @@ export interface ExportRequest {
   /** The maximum number of rows to return. */
   limit: number;
   /** The export format. */
-  format: ExportRequest_Format;
-}
-
-export enum ExportRequest_Format {
-  FORMAT_UNSPECIFIED = 0,
-  CSV = 1,
-  JSON = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function exportRequest_FormatFromJSON(object: any): ExportRequest_Format {
-  switch (object) {
-    case 0:
-    case "FORMAT_UNSPECIFIED":
-      return ExportRequest_Format.FORMAT_UNSPECIFIED;
-    case 1:
-    case "CSV":
-      return ExportRequest_Format.CSV;
-    case 2:
-    case "JSON":
-      return ExportRequest_Format.JSON;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ExportRequest_Format.UNRECOGNIZED;
-  }
-}
-
-export function exportRequest_FormatToJSON(object: ExportRequest_Format): string {
-  switch (object) {
-    case ExportRequest_Format.FORMAT_UNSPECIFIED:
-      return "FORMAT_UNSPECIFIED";
-    case ExportRequest_Format.CSV:
-      return "CSV";
-    case ExportRequest_Format.JSON:
-      return "JSON";
-    case ExportRequest_Format.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
+  format: ExportFormat;
+  /**
+   * The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
+   * The exported data is not masked.
+   */
+  admin: boolean;
 }
 
 export interface ExportResponse {
@@ -111,6 +89,8 @@ export interface QueryRequest {
   statement: string;
   /** The maximum number of rows to return. */
   limit: number;
+  /** The timeout for the request. */
+  timeout?: Duration | undefined;
 }
 
 export interface QueryResponse {
@@ -118,6 +98,8 @@ export interface QueryResponse {
   results: QueryResult[];
   /** The query advices. */
   advices: Advice[];
+  /** The query is allowed to be exported or not. */
+  allowExport: boolean;
 }
 
 export interface QueryResult {
@@ -132,10 +114,14 @@ export interface QueryResult {
   rows: QueryRow[];
   /** Columns are masked or not. */
   masked: boolean[];
+  /** Columns are sensitive or not. */
+  sensitive: boolean[];
   /** The error message if the query failed. */
   error: string;
   /** The time it takes to execute the query. */
-  latency?: Duration;
+  latency?:
+    | Duration
+    | undefined;
   /** The query statement for the result. */
   statement: string;
 }
@@ -159,7 +145,7 @@ export interface RowValue {
     | number
     | undefined;
   /** value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. */
-  valueValue?: any;
+  valueValue?: any | undefined;
 }
 
 export interface Advice {
@@ -173,6 +159,8 @@ export interface Advice {
   content: string;
   /** The advice line number in the SQL statement. */
   line: number;
+  /** The advice column number in the SQL statement. */
+  column: number;
   /** The advice detail. */
   detail: string;
 }
@@ -241,8 +229,161 @@ export interface PrettyResponse {
   expectedSchema: string;
 }
 
+export interface CheckRequest {
+  statement: string;
+  /** Format: instances/{instance}/databases/{databaseName} */
+  database: string;
+}
+
+export interface CheckResponse {
+  advices: Advice[];
+}
+
+function createBaseDifferPreviewRequest(): DifferPreviewRequest {
+  return { engine: 0, oldSchema: "", newMetadata: undefined };
+}
+
+export const DifferPreviewRequest = {
+  encode(message: DifferPreviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.engine !== 0) {
+      writer.uint32(8).int32(message.engine);
+    }
+    if (message.oldSchema !== "") {
+      writer.uint32(18).string(message.oldSchema);
+    }
+    if (message.newMetadata !== undefined) {
+      DatabaseMetadata.encode(message.newMetadata, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DifferPreviewRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDifferPreviewRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.oldSchema = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.newMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DifferPreviewRequest {
+    return {
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      oldSchema: isSet(object.oldSchema) ? String(object.oldSchema) : "",
+      newMetadata: isSet(object.newMetadata) ? DatabaseMetadata.fromJSON(object.newMetadata) : undefined,
+    };
+  },
+
+  toJSON(message: DifferPreviewRequest): unknown {
+    const obj: any = {};
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.oldSchema !== undefined && (obj.oldSchema = message.oldSchema);
+    message.newMetadata !== undefined &&
+      (obj.newMetadata = message.newMetadata ? DatabaseMetadata.toJSON(message.newMetadata) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DifferPreviewRequest>): DifferPreviewRequest {
+    return DifferPreviewRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DifferPreviewRequest>): DifferPreviewRequest {
+    const message = createBaseDifferPreviewRequest();
+    message.engine = object.engine ?? 0;
+    message.oldSchema = object.oldSchema ?? "";
+    message.newMetadata = (object.newMetadata !== undefined && object.newMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.newMetadata)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseDifferPreviewResponse(): DifferPreviewResponse {
+  return { schema: "" };
+}
+
+export const DifferPreviewResponse = {
+  encode(message: DifferPreviewResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schema !== "") {
+      writer.uint32(10).string(message.schema);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DifferPreviewResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDifferPreviewResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DifferPreviewResponse {
+    return { schema: isSet(object.schema) ? String(object.schema) : "" };
+  },
+
+  toJSON(message: DifferPreviewResponse): unknown {
+    const obj: any = {};
+    message.schema !== undefined && (obj.schema = message.schema);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DifferPreviewResponse>): DifferPreviewResponse {
+    return DifferPreviewResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DifferPreviewResponse>): DifferPreviewResponse {
+    const message = createBaseDifferPreviewResponse();
+    message.schema = object.schema ?? "";
+    return message;
+  },
+};
+
 function createBaseAdminExecuteRequest(): AdminExecuteRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0 };
+  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined };
 }
 
 export const AdminExecuteRequest = {
@@ -258,6 +399,9 @@ export const AdminExecuteRequest = {
     }
     if (message.limit !== 0) {
       writer.uint32(32).int32(message.limit);
+    }
+    if (message.timeout !== undefined) {
+      Duration.encode(message.timeout, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -297,6 +441,13 @@ export const AdminExecuteRequest = {
 
           message.limit = reader.int32();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.timeout = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -312,6 +463,7 @@ export const AdminExecuteRequest = {
       connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
       limit: isSet(object.limit) ? Number(object.limit) : 0,
+      timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
     };
   },
 
@@ -321,6 +473,7 @@ export const AdminExecuteRequest = {
     message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
     message.statement !== undefined && (obj.statement = message.statement);
     message.limit !== undefined && (obj.limit = Math.round(message.limit));
+    message.timeout !== undefined && (obj.timeout = message.timeout ? Duration.toJSON(message.timeout) : undefined);
     return obj;
   },
 
@@ -334,6 +487,9 @@ export const AdminExecuteRequest = {
     message.connectionDatabase = object.connectionDatabase ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
+    message.timeout = (object.timeout !== undefined && object.timeout !== null)
+      ? Duration.fromPartial(object.timeout)
+      : undefined;
     return message;
   },
 };
@@ -399,7 +555,7 @@ export const AdminExecuteResponse = {
 };
 
 function createBaseExportRequest(): ExportRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0, format: 0 };
+  return { name: "", connectionDatabase: "", statement: "", limit: 0, format: 0, admin: false };
 }
 
 export const ExportRequest = {
@@ -418,6 +574,9 @@ export const ExportRequest = {
     }
     if (message.format !== 0) {
       writer.uint32(40).int32(message.format);
+    }
+    if (message.admin === true) {
+      writer.uint32(48).bool(message.admin);
     }
     return writer;
   },
@@ -464,6 +623,13 @@ export const ExportRequest = {
 
           message.format = reader.int32() as any;
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.admin = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -479,7 +645,8 @@ export const ExportRequest = {
       connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
       limit: isSet(object.limit) ? Number(object.limit) : 0,
-      format: isSet(object.format) ? exportRequest_FormatFromJSON(object.format) : 0,
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+      admin: isSet(object.admin) ? Boolean(object.admin) : false,
     };
   },
 
@@ -489,7 +656,8 @@ export const ExportRequest = {
     message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
     message.statement !== undefined && (obj.statement = message.statement);
     message.limit !== undefined && (obj.limit = Math.round(message.limit));
-    message.format !== undefined && (obj.format = exportRequest_FormatToJSON(message.format));
+    message.format !== undefined && (obj.format = exportFormatToJSON(message.format));
+    message.admin !== undefined && (obj.admin = message.admin);
     return obj;
   },
 
@@ -504,6 +672,7 @@ export const ExportRequest = {
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
     message.format = object.format ?? 0;
+    message.admin = object.admin ?? false;
     return message;
   },
 };
@@ -566,7 +735,7 @@ export const ExportResponse = {
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0 };
+  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined };
 }
 
 export const QueryRequest = {
@@ -582,6 +751,9 @@ export const QueryRequest = {
     }
     if (message.limit !== 0) {
       writer.uint32(32).int32(message.limit);
+    }
+    if (message.timeout !== undefined) {
+      Duration.encode(message.timeout, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -621,6 +793,13 @@ export const QueryRequest = {
 
           message.limit = reader.int32();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.timeout = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -636,6 +815,7 @@ export const QueryRequest = {
       connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
       limit: isSet(object.limit) ? Number(object.limit) : 0,
+      timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
     };
   },
 
@@ -645,6 +825,7 @@ export const QueryRequest = {
     message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
     message.statement !== undefined && (obj.statement = message.statement);
     message.limit !== undefined && (obj.limit = Math.round(message.limit));
+    message.timeout !== undefined && (obj.timeout = message.timeout ? Duration.toJSON(message.timeout) : undefined);
     return obj;
   },
 
@@ -658,12 +839,15 @@ export const QueryRequest = {
     message.connectionDatabase = object.connectionDatabase ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
+    message.timeout = (object.timeout !== undefined && object.timeout !== null)
+      ? Duration.fromPartial(object.timeout)
+      : undefined;
     return message;
   },
 };
 
 function createBaseQueryResponse(): QueryResponse {
-  return { results: [], advices: [] };
+  return { results: [], advices: [], allowExport: false };
 }
 
 export const QueryResponse = {
@@ -673,6 +857,9 @@ export const QueryResponse = {
     }
     for (const v of message.advices) {
       Advice.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.allowExport === true) {
+      writer.uint32(24).bool(message.allowExport);
     }
     return writer;
   },
@@ -698,6 +885,13 @@ export const QueryResponse = {
 
           message.advices.push(Advice.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.allowExport = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -711,6 +905,7 @@ export const QueryResponse = {
     return {
       results: Array.isArray(object?.results) ? object.results.map((e: any) => QueryResult.fromJSON(e)) : [],
       advices: Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
+      allowExport: isSet(object.allowExport) ? Boolean(object.allowExport) : false,
     };
   },
 
@@ -726,6 +921,7 @@ export const QueryResponse = {
     } else {
       obj.advices = [];
     }
+    message.allowExport !== undefined && (obj.allowExport = message.allowExport);
     return obj;
   },
 
@@ -737,12 +933,22 @@ export const QueryResponse = {
     const message = createBaseQueryResponse();
     message.results = object.results?.map((e) => QueryResult.fromPartial(e)) || [];
     message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
+    message.allowExport = object.allowExport ?? false;
     return message;
   },
 };
 
 function createBaseQueryResult(): QueryResult {
-  return { columnNames: [], columnTypeNames: [], rows: [], masked: [], error: "", latency: undefined, statement: "" };
+  return {
+    columnNames: [],
+    columnTypeNames: [],
+    rows: [],
+    masked: [],
+    sensitive: [],
+    error: "",
+    latency: undefined,
+    statement: "",
+  };
 }
 
 export const QueryResult = {
@@ -761,14 +967,19 @@ export const QueryResult = {
       writer.bool(v);
     }
     writer.ldelim();
+    writer.uint32(42).fork();
+    for (const v of message.sensitive) {
+      writer.bool(v);
+    }
+    writer.ldelim();
     if (message.error !== "") {
-      writer.uint32(42).string(message.error);
+      writer.uint32(50).string(message.error);
     }
     if (message.latency !== undefined) {
-      Duration.encode(message.latency, writer.uint32(50).fork()).ldelim();
+      Duration.encode(message.latency, writer.uint32(58).fork()).ldelim();
     }
     if (message.statement !== "") {
-      writer.uint32(58).string(message.statement);
+      writer.uint32(66).string(message.statement);
     }
     return writer;
   },
@@ -819,21 +1030,38 @@ export const QueryResult = {
 
           break;
         case 5:
-          if (tag !== 42) {
-            break;
+          if (tag === 40) {
+            message.sensitive.push(reader.bool());
+
+            continue;
           }
 
-          message.error = reader.string();
-          continue;
+          if (tag === 42) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.sensitive.push(reader.bool());
+            }
+
+            continue;
+          }
+
+          break;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.latency = Duration.decode(reader, reader.uint32());
+          message.error = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
+            break;
+          }
+
+          message.latency = Duration.decode(reader, reader.uint32());
+          continue;
+        case 8:
+          if (tag !== 66) {
             break;
           }
 
@@ -854,6 +1082,7 @@ export const QueryResult = {
       columnTypeNames: Array.isArray(object?.columnTypeNames) ? object.columnTypeNames.map((e: any) => String(e)) : [],
       rows: Array.isArray(object?.rows) ? object.rows.map((e: any) => QueryRow.fromJSON(e)) : [],
       masked: Array.isArray(object?.masked) ? object.masked.map((e: any) => Boolean(e)) : [],
+      sensitive: Array.isArray(object?.sensitive) ? object.sensitive.map((e: any) => Boolean(e)) : [],
       error: isSet(object.error) ? String(object.error) : "",
       latency: isSet(object.latency) ? Duration.fromJSON(object.latency) : undefined,
       statement: isSet(object.statement) ? String(object.statement) : "",
@@ -882,6 +1111,11 @@ export const QueryResult = {
     } else {
       obj.masked = [];
     }
+    if (message.sensitive) {
+      obj.sensitive = message.sensitive.map((e) => e);
+    } else {
+      obj.sensitive = [];
+    }
     message.error !== undefined && (obj.error = message.error);
     message.latency !== undefined && (obj.latency = message.latency ? Duration.toJSON(message.latency) : undefined);
     message.statement !== undefined && (obj.statement = message.statement);
@@ -898,6 +1132,7 @@ export const QueryResult = {
     message.columnTypeNames = object.columnTypeNames?.map((e) => e) || [];
     message.rows = object.rows?.map((e) => QueryRow.fromPartial(e)) || [];
     message.masked = object.masked?.map((e) => e) || [];
+    message.sensitive = object.sensitive?.map((e) => e) || [];
     message.error = object.error ?? "";
     message.latency = (object.latency !== undefined && object.latency !== null)
       ? Duration.fromPartial(object.latency)
@@ -1170,7 +1405,7 @@ export const RowValue = {
 };
 
 function createBaseAdvice(): Advice {
-  return { status: 0, code: 0, title: "", content: "", line: 0, detail: "" };
+  return { status: 0, code: 0, title: "", content: "", line: 0, column: 0, detail: "" };
 }
 
 export const Advice = {
@@ -1190,8 +1425,11 @@ export const Advice = {
     if (message.line !== 0) {
       writer.uint32(40).int32(message.line);
     }
+    if (message.column !== 0) {
+      writer.uint32(48).int32(message.column);
+    }
     if (message.detail !== "") {
-      writer.uint32(50).string(message.detail);
+      writer.uint32(58).string(message.detail);
     }
     return writer;
   },
@@ -1239,7 +1477,14 @@ export const Advice = {
           message.line = reader.int32();
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.column = reader.int32();
+          continue;
+        case 7:
+          if (tag !== 58) {
             break;
           }
 
@@ -1261,6 +1506,7 @@ export const Advice = {
       title: isSet(object.title) ? String(object.title) : "",
       content: isSet(object.content) ? String(object.content) : "",
       line: isSet(object.line) ? Number(object.line) : 0,
+      column: isSet(object.column) ? Number(object.column) : 0,
       detail: isSet(object.detail) ? String(object.detail) : "",
     };
   },
@@ -1272,6 +1518,7 @@ export const Advice = {
     message.title !== undefined && (obj.title = message.title);
     message.content !== undefined && (obj.content = message.content);
     message.line !== undefined && (obj.line = Math.round(message.line));
+    message.column !== undefined && (obj.column = Math.round(message.column));
     message.detail !== undefined && (obj.detail = message.detail);
     return obj;
   },
@@ -1287,6 +1534,7 @@ export const Advice = {
     message.title = object.title ?? "";
     message.content = object.content ?? "";
     message.line = object.line ?? 0;
+    message.column = object.column ?? 0;
     message.detail = object.detail ?? "";
     return message;
   },
@@ -1447,6 +1695,137 @@ export const PrettyResponse = {
   },
 };
 
+function createBaseCheckRequest(): CheckRequest {
+  return { statement: "", database: "" };
+}
+
+export const CheckRequest = {
+  encode(message: CheckRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.statement !== "") {
+      writer.uint32(10).string(message.statement);
+    }
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CheckRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckRequest {
+    return {
+      statement: isSet(object.statement) ? String(object.statement) : "",
+      database: isSet(object.database) ? String(object.database) : "",
+    };
+  },
+
+  toJSON(message: CheckRequest): unknown {
+    const obj: any = {};
+    message.statement !== undefined && (obj.statement = message.statement);
+    message.database !== undefined && (obj.database = message.database);
+    return obj;
+  },
+
+  create(base?: DeepPartial<CheckRequest>): CheckRequest {
+    return CheckRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<CheckRequest>): CheckRequest {
+    const message = createBaseCheckRequest();
+    message.statement = object.statement ?? "";
+    message.database = object.database ?? "";
+    return message;
+  },
+};
+
+function createBaseCheckResponse(): CheckResponse {
+  return { advices: [] };
+}
+
+export const CheckResponse = {
+  encode(message: CheckResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.advices) {
+      Advice.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CheckResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.advices.push(Advice.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckResponse {
+    return { advices: Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: CheckResponse): unknown {
+    const obj: any = {};
+    if (message.advices) {
+      obj.advices = message.advices.map((e) => e ? Advice.toJSON(e) : undefined);
+    } else {
+      obj.advices = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CheckResponse>): CheckResponse {
+    return CheckResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<CheckResponse>): CheckResponse {
+    const message = createBaseCheckResponse();
+    message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 export type SQLServiceDefinition = typeof SQLServiceDefinition;
 export const SQLServiceDefinition = {
   name: "SQLService",
@@ -1574,30 +1953,63 @@ export const SQLServiceDefinition = {
       options: {
         _unknownFields: {
           578365826: [
+            new Uint8Array([18, 18, 16, 47, 118, 49, 58, 97, 100, 109, 105, 110, 69, 120, 101, 99, 117, 116, 101]),
+          ],
+        },
+      },
+    },
+    differPreview: {
+      name: "DifferPreview",
+      requestType: DifferPreviewRequest,
+      requestStream: false,
+      responseType: DifferPreviewResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
             new Uint8Array([
-              21,
+              26,
               58,
               1,
               42,
               34,
-              16,
+              21,
               47,
               118,
               49,
-              58,
-              97,
+              47,
+              115,
+              113,
+              108,
+              47,
               100,
-              109,
               105,
-              110,
-              69,
-              120,
+              102,
+              102,
               101,
-              99,
-              117,
-              116,
+              114,
+              80,
+              114,
               101,
+              118,
+              105,
+              101,
+              119,
             ]),
+          ],
+        },
+      },
+    },
+    check: {
+      name: "Check",
+      requestType: CheckRequest,
+      requestStream: false,
+      responseType: CheckResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([18, 58, 1, 42, 34, 13, 47, 118, 49, 47, 115, 113, 108, 47, 99, 104, 101, 99, 107]),
           ],
         },
       },
@@ -1605,30 +2017,10 @@ export const SQLServiceDefinition = {
   },
 } as const;
 
-export interface SQLServiceImplementation<CallContextExt = {}> {
-  pretty(request: PrettyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<PrettyResponse>>;
-  query(request: QueryRequest, context: CallContext & CallContextExt): Promise<DeepPartial<QueryResponse>>;
-  export(request: ExportRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ExportResponse>>;
-  adminExecute(
-    request: AsyncIterable<AdminExecuteRequest>,
-    context: CallContext & CallContextExt,
-  ): ServerStreamingMethodResult<DeepPartial<AdminExecuteResponse>>;
-}
-
-export interface SQLServiceClient<CallOptionsExt = {}> {
-  pretty(request: DeepPartial<PrettyRequest>, options?: CallOptions & CallOptionsExt): Promise<PrettyResponse>;
-  query(request: DeepPartial<QueryRequest>, options?: CallOptions & CallOptionsExt): Promise<QueryResponse>;
-  export(request: DeepPartial<ExportRequest>, options?: CallOptions & CallOptionsExt): Promise<ExportResponse>;
-  adminExecute(
-    request: AsyncIterable<DeepPartial<AdminExecuteRequest>>,
-    options?: CallOptions & CallOptionsExt,
-  ): AsyncIterable<AdminExecuteResponse>;
-}
-
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
@@ -1683,8 +2075,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
@@ -1693,5 +2083,3 @@ if (_m0.util.Long !== Long) {
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
 }
-
-export type ServerStreamingMethodResult<Response> = { [Symbol.asyncIterator](): AsyncIterator<Response, void> };

@@ -5,11 +5,13 @@ package advisor
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"log/slog"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
@@ -426,6 +428,56 @@ const (
 
 	// SnowflakeColumnNoNull is an advisor type for Snowflake column no NULL value.
 	SnowflakeColumnNoNull Type = "bb.plugin.advisor.snowflake.column.no-null"
+
+	// SnowflakeNoSelectAll is an advisor type for Snowflake no select all.
+	SnowflakeNoSelectAll Type = "bb.plugin.advisor.snowflake.select.no-select-all"
+
+	// SnowflakeTableDropNamingConvention is an advisor type for Snowflake table drop with naming convention.
+	SnowflakeTableDropNamingConvention Type = "bb.plugin.advisor.snowflake.table.drop-naming-convention"
+
+	// SnowflakeMigrationCompatibility is an advisor type for Snowflake migration compatibility.
+	SnowflakeMigrationCompatibility Type = "bb.plugin.advisor.snowflake.migration-compatibility"
+
+	// MSSQL Advisor.
+
+	// MSSQLSyntax is an advisor type for MSSQL syntax.
+	MSSQLSyntax Type = "bb.plugin.advisor.mssql.syntax"
+
+	// MSSQLNoSelectAll is an advisor type for MSSQL no select all.
+	MSSQLNoSelectAll Type = "bb.plugin.advisor.mssql.select.no-select-all"
+
+	// MSSQLNamingTableConvention is an advisor type for MSSQL table naming convention.
+	MSSQLNamingTableConvention Type = "bb.plugin.advisor.mssql.naming.table"
+
+	// MSSQLTableNamingNoKeyword is an advisor type for MSSQL table naming convention without keyword.
+	MSSQLTableNamingNoKeyword Type = "bb.plugin.advisor.mssql.naming.table-no-keyword"
+
+	// MSSQLIdentifierNamingNoKeyword is an advisor type for MSSQL identifier naming convention without keyword.
+	MSSQLIdentifierNamingNoKeyword Type = "bb.plugin.advisor.mssql.naming.identifier-no-keyword"
+
+	// MSSQLWhereRequirement is an advisor type for MSSQL WHERE clause requirement.
+	MSSQLWhereRequirement Type = "bb.plugin.advisor.mssql.where.require"
+
+	// MSSQLColumnMaximumVarcharLength is an advisor type for MSSQL maximum varchar length.
+	MSSQLColumnMaximumVarcharLength Type = "bb.plugin.advisor.mssql.column.maximum-varchar-length"
+
+	// MSSQLTableDropNamingConvention is an advisor type for MSSQL table drop with naming convention.
+	MSSQLTableDropNamingConvention Type = "bb.plugin.advisor.mssql.table.drop-naming-convention"
+
+	// MSSQLTableRequirePK is an advisor type for MSSQL table require primary key.
+	MSSQLTableRequirePK Type = "bb.plugin.advisor.mssql.table.require-pk"
+
+	// MSSQLColumnNoNull is an advisor type for MSSQL column no NULL value.
+	MSSQLColumnNoNull Type = "bb.plugin.advisor.mssql.column.no-null"
+
+	// MSSQLTableNoFK is an advisor type for MSSQL table disallow foreign key.
+	MSSQLTableNoFK Type = "bb.plugin.advisor.mssql.table.no-foreign-key"
+
+	// MSSQLMigrationCompatibility is an advisor type for MSSQL migration compatibility.
+	MSSQLMigrationCompatibility Type = "bb.plugin.advisor.mssql.migration-compatibility"
+
+	// MSSQLColumnRequirement is an advisor type for MSSQL column requirement.
+	MSSQLColumnRequirement Type = "bb.plugin.advisor.mssql.column.require"
 )
 
 // Advice is the result of an advisor.
@@ -437,31 +489,25 @@ type Advice struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 	Line    int    `json:"line"`
+	Column  int    `json:"column"`
 	Details string `json:"details,omitempty"`
 }
 
-// MarshalLogObject constructs a field that carries Advice.
-func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("status", string(a.Status))
-	enc.AddInt("code", int(a.Code))
-	enc.AddString("title", a.Title)
-	enc.AddString("content", a.Content)
-	enc.AddInt("line", a.Line)
-	enc.AddString("details", a.Details)
-	return nil
-}
+// SLogAdviceArray is a helper to format array of Advice.
+type SLogAdviceArray []Advice
 
-// ZapAdviceArray is a helper to format zap.Array.
-type ZapAdviceArray []Advice
-
-// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
-func (array ZapAdviceArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
-	for i := range array {
-		if err := enc.AppendObject(array[i]); err != nil {
-			return err
+// LogValue implements the LogValuer interface.
+func (arr SLogAdviceArray) LogValue() slog.Value {
+	logArr := []string{}
+	for _, advice := range arr {
+		payload, err := json.Marshal(advice)
+		if err != nil {
+			logArr = append(logArr, err.Error())
+			continue
 		}
+		logArr = append(logArr, string(payload))
 	}
-	return nil
+	return slog.StringValue(strings.Join(logArr, ","))
 }
 
 // SyntaxMode is the type of syntax mode.
@@ -481,11 +527,14 @@ type Context struct {
 	SyntaxMode SyntaxMode
 
 	// SQL review rule special fields.
+	AST     any
 	Rule    *SQLReviewRule
 	Catalog *catalog.Finder
 	Driver  *sql.DB
 	Context context.Context
 
+	// CurrentDatabase is the current database. Special for Snowflake.
+	CurrentDatabase string
 	// CurrentSchema is the current schema. Special for Oracle.
 	CurrentSchema string
 }
@@ -548,7 +597,7 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) (adviceL
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake:
+	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
 		return true
 	}
 	return false
@@ -557,7 +606,7 @@ func IsSyntaxCheckSupported(dbType db.Type) bool {
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake:
+	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
 		return true
 	}
 	return false

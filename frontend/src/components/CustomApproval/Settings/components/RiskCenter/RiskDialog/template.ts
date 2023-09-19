@@ -1,11 +1,10 @@
-import { computed } from "vue";
 import { first, last } from "lodash-es";
-
+import { computed } from "vue";
 import { ConditionGroupExpr, wrapAsGroup } from "@/plugins/cel";
+import { t, te } from "@/plugins/i18n";
 import { useEnvironmentV1List } from "@/store";
 import { PresetRiskLevel } from "@/types";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
-import { t, te } from "@/plugins/i18n";
 import { extractEnvironmentResourceName } from "@/utils";
 
 /*

@@ -1,8 +1,8 @@
 import { computed, unref } from "vue";
-import { MaybeRef, PresetRoleType, ProjectRoleType, RoleType } from "../types";
-import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
 import { t } from "@/plugins/i18n";
+import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
 import { UserRole } from "@/types/proto/v1/auth_service";
+import { MaybeRef, PresetRoleType, ProjectRoleType, RoleType } from "../types";
 
 export type WorkspacePermissionType =
   | "bb.permission.workspace.debug"
@@ -32,7 +32,8 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.audit-log"
   | "bb.permission.workspace.debug-log"
   | "bb.permission.workspace.manage-mail-delivery"
-  | "bb.permission.workspace.manage-database-secrets";
+  | "bb.permission.workspace.manage-database-secrets"
+  | "bb.permission.workspace.manage-announcement";
 
 // A map from a particular workspace permission to the respective enablement of a particular workspace role.
 // The key is the workspace permission type and the value is the workspace [DEVELOPER, DBA, OWNER] triplet.
@@ -57,12 +58,13 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.manage-access-control", [false, true, true]],
   ["bb.permission.workspace.manage-custom-approval", [false, true, true]],
   ["bb.permission.workspace.manage-slow-query", [false, true, true]],
-  ["bb.permission.workspace.manage-subscription", [false, false, true]],
+  ["bb.permission.workspace.manage-subscription", [false, true, true]],
   ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
   ["bb.permission.workspace.audit-log", [false, true, true]],
   ["bb.permission.workspace.debug-log", [false, true, true]],
   ["bb.permission.workspace.manage-mail-delivery", [false, false, true]],
   ["bb.permission.workspace.manage-database-secrets", [false, true, true]],
+  ["bb.permission.workspace.manage-announcement", [false, true, true]],
 ]);
 
 // Returns true if RBAC is not enabled or the particular role has the particular permission.
@@ -176,6 +178,10 @@ export function projectRoleName(role: ProjectRoleType): string {
       return "Owner";
     case "DEVELOPER":
       return "Developer";
+    case "QUERIER":
+      return "Querier";
+    case "EXPORTER":
+      return "Exporter";
   }
   return role;
 }

@@ -8,7 +8,7 @@
       </template>
     </RiskFilter>
 
-    <div class="space-y-4">
+    <div class="space-y-4 pb-4">
       <RiskSection
         v-for="{ source, riskList } in riskListGroupBySource"
         :key="source"
@@ -20,20 +20,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watch } from "vue";
 import { groupBy } from "lodash-es";
-
-import RiskSection from "./RiskSection.vue";
-import { RiskFilter, orderByLevelDesc, useRiskFilter } from "../common";
-import { useRiskCenterContext } from "./context";
-import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
-import { PresetRiskLevelList, SupportedSourceList } from "@/types";
+import { computed, watch } from "vue";
 import { useRiskStore } from "@/store";
+import { PresetRiskLevelList, SupportedSourceList } from "@/types";
+import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
+import { RiskFilter, orderByLevelDesc, useRiskFilter } from "../common";
+import RiskSection from "./RiskSection.vue";
+import { useRiskCenterContext } from "./context";
 
 const riskStore = useRiskStore();
 const context = useRiskCenterContext();
 const filter = useRiskFilter();
-const { allowAdmin } = context;
+const { allowAdmin, hasFeature, showFeatureModal } = context;
 
 const filteredRiskList = computed(() => {
   let list = [...riskStore.riskList];
@@ -76,6 +75,10 @@ const addRisk = () => {
     source: filter.source.value || SupportedSourceList[0],
     active: true,
   });
+  if (!hasFeature.value) {
+    showFeatureModal.value = true;
+    return;
+  }
   context.dialog.value = {
     mode: "CREATE",
     risk,

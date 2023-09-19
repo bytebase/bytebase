@@ -378,18 +378,26 @@ func NewPLSQLErrorListener() *ParseErrorListener {
 }
 
 // SyntaxError returns the errors.
-func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column int, msg string, _ antlr.RecognitionException) {
-	if len(msg) > 1024 {
-		msg = msg[:1024]
-	}
+func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, column int, _ string, _ antlr.RecognitionException) {
 	if l.err == nil {
+		errMessage := ""
+		if token, ok := token.(*antlr.CommonToken); ok {
+			stream := token.GetInputStream()
+			start := token.GetStart() - 40
+			if start < 0 {
+				start = 0
+			}
+			stop := token.GetStop()
+			if stop >= stream.Size() {
+				stop = stream.Size() - 1
+			}
+			errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
+		}
 		l.err = &SyntaxError{
 			Line:    line,
 			Column:  column,
-			Message: fmt.Sprintf("line %d:%d %s", line, column, msg),
+			Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", line, column, errMessage),
 		}
-	} else {
-		l.err.Message = fmt.Sprintf("%s \nline %d:%d %s", l.err.Message, line, column, msg)
 	}
 }
 
@@ -408,13 +416,32 @@ func (*ParseErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa
 	antlr.ConsoleErrorListenerINSTANCE.ReportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs)
 }
 
-// ParsePLSQL parses the given PLSQL.
-func ParsePLSQL(sql string) (antlr.Tree, error) {
-	// The antlr parser requires a semicolon at the end of the SQL.
-	sql = strings.TrimRight(sql, " \t\n\r\f;") + "\n;"
+func addSemicolonIfNeeded(sql string) string {
 	lexer := parser.NewPlSqlLexer(antlr.NewInputStream(sql))
-	steam := antlr.NewCommonTokenStream(lexer, 0)
-	p := parser.NewPlSqlParser(steam)
+	stream := antlr.NewCommonTokenStream(lexer, 0)
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+	for i := len(tokens) - 1; i >= 0; i-- {
+		if tokens[i].GetChannel() != antlr.TokenDefaultChannel || tokens[i].GetTokenType() == parser.PlSqlParserEOF {
+			continue
+		}
+
+		// The last default channel token is a semicolon.
+		if tokens[i].GetTokenType() == parser.PlSqlParserSEMICOLON {
+			return sql
+		}
+
+		return stream.GetTextFromInterval(antlr.NewInterval(0, tokens[i].GetTokenIndex())) + ";"
+	}
+	return sql
+}
+
+// ParsePLSQL parses the given PLSQL.
+func ParsePLSQL(sql string) (antlr.Tree, *antlr.CommonTokenStream, error) {
+	sql = addSemicolonIfNeeded(sql)
+	lexer := parser.NewPlSqlLexer(antlr.NewInputStream(sql))
+	stream := antlr.NewCommonTokenStream(lexer, 0)
+	p := parser.NewPlSqlParser(stream)
 	p.SetVersion12(true)
 
 	lexerErrorListener := &ParseErrorListener{}
@@ -429,14 +456,14 @@ func ParsePLSQL(sql string) (antlr.Tree, error) {
 	tree := p.Sql_script()
 
 	if lexerErrorListener.err != nil {
-		return nil, lexerErrorListener.err
+		return nil, nil, lexerErrorListener.err
 	}
 
 	if parserErrorListener.err != nil {
-		return nil, parserErrorListener.err
+		return nil, nil, parserErrorListener.err
 	}
 
-	return tree, nil
+	return tree, stream, nil
 }
 
 // PLSQLValidateForEditor validates the given PLSQL for editor.
@@ -446,7 +473,7 @@ func PLSQLValidateForEditor(tree antlr.Tree) error {
 	}
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
 	if !l.validate {
-		return errors.New("Malformed sql execute request, only support SELECT sql statement")
+		return errors.New("only support SELECT sql statement")
 	}
 	return nil
 }
@@ -480,7 +507,7 @@ func (l *plsqlValidateForEditorListener) EnterData_manipulation_language_stateme
 
 // PLSQLEquivalentType returns true if the given type is equivalent to the given text.
 func PLSQLEquivalentType(tp parser.IDatatypeContext, text string) (bool, error) {
-	tree, err := ParsePLSQL(fmt.Sprintf(`CREATE TABLE t(a %s);`, text))
+	tree, _, err := ParsePLSQL(fmt.Sprintf(`CREATE TABLE t(a %s);`, text))
 	if err != nil {
 		return false, err
 	}
@@ -642,13 +669,13 @@ func IsOracleKeyword(text string) bool {
 	return oracleKeywords[strings.ToUpper(text)] || oracleReservedWords[strings.ToUpper(text)]
 }
 
-func extractOracleResourceList(currentDatabase string, currentSchema string, statement string) ([]SchemaResource, error) {
-	tree, err := ParsePLSQL(statement)
+func extractOracleChangedResources(currentDatabase string, currentSchema string, statement string) ([]SchemaResource, error) {
+	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	l := &resourceExtractListener{
+	l := &plsqlChangedResourceExtractListener{
 		currentDatabase: currentDatabase,
 		currentSchema:   currentSchema,
 		resourceMap:     make(map[string]SchemaResource),
@@ -667,7 +694,7 @@ func extractOracleResourceList(currentDatabase string, currentSchema string, sta
 	return result, nil
 }
 
-type resourceExtractListener struct {
+type plsqlChangedResourceExtractListener struct {
 	*parser.BasePlSqlParserListener
 
 	currentDatabase string
@@ -675,7 +702,111 @@ type resourceExtractListener struct {
 	resourceMap     map[string]SchemaResource
 }
 
-func (l *resourceExtractListener) EnterTableview_name(ctx *parser.Tableview_nameContext) {
+// EnterCreate_table is called when production create_table is entered.
+func (l *plsqlChangedResourceExtractListener) EnterCreate_table(ctx *parser.Create_tableContext) {
+	resource := SchemaResource{
+		Database: l.currentDatabase,
+		Schema:   l.currentSchema,
+		Table:    PLSQLNormalizeIdentifierContext(ctx.Table_name().Identifier()),
+	}
+
+	if ctx.Schema_name() != nil {
+		resource.Schema = PLSQLNormalizeIdentifierContext(ctx.Schema_name().Identifier())
+	}
+	l.resourceMap[resource.String()] = resource
+}
+
+// EnterDrop_table is called when production drop_table is entered.
+func (l *plsqlChangedResourceExtractListener) EnterDrop_table(ctx *parser.Drop_tableContext) {
+	result := []string{PLSQLNormalizeIdentifierContext(ctx.Tableview_name().Identifier())}
+	if ctx.Tableview_name().Id_expression() != nil {
+		result = append(result, PLSQLNormalizeIDExpression(ctx.Tableview_name().Id_expression()))
+	}
+	if len(result) == 1 {
+		result = []string{l.currentSchema, result[0]}
+	}
+
+	resource := SchemaResource{
+		Database: l.currentDatabase,
+		Schema:   result[0],
+		Table:    result[1],
+	}
+	l.resourceMap[resource.String()] = resource
+}
+
+// EnterAlter_table is called when production alter_table is entered.
+func (l *plsqlChangedResourceExtractListener) EnterAlter_table(ctx *parser.Alter_tableContext) {
+	result := []string{PLSQLNormalizeIdentifierContext(ctx.Tableview_name().Identifier())}
+	if ctx.Tableview_name().Id_expression() != nil {
+		result = append(result, PLSQLNormalizeIDExpression(ctx.Tableview_name().Id_expression()))
+	}
+	if len(result) == 1 {
+		result = []string{l.currentSchema, result[0]}
+	}
+
+	resource := SchemaResource{
+		Database: l.currentDatabase,
+		Schema:   result[0],
+		Table:    result[1],
+	}
+	l.resourceMap[resource.String()] = resource
+}
+
+// EnterAlter_table_properties is called when production alter_table_properties is entered.
+func (l *plsqlChangedResourceExtractListener) EnterAlter_table_properties(ctx *parser.Alter_table_propertiesContext) {
+	if ctx.RENAME() == nil {
+		return
+	}
+	result := []string{PLSQLNormalizeIdentifierContext(ctx.Tableview_name().Identifier())}
+	if ctx.Tableview_name().Id_expression() != nil {
+		result = append(result, PLSQLNormalizeIDExpression(ctx.Tableview_name().Id_expression()))
+	}
+	if len(result) == 1 {
+		result = []string{l.currentSchema, result[0]}
+	}
+
+	resource := SchemaResource{
+		Database: l.currentDatabase,
+		Schema:   result[0],
+		Table:    result[1],
+	}
+	l.resourceMap[resource.String()] = resource
+}
+
+func extractOracleResourceList(currentDatabase string, currentSchema string, statement string) ([]SchemaResource, error) {
+	tree, _, err := ParsePLSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	l := &plsqlResourceExtractListener{
+		currentDatabase: currentDatabase,
+		currentSchema:   currentSchema,
+		resourceMap:     make(map[string]SchemaResource),
+	}
+
+	var result []SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	for _, resource := range l.resourceMap {
+		result = append(result, resource)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return result, nil
+}
+
+type plsqlResourceExtractListener struct {
+	*parser.BasePlSqlParserListener
+
+	currentDatabase string
+	currentSchema   string
+	resourceMap     map[string]SchemaResource
+}
+
+func (l *plsqlResourceExtractListener) EnterTableview_name(ctx *parser.Tableview_nameContext) {
 	if ctx.Identifier() == nil {
 		return
 	}
@@ -722,4 +853,32 @@ func PLSQLNormalizeIDExpression(idExpression parser.IId_expressionContext) strin
 	}
 
 	return ""
+}
+
+// PLSQLNormalizeIndexName returns the normalized index name from the given context.
+func PLSQLNormalizeIndexName(indexName parser.IIndex_nameContext) (string, string) {
+	if indexName == nil {
+		return "", ""
+	}
+
+	if indexName.Id_expression() != nil {
+		return PLSQLNormalizeIdentifierContext(indexName.Identifier()),
+			PLSQLNormalizeIDExpression(indexName.Id_expression())
+	}
+
+	return "", PLSQLNormalizeIdentifierContext(indexName.Identifier())
+}
+
+// PLSQLNormalizeConstraintName returns the normalized constraint name from the given context.
+func PLSQLNormalizeConstraintName(constraintName parser.IConstraint_nameContext) (string, string) {
+	if constraintName == nil {
+		return "", ""
+	}
+
+	if constraintName.Id_expression(0) != nil {
+		return PLSQLNormalizeIdentifierContext(constraintName.Identifier()),
+			PLSQLNormalizeIDExpression(constraintName.Id_expression(0))
+	}
+
+	return "", PLSQLNormalizeIdentifierContext(constraintName.Identifier())
 }

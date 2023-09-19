@@ -1,7 +1,8 @@
 {
   "current": "当前版本",
   "unlimited": "无限制",
-  "instance-count": "实例数",
+  "max-instance-count": "最多实例数",
+  "user-count": "用户数",
   "expires-at": "过期时间",
   "start-free-trial": "开始免费试用",
   "free-trial": "您可以免费试用 14 天 - 无需信用卡或预付费",
@@ -15,8 +16,8 @@
   "billed-annually": "按年付费",
   "billed-monthly": "按月付费",
   "per-instance": "每个实例",
-  "free-price-intro": "无限用户数和环境数",
-  "team-price-intro": "最多 20 个实例",
+  "free-price-intro": "最多 20 个用户，10 个实例",
+  "team-price-intro": "最多购买 20 个实例",
   "enterprise-price-intro": "自定义，按年付费",
   "deploy": "部署",
   "contact-us": "联系我们",
@@ -32,19 +33,19 @@
     "title": "版本",
     "try": "免费试用",
     "free": {
-      "title": "免费版",
+      "title": "社区版",
       "label": "",
-      "desc": "包含团队中心化管理数据库生命周期的核心能力"
+      "desc": "团队中心化管理数据库生命周期的核心能力。"
     },
     "team": {
       "title": "专业版",
       "label": "",
-      "desc": "更多协同和管控能力，进阶的数据库生命周期管理"
+      "desc": "更多协同和管控能力，进阶的数据库生命周期管理。"
     },
     "enterprise": {
       "title": "企业版",
       "label": "",
-      "desc": "大型组织，有专属 DBA 团队来管理数据库"
+      "desc": "额外的安全，合规，权限功能，SLA 支持。"
     }
   },
   "feature-sections": {
@@ -52,14 +53,16 @@
       "title": "变更管理",
       "features": {
         "user-count": "用户数",
+        "user-maximum-20": "不超过 20 个",
         "user-unlimited": "无限制",
         "instance-count": "实例数",
         "instance-customized": "自定义",
+        "instance-maximum-10": "不超过 10 个",
+        "instance-maximum-10-tooltip": "最多 10 个实例。如果超过数量请与我们联系。",
         "instance-maximum-20": "不超过 20 个",
-        "instance-maximum-20-tooltip": "最多 20 个实例。请与我们联系以获取超过数量的价格。",
+        "instance-maximum-20-tooltip": "最多 20 个实例。如果超过数量请与我们联系。",
         "instance-unlimited": "无限制",
-        "environment-count": "环境数",
-        "environment-unlimited": "无限制",
+        "instance-unlimited-tooltip": "可添加无限实例，另可购买实例证书，开启高级实例功能。",
         "state-based-change": "基于终态的变更",
         "migration-based-change": "基于过程的变更",
         "batch-change": "批量变更",
@@ -73,6 +76,11 @@
         "disaster-recovery-basic-tooltip": "数据库备份和恢复",
         "disaster-recovery-advanced": "高级",
         "disaster-recovery-advanced-tooltip": "数据库备份和恢复 + 恢复到指定时间点 (PITR)",
+        "rollout-policy": "发布策略",
+        "rollout-policy-basic": "基础",
+        "rollout-policy-basic-tooltip": "自动发布",
+        "rollout-policy-advanced": "高级",
+        "rollout-policy-advanced-tooltip": "自动发布 + 审核发布",
         "sql-check": "100+ SQL 自动检查",
         "schedule-change": "设定任务执行时间",
         "database-group": "数据库组",
@@ -81,7 +89,12 @@
         "sync-schema-basic-tooltip": "同步最新的 schema 版本",
         "sync-schema-advanced": "高级",
         "sync-schema-advanced-tooltip": "同步任意的 schema 版本",
-        "terraform-provider": "Terraform 集成"
+        "terraform-provider": "Terraform 集成",
+        "custom-approval": "自定义审批",
+        "issue-advanced-search": "工单搜索",
+        "issue-advanced-search-basic": "30天内的历史",
+        "issue-advanced-search-basic-tooltip": "30 天之前的工单会被隐藏",
+        "issue-advanced-search-advanced": "无限制"
       }
     },
     "sql-editor": {
@@ -123,11 +136,11 @@
         "watermark": "水印",
         "sso": "SSO 单点登录",
         "2fa": "双重认证 (2FA)",
-        "custom-approval": "自定义审批",
+        "ssh-tunnel": "SSH Tunnel",
         "dba-workflow": "DBA 工作流",
         "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
         "environment-tier": "环境分级",
-        "approval-and-backup-policy": "审核和备份策略",
+        "backup-policy": "审核和备份策略",
         "sensitive-data": "数据脱敏",
         "data-access-control": "数据访问控制",
         "anomaly-detection": "异常检测",
@@ -136,7 +149,8 @@
         "anomaly-detection-advanced": "高级",
         "anomaly-detection-advanced-tooltip": "基础版功能 + Schema 偏差检测",
         "archiving": "归档",
-        "disallow-signup": "禁用自助注册"
+        "disallow-signup": "禁用自助注册",
+        "announcement-banner": "公告"
       }
     },
     "bespoke": {
@@ -161,12 +175,12 @@
     "database-backup-restore": "数据库备份和恢复",
     "webhook-integration": "IM 集成 (Slack, Discord 等)",
     "email-support": "邮件支持",
-    "everything-in-free-plan": "所有免费版的功能",
+    "everything-in-free-plan": "所有社区版的功能",
     "rbac": "RBAC 权限管理",
     "gitlab-login": "通过 GitLab 登录",
     "online-schema-migration": "在线大表结构变更",
     "sql-check-anomaly-detection": "高阶 SQL 检查和异常检测",
-    "approval-and-backup-policy": "审核和备份策略",
+    "backup-policy": "备份策略",
     "sla": "专属客户成功经理以及 SLA 支持",
     "everything-in-team-plan": "所有团队版的功能",
     "batch-change-multi-environment": "多环境批量变更",

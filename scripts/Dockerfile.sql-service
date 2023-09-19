@@ -1,14 +1,16 @@
-# DO NOT run docker build against this file directly. Instead using ./build_docker.sh as that
+# DO NOT run docker build against this file directly. Instead using ./build_bytebase_docker.sh as that
 # one sets the various ARG used in the Dockerfile
 
 # After build
 
 # $ docker run --init --rm --name sql-service --publish 8081:8081 bytebase/sql
 
-FROM golang:1.20.5 as sql
+FROM golang:1.21.1 as sql
+ADD go.mod go.sum /
+RUN go mod download
 
 ARG VERSION="development"
-ARG GO_VERSION="1.20.5"
+ARG GO_VERSION="1.21.1"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
@@ -33,7 +35,7 @@ RUN VERSION=`cat ./VERSION` && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
     ./backend/bin/sql-service/main.go
 
 # Use debian because mysql requires glibc.
-FROM debian:bullseye-slim as monolithic
+FROM debian:bookworm-slim as monolithic
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"
@@ -47,7 +49,7 @@ LABEL org.opencontainers.image.created=${BUILD_TIME}
 LABEL org.opencontainers.image.authors=${BUILD_USER}
 
 # Our HEALTHCHECK instruction in dockerfile needs curl.
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl libncurses5
 
 COPY --from=sql /sql-service-build/sql-service /usr/local/bin/
 COPY --from=sql /etc/ssl/certs /etc/ssl/certs

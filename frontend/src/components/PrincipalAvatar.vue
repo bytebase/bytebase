@@ -1,6 +1,7 @@
 <template>
   <BBAvatar
     :username="name"
+    :email="email"
     :size="size"
     :override-class="overrideClass"
     :override-text-size="overrideTextSize"
@@ -9,7 +10,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-
 import { BBAvatar } from "@/bbkit";
 import { BBAvatarSizeType } from "@/bbkit/types";
 import { Principal, unknown, UNKNOWN_ID } from "@/types";
@@ -47,7 +47,13 @@ export default defineComponent({
       }
       return props.principal.name;
     });
-    return { name };
+    const email = computed((): string => {
+      if (props.principal.id === UNKNOWN_ID) {
+        return "";
+      }
+      return props.principal.email;
+    });
+    return { name, email };
   },
 });
 </script>

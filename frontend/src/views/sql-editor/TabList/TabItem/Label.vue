@@ -1,12 +1,16 @@
 <template>
   <div class="label">
-    <span
+    <NEllipsis
       class="name"
+      :tooltip="{
+        placement: 'top',
+        delay: 250,
+      }"
       :class="state.editing && 'invisible'"
       @dblclick="beginEdit"
     >
       {{ state.name }}
-    </span>
+    </NEllipsis>
 
     <input
       v-if="state.editing"
@@ -21,10 +25,12 @@
   </div>
 </template>
 <script lang="ts" setup>
+import { NEllipsis } from "naive-ui";
 import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
-
-import type { TabInfo } from "@/types";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useSheetV1Store, useTabStore } from "@/store";
+import type { TabInfo } from "@/types";
+import { useTabListContext } from "../context";
 
 type LocalState = {
   editing: boolean;
@@ -50,8 +56,16 @@ const state = reactive<LocalState>({
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
 const inputRef = ref<HTMLInputElement>();
+const { events } = useTabListContext();
 
 const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
+
+useEmitteryEventListener(events, "rename-tab", ({ tab }) => {
+  if (tab.id === props.tab.id) {
+    tabStore.setCurrentTabId(tab.id);
+    beginEdit();
+  }
+});
 
 const beginEdit = () => {
   state.editing = true;

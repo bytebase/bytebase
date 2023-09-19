@@ -1,8 +1,7 @@
 import { ClientError, ServerError, Status } from "nice-grpc-common";
-
-import { pushNotification } from "@/store";
-import { t } from "@/plugins/i18n";
 import { ClientMiddleware } from "nice-grpc-web";
+import { t } from "@/plugins/i18n";
+import { pushNotification } from "@/store";
 
 export type SilentRequestOptions = {
   /**

@@ -68,15 +68,15 @@
 </template>
 
 <script lang="ts">
-import { PRESET_LABEL_KEYS, RESERVED_LABEL_KEYS } from "@/utils";
 import { computed, defineComponent, PropType } from "vue";
-import { ComposedDatabase } from "../../types";
-import SelectorItem from "./SelectorItem.vue";
 import {
   LabelSelectorRequirement,
   OperatorType,
   ScheduleDeployment,
 } from "@/types/proto/v1/project_service";
+import { PRESET_LABEL_KEYS, RESERVED_LABEL_KEYS } from "@/utils";
+import { ComposedDatabase } from "../../types";
+import SelectorItem from "./SelectorItem.vue";
 
 export default defineComponent({
   name: "DeploymentStage",

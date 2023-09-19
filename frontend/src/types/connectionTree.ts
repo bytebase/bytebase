@@ -1,4 +1,9 @@
-export type ConnectionAtomType = "project" | "instance" | "database";
+export type ConnectionAtomType =
+  | "project"
+  | "instance"
+  | "database"
+  | "schema"
+  | "table";
 
 export enum ConnectionTreeState {
   UNSET,

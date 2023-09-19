@@ -78,15 +78,15 @@
 </template>
 
 <script lang="ts" setup>
-import { useI18n } from "vue-i18n";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { computed, onMounted, reactive, watch } from "vue";
-import { pushNotification, useAuthStore, useUserStore } from "@/store";
 import * as QRCode from "qrcode";
-import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
-import RecoveryCodesView from "@/components/RecoveryCodesView.vue";
+import { computed, onMounted, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import RecoveryCodesView from "@/components/RecoveryCodesView.vue";
 import TwoFactorSecretModal from "@/components/TwoFactorSecretModal.vue";
+import { pushNotification, useAuthStore, useUserStore } from "@/store";
+import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
 
 const issuerName = "Bytebase";
 

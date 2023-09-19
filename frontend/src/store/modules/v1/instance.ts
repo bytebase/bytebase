@@ -1,10 +1,6 @@
-import { computed, reactive, ref, unref, watch } from "vue";
 import { defineStore } from "pinia";
+import { computed, reactive, ref, unref, watch, watchEffect } from "vue";
 import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
-
-import { DataSource, Instance } from "@/types/proto/v1/instance_service";
-import { State } from "@/types/proto/v1/common";
-import { extractInstanceResourceName } from "@/utils";
 import {
   ComposedInstance,
   emptyInstance,
@@ -15,13 +11,21 @@ import {
   UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
-import { useEnvironmentV1Store } from "./environment";
+import { State } from "@/types/proto/v1/common";
 import { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import { DataSource, Instance } from "@/types/proto/v1/instance_service";
+import { extractInstanceResourceName } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { useEnvironmentV1Store } from "./environment";
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
   const instanceMapByName = reactive(new Map<string, ComposedInstance>());
   const instanceRoleListMapByName = reactive(new Map<string, InstanceRole[]>());
+
+  const reset = () => {
+    instanceMapByName.clear();
+    instanceRoleListMapByName.clear();
+  };
 
   // Getters
   const instanceList = computed(() => {
@@ -77,9 +81,10 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const composed = await upsertInstances([updatedInstance]);
     return composed[0];
   };
-  const archiveInstance = async (instance: Instance) => {
+  const archiveInstance = async (instance: Instance, force = false) => {
     await instanceServiceClient.deleteInstance({
       name: instance.name,
+      force,
     });
     instance.state = State.DELETED;
     const composed = await upsertInstances([instance]);
@@ -202,6 +207,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   };
 
   return {
+    reset,
     instanceList,
     activeInstanceList,
     activateInstanceCount,
@@ -248,19 +254,23 @@ export const useInstanceV1ByUID = (uid: MaybeRef<string>) => {
   return { instance, ready };
 };
 
-export const useInstanceV1List = (showDeleted: MaybeRef<boolean> = false) => {
+export const useInstanceV1List = (
+  showDeleted: MaybeRef<boolean> = false,
+  forceUpdate = false
+) => {
   const store = useInstanceV1Store();
   const ready = ref(false);
-  watch(
-    () => unref(showDeleted),
-    (showDeleted) => {
-      ready.value = false;
-      store.fetchInstanceList(showDeleted).then(() => {
-        ready.value = true;
-      });
-    },
-    { immediate: true }
-  );
+  watchEffect(() => {
+    if (!unref(forceUpdate)) {
+      ready.value = true;
+      return;
+    }
+
+    ready.value = false;
+    store.fetchInstanceList(unref(showDeleted)).then(() => {
+      ready.value = true;
+    });
+  });
   const instanceList = computed(() => {
     if (unref(showDeleted)) {
       return store.instanceList;

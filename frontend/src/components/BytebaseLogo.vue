@@ -4,19 +4,19 @@
   >
     <router-link
       to="/"
-      class="select-none"
+      class="w-full select-none flex flex-row justify-center items-center"
       active-class=""
       exact-active-class=""
     >
       <img
         v-if="customBrandingLogo"
         :src="customBrandingLogo"
-        class="w-full max-h-full"
+        class="w-auto max-w-full h-8 md:max-h-10"
       />
 
       <img
         v-if="!customBrandingLogo"
-        class="h-12 w-auto"
+        class="h-8 md:h-10 w-auto"
         src="../assets/logo-full.svg"
         alt="Bytebase"
       />

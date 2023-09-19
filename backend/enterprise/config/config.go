@@ -35,8 +35,6 @@ const (
 	issuer = "bytebase"
 	// audience is the license token audience.
 	audience = "bb.license"
-	// MaximumInstanceForFreePlan is the maximum instance limit for the FREE plan.
-	MaximumInstanceForFreePlan = 20
 )
 
 // NewConfig will create a new enterprise config instance.

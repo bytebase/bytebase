@@ -30,15 +30,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, useAttrs } from "vue";
-import { NButton, type SelectProps, SelectOption } from "naive-ui";
 import { omit } from "lodash-es";
+import { NButton, type SelectProps, SelectOption } from "naive-ui";
+import { computed, useAttrs } from "vue";
 import { useI18n } from "vue-i18n";
-
-import { VueClass, VueStyle } from "@/utils";
-import { useCustomApprovalContext } from "../context";
 import { useWorkspaceApprovalSettingStore } from "@/store";
+import { VueClass, VueStyle } from "@/utils";
 import { SpinnerSelect } from "../../common";
+import { useCustomApprovalContext } from "../context";
 
 export interface ApprovalTemplateSelectorProps extends SelectProps {
   label?: string;
@@ -58,7 +57,7 @@ defineEmits<{
 const { t } = useI18n();
 const store = useWorkspaceApprovalSettingStore();
 const context = useCustomApprovalContext();
-const { allowAdmin } = context;
+const { hasFeature, showFeatureModal, allowAdmin } = context;
 
 const attrs = useAttrs();
 const selectAttrs = computed(() => ({
@@ -85,6 +84,10 @@ const selectedRule = computed(() => {
 const toApprovalFlow = () => {
   const rule = selectedRule.value;
   if (!rule) {
+    return;
+  }
+  if (!hasFeature.value) {
+    showFeatureModal.value = true;
     return;
   }
   context.dialog.value = {

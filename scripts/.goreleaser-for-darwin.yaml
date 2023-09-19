@@ -17,7 +17,7 @@ builds:
       - embed_frontend
     env:
       - VERSION="development"
-      - GO_VERSION="1.20.5"
+      - GO_VERSION="1.21.1"
       - CGO_ENABLED=1
       - GIT_COMMIT="unknown"
       - BUILD_TIME="unknown"
@@ -41,7 +41,7 @@ builds:
       - release
     env:
       - VERSION="development"
-      - GO_VERSION="1.20.5"
+      - GO_VERSION="1.21.1"
       - CGO_ENABLED=1
       - GIT_COMMIT="unknown"
       - BUILD_TIME="unknown"
@@ -51,10 +51,5 @@ builds:
     goarch:
       - amd64
       - arm64
-archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      amd64: x86_64
 snapshot:
   name_template: "{{ incpatch .Version }}-next"

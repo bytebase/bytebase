@@ -1,5 +1,5 @@
 <template>
-  <BBModal :title="title" @close="$emit('cancel')">
+  <BBModal v-if="open && feature" :title="title" @close="$emit('cancel')">
     <div class="min-w-0 md:min-w-[400px] max-w-4xl">
       <div class="flex items-start space-x-2 mt-3">
         <div class="flex items-center">
@@ -16,7 +16,7 @@
           {{ $t(`subscription.features.${featureKey}.title`) }}
         </h3>
       </div>
-      <div class="mt-5">
+      <div class="mt-4">
         <p class="whitespace-pre-wrap">
           {{ $t(`subscription.features.${featureKey}.desc`) }}
         </p>
@@ -43,7 +43,13 @@
                   }}
                 </span>
               </template>
-              <template v-if="subscriptionStore.canUpgradeTrial" #startTrial>
+              <template v-if="!hasPermission" #startTrial>
+                {{ $t("subscription.contact-to-upgrade") }}
+              </template>
+              <template
+                v-else-if="subscriptionStore.canUpgradeTrial"
+                #startTrial
+              >
                 {{ $t("subscription.upgrade-trial") }}
               </template>
               <template v-else #startTrial>
@@ -60,7 +66,10 @@
               </template>
             </i18n-t>
           </template>
-          <i18n-t v-else keypath="subscription.require-subscription">
+          <i18n-t
+            v-else-if="requiredPlan !== PlanType.FREE"
+            keypath="subscription.require-subscription"
+          >
             <template #requiredPlan>
               <span class="font-bold text-accent">
                 {{
@@ -74,7 +83,15 @@
         </p>
       </div>
       <div class="mt-7 flex justify-end space-x-2">
-        <template v-if="subscriptionStore.canTrial">
+        <button
+          v-if="!hasPermission"
+          type="button"
+          class="btn-primary"
+          @click.prevent="$emit('cancel')"
+        >
+          {{ $t("common.ok") }}
+        </button>
+        <template v-else-if="subscriptionStore.canTrial">
           <button
             v-if="subscriptionStore.canUpgradeTrial"
             type="button"
@@ -106,21 +123,39 @@
       </div>
     </div>
   </BBModal>
+  <InstanceAssignment
+    :show="state.showInstanceAssignmentDrawer"
+    @dismiss="state.showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
-import { useRouter } from "vue-router";
+import { PropType, computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useSubscriptionV1Store, pushNotification } from "@/store";
+import { useRouter } from "vue-router";
+import {
+  useSubscriptionV1Store,
+  useCurrentUserV1,
+  pushNotification,
+} from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import { Instance } from "@/types/proto/v1/instance_service";
+import { PlanType } from "@/types/proto/v1/subscription_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
+
+interface LocalState {
+  showInstanceAssignmentDrawer: boolean;
+}
 
 const props = defineProps({
+  open: {
+    required: true,
+    type: Boolean,
+  },
   feature: {
     required: true,
     type: String as PropType<FeatureType>,
+    default: "",
   },
   instance: {
     type: Object as PropType<Instance>,
@@ -128,11 +163,19 @@ const props = defineProps({
   },
 });
 
+const state = reactive<LocalState>({
+  showInstanceAssignmentDrawer: false,
+});
+
 const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
 const router = useRouter();
 
 const subscriptionStore = useSubscriptionV1Store();
+const hasPermission = hasWorkspacePermissionV1(
+  "bb.permission.workspace.manage-subscription",
+  useCurrentUserV1().value.userRole
+);
 
 const instanceMissingLicense = computed(() => {
   return subscriptionStore.instanceMissingLicense(
@@ -149,14 +192,14 @@ const title = computed(() => {
 });
 
 const ok = () => {
-  router.push({
-    name: "setting.workspace.subscription",
-    query: instanceMissingLicense.value
-      ? {
-          manageLicense: 1,
-        }
-      : {},
-  });
+  if (instanceMissingLicense.value) {
+    state.showInstanceAssignmentDrawer = true;
+  } else {
+    router.push({
+      name: "setting.workspace.subscription",
+    });
+  }
+  emit("cancel");
 };
 
 const isRequiredInPlan = Array.isArray(
@@ -164,7 +207,9 @@ const isRequiredInPlan = Array.isArray(
 );
 const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
 
-const featureKey = props.feature.split(".").join("-");
+const featureKey = computed(() => {
+  return props.feature.split(".").join("-");
+});
 
 const trialSubscription = () => {
   const isUpgrade = subscriptionStore.canUpgradeTrial;

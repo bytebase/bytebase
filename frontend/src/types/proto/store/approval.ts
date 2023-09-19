@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
 
@@ -71,7 +71,7 @@ export function issuePayloadApproval_Approver_StatusToJSON(object: IssuePayloadA
 }
 
 export interface ApprovalTemplate {
-  flow?: ApprovalFlow;
+  flow?: ApprovalFlow | undefined;
   title: string;
   description: string;
   creatorId: number;

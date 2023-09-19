@@ -1,11 +1,10 @@
 import { defineStore } from "pinia";
-
 import { databaseServiceClient, instanceServiceClient } from "@/grpcweb";
+import { ComposedSlowQueryLog, ComposedDatabase } from "@/types";
 import {
   ListSlowQueriesRequest,
   SlowQueryLog,
 } from "@/types/proto/v1/database_service";
-import { ComposedSlowQueryLog, ComposedDatabase } from "@/types";
 import { useDatabaseV1Store } from "./v1/database";
 
 export const useSlowQueryStore = defineStore("slow-query", () => {
@@ -23,13 +22,13 @@ export const useSlowQueryStore = defineStore("slow-query", () => {
     }
   };
 
-  const syncSlowQueriesByInstance = async (instance: string) => {
+  const syncSlowQueries = async (parent: string) => {
     await instanceServiceClient.syncSlowQueries({
-      instance,
+      parent,
     });
   };
 
-  return { fetchSlowQueryLogList, syncSlowQueriesByInstance };
+  return { fetchSlowQueryLogList, syncSlowQueries };
 });
 
 const databaseRequestCache = new Map<string, Promise<ComposedDatabase>>();

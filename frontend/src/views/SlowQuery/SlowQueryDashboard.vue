@@ -7,7 +7,6 @@
 <script lang="ts" setup>
 import { shallowRef, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
-
 import {
   SlowQueryPanel,
   SlowQueryFilterParams,

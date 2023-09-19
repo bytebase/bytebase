@@ -20,11 +20,11 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { environmentV1Slug } from "@/utils";
-import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
 import { EnvironmentV1Name } from ".";
 
 export type EnvironmentRow = BBGridRow<Environment>;

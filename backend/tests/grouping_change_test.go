@@ -3,16 +3,15 @@ package tests
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/type/expr"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -141,16 +140,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			err = ctl.setLicense()
-			a.NoError(err)
-
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
 
 			instanceResourceID2InstanceTitle := make(map[string]string)
 			for _, prepareInstance := range tc.prepareInstances {
@@ -162,7 +151,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       prepareInstance.instanceTitle,
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 						Activation:  true,
 					},
@@ -170,16 +159,16 @@ func TestCreateDatabaseGroup(t *testing.T) {
 				a.NoError(err)
 				instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
 				for preCreateDatabase := range prepareInstance.matchedDatabasesName {
-					err = ctl.createDatabase(ctx, projectUID, instance, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 				}
 				for preCreateDatabase := range prepareInstance.unmatchedDatabaseName {
-					err = ctl.createDatabase(ctx, projectUID, instance, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 				}
 			}
 			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
-				Parent:          project.Name,
+				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
 					DatabasePlaceholder: tc.databaseGroupPlaceholder,
@@ -393,16 +382,6 @@ func TestCreateTableGroup(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			err = ctl.setLicense()
-			a.NoError(err)
-
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
 
 			instanceResourceID2InstanceTitle := make(map[string]string)
 			for _, prepareInstance := range tc.prepareInstances {
@@ -414,7 +393,7 @@ func TestCreateTableGroup(t *testing.T) {
 					Instance: &v1pb.Instance{
 						Title:       prepareInstance.instanceTitle,
 						Engine:      v1pb.Engine_SQLITE,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 						Activation:  true,
 					},
@@ -422,7 +401,7 @@ func TestCreateTableGroup(t *testing.T) {
 				a.NoError(err)
 				instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
 				for preCreateDatabase := range prepareInstance.matchDatabasesNameTableName {
-					err = ctl.createDatabase(ctx, projectUID, instance, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 					dbDriver, err := db.Open(ctx, db.SQLite, db.DriverConfig{}, db.ConnectionConfig{
 						Host:     instanceDir,
@@ -448,7 +427,7 @@ func TestCreateTableGroup(t *testing.T) {
 				}
 			}
 			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
-				Parent:          project.Name,
+				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
 					DatabasePlaceholder: tc.databaseGroupPlaceholder,
@@ -540,7 +519,7 @@ func TestCreateGroupingChangeIssue(t *testing.T) {
 		unmatched []string
 	}
 	type testCasePrepareInstance struct {
-		instanceTitle                  string
+		instanceID                     string
 		matchDatabasesNameTableName    map[string]tableNames
 		unmatchedDatabaseNameTableName map[string][]string
 		wantDatabaseTaskStatement      map[string][]string
@@ -570,7 +549,7 @@ func TestCreateGroupingChangeIssue(t *testing.T) {
 			},
 			prepareInstances: []testCasePrepareInstance{
 				{
-					instanceTitle: "TestCreateGroupingChangeIssue_SimpleStatement",
+					instanceID: "simplestatement",
 					matchDatabasesNameTableName: map[string]tableNames{
 						"employee_01": {
 							matched: []string{"salary_01", "salary_02"},
@@ -621,7 +600,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			},
 			prepareInstances: []testCasePrepareInstance{
 				{
-					instanceTitle: "TestCreateGroupingChangeIssue_ComplexStatement_Instance_01",
+					instanceID: "complexstatement-instance01",
 					matchDatabasesNameTableName: map[string]tableNames{
 						"employee_01": {
 							matched: []string{"salary_01", "salary_02", "person_01", "person_02", "part_partially_01"},
@@ -635,26 +614,26 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 					},
 					wantDatabaseTaskStatement: map[string][]string{
 						"employee_01": {
-							"ALTER TABLE salary_01 ADD COLUMN num INT;\n\nCREATE INDEX salary_01_num_idx ON salary_01 (num);\n",
-							"ALTER TABLE salary_02 ADD COLUMN num INT;\n\nCREATE INDEX salary_02_num_idx ON salary_02 (num);\n",
-							"\nCREATE TABLE singleton(id INT);\n",
+							"\nALTER TABLE part_partially_01 ADD COLUMN num INT;\n",
 							"\nALTER TABLE person_01 ADD COLUMN name VARCHAR(30);\n",
 							"\nALTER TABLE person_02 ADD COLUMN name VARCHAR(30);\n",
-							"\nALTER TABLE part_partially_01 ADD COLUMN num INT;\n",
 							"\nALTER TABLE singleton ADD COLUMN num INT\n;\n",
+							"\nCREATE TABLE singleton(id INT);\n",
+							"ALTER TABLE salary_01 ADD COLUMN num INT;\n\nCREATE INDEX salary_01_num_idx ON salary_01 (num);\n",
+							"ALTER TABLE salary_02 ADD COLUMN num INT;\n\nCREATE INDEX salary_02_num_idx ON salary_02 (num);\n",
 						},
 						"employee_02": {
-							"ALTER TABLE salary_03 ADD COLUMN num INT;\n\nCREATE INDEX salary_03_num_idx ON salary_03 (num);\n",
-							"ALTER TABLE salary_04 ADD COLUMN num INT;\n\nCREATE INDEX salary_04_num_idx ON salary_04 (num);\n",
-							"\nCREATE TABLE singleton(id INT);\n",
 							"\nALTER TABLE person_03 ADD COLUMN name VARCHAR(30);\n",
 							"\nALTER TABLE person_04 ADD COLUMN name VARCHAR(30);\n",
 							"\nALTER TABLE singleton ADD COLUMN num INT\n;\n",
+							"\nCREATE TABLE singleton(id INT);\n",
+							"ALTER TABLE salary_03 ADD COLUMN num INT;\n\nCREATE INDEX salary_03_num_idx ON salary_03 (num);\n",
+							"ALTER TABLE salary_04 ADD COLUMN num INT;\n\nCREATE INDEX salary_04_num_idx ON salary_04 (num);\n",
 						},
 					},
 				},
 				{
-					instanceTitle: "TestCreateGroupingChangeIssue_ComplexStatement_Instance_02",
+					instanceID: "complexstatement-instance02",
 					matchDatabasesNameTableName: map[string]tableNames{
 						"employee_03": {
 							matched: []string{"salary_05", "salary_06", "person_05", "person_06"},
@@ -668,21 +647,21 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 					},
 					wantDatabaseTaskStatement: map[string][]string{
 						"employee_03": {
-							"ALTER TABLE salary_05 ADD COLUMN num INT;\n\nCREATE INDEX salary_05_num_idx ON salary_05 (num);\n",
-							"ALTER TABLE salary_06 ADD COLUMN num INT;\n\nCREATE INDEX salary_06_num_idx ON salary_06 (num);\n",
-							"\nCREATE TABLE singleton(id INT);\n",
 							"\nALTER TABLE person_05 ADD COLUMN name VARCHAR(30);\n",
 							"\nALTER TABLE person_06 ADD COLUMN name VARCHAR(30);\n",
 							"\nALTER TABLE singleton ADD COLUMN num INT\n;\n",
+							"\nCREATE TABLE singleton(id INT);\n",
+							"ALTER TABLE salary_05 ADD COLUMN num INT;\n\nCREATE INDEX salary_05_num_idx ON salary_05 (num);\n",
+							"ALTER TABLE salary_06 ADD COLUMN num INT;\n\nCREATE INDEX salary_06_num_idx ON salary_06 (num);\n",
 						},
 						"employee_04": {
-							"ALTER TABLE salary_07 ADD COLUMN num INT;\n\nCREATE INDEX salary_07_num_idx ON salary_07 (num);\n",
-							"ALTER TABLE salary_08 ADD COLUMN num INT;\n\nCREATE INDEX salary_08_num_idx ON salary_08 (num);\n",
-							"\nCREATE TABLE singleton(id INT);\n",
+							"\nALTER TABLE part_partially_02 ADD COLUMN num INT;\n",
 							"\nALTER TABLE person_07 ADD COLUMN name VARCHAR(30);\n",
 							"\nALTER TABLE person_08 ADD COLUMN name VARCHAR(30);\n",
-							"\nALTER TABLE part_partially_02 ADD COLUMN num INT;\n",
 							"\nALTER TABLE singleton ADD COLUMN num INT\n;\n",
+							"\nCREATE TABLE singleton(id INT);\n",
+							"ALTER TABLE salary_07 ADD COLUMN num INT;\n\nCREATE INDEX salary_07_num_idx ON salary_07 (num);\n",
+							"ALTER TABLE salary_08 ADD COLUMN num INT;\n\nCREATE INDEX salary_08_num_idx ON salary_08 (num);\n",
 						},
 					},
 				},
@@ -706,16 +685,6 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			err = ctl.setLicense()
-			a.NoError(err)
-
-			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-			a.NoError(err)
-
-			project, err := ctl.createProject(ctx)
-			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
 
 			instanceResourceID2InstanceTitle := make(map[string]string)
 			var stopInstances []func()
@@ -725,22 +694,21 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 				stopInstances = append(stopInstances, stopInstance)
 
-				instanceResourceID := generateRandomString("instance", 10)
 				instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
-					InstanceId: instanceResourceID,
+					InstanceId: prepareInstance.instanceID,
 					Instance: &v1pb.Instance{
-						Title:       prepareInstance.instanceTitle,
+						Title:       prepareInstance.instanceID,
 						Engine:      v1pb.Engine_MYSQL,
-						Environment: prodEnvironment.Name,
+						Environment: "environments/prod",
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "root", Password: ""}},
 						Activation:  true,
 					},
 				})
 				a.NoError(err)
-				instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
+				instanceResourceID2InstanceTitle[prepareInstance.instanceID] = instance.Title
 
 				for preCreateDatabase := range prepareInstance.matchDatabasesNameTableName {
-					err = ctl.createDatabase(ctx, projectUID, instance, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 					dbDriver, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s", mysqlPort, preCreateDatabase))
 					a.NoError(err)
@@ -762,7 +730,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 					a.NoError(err)
 				}
 				for preCreateDatabase, preCreateTables := range prepareInstance.unmatchedDatabaseNameTableName {
-					err = ctl.createDatabase(ctx, projectUID, instance, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
 					dbDriver, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s", mysqlPort, preCreateDatabase))
 					a.NoError(err)
@@ -781,13 +749,14 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				}
 			}
 
-			for _, stopInstance := range stopInstances {
-				//nolint: revive
-				defer stopInstance()
-			}
+			defer func() {
+				for _, stopInstance := range stopInstances {
+					stopInstance()
+				}
+			}()
 
 			databaseGroup, err := ctl.projectServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
-				Parent:          project.Name,
+				Parent:          ctl.project.Name,
 				DatabaseGroupId: tc.databaseGroupPlaceholder,
 				DatabaseGroup: &v1pb.DatabaseGroup{
 					DatabasePlaceholder: tc.databaseGroupPlaceholder,
@@ -818,51 +787,56 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				a.NoError(err)
 			}
 
-			createContext := &api.MigrationContext{
-				DetailList: []*api.MigrationDetail{
-					{
-						MigrationType:     db.Migrate,
-						DatabaseGroupName: databaseGroup.Name,
-						Statement:         tc.statement,
-						EarliestAllowedTs: 0,
-					},
+			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+				Parent: ctl.project.Name,
+				Sheet: &v1pb.Sheet{
+					Title:      "migration statement sheet",
+					Content:    []byte(tc.statement),
+					Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+					Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+					Type:       v1pb.Sheet_TYPE_SQL,
 				},
-			}
-			createContextBytes, err := json.Marshal(createContext)
-			a.NoError(err)
-
-			issue, err := ctl.createIssue(api.IssueCreate{
-				ProjectID:     projectUID,
-				Name:          fmt.Sprintf("grouping change issue for test %s", t.Name()),
-				Type:          api.IssueDatabaseSchemaUpdate,
-				Description:   "",
-				AssigneeID:    api.SystemBotID,
-				CreateContext: string(createContextBytes),
-				ValidateOnly:  true,
 			})
 			a.NoError(err)
-			a.NotNil(issue)
-			a.Equal(1, len(issue.Pipeline.StageList))
+			_, rollout, _, err := ctl.changeDatabaseWithConfig(ctx, ctl.project, []*v1pb.Plan_Step{
+				{
+					Specs: []*v1pb.Plan_Spec{
+						{
+							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+									Target: databaseGroup.Name,
+									Sheet:  sheet.Name,
+									Type:   v1pb.Plan_ChangeDatabaseConfig_DATA,
+								},
+							},
+						},
+					},
+				},
+			})
+			a.NoError(err)
 
-			gotInstanceDatabaseToTaskStatement := make(map[string]map[string][]string)
-			for _, task := range issue.Pipeline.StageList[0].TaskList {
-				a.Equal(api.TaskDatabaseSchemaUpdate, task.Type)
-				if _, ok := gotInstanceDatabaseToTaskStatement[task.Instance.Name]; !ok {
-					gotInstanceDatabaseToTaskStatement[task.Instance.Name] = make(map[string][]string)
+			gotDatabaseToTaskStatement := make(map[string][]string)
+			for _, task := range rollout.Stages[0].Tasks {
+				var sheetName string
+				switch task.Type {
+				case v1pb.Task_DATABASE_SCHEMA_UPDATE:
+					sheetName = task.GetDatabaseSchemaUpdate().Sheet
+				case v1pb.Task_DATABASE_DATA_UPDATE:
+					sheetName = task.GetDatabaseDataUpdate().Sheet
 				}
-				gotInstanceDatabaseToTaskStatement[task.Instance.Name][task.Database.Name] = append(gotInstanceDatabaseToTaskStatement[task.Instance.Name][task.Database.Name], task.Statement)
+				if sheetName != "" {
+					statementSheet, err := ctl.sheetServiceClient.GetSheet(ctx, &v1pb.GetSheetRequest{Name: sheetName})
+					a.NoError(err)
+					gotDatabaseToTaskStatement[task.Target] = append(gotDatabaseToTaskStatement[task.Target], string(statementSheet.Content))
+				}
 			}
 
 			for _, prepareInstance := range tc.prepareInstances {
-				a.Contains(gotInstanceDatabaseToTaskStatement, prepareInstance.instanceTitle)
-				gotInstanceDatabaseToTaskStatement := gotInstanceDatabaseToTaskStatement[prepareInstance.instanceTitle]
 				for wantDatabaseName, wantDatabaseStatements := range prepareInstance.wantDatabaseTaskStatement {
-					a.Contains(gotInstanceDatabaseToTaskStatement, wantDatabaseName)
-					gotDatabaseStatements := gotInstanceDatabaseToTaskStatement[wantDatabaseName]
-					a.Equal(len(wantDatabaseStatements), len(gotDatabaseStatements))
-					for _, wantDatabaseStatement := range wantDatabaseStatements {
-						a.Contains(gotDatabaseStatements, wantDatabaseStatement)
-					}
+					database := fmt.Sprintf("instances/%s/databases/%s", prepareInstance.instanceID, wantDatabaseName)
+					gotDatabaseStatements := gotDatabaseToTaskStatement[database]
+					slices.Sort(gotDatabaseStatements)
+					a.Equal(wantDatabaseStatements, gotDatabaseStatements)
 				}
 			}
 		})

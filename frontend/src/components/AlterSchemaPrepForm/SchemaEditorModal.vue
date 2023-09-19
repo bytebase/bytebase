@@ -1,6 +1,7 @@
 <template>
   <BBModal
-    :title="$t('database.alter-schema')"
+    :title="$t('database.edit-schema')"
+    :trap-focus="false"
     class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
     @close="dismissModal"
   >
@@ -11,7 +12,7 @@
         class="-mb-px px-3 leading-9 rounded-t-md flex items-center text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
         :class="
           state.selectedTab === 'schema-editor' &&
-          'bg-white border-gray-300 text-gray-800'
+          'bg-white !border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('schema-editor')"
       >
@@ -24,7 +25,7 @@
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
         :class="
           state.selectedTab === 'raw-sql' &&
-          'bg-white border-gray-300 text-gray-800'
+          'bg-white !border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('raw-sql')"
       >
@@ -32,10 +33,17 @@
       </button>
     </div>
     <div class="w-full h-full max-h-full overflow-auto border-b mb-4">
-      <SchemaEditor
+      <div
         v-show="state.selectedTab === 'schema-editor'"
-        :database-id-list="props.databaseIdList"
-      />
+        class="w-full h-full py-2"
+      >
+        <SchemaEditorV1
+          :engine="databaseEngine"
+          :project="project"
+          :resource-type="'database'"
+          :databases="databaseList"
+        />
+      </div>
       <div
         v-show="state.selectedTab === 'raw-sql'"
         class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto"
@@ -74,9 +82,8 @@
           </div>
         </div>
         <MonacoEditor
-          ref="editorRef"
           class="w-full h-full border border-b-0"
-          data-label="bb-issue-sql-editor"
+          data-label="bb-schema-editor-sql-editor"
           :value="state.editStatement"
           :auto-focus="false"
           :dialect="dialectOfEngineV1(databaseEngine)"
@@ -123,36 +130,39 @@
 </template>
 
 <script lang="ts" setup>
+import axios from "axios";
 import dayjs from "dayjs";
 import { head, uniq } from "lodash-es";
 import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
+import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
+import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
+import {
+  useDatabaseV1Store,
+  useNotificationStore,
+  useSchemaEditorV1Store,
+} from "@/store";
 import {
   ComposedDatabase,
   DatabaseEdit,
+  DatabaseEditResult,
   dialectOfEngineV1,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import { allowGhostMigrationV1 } from "@/utils";
-import {
-  useDatabaseV1Store,
-  useNotificationStore,
-  useSchemaEditorStore,
-} from "@/store";
 import {
   checkHasSchemaChanges,
   diffSchema,
   mergeDiffResults,
 } from "@/utils/schemaEditor/diffSchema";
 import { validateDatabaseEdit } from "@/utils/schemaEditor/validate";
-import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
-import SchemaEditor from "@/components/SchemaEditor/SchemaEditor.vue";
-import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
+import MonacoEditor from "../MonacoEditor";
 import GhostDialog from "./GhostDialog.vue";
-import { Engine } from "@/types/proto/v1/common";
-import { TenantMode } from "@/types/proto/v1/project_service";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
@@ -190,7 +200,7 @@ const state = reactive<LocalState>({
   editStatement: "",
   showActionConfirmModal: false,
 });
-const editorStore = useSchemaEditorStore();
+const schemaEditorV1Store = useSchemaEditorV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
 const statementFromSchemaEditor = ref<string>();
@@ -298,17 +308,19 @@ const handleSyncSQLFromSchemaEditor = async () => {
 
 const getDatabaseEditListWithSchemaEditor = () => {
   const databaseEditList: DatabaseEdit[] = [];
-  for (const database of editorStore.databaseList) {
-    const databaseSchema = editorStore.databaseSchemaById.get(database.uid);
-    if (!databaseSchema) {
-      continue;
-    }
-
+  for (const databaseSchema of Array.from(
+    schemaEditorV1Store.resourceMap["database"].values()
+  )) {
+    const database = databaseSchema.database;
     for (const schema of databaseSchema.schemaList) {
       const originSchema = databaseSchema.originSchemaList.find(
         (originSchema) => originSchema.id === schema.id
       );
-      const diffSchemaResult = diffSchema(database.uid, originSchema, schema);
+      if (!originSchema) {
+        continue;
+      }
+
+      const diffSchemaResult = diffSchema(database.name, originSchema, schema);
       if (checkHasSchemaChanges(diffSchemaResult)) {
         const index = databaseEditList.findIndex(
           (edit) => String(edit.databaseId) === database.uid
@@ -335,9 +347,7 @@ const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
   const databaseEditMap: Map<string, string> = new Map();
   if (databaseEditList.length > 0) {
     for (const databaseEdit of databaseEditList) {
-      const databaseEditResult = await editorStore.postDatabaseEdit(
-        databaseEdit
-      );
+      const databaseEditResult = await postDatabaseEdit(databaseEdit);
       if (databaseEditResult.validateResultList.length > 0) {
         notificationStore.pushNotification({
           module: "bytebase",
@@ -533,8 +543,18 @@ const generateIssueName = (
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
-
   return issueNameParts.join(" ");
+};
+
+const postDatabaseEdit = async (databaseEdit: DatabaseEdit) => {
+  const resData = (
+    await axios.post(
+      `/api/database/${databaseEdit.databaseId}/edit`,
+      databaseEdit
+    )
+  ).data;
+  const databaseEditResult = resData.data.attributes as DatabaseEditResult;
+  return databaseEditResult;
 };
 
 watch(

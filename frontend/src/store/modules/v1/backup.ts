@@ -1,14 +1,13 @@
 import { defineStore } from "pinia";
 import { computed, reactive, unref, watch } from "vue";
-
 import { databaseServiceClient, environmentServiceClient } from "@/grpcweb";
+import { MaybeRef } from "@/types";
 import {
   Backup,
   BackupSetting,
   ListBackupsRequest,
 } from "@/types/proto/v1/database_service";
 import { EnvironmentBackupSetting } from "@/types/proto/v1/environment_service";
-import { MaybeRef } from "@/types";
 import { useAuthStore } from "../auth";
 
 export const useBackupV1Store = defineStore("backup_v1", () => {

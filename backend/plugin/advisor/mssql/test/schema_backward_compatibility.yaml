@@ -1,0 +1,123 @@
+- statement: DROP TABLE MyTable;
+  want:
+    - status: WARN
+      code: 112
+      title: schema.backward-compatibility
+      content: Drop table TEST_DB.dbo.mytable may cause incompatibility with the existing data and code
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE MyTable(Id INT PRIMARY KEY);
+    DROP TABLE MyTable;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: DROP SCHEMA MySchema;
+  want:
+    - status: WARN
+      code: 112
+      title: schema.backward-compatibility
+      content: Drop schema TEST_DB.myschema may cause incompatibility with the existing data and code
+      line: 1
+      details: ""
+- statement: |-
+    CREATE SCHEMA AUTHORIZATION dbo;
+    DROP SCHEMA dbo;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: DROP DATABASE MyDB;
+  want:
+    - status: WARN
+      code: 112
+      title: schema.backward-compatibility
+      content: Drop database mydb may cause incompatibility with the existing data and code
+      line: 1
+      details: ""
+- statement: |-
+    CREATE DATABASE MyDB;
+    DROP DATABASE MyDB;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    ALTER TABLE MyTable DROP COLUMN MyColumnOne, MyColumnTwo;
+    ALTER TABLE MyTable ALTER COLUMN MyColumnOne INT NOT NULL;
+    ALTER TABLE MyTable ADD PRIMARY KEY (MyColumnOne, MyColumnTwo);
+    ALTER TABLE MyTable ADD UNIQUE (MyColumnOne, MyColumnTwo);
+    ALTER TABLE MyTable ADD CHECK NOT FOR REPLICATION (MyColumnOne > 0);
+    ALTER TABLE MyTable WITH NOCHECK ADD CONSTRAINT MyConstraint CHECK (MyColumnOne > 0);
+    ALTER TABLE MyTable WITH CHECK ADD CONSTRAINT MyConstraint CHECK (MyColumnOne > 0);
+    ALTER TABLE MyTable WITH NOCHECK ADD FOREIGN KEY (MyColumnOne) REFERENCES MyTableTwo(MyColumnTwo);
+    ALTER TABLE MyTable WITH CHECK ADD FOREIGN KEY (MyColumnOne) REFERENCES MyTableTwo(MyColumnTwo);
+  want:
+    - status: WARN
+      code: 112
+      title: schema.backward-compatibility
+      content: Drop column mycolumnone, mycolumntwo may cause incompatibility with the existing data and code
+      line: 1
+      details: ""
+    - status: WARN
+      code: 111
+      title: schema.backward-compatibility
+      content: Alter COLUMN mycolumnone may cause incompatibility with the existing data and code
+      line: 2
+      details: ""
+    - status: WARN
+      code: 106
+      title: schema.backward-compatibility
+      content: Add PRIMARY KEY may cause incompatibility with the existing data and code
+      line: 3
+      details: ""
+    - status: WARN
+      code: 107
+      title: schema.backward-compatibility
+      content: Add UNIQUE KEY may cause incompatibility with the existing data and code
+      line: 4
+      details: ""
+    - status: WARN
+      code: 109
+      title: schema.backward-compatibility
+      content: Add CHECK may cause incompatibility with the existing data and code
+      line: 5
+      details: ""
+    - status: WARN
+      code: 108
+      title: schema.backward-compatibility
+      content: Add CHECK WITH NO CHECK may cause incompatibility with the existing data and code
+      line: 6
+      details: ""
+    - status: WARN
+      code: 108
+      title: schema.backward-compatibility
+      content: Add FOREIGN KEY WITH NO CHECK may cause incompatibility with the existing data and code
+      line: 8
+      details: ""
+- statement: EXEC sp_rename 'Sales.SalesTerritory', 'SalesTerr';
+  want:
+    - status: WARN
+      code: 102
+      title: schema.backward-compatibility
+      content: Rename Table 'Sales.SalesTerritory' WITH may cause incompatibility with the existing data and code
+      line: 1
+      details: ""
+- statement: EXEC sp_rename 'dbo.ErrorLog.ErrorTime', 'ErrorDateTime', 'COLUMN';
+  want:
+    - status: WARN
+      code: 104
+      title: schema.backward-compatibility
+      content: Rename COLUMN 'dbo.ErrorLog.ErrorTime' may cause incompatibility with the existing data and code
+      line: 1
+      details: ""

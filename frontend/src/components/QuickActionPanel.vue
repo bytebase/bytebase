@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pt-1 overflow-hidden grid grid-cols-5 gap-x-2 gap-y-4 md:inline-flex items-stretch"
+    class="pt-1 overflow-hidden grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch"
   >
     <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
@@ -9,26 +9,12 @@
         data-label="bb-quick-action-add-instance"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createInstance">
-          <heroicons-outline:plus-sm class="w-5 h-5" />
+          <heroicons-outline:plus-sm class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.add-instance") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.user.manage'"
-        class="flex flex-col items-center w-24"
-      >
-        <router-link to="/setting/member" class="btn-icon-primary p-3">
-          <heroicons-outline:users class="w-5 h-5" />
-        </router-link>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("quick-action.manage-user") }}
         </h3>
       </div>
 
@@ -39,7 +25,7 @@
           data-label="bb-quick-action-new-db"
         >
           <button class="btn-icon-primary p-3" @click.prevent="createDatabase">
-            <heroicons-outline:database class="w-5 h-5" />
+            <heroicons-outline:database class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -57,12 +43,12 @@
             data-label="bb-alter-schema-button"
             @click.prevent="alterSchema"
           >
-            <heroicons-outline:pencil-alt class="w-5 h-5" />
+            <heroicons-outline:pencil-alt class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
-            {{ $t("database.alter-schema") }}
+            {{ $t("database.edit-schema") }}
           </h3>
         </div>
 
@@ -71,7 +57,7 @@
           class="flex flex-col items-center w-24"
         >
           <button class="btn-icon-primary p-3" @click.prevent="changeData">
-            <heroicons-outline:pencil class="w-5 h-5" />
+            <heroicons-outline:pencil class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -82,25 +68,11 @@
       </template>
 
       <div
-        v-if="isDev() && quickAction === 'quickaction.bb.database.troubleshoot'"
-        class="flex flex-col items-center w-24"
-      >
-        <router-link to="/issue/new" class="btn-icon-primary p-3">
-          <heroicons-outline:hand class="w-5 h-5" />
-        </router-link>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("quick-action.troubleshoot") }}
-        </h3>
-      </div>
-
-      <div
         v-if="quickAction === 'quickaction.bb.environment.create'"
         class="flex flex-col items-center w-36"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createEnvironment">
-          <heroicons-outline:plus-sm class="w-5 h-5" />
+          <heroicons-outline:plus-sm class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -117,7 +89,7 @@
           class="btn-icon-primary p-3"
           @click.prevent="reorderEnvironment"
         >
-          <heroicons-outline:selector class="transform rotate-90 w-5 h-5" />
+          <heroicons-outline:selector class="transform rotate-90 w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -132,7 +104,7 @@
         data-label="bb-quick-action-new-project"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createProject">
-          <heroicons-outline:template class="w-5 h-5" />
+          <heroicons-outline:template class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -146,7 +118,7 @@
         class="flex flex-col items-center w-24"
       >
         <button class="btn-icon-primary p-3" @click.prevent="transferDatabase">
-          <heroicons-outline:chevron-double-down class="w-5 h-5" />
+          <heroicons-outline:chevron-double-down class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -163,7 +135,7 @@
           class="btn-icon-primary p-3"
           @click.prevent="transferOutDatabase"
         >
-          <heroicons-outline:chevron-double-up class="w-5 h-5" />
+          <heroicons-outline:chevron-double-up class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -181,7 +153,7 @@
             class="btn-icon-primary p-3"
             @click.prevent="state.showRequestQueryPanel = true"
           >
-            <heroicons-outline:document-search class="w-5 h-5" />
+            <heroicons-outline:document-search class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -198,7 +170,7 @@
             class="btn-icon-primary p-3"
             @click.prevent="state.showRequestExportPanel = true"
           >
-            <heroicons-outline:document-download class="w-5 h-5" />
+            <heroicons-outline:document-download class="w-4 h-4" />
           </button>
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -220,7 +192,7 @@
                 'quickaction.bb.subscription.license-assignment')
           "
         >
-          <heroicons-outline:academic-cap class="w-5 h-5" />
+          <heroicons-outline:academic-cap class="w-4 h-4" />
         </button>
         <h3
           class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
@@ -232,6 +204,8 @@
   </div>
 
   <Drawer
+    :auto-focus="true"
+    :trap-focus="false"
     :show="state.quickActionType !== undefined"
     @close="state.quickActionType = undefined"
   >
@@ -286,6 +260,7 @@
 
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
+    :redirect-to-issue-page="true"
     @close="state.showRequestExportPanel = false"
   />
 
@@ -295,6 +270,12 @@
     "
     @dismiss="state.quickActionType = undefined"
   />
+
+  <FeatureModal
+    :open="state.showFeatureModal && state.feature"
+    :feature="state.feature"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -302,26 +283,28 @@ import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-
-import { QuickActionType } from "@/types";
-import { idFromSlug, isDev } from "@/utils";
+import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
+import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import InstanceForm from "@/components/InstanceForm/";
+import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
+import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
+import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
+import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
+import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
+import { Drawer } from "@/components/v2";
 import {
+  useInstanceV1Store,
   useCommandStore,
   useCurrentUserIamPolicy,
   useProjectV1ListByCurrentUser,
   useSubscriptionV1Store,
 } from "@/store";
-import { Drawer } from "@/components/v2";
-import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
-import InstanceForm from "@/components/InstanceForm/";
-import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
-import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
-import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
-import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
-import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
-import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
+import { QuickActionType } from "@/types";
+import { idFromSlug } from "@/utils";
 
 interface LocalState {
+  feature?: string;
+  showFeatureModal: boolean;
   quickActionType: QuickActionType | undefined;
   showRequestQueryPanel: boolean;
   showRequestExportPanel: boolean;
@@ -345,6 +328,7 @@ const hasDBAWorkflowFeature = computed(() => {
 });
 
 const state = reactive<LocalState>({
+  showFeatureModal: false,
   quickActionType: undefined,
   showRequestQueryPanel: false,
   showRequestExportPanel: false,
@@ -386,6 +370,12 @@ const transferOutDatabase = () => {
 };
 
 const createInstance = () => {
+  const instanceList = useInstanceV1Store().activeInstanceList;
+  if (subscriptionStore.instanceCountLimit <= instanceList.length) {
+    state.feature = "bb.feature.instance-count";
+    state.showFeatureModal = true;
+    return;
+  }
   state.quickActionType = "quickaction.bb.instance.create";
 };
 
@@ -414,21 +404,13 @@ const QuickActionMap: Record<string, Partial<Action>> = {
     name: t("quick-action.add-instance"),
     perform: () => createInstance(),
   },
-  "quickaction.bb.user.manage": {
-    name: t("quick-action.manage-user"),
-    perform: () => router.push({ name: "setting.workspace.member" }),
-  },
   "quickaction.bb.database.create": {
     name: t("quick-action.new-db"),
     perform: () => createDatabase(),
   },
   "quickaction.bb.database.schema.update": {
-    name: t("database.alter-schema"),
+    name: t("database.edit-schema"),
     perform: () => alterSchema(),
-  },
-  "quickaction.bb.database.troubleshoot": {
-    name: t("quick-action.troubleshoot"),
-    perform: () => router.push({ path: "/issue/new" }),
   },
   "quickaction.bb.environment.create": {
     name: t("quick-action.add-environment"),

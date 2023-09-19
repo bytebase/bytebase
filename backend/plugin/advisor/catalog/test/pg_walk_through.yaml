@@ -14,6 +14,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default: null
@@ -22,6 +24,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -31,6 +35,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
             - name: test
               columns:
@@ -42,6 +48,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: name
                   position: 2
                   default: null
@@ -50,6 +58,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -59,12 +69,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE public.t(a int, "B" int);
@@ -85,6 +101,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: B
                   position: 2
                   default: null
@@ -93,6 +111,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: t_a_B_idx
                   expressions:
@@ -120,6 +140,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
             - name: test
               columns:
@@ -131,6 +153,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: name
                   position: 2
                   default: null
@@ -139,6 +163,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -148,12 +174,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -178,6 +210,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default:
@@ -187,6 +221,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: c
                   position: 3
                   default: null
@@ -195,6 +231,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: t_a_b_c_idx
                   expressions:
@@ -239,6 +277,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
             - name: test
               columns:
@@ -250,6 +290,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: name
                   position: 2
                   default: null
@@ -258,6 +300,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -267,12 +311,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -310,6 +360,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default: null
@@ -318,6 +370,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: d
                   position: 4
                   default: null
@@ -326,6 +380,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: t_a_b_c_idx
                   expressions:
@@ -378,6 +434,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
             - name: test
               columns:
@@ -389,6 +447,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: name
                   position: 2
                   default: null
@@ -397,6 +457,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -406,12 +468,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -437,6 +505,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default:
@@ -446,6 +516,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: c
                   position: 3
                   default: null
@@ -454,6 +526,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: t_a_b_c_idx
                   expressions:
@@ -498,6 +572,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
             - name: test
               columns:
@@ -509,6 +585,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: name
                   position: 2
                   default: null
@@ -517,6 +595,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -526,12 +606,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -557,6 +643,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: b
                   position: 2
                   default:
@@ -566,6 +654,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: c
                   position: 3
                   default: null
@@ -574,6 +664,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes:
                 - name: t_a_b_c_idx
                   expressions:
@@ -609,6 +701,8 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
             - name: test
               columns:
@@ -620,6 +714,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: name
                   position: 2
                   default: null
@@ -628,6 +724,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -637,12 +735,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -668,6 +772,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: name
                   position: 2
                   default: null
@@ -676,6 +782,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -685,12 +793,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -707,6 +821,8 @@
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: ALTER TABLE test DROP COLUMN id;
   want: null
@@ -750,6 +866,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -759,12 +877,18 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null
 - statement: |-
     create view v1 as select * from t;
@@ -785,6 +909,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
                 - name: name
                   position: 2
                   default: null
@@ -793,6 +919,8 @@
                   characterset: ""
                   collation: ""
                   comment: ""
+                  classification: ""
+                  usercomment: ""
               indexes: []
               engine: ""
               collation: ""
@@ -802,10 +930,16 @@
               datafree: 0
               createoptions: ""
               comment: ""
+              classification: ""
+              usercomment: ""
               foreignkeys: []
           views: []
           functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    datashare: false
+    servicename: ""
   err: null

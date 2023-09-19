@@ -16,15 +16,15 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive, watch } from "vue";
-import { UNKNOWN_ID, DEFAULT_PROJECT_ID, unknownProject } from "../types";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import { State } from "@/types/proto/v1/common";
+import { Project, TenantMode } from "@/types/proto/v1/project_service";
 import {
   hasWorkspacePermissionV1,
   isMemberOfProjectV1,
   projectV1Name,
 } from "@/utils";
-import { Project, TenantMode } from "@/types/proto/v1/project_service";
-import { State } from "@/types/proto/v1/common";
+import { UNKNOWN_ID, DEFAULT_PROJECT_ID, unknownProject } from "../types";
 
 interface LocalState {
   selectedProject?: Project;

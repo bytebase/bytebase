@@ -119,6 +119,15 @@ type LabelSelectorRequirement struct {
 
 // GetDeploymentConfigV2 returns the deployment config.
 func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*DeploymentConfigMessage, error) {
+	// Return the default deployment config if a project is not in tenant mode any more.
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: &projectUID})
+	if err != nil {
+		return nil, err
+	}
+	if project.TenantMode != api.TenantModeTenant {
+		return s.getDefaultDeploymentConfigV2(ctx)
+	}
+
 	if deploymentConfig, ok := s.projectIDDeploymentConfigCache.Load(projectUID); ok {
 		return deploymentConfig.(*DeploymentConfigMessage), nil
 	}

@@ -1,5 +1,6 @@
 import {
   IdentityProviderType,
+  OAuth2AuthStyle,
   OAuth2IdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
 
@@ -10,6 +11,8 @@ export const identityProviderTypeToString = (
     return "OAuth 2.0";
   } else if (type === IdentityProviderType.OIDC) {
     return "OIDC";
+  } else if (type == IdentityProviderType.LDAP) {
+    return "LDAP";
   } else {
     throw new Error(`identity provider type ${type} not found`);
   }
@@ -38,10 +41,13 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       tokenUrl: "https://github.com/login/oauth/access_token",
       userInfoUrl: "https://api.github.com/user",
       scopes: ["user"],
+      skipTlsVerify: false,
+      authStyle: OAuth2AuthStyle.IN_PARAMS,
       fieldMapping: {
-        identifier: "login",
+        identifier: "email",
         displayName: "name",
-        email: "email",
+        email: "",
+        phone: "",
       },
     },
   },
@@ -57,10 +63,13 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       tokenUrl: "https://gitlab.com/oauth/token",
       userInfoUrl: "https://gitlab.com/api/v4/user",
       scopes: ["read_user"],
+      skipTlsVerify: false,
+      authStyle: OAuth2AuthStyle.IN_PARAMS,
       fieldMapping: {
-        identifier: "username",
+        identifier: "email",
         displayName: "name",
-        email: "email",
+        email: "",
+        phone: "",
       },
     },
   },
@@ -79,10 +88,13 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile",
       ],
+      skipTlsVerify: false,
+      authStyle: OAuth2AuthStyle.IN_PARAMS,
       fieldMapping: {
         identifier: "email",
         displayName: "name",
-        email: "email",
+        email: "",
+        phone: "",
       },
     },
   },
@@ -98,10 +110,13 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
       tokenUrl: "",
       userInfoUrl: "",
       scopes: [],
+      skipTlsVerify: false,
+      authStyle: OAuth2AuthStyle.IN_PARAMS,
       fieldMapping: {
         identifier: "",
         displayName: "",
         email: "",
+        phone: "",
       },
     },
   },

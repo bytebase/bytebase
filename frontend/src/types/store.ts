@@ -1,8 +1,9 @@
 import { MigrationHistoryId, QueryHistory, OnboardingGuideType } from ".";
+import { InstanceUser } from "./InstanceUser";
 import { Backup } from "./backup";
 import { Command } from "./common";
-import { Database } from "./database";
 import { DataSource } from "./dataSource";
+import { Database } from "./database";
 import {
   CommandId,
   DatabaseId,
@@ -13,15 +14,15 @@ import {
   VCSId,
 } from "./id";
 import { Instance, MigrationHistory } from "./instance";
-import { InstanceUser } from "./InstanceUser";
 import { Issue } from "./issue";
 import { IssueSubscriber } from "./issueSubscriber";
+import { Label } from "./label";
 import { Notification } from "./notification";
 import { Principal } from "./principal";
 import { Project } from "./project";
-import { VCS } from "./vcs";
-import { Label } from "./label";
 import { DatabaseMetadata } from "./proto/store/database";
+import { SQLEditorMode } from "./sqlEditor";
+import { VCS } from "./vcs";
 
 export interface PrincipalState {
   principalList: Principal[];
@@ -103,6 +104,7 @@ export interface SQLEditorState {
   isFetchingQueryHistory: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
+  mode: SQLEditorMode;
 }
 
 export interface DebugState {

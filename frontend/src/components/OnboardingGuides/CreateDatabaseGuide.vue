@@ -16,12 +16,12 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { lastTask } from "@/utils";
-import { useIssueStore, useProjectV1List, useInstanceV1List } from "@/store";
-import GuideDialog from "@/plugins/demo/components/GuideDialog.vue";
-import CreateDatabaseGuideFinished from "./CreateDatabaseGuideFinished.vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
+import GuideDialog from "@/plugins/demo/components/GuideDialog.vue";
+import { useIssueStore, useProjectV1List, useInstanceV1List } from "@/store";
+import { lastTask } from "@/utils";
+import CreateDatabaseGuideFinished from "./CreateDatabaseGuideFinished.vue";
 
 const { t } = useI18n();
 const route = useRoute();

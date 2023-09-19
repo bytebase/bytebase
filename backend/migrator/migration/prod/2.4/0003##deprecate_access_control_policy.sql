@@ -1,0 +1,1 @@
+DELETE FROM policy where type = 'bb.policy.access-control';

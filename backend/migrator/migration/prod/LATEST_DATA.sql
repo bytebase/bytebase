@@ -82,30 +82,7 @@ VALUES
         102,
         TRUE,
         'bb.policy.pipeline-approval',
-        '{"value":"MANUAL_APPROVAL_ALWAYS"}'
+        '{"value":"MANUAL_APPROVAL_NEVER"}'
     );
 
-INSERT INTO
-    policy (
-        id,
-        creator_id,
-        updater_id,
-        resource_type,
-        resource_id,
-        inherit_from_parent,
-        type,
-        payload
-    )
-VALUES
-    (
-        103,
-        1,
-        1,
-        'ENVIRONMENT',
-        102,
-        TRUE,
-        'bb.policy.backup-plan',
-        '{"schedule":"WEEKLY"}'
-    );
-
-ALTER SEQUENCE policy_id_seq RESTART WITH 104;
+ALTER SEQUENCE policy_id_seq RESTART WITH 103;

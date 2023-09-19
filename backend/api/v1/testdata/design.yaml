@@ -1,0 +1,200 @@
+- engine: 2
+  baseline: |-
+    CREATE TABLE `t` (
+      `a` int,
+      PRIMARY KEY (`a`),
+      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
+    );
+    CREATE TABLE `t3` (
+      `a` int
+    );
+    CREATE TABLE `t4` (
+      `a` int,
+      `c` int,
+      `d` int,
+      `e` char(10) NOT NULL DEFAULT 'NULL' comment 'this is comment',
+      PRIMARY KEY (`a`, `c`, `d`),
+      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
+    );
+  target:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys: []
+            - name: t4
+              columns:
+                - name: a
+                  position: 0
+                  default:
+                    value: '''default value'''
+                  nullable: false
+                  type: varchar(10)
+                  characterset: ""
+                  collation: ""
+                  comment: this is comment, aha
+                  classification: ""
+                  usercomment: ""
+                - name: b
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: char(10)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                - name: c
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                - name: e
+                  position: 0
+                  default: null
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - a
+                    - b
+                    - c
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - b
+                  referencedschema: ""
+                  referencedtable: t2
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default: null
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                - name: a
+                  position: 0
+                  default: null
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys:
+                - name: fk1
+                  columns:
+                    - b
+                  referencedschema: ""
+                  referencedtable: t4
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  result: |
+    CREATE TABLE `t` (
+      `a` int NOT NULL
+    );
+    CREATE TABLE `t4` (
+      `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
+      `c` int NOT NULL,
+      `e` int  NULL,
+      `b` char(10) NOT NULL,
+      PRIMARY KEY (`a`, `b`, `c`),
+      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
+    );
+
+    CREATE TABLE `t2` (
+      `b` int NULL,
+      `a` int NULL,
+      PRIMARY KEY (`b`),
+      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
+    );

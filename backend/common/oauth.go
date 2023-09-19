@@ -9,6 +9,7 @@ type OauthContext struct {
 	ClientSecret string
 	AccessToken  string
 	RefreshToken string
+	RedirectURL  string
 	Refresher    TokenRefresher
 }
 

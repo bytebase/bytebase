@@ -53,11 +53,11 @@
 
 <script lang="ts" setup>
 import { PropType } from "vue";
-import { SQLReviewPolicyTemplate } from "@/types";
-import { environmentV1Name } from "@/utils";
 import { BBTextField } from "@/bbkit";
-import { SQLReviewTemplateSelector } from "./components";
+import { SQLReviewPolicyTemplate } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { environmentV1Name } from "@/utils";
+import { SQLReviewTemplateSelector } from "./components";
 
 const props = defineProps({
   name: {

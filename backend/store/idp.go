@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -31,6 +30,9 @@ func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
 		configBytes, err := protojson.Marshal(v)
 		return configBytes, err
 	} else if v := config.GetOidcConfig(); v != nil {
+		configBytes, err := protojson.Marshal(v)
+		return configBytes, err
+	} else if v := config.GetLdapConfig(); v != nil {
 		configBytes, err := protojson.Marshal(v)
 		return configBytes, err
 	} else {
@@ -202,11 +204,11 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, string(configBytes))
 	}
 	if v := patch.Delete; v != nil {
-		rowStatus := api.Normal
+		rowStatus := Normal
 		if *patch.Delete {
-			rowStatus = api.Archived
+			rowStatus = Archived
 		}
-		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, rowStatus)
 	}
 	args = append(args, patch.ResourceID)
 
@@ -258,7 +260,7 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, Normal)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -313,6 +315,8 @@ func convertIdentityProviderType(identityProviderType string) storepb.IdentityPr
 		return storepb.IdentityProviderType_OAUTH2
 	} else if identityProviderType == "OIDC" {
 		return storepb.IdentityProviderType_OIDC
+	} else if identityProviderType == "LDAP" {
+		return storepb.IdentityProviderType_LDAP
 	}
 	return storepb.IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED
 }
@@ -336,6 +340,15 @@ func convertIdentityProviderConfigString(identityProviderType storepb.IdentityPr
 		}
 		identityProviderConfig.Config = &storepb.IdentityProviderConfig_OidcConfig{
 			OidcConfig: &formattedConfig,
+		}
+	} else if identityProviderType == storepb.IdentityProviderType_LDAP {
+		var formattedConfig storepb.LDAPIdentityProviderConfig
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := decoder.Unmarshal([]byte(config), &formattedConfig); err != nil {
+			return nil
+		}
+		identityProviderConfig.Config = &storepb.IdentityProviderConfig_LdapConfig{
+			LdapConfig: &formattedConfig,
 		}
 	}
 	return identityProviderConfig

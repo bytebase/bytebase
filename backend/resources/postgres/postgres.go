@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"sort"
 
-	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"os/user"
@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -37,44 +36,36 @@ import (
 var sampleFS embed.FS
 
 const (
-	// SampleInstanceResourceID is the resource id for the sample database.
-	SampleInstanceResourceID = "postgres-sample"
+	// TestSampleInstanceResourceID is the resource id for the test sample database.
+	TestSampleInstanceResourceID = "test-sample-instance"
+	// ProdSampleInstanceResourceID is the resource id for the prod sample database.
+	ProdSampleInstanceResourceID = "prod-sample-instance"
 	// SampleUser is the user name for the sample database.
 	SampleUser = "bbsample"
 	// SampleDatabase is the sample database name.
 	SampleDatabase = "employee"
 )
 
-// isPgDump15 returns true if the pg_dump binary is version 15.
-func isPgDump15(pgDumpPath string) (bool, error) {
-	var cmd *exec.Cmd
-	var version bytes.Buffer
-	cmd = exec.Command(pgDumpPath, "-V")
-	cmd.Stdout = &version
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return false, err
-	}
-	pgDump15 := "pg_dump (PostgreSQL) 15.1\n"
-	return pgDump15 == version.String(), nil
-}
-
 // Install will extract the postgres and utility tar in resourceDir.
 // Returns the bin directory on success.
 func Install(resourceDir string) (string, error) {
 	var tarName string
-	switch runtime.GOOS {
-	case "darwin":
-		tarName = "postgres-darwin-x86_64.txz"
-	case "linux":
-		tarName = "postgres-linux-x86_64.txz"
+	switch {
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
+		tarName = "postgres-darwin-amd64.txz"
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
+		tarName = "postgres-darwin-arm64.txz"
+	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
+		tarName = "postgres-linux-amd64.txz"
+	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
+		tarName = "postgres-linux-arm64.txz"
 	default:
-		return "", errors.Errorf("OS %q is not supported", runtime.GOOS)
+		return "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
 	}
+
 	version := strings.TrimSuffix(tarName, ".txz")
 	pgBaseDir := path.Join(resourceDir, version)
 	pgBinDir := path.Join(pgBaseDir, "bin")
-	pgDumpPath := path.Join(pgBinDir, "pg_dump")
 	needInstall := false
 
 	if _, err := os.Stat(pgBaseDir); err != nil {
@@ -83,26 +74,9 @@ func Install(resourceDir string) (string, error) {
 		}
 		// Install if not exist yet.
 		needInstall = true
-	} else {
-		// TODO(zp): remove this when pg_dump 15 is populated to all users.
-		// Bytebase bump the pg_dump version to 15 to support PostgreSQL 15.
-		// We need to reinstall the PostgreSQL resources if md5sum of pg_dump is different.
-		// Check if pg_dump is version 15.
-		isPgDump15, err := isPgDump15(pgDumpPath)
-		if err != nil {
-			return "", err
-		}
-		if !isPgDump15 {
-			needInstall = true
-			// Reinstall if pg_dump is not version 15.
-			log.Info("Remove old postgres binary before installing new pg_dump...")
-			if err := os.RemoveAll(pgBaseDir); err != nil {
-				return "", errors.Wrapf(err, "failed to remove postgres binary base directory %q", pgBaseDir)
-			}
-		}
 	}
 	if needInstall {
-		log.Info("Installing PostgreSQL utilities...")
+		slog.Info("Installing PostgreSQL utilities...")
 		// The ordering below made Postgres installation atomic.
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 		if err := installInDir(tarName, tmpDir); err != nil {
@@ -195,6 +169,23 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 		return nil
 	}
 
+	// For pgDataDir and every intermediate to be created by MkdirAll, we need to prepare to chown
+	// it to the bytebase user. Otherwise, initdb will complain file permission error.
+	dirListToChown := []string{pgDataDir}
+	path := filepath.Dir(pgDataDir)
+	for path != "/" {
+		_, err := os.Stat(path)
+		if err == nil {
+			break
+		}
+		if !os.IsNotExist(err) {
+			return errors.Wrapf(err, "failed to check data directory path existence %q", path)
+		}
+		dirListToChown = append(dirListToChown, path)
+		path = filepath.Dir(path)
+	}
+	slog.Debug("Data directory list to Chown", slog.Any("dirListToChown", dirListToChown))
+
 	if err := os.MkdirAll(pgDataDir, 0700); err != nil {
 		return errors.Wrapf(err, "failed to make postgres data directory %q", pgDataDir)
 	}
@@ -218,19 +209,23 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 			Setpgid:    true,
 			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
-		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
-			return errors.Wrapf(err, "failed to change owner of data directory %q to bytebase", pgDataDir)
+		slog.Info(fmt.Sprintf("Recursively change owner of data directory %q to bytebase...", pgDataDir))
+		for _, dir := range dirListToChown {
+			slog.Info(fmt.Sprintf("Change owner of %q to bytebase", dir))
+			if err := os.Chown(dir, int(uid), int(gid)); err != nil {
+				return errors.Wrapf(err, "failed to change owner of %q to bytebase", dir)
+			}
 		}
 	}
 
 	// Suppress log spam
 	p.Stdout = nil
 	p.Stderr = os.Stderr
-	log.Info("-----Postgres initdb BEGIN-----")
+	slog.Info("-----Postgres initdb BEGIN-----")
 	if err := p.Run(); err != nil {
 		return errors.Wrapf(err, "failed to initdb %q", p.String())
 	}
-	log.Info("-----Postgres initdb END-----")
+	slog.Info("-----Postgres initdb END-----")
 
 	return nil
 }
@@ -428,7 +423,7 @@ func StartSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, port i
 	}
 
 	if err := turnOnPGStateStatements(pgDataDir); err != nil {
-		log.Warn("Failed to turn on pg_stat_statements", zap.Error(err))
+		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
 	}
 
 	if err := Start(port, pgBinDir, pgDataDir, mode == common.ReleaseModeDev /* serverLog */); err != nil {
@@ -441,7 +436,7 @@ func StartSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, port i
 	}
 
 	if err := createPGStatStatementsExtension(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
-		log.Warn("Failed to create pg_stat_statements extension", zap.Error(err))
+		slog.Warn("Failed to create pg_stat_statements extension", log.BBError(err))
 	}
 
 	return nil
@@ -469,7 +464,7 @@ func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, da
 	if _, err := driver.Execute(ctx, "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;", false, db.ExecuteOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to create pg_stat_statements extension")
 	}
-	log.Info("Successfully created pg_stat_statements extension")
+	slog.Info("Successfully created pg_stat_statements extension")
 	return nil
 }
 
@@ -518,7 +513,7 @@ func turnOnPGStateStatements(pgDataDir string) error {
 		}
 	}
 
-	log.Info("Successfully added pg_stat_statements to postgresql.conf file")
+	slog.Info("Successfully added pg_stat_statements to postgresql.conf file")
 	return nil
 }
 

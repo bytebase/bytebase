@@ -6,12 +6,12 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -63,14 +63,14 @@ func (s *SlowQueryWeeklyMailSender) Run(ctx context.Context, wg *sync.WaitGroup)
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug("Slow query weekly mail sender started")
+	slog.Debug("Slow query weekly mail sender started")
 	for {
 		select {
 		case <-ctx.Done():
-			log.Debug("Slow query weekly mail sender received context cancellation")
+			slog.Debug("Slow query weekly mail sender received context cancellation")
 			return
 		case <-ticker.C:
-			log.Debug("Slow query weekly mail sender received tick")
+			slog.Debug("Slow query weekly mail sender received tick")
 			now := time.Now()
 			// Send email every Saturday in 00:00 ~ 00:59.
 			if now.Weekday() == time.Saturday && now.Hour() == 0 {
@@ -84,7 +84,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	name := api.SettingWorkspaceMailDelivery
 	mailSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &name})
 	if err != nil {
-		log.Error("Failed to get mail setting", zap.Error(err))
+		slog.Error("Failed to get mail setting", log.BBError(err))
 		return
 	}
 
@@ -94,7 +94,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 
 	var storeValue storepb.SMTPMailDeliverySetting
 	if err := protojson.Unmarshal([]byte(mailSetting.Value), &storeValue); err != nil {
-		log.Error("Failed to unmarshal setting value", zap.Error(err))
+		slog.Error("Failed to unmarshal setting value", log.BBError(err))
 		return
 	}
 	apiValue := convertStorepbToAPIMailDeliveryValue(&storeValue)
@@ -103,13 +103,13 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	workspaceProfileSettingName := api.SettingWorkspaceProfile
 	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &workspaceProfileSettingName})
 	if err != nil {
-		log.Error("Failed to get workspace profile setting", zap.Error(err))
+		slog.Error("Failed to get workspace profile setting", log.BBError(err))
 		return
 	}
 	if setting != nil {
 		settingValue := new(storepb.WorkspaceProfileSetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), settingValue); err != nil {
-			log.Error("Failed to unmarshal setting value", zap.Error(err))
+			slog.Error("Failed to unmarshal setting value", log.BBError(err))
 			return
 		}
 		if settingValue.ExternalUrl != "" {
@@ -124,7 +124,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 		ResourceType: &instanceResourceType,
 	})
 	if err != nil {
-		log.Error("Failed to list slow query policies", zap.Error(err))
+		slog.Error("Failed to list slow query policies", log.BBError(err))
 		return
 	}
 
@@ -132,7 +132,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	for _, policy := range policies {
 		payload, err := api.UnmarshalSlowQueryPolicy(policy.Payload)
 		if err != nil {
-			log.Error("Failed to unmarshal slow query policy payload", zap.Error(err))
+			slog.Error("Failed to unmarshal slow query policy payload", log.BBError(err))
 			return
 		}
 		if payload.Active {
@@ -144,12 +144,12 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 		dbaRole := api.DBA
 		users, err := s.store.ListUsers(ctx, &store.FindUserMessage{Role: &dbaRole})
 		if err != nil {
-			log.Error("Failed to list dba users", zap.Error(err))
+			slog.Error("Failed to list dba users", log.BBError(err))
 		} else {
 			for _, user := range users {
 				apiValue.SMTPTo = user.Email
 				if err := s.sendNeedConfigSlowQueryPolicyEmail(apiValue, consoleRedirectURL); err != nil {
-					log.Error("Failed to send need config slow query policy email", zap.String("user", user.Name), zap.String("email", user.Email), zap.Error(err))
+					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 				}
 			}
 		}
@@ -157,12 +157,12 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 		ownerRole := api.Owner
 		users, err = s.store.ListUsers(ctx, &store.FindUserMessage{Role: &ownerRole})
 		if err != nil {
-			log.Error("Failed to list owner users", zap.Error(err))
+			slog.Error("Failed to list owner users", log.BBError(err))
 		} else {
 			for _, user := range users {
 				apiValue.SMTPTo = user.Email
 				if err := s.sendNeedConfigSlowQueryPolicyEmail(apiValue, consoleRedirectURL); err != nil {
-					log.Error("Failed to send need config slow query policy email", zap.String("user", user.Name), zap.String("email", user.Email), zap.Error(err))
+					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 				}
 			}
 		}
@@ -173,38 +173,38 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 		dbaRole := api.DBA
 		users, err := s.store.ListUsers(ctx, &store.FindUserMessage{Role: &dbaRole})
 		if err != nil {
-			log.Error("Failed to list dba users", zap.Error(err))
+			slog.Error("Failed to list dba users", log.BBError(err))
 		} else {
 			for _, user := range users {
 				apiValue.SMTPTo = user.Email
 				if err := send(apiValue, fmt.Sprintf("Database slow query weekly report %s", generateDateRange(now)), body); err != nil {
-					log.Error("Failed to send need config slow query policy email", zap.String("user", user.Name), zap.String("email", user.Email), zap.Error(err))
+					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 				}
 			}
 		}
 	} else {
-		log.Error("Failed to generate weekly email for dba", zap.Error(err))
+		slog.Error("Failed to generate weekly email for dba", log.BBError(err))
 	}
 
 	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{})
 	if err != nil {
-		log.Error("Failed to list projects", zap.Error(err))
+		slog.Error("Failed to list projects", log.BBError(err))
 		return
 	}
 	for _, project := range projects {
 		body, err := s.generateWeeklyEmailForProject(ctx, project, activePolicies, now, consoleRedirectURL)
 		if err != nil {
-			log.Error("Failed to generate weekly email for project", zap.Error(err))
+			slog.Error("Failed to generate weekly email for project", log.BBError(err))
 			continue
 		}
 		if len(body) == 0 {
-			log.Debug("No slow query found for project", zap.String("project", project.Title))
+			slog.Debug("No slow query found for project", slog.String("project", project.Title))
 			continue
 		}
 
 		projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 		if err != nil {
-			log.Error("Failed to get project policy", zap.Error(err))
+			slog.Error("Failed to get project policy", log.BBError(err))
 			continue
 		}
 
@@ -214,7 +214,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 					apiValue.SMTPTo = member.Email
 					subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
 					if err := send(apiValue, subject, body); err != nil {
-						log.Error("Failed to send need config slow query policy email", zap.String("user", member.Name), zap.String("email", member.Email), zap.Error(err))
+						slog.Error("Failed to send need config slow query policy email", slog.String("user", member.Name), slog.String("email", member.Email), log.BBError(err))
 					}
 				}
 			}
@@ -271,7 +271,7 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 	for _, policy := range policies {
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &policy.ResourceUID})
 		if err != nil {
-			log.Warn("Failed to get instance", zap.Error(err))
+			slog.Warn("Failed to get instance", log.BBError(err))
 			continue
 		}
 		instanceMap[instance.ResourceID] = instance
@@ -287,10 +287,10 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 		if _, exists := instanceMap[database.InstanceID]; !exists {
 			continue
 		}
-		if list, exists := databaseMap[database.EnvironmentID]; exists {
-			databaseMap[database.EnvironmentID] = append(list, database)
+		if list, exists := databaseMap[database.EffectiveEnvironmentID]; exists {
+			databaseMap[database.EffectiveEnvironmentID] = append(list, database)
 		} else {
-			databaseMap[database.EnvironmentID] = []*store.DatabaseMessage{database}
+			databaseMap[database.EffectiveEnvironmentID] = []*store.DatabaseMessage{database}
 		}
 	}
 
@@ -404,7 +404,7 @@ func send(mailSetting *api.SettingWorkspaceMailDeliveryValue, subject string, bo
 	if err := client.SendMail(email); err != nil {
 		return err
 	}
-	log.Debug("Successfully sent need configure slow query policy email", zap.String("to", mailSetting.SMTPTo), zap.String("subject", subject))
+	slog.Debug("Successfully sent need configure slow query policy email", slog.String("to", mailSetting.SMTPTo), slog.String("subject", subject))
 	return nil
 }
 
@@ -474,7 +474,7 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForDBA(ctx context.Contex
 	for _, policy := range policies {
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &policy.ResourceUID})
 		if err != nil {
-			log.Warn("Failed to get instance", zap.Error(err))
+			slog.Warn("Failed to get instance", log.BBError(err))
 			continue
 		}
 
@@ -679,7 +679,7 @@ func (*SlowQueryWeeklyMailSender) sendNeedConfigSlowQueryPolicyEmail(mailSetting
 	if err := client.SendMail(email); err != nil {
 		return err
 	}
-	log.Debug("Successfully sent need configure slow query policy email", zap.String("to", mailSetting.SMTPTo))
+	slog.Debug("Successfully sent need configure slow query policy email", slog.String("to", mailSetting.SMTPTo))
 	return nil
 }
 

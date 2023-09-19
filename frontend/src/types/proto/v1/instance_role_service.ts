@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 
@@ -57,7 +56,7 @@ export interface CreateInstanceRoleRequest {
    */
   parent: string;
   /** The role to create. */
-  role?: InstanceRole;
+  role?: InstanceRole | undefined;
 }
 
 export interface UpdateInstanceRoleRequest {
@@ -67,9 +66,11 @@ export interface UpdateInstanceRoleRequest {
    * The role's `name` and `instance` field is used to identify the role to update.
    * Format: instances/{instance}/roles/{role name}
    */
-  role?: InstanceRole;
+  role?:
+    | InstanceRole
+    | undefined;
   /** The list of fields to update. */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface DeleteInstanceRoleRequest {
@@ -1063,60 +1064,6 @@ export const InstanceRoleServiceDefinition = {
     },
   },
 } as const;
-
-export interface InstanceRoleServiceImplementation<CallContextExt = {}> {
-  getInstanceRole(
-    request: GetInstanceRoleRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<InstanceRole>>;
-  listInstanceRoles(
-    request: ListInstanceRolesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListInstanceRolesResponse>>;
-  createInstanceRole(
-    request: CreateInstanceRoleRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<InstanceRole>>;
-  updateInstanceRole(
-    request: UpdateInstanceRoleRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<InstanceRole>>;
-  deleteInstanceRole(
-    request: DeleteInstanceRoleRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-  undeleteInstanceRole(
-    request: UndeleteInstanceRoleRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<InstanceRole>>;
-}
-
-export interface InstanceRoleServiceClient<CallOptionsExt = {}> {
-  getInstanceRole(
-    request: DeepPartial<GetInstanceRoleRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<InstanceRole>;
-  listInstanceRoles(
-    request: DeepPartial<ListInstanceRolesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListInstanceRolesResponse>;
-  createInstanceRole(
-    request: DeepPartial<CreateInstanceRoleRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<InstanceRole>;
-  updateInstanceRole(
-    request: DeepPartial<UpdateInstanceRoleRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<InstanceRole>;
-  deleteInstanceRole(
-    request: DeepPartial<DeleteInstanceRoleRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-  undeleteInstanceRole(
-    request: DeepPartial<UndeleteInstanceRoleRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<InstanceRole>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"sync"
@@ -12,13 +13,11 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
-	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -28,11 +27,10 @@ import (
 )
 
 // NewRunner creates a new runner instance.
-func NewRunner(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, stateCfg *state.State) *Runner {
+func NewRunner(store *store.Store, activityManager *activity.Manager, stateCfg *state.State) *Runner {
 	return &Runner{
 		store:                     store,
 		activityManager:           activityManager,
-		taskScheduler:             taskScheduler,
 		stateCfg:                  stateCfg,
 		Client:                    relayplugin.NewClient(),
 		CheckExternalApprovalChan: make(chan CheckExternalApprovalChanMessage, 100),
@@ -51,7 +49,6 @@ type CheckExternalApprovalChanMessage struct {
 type Runner struct {
 	store           *store.Store
 	activityManager *activity.Manager
-	taskScheduler   *taskrun.Scheduler
 	stateCfg        *state.State
 
 	Client *relayplugin.Client
@@ -66,7 +63,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(relayRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Relay runner started and will run every %v", relayRunnerInterval))
+	slog.Debug(fmt.Sprintf("Relay runner started and will run every %v", relayRunnerInterval))
 
 	wg.Add(1)
 	go r.listenIssueExternalApprovalRelayCancelChan(ctx, wg)
@@ -100,7 +97,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				return errs
 			}()
 			if err != nil {
-				log.Error("relay runner: failed to check external approval", zap.Error(err))
+				slog.Error("relay runner: failed to check external approval", log.BBError(err))
 			}
 		case <-ctx.Done():
 			return
@@ -130,12 +127,12 @@ func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.Exte
 	if err != nil {
 		return errors.Wrapf(err, "failed to get external approval node %s", payload.ExternalApprovalNodeID)
 	}
-	uri := payload.URI
-	status, err := r.Client.GetStatus(node.Endpoint, uri)
+	id := payload.ID
+	resp, err := r.Client.GetApproval(node.Endpoint, id)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get external approval status, id: %v, endpoint: %s, uri: %s", node.Id, node.Endpoint, uri)
+		return errors.Wrapf(err, "failed to get external approval status, id: %v, endpoint: %s, id: %s", node.Id, node.Endpoint, id)
 	}
-	if status == relayplugin.StatusApproved {
+	if resp.Status == relayplugin.StatusApproved {
 		if err := r.approveExternalApprovalNode(ctx, approval.IssueUID); err != nil {
 			return err
 		}
@@ -145,7 +142,7 @@ func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.Exte
 		}); err != nil {
 			return err
 		}
-	} else if status == relayplugin.StatusRejected {
+	} else if resp.Status == relayplugin.StatusRejected {
 		if err := r.rejectExternalApprovalNode(ctx, approval.IssueUID); err != nil {
 			return err
 		}
@@ -177,7 +174,7 @@ func (r *Runner) cancelExternalApproval(ctx context.Context, issueUID int) {
 		IssueUID: &issueUID,
 	})
 	if err != nil {
-		log.Error("failed to list external approvals", zap.Error(err))
+		slog.Error("failed to list external approvals", log.BBError(err))
 		return
 	}
 	if len(approvals) == 0 {
@@ -188,27 +185,27 @@ func (r *Runner) cancelExternalApproval(ctx context.Context, issueUID int) {
 			ID:        approval.ID,
 			RowStatus: api.Archived,
 		}); err != nil {
-			log.Error("failed to archive external approval", zap.Error(err))
+			slog.Error("failed to archive external approval", log.BBError(err))
 			continue
 		}
 		payload := &api.ExternalApprovalPayloadRelay{}
 		if err := json.Unmarshal([]byte(approval.Payload), payload); err != nil {
-			log.Error("failed to unmarshal external approval payload", zap.Error(err))
+			slog.Error("failed to unmarshal external approval payload", log.BBError(err))
 			continue
 		}
 		// don't wait for http requests, just fire and forget
 		node, err := getExternalApprovalByID(ctx, r.store, payload.ExternalApprovalNodeID)
 		if err != nil {
-			log.Error("failed to get external approval node", zap.Error(err))
+			slog.Error("failed to get external approval node", log.BBError(err))
 			continue
 		}
 		if node == nil {
-			log.Error("external approval node not found", zap.String("id", payload.ExternalApprovalNodeID))
+			slog.Error("external approval node not found", slog.String("id", payload.ExternalApprovalNodeID))
 			continue
 		}
 		go func() {
-			if err := r.Client.UpdateStatus(node.Endpoint, payload.URI); err != nil {
-				log.Error("failed to update external approval status", zap.String("endpoint", node.Endpoint), zap.String("uri", payload.URI), zap.Error(err))
+			if err := r.Client.UpdateApproval(node.Endpoint, payload.ID, &relayplugin.UpdatePayload{}); err != nil {
+				slog.Error("failed to update external approval status", slog.String("endpoint", node.Endpoint), slog.String("id", payload.ID), log.BBError(err))
 			}
 		}()
 	}
@@ -271,16 +268,12 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 	if err != nil {
 		return errors.Wrapf(err, "failed to handle incoming approval steps")
 	}
-
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal issue payload")
-	}
-	payloadStr := string(payloadBytes)
 
 	issue, err = r.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue")
@@ -319,7 +312,7 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create skipping steps activity after approving review", zap.Error(err))
+		slog.Error("failed to create skipping steps activity after approving review", log.BBError(err))
 	}
 
 	if err := func() error {
@@ -357,7 +350,7 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create approval step pending activity after creating review", zap.Error(err))
+		slog.Error("failed to create approval step pending activity after creating review", log.BBError(err))
 	}
 
 	// Grant the privilege if the issue is approved.
@@ -420,7 +413,7 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 			Level:        api.ActivityInfo,
 			Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, role),
 		}, &activity.Metadata{}); err != nil {
-			log.Warn("Failed to create project activity", zap.Error(err))
+			slog.Warn("Failed to create project activity", log.BBError(err))
 		}
 	}
 	if issue.Type == api.IssueGrantRequest {
@@ -434,13 +427,13 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := r.taskScheduler.ChangeIssueStatus(ctx, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+				if err := utils.ChangeIssueStatus(ctx, r.store, r.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}
 			return nil
 		}(); err != nil {
-			log.Debug("failed to update issue status to done if grant request issue is approved", zap.Error(err))
+			slog.Debug("failed to update issue status to done if grant request issue is approved", log.BBError(err))
 		}
 	}
 
@@ -486,14 +479,10 @@ func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) e
 		PrincipalId: int32(api.SystemBotID),
 	})
 
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal issue payload")
-	}
-	payloadStr := string(payloadBytes)
-
 	issue, err = r.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		Payload: &payloadStr,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue")
@@ -525,7 +514,7 @@ func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) e
 		}
 		return nil
 	}(); err != nil {
-		log.Error("failed to create activity after rejecting review", zap.Error(err))
+		slog.Error("failed to create activity after rejecting review", log.BBError(err))
 	}
 
 	return nil

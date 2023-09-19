@@ -18,11 +18,11 @@
 </template>
 
 <script lang="ts" setup>
-import { useInstanceV1List } from "@/store";
 import { computed, PropType, reactive, watch } from "vue";
-import { ComposedInstance, UNKNOWN_ID } from "../types";
+import { useInstanceV1List } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import { instanceV1Name } from "@/utils";
+import { ComposedInstance, UNKNOWN_ID } from "../types";
 import { InstanceV1EngineIcon } from "./v2";
 
 interface LocalState {

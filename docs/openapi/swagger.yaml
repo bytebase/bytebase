@@ -58,6 +58,7 @@ paths:
             - TIDB
             - OCEANBASE
             - SNOWFLAKE
+            - MSSQL
           in: body
           name: databaseType
           schema:

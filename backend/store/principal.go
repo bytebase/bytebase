@@ -15,6 +15,9 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+// SystemBotID is the ID of the system robot.
+const SystemBotID = 1
+
 // GetPrincipalByID gets an instance of Principal by ID.
 func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	user, err := s.GetUserByID(ctx, id)
@@ -89,6 +92,14 @@ type UserMessage struct {
 
 // GetUser gets an user.
 func (s *Store) GetUser(ctx context.Context, find *FindUserMessage) (*UserMessage, error) {
+	if find.Email != nil && *find.Email == api.SystemBotEmail {
+		return &UserMessage{
+			ID:    api.SystemBotID,
+			Email: api.SystemBotEmail,
+			Type:  api.SystemBot,
+			Role:  api.Owner,
+		}, nil
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err

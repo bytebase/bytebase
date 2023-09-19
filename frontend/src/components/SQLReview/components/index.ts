@@ -1,7 +1,7 @@
 import SQLReviewTemplateSelector from "./SQLReviewTemplateSelector.vue";
-import SQLRuleTable from "./SQLRuleTable.vue";
-import SQLRuleFilter from "./SQLRuleFilter.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
+import SQLRuleFilter from "./SQLRuleFilter.vue";
+import SQLRuleTable from "./SQLRuleTable.vue";
 
 export {
   SQLReviewTemplateSelector,

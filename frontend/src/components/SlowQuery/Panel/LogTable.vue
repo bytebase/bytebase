@@ -68,7 +68,7 @@
         </div>
         <div v-if="showEnvironmentColumn" class="bb-grid-cell">
           <EnvironmentV1Name
-            :environment="item.database.instanceEntity.environmentEntity"
+            :environment="item.database.effectiveEnvironmentEntity"
             :link="false"
           />
         </div>
@@ -99,21 +99,31 @@
         />
       </div>
     </template>
+
+    <template #placeholder-content>
+      <div class="py-8 px-8 text-center">
+        <p v-if="allowAdmin">
+          {{ $t("slow-query.no-log-placeholder.admin") }}
+        </p>
+        <p v-else>
+          {{ $t("slow-query.no-log-placeholder.developer") }}
+        </p>
+      </div>
+    </template>
   </BBGrid>
 </template>
 
 <script lang="ts" setup>
 import { computed, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import type { ComposedSlowQueryLog } from "@/types";
 import {
   DatabaseV1Name,
   InstanceV1Name,
   EnvironmentV1Name,
 } from "@/components/v2";
+import type { ComposedSlowQueryLog } from "@/types";
+import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { instanceV1HasSlowQueryDetail } from "@/utils";
 
 export type SlowQueryLogRow = BBGridRow<ComposedSlowQueryLog>;
@@ -126,6 +136,7 @@ const props = withDefaults(
     showEnvironmentColumn?: boolean;
     showInstanceColumn?: boolean;
     showDatabaseColumn?: boolean;
+    allowAdmin: boolean;
   }>(),
   {
     slowQueryLogList: () => [],

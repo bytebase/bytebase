@@ -1,5 +1,5 @@
-import type { Geometry, Path, Point, Rect, Size } from "../types";
 import { minmax } from "@/utils";
+import type { Geometry, Path, Point, Rect, Size } from "../types";
 
 export const pointsOfRect = (rect: Rect): Point[] => {
   const { x, y, width, height } = rect;

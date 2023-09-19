@@ -16,8 +16,8 @@
 <script lang="ts" setup>
 import { computed, reactive, watch } from "vue";
 import { useDBGroupStore } from "@/store";
-import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { ComposedDatabaseGroup } from "@/types";
+import { DatabaseGroup } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   selectedDatabaseGroup?: ComposedDatabaseGroup;

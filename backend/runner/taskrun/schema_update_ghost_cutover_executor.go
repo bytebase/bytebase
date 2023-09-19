@@ -3,6 +3,7 @@ package taskrun
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/github/gh-ost/go/base"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -21,7 +21,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -52,7 +51,8 @@ type SchemaUpdateGhostCutoverExecutor struct {
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
-func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
+// TODO: support cancellation.
+func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
 	if len(task.BlockedBy) != 1 {
 		return true, nil, errors.Errorf("failed to find task dag for ToTask %v", task.ID)
 	}
@@ -98,19 +98,19 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task *st
 	sharedGhost := value.(sharedGhostState)
 
 	// not using the rendered statement here because we want to avoid leaking the rendered statement
-	terminated, result, err := cutover(ctx, e.store, e.dbFactory, e.activityManager, e.license, e.profile, task, statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	terminated, result, err := cutover(ctx, e.store, e.dbFactory, e.activityManager, e.license, e.profile, task, statement, payload.SheetID, payload.SchemaVersion, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 	if err := e.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-		log.Error("failed to sync database schema",
-			zap.String("instanceName", instance.ResourceID),
-			zap.String("databaseName", database.DatabaseName),
-			zap.Error(err),
+		slog.Error("failed to sync database schema",
+			slog.String("instanceName", instance.ResourceID),
+			slog.String("databaseName", database.DatabaseName),
+			log.BBError(err),
 		)
 	}
 
 	return terminated, result, err
 }
 
-func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *store.TaskMessage, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *store.TaskMessage, statement string, sheetID int, schemaVersion string, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
@@ -127,12 +127,12 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, errors.Errorf("cutover poller cancelled")
 	}
 
-	mi, err := getMigrationInfo(ctx, stores, profile, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
+	mi, err := getMigrationInfo(ctx, stores, profile, task, db.Migrate, statement, schemaVersion)
 	if err != nil {
 		return true, nil, err
 	}
 
-	execFunc := func(_ string) error {
+	execFunc := func(_ context.Context, _ string) error {
 		if err := os.Remove(postponeFilename); err != nil {
 			return errors.Wrap(err, "failed to remove postpone flag file")
 		}
@@ -146,12 +146,12 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-	migrationID, schema, err := utils.ExecuteMigrationWithFunc(ctx, stores, driver, mi, statement, execFunc)
+	migrationID, schema, err := utils.ExecuteMigrationWithFunc(ctx, ctx, stores, driver, mi, statement, &sheetID, execFunc)
 	if err != nil {
 		return true, nil, err
 	}
 
-	return postMigration(ctx, stores, activityManager, license, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, stores, activityManager, license, task, mi, migrationID, schema)
 }
 
 func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext) bool {

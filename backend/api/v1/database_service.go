@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"sort"
 	"strconv"
@@ -12,13 +13,11 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/pkg/errors"
-	openai "github.com/sashabaranov/go-openai"
-
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
-	"go.uber.org/zap"
+	"github.com/pkg/errors"
+	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -34,6 +33,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -80,7 +80,7 @@ func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *
 
 // GetDatabase gets a database.
 func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetDatabaseRequest) (*v1pb.Database, error) {
-	instanceID, databaseName, err := getInstanceDatabaseID(request.Name)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -93,6 +93,11 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 		// Expected format: "instances/{instance}/database/{database}"
 		find.InstanceID = &instanceID
 		find.DatabaseName = &databaseName
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+		}
+		find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
@@ -106,7 +111,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 
 // ListDatabases lists all databases.
 func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
-	instanceID, err := getInstanceID(request.Parent)
+	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -119,7 +124,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		projectID, err := getProjectID(projectFilter)
+		projectID, err := common.GetProjectID(projectFilter)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid project %q in the filter", projectFilter)
 		}
@@ -141,7 +146,7 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	role := ctx.Value(common.RoleContextKey).(api.Role)
 
-	instanceID, err := getInstanceID(request.Parent)
+	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -154,7 +159,7 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		projectID, err := getProjectID(projectFilter)
+		projectID, err := common.GetProjectID(projectFilter)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid project %q in the filter", projectFilter)
 		}
@@ -187,13 +192,18 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instanceID, databaseName, err := getInstanceDatabaseID(request.Database.Name)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Database.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -210,7 +220,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "project":
-			projectID, err := getProjectID(request.Database.Project)
+			projectID, err := common.GetProjectID(request.Database.Project)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
@@ -229,7 +239,33 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			}
 			patch.ProjectID = &project.ResourceID
 		case "labels":
-			patch.Labels = &request.Database.Labels
+			patch.MetadataUpsert = &storepb.DatabaseMetadata{
+				Labels: request.Database.Labels,
+			}
+		case "environment":
+			if request.Database.Environment == "" {
+				unsetEnvironment := ""
+				patch.EnvironmentID = &unsetEnvironment
+			} else {
+				environmentID, err := common.GetEnvironmentID(request.Database.Environment)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				}
+				environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+					ResourceID:  &environmentID,
+					ShowDeleted: true,
+				})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, err.Error())
+				}
+				if environment == nil {
+					return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+				}
+				if environment.Deleted {
+					return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", environmentID)
+				}
+				patch.EnvironmentID = &environment.ResourceID
+			}
 		}
 	}
 
@@ -249,7 +285,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 
 // SyncDatabase syncs the schema of a database.
 func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDatabaseRequest) (*v1pb.SyncDatabaseResponse, error) {
-	instanceID, databaseName, err := getInstanceDatabaseID(request.Name)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -262,6 +298,11 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDa
 		// Expected format: "instances/{instance}/database/{database}"
 		find.InstanceID = &instanceID
 		find.DatabaseName = &databaseName
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+		}
+		find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
@@ -287,13 +328,18 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		if req.UpdateMask == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 		}
-		instanceID, databaseName, err := getInstanceDatabaseID(req.Database.Name)
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Database.Name)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+		}
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instanceID,
-			DatabaseName: &databaseName,
+			InstanceID:          &instanceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
@@ -307,7 +353,8 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		projectURI = req.Database.Project
 		databases = append(databases, database)
 	}
-	projectID, err := getProjectID(projectURI)
+	// TODO(d): support batch update environment.
+	projectID, err := common.GetProjectID(projectURI)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -326,37 +373,49 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.FailedPrecondition, "project %q is deleted", projectID)
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if err := s.createTransferProjectActivity(ctx, project, principalID, databases...); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
 	response := &v1pb.BatchUpdateDatabasesResponse{}
-	for _, database := range updatedDatabases {
-		response.Databases = append(response.Databases, convertToDatabase(database))
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	if len(databases) > 0 {
+		updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if err := s.createTransferProjectActivity(ctx, project, principalID, databases...); err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		for _, database := range updatedDatabases {
+			response.Databases = append(response.Databases, convertToDatabase(database))
+		}
 	}
 	return response, nil
 }
 
 // GetDatabaseMetadata gets the metadata of a database.
 func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb.GetDatabaseMetadataRequest) (*v1pb.DatabaseMetadata, error) {
-	instanceID, databaseName, err := trimSuffixAndGetInstanceDatabaseID(request.Name, metadataSuffix)
+	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.Name, common.MetadataSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &database.ProjectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
@@ -375,18 +434,62 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		dbSchema = newDBSchema
 	}
-	return convertDatabaseMetadata(dbSchema.Metadata), nil
+	v1pbMetadata := convertDatabaseMetadata(dbSchema.Metadata)
+	// backfill the effective masking level.
+	dataClassificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get data classification setting, error: %v", err)
+	}
+	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get masking rule policy, error: %v", err)
+	}
+	// Convert the maskingPolicy to a map to reduce the time complexity of searching.
+	maskingPolicy, err := s.store.GetMaskingPolicyByDatabaseUID(ctx, database.UID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find masking policy for database %q", databaseName)
+	}
+	maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
+	if maskingPolicy != nil {
+		for _, maskData := range maskingPolicy.MaskData {
+			maskingPolicyMap[maskingPolicyKey{
+				schema: maskData.Schema,
+				table:  maskData.Table,
+				column: maskData.Column,
+			}] = maskData
+		}
+	}
+
+	evaluator := newEmptyMaskingLevelEvaluator().withDataClassificationSetting(dataClassificationSetting).withMaskingRulePolicy(maskingRulePolicy)
+	for _, schema := range v1pbMetadata.Schemas {
+		for _, table := range schema.Tables {
+			for _, column := range table.Columns {
+				maskingLevel, err := evaluator.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, nil /* Exceptions*/)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to evaluate masking level of column %q, error: %v", column.Name, err)
+				}
+				v1pbMaskingLevel := convertToV1PBMaskingLevel(maskingLevel)
+				column.EffectiveMaskingLevel = v1pbMaskingLevel
+			}
+		}
+	}
+	return v1pbMetadata, nil
 }
 
 // GetDatabaseSchema gets the schema of a database.
 func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.GetDatabaseSchemaRequest) (*v1pb.DatabaseSchema, error) {
-	instanceID, databaseName, err := trimSuffixAndGetInstanceDatabaseID(request.Name, schemaSuffix)
+	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.Name, common.SchemaSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -410,10 +513,6 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 		}
 		dbSchema = newDBSchema
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-	if err != nil {
-		return nil, err
 	}
 	// We only support MySQL engine for now.
 	schema := string(dbSchema.Schema)
@@ -432,7 +531,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 
 // GetBackupSetting gets the backup setting of a database.
 func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.GetBackupSettingRequest) (*v1pb.BackupSetting, error) {
-	instanceID, databaseName, err := trimSuffixAndGetInstanceDatabaseID(request.Name, backupSettingSuffix)
+	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.Name, common.BackupSettingSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -446,8 +545,9 @@ func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.Ge
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -468,7 +568,7 @@ func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.Ge
 
 // UpdateBackupSetting updates the backup setting of a database.
 func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb.UpdateBackupSettingRequest) (*v1pb.BackupSetting, error) {
-	instanceID, databaseName, err := trimSuffixAndGetInstanceDatabaseID(request.Setting.Name, backupSettingSuffix)
+	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.Setting.Name, common.BackupSettingSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -482,8 +582,9 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -505,7 +606,7 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 
 // ListBackups lists the backups of a database.
 func (s *DatabaseService) ListBackups(ctx context.Context, request *v1pb.ListBackupsRequest) (*v1pb.ListBackupsResponse, error) {
-	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -519,8 +620,9 @@ func (s *DatabaseService) ListBackups(ctx context.Context, request *v1pb.ListBac
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -549,7 +651,7 @@ func (s *DatabaseService) ListBackups(ctx context.Context, request *v1pb.ListBac
 
 // CreateBackup creates a backup of a database.
 func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.CreateBackupRequest) (*v1pb.Backup, error) {
-	instanceID, databaseName, backupName, err := getInstanceDatabaseIDBackupName(request.Backup.Name)
+	instanceID, databaseName, backupName, err := common.GetInstanceDatabaseIDBackupName(request.Backup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -563,8 +665,9 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -594,7 +697,7 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 
 // ListChangeHistories lists the change histories of a database.
 func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb.ListChangeHistoriesRequest) (*v1pb.ListChangeHistoriesResponse, error) {
-	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -608,8 +711,9 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -618,19 +722,20 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	var pageToken storepb.PageToken
+	var limit, offset int
 	if request.PageToken != "" {
+		var pageToken storepb.PageToken
 		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
 		}
-		if pageToken.Limit != request.PageSize {
-			return nil, status.Errorf(codes.InvalidArgument, "request page size does not match the page token")
+		if pageToken.Limit < 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
 		}
+		limit = int(pageToken.Limit)
+		offset = int(pageToken.Offset)
 	} else {
-		pageToken.Limit = request.PageSize
+		limit = int(request.PageSize)
 	}
-
-	limit := int(pageToken.Limit)
 	if limit <= 0 {
 		limit = 10
 	}
@@ -638,7 +743,6 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		limit = 1000
 	}
 	limitPlusOne := limit + 1
-	offset := int(pageToken.Offset)
 
 	find := &store.FindInstanceChangeHistoryMessage{
 		InstanceID: &instance.UID,
@@ -649,18 +753,18 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true
 	}
+	if request.Filter != "" {
+		find.ResourcesFilter = &request.Filter
+	}
 	changeHistories, err := s.store.ListInstanceChangeHistory(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
 	}
 
 	if len(changeHistories) == limitPlusOne {
-		nextPageToken, err := marshalPageToken(&storepb.PageToken{
-			Limit:  int32(limit),
-			Offset: int32(limit + offset),
-		})
+		nextPageToken, err := getPageToken(limit, offset+limit)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
 		converted, err := convertToChangeHistories(changeHistories[:limit])
 		if err != nil {
@@ -685,13 +789,9 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 
 // GetChangeHistory gets a change history.
 func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.GetChangeHistoryRequest) (*v1pb.ChangeHistory, error) {
-	instanceID, databaseName, changeHistoryIDStr, err := getInstanceDatabaseIDChangeHistory(request.Name)
+	instanceID, databaseName, changeHistoryIDStr, err := common.GetInstanceDatabaseIDChangeHistory(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	changeHistoryID, err := strconv.ParseInt(changeHistoryIDStr, 10, 64)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "cannot parse change history id %q", changeHistoryIDStr)
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
@@ -703,8 +803,9 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -715,7 +816,7 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	find := &store.FindInstanceChangeHistoryMessage{
 		InstanceID: &instance.UID,
 		DatabaseID: &database.UID,
-		ID:         &changeHistoryID,
+		ID:         &changeHistoryIDStr,
 	}
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true
@@ -752,6 +853,122 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	return converted, nil
 }
 
+// DiffSchema diff the database schema.
+func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (*v1pb.DiffSchemaResponse, error) {
+	source, err := s.getSourceSchema(ctx, request)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get source schema, error: %v", err)
+	}
+
+	target, err := s.getTargetSchema(ctx, request)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get target schema, error: %v", err)
+	}
+
+	engine, err := s.getParserEngine(ctx, request)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get parser engine, error: %v", err)
+	}
+
+	diff, err := differ.SchemaDiff(engine, source, target, false /* ignoreCaseSensitive */)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
+	}
+
+	return &v1pb.DiffSchemaResponse{
+		Diff: diff,
+	}, nil
+}
+
+func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {
+	if strings.Contains(request.Name, common.ChangeHistoryPrefix) {
+		changeHistory, err := s.GetChangeHistory(ctx, &v1pb.GetChangeHistoryRequest{
+			Name:      request.Name,
+			View:      v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
+			SdlFormat: true,
+		})
+		if err != nil {
+			return "", err
+		}
+		return changeHistory.Schema, nil
+	}
+
+	databaseSchema, err := s.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+		Name:      fmt.Sprintf("%s/schema", request.Name),
+		SdlFormat: true,
+	})
+	if err != nil {
+		return "", err
+	}
+	return databaseSchema.Schema, nil
+}
+
+func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {
+	schema := request.GetSchema()
+	changeHistoryID := request.GetChangeHistory()
+	// TODO: maybe we will support an empty schema as the target.
+	if schema == "" && changeHistoryID == "" {
+		return "", status.Errorf(codes.InvalidArgument, "must set the schema or change history id as the target")
+	}
+
+	// If the change history id is set, use the schema of the change history as the target.
+	if changeHistoryID != "" {
+		changeHistory, err := s.GetChangeHistory(ctx, &v1pb.GetChangeHistoryRequest{
+			Name:      request.Name,
+			View:      v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
+			SdlFormat: true,
+		})
+		if err != nil {
+			return "", err
+		}
+		schema = changeHistory.Schema
+	}
+
+	return schema, nil
+}
+
+func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (parser.EngineType, error) {
+	var instanceID string
+	var engine parser.EngineType
+
+	if strings.Contains(request.Name, common.ChangeHistoryPrefix) {
+		insID, _, _, err := common.GetInstanceDatabaseIDChangeHistory(request.Name)
+		if err != nil {
+			return engine, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		instanceID = insID
+	} else {
+		insID, _, err := common.GetInstanceDatabaseID(request.Name)
+		if err != nil {
+			return engine, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		instanceID = insID
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return engine, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
+	if instance == nil {
+		return engine, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+
+	switch instance.Engine {
+	case db.Postgres:
+		engine = parser.Postgres
+	case db.MySQL, db.MariaDB, db.OceanBase:
+		engine = parser.MySQL
+	case db.TiDB:
+		engine = parser.TiDB
+	case db.Oracle:
+		engine = parser.Oracle
+	default:
+		return engine, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid engine type %v", instance.Engine))
+	}
+
+	return engine, nil
+}
+
 func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.ChangeHistory, error) {
 	var changeHistories []*v1pb.ChangeHistory
 	for _, history := range h {
@@ -770,7 +987,7 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		return nil, errors.Wrapf(err, "failed to convert stored version %q", h.Version)
 	}
 	v1pbHistory := &v1pb.ChangeHistory{
-		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", instanceNamePrefix, h.InstanceID, databaseIDPrefix, h.DatabaseName, changeHistoryPrefix, h.UID),
+		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", common.InstanceNamePrefix, h.InstanceID, common.DatabaseIDPrefix, h.DatabaseName, common.ChangeHistoryPrefix, h.UID),
 		Uid:               h.UID,
 		Creator:           fmt.Sprintf("users/%s", h.Creator.Email),
 		Updater:           fmt.Sprintf("users/%s", h.Updater.Email),
@@ -786,13 +1003,51 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		Schema:            h.Schema,
 		PrevSchema:        h.SchemaPrev,
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
-		PushEvent:         convertToPushEvent(h.Payload.GetPushEvent()),
-		Review:            "",
+		Issue:             "",
 	}
 	if h.IssueUID != nil {
-		v1pbHistory.Review = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, h.IssueProjectID, reviewPrefix, *h.IssueUID)
+		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.IssuePrefix, *h.IssueUID)
+	}
+	if h.Payload != nil && h.Payload.ChangedResources != nil {
+		v1pbHistory.ChangedResources = convertToChangedResources(h.Payload.ChangedResources)
 	}
 	return v1pbHistory, nil
+}
+
+func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResources {
+	if r == nil {
+		return nil
+	}
+	result := &v1pb.ChangedResources{}
+	for _, database := range r.Databases {
+		v1Database := &v1pb.ChangedResourceDatabase{
+			Name:    database.Name,
+			Schemas: []*v1pb.ChangedResourceSchema{},
+		}
+		for _, schema := range database.Schemas {
+			v1Schema := &v1pb.ChangedResourceSchema{
+				Name:   schema.Name,
+				Tables: []*v1pb.ChangedResourceTable{},
+			}
+			for _, table := range schema.Tables {
+				v1Schema.Tables = append(v1Schema.Tables, &v1pb.ChangedResourceTable{
+					Name: table.Name,
+				})
+			}
+			sort.Slice(v1Schema.Tables, func(i, j int) bool {
+				return v1Schema.Tables[i].Name < v1Schema.Tables[j].Name
+			})
+			v1Database.Schemas = append(v1Database.Schemas, v1Schema)
+		}
+		sort.Slice(v1Database.Schemas, func(i, j int) bool {
+			return v1Database.Schemas[i].Name < v1Database.Schemas[j].Name
+		})
+		result.Databases = append(result.Databases, v1Database)
+	}
+	sort.Slice(result.Databases, func(i, j int) bool {
+		return result.Databases[i].Name < result.Databases[j].Name
+	})
+	return result
 }
 
 func convertToPushEvent(e *storepb.PushEvent) *v1pb.PushEvent {
@@ -908,7 +1163,7 @@ func convertToChangeHistoryStatus(s db.MigrationStatus) v1pb.ChangeHistory_Statu
 
 // ListSecrets lists the secrets of a database.
 func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSecretsRequest) (*v1pb.ListSecretsResponse, error) {
-	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -922,8 +1177,9 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -945,7 +1201,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instanceID, databaseName, updateSecretName, err := getInstanceDatabaseIDSecretName(request.Secret.Name)
+	instanceID, databaseName, updateSecretName, err := common.GetInstanceDatabaseIDSecretName(request.Secret.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -964,8 +1220,9 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1043,7 +1300,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 
 // DeleteSecret deletes a secret of a database.
 func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteSecretRequest) (*emptypb.Empty, error) {
-	instanceID, databaseName, secretName, err := getInstanceDatabaseIDSecretName(request.Name)
+	instanceID, databaseName, secretName, err := common.GetInstanceDatabaseIDSecretName(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1063,8 +1320,9 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1111,7 +1369,7 @@ type totalValue struct {
 // ListSlowQueries lists the slow queries.
 func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.ListSlowQueriesRequest) (*v1pb.ListSlowQueriesResponse, error) {
 	findDatabase := &store.FindDatabaseMessage{}
-	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1119,7 +1377,12 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 		findDatabase.InstanceID = &instanceID
 	}
 	if databaseName != "-" {
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
 		findDatabase.DatabaseName = &databaseName
+		findDatabase.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
 
 	filters, err := parseFilter(request.Filter)
@@ -1136,7 +1399,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			if len(match) != 2 {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid environment filter %q", expr.value)
 			}
-			findDatabase.EnvironmentID = &match[1]
+			findDatabase.EffectiveEnvironmentID = &match[1]
 		case filterKeyProject:
 			reg := regexp.MustCompile(`^projects/(.+)`)
 			match := reg.FindStringSubmatch(expr.value)
@@ -1270,7 +1533,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 	}
 
 	for _, log := range result.SlowQueryLogs {
-		instanceID, _, err := getInstanceDatabaseID(log.Resource)
+		instanceID, _, err := common.GetInstanceDatabaseID(log.Resource)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get instance id %q", err.Error())
 		}
@@ -1400,8 +1663,8 @@ func validSlowQueryOrderByKey(keys []orderByKey) error {
 
 func convertToSlowQueryLog(instanceID string, databaseName string, projectID string, log *v1pb.SlowQueryLog) *v1pb.SlowQueryLog {
 	return &v1pb.SlowQueryLog{
-		Resource:   fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName),
-		Project:    fmt.Sprintf("%s%s", projectNamePrefix, projectID),
+		Resource:   fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName),
+		Project:    fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectID),
 		Statistics: log.Statistics,
 	}
 }
@@ -1428,7 +1691,7 @@ func convertToBackup(backup *store.BackupMessage, instanceID string, databaseNam
 		backupType = v1pb.Backup_PITR
 	}
 	return &v1pb.Backup{
-		Name:       fmt.Sprintf("%s%s/%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupPrefix, backup.Name),
+		Name:       fmt.Sprintf("%s%s/%s%s/%s%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName, common.BackupPrefix, backup.Name),
 		CreateTime: createTime,
 		UpdateTime: updateTime,
 		State:      backupState,
@@ -1446,18 +1709,27 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	case api.NotFound:
 		syncState = v1pb.State_DELETED
 	}
+	environment, effectiveEnvironment := "", ""
+	if database.EnvironmentID != "" {
+		environment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EnvironmentID)
+	}
+	if database.EffectiveEnvironmentID != "" {
+		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
+	}
 	return &v1pb.Database{
-		Name:               fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
-		Uid:                fmt.Sprintf("%d", database.UID),
-		SyncState:          syncState,
-		SuccessfulSyncTime: timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
-		Project:            fmt.Sprintf("%s%s", projectNamePrefix, database.ProjectID),
-		SchemaVersion:      database.SchemaVersion,
-		Labels:             database.Labels,
+		Name:                 fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
+		Uid:                  fmt.Sprintf("%d", database.UID),
+		SyncState:            syncState,
+		SuccessfulSyncTime:   timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
+		Project:              fmt.Sprintf("%s%s", common.ProjectNamePrefix, database.ProjectID),
+		Environment:          environment,
+		EffectiveEnvironment: effectiveEnvironment,
+		SchemaVersion:        database.SchemaVersion,
+		Labels:               database.GetEffectiveLabels(),
 	}
 }
 
-func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseMetadata {
+func convertDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *v1pb.DatabaseMetadata {
 	m := &v1pb.DatabaseMetadata{
 		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,
@@ -1469,26 +1741,30 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 		}
 		for _, table := range schema.Tables {
 			t := &v1pb.TableMetadata{
-				Name:          table.Name,
-				Engine:        table.Engine,
-				Collation:     table.Collation,
-				RowCount:      table.RowCount,
-				DataSize:      table.DataSize,
-				IndexSize:     table.IndexSize,
-				DataFree:      table.DataFree,
-				CreateOptions: table.CreateOptions,
-				Comment:       table.Comment,
+				Name:           table.Name,
+				Engine:         table.Engine,
+				Collation:      table.Collation,
+				RowCount:       table.RowCount,
+				DataSize:       table.DataSize,
+				IndexSize:      table.IndexSize,
+				DataFree:       table.DataFree,
+				CreateOptions:  table.CreateOptions,
+				Comment:        table.Comment,
+				Classification: table.Classification,
+				UserComment:    table.UserComment,
 			}
 			for _, column := range table.Columns {
 				t.Columns = append(t.Columns, &v1pb.ColumnMetadata{
-					Name:         column.Name,
-					Position:     column.Position,
-					Default:      column.Default,
-					Nullable:     column.Nullable,
-					Type:         column.Type,
-					CharacterSet: column.CharacterSet,
-					Collation:    column.Collation,
-					Comment:      column.Comment,
+					Name:           column.Name,
+					Position:       column.Position,
+					Default:        column.Default,
+					Nullable:       column.Nullable,
+					Type:           column.Type,
+					CharacterSet:   column.CharacterSet,
+					Collation:      column.Collation,
+					Comment:        column.Comment,
+					Classification: column.Classification,
+					UserComment:    column.UserComment,
 				})
 			}
 			for _, index := range table.Indexes {
@@ -1539,6 +1815,32 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 				Definition: function.Definition,
 			})
 		}
+		for _, task := range schema.Tasks {
+			s.Tasks = append(s.Tasks, &v1pb.TaskMetadata{
+				Name:         task.Name,
+				Id:           task.Id,
+				Owner:        task.Owner,
+				Comment:      task.Comment,
+				Warehouse:    task.Warehouse,
+				Schedule:     task.Schedule,
+				Predecessors: task.Predecessors,
+				State:        v1pb.TaskMetadata_State(task.State),
+				Condition:    task.Condition,
+				Definition:   task.Definition,
+			})
+		}
+		for _, stream := range schema.Streams {
+			s.Streams = append(s.Streams, &v1pb.StreamMetadata{
+				Name:       stream.Name,
+				TableName:  stream.TableName,
+				Owner:      stream.Owner,
+				Comment:    stream.Comment,
+				Type:       v1pb.StreamMetadata_Type(stream.Type),
+				Stale:      stream.Stale,
+				Mode:       v1pb.StreamMetadata_Mode(stream.Mode),
+				Definition: stream.Definition,
+			})
+		}
 		m.Schemas = append(m.Schemas, s)
 	}
 	for _, extension := range metadata.Extensions {
@@ -1586,7 +1888,7 @@ func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, new
 		)
 	}
 	if _, err := s.store.BatchCreateActivityV2(ctx, creates); err != nil {
-		log.Warn("failed to create activities for database project updates", zap.Error(err))
+		slog.Warn("failed to create activities for database project updates", log.BBError(err))
 	}
 	return nil
 }
@@ -1594,10 +1896,10 @@ func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, new
 func getDefaultBackupSetting(instanceID, databaseName string) *v1pb.BackupSetting {
 	sevenDays, err := convertPeriodTsToDuration(int(time.Duration(7 * 24 * time.Hour).Seconds()))
 	if err != nil {
-		log.Warn("failed to convert period ts to duration", zap.Error(err))
+		slog.Warn("failed to convert period ts to duration", log.BBError(err))
 	}
 	return &v1pb.BackupSetting{
-		Name:                 fmt.Sprintf("%s%s/%s%s/%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupSettingSuffix),
+		Name:                 fmt.Sprintf("%s%s/%s%s/%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName, common.BackupSettingSuffix),
 		BackupRetainDuration: sevenDays,
 		CronSchedule:         "", /* Disable automatic backup */
 		HookUrl:              "",
@@ -1614,7 +1916,7 @@ func convertToBackupSetting(backupSetting *store.BackupSettingMessage, instanceI
 		cronSchedule = buildSimpleCron(backupSetting.HourOfDay, backupSetting.DayOfWeek)
 	}
 	return &v1pb.BackupSetting{
-		Name:                 fmt.Sprintf("%s%s/%s%s/%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupSettingSuffix),
+		Name:                 fmt.Sprintf("%s%s/%s%s/%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName, common.BackupSettingSuffix),
 		BackupRetainDuration: period,
 		CronSchedule:         cronSchedule,
 		HookUrl:              backupSetting.HookURL,
@@ -1646,14 +1948,14 @@ func (s *DatabaseService) validateAndConvertToStoreBackupSetting(ctx context.Con
 	}
 
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID:  &database.EnvironmentID,
+		ResourceID:  &database.EffectiveEnvironmentID,
 		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EnvironmentID)
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
 	backupPlanPolicy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, environment.UID)
 	if err != nil {
@@ -1756,7 +2058,7 @@ func stripeAndConvertToServiceSecrets(secrets *storepb.Secrets, instanceID, data
 
 func stripeAndConvertToServiceSecret(secretEntry *storepb.SecretItem, instanceID, databaseName string) *v1pb.Secret {
 	return &v1pb.Secret{
-		Name:        fmt.Sprintf("%s%s/%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, secretNamePrefix, secretEntry.Name),
+		Name:        fmt.Sprintf("%s%s/%s%s/%s%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName, common.SecretNamePrefix, secretEntry.Name),
 		Value:       "", /* stripped */
 		Description: secretEntry.Description,
 	}
@@ -1800,26 +2102,27 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	if err := s.licenseService.IsFeatureEnabled(api.FeaturePluginOpenAI); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
+
 	findDatabase := &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	}
 	database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
 	}
-
-	findInstance := &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	}
-	instance, err := s.store.GetInstanceV2(ctx, findInstance)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to get instance: %v", err)
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
 	switch instance.Engine {
@@ -1845,19 +2148,27 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 	var schemas []*store.DBSchema
 
 	// Deal with the cross database query
-	dbList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement)
+	dbList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement, "")
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract database list: %v", err)
 	}
 	for _, db := range dbList {
 		if db != "" && db != database.DatabaseName {
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get instance %s", database.InstanceID)
+			}
 			findDatabase := &store.FindDatabaseMessage{
-				InstanceID:   &database.InstanceID,
-				DatabaseName: &db,
+				InstanceID:          &database.InstanceID,
+				DatabaseName:        &db,
+				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 			}
 			database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
+			}
+			if database == nil {
+				return nil, status.Errorf(codes.NotFound, "database %q not found", db)
 			}
 			schema, err := s.store.GetDBSchema(ctx, database.UID)
 			if err != nil {

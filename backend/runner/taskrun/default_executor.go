@@ -3,10 +3,8 @@ package taskrun
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
-	"go.uber.org/zap"
-
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -21,8 +19,8 @@ type DefaultExecutor struct {
 }
 
 // RunOnce will run the default task executor once.
-func (*DefaultExecutor) RunOnce(_ context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	log.Info("Run default task type", zap.String("task", task.Name))
+func (*DefaultExecutor) RunOnce(_ context.Context, _ context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	slog.Info("Run default task type", slog.String("task", task.Name))
 
 	return true, &api.TaskRunResultPayload{Detail: fmt.Sprintf("No-op task %s", task.Name)}, nil
 }

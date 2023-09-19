@@ -7,13 +7,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/idp"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -51,6 +53,10 @@ func NewIdentityProvider(config *storepb.OAuth2IdentityProviderConfig) (*Identit
 
 // ExchangeToken returns the exchanged OAuth2 token using the given authorization code.
 func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code string) (string, error) {
+	authStyle := oauth2.AuthStyleInParams
+	if p.config.GetAuthStyle() == storepb.OAuth2AuthStyle_IN_HEADER {
+		authStyle = oauth2.AuthStyleInHeader
+	}
 	conf := &oauth2.Config{
 		ClientID:     p.config.ClientId,
 		ClientSecret: p.config.ClientSecret,
@@ -59,20 +65,20 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 		Endpoint: oauth2.Endpoint{
 			AuthURL:   p.config.AuthUrl,
 			TokenURL:  p.config.TokenUrl,
-			AuthStyle: oauth2.AuthStyleInParams,
+			AuthStyle: authStyle,
 		},
 	}
 
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
 	token, err := conf.Exchange(ctx, code)
 	if err != nil {
-		log.Error("Failed to exchange access token", zap.String("code", code), zap.Error(err))
+		slog.Error("Failed to exchange access token", slog.String("code", code), log.BBError(err))
 		return "", errors.Wrap(err, "failed to exchange access token")
 	}
 
 	accessToken, ok := token.Extra("access_token").(string)
 	if !ok {
-		log.Error(`Missing "access_token" from authorization response`, zap.String("code", code), zap.Any("token", token))
+		slog.Error(`Missing "access_token" from authorization response`, slog.String("code", code), slog.Any("token", token))
 		return "", errors.New(`missing "access_token" from authorization response`)
 	}
 
@@ -89,35 +95,36 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	resp, err := p.client.Do(req)
 	if err != nil {
-		log.Error("Failed to get user information", zap.String("token", token), zap.Error(err))
+		slog.Error("Failed to get user information", slog.String("token", token), log.BBError(err))
 		return nil, errors.Wrap(err, "failed to get user information")
 	}
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error("Failed to read response body", zap.String("token", token), zap.Error(err))
+		slog.Error("Failed to read response body", slog.String("token", token), log.BBError(err))
 		return nil, errors.Wrap(err, "failed to read response body")
 	}
 
 	var claims map[string]any
 	err = json.Unmarshal(body, &claims)
 	if err != nil {
-		log.Error("Failed to unmarshal response body", zap.String("token", token), zap.String("body", string(body)), zap.Error(err))
+		slog.Error("Failed to unmarshal response body", slog.String("token", token), slog.String("body", string(body)), log.BBError(err))
 		return nil, errors.Wrap(err, "failed to unmarshal response body")
 	}
-	log.Debug("User info", zap.Any("claims", claims))
+	slog.Debug("User info", slog.Any("claims", claims))
 
 	userInfo := &storepb.IdentityProviderUserInfo{}
-	if v, ok := claims[p.config.FieldMapping.Identifier].(string); ok {
+	if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Identifier).(string); ok {
 		userInfo.Identifier = v
 	}
 	if userInfo.Identifier == "" {
-		log.Error("Missing identifier in response body", zap.String("token", token), zap.Any("claims", claims), zap.Error(err))
+		slog.Error("Missing identifier in response body", slog.String("token", token), slog.Any("claims", claims))
 		return nil, errors.Errorf("the field %q is not found in claims or has empty value", p.config.FieldMapping.Identifier)
 	}
 
 	// Best effort to map optional fields
 	if p.config.FieldMapping.DisplayName != "" {
-		if v, ok := claims[p.config.FieldMapping.DisplayName].(string); ok {
+		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.DisplayName).(string); ok {
 			userInfo.DisplayName = v
 		}
 	}
@@ -125,8 +132,16 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 		userInfo.DisplayName = userInfo.Identifier
 	}
 	if p.config.FieldMapping.Email != "" {
-		if v, ok := claims[p.config.FieldMapping.Email].(string); ok {
+		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Email).(string); ok {
 			userInfo.Email = v
+		}
+	}
+	if p.config.FieldMapping.Phone != "" {
+		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Phone).(string); ok {
+			// Only set phone if it's valid.
+			if err := common.ValidatePhone(v); err == nil {
+				userInfo.Phone = v
+			}
 		}
 	}
 	return userInfo, nil

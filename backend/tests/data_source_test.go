@@ -2,21 +2,20 @@ package tests
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestDataSource(t *testing.T) {
 	a := require.New(t)
-	log.SetLevel(zapcore.DebugLevel)
+	log.GLogLevel.Set(slog.LevelDebug)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
@@ -32,25 +31,24 @@ func TestDataSource(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
-	a.NoError(err)
-
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
 			Title:       "test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: prodEnvironment.Name,
+			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Title: api.AdminDataSourceName, Host: instanceDir}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Id: "admin-ds", Host: instanceDir}},
 		},
 	})
 	a.NoError(err)
 
+	err = ctl.removeLicense(ctx)
+	a.NoError(err)
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
-			Title:    api.ReadOnlyDataSourceName,
+			Id:       "readonly",
 			Type:     v1pb.DataSourceType_READ_ONLY,
 			Username: "ro_ds",
 			Password: "",
@@ -60,12 +58,13 @@ func TestDataSource(t *testing.T) {
 		},
 	})
 	a.ErrorContains(err, "Read replica connection is a ENTERPRISE feature")
-	err = ctl.setLicense()
+
+	err = ctl.setLicense(ctx)
 	a.NoError(err)
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
-			Title:    api.ReadOnlyDataSourceName,
+			Id:       "readonly",
 			Type:     v1pb.DataSourceType_READ_ONLY,
 			Username: "ro_ds",
 			Password: "",
@@ -79,13 +78,13 @@ func TestDataSource(t *testing.T) {
 	instance, err = ctl.instanceServiceClient.GetInstance(ctx, &v1pb.GetInstanceRequest{Name: instance.Name})
 	a.NoError(err)
 	a.Equal(2, len(instance.DataSources))
-	err = ctl.removeLicense()
+	err = ctl.removeLicense(ctx)
 	a.NoError(err)
 
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
-			Type: v1pb.DataSourceType_READ_ONLY,
+			Id:   "readonly",
 			Host: "127.0.0.1",
 			Port: "8000",
 		},
@@ -95,12 +94,12 @@ func TestDataSource(t *testing.T) {
 	})
 	a.ErrorContains(err, "Read replica connection is a ENTERPRISE feature")
 
-	err = ctl.setLicense()
+	err = ctl.setLicense(ctx)
 	a.NoError(err)
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
-			Type: v1pb.DataSourceType_READ_ONLY,
+			Id:   "readonly",
 			Host: "127.0.0.1",
 			Port: "8000",
 		},
@@ -110,9 +109,23 @@ func TestDataSource(t *testing.T) {
 	})
 	a.NoError(err)
 
+	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
+		Instance: instance.Name,
+		DataSource: &v1pb.DataSource{
+			Id:       "second-read-only-datasource",
+			Type:     v1pb.DataSourceType_READ_ONLY,
+			Username: "ro_ds",
+			Password: "",
+			SslCa:    "",
+			SslCert:  "",
+			SslKey:   "",
+		},
+	})
+	a.NoError(err)
+
 	_, err = ctl.instanceServiceClient.RemoveDataSource(ctx, &v1pb.RemoveDataSourceRequest{
 		Instance:   instance.Name,
-		DataSource: &v1pb.DataSource{Type: v1pb.DataSourceType_READ_ONLY},
+		DataSource: &v1pb.DataSource{Id: "readonly"},
 	})
 	a.NoError(err)
 }

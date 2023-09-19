@@ -1,11 +1,11 @@
 <template>
   <div
-    class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-4 border-b bg-white"
+    class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center px-4 py-2 border-b bg-white"
   >
     <div
       class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center"
     >
-      <NButton @click="tab.editMode = 'SQL-EDITOR'">
+      <NButton size="small" @click="tab.editMode = 'SQL-EDITOR'">
         <template #icon>
           <heroicons:chevron-left />
         </template>
@@ -16,7 +16,7 @@
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
     >
-      <NButton @click="showHistoryDialog = true">
+      <NButton size="small" @click="showHistoryDialog = true">
         <template #icon>
           <heroicons:clock />
         </template>
@@ -24,7 +24,7 @@
           $t("plugin.ai.conversation.view-history-conversations")
         }}</span>
       </NButton>
-      <NButton @click="events.emit('new-conversation')">
+      <NButton size="small" @click="events.emit('new-conversation')">
         <template #icon>
           <heroicons:plus />
         </template>

@@ -1,5 +1,4 @@
 import { groupBy, maxBy } from "lodash-es";
-
 import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
 import {
   Issue,
@@ -18,9 +17,9 @@ import {
   TaskType,
   unknownDatabase,
 } from "@/types";
-import { issueSlug, stageSlug, taskSlug } from "./slug";
 import { activeTask } from "./pipeline";
 import { hasWorkspacePermissionV1 } from "./role";
+import { issueSlug, stageSlug, taskSlug } from "./slug";
 import { extractUserUID } from "./v1";
 
 export const extractDatabaseNameFromTask = (

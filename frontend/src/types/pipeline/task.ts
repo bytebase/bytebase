@@ -35,7 +35,8 @@ export type TaskStatus =
   | "RUNNING"
   | "DONE"
   | "FAILED"
-  | "CANCELED";
+  | "CANCELED"
+  | "SKIPPED";
 
 export type TaskGeneralPayload = {
   statement: string;
@@ -230,7 +231,13 @@ export type TaskStatusPatch = {
 };
 
 // TaskRun is one run of a particular task
-export type TaskRunStatus = "RUNNING" | "DONE" | "FAILED" | "CANCELED";
+export type TaskRunStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "DONE"
+  | "SKIPPED"
+  | "FAILED"
+  | "CANCELED";
 
 export type TaskRunResultPayload = {
   detail: string;
@@ -282,6 +289,7 @@ export type TaskCheckResult = {
   title: string;
   content: string;
   line: number | undefined;
+  column: number | undefined;
   namespace: TaskCheckNamespace;
   details?: string;
 };

@@ -13,11 +13,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { escape } from "lodash-es";
-
-import type { TreeNode } from "../types";
+import { computed } from "vue";
 import { getHighlightHTMLByKeyWords } from "@/utils";
+import type { TreeNode } from "../types";
 import { isTypedNode } from "../utils";
 
 const props = defineProps<{

@@ -14,7 +14,7 @@ import (
 
 // DataSourceMessage is the message for data source.
 type DataSourceMessage struct {
-	Title              string
+	ID                 string
 	Type               api.DataSourceType
 	Username           string
 	ObfuscatedPassword string
@@ -36,17 +36,41 @@ type DataSourceMessage struct {
 	SSHObfuscatedPassword   string
 	SSHObfuscatedPrivateKey string
 	// (deprecated) Output only.
-	UID        int
-	DatabaseID int
+	UID int
+}
+
+// Copy returns a copy of the data source message.
+func (m *DataSourceMessage) Copy() *DataSourceMessage {
+	return &DataSourceMessage{
+		ID:                      m.ID,
+		Type:                    m.Type,
+		Username:                m.Username,
+		ObfuscatedPassword:      m.ObfuscatedPassword,
+		ObfuscatedSslCa:         m.ObfuscatedSslCa,
+		ObfuscatedSslCert:       m.ObfuscatedSslCert,
+		ObfuscatedSslKey:        m.ObfuscatedSslKey,
+		Host:                    m.Host,
+		Port:                    m.Port,
+		Database:                m.Database,
+		SRV:                     m.SRV,
+		AuthenticationDatabase:  m.AuthenticationDatabase,
+		SID:                     m.SID,
+		ServiceName:             m.ServiceName,
+		SSHHost:                 m.SSHHost,
+		SSHPort:                 m.SSHPort,
+		SSHUser:                 m.SSHUser,
+		SSHObfuscatedPassword:   m.SSHObfuscatedPassword,
+		SSHObfuscatedPrivateKey: m.SSHObfuscatedPrivateKey,
+		UID:                     m.UID,
+	}
 }
 
 // UpdateDataSourceMessage is the message for the data source.
 type UpdateDataSourceMessage struct {
-	UpdaterID   int
-	InstanceUID int
-	InstanceID  string
-
-	Type api.DataSourceType
+	UpdaterID    int
+	InstanceUID  int
+	InstanceID   string
+	DataSourceID string
 
 	Username           *string
 	ObfuscatedPassword *string
@@ -74,7 +98,6 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			data_source.id,
-			data_source.database_id,
 			data_source.name,
 			data_source.type,
 			data_source.username,
@@ -100,8 +123,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		var dataSourceMessage DataSourceMessage
 		if err := rows.Scan(
 			&dataSourceMessage.UID,
-			&dataSourceMessage.DatabaseID,
-			&dataSourceMessage.Title,
+			&dataSourceMessage.ID,
 			&dataSourceMessage.Type,
 			&dataSourceMessage.Username,
 			&dataSourceMessage.ObfuscatedPassword,
@@ -147,17 +169,7 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 	}
 	defer tx.Rollback()
 
-	allDatabaseName := api.AllDatabaseName
-	allDatabase, err := s.getDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
-		InstanceID:         &instanceID,
-		DatabaseName:       &allDatabaseName,
-		IncludeAllDatabase: true,
-	})
-	if err != nil {
-		return err
-	}
-
-	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, allDatabase.UID, creatorID, dataSource); err != nil {
+	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, creatorID, dataSource); err != nil {
 		return err
 	}
 
@@ -171,7 +183,7 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 }
 
 // RemoveDataSourceV2 removes a RO data source from an instance.
-func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, instanceID string, dataSourceTp api.DataSourceType) error {
+func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, instanceID string, dataSourceID string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.New("Failed to begin transaction")
@@ -179,8 +191,8 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, instanc
 	defer tx.Rollback()
 
 	result, err := tx.ExecContext(ctx, `
-		DELETE FROM data_source WHERE data_source.instance_id = $1 AND data_source.type = $2;
-	`, instanceUID, dataSourceTp)
+		DELETE FROM data_source WHERE data_source.instance_id = $1 AND data_source.name = $2;
+	`, instanceUID, dataSourceID)
 	if err != nil {
 		return err
 	}
@@ -274,7 +286,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	// Only update the data source if the
 	query := `UPDATE data_source SET ` + strings.Join(set, ", ") +
 		` WHERE instance_id = ` + fmt.Sprintf("%d", patch.InstanceUID) +
-		` AND type = ` + fmt.Sprintf(`'%s'`, patch.Type)
+		` AND name = ` + fmt.Sprintf(`'%s'`, patch.DataSourceID)
 	result, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
 		return err
@@ -297,7 +309,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	return nil
 }
 
-func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, databaseUID, creatorID int, dataSource *DataSourceMessage) error {
+func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, creatorID int, dataSource *DataSourceMessage) error {
 	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
 	dataSourceOptions := storepb.DataSourceOptions{
 		Srv:                     dataSource.SRV,
@@ -320,7 +332,6 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 			creator_id,
 			updater_id,
 			instance_id,
-			database_id,
 			name,
 			type,
 			username,
@@ -333,8 +344,8 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 			options,
 			database
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-	`, creatorID, creatorID, instanceUID, databaseUID, dataSource.Title,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+	`, creatorID, creatorID, instanceUID, dataSource.ID,
 		dataSource.Type, dataSource.Username, dataSource.ObfuscatedPassword, dataSource.ObfuscatedSslKey,
 		dataSource.ObfuscatedSslCert, dataSource.ObfuscatedSslCa, dataSource.Host, dataSource.Port,
 		protoBytes, dataSource.Database,
@@ -346,8 +357,8 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 }
 
 // clearDataSourceImpl deletes dataSources by instance id and database id.
-func (*Store) clearDataSourceImpl(ctx context.Context, tx *Tx, instanceID, databaseID int) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM data_source WHERE instance_id = $1 AND database_id = $2`, instanceID, databaseID); err != nil {
+func (*Store) clearDataSourceImpl(ctx context.Context, tx *Tx, instanceID int) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM data_source WHERE instance_id = $1`, instanceID); err != nil {
 		return err
 	}
 	return nil

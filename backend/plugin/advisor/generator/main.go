@@ -20,10 +20,12 @@ const (
 	postgresqlTemplate = "./postgresql.template"
 	oracleTemplate     = "./oracle.template"
 	snowflakeTemplate  = "./snowflake.template"
+	mssqlTemplate      = "./mssql.template"
 	lowerMySQL         = "mysql"
 	lowerPostgreSQL    = "postgresql"
 	lowerOracle        = "oracle"
 	lowerSnowflake     = "snowflake"
+	lowerMSSQL         = "mssql"
 )
 
 var (
@@ -66,7 +68,10 @@ var (
 							engineType = lowerOracle
 						case lowerSnowflake:
 							advisorComment = strings.Join(wordList[i+1:], " ")
-							engineType = "snowflake"
+							engineType = lowerSnowflake
+						case lowerMSSQL:
+							advisorComment = strings.Join(wordList[i+1:], " ")
+							engineType = lowerMSSQL
 						}
 						if advisorComment != "" {
 							break
@@ -82,7 +87,7 @@ var (
 							continue
 						}
 						switch token {
-						case lowerMySQL, lowerPostgreSQL, lowerOracle, lowerSnowflake:
+						case lowerMySQL, lowerPostgreSQL, lowerOracle, lowerSnowflake, lowerMSSQL:
 							needed = true
 						}
 					}
@@ -120,9 +125,12 @@ var (
 			case lowerOracle:
 				templateFile = oracleTemplate
 				dir = "oracle"
-			case "snowflake":
+			case lowerSnowflake:
 				templateFile = snowflakeTemplate
 				dir = "snowflake"
+			case lowerMSSQL:
+				templateFile = mssqlTemplate
+				dir = "mssql"
 			default:
 				fmt.Printf("unknown engine type %s\n", engineType)
 				return

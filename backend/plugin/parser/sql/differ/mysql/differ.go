@@ -5,10 +5,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log/slog"
 	"sort"
 	"strings"
-
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 
@@ -50,6 +49,9 @@ type SchemaDiffer struct {
 // diffNode defines different modification types as the safe change order.
 // The safe change order means we can change them with no dependency conflicts as this order.
 type diffNode struct {
+	// Ignore the case sensitive when comparing the table and view names.
+	ignoreCaseSensitive bool
+
 	dropUnsupportedStatement   []string
 	dropForeignKeyList         []ast.Node
 	dropConstraintExceptFkList []ast.Node
@@ -73,17 +75,17 @@ type diffNode struct {
 
 func (diff *diffNode) diffUnsupportedStatement(oldUnsupportedStmtList, newUnsupportedStmtList []string) error {
 	// We compare the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statements based on strcmp.
-	oldUnsupportMap, err := buildUnsupportObjectMap(oldUnsupportedStmtList)
+	oldUnsupportedMap, err := buildUnsupportedObjectMap(oldUnsupportedStmtList)
 	if err != nil {
 		return err
 	}
-	newUnsupportMap, err := buildUnsupportObjectMap(newUnsupportedStmtList)
+	newUnsupportedMap, err := buildUnsupportedObjectMap(newUnsupportedStmtList)
 	if err != nil {
 		return err
 	}
-	for tp, objs := range newUnsupportMap {
-		for newName, newStmt := range objs {
-			if oldStmt, ok := oldUnsupportMap[tp][newName]; ok {
+	for tp, objects := range newUnsupportedMap {
+		for newName, newStmt := range objects {
+			if oldStmt, ok := oldUnsupportedMap[tp][newName]; ok {
 				if strings.Compare(oldStmt, newStmt) != 0 {
 					// We should drop the old function and create the new function.
 					// https://dev.mysql.com/doc/refman/8.0/en/drop-procedure.html
@@ -91,7 +93,7 @@ func (diff *diffNode) diffUnsupportedStatement(oldUnsupportedStmtList, newUnsupp
 					diff.inPlaceDropUnsupportedStatement = append(diff.inPlaceDropUnsupportedStatement, fmt.Sprintf("DROP %s IF EXISTS `%s`;", tp, newName))
 					diff.inPlaceAddUnsupportedStatement = append(diff.inPlaceAddUnsupportedStatement, newStmt)
 				}
-				delete(oldUnsupportMap[tp], newName)
+				delete(oldUnsupportedMap[tp], newName)
 				continue
 			}
 			// Now, the input of differ comes from the our mysqldump, mysqldump use ;; to separate the CREATE TRIGGER/FUNCTION/PROCEDURE/EVENT statements;
@@ -101,8 +103,8 @@ func (diff *diffNode) diffUnsupportedStatement(oldUnsupportedStmtList, newUnsupp
 		}
 	}
 	// drop remaining TiDB unsupported objects
-	for tp, objs := range oldUnsupportMap {
-		for name := range objs {
+	for tp, objects := range oldUnsupportedMap {
+		for name := range objects {
 			diff.dropUnsupportedStatement = append(diff.dropUnsupportedStatement, fmt.Sprintf("DROP %s IF EXISTS `%s`;", tp, name))
 		}
 	}
@@ -120,11 +122,11 @@ func (diff *diffNode) diffSupportedStatement(oldStatement, newStatement string) 
 		return errors.Wrapf(err, "failed to parse new statement %q", newStatement)
 	}
 
-	oldSchemaInfo, err := buildSchemaInfo(oldNodeList)
+	oldSchemaInfo, err := diff.buildSchemaInfo(oldNodeList)
 	if err != nil {
 		return err
 	}
-	newSchemaInfo, err := buildSchemaInfo(newNodeList)
+	newSchemaInfo, err := diff.buildSchemaInfo(newNodeList)
 	if err != nil {
 		return err
 	}
@@ -158,25 +160,30 @@ func (diff *diffNode) diffSupportedStatement(oldStatement, newStatement string) 
 		}
 	}
 
-	diff.diffView(oldSchemaInfo.viewMap, newSchemaInfo.viewMap, newViewList)
+	if err := diff.diffView(oldSchemaInfo.viewMap, newSchemaInfo.viewMap, newViewList); err != nil {
+		return errors.Wrapf(err, "failed to diff view")
+	}
 
 	return nil
 }
 
-func (diff *diffNode) diffView(oldViewMap viewMap, newViewMap viewMap, newViewList []*ast.CreateViewStmt) {
+func (diff *diffNode) diffView(oldViewMap viewMap, newViewMap viewMap, newViewList []*ast.CreateViewStmt) error {
 	var tempViewList []ast.Node
 	var viewList []ast.Node
 	for _, view := range newViewList {
 		viewName := view.ViewName.Name.O
+		if diff.ignoreCaseSensitive {
+			viewName = view.ViewName.Name.L
+		}
 		if newNode, ok := newViewMap[viewName]; ok {
-			if !isViewEqual(view, newNode) {
+			if !diff.isViewEqual(view, newNode) {
 				// Skip predefined view such as the temporary view from mysqldump.
 				continue
 			}
 		}
 		oldNode, ok := oldViewMap[viewName]
 		if ok {
-			if !isViewEqual(view, oldNode) {
+			if !diff.isViewEqual(view, oldNode) {
 				createViewStmt := *view
 				createViewStmt.OrReplace = true
 				viewList = append(viewList, &createViewStmt)
@@ -186,7 +193,10 @@ func (diff *diffNode) diffView(oldViewMap viewMap, newViewMap viewMap, newViewLi
 		} else {
 			// We should create the view.
 			// We create the temporary view first and replace it to avoid break the dependency like mysqldump does.
-			tempViewStmt := getTempView(view)
+			tempViewStmt, err := getTempView(view)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get temporary view for view %s", view.ViewName.Name.O)
+			}
 			tempViewList = append(tempViewList, tempViewStmt)
 			createViewStmt := *view
 			createViewStmt.OrReplace = true
@@ -206,6 +216,7 @@ func (diff *diffNode) diffView(oldViewMap viewMap, newViewMap viewMap, newViewLi
 	if len(dropViewStmt.Tables) > 0 {
 		diff.dropViewList = append(diff.dropViewList, dropViewStmt)
 	}
+	return nil
 }
 
 func (diff *diffNode) diffTable(oldTable, newTable *tableInfo) {
@@ -254,7 +265,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) {
 				},
 			})
 		case ast.ConstraintForeignKey:
-			if oldConstraint, ok := oldConstraintMap[constraint.Name]; ok {
+			if oldConstraint, ok := oldConstraintMap[strings.ToLower(constraint.Name)]; ok {
 				if !isForeignKeyConstraintEqual(constraint, oldConstraint) {
 					diff.dropForeignKeyList = append(diff.dropForeignKeyList, &ast.AlterTableStmt{
 						Table: newTable.createTable.Table,
@@ -275,7 +286,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) {
 						},
 					})
 				}
-				delete(oldConstraintMap, constraint.Name)
+				delete(oldConstraintMap, strings.ToLower(constraint.Name))
 				continue
 			}
 			diff.addForeignKeyList = append(diff.addForeignKeyList, &ast.AlterTableStmt{
@@ -288,7 +299,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) {
 				},
 			})
 		case ast.ConstraintCheck:
-			if oldConstraint, ok := oldConstraintMap[constraint.Name]; ok {
+			if oldConstraint, ok := oldConstraintMap[strings.ToLower(constraint.Name)]; ok {
 				if !isCheckConstraintEqual(constraint, oldConstraint) {
 					diff.dropConstraintExceptFkList = append(diff.dropConstraintExceptFkList, &ast.AlterTableStmt{
 						Table: newTable.createTable.Table,
@@ -309,7 +320,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) {
 						},
 					})
 				}
-				delete(oldConstraintMap, constraint.Name)
+				delete(oldConstraintMap, strings.ToLower(constraint.Name))
 				continue
 			}
 			diff.addConstraintExceptFkList = append(diff.addConstraintExceptFkList, &ast.AlterTableStmt{
@@ -366,7 +377,7 @@ func (diff *diffNode) diffIndex(oldTable, newTable *tableInfo) {
 		if oldIndex, ok := oldTable.indexMap[indexName]; ok {
 			if !isIndexEqual(newIndex.createIndex, oldIndex.createIndex) {
 				diff.dropIndexList = append(diff.dropIndexList, &ast.DropIndexStmt{
-					IndexName: indexName,
+					IndexName: oldIndex.createIndex.IndexName,
 					Table:     oldIndex.createIndex.Table,
 				})
 				diff.createIndexList = append(diff.createIndexList, newIndex.createIndex)
@@ -377,9 +388,9 @@ func (diff *diffNode) diffIndex(oldTable, newTable *tableInfo) {
 		diff.createIndexList = append(diff.createIndexList, newIndex.createIndex)
 	}
 
-	for indexName, oldIndex := range oldTable.indexMap {
+	for _, oldIndex := range oldTable.indexMap {
 		diff.dropIndexList = append(diff.dropIndexList, &ast.DropIndexStmt{
-			IndexName: indexName,
+			IndexName: oldIndex.createIndex.IndexName,
 			Table:     oldIndex.createIndex.Table,
 		})
 	}
@@ -394,7 +405,8 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 	oldColumnMap := buildColumnMap(oldTable.createTable.Cols)
 	oldColumnPositionMap := buildColumnPositionMap(oldTable.createTable)
 	for idx, columnDef := range newTable.createTable.Cols {
-		newColumnName := columnDef.Name.Name.O
+		// Column names are always case insensitive.
+		newColumnName := columnDef.Name.Name.L
 		oldColumnDef, ok := oldColumnMap[newColumnName]
 		if !ok {
 			columnPosition := &ast.ColumnPosition{Tp: ast.ColumnPositionFirst}
@@ -555,7 +567,7 @@ type constraintMap map[string]*ast.Constraint
 
 // SchemaDiff returns the schema diff.
 // It only supports schema information from mysqldump.
-func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
+func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive bool) (string, error) {
 	// 1. Preprocessing Stage.
 	// TiDB parser doesn't support some statements like `CREATE EVENT`, so we need to extract them out and diff them based on string compare.
 	oldUnsupportedStmtList, oldSupportedStmt, err := classifyStatement(oldStmt)
@@ -567,7 +579,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", err
 	}
 
-	diff := &diffNode{}
+	diff := &diffNode{
+		ignoreCaseSensitive: ignoreCaseSensitive,
+	}
 	if err := diff.diffSupportedStatement(oldSupportedStmt, newSupportedStmt); err != nil {
 		return "", err
 	}
@@ -579,7 +593,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 }
 
 func classifyStatement(statement string) ([]string, string, error) {
-	unsupported, supported, err := bbparser.ExtractTiDBUnsupportStmts(statement)
+	unsupported, supported, err := bbparser.ExtractTiDBUnsupportedStmts(statement)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to extract TiDB unsupported statements from statements %q", statement)
 	}
@@ -686,10 +700,10 @@ func newTableInfo(createTable *ast.CreateTableStmt) (*tableInfo, error) {
 	var newConstraintList []*ast.Constraint
 	for _, constraint := range createTable.Constraints {
 		if createIndex := transformConstraintToIndex(createTable.Table, constraint); createIndex != nil {
-			if _, exists := result.indexMap[createIndex.IndexName]; exists {
+			if _, exists := result.indexMap[strings.ToLower(createIndex.IndexName)]; exists {
 				return nil, errors.Errorf("Try to create index `%s` on table `%s`, but index already exists", createIndex.IndexName, createIndex.Table.Name.String())
 			}
-			result.indexMap[constraint.Name] = newIndexInfo(createIndex)
+			result.indexMap[strings.ToLower(constraint.Name)] = newIndexInfo(createIndex)
 		} else {
 			newConstraintList = append(newConstraintList, constraint)
 		}
@@ -724,7 +738,7 @@ func transformConstraintToIndex(tableName *ast.TableName, constraint *ast.Constr
 }
 
 // buildSchemaInfo returns schema information built by statements.
-func buildSchemaInfo(nodes []ast.StmtNode) (*schemaInfo, error) {
+func (diff *diffNode) buildSchemaInfo(nodes []ast.StmtNode) (*schemaInfo, error) {
 	result := &schemaInfo{
 		tableMap: make(tableMap),
 		viewMap:  make(viewMap),
@@ -733,36 +747,48 @@ func buildSchemaInfo(nodes []ast.StmtNode) (*schemaInfo, error) {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
 			var err error
-			tableName := stmt.Table.Name.String()
+			tableName := stmt.Table.Name.O
+			if diff.ignoreCaseSensitive {
+				tableName = stmt.Table.Name.L
+			}
 			if result.tableMap[tableName], err = newTableInfo(stmt); err != nil {
 				return nil, err
 			}
 		case *ast.CreateIndexStmt:
-			table, exists := result.tableMap[stmt.Table.Name.String()]
+			tableName := stmt.Table.Name.O
+			if diff.ignoreCaseSensitive {
+				tableName = stmt.Table.Name.L
+			}
+			table, exists := result.tableMap[tableName]
 			if !exists {
 				return nil, errors.Errorf("Try to create index `%s` on table `%s`, but table not found", stmt.IndexName, stmt.Table.Name.String())
 			}
-			if _, exists := table.indexMap[stmt.IndexName]; exists {
+			// Index names are always case insensitive
+			if _, exists := table.indexMap[strings.ToLower(stmt.IndexName)]; exists {
 				return nil, errors.Errorf("Try to create index `%s` on table `%s`, but index already exists", stmt.IndexName, stmt.Table.Name.String())
 			}
-			table.indexMap[stmt.IndexName] = newIndexInfo(stmt)
+			table.indexMap[strings.ToLower(stmt.IndexName)] = newIndexInfo(stmt)
 		case *ast.CreateViewStmt:
-			result.viewMap[stmt.ViewName.Name.String()] = stmt
+			viewName := stmt.ViewName.Name.O
+			if diff.ignoreCaseSensitive {
+				viewName = stmt.ViewName.Name.L
+			}
+			result.viewMap[viewName] = stmt
 		default:
 		}
 	}
 	return result, nil
 }
 
-// buildUnsupportObjectMap builds map for trigger, function, procedure, event to correspond create object string statements.
-func buildUnsupportObjectMap(stmts []string) (map[objectType]map[string]string, error) {
+// buildUnsupportedObjectMap builds map for trigger, function, procedure, event to correspond create object string statements.
+func buildUnsupportedObjectMap(stmts []string) (map[objectType]map[string]string, error) {
 	m := make(map[objectType]map[string]string)
 	m[trigger] = make(map[string]string)
 	m[function] = make(map[string]string)
 	m[procedure] = make(map[string]string)
 	m[event] = make(map[string]string)
 	for _, stmt := range stmts {
-		objName, objType, err := extractUnsupportObjNameAndType(stmt)
+		objName, objType, err := extractUnsupportedObjectNameAndType(stmt)
 		if err != nil {
 			return nil, err
 		}
@@ -772,7 +798,7 @@ func buildUnsupportObjectMap(stmts []string) (map[objectType]map[string]string, 
 }
 
 // getTempView returns the temporary view name and the create statement.
-func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
+func getTempView(stmt *ast.CreateViewStmt) (*ast.CreateViewStmt, error) {
 	// We create the temp view similar to what mysqldump does.
 	// Create a temporary view with the same name as the view. Its columns should
 	// have the same name in order to satisfy views that depend on this view.
@@ -781,11 +807,11 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 	// because other views only need to reference the column name.
 	//  Example: SELECT 1 AS colName1, 1 AS colName2.
 	// TODO(zp): support SDL for GitOps.
-	var selectFileds []*ast.SelectField
+	var selectFields []*ast.SelectField
 	// mysqldump always show field list
 	if len(stmt.Cols) > 0 {
 		for _, col := range stmt.Cols {
-			selectFileds = append(selectFileds, &ast.SelectField{
+			selectFields = append(selectFields, &ast.SelectField{
 				Expr: &driver.ValueExpr{
 					Datum: types.NewDatum(1),
 				},
@@ -793,18 +819,16 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 			})
 		}
 	} else {
-		for _, field := range stmt.Select.(*ast.SelectStmt).Fields.Fields {
-			var fieldName string
-			if field.AsName.O != "" {
-				fieldName = field.AsName.O
-			} else {
-				fieldName = field.Expr.(*ast.ColumnNameExpr).Name.Name.O
-			}
-			selectFileds = append(selectFileds, &ast.SelectField{
+		colName, err := extractColNameFromSelectListClauseOfCreateViewStmt(stmt.Select)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract column name from select list clause of create view statement")
+		}
+		for _, name := range colName {
+			selectFields = append(selectFields, &ast.SelectField{
 				Expr: &driver.ValueExpr{
 					Datum: types.NewDatum(1),
 				},
-				AsName: model.NewCIStr(fieldName),
+				AsName: model.NewCIStr(name),
 			})
 		}
 	}
@@ -818,7 +842,7 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 				SQLCache: true,
 			},
 			Fields: &ast.FieldList{
-				Fields: selectFileds,
+				Fields: selectFields,
 			},
 		},
 		OrReplace: true,
@@ -827,6 +851,47 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 		Definer:     stmt.Definer,
 		Security:    stmt.Security,
 		CheckOption: model.CheckOptionCascaded,
+	}, nil
+}
+
+// extractColNameFromCreateViewStmt extracts column names from create view statement.
+// For example, CREATE OR REPLACE VIEW `v` AS select `d` as `c` WILL return `c`.
+func extractColNameFromSelectListClauseOfCreateViewStmt(stmt ast.Node) ([]string, error) {
+	var result []string
+	switch stmt := (stmt).(type) {
+	case *ast.SelectStmt:
+		for _, field := range stmt.Fields.Fields {
+			if field.WildCard != nil {
+				return nil, errors.New("wildcard(*) is not supported now in select statement")
+			}
+			var fieldName string
+			if field.AsName.O != "" {
+				fieldName = field.AsName.O
+			} else {
+				fieldName = field.Expr.(*ast.ColumnNameExpr).Name.Name.O
+			}
+			result = append(result, fieldName)
+		}
+		return result, nil
+	case *ast.SetOprStmt:
+		// For SetOprStmt, we focus on the first select statement, for example:
+		// with `tt` as (select `t1`.`id` AS `id` from `t1` union select `t2`.`id2` AS `id2` from `t2`) select `tt`.`id` AS `id` from `tt` union select `t1`.`id` AS `id` from `t1`
+		// we just focus on select `tt`.`id` as `id` from `tt`.
+		if len(stmt.SelectList.Selects) == 0 {
+			return nil, errors.New("select list in SetOprStmt is empty")
+		}
+		return extractColNameFromSelectListClauseOfCreateViewStmt(stmt.SelectList.Selects[0])
+	case *ast.SetOprSelectList:
+		if len(stmt.Selects) == 0 {
+			return nil, errors.New("select list in SetOprSelectList is empty")
+		}
+		return extractColNameFromSelectListClauseOfCreateViewStmt(stmt.Selects[0])
+	default:
+		stmtStr, err := toString(stmt)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert create view statement to string")
+		}
+		return nil, errors.Errorf("unsupported create view statement %q which select is not supported node", stmtStr)
 	}
 }
 
@@ -834,7 +899,8 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 func buildColumnMap(columnList []*ast.ColumnDef) map[string]*ast.ColumnDef {
 	oldColumnMap := make(map[string]*ast.ColumnDef)
 	for _, columnDef := range columnList {
-		oldColumnMap[columnDef.Name.Name.O] = columnDef
+		// Column names are always case insensitive.
+		oldColumnMap[columnDef.Name.Name.L] = columnDef
 	}
 	return oldColumnMap
 }
@@ -843,7 +909,8 @@ func buildColumnMap(columnList []*ast.ColumnDef) map[string]*ast.ColumnDef {
 func buildColumnPositionMap(stmt *ast.CreateTableStmt) map[string]int {
 	m := make(map[string]int)
 	for i, col := range stmt.Cols {
-		m[col.Name.Name.O] = i
+		// Column names are always case insensitive.
+		m[col.Name.Name.L] = i
 	}
 	return m
 }
@@ -854,7 +921,7 @@ func buildConstraintMap(stmt *ast.CreateTableStmt) (*ast.Constraint, constraintM
 	for _, constraint := range stmt.Constraints {
 		switch constraint.Tp {
 		case ast.ConstraintForeignKey, ast.ConstraintCheck:
-			constraintMap[constraint.Name] = constraint
+			constraintMap[strings.ToLower(constraint.Name)] = constraint
 		case ast.ConstraintPrimaryKey:
 			primaryKey = constraint
 		default:
@@ -895,13 +962,13 @@ func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
 	for idx, oldOption := range oldNormalizeOptions {
 		oldOptionStr, err := toString(oldOption)
 		if err != nil {
-			log.Error("failed to convert old column option to string", zap.Error(err))
+			slog.Error("failed to convert old column option to string", log.BBError(err))
 			return false
 		}
 		newOption := newNormalizeOptions[idx]
 		newOptionStr, err := toString(newOption)
 		if err != nil {
-			log.Error("failed to convert new column option to string", zap.Error(err))
+			slog.Error("failed to convert new column option to string", log.BBError(err))
 			return false
 		}
 		if oldOptionStr != newOptionStr {
@@ -946,7 +1013,8 @@ func isIndexEqual(old, new *ast.CreateIndexStmt) bool {
 	// [index_option]
 	// [algorithm_option | lock_option] ...
 
-	if old.IndexName != new.IndexName {
+	// MySQL index names are case insensitive.
+	if !strings.EqualFold(old.IndexName, new.IndexName) {
 		return false
 	}
 	if (old.IndexOption == nil) != (new.IndexOption == nil) {
@@ -1017,12 +1085,12 @@ func isKeyPartEqual(old, new []*ast.IndexPartSpecification) bool {
 		if oldKeyPart.Expr != nil && newKeyPart.Expr != nil {
 			oldKeyPartStr, err := toString(oldKeyPart.Expr)
 			if err != nil {
-				log.Error("failed to convert old key part to string", zap.Error(err))
+				slog.Error("failed to convert old key part to string", log.BBError(err))
 				return false
 			}
 			newKeyPartStr, err := toString(newKeyPart.Expr)
 			if err != nil {
-				log.Error("failed to convert new key part to string", zap.Error(err))
+				slog.Error("failed to convert new key part to string", log.BBError(err))
 				return false
 			}
 			return oldKeyPartStr == newKeyPartStr
@@ -1076,7 +1144,7 @@ func isIndexOptionEqual(old, new *ast.IndexOption) bool {
 // isForeignKeyEqual returns true if two foreign keys are the same.
 func isForeignKeyConstraintEqual(old, new *ast.Constraint) bool {
 	// FOREIGN KEY [index_name] (index_col_name,...) reference_definition
-	if old.Name != new.Name {
+	if !strings.EqualFold(old.Name, new.Name) {
 		return false
 	}
 	if !isKeyPartEqual(old.Keys, new.Keys) {
@@ -1146,7 +1214,7 @@ func trimParentheses(expr ast.ExprNode) ast.ExprNode {
 func isCheckConstraintEqual(old, new *ast.Constraint) bool {
 	// check_constraint_definition:
 	// 		[CONSTRAINT [symbol]] CHECK (expr) [[NOT] ENFORCED]
-	if old.Name != new.Name {
+	if !strings.EqualFold(old.Name, new.Name) {
 		return false
 	}
 
@@ -1156,12 +1224,12 @@ func isCheckConstraintEqual(old, new *ast.Constraint) bool {
 
 	oldExpr, err := toString(trimParentheses(old.Expr))
 	if err != nil {
-		log.Error("failed to convert old check constraint expression to string", zap.Error(err))
+		slog.Error("failed to convert old check constraint expression to string", log.BBError(err))
 		return false
 	}
 	newExpr, err := toString(trimParentheses(new.Expr))
 	if err != nil {
-		log.Error("failed to convert new check constraint expression to string", zap.Error(err))
+		slog.Error("failed to convert new check constraint expression to string", log.BBError(err))
 		return false
 	}
 	return oldExpr == newExpr
@@ -1467,7 +1535,7 @@ func isTableOptionValEqual(old, new *ast.TableOption) bool {
 }
 
 // isViewEqual checks whether two views with same name are equal.
-func isViewEqual(old, new *ast.CreateViewStmt) bool {
+func (diff *diffNode) isViewEqual(old, new *ast.CreateViewStmt) bool {
 	// CREATE
 	// 		[OR REPLACE]
 	// 		[ALGORITHM = {UNDEFINED | MERGE | TEMPTABLE}]
@@ -1478,14 +1546,27 @@ func isViewEqual(old, new *ast.CreateViewStmt) bool {
 	// 		[WITH [CASCADED | LOCAL] CHECK OPTION]
 	// We can easily replace view statement by using `CREATE OR REPLACE VIEW` statement to replace the old one.
 	// So we don't need to compare each part, just compare the restore string.
+	if diff.ignoreCaseSensitive {
+		oldViewStr, err := toLowerNameString(old)
+		if err != nil {
+			slog.Error("fail to convert old view to string", log.BBError(err))
+			return false
+		}
+		newViewStr, err := toLowerNameString(new)
+		if err != nil {
+			slog.Error("fail to convert new view to string", log.BBError(err))
+			return false
+		}
+		return oldViewStr == newViewStr
+	}
 	oldViewStr, err := toString(old)
 	if err != nil {
-		log.Error("fail to convert old view to string", zap.Error(err))
+		slog.Error("fail to convert old view to string", log.BBError(err))
 		return false
 	}
 	newViewStr, err := toString(new)
 	if err != nil {
-		log.Error("fail to convert new view to string", zap.Error(err))
+		slog.Error("fail to convert new view to string", log.BBError(err))
 		return false
 	}
 	return oldViewStr == newViewStr
@@ -1500,14 +1581,16 @@ func buildTableOptionMap(options []*ast.TableOption) map[ast.TableOptionType]*as
 	return m
 }
 
-// hasColumnsIntersection returns true if two column slices have column name intersaction.
+// hasColumnsIntersection returns true if two column slices have column name intersection.
 func hasColumnsIntersection(a, b []*ast.ColumnDef) bool {
 	bMap := make(map[string]bool)
 	for _, col := range b {
-		bMap[col.Name.Name.O] = true
+		// MySQL column name is case insensitive.
+		bMap[col.Name.Name.L] = true
 	}
 	for _, col := range a {
-		if _, ok := bMap[col.Name.Name.O]; ok {
+		// MySQL column name is case insensitive.
+		if _, ok := bMap[col.Name.Name.L]; ok {
 			return true
 		}
 	}

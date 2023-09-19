@@ -19,7 +19,7 @@ CREATE TABLE idp (
   resource_id TEXT NOT NULL,
   name TEXT NOT NULL,
   domain TEXT NOT NULL,
-  type TEXT NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC')),
+  type TEXT NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC', 'LDAP')),
   -- config stores the corresponding configuration of the IdP, which may vary depending on the type of the IdP.
   config JSONB NOT NULL DEFAULT '{}'
 );
@@ -223,7 +223,8 @@ CREATE TABLE project (
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
-    resource_id TEXT NOT NULL
+    resource_id TEXT NOT NULL,
+    data_classification_config_id TEXT NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
@@ -324,14 +325,16 @@ CREATE TABLE instance (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    environment_id INTEGER NOT NULL REFERENCES environment (id),
+    environment_id INTEGER REFERENCES environment (id),
     name TEXT NOT NULL,
     engine TEXT NOT NULL,
     engine_version TEXT NOT NULL DEFAULT '',
     external_link TEXT NOT NULL DEFAULT '',
     resource_id TEXT NOT NULL,
     -- activation should set to be TRUE if users assign license to this instance.
-    activation BOOLEAN NOT NULL DEFAULT false
+    activation BOOLEAN NOT NULL DEFAULT false,
+    options JSONB NOT NULL DEFAULT '{}',
+    metadata JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
@@ -378,6 +381,7 @@ CREATE TABLE db (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
+    environment_id INTEGER REFERENCES environment (id),
     -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
     source_backup_id INTEGER,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
@@ -385,7 +389,10 @@ CREATE TABLE db (
     schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
     secrets JSONB NOT NULL DEFAULT '{}',
-    datashare BOOLEAN NOT NULL DEFAULT FALSE
+    datashare BOOLEAN NOT NULL DEFAULT FALSE,
+    -- service_name is the Oracle specific field.
+    service_name TEXT NOT NULL DEFAULT '',
+    metadata JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_db_instance_id ON db(instance_id);
@@ -434,7 +441,6 @@ CREATE TABLE data_source (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
-    database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
@@ -448,9 +454,7 @@ CREATE TABLE data_source (
     database TEXT NOT NULL DEFAULT ''
 );
 
-CREATE INDEX idx_data_source_instance_id ON data_source(instance_id);
-
-CREATE UNIQUE INDEX idx_data_source_unique_database_id_name ON data_source(database_id, name);
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON data_source(instance_id, name);
 
 ALTER SEQUENCE data_source_id_seq RESTART WITH 101;
 
@@ -532,6 +536,7 @@ CREATE TABLE pipeline (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL
 );
 
@@ -631,17 +636,17 @@ CREATE TABLE task_run (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     task_id INTEGER NOT NULL REFERENCES task (id),
+    attempt INTEGER NOT NULL,
     name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
+    status TEXT NOT NULL CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     code INTEGER NOT NULL DEFAULT 0,
-    comment TEXT NOT NULL DEFAULT '',
     -- result saves the task run result in json format
-    result  JSONB NOT NULL DEFAULT '{}',
-    payload JSONB NOT NULL DEFAULT '{}'
+    result  JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run (task_id, attempt);
 
 ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 
@@ -649,33 +654,6 @@ CREATE TRIGGER update_task_run_updated_ts
 BEFORE
 UPDATE
     ON task_run FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
--- task check run table stores the task check run
-CREATE TABLE task_check_run (
-    id SERIAL PRIMARY KEY,
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    task_id INTEGER NOT NULL REFERENCES task (id),
-    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.task-check.%'),
-    code INTEGER NOT NULL DEFAULT 0,
-    comment TEXT NOT NULL DEFAULT '',
-    -- result saves the task check run result in json format
-    result  JSONB NOT NULL DEFAULT '{}',
-    payload JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_task_check_run_task_id ON task_check_run(task_id);
-
-ALTER SEQUENCE task_check_run_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_task_check_run_updated_ts
-BEFORE
-UPDATE
-    ON task_check_run FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Pipeline related END
@@ -706,6 +684,31 @@ BEFORE
 UPDATE
     ON plan FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
+
+CREATE TABLE plan_check_run (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    plan_id BIGINT NOT NULL REFERENCES plan (id),
+    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.plan-check.%'),
+    config JSONB NOT NULL DEFAULT '{}',
+    result JSONB NOT NULL DEFAULT '{}',
+    payload JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_plan_check_run_plan_id ON plan_check_run (plan_id);
+
+ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
+
+CREATE TRIGGER update_plan_check_run_updated_ts
+BEFORE
+UPDATE
+    ON plan_check_run FOR EACH ROW
+EXECUTE FUNCTION trigger_update_updated_ts();
+
 -- Plan related END
 -----------------------
 -- issue
@@ -726,7 +729,8 @@ CREATE TABLE issue (
     -- While changing assignee_id, one should only change it to a non-robot DBA/owner.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
     assignee_need_attention BOOLEAN NOT NULL DEFAULT FALSE, 
-    payload JSONB NOT NULL DEFAULT '{}'
+    payload JSONB NOT NULL DEFAULT '{}',
+    ts_vector TSVECTOR
 );
 
 CREATE INDEX idx_issue_project_id ON issue(project_id);
@@ -740,6 +744,8 @@ CREATE INDEX idx_issue_creator_id ON issue(creator_id);
 CREATE INDEX idx_issue_assignee_id ON issue(assignee_id);
 
 CREATE INDEX idx_issue_created_ts ON issue(created_ts);
+
+CREATE INDEX idx_issue_ts_vector ON issue USING gin(ts_vector);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 101;
 
@@ -892,7 +898,7 @@ CREATE TABLE vcs (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET')),
+    type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
     api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
     application_id TEXT NOT NULL,
@@ -1105,7 +1111,7 @@ CREATE TABLE sheet (
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
     visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE',
-    source TEXT NOT NULL CONSTRAINT sheet_source_check CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET', 'BYTEBASE_ARTIFACT')) DEFAULT 'BYTEBASE',
+    source TEXT NOT NULL CONSTRAINT sheet_source_check CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS', 'BYTEBASE_ARTIFACT')) DEFAULT 'BYTEBASE',
     type TEXT NOT NULL CHECK (type IN ('SQL')) DEFAULT 'SQL',
     payload JSONB NOT NULL DEFAULT '{}'
 );

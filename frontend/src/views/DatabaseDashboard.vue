@@ -1,10 +1,10 @@
 <template>
   <div class="flex flex-col relative">
-    <div class="px-5 py-2 flex justify-between items-center">
+    <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
-        :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
-        @update:environment="changeEnvironmentId"
+        :environment="selectedEnvironment?.name"
+        @update:environment="changeEnvironment"
       />
 
       <div class="flex items-center space-x-4">
@@ -31,6 +31,7 @@
 
         <NInputGroup style="width: auto">
           <InstanceSelect
+            class="!w-48"
             :instance="state.instanceFilter"
             :include-all="true"
             :environment="selectedEnvironment?.uid"
@@ -65,10 +66,9 @@
 </template>
 
 <script lang="ts" setup>
+import { NInputGroup, NTooltip } from "naive-ui";
 import { computed, watchEffect, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { NInputGroup, NTooltip } from "naive-ui";
-
 import {
   EnvironmentTabFilter,
   InstanceSelect,
@@ -76,24 +76,12 @@ import {
   SearchBox,
 } from "@/components/v2";
 import {
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_ID,
-  UNKNOWN_USER_NAME,
-  ComposedDatabase,
-  ComposedDatabaseGroup,
-} from "../types";
-import {
-  filterDatabaseV1ByKeyword,
-  hasWorkspacePermissionV1,
-  sortDatabaseV1List,
-  isDatabaseV1Accessible,
-} from "@/utils";
-import {
   useCurrentUserV1,
   useDBGroupStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   usePolicyV1Store,
+  useProjectV1ListByCurrentUser,
   useUIStateStore,
 } from "@/store";
 import {
@@ -101,6 +89,21 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
+import {
+  filterDatabaseV1ByKeyword,
+  hasWorkspacePermissionV1,
+  sortDatabaseV1List,
+  isDatabaseV1Accessible,
+} from "@/utils";
+import {
+  UNKNOWN_ID,
+  UNKNOWN_ENVIRONMENT_NAME,
+  DEFAULT_PROJECT_ID,
+  UNKNOWN_USER_NAME,
+  ComposedDatabase,
+  ComposedDatabaseGroup,
+  DEFAULT_PROJECT_V1_NAME,
+} from "../types";
 
 interface LocalState {
   instanceFilter: string;
@@ -110,10 +113,11 @@ interface LocalState {
   loading: boolean;
 }
 
+const route = useRoute();
+const router = useRouter();
 const uiStateStore = useUIStateStore();
 const environmentV1Store = useEnvironmentV1Store();
-const router = useRouter();
-const route = useRoute();
+const { projectList } = useProjectV1ListByCurrentUser();
 
 const state = reactive<LocalState>({
   instanceFilter: String(UNKNOWN_ID),
@@ -131,8 +135,8 @@ const policyList = ref<Policy[]>([]);
 const preparePolicyList = () => {
   usePolicyV1Store()
     .fetchPolicies({
-      resourceType: PolicyResourceType.DATABASE,
-      policyType: PolicyType.ACCESS_CONTROL,
+      policyType: PolicyType.WORKSPACE_IAM,
+      resourceType: PolicyResourceType.WORKSPACE,
     })
     .then((list) => (policyList.value = list));
 };
@@ -142,7 +146,7 @@ watchEffect(preparePolicyList);
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
   return environment
-    ? environmentV1Store.getEnvironmentByUID(environment as string)
+    ? environmentV1Store.getEnvironmentByName(environment as string)
     : undefined;
 });
 
@@ -169,14 +173,22 @@ const prepareDatabaseList = async () => {
     const databaseV1List = await databaseV1Store.searchDatabaseList({
       parent: "instances/-",
     });
-    state.databaseV1List = sortDatabaseV1List(databaseV1List);
+    state.databaseV1List = sortDatabaseV1List(databaseV1List).filter((db) =>
+      projectList.value.map((project) => project.name).includes(db.project)
+    );
     state.loading = false;
   }
 };
 
 const prepareDatabaseGroupList = async () => {
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    state.databaseGroupList = await dbGroupStore.fetchAllDatabaseGroupList();
+    state.databaseGroupList = (
+      await dbGroupStore.fetchAllDatabaseGroupList()
+    ).filter((dbGroup) =>
+      projectList.value
+        .map((project) => project.name)
+        .includes(dbGroup.project.name)
+    );
   }
 };
 
@@ -187,8 +199,8 @@ watchEffect(async () => {
   state.loading = false;
 });
 
-const changeEnvironmentId = (environment: string | undefined) => {
-  if (environment && environment !== String(UNKNOWN_ID)) {
+const changeEnvironment = (environment: string | undefined) => {
+  if (environment && environment !== UNKNOWN_ENVIRONMENT_NAME) {
     router.replace({
       name: "workspace.database",
       query: { environment },
@@ -203,14 +215,14 @@ const changeSearchText = (searchText: string) => {
 };
 
 const filteredDatabaseList = computed(() => {
-  let list = [...state.databaseV1List].filter((database) =>
-    isDatabaseV1Accessible(database, policyList.value, currentUserV1.value)
-  );
-  const environment = selectedEnvironment.value;
-  if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
-    list = list.filter(
-      (db) => db.instanceEntity.environment === environment.name
+  let list = [...state.databaseV1List]
+    .filter((database) => database.project !== DEFAULT_PROJECT_V1_NAME)
+    .filter((database) =>
+      isDatabaseV1Accessible(database, currentUserV1.value)
     );
+  const environment = selectedEnvironment.value;
+  if (environment && environment.name !== UNKNOWN_ENVIRONMENT_NAME) {
+    list = list.filter((db) => db.effectiveEnvironment === environment.name);
   }
   if (state.instanceFilter !== String(UNKNOWN_ID)) {
     list = list.filter(
@@ -234,7 +246,7 @@ const filteredDatabaseList = computed(() => {
 const filteredDatabaseGroupList = computed(() => {
   let list = [...state.databaseGroupList];
   const environment = selectedEnvironment.value;
-  if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
+  if (environment && environment.name !== UNKNOWN_ENVIRONMENT_NAME) {
     list = list.filter(
       (dbGroup) => dbGroup.environmentName === environment.name
     );

@@ -2,14 +2,13 @@ package store
 
 import (
 	"fmt"
+	"log/slog"
 	"net"
 	"net/url"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 )
@@ -92,7 +91,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 
 	q := u.Query()
 
-	log.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
+	slog.Info("Establishing external PostgreSQL connection...", slog.String("pgURL", u.Redacted()))
 
 	// Though the official libpq adopts postgresql:// (https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING)
 	// Several popular services such as render.com, supabase use postgres://.
@@ -162,7 +161,7 @@ func (m *MetadataDB) Close() error {
 		return nil
 	}
 
-	log.Info("Stopping PostgreSQL...")
+	slog.Info("Stopping PostgreSQL...")
 	if err := postgres.Stop(m.binDir, m.pgDataDir); err != nil {
 		return err
 	}

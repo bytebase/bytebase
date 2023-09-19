@@ -3,8 +3,10 @@ package pg
 import (
 	"bufio"
 	"context"
+	"encoding/pem"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os/exec"
 	"path/filepath"
@@ -16,6 +18,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
+
+// sslCAThreshold is the block size for splitting sslCA.
+// we use 120kb as the threshold to avoid argument list too long error.
+// https://stackoverflow.com/questions/46897008/why-am-i-getting-e2big-from-exec-when-im-accounting-for-the-arguments-and-the
+const sslCAThreshold = 120 * 1024
 
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
@@ -42,7 +49,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 		dumpableDbNames = []string{driver.databaseName}
 	} else {
 		for _, n := range databases {
-			if ExcludedDatabaseList[n.Name] {
+			if IsSystemDatabase(n.Name) {
 				continue
 			}
 			dumpableDbNames = append(dumpableDbNames, n.Name)
@@ -93,6 +100,24 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	args = append(args, "--no-privileges")
 	args = append(args, database)
 
+	sslCAs := splitSslCA(driver.config.TLSConfig.SslCA)
+	dumpSuccess := false
+	for _, sslCA := range sslCAs {
+		if err := driver.execPgDump(ctx, args, out, sslCA); err != nil {
+			slog.Warn("Failed to exec pg_dump", log.BBError(err))
+		} else {
+			dumpSuccess = true
+			slog.Info("pg dump successfully")
+			break
+		}
+	}
+	if !dumpSuccess {
+		return errors.New("Failed to exec pg_dump")
+	}
+	return nil
+}
+
+func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writer, sslCA string) error {
 	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
 	// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
@@ -102,8 +127,8 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	if driver.config.TLSConfig.SslCert != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLCERT=%s", driver.config.TLSConfig.SslCert))
 	}
-	if driver.config.TLSConfig.SslCA != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", driver.config.TLSConfig.SslCA))
+	if sslCA != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", sslCA))
 	}
 	if driver.config.TLSConfig.SslKey != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLKEY=%s", driver.config.TLSConfig.SslKey))
@@ -179,7 +204,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		errorMsg := make([]byte, 1024)
 		readSize, readErr := errReader.Read(errorMsg)
 		if readSize > 0 {
-			log.Warn(string(errorMsg))
+			slog.Warn(string(errorMsg))
 			allMsg = append(allMsg, errorMsg[0:readSize]...)
 		}
 		if readErr != nil {
@@ -246,4 +271,33 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 	}
 
 	return txn.Commit()
+}
+
+// split large sslCA to multiple smaller sslCAs.
+func splitSslCA(sslca string) []string {
+	if len(sslca) < sslCAThreshold {
+		return []string{sslca}
+	}
+
+	var certs []string
+	var cert string
+	for block, rest := pem.Decode([]byte(sslca)); block != nil; block, rest = pem.Decode(rest) {
+		switch block.Type {
+		case "CERTIFICATE":
+			curCert := string(pem.EncodeToMemory(block))
+			if len(cert)+len(curCert) > sslCAThreshold {
+				certs = append(certs, cert)
+				cert = curCert
+			} else {
+				cert += curCert
+			}
+		default:
+			slog.Warn("unknown block type when spliting sslca")
+		}
+	}
+
+	if len(cert) > 0 {
+		certs = append(certs, cert)
+	}
+	return certs
 }

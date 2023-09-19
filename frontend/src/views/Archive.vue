@@ -40,17 +40,13 @@
 <script lang="ts">
 import { computed, defineComponent, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { BBTabFilterItem } from "@/bbkit/types";
+import IdentityProviderTable from "@/components/IdentityProviderTable.vue";
 import {
   EnvironmentV1Table,
   InstanceV1Table,
   ProjectV1Table,
 } from "@/components/v2";
-import {
-  filterProjectV1ListByKeyword,
-  hasWorkspacePermissionV1,
-} from "@/utils";
-import { BBTabFilterItem } from "@/bbkit/types";
 import {
   useCurrentUserV1,
   useEnvironmentV1Store,
@@ -58,9 +54,12 @@ import {
   useInstanceV1Store,
   useProjectV1ListByCurrentUser,
 } from "@/store";
-import { IdentityProvider } from "@/types/proto/v1/idp_service";
-import IdentityProviderTable from "@/components/IdentityProviderTable.vue";
 import { State } from "@/types/proto/v1/common";
+import { IdentityProvider } from "@/types/proto/v1/idp_service";
+import {
+  filterProjectV1ListByKeyword,
+  hasWorkspacePermissionV1,
+} from "@/utils";
 
 const PROJECT_TAB = 0;
 const INSTANCE_TAB = 1;

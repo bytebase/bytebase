@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -16,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 // Response code definition in feishu response body.
@@ -342,6 +344,7 @@ func (p *Provider) tokenRefresher(tokenCtx TokenCtx) tokenRefresher {
 
 func (p *Provider) do(ctx context.Context, client *http.Client, method, url string, body []byte, tokenRefresher tokenRefresher) (code int, header http.Header, respBody string, err error) {
 	token := p.Token.Load().(string)
+	//nolint:bodyclose
 	return retry(ctx, client, &token, tokenRefresher, requester(ctx, client, method, url, &token, body))
 }
 
@@ -384,6 +387,9 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return 0, nil, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
+		}
+		if err := resp.Body.Close(); err != nil {
+			slog.Warn("failed to close resp body", log.BBError(err))
 		}
 
 		var response struct {

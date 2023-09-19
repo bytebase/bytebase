@@ -1,10 +1,10 @@
 /* eslint-disable */
-import * as Long from "long";
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -15,7 +15,7 @@ export interface CreateSheetRequest {
    */
   parent: string;
   /** The sheet to create. */
-  sheet?: Sheet;
+  sheet?: Sheet | undefined;
 }
 
 export interface GetSheetRequest {
@@ -35,7 +35,9 @@ export interface UpdateSheetRequest {
    * The sheet's `name` field is used to identify the sheet to update.
    * Format: projects/{project}/sheets/{sheet}
    */
-  sheet?: Sheet;
+  sheet?:
+    | Sheet
+    | undefined;
   /**
    * The list of fields to be updated.
    * Fields are specified relative to the sheet.
@@ -46,7 +48,7 @@ export interface UpdateSheetRequest {
    * - `starred`
    * - `visibility`
    */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface UpdateSheetOrganizerRequest {
@@ -56,7 +58,9 @@ export interface UpdateSheetOrganizerRequest {
    * The organizer's `sheet` field is used to identify the sheet.
    * Format: projects/{project}/sheets/{sheet}
    */
-  organizer?: SheetOrganizer;
+  organizer?:
+    | SheetOrganizer
+    | undefined;
   /**
    * The list of fields to be updated.
    * Fields are specified relative to the sheet organizer.
@@ -64,7 +68,7 @@ export interface UpdateSheetOrganizerRequest {
    * - `starred`
    * - `pinned`
    */
-  updateMask?: string[];
+  updateMask?: string[] | undefined;
 }
 
 export interface SheetOrganizer {
@@ -158,9 +162,13 @@ export interface Sheet {
    */
   creator: string;
   /** The create time of the sheet. */
-  createTime?: Date;
+  createTime?:
+    | Date
+    | undefined;
   /** The last update time of the sheet. */
-  updateTime?: Date;
+  updateTime?:
+    | Date
+    | undefined;
   /**
    * The content of the sheet.
    * By default, it will be cut off, if it doesn't match the `content_size`, you can
@@ -178,6 +186,7 @@ export interface Sheet {
   starred: boolean;
   /** TODO: deprecate this field. */
   payload: string;
+  pushEvent?: PushEvent | undefined;
 }
 
 export enum Sheet_Visibility {
@@ -993,6 +1002,7 @@ function createBaseSheet(): Sheet {
     type: 0,
     starred: false,
     payload: "",
+    pushEvent: undefined,
   };
 }
 
@@ -1036,6 +1046,9 @@ export const Sheet = {
     }
     if (message.payload !== "") {
       writer.uint32(106).string(message.payload);
+    }
+    if (message.pushEvent !== undefined) {
+      PushEvent.encode(message.pushEvent, writer.uint32(114).fork()).ldelim();
     }
     return writer;
   },
@@ -1138,6 +1151,13 @@ export const Sheet = {
 
           message.payload = reader.string();
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.pushEvent = PushEvent.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1162,6 +1182,7 @@ export const Sheet = {
       type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
       starred: isSet(object.starred) ? Boolean(object.starred) : false,
       payload: isSet(object.payload) ? String(object.payload) : "",
+      pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
   },
 
@@ -1181,6 +1202,8 @@ export const Sheet = {
     message.type !== undefined && (obj.type = sheet_TypeToJSON(message.type));
     message.starred !== undefined && (obj.starred = message.starred);
     message.payload !== undefined && (obj.payload = message.payload);
+    message.pushEvent !== undefined &&
+      (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
     return obj;
   },
 
@@ -1203,6 +1226,9 @@ export const Sheet = {
     message.type = object.type ?? 0;
     message.starred = object.starred ?? false;
     message.payload = object.payload ?? "";
+    message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
+      ? PushEvent.fromPartial(object.pushEvent)
+      : undefined;
     return message;
   },
 };
@@ -1646,42 +1672,10 @@ export const SheetServiceDefinition = {
   },
 } as const;
 
-export interface SheetServiceImplementation<CallContextExt = {}> {
-  createSheet(request: CreateSheetRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Sheet>>;
-  getSheet(request: GetSheetRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Sheet>>;
-  searchSheets(
-    request: SearchSheetsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchSheetsResponse>>;
-  updateSheet(request: UpdateSheetRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Sheet>>;
-  updateSheetOrganizer(
-    request: UpdateSheetOrganizerRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SheetOrganizer>>;
-  deleteSheet(request: DeleteSheetRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  syncSheets(request: SyncSheetsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-}
-
-export interface SheetServiceClient<CallOptionsExt = {}> {
-  createSheet(request: DeepPartial<CreateSheetRequest>, options?: CallOptions & CallOptionsExt): Promise<Sheet>;
-  getSheet(request: DeepPartial<GetSheetRequest>, options?: CallOptions & CallOptionsExt): Promise<Sheet>;
-  searchSheets(
-    request: DeepPartial<SearchSheetsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchSheetsResponse>;
-  updateSheet(request: DeepPartial<UpdateSheetRequest>, options?: CallOptions & CallOptionsExt): Promise<Sheet>;
-  updateSheetOrganizer(
-    request: DeepPartial<UpdateSheetOrganizerRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SheetOrganizer>;
-  deleteSheet(request: DeepPartial<DeleteSheetRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  syncSheets(request: DeepPartial<SyncSheetsRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-}
-
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
+declare const self: any | undefined;
+declare const window: any | undefined;
+declare const global: any | undefined;
+const tsProtoGlobalThis: any = (() => {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
@@ -1758,8 +1752,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

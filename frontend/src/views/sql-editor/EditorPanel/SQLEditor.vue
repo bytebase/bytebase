@@ -19,17 +19,16 @@
 
 <script lang="ts" setup>
 import { computed, defineEmits, nextTick, ref, watch, watchEffect } from "vue";
-
+import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
   useTabStore,
   useSQLEditorStore,
-  useSheetV1Store,
   useDBSchemaV1Store,
   useUIStateStore,
   useDatabaseV1Store,
   useInstanceV1ByUID,
+  useSheetAndTabStore,
 } from "@/store";
-import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
   ComposedDatabase,
   dialectOfEngineV1,
@@ -40,9 +39,9 @@ import {
 } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
+import { useSQLEditorContext } from "../context";
 
 const emit = defineEmits<{
-  (e: "save-sheet", content?: string): void;
   (
     e: "execute",
     sql: string,
@@ -55,8 +54,9 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const sqlEditorStore = useSQLEditorStore();
-const sheetV1Store = useSheetV1Store();
+const sheetAndTabStore = useSheetAndTabStore();
 const uiStateStore = useUIStateStore();
+const { events: editorEvents } = useSQLEditorContext();
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -77,7 +77,7 @@ const selectedDialect = computed((): SQLDialect => {
   const engine = selectedInstance.value.engine;
   return dialectOfEngineV1(engine);
 });
-const readonly = computed(() => sheetV1Store.isReadOnly);
+const readonly = computed(() => sheetAndTabStore.isReadOnly);
 const currentTabId = computed(() => tabStore.currentTabId);
 const isSwitchingTab = ref(false);
 
@@ -104,6 +104,9 @@ const handleChange = (value: string) => {
   if (isSwitchingTab.value) {
     return;
   }
+  if (value === tabStore.currentTab.statement) {
+    return;
+  }
   tabStore.updateCurrentTab({
     statement: value,
     isSaved: false,
@@ -117,7 +120,7 @@ const handleChangeSelection = (value: string) => {
 };
 
 const handleSaveSheet = () => {
-  emit("save-sheet");
+  editorEvents.emit("save-sheet", { title: tabStore.currentTab.name });
 };
 
 const handleEditorReady = async () => {

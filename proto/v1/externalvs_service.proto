@@ -157,6 +157,8 @@ message ExternalVersionControl {
     GITLAB = 2;
     // BitBucket type. Using for BitBucket cloud or BitBucket server.
     BITBUCKET = 3;
+    // Azure DevOps. Using for Azure DevOps GitOps workflow.
+    AZURE_DEVOPS = 4;
   }
 
   Type type = 3 [(google.api.field_behavior) = REQUIRED];

@@ -21,8 +21,8 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-import { Environment } from "@/types";
 import { featureToRef } from "@/store";
+import { Environment } from "@/types";
 
 export default defineComponent({
   name: "ProductionEnvironmentIcon",

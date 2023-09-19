@@ -37,6 +37,12 @@ export const themeOverrides = computed((): GlobalThemeOverrides => {
       errorColorHover: callVar("--color-error-hover"),
       errorColorPressed: callVar("--color-error"),
     },
+    Button: {
+      color: "white",
+      colorHover: "white",
+      colorFocus: "white",
+      colorPressed: "white",
+    },
   };
 });
 
@@ -48,6 +54,10 @@ export const darkThemeOverrides = computed((): GlobalThemeOverrides => {
       primaryColorPressed: callVar("--color-matrix-green"),
     },
     Button: {
+      color: "transparent",
+      colorHover: "transparent",
+      colorFocus: "transparent",
+      colorPressed: "transparent",
       colorInfo: callVar("--color-matrix-green"),
       colorHoverInfo: callVar("--color-matrix-green-hover"),
       colorFocusInfo: callVar("--color-matrix-green"),

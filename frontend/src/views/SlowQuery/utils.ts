@@ -1,5 +1,4 @@
 import type { LocationQuery } from "vue-router";
-import { UNKNOWN_ID } from "@/types";
 import {
   SlowQueryFilterParams,
   defaultSlowQueryFilterParams,
@@ -10,6 +9,7 @@ import {
   useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
+import { UNKNOWN_ID } from "@/types";
 
 export const wrapQueryFromFilterParams = (params: SlowQueryFilterParams) => {
   const query: Record<string, any> = {};

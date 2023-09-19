@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math"
 	"net/http"
 	"os"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -60,7 +60,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(r.profile.BackupRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug("Auto backup runner started", zap.Duration("interval", r.profile.BackupRunnerInterval))
+	slog.Debug("Auto backup runner started", slog.Duration("interval", r.profile.BackupRunnerInterval))
 	for {
 		select {
 		case <-ticker.C:
@@ -71,7 +71,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = errors.Errorf("%v", r)
 						}
-						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+						slog.Error("Auto backup runner PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 					}
 				}()
 				r.startAutoBackups(ctx)
@@ -91,7 +91,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 	backupSettingList, err := r.store.ListBackupSettingV2(ctx, &store.FindBackupSettingMessage{})
 	if err != nil {
-		log.Error("Failed to find all the backup settings.", zap.Error(err))
+		slog.Error("Failed to find all the backup settings.", log.BBError(err))
 		return
 	}
 
@@ -105,16 +105,16 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 			RowStatus:   &statusNormal,
 		})
 		if err != nil {
-			log.Error("Failed to get backups for database.", zap.Int("databaseID", bs.DatabaseUID))
+			slog.Error("Failed to get backups for database.", slog.Int("databaseID", bs.DatabaseUID))
 			return
 		}
 		for _, backup := range backupList {
 			backupTime := time.Unix(backup.UpdatedTs, 0)
 			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs) * time.Second)
 			if time.Now().After(expireTime) {
-				log.Debug("Purging expired backup", zap.Int("databaseID", backup.DatabaseUID), zap.String("backup", backup.Name), zap.String("storageBackend", string(backup.StorageBackend)))
+				slog.Debug("Purging expired backup", slog.Int("databaseID", backup.DatabaseUID), slog.String("backup", backup.Name), slog.String("storageBackend", string(backup.StorageBackend)))
 				if err := r.purgeBackup(ctx, backup); err != nil {
-					log.Error("Failed to purge backup", zap.String("backup", backup.Name), zap.Error(err))
+					slog.Error("Failed to purge backup", slog.String("backup", backup.Name), log.BBError(err))
 				}
 			}
 		}
@@ -122,7 +122,7 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 
 	instanceList, err := r.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
 	if err != nil {
-		log.Error("Failed to find non-archived instances.", zap.Error(err))
+		slog.Error("Failed to find non-archived instances.", log.BBError(err))
 		return
 	}
 
@@ -132,14 +132,14 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 		}
 		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
 		if err != nil {
-			log.Error("Failed to get max retention period for MySQL instance", zap.String("instance", instance.Title), zap.Error(err))
+			slog.Error("Failed to get max retention period for MySQL instance", slog.String("instance", instance.Title), log.BBError(err))
 			continue
 		}
 		if maxRetentionPeriodTs == math.MaxInt {
 			continue
 		}
 		if err := r.purgeBinlogFiles(ctx, instance.UID, maxRetentionPeriodTs); err != nil {
-			log.Error("Failed to purge binlog files for instance", zap.String("instance", instance.Title), zap.Int("retentionPeriodTs", maxRetentionPeriodTs), zap.Error(err))
+			slog.Error("Failed to purge binlog files for instance", slog.String("instance", instance.Title), slog.Int("retentionPeriodTs", maxRetentionPeriodTs), log.BBError(err))
 		}
 	}
 }
@@ -147,7 +147,7 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 func (r *Runner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Context, instance *store.InstanceMessage) (int, error) {
 	backupSettingList, err := r.store.ListBackupSettingV2(ctx, &store.FindBackupSettingMessage{InstanceUID: &instance.UID})
 	if err != nil {
-		log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Title), zap.Error(err))
+		slog.Error("Failed to find backup settings for instance.", slog.String("instance", instance.Title), log.BBError(err))
 		return 0, errors.Wrapf(err, "failed to find backup settings for instance %q", instance.Title)
 	}
 	maxRetentionPeriodTs := math.MaxInt
@@ -185,7 +185,7 @@ func (r *Runner) purgeBinlogFilesOnCloud(ctx context.Context, binlogDir string, 
 		}
 	}
 	if len(purgeBinlogPathList) > 0 {
-		log.Debug(fmt.Sprintf("Deleting %d expired binlog files from the cloud storage.", len(purgeBinlogPathList)))
+		slog.Debug(fmt.Sprintf("Deleting %d expired binlog files from the cloud storage.", len(purgeBinlogPathList)))
 		if _, err := r.s3Client.DeleteObjects(ctx, purgeBinlogPathList...); err != nil {
 			return errors.Wrapf(err, "failed to delete %d expired binlog files from the cloud storage", len(purgeBinlogPathList))
 		}
@@ -208,20 +208,20 @@ func (*Runner) purgeBinlogFilesLocal(binlogDir string, retentionPeriodTs int) er
 		// This is not accurate and gives about 10 minutes (backup runner interval) more retention time to the binlog files, which is acceptable.
 		fileInfo, err := binlogFileInfo.Info()
 		if err != nil {
-			log.Warn("Failed to get file info.", zap.String("path", binlogFileInfo.Name()), zap.Error(err))
+			slog.Warn("Failed to get file info.", slog.String("path", binlogFileInfo.Name()), log.BBError(err))
 			continue
 		}
 		expireTime := fileInfo.ModTime().Add(time.Duration(retentionPeriodTs) * time.Second)
 		if time.Now().After(expireTime) {
 			binlogFilePath := path.Join(binlogDir, binlogFileInfo.Name())
-			log.Debug("Deleting expired local binlog file for MySQL instance.", zap.String("path", binlogFilePath))
+			slog.Debug("Deleting expired local binlog file for MySQL instance.", slog.String("path", binlogFilePath))
 			if err := os.Remove(binlogFilePath); err != nil {
 				if !os.IsNotExist(err) {
-					log.Warn("Failed to remove an expired binlog file.", zap.String("path", binlogFilePath), zap.Error(err))
+					slog.Warn("Failed to remove an expired binlog file.", slog.String("path", binlogFilePath), log.BBError(err))
 				}
 				continue
 			}
-			log.Info("Deleted expired binlog file.", zap.String("path", binlogFilePath))
+			slog.Info("Deleted expired binlog file.", slog.String("path", binlogFilePath))
 		}
 	}
 	return nil
@@ -237,7 +237,7 @@ func (r *Runner) purgeBackup(ctx context.Context, backup *store.BackupMessage) e
 	if _, err := r.store.UpdateBackupV2(ctx, backupPatch); err != nil {
 		return errors.Wrapf(err, "failed to update status for deleted backup %q for database with ID %d", backup.Name, backup.DatabaseUID)
 	}
-	log.Debug("Archived expired backup record", zap.String("name", backup.Name), zap.Int("id", backup.UID))
+	slog.Debug("Archived expired backup record", slog.String("name", backup.Name), slog.Int("id", backup.UID))
 
 	switch backup.StorageBackend {
 	case api.BackupStorageBackendLocal:
@@ -245,13 +245,13 @@ func (r *Runner) purgeBackup(ctx context.Context, backup *store.BackupMessage) e
 		if err := os.Remove(backupFilePath); err != nil {
 			return errors.Wrapf(err, "failed to delete an expired backup file %q", backupFilePath)
 		}
-		log.Debug(fmt.Sprintf("Deleted expired local backup file %s", backupFilePath))
+		slog.Debug(fmt.Sprintf("Deleted expired local backup file %s", backupFilePath))
 	case api.BackupStorageBackendS3:
 		backupFilePath := getBackupRelativeFilePath(backup.DatabaseUID, backup.Name)
 		if _, err := r.s3Client.DeleteObjects(ctx, backupFilePath); err != nil {
 			return errors.Wrapf(err, "failed to delete backup file %s in the cloud storage", backupFilePath)
 		}
-		log.Debug(fmt.Sprintf("Deleted expired backup file %s in the cloud storage", backupFilePath))
+		slog.Debug(fmt.Sprintf("Deleted expired backup file %s in the cloud storage", backupFilePath))
 	}
 
 	return nil
@@ -260,7 +260,7 @@ func (r *Runner) purgeBackup(ctx context.Context, backup *store.BackupMessage) e
 func (r *Runner) downloadBinlogFiles(ctx context.Context) {
 	instances, err := r.store.FindInstanceWithDatabaseBackupEnabled(ctx)
 	if err != nil {
-		log.Error("Failed to retrieve MySQL instance list with at least one database backup enabled", zap.Error(err))
+		slog.Error("Failed to retrieve MySQL instance list with at least one database backup enabled", log.BBError(err))
 		return
 	}
 
@@ -288,21 +288,21 @@ func (r *Runner) downloadBinlogFilesForInstance(ctx context.Context, instance *s
 	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
-			log.Debug("Cannot connect to instance", zap.String("instance", instance.ResourceID), zap.Error(err))
+			slog.Debug("Cannot connect to instance", slog.String("instance", instance.ResourceID), log.BBError(err))
 			return
 		}
-		log.Error("Failed to get driver for MySQL instance when downloading binlog", zap.String("instance", instance.ResourceID), zap.Error(err))
+		slog.Error("Failed to get driver for MySQL instance when downloading binlog", slog.String("instance", instance.ResourceID), log.BBError(err))
 		return
 	}
 	defer driver.Close(ctx)
 
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
-		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.ResourceID))
+		slog.Error("Failed to cast driver to mysql.Driver", slog.String("instance", instance.ResourceID))
 		return
 	}
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */, r.s3Client); err != nil {
-		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.ResourceID), zap.Error(err))
+		slog.Error("Failed to download all binlog files for instance", slog.String("instance", instance.ResourceID), log.BBError(err))
 		return
 	}
 }
@@ -315,7 +315,7 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 		DayOfWeek: int(t.Weekday()),
 	})
 	if err != nil {
-		log.Error("Failed to retrieve backup settings match", zap.Error(err))
+		slog.Error("Failed to retrieve backup settings match", log.BBError(err))
 		return
 	}
 
@@ -325,23 +325,19 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 		}
 		database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &backupSetting.DatabaseUID})
 		if err != nil {
-			log.Error("Failed to get database", zap.Error(err))
+			slog.Error("Failed to get database", log.BBError(err))
 			return
-		}
-		if database.DatabaseName == api.AllDatabaseName {
-			// Skip backup job for wildcard database `*`.
-			continue
 		}
 		project, err := r.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 		if err != nil {
-			log.Error("Failed to get project", zap.Error(err))
+			slog.Error("Failed to get project", log.BBError(err))
 		}
 		if project.Deleted {
 			continue
 		}
 		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
-			log.Error("Failed to get instance", zap.Error(err))
+			slog.Error("Failed to get instance", log.BBError(err))
 		}
 		if instance.Deleted {
 			continue
@@ -350,9 +346,9 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 		if instance.Engine == db.ClickHouse || instance.Engine == db.Snowflake || instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis || instance.Engine == db.Oracle {
 			continue
 		}
-		environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+		environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 		if err != nil {
-			log.Error("Failed to get environment", zap.Error(err))
+			slog.Error("Failed to get environment", log.BBError(err))
 		}
 		if environment.Deleted {
 			continue
@@ -363,7 +359,7 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 			Name:        &backupName,
 		})
 		if err != nil {
-			log.Error("Failed to find backup", zap.Error(err))
+			slog.Error("Failed to find backup", log.BBError(err))
 			continue
 		}
 		if len(backupList) > 0 {
@@ -376,26 +372,28 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 				r.stateCfg.RunningBackupDatabases.Delete(database.UID)
 				r.backupWg.Done()
 			}()
-			log.Debug("Schedule auto backup",
-				zap.String("database", database.DatabaseName),
-				zap.String("backup", backupName),
+			slog.Debug("Schedule auto backup",
+				slog.String("database", database.DatabaseName),
+				slog.String("backup", backupName),
 			)
 			if _, err := r.ScheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.SystemBotID); err != nil {
-				log.Error("Failed to create automatic backup for database",
-					zap.Int("databaseID", database.UID),
-					zap.Error(err))
+				slog.Error("Failed to create automatic backup for database",
+					slog.Int("databaseID", database.UID),
+					log.BBError(err))
 				return
 			}
 			// Backup succeeded. POST hook URL.
 			if hookURL == "" {
 				return
 			}
-			if _, err := http.PostForm(hookURL, nil); err != nil {
-				log.Warn("Failed to POST hook URL",
-					zap.String("hookURL", hookURL),
-					zap.Int("databaseID", database.UID),
-					zap.Error(err))
+			resp, err := http.PostForm(hookURL, nil)
+			if err != nil {
+				slog.Warn("Failed to POST hook URL",
+					slog.String("hookURL", hookURL),
+					slog.Int("databaseID", database.UID),
+					log.BBError(err))
 			}
+			defer resp.Body.Close()
 		}(database, backupName, backupSetting.HookURL)
 		r.backupWg.Add(1)
 	}
@@ -413,7 +411,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	if instance.Deleted {
 		return nil, errors.Errorf("instance %q deleted", database.InstanceID)
 	}
-	environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+	environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +445,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	}, database.UID, creatorID)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
-			log.Error("Backup already exists for the database", zap.String("backup", backupName), zap.String("database", database.DatabaseName))
+			slog.Error("Backup already exists for the database", slog.String("backup", backupName), slog.String("database", database.DatabaseName))
 			return nil, nil
 		}
 		return nil, errors.Wrapf(err, "failed to create backup %q", backupName)
@@ -462,7 +460,8 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	}
 
 	pipeline, err := r.store.CreatePipelineV2(ctx, &store.PipelineMessage{
-		Name: fmt.Sprintf("backup-%s", backupName),
+		Name:      fmt.Sprintf("backup-%s", backupName),
+		ProjectID: database.ProjectID,
 	}, creatorID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create pipeline for backup %q", backupName)
@@ -483,19 +482,30 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	}
 
 	createdStage := createdStages[0]
-	if _, err := r.store.CreateTasksV2(ctx, &api.TaskCreate{
+
+	tasks, err := r.store.CreateTasksV2(ctx, &store.TaskMessage{
 		Name:       fmt.Sprintf("backup-%s", backupName),
 		PipelineID: pipeline.ID,
 		StageID:    createdStage.ID,
 		InstanceID: instance.UID,
 		DatabaseID: &database.UID,
-		Status:     api.TaskPending,
+		Status:     api.TaskPendingApproval,
 		Type:       api.TaskDatabaseBackup,
 		Payload:    string(bytes),
 		CreatorID:  creatorID,
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create task for backup %q", backupName)
 	}
+	task := tasks[0]
+	if err := r.store.CreatePendingTaskRuns(ctx, &store.TaskRunMessage{
+		CreatorID: creatorID,
+		TaskUID:   task.ID,
+		Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to create pending task run for backup %q", backupName)
+	}
+
 	return backupNew, nil
 }
 

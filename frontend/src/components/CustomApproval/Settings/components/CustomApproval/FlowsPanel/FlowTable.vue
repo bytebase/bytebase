@@ -66,18 +66,17 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton } from "naive-ui";
-
 import { BBGrid, type BBGridColumn } from "@/bbkit";
-import { SpinnerButton } from "../../common";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import { LocalApprovalRule, SYSTEM_BOT_USER_NAME } from "@/types";
 import { ApprovalFlow } from "@/types/proto/store/approval";
+import { creatorOfRule } from "@/utils";
+import { SpinnerButton } from "../../common";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";
-import { creatorOfRule } from "@/utils";
 
 type LocalState = {
   viewFlow: ApprovalFlow | undefined;
@@ -89,7 +88,7 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const store = useWorkspaceApprovalSettingStore();
 const context = useCustomApprovalContext();
-const { allowAdmin, dialog } = context;
+const { hasFeature, showFeatureModal, allowAdmin, dialog } = context;
 
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
@@ -125,6 +124,10 @@ const filteredApprovalRuleList = computed(() => {
 });
 
 const editApprovalTemplate = (rule: LocalApprovalRule) => {
+  if (!hasFeature.value) {
+    showFeatureModal.value = true;
+    return;
+  }
   dialog.value = {
     mode: "EDIT",
     rule,

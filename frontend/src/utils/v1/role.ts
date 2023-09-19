@@ -1,5 +1,5 @@
-import { UserRole, userRoleToJSON } from "@/types/proto/v1/auth_service";
 import { t } from "@/plugins/i18n";
+import { UserRole, userRoleToJSON } from "@/types/proto/v1/auth_service";
 
 export function roleNameV1(role: UserRole): string {
   switch (role) {

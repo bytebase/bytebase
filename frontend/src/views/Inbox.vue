@@ -35,14 +35,14 @@
 
 <script lang="ts">
 import { reactive, watchEffect } from "vue";
-import InboxList from "../components/InboxList.vue";
-import { UNKNOWN_ID } from "@/types";
 import { useRouter } from "vue-router";
 import { useCurrentUser, useInboxV1Store } from "@/store";
+import { UNKNOWN_ID } from "@/types";
 import {
   InboxMessage,
   InboxMessage_Status,
 } from "@/types/proto/v1/inbox_service";
+import InboxList from "../components/InboxList.vue";
 
 // We alway fetch all "UNREAD" items. But for "READ" items, by default, we only fetch the most recent 7 days.
 // And each time clicking "View older" will extend 7 days further.

@@ -1,8 +1,8 @@
-import DatabaseLabelForm from "./DatabaseLabelForm.vue";
-import DatabaseNameTemplateTips from "./DatabaseNameTemplateTips.vue";
+import CreateDatabasePrepButtonGroup from "./CreateDatabasePrepButtonGroup.vue";
 import CreateDatabasePrepForm from "./CreateDatabasePrepForm.vue";
 import CreateDatabasePrepPanel from "./CreateDatabasePrepPanel.vue";
-import CreateDatabasePrepButtonGroup from "./CreateDatabasePrepButtonGroup.vue";
+import DatabaseLabelForm from "./DatabaseLabelForm.vue";
+import DatabaseNameTemplateTips from "./DatabaseNameTemplateTips.vue";
 
 export {
   DatabaseLabelForm,

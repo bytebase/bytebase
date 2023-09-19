@@ -60,18 +60,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, Ref } from "vue";
 import { cloneDeep, isEmpty } from "lodash-es";
+import { computed, ref, Ref } from "vue";
 import { useI18n } from "vue-i18n";
-
-import {
-  activeStage,
-  canSkipTask,
-  isDatabaseRelatedIssueType,
-  isGrantRequestIssueType,
-  StageStatusTransition,
-  TaskStatusTransition,
-} from "@/utils";
+import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
+import { convertUserToPrincipal, useCurrentUserV1 } from "@/store";
 import type {
   GrantRequestContext,
   Issue,
@@ -81,20 +74,27 @@ import type {
   TaskCreate,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { convertUserToPrincipal, useCurrentUserV1 } from "@/store";
+import {
+  activeStage,
+  canSkipTask,
+  isDatabaseRelatedIssueType,
+  isGrantRequestIssueType,
+  StageStatusTransition,
+  TASK_STATUS_TRANSITION_LIST,
+  TaskStatusTransition,
+} from "@/utils";
 import {
   flattenTaskList,
   useIssueTransitionLogic,
   TaskTypeWithStatement,
   useIssueLogic,
 } from "../logic";
-import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
-import TaskStatusTransitionButtonGroup from "./TaskStatusTransitionButtonGroup.vue";
-import IssueStatusTransitionButtonGroup from "./IssueStatusTransitionButtonGroup.vue";
-import { ExtraActionOption, IssueContext } from "./common";
-import TaskStatusTransitionDialog from "./TaskStatusTransitionDialog.vue";
-import IssueStatusTransitionDialog from "./IssueStatusTransitionDialog.vue";
 import BatchTaskActionDialog from "./BatchTaskActionDialog.vue";
+import IssueStatusTransitionButtonGroup from "./IssueStatusTransitionButtonGroup.vue";
+import IssueStatusTransitionDialog from "./IssueStatusTransitionDialog.vue";
+import TaskStatusTransitionButtonGroup from "./TaskStatusTransitionButtonGroup.vue";
+import TaskStatusTransitionDialog from "./TaskStatusTransitionDialog.vue";
+import { ExtraActionOption, IssueContext } from "./common";
 
 const { t } = useI18n();
 
@@ -104,6 +104,7 @@ const {
   template: issueTemplate,
   activeTaskOfPipeline,
   doCreate,
+  allowApplyTaskStatusTransition,
 } = useIssueLogic();
 
 const onGoingIssueStatusTransition = ref<{
@@ -149,6 +150,26 @@ const issueStatusTransitionActionList = computed(() => {
     }
   }
   return actionList;
+});
+
+const retryableTaskList = computed(() => {
+  if (create.value) return [];
+
+  const issueEntity = issue.value as Issue;
+  if (issueEntity.status !== "OPEN") {
+    return [];
+  }
+  if (!isDatabaseRelatedIssueType(issueEntity.type)) {
+    return [];
+  }
+
+  const currentStage = activeStage(issueEntity.pipeline!);
+  const RETRY = TASK_STATUS_TRANSITION_LIST.get("RETRY")!;
+  return currentStage.taskList.filter((task) => {
+    return (
+      task.status === "FAILED" && allowApplyTaskStatusTransition(task, RETRY.to)
+    );
+  });
 });
 
 const skippableTaskList = computed(() => {
@@ -210,6 +231,17 @@ const tryStartStageOrTaskStatusTransition = (
   transition: TaskStatusTransition | StageStatusTransition,
   mode: "STAGE" | "TASK"
 ) => {
+  if (transition.type === "RETRY" && mode === "STAGE") {
+    // RETRYing current stage won't use stage status transition API endpoint.
+    // Use batch task status transition instead.
+    const taskList = retryableTaskList.value;
+    onGoingBatchTaskStatusTransition.value = {
+      transition,
+      taskList,
+    };
+    return;
+  }
+
   onGoingTaskOrStageStatusTransition.value = {
     mode,
     transition,

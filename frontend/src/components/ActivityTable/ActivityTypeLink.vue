@@ -16,15 +16,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
 import { head } from "lodash-es";
-
+import { computed, PropType } from "vue";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import {
   ActivityProjectRepositoryPushPayload,
   ActivityProjectDatabaseTransferPayload,
 } from "../../types";
 import { Link } from "./types";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 
 const props = defineProps({
   activity: {

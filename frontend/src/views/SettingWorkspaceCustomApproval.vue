@@ -16,22 +16,14 @@
   <ExternalApprovalNodeDrawer />
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.custom-approval"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref, toRef } from "vue";
-
-import {
-  featureToRef,
-  useWorkspaceApprovalSettingStore,
-  useCurrentUserV1,
-  useRiskStore,
-} from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   CustomApproval,
   ApprovalRuleDialog,
@@ -40,6 +32,13 @@ import {
   TabValueList,
 } from "@/components/CustomApproval/Settings/components/CustomApproval/";
 import { useRouteHash } from "@/composables/useRouteHash";
+import {
+  featureToRef,
+  useWorkspaceApprovalSettingStore,
+  useCurrentUserV1,
+  useRiskStore,
+} from "@/store";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   ready: boolean;

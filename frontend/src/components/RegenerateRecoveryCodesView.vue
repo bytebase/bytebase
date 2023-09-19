@@ -18,10 +18,10 @@
 </template>
 
 <script lang="ts" setup>
-import { pushNotification, useAuthStore, useUserStore } from "@/store";
-import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useAuthStore, useUserStore } from "@/store";
+import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
 import RecoveryCodesView from "./RecoveryCodesView.vue";
 
 interface LocalState {

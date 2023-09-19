@@ -20,7 +20,7 @@
       code: 601
       title: table.require-pk
       content: Table "SYS"."T" requires PRIMARY KEY.
-      line: 2
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(id INT);

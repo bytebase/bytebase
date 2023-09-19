@@ -1,6 +1,6 @@
 import { merge } from "lodash-es";
-import { DemoData, GuideData } from "./types";
 import { validateStepData } from "./guide";
+import { DemoData, GuideData } from "./types";
 
 const demoDataCache = new Map<string, DemoData>();
 

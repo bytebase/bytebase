@@ -1,5 +1,4 @@
 //go:build release
-// +build release
 
 package cmd
 
@@ -13,7 +12,6 @@ func activeProfile() server.Profile {
 		Mode:                common.ReleaseModeProd,
 		BackendHost:         flags.host,
 		BackendPort:         flags.port,
-		Debug:               flags.debug,
 		Version:             version,
 		GitCommit:           gitcommit,
 		MetricConnectionKey: "46nEgegY1APWBz4NcQp0rCRJomDnLJyE",

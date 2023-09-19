@@ -1,5 +1,4 @@
 import slug from "slug";
-
 import { State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 

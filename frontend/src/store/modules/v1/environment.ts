@@ -1,15 +1,14 @@
+import { isEqual, isUndefined, orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
-import { isEqual, isUndefined, orderBy } from "lodash-es";
-
 import { environmentServiceClient } from "@/grpcweb";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { ResourceId, unknownEnvironment } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import {
   Environment,
   EnvironmentTier,
 } from "@/types/proto/v1/environment_service";
-import { ResourceId, unknownEnvironment } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import { environmentNamePrefix } from "@/store/modules/v1/common";
 
 interface EnvironmentState {
   environmentMapByName: Map<ResourceId, Environment>;

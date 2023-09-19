@@ -14,6 +14,11 @@ func TestExtractTiDBUnsupportStmts(t *testing.T) {
 		wantErr       bool
 	}{
 		{
+			stmts:       "CREATE TABLE `actor` (\n  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `first_name` varchar(45) NOT NULL,\n  `last_name` varchar(45) NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`actor_id`),\n  KEY `idx_actor_last_name` (`last_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;",
+			wantSupport: "CREATE TABLE `actor` (\n  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `first_name` varchar(45) NOT NULL,\n  `last_name` varchar(45) NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`actor_id`),\n  KEY `idx_actor_last_name` (`last_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3\n;\n",
+			wantErr:     false,
+		},
+		{
 			stmts: "CREATE TABLE t1(id INT);\n" +
 				`CREATE TRIGGER order_insert_audit 
 				AFTER INSERT ON orders
@@ -39,7 +44,7 @@ CREATE TRIGGER order_insert_audit
 	}
 	a := require.New(t)
 	for _, test := range tests {
-		gotUnsupport, gotSupport, err := ExtractTiDBUnsupportStmts(test.stmts)
+		gotUnsupport, gotSupport, err := ExtractTiDBUnsupportedStmts(test.stmts)
 		if test.wantErr {
 			a.Error(err)
 		} else {
@@ -190,7 +195,7 @@ func TestExtractDelimiter(t *testing.T) {
 	}
 }
 
-func TestExtractDatabaseList(t *testing.T) {
+func TestMySQLExtractDatabaseList(t *testing.T) {
 	tests := []struct {
 		stmt string
 		want []string
@@ -221,7 +226,7 @@ func TestExtractDatabaseList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := ExtractDatabaseList(MySQL, test.stmt)
+		res, err := ExtractDatabaseList(MySQL, test.stmt, "")
 		require.NoError(t, err)
 		require.Equal(t, test.want, res)
 	}

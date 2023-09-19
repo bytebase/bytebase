@@ -1,12 +1,11 @@
 // We periodically sync the underlying db schema and stores those info
 // in the "database" object.
 // Physically, a database belongs to an instance. Logically, it belongs to a project.
-
 import { DataSource } from "./dataSource";
 import { DatabaseId, InstanceId, ProjectId } from "./id";
 import { Instance } from "./instance";
-import { Project } from "./project";
 import { DatabaseLabel } from "./label";
+import { Project } from "./project";
 
 // "OK" means we find the database with the same name.
 // "NOT_FOUND" means no matching database name found, this usually means someone changes the underlying db name without Bytebase knowledge.

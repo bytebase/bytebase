@@ -8,7 +8,10 @@
     @click-row="handleDatabaseGroupSelect"
   >
     <template #item="{ item: dbGroup }: { item: ComposedDatabaseGroup }">
-      <div class="bb-grid-cell justify-center items-center">
+      <div
+        v-if="showSelection"
+        class="bb-grid-cell justify-center items-center"
+      >
         <NRadio
           :checked="state.selectedDatabaseGroupName === dbGroup.name"
           :value="dbGroup.name"
@@ -29,11 +32,11 @@
 <script lang="ts" setup>
 import { NRadio } from "naive-ui";
 import { ref, watch, reactive, computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { BBGridColumn } from "@/bbkit";
 import { useDBGroupStore } from "@/store";
 import { ComposedDatabaseGroup } from "@/types";
 import { SchemaGroup } from "@/types/proto/v1/project_service";
-import { BBGridColumn } from "@/bbkit";
-import { useI18n } from "vue-i18n";
 
 interface LocalState {
   selectedDatabaseGroupName?: string;
@@ -42,6 +45,7 @@ interface LocalState {
 const props = defineProps<{
   databaseGroupList: ComposedDatabaseGroup[];
   selectedDatabaseGroupName?: string;
+  showSelection?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -57,10 +61,6 @@ const schemaGroupListMap = ref<Map<string, SchemaGroup[]>>(new Map());
 
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
-    {
-      title: "",
-      width: "2rem",
-    },
     { title: t("common.name"), width: "1fr" },
     {
       title: t("common.project"),
@@ -71,6 +71,13 @@ const COLUMN_LIST = computed(() => {
       width: "1fr",
     },
   ];
+
+  if (props.showSelection) {
+    columns.unshift({
+      title: "",
+      width: "2rem",
+    });
+  }
 
   return columns;
 });

@@ -5,17 +5,21 @@
     class="inline-flex items-center gap-x-1"
     :class="link && !plain && 'normal-link'"
   >
-    <span>{{ environmentV1Name(environment) }}</span>
+    <span class="line-clamp-1" :class="textClass">
+      {{ environmentV1Name(environment) }}
+      {{ suffix }}
+    </span>
     <ProductionEnvironmentV1Icon
+      v-if="showIcon"
       :environment="environment"
       :class="iconClass ?? '!text-current'"
+      :tooltip="tooltip"
     />
   </component>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
-
 import { Environment } from "@/types/proto/v1/environment_service";
 import { VueClass, environmentV1Name, environmentV1Slug } from "@/utils";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
@@ -27,12 +31,20 @@ const props = withDefaults(
     link?: boolean;
     plain?: boolean;
     iconClass?: VueClass;
+    tooltip?: boolean;
+    suffix?: string;
+    showIcon?: boolean;
+    textClass?: string;
   }>(),
   {
     tag: "span",
     link: true,
     plain: false,
     iconClass: undefined,
+    tooltip: false,
+    suffix: "",
+    showIcon: true,
+    textClass: "",
   }
 );
 

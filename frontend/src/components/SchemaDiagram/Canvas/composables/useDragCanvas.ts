@@ -1,11 +1,10 @@
-import { type Ref, ref } from "vue";
 import { useEventListener } from "@vueuse/core";
 import normalizeWheel from "normalize-wheel";
-
-import type { Point } from "../../types";
-import { ZOOM_RANGE } from "../../common/const";
-import { useDraggable, useSchemaDiagramContext } from "../../common";
+import { type Ref, ref } from "vue";
 import { minmax } from "@/utils";
+import { useDraggable, useSchemaDiagramContext } from "../../common";
+import { ZOOM_RANGE } from "../../common/const";
+import type { Point } from "../../types";
 
 export const useDragCanvas = (canvas: Ref<Element | undefined>) => {
   const { zoom, position, panning } = useSchemaDiagramContext();

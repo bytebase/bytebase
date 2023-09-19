@@ -111,30 +111,28 @@
   </DrawerContent>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.multi-tenancy"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
-import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
-import { useEventListener } from "@vueuse/core";
 import { Status } from "nice-grpc-common";
-
-import { projectV1Slug, randomString } from "@/utils";
-import { ResourceId, ValidatedMessage, emptyProject } from "@/types";
-import { hasFeature, pushNotification, useUIStateStore } from "@/store";
-import { useProjectV1Store } from "@/store/modules/v1/project";
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import { getErrorCode } from "@/utils/grpcweb";
+import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { hasFeature, pushNotification, useUIStateStore } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
+import { useProjectV1Store } from "@/store/modules/v1/project";
+import { ResourceId, ValidatedMessage, emptyProject } from "@/types";
 import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import { projectV1Slug, randomString } from "@/utils";
+import { getErrorCode } from "@/utils/grpcweb";
 
 interface LocalState {
   project: Project;
@@ -162,12 +160,6 @@ const state = reactive<LocalState>({
   isCreating: false,
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-
-useEventListener("keydown", (e) => {
-  if (e.code == "Escape") {
-    emit("dismiss");
-  }
-});
 
 const validateResourceId = async (
   resourceId: ResourceId

@@ -85,18 +85,17 @@
 </template>
 
 <script setup lang="ts">
+import { cloneDeep } from "lodash-es";
+import { NButton, NInput } from "naive-ui";
+import { zindexable as vZindexable } from "vdirs";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton, NInput } from "naive-ui";
-import { cloneDeep } from "lodash-es";
-import { zindexable as vZindexable } from "vdirs";
-
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useCustomApprovalContext } from "../context";
-import { RequiredStar } from "../../common";
-import { ExternalApprovalSetting_Node } from "@/types/proto/store/setting";
 import { useSettingV1Store } from "@/store";
+import { ExternalApprovalSetting_Node } from "@/types/proto/store/setting";
 import { ExternalApprovalSetting } from "@/types/proto/v1/setting_service";
+import { RequiredStar } from "../../common";
+import { useCustomApprovalContext } from "../context";
 
 type LocalState = {
   node: ExternalApprovalSetting_Node;

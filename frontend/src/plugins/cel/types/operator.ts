@@ -47,19 +47,30 @@ export const isStringOperator = (op: Operator): op is StringOperator => {
 };
 
 /// Define supported operators for each factor
-export const OperatorList: Record<Factor, Operator[]> = {
+const OperatorList: Record<Factor, Operator[]> = {
   affected_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
 
   level: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
   source: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
 
   environment_id: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
+  instance_id: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
   project_id: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
   database_name: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
+  ]),
+  table_name: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
+  ]),
+  column_name: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
@@ -74,6 +85,7 @@ export const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
+  classification_level: uniq([...CollectionOperatorList]),
 
   // Database group related fields.
   "resource.environment_name": uniq(["_==_"]),
@@ -101,6 +113,10 @@ export const OperatorList: Record<Factor, Operator[]> = {
     "contains",
     "matches",
   ]),
+
+  // Request query/export factors
+  expiration_days: uniq([...EqualityOperatorList, ...CompareOperatorList]),
+  export_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
 };
 
 export const getOperatorListByFactor = (factor: Factor) => {

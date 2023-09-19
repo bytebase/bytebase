@@ -7,44 +7,65 @@
     :right-bordered="true"
     v-bind="$attrs"
   >
-    <template #body="{ rowData: column }">
-      <BBTableCell
-        v-if="showSensitiveColumn"
-        :left-padding="4"
-        class="w-[1%] text-center"
-      >
-        <!-- width: 1% means as narrow as possible -->
-        <div class="flex items-center justify-center">
-          <FeatureBadge
-            feature="bb.feature.sensitive-data"
-            custom-class="mr-2"
-            :instance="database.instanceEntity"
-          />
-          <input
-            type="checkbox"
-            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-            :disabled="!allowAdmin || instanceMissingLicense"
-            :checked="isSensitiveColumn(column)"
-            @input="
-              toggleSensitiveColumn(
-                column,
-                ($event.target as HTMLInputElement).checked,
-                $event
+    <template #body="{ rowData: column }: { rowData: ColumnMetadata }">
+      <BBTableCell class="bb-grid-cell">
+        {{ column.name }}
+      </BBTableCell>
+      <BBTableCell v-if="showSensitiveColumn" class="bb-grid-cell">
+        <div class="flex items-center">
+          {{ getMaskingLevelText(column) }}
+          <span v-if="!isColumnConfigMasking(column)">
+            ({{
+              $t(
+                `settings.sensitive-data.masking-level.${maskingLevelToJSON(
+                  column.effectiveMaskingLevel
+                ).toLowerCase()}`
               )
-            "
+            }})
+          </span>
+          <NTooltip v-if="!isColumnConfigMasking(column)">
+            <template #trigger>
+              <heroicons-outline:question-mark-circle class="h-4 w-4 mr-2" />
+            </template>
+            <i18n-t
+              tag="div"
+              keypath="settings.sensitive-data.column-detail.column-effective-masking-tips"
+              class="whitespace-pre-line"
+            >
+              <template #link>
+                <router-link
+                  class="flex items-center light-link text-sm"
+                  to="/setting/sensitive-data#global-masking-rule"
+                >
+                  {{ $t("settings.sensitive-data.global-rules.check-rules") }}
+                </router-link>
+              </template>
+            </i18n-t>
+          </NTooltip>
+          <button
+            v-if="allowAdmin"
+            class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+            @click.prevent="openSensitiveDrawer(column)"
+          >
+            <heroicons-outline:pencil class="w-4 h-4" />
+          </button>
+        </div>
+      </BBTableCell>
+      <BBTableCell v-if="showClassificationColumn" class="bb-grid-cell">
+        <div class="flex items-center">
+          <ClassificationLevelBadge
+            :classification="column.classification"
+            :classification-config="classificationConfig"
           />
         </div>
       </BBTableCell>
-      <BBTableCell class="w-16" :left-padding="showSensitiveColumn ? 2 : 4">
-        {{ column.name }}
-      </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="bb-grid-cell">
         {{ column.type }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="bb-grid-cell">
         {{ column.default }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="bb-grid-cell">
         {{ column.nullable }}
       </BBTableCell>
       <BBTableCell
@@ -53,49 +74,61 @@
           engine !== Engine.CLICKHOUSE &&
           engine !== Engine.SNOWFLAKE
         "
-        class="w-8"
+        class="bb-grid-cell"
       >
         {{ column.characterSet }}
       </BBTableCell>
       <BBTableCell
         v-if="engine !== Engine.CLICKHOUSE && engine !== Engine.SNOWFLAKE"
-        class="w-8"
+        class="bb-grid-cell"
       >
         {{ column.collation }}
       </BBTableCell>
-      <BBTableCell class="w-16">
-        {{ column.comment }}
+      <BBTableCell class="bb-grid-cell">
+        {{ column.userComment }}
       </BBTableCell>
     </template>
   </BBTable>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
     feature="bb.feature.sensitive-data"
     :instance="database.instanceEntity"
+    :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
+  />
+
+  <SensitiveColumnDrawer
+    :show="!!state.activeColumn"
+    :column="{
+      maskData: getColumnMasking(state.activeColumn ?? {} as ColumnMetadata),
+      database: props.database,
+    }"
+    @dismiss="state.activeColumn = undefined"
   />
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { Column, ComposedDatabase } from "@/types";
-import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
-import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
 import { BBTableColumn } from "@/bbkit/types";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
+import { ComposedDatabase } from "@/types";
 import {
-  PolicyType,
-  SensitiveData,
-  SensitiveDataMaskType,
-} from "@/types/proto/v1/org_policy_service";
-import { Engine } from "@/types/proto/v1/common";
+  Engine,
+  MaskingLevel,
+  maskingLevelToJSON,
+} from "@/types/proto/v1/common";
+import {
+  ColumnMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
+import { MaskData } from "@/types/proto/v1/org_policy_service";
+import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 type LocalState = {
   showFeatureModal: boolean;
+  activeColumn?: ColumnMetadata;
 };
 
 const props = defineProps({
@@ -115,9 +148,16 @@ const props = defineProps({
     required: true,
     type: Object as PropType<ColumnMetadata[]>,
   },
-  sensitiveDataList: {
+  maskDataList: {
     required: true,
-    type: Array as PropType<SensitiveData[]>,
+    type: Array as PropType<MaskData[]>,
+  },
+  classificationConfig: {
+    required: false,
+    default: undefined,
+    type: Object as PropType<
+      DataClassificationSetting_DataClassificationConfig | undefined
+    >,
   },
 });
 
@@ -147,8 +187,15 @@ const showSensitiveColumn = computed(() => {
       engine.value === Engine.TIDB ||
       engine.value === Engine.POSTGRES ||
       engine.value === Engine.REDSHIFT ||
-      engine.value === Engine.ORACLE)
+      engine.value === Engine.ORACLE ||
+      engine.value === Engine.SNOWFLAKE ||
+      engine.value === Engine.MSSQL ||
+      engine.value === Engine.RISINGWAVE)
   );
+});
+
+const showClassificationColumn = computed(() => {
+  return engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES;
 });
 
 const currentUserV1 = useCurrentUserV1();
@@ -193,10 +240,13 @@ const NORMAL_COLUMN_LIST = computed(() => {
     },
   ];
   if (showSensitiveColumn.value) {
-    columnList.unshift({
-      title: t("database.sensitive"),
-      center: true,
-      nowrap: true,
+    columnList.splice(1, 0, {
+      title: t("settings.sensitive-data.masking-level.self"),
+    });
+  }
+  if (showClassificationColumn.value) {
+    columnList.splice(showSensitiveColumn.value ? 2 : 1, 0, {
+      title: t("database.classification.self"),
     });
   }
   return columnList;
@@ -223,10 +273,13 @@ const POSTGRES_COLUMN_LIST = computed(() => {
     },
   ];
   if (showSensitiveColumn.value) {
-    columnList.unshift({
-      title: t("database.sensitive"),
-      center: true,
-      nowrap: true,
+    columnList.splice(1, 0, {
+      title: t("settings.sensitive-data.masking-level.self"),
+    });
+  }
+  if (showClassificationColumn.value) {
+    columnList.splice(showSensitiveColumn.value ? 2 : 1, 0, {
+      title: t("database.classification.self"),
     });
   }
   return columnList;
@@ -261,56 +314,43 @@ const columnNameList = computed(() => {
   }
 });
 
-const isSensitiveColumn = (column: Column) => {
+const isColumnConfigMasking = (column: ColumnMetadata): boolean => {
   return (
-    props.sensitiveDataList.findIndex((sensitiveData) => {
-      return (
-        sensitiveData.table === props.table.name &&
-        sensitiveData.column === column.name
-      );
-    }) >= 0
+    getColumnMasking(column).maskingLevel !==
+    MaskingLevel.MASKING_LEVEL_UNSPECIFIED
   );
 };
 
-const toggleSensitiveColumn = (column: Column, on: boolean, e: Event) => {
-  if (!hasSensitiveDataFeature.value || instanceMissingLicense.value) {
-    state.showFeatureModal = true;
-
-    // Revert UI states
-    e.preventDefault();
-    e.stopPropagation();
-    (e.target as HTMLInputElement).checked = !on;
-    return;
-  }
-
-  const index = props.sensitiveDataList.findIndex((sensitiveData) => {
-    return (
-      sensitiveData.table === props.table.name &&
-      sensitiveData.column === column.name
-    );
-  });
-  const sensitiveDataList = cloneDeep(props.sensitiveDataList);
-  if (on && index < 0) {
-    // Turn on sensitive
-    sensitiveDataList.push({
+const getColumnMasking = (column: ColumnMetadata): MaskData => {
+  return (
+    props.maskDataList.find((sensitiveData) => {
+      return (
+        sensitiveData.table === props.table.name &&
+        sensitiveData.column === column.name &&
+        sensitiveData.schema === props.schema
+      );
+    }) ?? {
       schema: props.schema,
       table: props.table.name,
       column: column.name,
-      maskType: SensitiveDataMaskType.DEFAULT,
-    });
-  } else if (!on && index >= 0) {
-    sensitiveDataList.splice(index, 1);
+      semanticCategoryId: "",
+      maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+    }
+  );
+};
+
+const openSensitiveDrawer = (column: ColumnMetadata) => {
+  if (!hasSensitiveDataFeature.value || instanceMissingLicense.value) {
+    state.showFeatureModal = true;
+    return;
   }
 
-  usePolicyV1Store().upsertPolicy({
-    parentPath: props.database.name,
-    policy: {
-      type: PolicyType.SENSITIVE_DATA,
-      sensitiveDataPolicy: {
-        sensitiveData: sensitiveDataList,
-      },
-    },
-    updateMask: ["payload"],
-  });
+  state.activeColumn = column;
+};
+
+const getMaskingLevelText = (column: ColumnMetadata) => {
+  const masking = getColumnMasking(column);
+  const level = maskingLevelToJSON(masking.maskingLevel);
+  return t(`settings.sensitive-data.masking-level.${level.toLowerCase()}`);
 };
 </script>

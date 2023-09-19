@@ -25,12 +25,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, watch } from "vue";
-
-import { useIsLoggedIn, useActivityV1Store } from "@/store";
-import { FindActivityMessage } from "@/types";
 import { useSessionStorage } from "@vueuse/core";
 import { stringify } from "qs";
+import { computed, PropType, reactive, watch } from "vue";
+import { useIsLoggedIn, useActivityV1Store } from "@/store";
+import { FindActivityMessage } from "@/types";
 import { LogEntity } from "@/types/proto/v1/logging_service";
 
 type LocalState = {
@@ -78,6 +77,10 @@ const props = defineProps({
     default: false,
   },
 });
+
+const emit = defineEmits<{
+  (event: "list:update", list: LogEntity[]): void;
+}>();
 
 const state = reactive<LocalState>({
   loading: false,
@@ -132,15 +135,16 @@ const fetchData = async (refresh = false) => {
       state.auditLogList.push(...logEntities);
     }
 
-    if (logEntities.length < expectedRowCount) {
-      state.hasMore = false;
-    } else if (!isFirstFetch) {
+    if (!isFirstFetch && logEntities.length === expectedRowCount) {
       // If we didn't reach the end, memorize we've clicked the "load more" button.
       sessionState.value.page++;
     }
 
     sessionState.value.updatedTs = Date.now();
     state.paginationToken = nextPageToken;
+    if (!nextPageToken) {
+      state.hasMore = false;
+    }
   } catch (e) {
     console.error(e);
   } finally {
@@ -178,4 +182,9 @@ watch(isLoggedIn, () => {
     resetSession();
   }
 });
+
+watch(
+  () => state.auditLogList,
+  (list) => emit("list:update", list)
+);
 </script>
