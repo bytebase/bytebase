@@ -6,7 +6,6 @@ import { loggingServiceClient } from "@/grpcweb";
 import {
   IdType,
   FindActivityMessage,
-  Issue as LegacyIssue,
   UNKNOWN_ID,
   EMPTY_ID,
   ComposedIssue,
@@ -19,14 +18,10 @@ import {
   logEntity_ActionToJSON,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
-import {
-  isDatabaseRelatedIssue,
-  isDatabaseRelatedIssueType,
-  extractRolloutUID,
-} from "@/utils";
+import { isDatabaseRelatedIssue, extractRolloutUID } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
-import { useIssueStore } from "../issue";
 import { userNamePrefix, getLogId, logNamePrefix } from "./common";
+import { experimentalFetchIssueByUID } from "./experimental-issue";
 
 dayjs.extend(utc);
 
@@ -64,7 +59,6 @@ const buildFilter = (find: FindActivityMessage): string => {
 };
 
 export const useActivityV1Store = defineStore("activity_v1", () => {
-  const activityListByIssue = reactive(new Map<IdType, LogEntity[]>());
   const activityListByIssueV1 = reactive(new Map<string, LogEntity[]>());
 
   const fetchActivityList = async (find: FindActivityMessage) => {
@@ -76,40 +70,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     });
 
     return resp;
-  };
-
-  const getActivityListByIssue = (issueId: IdType): LogEntity[] => {
-    return activityListByIssue.get(issueId) || [];
-  };
-
-  const fetchActivityListForIssue = async (issue: LegacyIssue) => {
-    const requests = [
-      fetchActivityList({
-        resource: `issues/${issue.id}`,
-        order: "asc",
-        pageSize: 1000,
-      }).then((resp) => resp.logEntities),
-    ];
-    if (isDatabaseRelatedIssueType(issue.type) && issue.pipeline) {
-      requests.push(
-        fetchActivityList({
-          resource: `pipelines/${issue.pipeline.id}`,
-          order: "asc",
-          pageSize: 1000,
-        }).then((resp) => resp.logEntities)
-      );
-    } else {
-      requests.push(Promise.resolve([]));
-    }
-
-    const [listForIssue, listForPipeline] = await Promise.all(requests);
-    const mergedList = [...listForIssue, ...listForPipeline];
-    mergedList.sort((a, b) => {
-      return getLogId(a.name) - getLogId(b.name);
-    });
-
-    activityListByIssue.set(issue.id, mergedList);
-    return mergedList;
   };
 
   const getActivityListByIssueV1 = (uid: string): LogEntity[] => {
@@ -145,12 +105,9 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     return mergedList;
   };
 
-  const fetchActivityListByIssueId = async (issueId: IdType) => {
-    const issue = useIssueStore().getIssueById(issueId);
-    if (issue.id === UNKNOWN_ID) {
-      return;
-    }
-    return fetchActivityListForIssue(issue);
+  const fetchActivityListByIssueUID = async (uid: string) => {
+    const issue = await experimentalFetchIssueByUID(uid);
+    return fetchActivityListForIssueV1(issue);
   };
 
   const fetchActivityListForQueryHistory = async ({
@@ -202,12 +159,10 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
 
   return {
     fetchActivityList,
-    fetchActivityListForIssue,
     fetchActivityListForIssueV1,
-    fetchActivityListByIssueId,
+    fetchActivityListByIssueUID,
     fetchActivityListForQueryHistory,
     fetchActivityByUID,
-    getActivityListByIssue,
     getActivityListByIssueV1,
     getResourceId,
     exportData,
