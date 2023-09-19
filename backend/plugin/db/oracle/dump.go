@@ -2168,7 +2168,6 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 
 func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	sequences := []*sequenceMeta{}
-	// sequenceRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
 	var sequenceRows *sql.Rows
 	majorVersion, err := driver.getMajorVersion(ctx)
 	if err != nil {
