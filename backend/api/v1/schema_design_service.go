@@ -402,6 +402,20 @@ func (*SchemaDesignService) ParseSchemaString(_ context.Context, request *v1pb.P
 	}, nil
 }
 
+// DeparseSchemaMetadata deparse a database metadata to schema string.
+func (*SchemaDesignService) DeparseSchemaMetadata(_ context.Context, request *v1pb.DeparseSchemaMetadataRequest) (*v1pb.DeparseSchemaMetadataResponse, error) {
+	if request.SchemaMetadata == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "schema_metadata is required")
+	}
+	schema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.SchemaMetadata)
+	if err != nil {
+		return nil, err
+	}
+	return &v1pb.DeparseSchemaMetadataResponse{
+		SchemaString: schema,
+	}, nil
+}
+
 // DeleteSchemaDesign deletes an existing schema design.
 func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
 	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.Name)
