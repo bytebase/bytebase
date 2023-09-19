@@ -24,7 +24,7 @@ SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE public.principal DISABLE TRIGGER ALL;
 
-INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1694683927, 1, 1694683927, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695111825, 1, 1695111825, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (101, 'NORMAL', 1, 1694684977, 1, 1694684977, 'END_USER', 'Demo', 'demo@example.com', '$2a$10$JbwDbh1u86G9UUCMKXehV.uKPQhZYEJIUiLpVXRkVM4pNAUnU1THG', '', '{}') ON CONFLICT DO NOTHING;
 
 
@@ -47,8 +47,9 @@ ALTER TABLE public.activity ENABLE TRIGGER ALL;
 
 ALTER TABLE public.environment DISABLE TRIGGER ALL;
 
-INSERT INTO public.environment (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order", resource_id) VALUES (101, 'NORMAL', 1, 1694683927, 1, 1694683927, 'Test', 0, 'test') ON CONFLICT DO NOTHING;
-INSERT INTO public.environment (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order", resource_id) VALUES (102, 'NORMAL', 1, 1694683927, 1, 1694683927, 'Prod', 1, 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.environment (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order", resource_id) VALUES (101, 'NORMAL', 1, 1694683927, 101, 1695110907, 'Test', 0, 'test') ON CONFLICT DO NOTHING;
+INSERT INTO public.environment (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order", resource_id) VALUES (103, 'NORMAL', 101, 1695110903, 101, 1695110907, 'Staging', 1, 'staging') ON CONFLICT DO NOTHING;
+INSERT INTO public.environment (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order", resource_id) VALUES (102, 'NORMAL', 1, 1694683927, 101, 1695110907, 'Prod', 2, 'prod') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.environment ENABLE TRIGGER ALL;
@@ -59,15 +60,15 @@ ALTER TABLE public.environment ENABLE TRIGGER ALL;
 
 ALTER TABLE public.instance DISABLE TRIGGER ALL;
 
-INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (101, 'NORMAL', 101, 1695025927, 1, 1695025927, 102, 'mysql-prod', 'MYSQL', '8.0.27', '', 'mysql-prod', true, '{}', '{"lastSyncTime": "2023-09-18T08:32:07.392792Z", "mysqlLowerCaseTableNames": 2}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (102, 'NORMAL', 101, 1695025945, 1, 1695025945, 102, 'pg-prod', 'POSTGRES', '14.3', '', 'pg-prod', true, '{}', '{"lastSyncTime": "2023-09-18T08:32:24.731332Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (103, 'NORMAL', 101, 1695025963, 101, 1695025963, 102, 'tidb', 'TIDB', '', '', 'tidb', true, '{}', '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (104, 'NORMAL', 101, 1695025982, 101, 1695025982, 102, 'snowflake', 'SNOWFLAKE', '', '', 'snowflake', true, '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (105, 'NORMAL', 101, 1695025993, 101, 1695025993, 102, 'clickhouse', 'CLICKHOUSE', '', '', 'clickhouse', true, '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (106, 'NORMAL', 101, 1695026057, 101, 1695026057, 102, 'mongodb', 'MONGODB', '', '', 'mongodb', true, '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (107, 'NORMAL', 101, 1695026105, 101, 1695026105, 102, 'redis', 'REDIS', '', '', 'redis', true, '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (108, 'NORMAL', 101, 1695026151, 101, 1695026151, 102, 'spanner', 'SPANNER', '', '', 'spanner', true, '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (109, 'NORMAL', 101, 1695026169, 101, 1695026169, 102, 'oracle', 'ORACLE', '', '', 'oracle', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (101, 'NORMAL', 101, 1695025927, 1, 1695025927, 102, 'mysql-prod', 'MYSQL', '8.0.27', '', 'mysql-prod', true, '{}', '{"lastSyncTime": "2023-09-18T08:32:07.392792Z", "mysqlLowerCaseTableNames": 2}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (102, 'NORMAL', 101, 1695025945, 1, 1695025945, 102, 'pg-prod', 'POSTGRES', '14.3', '', 'pg-prod', true, '{}', '{"lastSyncTime": "2023-09-18T08:32:24.731332Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (103, 'NORMAL', 101, 1695025963, 101, 1695025963, 102, 'tidb', 'TIDB', '', '', 'tidb', true, '{}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (104, 'NORMAL', 101, 1695025982, 101, 1695025982, 102, 'snowflake', 'SNOWFLAKE', '', '', 'snowflake', true, '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (110, 'NORMAL', 101, 1695026328, 101, 1695026328, 102, 'oceanbase', 'OCEANBASE', '', '', 'oceanbase', true, '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (111, 'NORMAL', 101, 1695026339, 101, 1695026339, 102, 'mariadb', 'MARIADB', '', '', 'mariadb', true, '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (112, 'NORMAL', 101, 1695026350, 101, 1695026350, 102, 'mssql', 'MSSQL', '', '', 'mssql', true, '{}', '{}') ON CONFLICT DO NOTHING;
@@ -83,7 +84,7 @@ ALTER TABLE public.instance ENABLE TRIGGER ALL;
 
 ALTER TABLE public.project DISABLE TRIGGER ALL;
 
-INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1694683927, 1, 1694683927, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695111825, 1, 1695111825, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (101, 'NORMAL', 101, 1694685057, 101, 1694685057, 'Test', 'TEST', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'test', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 
 
@@ -269,7 +270,7 @@ ALTER TABLE public.inbox ENABLE TRIGGER ALL;
 
 ALTER TABLE public.instance_change_history DISABLE TRIGGER ALL;
 
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1694683928, 1, 1694683928, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0003-20230914173207', 'Initial migration version 2.8.3 server version development with file migration/prod/LATEST.sql.', '-- Type
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695111825, 1, 1695111825, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919162345', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
 CREATE TYPE row_status AS ENUM (''NORMAL'', ''ARCHIVED'');
 
 -- updated_ts trigger.
@@ -3002,7 +3003,7 @@ VALUES
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 103;
 ', '', 0, '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1694683928, 1, 1694683928, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0003-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695111826, 1, 1695111826, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
 ', NULL, '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -6913,7 +6914,3927 @@ ALTER TABLE ONLY public.vcs
 ALTER TABLE ONLY public.vcs
     ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
 
-', 84601000, '{}') ON CONFLICT DO NOTHING;
+', 63416000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (103, 'NORMAL', 1, 1695110681, 1, 1695110681, NULL, NULL, NULL, 'development', 3, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919160440', 'Migrate version 2.8.4 server version development with files migration/prod/2.8/0004##issue_type.sql.', 'ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts;
+
+UPDATE issue
+SET type = ''bb.issue.database.general''
+WHERE type IN (''bb.issue.database.create'', ''bb.issue.database.schema.update'', ''bb.issue.database.schema.update.ghost'', ''bb.issue.database.data.update'', ''bb.issue.database.restore.pitr'');
+
+ALTER TABLE issue ENABLE TRIGGER update_issue_updated_ts;
+', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE TYPE public.resource_type AS ENUM (
+    ''WORKSPACE'',
+    ''ENVIRONMENT'',
+    ''PROJECT'',
+    ''INSTANCE'',
+    ''DATABASE''
+);
+
+CREATE TYPE public.row_status AS ENUM (
+    ''NORMAL'',
+    ''ARCHIVED''
+);
+
+CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_ts = extract(epoch from now());
+  RETURN NEW;
+END;
+$$;
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.activity (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    container_id integer NOT NULL,
+    type text NOT NULL,
+    level text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT activity_container_id_check CHECK ((container_id > 0)),
+    CONSTRAINT activity_level_check CHECK ((level = ANY (ARRAY[''INFO''::text, ''WARN''::text, ''ERROR''::text]))),
+    CONSTRAINT activity_type_check CHECK ((type ~~ ''bb.%''::text))
+);
+
+CREATE SEQUENCE public.activity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.activity_id_seq OWNED BY public.activity.id;
+
+CREATE TABLE public.anomaly (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT anomaly_type_check CHECK ((type ~~ ''bb.anomaly.%''::text))
+);
+
+CREATE SEQUENCE public.anomaly_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.anomaly_id_seq OWNED BY public.anomaly.id;
+
+CREATE TABLE public.backup (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    storage_backend text NOT NULL,
+    migration_history_version text NOT NULL,
+    path text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT backup_status_check CHECK ((status = ANY (ARRAY[''PENDING_CREATE''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT backup_storage_backend_check CHECK ((storage_backend = ANY (ARRAY[''LOCAL''::text, ''S3''::text, ''GCS''::text, ''OSS''::text]))),
+    CONSTRAINT backup_type_check CHECK ((type = ANY (ARRAY[''MANUAL''::text, ''AUTOMATIC''::text, ''PITR''::text])))
+);
+
+CREATE SEQUENCE public.backup_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_id_seq OWNED BY public.backup.id;
+
+CREATE TABLE public.backup_setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    enabled boolean NOT NULL,
+    hour integer NOT NULL,
+    day_of_week integer NOT NULL,
+    retention_period_ts integer DEFAULT 0 NOT NULL,
+    hook_url text NOT NULL,
+    CONSTRAINT backup_setting_day_of_week_check CHECK (((day_of_week >= ''-1''::integer) AND (day_of_week <= 6))),
+    CONSTRAINT backup_setting_hour_check CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT backup_setting_retention_period_ts_check CHECK ((retention_period_ts >= 0))
+);
+
+CREATE SEQUENCE public.backup_setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_setting_id_seq OWNED BY public.backup_setting.id;
+
+CREATE TABLE public.bookmark (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    link text NOT NULL
+);
+
+CREATE SEQUENCE public.bookmark_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bookmark_id_seq OWNED BY public.bookmark.id;
+
+CREATE TABLE public.data_source (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    username text NOT NULL,
+    password text NOT NULL,
+    ssl_key text DEFAULT ''''::text NOT NULL,
+    ssl_cert text DEFAULT ''''::text NOT NULL,
+    ssl_ca text DEFAULT ''''::text NOT NULL,
+    host text DEFAULT ''''::text NOT NULL,
+    port text DEFAULT ''''::text NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    database text DEFAULT ''''::text NOT NULL,
+    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY[''ADMIN''::text, ''RW''::text, ''RO''::text])))
+);
+
+CREATE SEQUENCE public.data_source_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
+
+CREATE TABLE public.db (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    project_id integer NOT NULL,
+    environment_id integer,
+    source_backup_id integer,
+    sync_status text NOT NULL,
+    last_successful_sync_ts bigint NOT NULL,
+    schema_version text NOT NULL,
+    name text NOT NULL,
+    secrets jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    datashare boolean DEFAULT false NOT NULL,
+    service_name text DEFAULT ''''::text NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY[''OK''::text, ''NOT_FOUND''::text])))
+);
+
+CREATE TABLE public.db_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_group_id_seq OWNED BY public.db_group.id;
+
+CREATE SEQUENCE public.db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_id_seq OWNED BY public.db.id;
+
+CREATE TABLE public.db_label (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    key text NOT NULL,
+    value text NOT NULL
+);
+
+CREATE SEQUENCE public.db_label_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_label_id_seq OWNED BY public.db_label.id;
+
+CREATE TABLE public.db_schema (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    raw_dump text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.db_schema_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
+
+CREATE TABLE public.deployment_config (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.deployment_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
+
+CREATE TABLE public.environment (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    resource_id text NOT NULL,
+    CONSTRAINT environment_order_check CHECK (("order" >= 0))
+);
+
+CREATE SEQUENCE public.environment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.environment_id_seq OWNED BY public.environment.id;
+
+CREATE TABLE public.external_approval (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    issue_id integer NOT NULL,
+    requester_id integer NOT NULL,
+    approver_id integer NOT NULL,
+    type text NOT NULL,
+    payload jsonb NOT NULL,
+    CONSTRAINT external_approval_type_check CHECK ((type ~~ ''bb.plugin.app.%''::text))
+);
+
+CREATE SEQUENCE public.external_approval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.external_approval_id_seq OWNED BY public.external_approval.id;
+
+CREATE TABLE public.idp (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT idp_type_check CHECK ((type = ANY (ARRAY[''OAUTH2''::text, ''OIDC''::text, ''LDAP''::text])))
+);
+
+CREATE SEQUENCE public.idp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
+
+CREATE TABLE public.inbox (
+    id integer NOT NULL,
+    receiver_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    status text NOT NULL,
+    CONSTRAINT inbox_status_check CHECK ((status = ANY (ARRAY[''UNREAD''::text, ''READ''::text])))
+);
+
+CREATE SEQUENCE public.inbox_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.inbox_id_seq OWNED BY public.inbox.id;
+
+CREATE TABLE public.instance (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    environment_id integer,
+    name text NOT NULL,
+    engine text NOT NULL,
+    engine_version text DEFAULT ''''::text NOT NULL,
+    external_link text DEFAULT ''''::text NOT NULL,
+    resource_id text NOT NULL,
+    activation boolean DEFAULT false NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.instance_change_history (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer,
+    database_id integer,
+    issue_id integer,
+    release_version text NOT NULL,
+    sequence bigint NOT NULL,
+    source text NOT NULL,
+    type text NOT NULL,
+    status text NOT NULL,
+    version text NOT NULL,
+    description text NOT NULL,
+    statement text NOT NULL,
+    sheet_id bigint,
+    schema text NOT NULL,
+    schema_prev text NOT NULL,
+    execution_duration_ns bigint NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT instance_change_history_sequence_check CHECK ((sequence >= 0)),
+    CONSTRAINT instance_change_history_source_check CHECK ((source = ANY (ARRAY[''UI''::text, ''VCS''::text, ''LIBRARY''::text]))),
+    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT instance_change_history_type_check CHECK ((type = ANY (ARRAY[''BASELINE''::text, ''MIGRATE''::text, ''MIGRATE_SDL''::text, ''BRANCH''::text, ''DATA''::text])))
+);
+
+CREATE SEQUENCE public.instance_change_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_change_history_id_seq OWNED BY public.instance_change_history.id;
+
+CREATE SEQUENCE public.instance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_id_seq OWNED BY public.instance.id;
+
+CREATE TABLE public.instance_user (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    "grant" text NOT NULL
+);
+
+CREATE SEQUENCE public.instance_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_user_id_seq OWNED BY public.instance_user.id;
+
+CREATE TABLE public.issue (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    plan_id bigint,
+    pipeline_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL,
+    assignee_id integer NOT NULL,
+    assignee_need_attention boolean DEFAULT false NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    ts_vector tsvector,
+    CONSTRAINT issue_status_check CHECK ((status = ANY (ARRAY[''OPEN''::text, ''DONE''::text, ''CANCELED''::text]))),
+    CONSTRAINT issue_type_check CHECK ((type ~~ ''bb.issue.%''::text))
+);
+
+CREATE SEQUENCE public.issue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.issue_id_seq OWNED BY public.issue.id;
+
+CREATE TABLE public.issue_subscriber (
+    issue_id integer NOT NULL,
+    subscriber_id integer NOT NULL
+);
+
+CREATE TABLE public.label_key (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    key text NOT NULL
+);
+
+CREATE SEQUENCE public.label_key_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.label_key_id_seq OWNED BY public.label_key.id;
+
+CREATE TABLE public.label_value (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    key text NOT NULL,
+    value text NOT NULL
+);
+
+CREATE SEQUENCE public.label_value_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.label_value_id_seq OWNED BY public.label_value.id;
+
+CREATE TABLE public.member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    status text NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    CONSTRAINT member_role_check CHECK ((role = ANY (ARRAY[''OWNER''::text, ''DBA''::text, ''DEVELOPER''::text]))),
+    CONSTRAINT member_status_check CHECK ((status = ANY (ARRAY[''INVITED''::text, ''ACTIVE''::text])))
+);
+
+CREATE SEQUENCE public.member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.member_id_seq OWNED BY public.member.id;
+
+CREATE TABLE public.pipeline (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.pipeline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.pipeline_id_seq OWNED BY public.pipeline.id;
+
+CREATE TABLE public.plan (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    pipeline_id integer,
+    name text NOT NULL,
+    description text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.plan_check_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    plan_id bigint NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT plan_check_run_status_check CHECK ((status = ANY (ARRAY[''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT plan_check_run_type_check CHECK ((type ~~ ''bb.plan-check.%''::text))
+);
+
+CREATE SEQUENCE public.plan_check_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_check_run_id_seq OWNED BY public.plan_check_run.id;
+
+CREATE SEQUENCE public.plan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_id_seq OWNED BY public.plan.id;
+
+CREATE TABLE public.policy (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    resource_type public.resource_type NOT NULL,
+    resource_id integer NOT NULL,
+    inherit_from_parent boolean DEFAULT true NOT NULL,
+    CONSTRAINT policy_type_check CHECK ((type ~~ ''bb.policy.%''::text))
+);
+
+CREATE SEQUENCE public.policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.policy_id_seq OWNED BY public.policy.id;
+
+CREATE TABLE public.principal (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    phone text DEFAULT ''''::text NOT NULL,
+    mfa_config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT principal_type_check CHECK ((type = ANY (ARRAY[''END_USER''::text, ''SYSTEM_BOT''::text, ''SERVICE_ACCOUNT''::text])))
+);
+
+CREATE SEQUENCE public.principal_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.principal_id_seq OWNED BY public.principal.id;
+
+CREATE TABLE public.project (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    workflow_type text NOT NULL,
+    visibility text NOT NULL,
+    tenant_mode text DEFAULT ''DISABLED''::text NOT NULL,
+    db_name_template text NOT NULL,
+    schema_change_type text DEFAULT ''DDL''::text NOT NULL,
+    resource_id text NOT NULL,
+    data_classification_config_id text DEFAULT ''''::text NOT NULL,
+    schema_version_type text DEFAULT ''TIMESTAMP''::text NOT NULL,
+    CONSTRAINT project_schema_change_type_check CHECK ((schema_change_type = ANY (ARRAY[''DDL''::text, ''SDL''::text]))),
+    CONSTRAINT project_schema_version_type_check CHECK ((schema_version_type = ANY (ARRAY[''TIMESTAMP''::text, ''SEMANTIC''::text]))),
+    CONSTRAINT project_tenant_mode_check CHECK ((tenant_mode = ANY (ARRAY[''DISABLED''::text, ''TENANT''::text]))),
+    CONSTRAINT project_visibility_check CHECK ((visibility = ANY (ARRAY[''PUBLIC''::text, ''PRIVATE''::text]))),
+    CONSTRAINT project_workflow_type_check CHECK ((workflow_type = ANY (ARRAY[''UI''::text, ''VCS''::text])))
+);
+
+CREATE SEQUENCE public.project_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_id_seq OWNED BY public.project.id;
+
+CREATE TABLE public.project_member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    condition jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.project_member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_member_id_seq OWNED BY public.project_member.id;
+
+CREATE TABLE public.project_webhook (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    url text NOT NULL,
+    activity_list text[] NOT NULL,
+    CONSTRAINT project_webhook_type_check CHECK ((type ~~ ''bb.plugin.webhook.%''::text))
+);
+
+CREATE SEQUENCE public.project_webhook_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_webhook_id_seq OWNED BY public.project_webhook.id;
+
+CREATE TABLE public.repository (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    vcs_id integer NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    full_path text NOT NULL,
+    web_url text NOT NULL,
+    branch_filter text DEFAULT ''''::text NOT NULL,
+    base_directory text DEFAULT ''''::text NOT NULL,
+    file_path_template text DEFAULT ''''::text NOT NULL,
+    enable_sql_review_ci boolean DEFAULT false NOT NULL,
+    schema_path_template text DEFAULT ''''::text NOT NULL,
+    sheet_path_template text DEFAULT ''''::text NOT NULL,
+    external_id text NOT NULL,
+    external_webhook_id text NOT NULL,
+    webhook_url_host text NOT NULL,
+    webhook_endpoint_id text NOT NULL,
+    webhook_secret_token text NOT NULL,
+    access_token text NOT NULL,
+    expires_ts bigint NOT NULL,
+    refresh_token text NOT NULL
+);
+
+CREATE SEQUENCE public.repository_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.repository_id_seq OWNED BY public.repository.id;
+
+CREATE TABLE public.risk (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    source text NOT NULL,
+    level bigint NOT NULL,
+    name text NOT NULL,
+    active boolean NOT NULL,
+    expression jsonb NOT NULL,
+    CONSTRAINT risk_source_check CHECK ((source ~~ ''bb.risk.%''::text))
+);
+
+CREATE SEQUENCE public.risk_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.risk_id_seq OWNED BY public.risk.id;
+
+CREATE TABLE public.role (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    permissions jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
+
+CREATE TABLE public.schema_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    db_group_id bigint NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.schema_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.schema_group_id_seq OWNED BY public.schema_group.id;
+
+CREATE TABLE public.setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    value text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.setting_id_seq OWNED BY public.setting.id;
+
+CREATE TABLE public.sheet (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    statement text NOT NULL,
+    visibility text DEFAULT ''PRIVATE''::text NOT NULL,
+    source text DEFAULT ''BYTEBASE''::text NOT NULL,
+    type text DEFAULT ''SQL''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT sheet_source_check CHECK ((source = ANY (ARRAY[''BYTEBASE''::text, ''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text, ''BYTEBASE_ARTIFACT''::text]))),
+    CONSTRAINT sheet_type_check CHECK ((type = ''SQL''::text)),
+    CONSTRAINT sheet_visibility_check CHECK ((visibility = ANY (ARRAY[''PRIVATE''::text, ''PROJECT''::text, ''PUBLIC''::text])))
+);
+
+CREATE SEQUENCE public.sheet_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
+
+CREATE TABLE public.sheet_organizer (
+    id integer NOT NULL,
+    sheet_id integer NOT NULL,
+    principal_id integer NOT NULL,
+    starred boolean DEFAULT false NOT NULL,
+    pinned boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.sheet_organizer_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_organizer_id_seq OWNED BY public.sheet_organizer.id;
+
+CREATE TABLE public.slow_query (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    log_date_ts integer NOT NULL,
+    slow_query_statistics jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.slow_query_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
+
+CREATE TABLE public.stage (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    environment_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.stage_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.stage_id_seq OWNED BY public.stage.id;
+
+CREATE TABLE public.task (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    stage_id integer NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    earliest_allowed_ts bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''PENDING_APPROVAL''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT task_type_check CHECK ((type ~~ ''bb.task.%''::text))
+);
+
+CREATE TABLE public.task_dag (
+    id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    from_task_id integer NOT NULL,
+    to_task_id integer NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.task_dag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+CREATE TABLE public.task_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    task_id integer NOT NULL,
+    attempt integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    code integer DEFAULT 0 NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT task_run_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text])))
+);
+
+CREATE SEQUENCE public.task_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_run_id_seq OWNED BY public.task_run.id;
+
+CREATE TABLE public.vcs (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    instance_url text NOT NULL,
+    api_url text NOT NULL,
+    application_id text NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT vcs_api_url_check CHECK ((((api_url ~~ ''http://%''::text) OR (api_url ~~ ''https://%''::text)) AND (api_url = rtrim(api_url, ''/''::text)))),
+    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ ''http://%''::text) OR (instance_url ~~ ''https://%''::text)) AND (instance_url = rtrim(instance_url, ''/''::text)))),
+    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY[''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text])))
+);
+
+CREATE SEQUENCE public.vcs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
+
+ALTER TABLE ONLY public.activity ALTER COLUMN id SET DEFAULT nextval(''public.activity_id_seq''::regclass);
+
+ALTER TABLE ONLY public.anomaly ALTER COLUMN id SET DEFAULT nextval(''public.anomaly_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup ALTER COLUMN id SET DEFAULT nextval(''public.backup_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup_setting ALTER COLUMN id SET DEFAULT nextval(''public.backup_setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.bookmark ALTER COLUMN id SET DEFAULT nextval(''public.bookmark_id_seq''::regclass);
+
+ALTER TABLE ONLY public.data_source ALTER COLUMN id SET DEFAULT nextval(''public.data_source_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db ALTER COLUMN id SET DEFAULT nextval(''public.db_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval(''public.db_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_label ALTER COLUMN id SET DEFAULT nextval(''public.db_label_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval(''public.db_schema_id_seq''::regclass);
+
+ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval(''public.deployment_config_id_seq''::regclass);
+
+ALTER TABLE ONLY public.environment ALTER COLUMN id SET DEFAULT nextval(''public.environment_id_seq''::regclass);
+
+ALTER TABLE ONLY public.external_approval ALTER COLUMN id SET DEFAULT nextval(''public.external_approval_id_seq''::regclass);
+
+ALTER TABLE ONLY public.idp ALTER COLUMN id SET DEFAULT nextval(''public.idp_id_seq''::regclass);
+
+ALTER TABLE ONLY public.inbox ALTER COLUMN id SET DEFAULT nextval(''public.inbox_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance ALTER COLUMN id SET DEFAULT nextval(''public.instance_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_change_history ALTER COLUMN id SET DEFAULT nextval(''public.instance_change_history_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_user ALTER COLUMN id SET DEFAULT nextval(''public.instance_user_id_seq''::regclass);
+
+ALTER TABLE ONLY public.issue ALTER COLUMN id SET DEFAULT nextval(''public.issue_id_seq''::regclass);
+
+ALTER TABLE ONLY public.label_key ALTER COLUMN id SET DEFAULT nextval(''public.label_key_id_seq''::regclass);
+
+ALTER TABLE ONLY public.label_value ALTER COLUMN id SET DEFAULT nextval(''public.label_value_id_seq''::regclass);
+
+ALTER TABLE ONLY public.member ALTER COLUMN id SET DEFAULT nextval(''public.member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.pipeline ALTER COLUMN id SET DEFAULT nextval(''public.pipeline_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan ALTER COLUMN id SET DEFAULT nextval(''public.plan_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan_check_run ALTER COLUMN id SET DEFAULT nextval(''public.plan_check_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.policy ALTER COLUMN id SET DEFAULT nextval(''public.policy_id_seq''::regclass);
+
+ALTER TABLE ONLY public.principal ALTER COLUMN id SET DEFAULT nextval(''public.principal_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project ALTER COLUMN id SET DEFAULT nextval(''public.project_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_member ALTER COLUMN id SET DEFAULT nextval(''public.project_member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_webhook ALTER COLUMN id SET DEFAULT nextval(''public.project_webhook_id_seq''::regclass);
+
+ALTER TABLE ONLY public.repository ALTER COLUMN id SET DEFAULT nextval(''public.repository_id_seq''::regclass);
+
+ALTER TABLE ONLY public.risk ALTER COLUMN id SET DEFAULT nextval(''public.risk_id_seq''::regclass);
+
+ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval(''public.role_id_seq''::regclass);
+
+ALTER TABLE ONLY public.schema_group ALTER COLUMN id SET DEFAULT nextval(''public.schema_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.setting ALTER COLUMN id SET DEFAULT nextval(''public.setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval(''public.sheet_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet_organizer ALTER COLUMN id SET DEFAULT nextval(''public.sheet_organizer_id_seq''::regclass);
+
+ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval(''public.slow_query_id_seq''::regclass);
+
+ALTER TABLE ONLY public.stage ALTER COLUMN id SET DEFAULT nextval(''public.stage_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval(''public.task_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval(''public.task_dag_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval(''public.task_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval(''public.vcs_id_seq''::regclass);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.idp
+    ADD CONSTRAINT idp_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_pkey PRIMARY KEY (issue_id, subscriber_id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);
+
+CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);
+
+CREATE INDEX idx_anomaly_database_id_row_status_type ON public.anomaly USING btree (database_id, row_status, type);
+
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON public.anomaly USING btree (instance_id, row_status, type);
+
+CREATE INDEX idx_backup_database_id ON public.backup USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON public.backup_setting USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING btree (database_id, name);
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);
+
+CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);
+
+CREATE UNIQUE INDEX idx_db_label_unique_database_id_key ON public.db_label USING btree (database_id, key);
+
+CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_environment_unique_name ON public.environment USING btree (name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);
+
+CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);
+
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id ON public.inbox USING btree (receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON public.inbox USING btree (receiver_id, status);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);
+
+CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
+
+CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);
+
+CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);
+
+CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);
+
+CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);
+
+CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);
+
+CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);
+
+CREATE UNIQUE INDEX idx_label_key_unique_key ON public.label_key USING btree (key);
+
+CREATE UNIQUE INDEX idx_label_value_unique_key_value ON public.label_value USING btree (key, value);
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON public.member USING btree (principal_id);
+
+CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);
+
+CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);
+
+CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);
+
+CREATE INDEX idx_project_member_project_id ON public.project_member USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);
+
+CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);
+
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON public.repository USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON public.schema_group USING btree (db_group_id, placeholder);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON public.schema_group USING btree (db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);
+
+CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);
+
+CREATE INDEX idx_sheet_database_id_row_status ON public.sheet USING btree (database_id, row_status);
+
+CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON public.sheet_organizer USING btree (principal_id);
+
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON public.sheet_organizer USING btree (sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);
+
+CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);
+
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);
+
+CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
+
+CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
+
+CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);
+
+CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);
+
+CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
+
+CREATE INDEX idx_task_status ON public.task USING btree (status);
+
+CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
+
+CREATE TRIGGER update_activity_updated_ts BEFORE UPDATE ON public.activity FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_anomaly_updated_ts BEFORE UPDATE ON public.anomaly FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_setting_updated_ts BEFORE UPDATE ON public.backup_setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_updated_ts BEFORE UPDATE ON public.backup FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_bookmark_updated_ts BEFORE UPDATE ON public.bookmark FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_data_source_updated_ts BEFORE UPDATE ON public.data_source FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_group_updated_ts BEFORE UPDATE ON public.db_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_label_updated_ts BEFORE UPDATE ON public.db_label FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_schema_updated_ts BEFORE UPDATE ON public.db_schema FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_updated_ts BEFORE UPDATE ON public.db FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_deployment_config_updated_ts BEFORE UPDATE ON public.deployment_config FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_environment_updated_ts BEFORE UPDATE ON public.environment FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_external_approval_updated_ts BEFORE UPDATE ON public.external_approval FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_idp_updated_ts BEFORE UPDATE ON public.idp FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_change_history_updated_ts BEFORE UPDATE ON public.instance_change_history FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_updated_ts BEFORE UPDATE ON public.instance FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_user_updated_ts BEFORE UPDATE ON public.instance_user FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_issue_updated_ts BEFORE UPDATE ON public.issue FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_label_key_updated_ts BEFORE UPDATE ON public.label_key FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_label_value_updated_ts BEFORE UPDATE ON public.label_value FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_member_updated_ts BEFORE UPDATE ON public.member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_pipeline_updated_ts BEFORE UPDATE ON public.pipeline FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_check_run_updated_ts BEFORE UPDATE ON public.plan_check_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_updated_ts BEFORE UPDATE ON public.plan FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_policy_updated_ts BEFORE UPDATE ON public.policy FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_member_updated_ts BEFORE UPDATE ON public.project_member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_updated_ts BEFORE UPDATE ON public.project FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_webhook_updated_ts BEFORE UPDATE ON public.project_webhook FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_repository_updated_ts BEFORE UPDATE ON public.repository FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_risk_updated_ts BEFORE UPDATE ON public.risk FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_role_updated_ts BEFORE UPDATE ON public.role FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_schema_group_updated_ts BEFORE UPDATE ON public.schema_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_setting_updated_ts BEFORE UPDATE ON public.setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_sheet_updated_ts BEFORE UPDATE ON public.sheet FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_slow_query_updated_ts BEFORE UPDATE ON public.slow_query FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_stage_updated_ts BEFORE UPDATE ON public.stage FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_dag_updated_ts BEFORE UPDATE ON public.task_dag FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_run_updated_ts BEFORE UPDATE ON public.task_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_updated_ts BEFORE UPDATE ON public.task FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_vcs_updated_ts BEFORE UPDATE ON public.vcs FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activity(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_key_fkey FOREIGN KEY (key) REFERENCES public.label_key(key);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_vcs_id_fkey FOREIGN KEY (vcs_id) REFERENCES public.vcs(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_db_group_id_fkey FOREIGN KEY (db_group_id) REFERENCES public.db_group(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheet(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE TYPE public.resource_type AS ENUM (
+    ''WORKSPACE'',
+    ''ENVIRONMENT'',
+    ''PROJECT'',
+    ''INSTANCE'',
+    ''DATABASE''
+);
+
+CREATE TYPE public.row_status AS ENUM (
+    ''NORMAL'',
+    ''ARCHIVED''
+);
+
+CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_ts = extract(epoch from now());
+  RETURN NEW;
+END;
+$$;
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.activity (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    container_id integer NOT NULL,
+    type text NOT NULL,
+    level text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT activity_container_id_check CHECK ((container_id > 0)),
+    CONSTRAINT activity_level_check CHECK ((level = ANY (ARRAY[''INFO''::text, ''WARN''::text, ''ERROR''::text]))),
+    CONSTRAINT activity_type_check CHECK ((type ~~ ''bb.%''::text))
+);
+
+CREATE SEQUENCE public.activity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.activity_id_seq OWNED BY public.activity.id;
+
+CREATE TABLE public.anomaly (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT anomaly_type_check CHECK ((type ~~ ''bb.anomaly.%''::text))
+);
+
+CREATE SEQUENCE public.anomaly_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.anomaly_id_seq OWNED BY public.anomaly.id;
+
+CREATE TABLE public.backup (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    storage_backend text NOT NULL,
+    migration_history_version text NOT NULL,
+    path text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT backup_status_check CHECK ((status = ANY (ARRAY[''PENDING_CREATE''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT backup_storage_backend_check CHECK ((storage_backend = ANY (ARRAY[''LOCAL''::text, ''S3''::text, ''GCS''::text, ''OSS''::text]))),
+    CONSTRAINT backup_type_check CHECK ((type = ANY (ARRAY[''MANUAL''::text, ''AUTOMATIC''::text, ''PITR''::text])))
+);
+
+CREATE SEQUENCE public.backup_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_id_seq OWNED BY public.backup.id;
+
+CREATE TABLE public.backup_setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    enabled boolean NOT NULL,
+    hour integer NOT NULL,
+    day_of_week integer NOT NULL,
+    retention_period_ts integer DEFAULT 0 NOT NULL,
+    hook_url text NOT NULL,
+    CONSTRAINT backup_setting_day_of_week_check CHECK (((day_of_week >= ''-1''::integer) AND (day_of_week <= 6))),
+    CONSTRAINT backup_setting_hour_check CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT backup_setting_retention_period_ts_check CHECK ((retention_period_ts >= 0))
+);
+
+CREATE SEQUENCE public.backup_setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_setting_id_seq OWNED BY public.backup_setting.id;
+
+CREATE TABLE public.bookmark (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    link text NOT NULL
+);
+
+CREATE SEQUENCE public.bookmark_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bookmark_id_seq OWNED BY public.bookmark.id;
+
+CREATE TABLE public.data_source (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    username text NOT NULL,
+    password text NOT NULL,
+    ssl_key text DEFAULT ''''::text NOT NULL,
+    ssl_cert text DEFAULT ''''::text NOT NULL,
+    ssl_ca text DEFAULT ''''::text NOT NULL,
+    host text DEFAULT ''''::text NOT NULL,
+    port text DEFAULT ''''::text NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    database text DEFAULT ''''::text NOT NULL,
+    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY[''ADMIN''::text, ''RW''::text, ''RO''::text])))
+);
+
+CREATE SEQUENCE public.data_source_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
+
+CREATE TABLE public.db (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    project_id integer NOT NULL,
+    environment_id integer,
+    source_backup_id integer,
+    sync_status text NOT NULL,
+    last_successful_sync_ts bigint NOT NULL,
+    schema_version text NOT NULL,
+    name text NOT NULL,
+    secrets jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    datashare boolean DEFAULT false NOT NULL,
+    service_name text DEFAULT ''''::text NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY[''OK''::text, ''NOT_FOUND''::text])))
+);
+
+CREATE TABLE public.db_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_group_id_seq OWNED BY public.db_group.id;
+
+CREATE SEQUENCE public.db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_id_seq OWNED BY public.db.id;
+
+CREATE TABLE public.db_label (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    key text NOT NULL,
+    value text NOT NULL
+);
+
+CREATE SEQUENCE public.db_label_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_label_id_seq OWNED BY public.db_label.id;
+
+CREATE TABLE public.db_schema (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    raw_dump text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.db_schema_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
+
+CREATE TABLE public.deployment_config (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.deployment_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
+
+CREATE TABLE public.environment (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    resource_id text NOT NULL,
+    CONSTRAINT environment_order_check CHECK (("order" >= 0))
+);
+
+CREATE SEQUENCE public.environment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.environment_id_seq OWNED BY public.environment.id;
+
+CREATE TABLE public.external_approval (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    issue_id integer NOT NULL,
+    requester_id integer NOT NULL,
+    approver_id integer NOT NULL,
+    type text NOT NULL,
+    payload jsonb NOT NULL,
+    CONSTRAINT external_approval_type_check CHECK ((type ~~ ''bb.plugin.app.%''::text))
+);
+
+CREATE SEQUENCE public.external_approval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.external_approval_id_seq OWNED BY public.external_approval.id;
+
+CREATE TABLE public.idp (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT idp_type_check CHECK ((type = ANY (ARRAY[''OAUTH2''::text, ''OIDC''::text, ''LDAP''::text])))
+);
+
+CREATE SEQUENCE public.idp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
+
+CREATE TABLE public.inbox (
+    id integer NOT NULL,
+    receiver_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    status text NOT NULL,
+    CONSTRAINT inbox_status_check CHECK ((status = ANY (ARRAY[''UNREAD''::text, ''READ''::text])))
+);
+
+CREATE SEQUENCE public.inbox_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.inbox_id_seq OWNED BY public.inbox.id;
+
+CREATE TABLE public.instance (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    environment_id integer,
+    name text NOT NULL,
+    engine text NOT NULL,
+    engine_version text DEFAULT ''''::text NOT NULL,
+    external_link text DEFAULT ''''::text NOT NULL,
+    resource_id text NOT NULL,
+    activation boolean DEFAULT false NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.instance_change_history (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer,
+    database_id integer,
+    issue_id integer,
+    release_version text NOT NULL,
+    sequence bigint NOT NULL,
+    source text NOT NULL,
+    type text NOT NULL,
+    status text NOT NULL,
+    version text NOT NULL,
+    description text NOT NULL,
+    statement text NOT NULL,
+    sheet_id bigint,
+    schema text NOT NULL,
+    schema_prev text NOT NULL,
+    execution_duration_ns bigint NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT instance_change_history_sequence_check CHECK ((sequence >= 0)),
+    CONSTRAINT instance_change_history_source_check CHECK ((source = ANY (ARRAY[''UI''::text, ''VCS''::text, ''LIBRARY''::text]))),
+    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT instance_change_history_type_check CHECK ((type = ANY (ARRAY[''BASELINE''::text, ''MIGRATE''::text, ''MIGRATE_SDL''::text, ''BRANCH''::text, ''DATA''::text])))
+);
+
+CREATE SEQUENCE public.instance_change_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_change_history_id_seq OWNED BY public.instance_change_history.id;
+
+CREATE SEQUENCE public.instance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_id_seq OWNED BY public.instance.id;
+
+CREATE TABLE public.instance_user (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    "grant" text NOT NULL
+);
+
+CREATE SEQUENCE public.instance_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_user_id_seq OWNED BY public.instance_user.id;
+
+CREATE TABLE public.issue (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    plan_id bigint,
+    pipeline_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL,
+    assignee_id integer NOT NULL,
+    assignee_need_attention boolean DEFAULT false NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    ts_vector tsvector,
+    CONSTRAINT issue_status_check CHECK ((status = ANY (ARRAY[''OPEN''::text, ''DONE''::text, ''CANCELED''::text]))),
+    CONSTRAINT issue_type_check CHECK ((type ~~ ''bb.issue.%''::text))
+);
+
+CREATE SEQUENCE public.issue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.issue_id_seq OWNED BY public.issue.id;
+
+CREATE TABLE public.issue_subscriber (
+    issue_id integer NOT NULL,
+    subscriber_id integer NOT NULL
+);
+
+CREATE TABLE public.label_key (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    key text NOT NULL
+);
+
+CREATE SEQUENCE public.label_key_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.label_key_id_seq OWNED BY public.label_key.id;
+
+CREATE TABLE public.label_value (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    key text NOT NULL,
+    value text NOT NULL
+);
+
+CREATE SEQUENCE public.label_value_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.label_value_id_seq OWNED BY public.label_value.id;
+
+CREATE TABLE public.member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    status text NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    CONSTRAINT member_role_check CHECK ((role = ANY (ARRAY[''OWNER''::text, ''DBA''::text, ''DEVELOPER''::text]))),
+    CONSTRAINT member_status_check CHECK ((status = ANY (ARRAY[''INVITED''::text, ''ACTIVE''::text])))
+);
+
+CREATE SEQUENCE public.member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.member_id_seq OWNED BY public.member.id;
+
+CREATE TABLE public.pipeline (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.pipeline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.pipeline_id_seq OWNED BY public.pipeline.id;
+
+CREATE TABLE public.plan (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    pipeline_id integer,
+    name text NOT NULL,
+    description text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.plan_check_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    plan_id bigint NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT plan_check_run_status_check CHECK ((status = ANY (ARRAY[''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT plan_check_run_type_check CHECK ((type ~~ ''bb.plan-check.%''::text))
+);
+
+CREATE SEQUENCE public.plan_check_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_check_run_id_seq OWNED BY public.plan_check_run.id;
+
+CREATE SEQUENCE public.plan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_id_seq OWNED BY public.plan.id;
+
+CREATE TABLE public.policy (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    resource_type public.resource_type NOT NULL,
+    resource_id integer NOT NULL,
+    inherit_from_parent boolean DEFAULT true NOT NULL,
+    CONSTRAINT policy_type_check CHECK ((type ~~ ''bb.policy.%''::text))
+);
+
+CREATE SEQUENCE public.policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.policy_id_seq OWNED BY public.policy.id;
+
+CREATE TABLE public.principal (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    phone text DEFAULT ''''::text NOT NULL,
+    mfa_config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT principal_type_check CHECK ((type = ANY (ARRAY[''END_USER''::text, ''SYSTEM_BOT''::text, ''SERVICE_ACCOUNT''::text])))
+);
+
+CREATE SEQUENCE public.principal_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.principal_id_seq OWNED BY public.principal.id;
+
+CREATE TABLE public.project (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    workflow_type text NOT NULL,
+    visibility text NOT NULL,
+    tenant_mode text DEFAULT ''DISABLED''::text NOT NULL,
+    db_name_template text NOT NULL,
+    schema_change_type text DEFAULT ''DDL''::text NOT NULL,
+    resource_id text NOT NULL,
+    data_classification_config_id text DEFAULT ''''::text NOT NULL,
+    schema_version_type text DEFAULT ''TIMESTAMP''::text NOT NULL,
+    CONSTRAINT project_schema_change_type_check CHECK ((schema_change_type = ANY (ARRAY[''DDL''::text, ''SDL''::text]))),
+    CONSTRAINT project_schema_version_type_check CHECK ((schema_version_type = ANY (ARRAY[''TIMESTAMP''::text, ''SEMANTIC''::text]))),
+    CONSTRAINT project_tenant_mode_check CHECK ((tenant_mode = ANY (ARRAY[''DISABLED''::text, ''TENANT''::text]))),
+    CONSTRAINT project_visibility_check CHECK ((visibility = ANY (ARRAY[''PUBLIC''::text, ''PRIVATE''::text]))),
+    CONSTRAINT project_workflow_type_check CHECK ((workflow_type = ANY (ARRAY[''UI''::text, ''VCS''::text])))
+);
+
+CREATE SEQUENCE public.project_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_id_seq OWNED BY public.project.id;
+
+CREATE TABLE public.project_member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    condition jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.project_member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_member_id_seq OWNED BY public.project_member.id;
+
+CREATE TABLE public.project_webhook (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    url text NOT NULL,
+    activity_list text[] NOT NULL,
+    CONSTRAINT project_webhook_type_check CHECK ((type ~~ ''bb.plugin.webhook.%''::text))
+);
+
+CREATE SEQUENCE public.project_webhook_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_webhook_id_seq OWNED BY public.project_webhook.id;
+
+CREATE TABLE public.repository (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    vcs_id integer NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    full_path text NOT NULL,
+    web_url text NOT NULL,
+    branch_filter text DEFAULT ''''::text NOT NULL,
+    base_directory text DEFAULT ''''::text NOT NULL,
+    file_path_template text DEFAULT ''''::text NOT NULL,
+    enable_sql_review_ci boolean DEFAULT false NOT NULL,
+    schema_path_template text DEFAULT ''''::text NOT NULL,
+    sheet_path_template text DEFAULT ''''::text NOT NULL,
+    external_id text NOT NULL,
+    external_webhook_id text NOT NULL,
+    webhook_url_host text NOT NULL,
+    webhook_endpoint_id text NOT NULL,
+    webhook_secret_token text NOT NULL,
+    access_token text NOT NULL,
+    expires_ts bigint NOT NULL,
+    refresh_token text NOT NULL
+);
+
+CREATE SEQUENCE public.repository_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.repository_id_seq OWNED BY public.repository.id;
+
+CREATE TABLE public.risk (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    source text NOT NULL,
+    level bigint NOT NULL,
+    name text NOT NULL,
+    active boolean NOT NULL,
+    expression jsonb NOT NULL,
+    CONSTRAINT risk_source_check CHECK ((source ~~ ''bb.risk.%''::text))
+);
+
+CREATE SEQUENCE public.risk_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.risk_id_seq OWNED BY public.risk.id;
+
+CREATE TABLE public.role (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    permissions jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
+
+CREATE TABLE public.schema_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    db_group_id bigint NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.schema_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.schema_group_id_seq OWNED BY public.schema_group.id;
+
+CREATE TABLE public.setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    value text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.setting_id_seq OWNED BY public.setting.id;
+
+CREATE TABLE public.sheet (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    statement text NOT NULL,
+    visibility text DEFAULT ''PRIVATE''::text NOT NULL,
+    source text DEFAULT ''BYTEBASE''::text NOT NULL,
+    type text DEFAULT ''SQL''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT sheet_source_check CHECK ((source = ANY (ARRAY[''BYTEBASE''::text, ''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text, ''BYTEBASE_ARTIFACT''::text]))),
+    CONSTRAINT sheet_type_check CHECK ((type = ''SQL''::text)),
+    CONSTRAINT sheet_visibility_check CHECK ((visibility = ANY (ARRAY[''PRIVATE''::text, ''PROJECT''::text, ''PUBLIC''::text])))
+);
+
+CREATE SEQUENCE public.sheet_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
+
+CREATE TABLE public.sheet_organizer (
+    id integer NOT NULL,
+    sheet_id integer NOT NULL,
+    principal_id integer NOT NULL,
+    starred boolean DEFAULT false NOT NULL,
+    pinned boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.sheet_organizer_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_organizer_id_seq OWNED BY public.sheet_organizer.id;
+
+CREATE TABLE public.slow_query (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    log_date_ts integer NOT NULL,
+    slow_query_statistics jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.slow_query_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
+
+CREATE TABLE public.stage (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    environment_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.stage_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.stage_id_seq OWNED BY public.stage.id;
+
+CREATE TABLE public.task (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    stage_id integer NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    earliest_allowed_ts bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''PENDING_APPROVAL''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT task_type_check CHECK ((type ~~ ''bb.task.%''::text))
+);
+
+CREATE TABLE public.task_dag (
+    id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    from_task_id integer NOT NULL,
+    to_task_id integer NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.task_dag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+CREATE TABLE public.task_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    task_id integer NOT NULL,
+    attempt integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    code integer DEFAULT 0 NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT task_run_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text])))
+);
+
+CREATE SEQUENCE public.task_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_run_id_seq OWNED BY public.task_run.id;
+
+CREATE TABLE public.vcs (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    instance_url text NOT NULL,
+    api_url text NOT NULL,
+    application_id text NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT vcs_api_url_check CHECK ((((api_url ~~ ''http://%''::text) OR (api_url ~~ ''https://%''::text)) AND (api_url = rtrim(api_url, ''/''::text)))),
+    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ ''http://%''::text) OR (instance_url ~~ ''https://%''::text)) AND (instance_url = rtrim(instance_url, ''/''::text)))),
+    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY[''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text])))
+);
+
+CREATE SEQUENCE public.vcs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
+
+ALTER TABLE ONLY public.activity ALTER COLUMN id SET DEFAULT nextval(''public.activity_id_seq''::regclass);
+
+ALTER TABLE ONLY public.anomaly ALTER COLUMN id SET DEFAULT nextval(''public.anomaly_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup ALTER COLUMN id SET DEFAULT nextval(''public.backup_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup_setting ALTER COLUMN id SET DEFAULT nextval(''public.backup_setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.bookmark ALTER COLUMN id SET DEFAULT nextval(''public.bookmark_id_seq''::regclass);
+
+ALTER TABLE ONLY public.data_source ALTER COLUMN id SET DEFAULT nextval(''public.data_source_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db ALTER COLUMN id SET DEFAULT nextval(''public.db_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval(''public.db_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_label ALTER COLUMN id SET DEFAULT nextval(''public.db_label_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval(''public.db_schema_id_seq''::regclass);
+
+ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval(''public.deployment_config_id_seq''::regclass);
+
+ALTER TABLE ONLY public.environment ALTER COLUMN id SET DEFAULT nextval(''public.environment_id_seq''::regclass);
+
+ALTER TABLE ONLY public.external_approval ALTER COLUMN id SET DEFAULT nextval(''public.external_approval_id_seq''::regclass);
+
+ALTER TABLE ONLY public.idp ALTER COLUMN id SET DEFAULT nextval(''public.idp_id_seq''::regclass);
+
+ALTER TABLE ONLY public.inbox ALTER COLUMN id SET DEFAULT nextval(''public.inbox_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance ALTER COLUMN id SET DEFAULT nextval(''public.instance_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_change_history ALTER COLUMN id SET DEFAULT nextval(''public.instance_change_history_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_user ALTER COLUMN id SET DEFAULT nextval(''public.instance_user_id_seq''::regclass);
+
+ALTER TABLE ONLY public.issue ALTER COLUMN id SET DEFAULT nextval(''public.issue_id_seq''::regclass);
+
+ALTER TABLE ONLY public.label_key ALTER COLUMN id SET DEFAULT nextval(''public.label_key_id_seq''::regclass);
+
+ALTER TABLE ONLY public.label_value ALTER COLUMN id SET DEFAULT nextval(''public.label_value_id_seq''::regclass);
+
+ALTER TABLE ONLY public.member ALTER COLUMN id SET DEFAULT nextval(''public.member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.pipeline ALTER COLUMN id SET DEFAULT nextval(''public.pipeline_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan ALTER COLUMN id SET DEFAULT nextval(''public.plan_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan_check_run ALTER COLUMN id SET DEFAULT nextval(''public.plan_check_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.policy ALTER COLUMN id SET DEFAULT nextval(''public.policy_id_seq''::regclass);
+
+ALTER TABLE ONLY public.principal ALTER COLUMN id SET DEFAULT nextval(''public.principal_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project ALTER COLUMN id SET DEFAULT nextval(''public.project_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_member ALTER COLUMN id SET DEFAULT nextval(''public.project_member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_webhook ALTER COLUMN id SET DEFAULT nextval(''public.project_webhook_id_seq''::regclass);
+
+ALTER TABLE ONLY public.repository ALTER COLUMN id SET DEFAULT nextval(''public.repository_id_seq''::regclass);
+
+ALTER TABLE ONLY public.risk ALTER COLUMN id SET DEFAULT nextval(''public.risk_id_seq''::regclass);
+
+ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval(''public.role_id_seq''::regclass);
+
+ALTER TABLE ONLY public.schema_group ALTER COLUMN id SET DEFAULT nextval(''public.schema_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.setting ALTER COLUMN id SET DEFAULT nextval(''public.setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval(''public.sheet_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet_organizer ALTER COLUMN id SET DEFAULT nextval(''public.sheet_organizer_id_seq''::regclass);
+
+ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval(''public.slow_query_id_seq''::regclass);
+
+ALTER TABLE ONLY public.stage ALTER COLUMN id SET DEFAULT nextval(''public.stage_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval(''public.task_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval(''public.task_dag_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval(''public.task_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval(''public.vcs_id_seq''::regclass);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.idp
+    ADD CONSTRAINT idp_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_pkey PRIMARY KEY (issue_id, subscriber_id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);
+
+CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);
+
+CREATE INDEX idx_anomaly_database_id_row_status_type ON public.anomaly USING btree (database_id, row_status, type);
+
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON public.anomaly USING btree (instance_id, row_status, type);
+
+CREATE INDEX idx_backup_database_id ON public.backup USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON public.backup_setting USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING btree (database_id, name);
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);
+
+CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);
+
+CREATE UNIQUE INDEX idx_db_label_unique_database_id_key ON public.db_label USING btree (database_id, key);
+
+CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_environment_unique_name ON public.environment USING btree (name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);
+
+CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);
+
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id ON public.inbox USING btree (receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON public.inbox USING btree (receiver_id, status);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);
+
+CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
+
+CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);
+
+CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);
+
+CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);
+
+CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);
+
+CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);
+
+CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);
+
+CREATE UNIQUE INDEX idx_label_key_unique_key ON public.label_key USING btree (key);
+
+CREATE UNIQUE INDEX idx_label_value_unique_key_value ON public.label_value USING btree (key, value);
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON public.member USING btree (principal_id);
+
+CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);
+
+CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);
+
+CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);
+
+CREATE INDEX idx_project_member_project_id ON public.project_member USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);
+
+CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);
+
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON public.repository USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON public.schema_group USING btree (db_group_id, placeholder);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON public.schema_group USING btree (db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);
+
+CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);
+
+CREATE INDEX idx_sheet_database_id_row_status ON public.sheet USING btree (database_id, row_status);
+
+CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON public.sheet_organizer USING btree (principal_id);
+
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON public.sheet_organizer USING btree (sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);
+
+CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);
+
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);
+
+CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
+
+CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
+
+CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);
+
+CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);
+
+CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
+
+CREATE INDEX idx_task_status ON public.task USING btree (status);
+
+CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
+
+CREATE TRIGGER update_activity_updated_ts BEFORE UPDATE ON public.activity FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_anomaly_updated_ts BEFORE UPDATE ON public.anomaly FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_setting_updated_ts BEFORE UPDATE ON public.backup_setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_updated_ts BEFORE UPDATE ON public.backup FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_bookmark_updated_ts BEFORE UPDATE ON public.bookmark FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_data_source_updated_ts BEFORE UPDATE ON public.data_source FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_group_updated_ts BEFORE UPDATE ON public.db_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_label_updated_ts BEFORE UPDATE ON public.db_label FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_schema_updated_ts BEFORE UPDATE ON public.db_schema FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_updated_ts BEFORE UPDATE ON public.db FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_deployment_config_updated_ts BEFORE UPDATE ON public.deployment_config FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_environment_updated_ts BEFORE UPDATE ON public.environment FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_external_approval_updated_ts BEFORE UPDATE ON public.external_approval FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_idp_updated_ts BEFORE UPDATE ON public.idp FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_change_history_updated_ts BEFORE UPDATE ON public.instance_change_history FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_updated_ts BEFORE UPDATE ON public.instance FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_user_updated_ts BEFORE UPDATE ON public.instance_user FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_issue_updated_ts BEFORE UPDATE ON public.issue FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_label_key_updated_ts BEFORE UPDATE ON public.label_key FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_label_value_updated_ts BEFORE UPDATE ON public.label_value FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_member_updated_ts BEFORE UPDATE ON public.member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_pipeline_updated_ts BEFORE UPDATE ON public.pipeline FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_check_run_updated_ts BEFORE UPDATE ON public.plan_check_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_updated_ts BEFORE UPDATE ON public.plan FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_policy_updated_ts BEFORE UPDATE ON public.policy FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_member_updated_ts BEFORE UPDATE ON public.project_member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_updated_ts BEFORE UPDATE ON public.project FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_webhook_updated_ts BEFORE UPDATE ON public.project_webhook FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_repository_updated_ts BEFORE UPDATE ON public.repository FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_risk_updated_ts BEFORE UPDATE ON public.risk FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_role_updated_ts BEFORE UPDATE ON public.role FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_schema_group_updated_ts BEFORE UPDATE ON public.schema_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_setting_updated_ts BEFORE UPDATE ON public.setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_sheet_updated_ts BEFORE UPDATE ON public.sheet FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_slow_query_updated_ts BEFORE UPDATE ON public.slow_query FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_stage_updated_ts BEFORE UPDATE ON public.stage FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_dag_updated_ts BEFORE UPDATE ON public.task_dag FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_run_updated_ts BEFORE UPDATE ON public.task_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_updated_ts BEFORE UPDATE ON public.task FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_vcs_updated_ts BEFORE UPDATE ON public.vcs FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activity(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_key_fkey FOREIGN KEY (key) REFERENCES public.label_key(key);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_vcs_id_fkey FOREIGN KEY (vcs_id) REFERENCES public.vcs(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_db_group_id_fkey FOREIGN KEY (db_group_id) REFERENCES public.db_group(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheet(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+', 62228000, '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance_change_history ENABLE TRIGGER ALL;
@@ -6992,6 +10913,9 @@ ALTER TABLE public.policy DISABLE TRIGGER ALL;
 
 INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (101, 'NORMAL', 1, 1694683927, 1, 1694683927, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_NEVER"}', 'ENVIRONMENT', 101, true) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (102, 'NORMAL', 1, 1694683927, 1, 1694683927, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_NEVER"}', 'ENVIRONMENT', 102, true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (103, 'NORMAL', 101, 1695110903, 101, 1695110903, 'bb.policy.environment-tier', '{"environmentTier": "UNPROTECTED"}', 'ENVIRONMENT', 103, true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (104, 'NORMAL', 101, 1695110903, 101, 1695110903, 'bb.policy.backup-plan', '{"schedule": "UNSET", "retentionPeriodTs": 0}', 'ENVIRONMENT', 103, false) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (105, 'NORMAL', 101, 1695110903, 101, 1695110903, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_ALWAYS", "assigneeGroupList": [{"value": "PROJECT_OWNER", "issueType": "bb.issue.database.schema.update"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.data.update"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.schema.update.ghost"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.general"}]}', 'ENVIRONMENT', 103, false) ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.policy ENABLE TRIGGER ALL;
@@ -7073,19 +10997,19 @@ ALTER TABLE public.schema_group ENABLE TRIGGER ALL;
 
 ALTER TABLE public.setting DISABLE TRIGGER ALL;
 
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (104, 'NORMAL', 1, 1694683928, 1, 1695111120, 'bb.enterprise.license', 'eyJhbGciOiJSUzI1NiIsImtpZCI6InYxIiwidHlwIjoiSldUIn0.eyJpbnN0YW5jZUNvdW50Ijo5OTksInRyaWFsaW5nIjpmYWxzZSwicGxhbiI6IkVOVEVSUFJJU0UiLCJvcmdOYW1lIjoiYmIiLCJhdWQiOiJiYi5saWNlbnNlIiwiZXhwIjo3OTc0OTc5MjAwLCJpYXQiOjE2NjM2Njc1NjEsImlzcyI6ImJ5dGViYXNlIiwic3ViIjoiMDAwMDEwMDAuIn0.JjYCMeAAMB9FlVeDFLdN3jvFcqtPsbEzaIm1YEDhUrfekthCbIOeX_DB2Bg2OUji3HSX5uDvG9AkK4Gtrc4gLMPI3D5mk3L-6wUKZ0L4REztS47LT4oxVhpqPQayYa9lKJB1YoHaqeMV4Z5FXeOXwuACoELznlwpT6pXo9xXm_I6QwQiO7-zD83XOTO4PRjByc-q3GKQu_64zJMIKiCW0I8a3GvrdSnO7jUuYU1KPmCuk0ZRq3I91m29LTo478BMST59HqCLj1GGuCKtR3SL_376XsZfUUM0iSAur5scg99zNGWRj-sUo05wbAadYx6V6TKaWrBUi_8_0RnJyP5gbA', 'Enterprise license') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (102, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.auth.secret', '0DYdOCjqcJSJ9KAfUlCOKsbS743PjSDi', 'Random string used to sign the JWT auth token.') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (101, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.branding.logo', '', 'The branding slogo image in base64 string format.') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (103, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.id', 'be28420e-5db3-4dc6-80ba-b822be20d36a', 'The workspace identifier') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (105, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.app.im', '{}', '') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (106, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.watermark', '0', 'Display watermark') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (104, 'NORMAL', 1, 1694683928, 1, 1695025798, 'bb.enterprise.license', 'eyJhbGciOiJSUzI1NiIsImtpZCI6InYxIiwidHlwIjoiSldUIn0.eyJpbnN0YW5jZUNvdW50Ijo5OTksInRyaWFsaW5nIjpmYWxzZSwicGxhbiI6IkVOVEVSUFJJU0UiLCJvcmdOYW1lIjoiYmIiLCJhdWQiOiJiYi5saWNlbnNlIiwiZXhwIjo3OTc0OTc5MjAwLCJpYXQiOjE2NjM2Njc1NjEsImlzcyI6ImJ5dGViYXNlIiwic3ViIjoiMDAwMDEwMDAuIn0.JjYCMeAAMB9FlVeDFLdN3jvFcqtPsbEzaIm1YEDhUrfekthCbIOeX_DB2Bg2OUji3HSX5uDvG9AkK4Gtrc4gLMPI3D5mk3L-6wUKZ0L4REztS47LT4oxVhpqPQayYa9lKJB1YoHaqeMV4Z5FXeOXwuACoELznlwpT6pXo9xXm_I6QwQiO7-zD83XOTO4PRjByc-q3GKQu_64zJMIKiCW0I8a3GvrdSnO7jUuYU1KPmCuk0ZRq3I91m29LTo478BMST59HqCLj1GGuCKtR3SL_376XsZfUUM0iSAur5scg99zNGWRj-sUo05wbAadYx6V6TKaWrBUi_8_0RnJyP5gbA', 'Enterprise license') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (107, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.plugin.openai.key', '', 'API key to request OpenAI (ChatGPT)') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (108, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.plugin.openai.endpoint', '', 'API Endpoint for OpenAI') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (109, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.approval.external', '{}', 'The external approval setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (110, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.schema-template', '{}', 'The schema template setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (111, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.data-classification', '{}', 'The data classification setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (112, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.approval', '{}', 'The workspace approval setting') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695025798, 'bb.workspace.profile', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695111826, 'bb.workspace.profile', '{}', '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.setting ENABLE TRIGGER ALL;
@@ -7241,7 +11165,7 @@ SELECT pg_catalog.setval('public.deployment_config_id_seq', 101, false);
 -- Name: environment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.environment_id_seq', 103, false);
+SELECT pg_catalog.setval('public.environment_id_seq', 103, true);
 
 
 --
@@ -7339,7 +11263,7 @@ SELECT pg_catalog.setval('public.plan_id_seq', 101, false);
 -- Name: policy_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.policy_id_seq', 103, false);
+SELECT pg_catalog.setval('public.policy_id_seq', 105, true);
 
 
 --
@@ -7402,7 +11326,7 @@ SELECT pg_catalog.setval('public.schema_group_id_seq', 101, false);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 116, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 119, true);
 
 
 --
