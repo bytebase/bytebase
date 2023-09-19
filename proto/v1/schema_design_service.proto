@@ -52,6 +52,13 @@ service SchemaDesignService {
     };
   }
 
+  rpc DeparseSchemaMetadata(DeparseSchemaMetadataRequest) returns (DeparseSchemaMetadataResponse) {
+    option (google.api.http) = {
+      post: "/v1/schemaDesign:deparseSchemaMetadata"
+      body: "*"
+    };
+  }
+
   rpc DeleteSchemaDesign(DeleteSchemaDesignRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/schemaDesigns/*}"};
     option (google.api.method_signature) = "name";
@@ -214,6 +221,19 @@ message ParseSchemaStringRequest {
 message ParseSchemaStringResponse {
   // The metadata of the parsed schema.
   DatabaseMetadata schema_metadata = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message DeparseSchemaMetadataRequest {
+  // The metadata of the schema to deparse.
+  DatabaseMetadata schema_metadata = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The database engine of the schema string.
+  Engine engine = 2;
+}
+
+message DeparseSchemaMetadataResponse {
+  // The schema string.
+  string schema_string = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message DeleteSchemaDesignRequest {

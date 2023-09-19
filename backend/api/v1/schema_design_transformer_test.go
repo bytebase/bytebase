@@ -3,6 +3,7 @@ package v1
 import (
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,6 +11,48 @@ import (
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
+
+type deparseTest struct {
+	Engine   v1pb.Engine
+	Metadata *v1pb.DatabaseMetadata
+	Schema   string
+}
+
+func TestDeparseSchemaString(t *testing.T) {
+	const (
+		record = false
+	)
+	var (
+		filepath = "testdata/deparse.yaml"
+	)
+
+	a := require.New(t)
+	yamlFile, err := os.Open(filepath)
+	a.NoError(err)
+
+	tests := []deparseTest{}
+	byteValue, err := io.ReadAll(yamlFile)
+	a.NoError(yamlFile.Close())
+	a.NoError(err)
+	a.NoError(yaml.Unmarshal(byteValue, &tests))
+
+	for i, t := range tests {
+		result, err := transformDatabaseMetadataToSchemaString(t.Engine, t.Metadata)
+		a.NoError(err)
+		if record {
+			tests[i].Schema = strings.TrimSpace(result)
+		} else {
+			a.Equal(strings.TrimSpace(t.Schema), strings.TrimSpace(result))
+		}
+	}
+
+	if record {
+		byteValue, err := yaml.Marshal(tests)
+		a.NoError(err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		a.NoError(err)
+	}
+}
 
 type transformTest struct {
 	Engine   v1pb.Engine

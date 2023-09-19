@@ -503,6 +503,8 @@
 - [v1/schema_design_service.proto](#v1_schema_design_service-proto)
     - [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest)
     - [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest)
+    - [DeparseSchemaMetadataRequest](#bytebase-v1-DeparseSchemaMetadataRequest)
+    - [DeparseSchemaMetadataResponse](#bytebase-v1-DeparseSchemaMetadataResponse)
     - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
     - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest)
@@ -8144,6 +8146,37 @@ Type is the database change type.
 
 
 
+<a name="bytebase-v1-DeparseSchemaMetadataRequest"></a>
+
+### DeparseSchemaMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the schema to deparse. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema string. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeparseSchemaMetadataResponse"></a>
+
+### DeparseSchemaMetadataResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_string | [string](#string) |  | The schema string. |
+
+
+
+
+
+
 <a name="bytebase-v1-DiffMetadataRequest"></a>
 
 ### DiffMetadataRequest
@@ -8370,6 +8403,7 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | UpdateSchemaDesign | [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | MergeSchemaDesign | [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | ParseSchemaString | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
+| DeparseSchemaMetadata | [DeparseSchemaMetadataRequest](#bytebase-v1-DeparseSchemaMetadataRequest) | [DeparseSchemaMetadataResponse](#bytebase-v1-DeparseSchemaMetadataResponse) |  |
 | DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
