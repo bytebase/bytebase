@@ -347,11 +347,20 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
 			}
-			// TODO(p0ny): fix it with the right type.
-			if spec.value == "DDL" || spec.value == "DML" {
-				issueFind.TypeList = append(issueFind.TypeList, api.IssueDatabaseGeneral)
-			} else {
-				return nil, status.Errorf(codes.InvalidArgument, `unknown value "%s"`, spec.value)
+			switch spec.value {
+			case "DDL":
+				issueFind.TaskTypes = &[]api.TaskType{
+					api.TaskDatabaseSchemaUpdate,
+					api.TaskDatabaseSchemaUpdateSDL,
+					api.TaskDatabaseSchemaUpdateGhostSync,
+					api.TaskDatabaseSchemaUpdateGhostCutover,
+				}
+			case "DML":
+				issueFind.TaskTypes = &[]api.TaskType{
+					api.TaskDatabaseDataUpdate,
+				}
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, `unknown value %q`, spec.value)
 			}
 		case "instance":
 			if spec.operator != comparatorTypeEqual {
