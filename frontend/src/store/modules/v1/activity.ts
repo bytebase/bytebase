@@ -25,8 +25,8 @@ import {
   extractRolloutUID,
 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
-import { useIssueStore } from "../issue";
 import { userNamePrefix, getLogId, logNamePrefix } from "./common";
+import { experimentalFetchIssueByUID } from "./experimental-issue";
 
 dayjs.extend(utc);
 
@@ -146,11 +146,8 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
   };
 
   const fetchActivityListByIssueId = async (issueId: IdType) => {
-    const issue = useIssueStore().getIssueById(issueId);
-    if (issue.id === UNKNOWN_ID) {
-      return;
-    }
-    return fetchActivityListForIssue(issue);
+    const issue = await experimentalFetchIssueByUID(String(issueId));
+    return fetchActivityListForIssueV1(issue);
   };
 
   const fetchActivityListForQueryHistory = async ({
