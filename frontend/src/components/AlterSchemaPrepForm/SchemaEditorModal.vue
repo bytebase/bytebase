@@ -12,7 +12,7 @@
         class="-mb-px px-3 leading-9 rounded-t-md flex items-center text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
         :class="
           state.selectedTab === 'schema-editor' &&
-          'bg-white border-gray-300 text-gray-800'
+          'bg-white !border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('schema-editor')"
       >
@@ -25,7 +25,7 @@
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
         :class="
           state.selectedTab === 'raw-sql' &&
-          'bg-white border-gray-300 text-gray-800'
+          'bg-white !border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('raw-sql')"
       >
