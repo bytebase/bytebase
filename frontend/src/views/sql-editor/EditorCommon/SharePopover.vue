@@ -4,15 +4,25 @@
       <div class="pr-4">
         <h2 class="text-lg font-semibold">{{ $t("common.share") }}</h2>
       </div>
-      <NPopover trigger="click" :show="isShowAccessPopover">
+      <NPopover
+        trigger="click"
+        :show="isShowAccessPopover"
+        :disabled="!allowChangeAccess"
+      >
         <template #trigger>
           <div
-            class="flex items-center cursor-pointer"
+            class="flex items-center"
+            :class="allowChangeAccess ? 'cursor-pointer' : 'cursor-not-allowed'"
             @click="isShowAccessPopover = !isShowAccessPopover"
           >
             <span class="pr-2">{{ $t("sql-editor.link-access") }}:</span>
             <div
-              class="border flex flex-row justify-start items-center px-2 py-1 rounded hover:border-accent"
+              class="border flex flex-row justify-start items-center px-2 py-1 rounded"
+              :class="
+                allowChangeAccess
+                  ? 'hover:border-accent'
+                  : 'border-gray-200 text-gray-400'
+              "
             >
               <strong>{{ currentAccess.label }}</strong>
               <heroicons-solid:chevron-down />
@@ -25,7 +35,7 @@
             :key="option.label"
             class="p-2 rounded-sm flex justify-between"
             :class="[
-              isCreator && 'cursor-pointer hover:bg-gray-200',
+              allowChangeAccess && 'cursor-pointer hover:bg-gray-200',
               option.value === currentAccess.value && 'bg-gray-200',
             ]"
             @click="handleChangeAccess(option)"
@@ -124,7 +134,7 @@ const accessOptions = computed<AccessOption[]>(() => {
 const sheet = computed(() => {
   return sheetAndTabStore.currentSheet;
 });
-const isCreator = computed(() => {
+const allowChangeAccess = computed(() => {
   return sheetAndTabStore.isCreator;
 });
 
@@ -142,7 +152,7 @@ const updateSheet = () => {
 
 const handleChangeAccess = (option: AccessOption) => {
   // only creator can change access
-  if (isCreator.value) {
+  if (allowChangeAccess.value) {
     currentAccess.value = option;
     updateSheet();
   }
