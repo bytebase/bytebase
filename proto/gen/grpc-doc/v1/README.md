@@ -503,6 +503,8 @@
 - [v1/schema_design_service.proto](#v1_schema_design_service-proto)
     - [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest)
     - [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest)
+    - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
+    - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest)
     - [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest)
     - [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse)
@@ -8143,6 +8145,38 @@ Type is the database change type.
 
 
 
+<a name="bytebase-v1-DiffMetadataRequest"></a>
+
+### DiffMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
+| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffMetadataResponse"></a>
+
+### DiffMetadataResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  | The diff of the metadata. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetSchemaDesignRequest"></a>
 
 ### GetSchemaDesignRequest
@@ -8338,6 +8372,7 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | MergeSchemaDesign | [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | ParseSchemaString | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
 | DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| DiffMetadata | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
 
  
 

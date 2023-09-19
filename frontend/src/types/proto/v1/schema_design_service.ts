@@ -217,6 +217,24 @@ export interface DeleteSchemaDesignRequest {
   name: string;
 }
 
+export interface DiffMetadataRequest {
+  /** The metadata of the source schema. */
+  sourceMetadata?:
+    | DatabaseMetadata
+    | undefined;
+  /** The metadata of the target schema. */
+  targetMetadata?:
+    | DatabaseMetadata
+    | undefined;
+  /** The database engine of the schema. */
+  engine: Engine;
+}
+
+export interface DiffMetadataResponse {
+  /** The diff of the metadata. */
+  diff: string;
+}
+
 function createBaseSchemaDesign(): SchemaDesign {
   return {
     name: "",
@@ -1209,6 +1227,152 @@ export const DeleteSchemaDesignRequest = {
   },
 };
 
+function createBaseDiffMetadataRequest(): DiffMetadataRequest {
+  return { sourceMetadata: undefined, targetMetadata: undefined, engine: 0 };
+}
+
+export const DiffMetadataRequest = {
+  encode(message: DiffMetadataRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.sourceMetadata !== undefined) {
+      DatabaseMetadata.encode(message.sourceMetadata, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.targetMetadata !== undefined) {
+      DatabaseMetadata.encode(message.targetMetadata, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.engine !== 0) {
+      writer.uint32(24).int32(message.engine);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiffMetadataRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiffMetadataRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sourceMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.targetMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiffMetadataRequest {
+    return {
+      sourceMetadata: isSet(object.sourceMetadata) ? DatabaseMetadata.fromJSON(object.sourceMetadata) : undefined,
+      targetMetadata: isSet(object.targetMetadata) ? DatabaseMetadata.fromJSON(object.targetMetadata) : undefined,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+    };
+  },
+
+  toJSON(message: DiffMetadataRequest): unknown {
+    const obj: any = {};
+    message.sourceMetadata !== undefined &&
+      (obj.sourceMetadata = message.sourceMetadata ? DatabaseMetadata.toJSON(message.sourceMetadata) : undefined);
+    message.targetMetadata !== undefined &&
+      (obj.targetMetadata = message.targetMetadata ? DatabaseMetadata.toJSON(message.targetMetadata) : undefined);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    return obj;
+  },
+
+  create(base?: DeepPartial<DiffMetadataRequest>): DiffMetadataRequest {
+    return DiffMetadataRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DiffMetadataRequest>): DiffMetadataRequest {
+    const message = createBaseDiffMetadataRequest();
+    message.sourceMetadata = (object.sourceMetadata !== undefined && object.sourceMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.sourceMetadata)
+      : undefined;
+    message.targetMetadata = (object.targetMetadata !== undefined && object.targetMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.targetMetadata)
+      : undefined;
+    message.engine = object.engine ?? 0;
+    return message;
+  },
+};
+
+function createBaseDiffMetadataResponse(): DiffMetadataResponse {
+  return { diff: "" };
+}
+
+export const DiffMetadataResponse = {
+  encode(message: DiffMetadataResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.diff !== "") {
+      writer.uint32(10).string(message.diff);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiffMetadataResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiffMetadataResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.diff = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiffMetadataResponse {
+    return { diff: isSet(object.diff) ? String(object.diff) : "" };
+  },
+
+  toJSON(message: DiffMetadataResponse): unknown {
+    const obj: any = {};
+    message.diff !== undefined && (obj.diff = message.diff);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DiffMetadataResponse>): DiffMetadataResponse {
+    return DiffMetadataResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DiffMetadataResponse>): DiffMetadataResponse {
+    const message = createBaseDiffMetadataResponse();
+    message.diff = object.diff ?? "";
+    return message;
+  },
+};
+
 export type SchemaDesignServiceDefinition = typeof SchemaDesignServiceDefinition;
 export const SchemaDesignServiceDefinition = {
   name: "SchemaDesignService",
@@ -1702,6 +1866,56 @@ export const SchemaDesignServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    diffMetadata: {
+      name: "DiffMetadata",
+      requestType: ParseSchemaStringRequest,
+      requestStream: false,
+      responseType: ParseSchemaStringResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              34,
+              58,
+              1,
+              42,
+              34,
+              29,
+              47,
+              118,
+              49,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              68,
+              101,
+              115,
+              105,
+              103,
+              110,
+              58,
+              100,
+              105,
+              102,
+              102,
+              77,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
             ]),
           ],
         },
