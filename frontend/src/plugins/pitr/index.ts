@@ -1,22 +1,12 @@
 import { head } from "lodash-es";
 import { computed, Ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  useBackupListByDatabaseName,
-  useChangeHistoryStore,
-  useCurrentUserV1,
-  useIssueStore,
-} from "@/store";
-import {
-  CreateDatabaseContext,
-  ComposedDatabase,
-  IssueCreate,
-  PITRContext,
-} from "@/types";
+import { useBackupListByDatabaseName, useChangeHistoryStore } from "@/store";
+import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { Backup_BackupState } from "@/types/proto/v1/database_service";
 import { Instance } from "@/types/proto/v1/instance_service";
-import { extractUserUID, semverCompare } from "@/utils";
+import { semverCompare } from "@/utils";
 
 export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
@@ -30,7 +20,6 @@ export const isPITRAvailableOnInstanceV1 = (instance: Instance): boolean => {
 
 export const usePITRLogic = (database: Ref<ComposedDatabase>) => {
   const { t } = useI18n();
-  const currentUserV1 = useCurrentUserV1();
   const changeHistoryStore = useChangeHistoryStore();
 
   const backupList = useBackupListByDatabaseName(
@@ -83,41 +72,11 @@ export const usePITRLogic = (database: Ref<ComposedDatabase>) => {
     return head(changeHistoryList.value);
   });
 
-  const createPITRIssue = async (
-    pointTimeTs: number,
-    createDatabaseContext: CreateDatabaseContext | undefined = undefined,
-    params: Partial<IssueCreate> = {}
-  ) => {
-    const issueStore = useIssueStore();
-    const createContext: PITRContext = {
-      databaseId: Number(database.value.uid),
-      pointInTimeTs: pointTimeTs,
-      createDatabaseContext,
-    };
-    const issueCreate: IssueCreate = {
-      name: `Restore database [${database.value.name}]`,
-      type: "bb.issue.database.restore.pitr",
-      description: "",
-      assigneeId: Number(extractUserUID(currentUserV1.value.name)),
-      projectId: Number(database.value.projectEntity.uid),
-      payload: {},
-      createContext,
-      ...params,
-    };
-
-    await issueStore.validateIssue(issueCreate);
-
-    const issue = await issueStore.createIssue(issueCreate);
-
-    return issue;
-  };
-
   return {
     backupList,
     doneBackupList,
     pitrAvailable,
     changeHistoryList,
     lastChangeHistory,
-    createPITRIssue,
   };
 };

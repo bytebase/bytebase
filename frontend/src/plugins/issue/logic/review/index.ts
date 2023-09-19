@@ -75,7 +75,7 @@ export const extractIssueReviewContext = (
   });
 
   return {
-    issue: issue,
+    issue,
     ready,
     flow,
     status,

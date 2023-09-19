@@ -173,7 +173,6 @@ import {
   specForTask,
   createEmptyLocalSheet,
   notifyNotEditableLegacyIssue,
-  patchLegacyIssueTasksStatement,
   isDeploymentConfigChangeTaskV1,
 } from "@/components/IssueV1/logic";
 import MonacoEditor from "@/components/MonacoEditor";
@@ -590,18 +589,7 @@ const updateStatement = async (statement: string) => {
 
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
-    // notifyNotEditableLegacyIssue();
-    try {
-      await patchLegacyIssueTasksStatement(issue.value, tasks, statement);
-      events.emit("status-changed", { eager: true });
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
-    } finally {
-      // nothing
-    }
+    notifyNotEditableLegacyIssue();
     return;
   }
 
