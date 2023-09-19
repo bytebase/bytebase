@@ -216,8 +216,11 @@ message Advice {
   // The advice line number in the SQL statement.
   int32 line = 5;
 
+  // The advice column number in the SQL statement.
+  int32 column = 6;
+
   // The advice detail.
-  string detail = 6;
+  string detail = 7;
 }
 
 message PrettyRequest {
