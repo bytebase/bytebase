@@ -159,6 +159,8 @@ export interface Advice {
   content: string;
   /** The advice line number in the SQL statement. */
   line: number;
+  /** The advice column number in the SQL statement. */
+  column: number;
   /** The advice detail. */
   detail: string;
 }
@@ -1403,7 +1405,7 @@ export const RowValue = {
 };
 
 function createBaseAdvice(): Advice {
-  return { status: 0, code: 0, title: "", content: "", line: 0, detail: "" };
+  return { status: 0, code: 0, title: "", content: "", line: 0, column: 0, detail: "" };
 }
 
 export const Advice = {
@@ -1423,8 +1425,11 @@ export const Advice = {
     if (message.line !== 0) {
       writer.uint32(40).int32(message.line);
     }
+    if (message.column !== 0) {
+      writer.uint32(48).int32(message.column);
+    }
     if (message.detail !== "") {
-      writer.uint32(50).string(message.detail);
+      writer.uint32(58).string(message.detail);
     }
     return writer;
   },
@@ -1472,7 +1477,14 @@ export const Advice = {
           message.line = reader.int32();
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.column = reader.int32();
+          continue;
+        case 7:
+          if (tag !== 58) {
             break;
           }
 
@@ -1494,6 +1506,7 @@ export const Advice = {
       title: isSet(object.title) ? String(object.title) : "",
       content: isSet(object.content) ? String(object.content) : "",
       line: isSet(object.line) ? Number(object.line) : 0,
+      column: isSet(object.column) ? Number(object.column) : 0,
       detail: isSet(object.detail) ? String(object.detail) : "",
     };
   },
@@ -1505,6 +1518,7 @@ export const Advice = {
     message.title !== undefined && (obj.title = message.title);
     message.content !== undefined && (obj.content = message.content);
     message.line !== undefined && (obj.line = Math.round(message.line));
+    message.column !== undefined && (obj.column = Math.round(message.column));
     message.detail !== undefined && (obj.detail = message.detail);
     return obj;
   },
@@ -1520,6 +1534,7 @@ export const Advice = {
     message.title = object.title ?? "";
     message.content = object.content ?? "";
     message.line = object.line ?? 0;
+    message.column = object.column ?? 0;
     message.detail = object.detail ?? "";
     return message;
   },
