@@ -17,8 +17,7 @@ import (
 )
 
 var (
-	_             differ.SchemaDiffer = (*SchemaDiffer)(nil)
-	systemSchemas map[string]bool
+	_ differ.SchemaDiffer = (*SchemaDiffer)(nil)
 )
 
 func init() {
@@ -234,7 +233,7 @@ func newTypeInfo(id int, createType *ast.CreateTypeStmt) *typeInfo {
 }
 
 func (m schemaMap) addTable(id int, table *ast.CreateTableStmt) error {
-	if _, exists := systemSchemas[table.Name.Schema]; exists {
+	if pg.IsSystemSchema(table.Name.Schema) {
 		return nil
 	}
 	schema, exists := m[table.Name.Schema]
@@ -254,7 +253,7 @@ func (m schemaMap) getTable(schemaName string, tableName string) *tableInfo {
 }
 
 func (m schemaMap) addConstraint(id int, addConstraint *ast.AddConstraintStmt) error {
-	if _, exists := systemSchemas[addConstraint.Table.Schema]; exists {
+	if pg.IsSystemSchema(addConstraint.Table.Schema) {
 		return nil
 	}
 	schema, exists := m[addConstraint.Table.Schema]
@@ -286,7 +285,7 @@ func (m schemaMap) getConstraint(schemaName string, tableName string, constraint
 }
 
 func (m schemaMap) addExtension(id int, extension *ast.CreateExtensionStmt) error {
-	if _, exists := systemSchemas[extension.Schema]; exists {
+	if pg.IsSystemSchema(extension.Schema) {
 		return nil
 	}
 	schema, exists := m[extension.Schema]
@@ -306,7 +305,7 @@ func (m schemaMap) getExtension(schemaName string, extensionName string) *extens
 }
 
 func (m schemaMap) addFunction(id int, function *ast.CreateFunctionStmt) error {
-	if _, exists := systemSchemas[function.Function.Schema]; exists {
+	if pg.IsSystemSchema(function.Function.Schema) {
 		return nil
 	}
 	schema, exists := m[function.Function.Schema]
@@ -330,7 +329,7 @@ func (m schemaMap) getFunction(schemaName string, signature string) *functionInf
 }
 
 func (m schemaMap) addIndex(id int, index *ast.CreateIndexStmt) error {
-	if _, exists := systemSchemas[index.Index.Table.Schema]; exists {
+	if pg.IsSystemSchema(index.Index.Table.Schema) {
 		return nil
 	}
 	schema, exists := m[index.Index.Table.Schema]
@@ -350,7 +349,7 @@ func (m schemaMap) getIndex(schemaName string, indexName string) *indexInfo {
 }
 
 func (m schemaMap) addSequence(id int, sequence *ast.CreateSequenceStmt) error {
-	if _, exists := systemSchemas[sequence.SequenceDef.SequenceName.Schema]; exists {
+	if pg.IsSystemSchema(sequence.SequenceDef.SequenceName.Schema) {
 		return nil
 	}
 	schema, exists := m[sequence.SequenceDef.SequenceName.Schema]
@@ -370,7 +369,7 @@ func (m schemaMap) getSequence(schemaName string, sequenceName string) *sequence
 }
 
 func (m schemaMap) addTrigger(id int, trigger *ast.CreateTriggerStmt) error {
-	if _, exists := systemSchemas[trigger.Trigger.Table.Schema]; exists {
+	if pg.IsSystemSchema(trigger.Trigger.Table.Schema) {
 		return nil
 	}
 	schema, exists := m[trigger.Trigger.Table.Schema]
@@ -398,7 +397,7 @@ func (m schemaMap) getTrigger(schemaName string, tableName string, triggerName s
 }
 
 func (m schemaMap) addType(id int, createType *ast.CreateTypeStmt) error {
-	if _, exists := systemSchemas[createType.Type.TypeName().Schema]; exists {
+	if pg.IsSystemSchema(createType.Type.TypeName().Schema) {
 		return nil
 	}
 	schema, exists := m[createType.Type.TypeName().Schema]
@@ -439,7 +438,7 @@ func (m schemaMap) addSequenceOwnedBy(id int, alterStmt *ast.AlterSequenceStmt) 
 		return errors.Errorf("expect OwnedBy only, but found %v", alterStmt)
 	}
 
-	if _, exists := systemSchemas[alterStmt.Name.Schema]; exists {
+	if pg.IsSystemSchema(alterStmt.Name.Schema) {
 		return nil
 	}
 	schema, exists := m[alterStmt.Name.Schema]
@@ -548,10 +547,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to and preprocess new statements %q", newStmt)
 	}
-	systemSchemas = make(map[string]bool)
-	for _, schema := range pg.SystemSchemaList {
-		systemSchemas[schema] = true
-	}
 	oldSchemaMap := make(schemaMap)
 	oldSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
 	oldSchemaMap["public"].existsInNew = true
@@ -644,7 +639,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
 				continue
 			}
-			if _, exists := systemSchemas[stmt.Name.Schema]; exists {
+			if pg.IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
 			oldTable := oldSchemaMap.getTable(stmt.Name.Schema, stmt.Name.Name)
@@ -659,7 +654,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateSchemaStmt:
-			if _, exists := systemSchemas[stmt.Name]; exists {
+			if pg.IsSystemSchema(stmt.Name) {
 				continue
 			}
 			schema, hasSchema := oldSchemaMap[stmt.Name]
@@ -673,7 +668,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Table.Schema, stmt.Table.Name)]; exists {
 				continue
 			}
-			if _, exists := systemSchemas[stmt.Table.Schema]; exists {
+			if pg.IsSystemSchema(stmt.Table.Schema) {
 				continue
 			}
 			for _, alterItem := range stmt.AlterItemList {
@@ -713,7 +708,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Index.Table.Schema, stmt.Index.Table.Name)]; exists {
 				continue
 			}
-			if _, exists := systemSchemas[stmt.Index.Table.Schema]; exists {
+			if pg.IsSystemSchema(stmt.Index.Table.Schema) {
 				continue
 			}
 			oldIndex := oldSchemaMap.getIndex(stmt.Index.Table.Schema, stmt.Index.Name)
@@ -728,7 +723,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateSequenceStmt:
-			if _, exists := systemSchemas[stmt.SequenceDef.SequenceName.Schema]; exists {
+			if pg.IsSystemSchema(stmt.SequenceDef.SequenceName.Schema) {
 				continue
 			}
 			oldSequence := oldSchemaMap.getSequence(stmt.SequenceDef.SequenceName.Schema, stmt.SequenceDef.SequenceName.Name)
@@ -746,7 +741,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 			if !onlySetOwnedBy(stmt) {
 				return "", errors.Errorf("expect OwnedBy only, but found %v", stmt)
 			}
-			if _, exists := systemSchemas[stmt.Name.Schema]; exists {
+			if pg.IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
 			oldSequence := oldSchemaMap.getSequence(stmt.Name.Schema, stmt.Name.Name)
@@ -760,7 +755,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateExtensionStmt:
-			if _, exists := systemSchemas[stmt.Schema]; exists {
+			if pg.IsSystemSchema(stmt.Schema) {
 				continue
 			}
 			oldExtension := oldSchemaMap.getExtension(stmt.Schema, stmt.Name)
@@ -775,7 +770,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateFunctionStmt:
-			if _, exists := systemSchemas[stmt.Function.Schema]; exists {
+			if pg.IsSystemSchema(stmt.Function.Schema) {
 				continue
 			}
 			signature, err := functionSignature(stmt.Function)
@@ -794,7 +789,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateTriggerStmt:
-			if _, exists := systemSchemas[stmt.Trigger.Table.Schema]; exists {
+			if pg.IsSystemSchema(stmt.Trigger.Table.Schema) {
 				continue
 			}
 			oldTrigger := oldSchemaMap.getTrigger(stmt.Trigger.Table.Schema, stmt.Trigger.Table.Name, stmt.Trigger.Name)
@@ -809,7 +804,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateTypeStmt:
-			if _, exists := systemSchemas[stmt.Type.TypeName().Schema]; exists {
+			if pg.IsSystemSchema(stmt.Type.TypeName().Schema) {
 				continue
 			}
 			oldType := oldSchemaMap.getType(stmt.Type.TypeName().Schema, stmt.Type.TypeName().Name)

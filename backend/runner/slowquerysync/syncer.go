@@ -154,7 +154,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		if database.SyncState != api.OK {
 			continue
 		}
-		if _, exists := pg.ExcludedDatabaseList[database.DatabaseName]; exists {
+		if pg.IsSystemDatabase(database.DatabaseName) {
 			continue
 		}
 		if err := func() error {
