@@ -119,10 +119,8 @@
             <AssigneeGroupEditor
               class="ml-8"
               :policy="state.approvalPolicy"
-              :allow-edit="allowEdit"
-              @update="(assigneeGroupList) => {
-                state.approvalPolicy.deploymentApprovalPolicy!.deploymentApprovalStrategies = assigneeGroupList
-              }"
+              :disabled="!allowEdit"
+              @update="onApprovalGroupUpdate"
             />
           </div>
         </div>
@@ -328,6 +326,7 @@ import {
   PolicyType,
   BackupPlanSchedule,
   ApprovalStrategy,
+  DeploymentApprovalStrategy,
 } from "@/types/proto/v1/org_policy_service";
 import {
   extractEnvironmentResourceName,
@@ -448,6 +447,20 @@ const onSQLReviewPolicyClick = () => {
       },
     });
   }
+};
+
+const onApprovalGroupUpdate = (
+  assigneeGroupList: DeploymentApprovalStrategy[]
+) => {
+  if (!state.approvalPolicy.deploymentApprovalPolicy) {
+    return;
+  }
+  state.approvalPolicy.deploymentApprovalPolicy.deploymentApprovalStrategies =
+    assigneeGroupList;
+  state.approvalPolicy.deploymentApprovalPolicy.defaultStrategy =
+    assigneeGroupList.length === 0
+      ? ApprovalStrategy.AUTOMATIC
+      : ApprovalStrategy.MANUAL;
 };
 
 watch(
