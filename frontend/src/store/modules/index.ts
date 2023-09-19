@@ -5,7 +5,6 @@ export * from "./dataSource";
 export * from "./environment";
 export * from "./help";
 export * from "./issue";
-export * from "./issueSubscriber";
 export * from "./instance";
 export * from "./notification";
 export * from "./pipeline";
