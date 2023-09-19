@@ -1333,21 +1333,13 @@ func allPostgresSystemObjects(statement string) bool {
 		slog.Debug("Failed to extract resource list from statement", slog.String("statement", statement), log.BBError(err))
 		return false
 	}
-	systemSchemas := make(map[string]bool)
-	for _, schema := range pg.SystemSchemaList {
-		systemSchemas[schema] = true
-	}
-	systemTables := make(map[string]bool)
-	for _, table := range pg.SystemTableList {
-		systemTables[table] = true
-	}
 	for _, resource := range resources {
-		if systemSchemas[resource.Schema] {
+		if pg.IsSystemSchema(resource.Schema) {
 			continue
 		}
 		// If schema is not specified, user can access the pg_catalog schema if the table is pg_catalog's system table.
 		// So we need to check this case.
-		if resource.Schema == "" && systemTables[resource.Table] {
+		if resource.Schema == "" && pg.IsSystemTable(resource.Table) {
 			continue
 		}
 		return false
