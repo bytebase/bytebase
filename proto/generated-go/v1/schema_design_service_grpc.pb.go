@@ -41,7 +41,7 @@ type SchemaDesignServiceClient interface {
 	MergeSchemaDesign(ctx context.Context, in *MergeSchemaDesignRequest, opts ...grpc.CallOption) (*SchemaDesign, error)
 	ParseSchemaString(ctx context.Context, in *ParseSchemaStringRequest, opts ...grpc.CallOption) (*ParseSchemaStringResponse, error)
 	DeleteSchemaDesign(ctx context.Context, in *DeleteSchemaDesignRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	DiffMetadata(ctx context.Context, in *ParseSchemaStringRequest, opts ...grpc.CallOption) (*ParseSchemaStringResponse, error)
+	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
 }
 
 type schemaDesignServiceClient struct {
@@ -115,8 +115,8 @@ func (c *schemaDesignServiceClient) DeleteSchemaDesign(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *schemaDesignServiceClient) DiffMetadata(ctx context.Context, in *ParseSchemaStringRequest, opts ...grpc.CallOption) (*ParseSchemaStringResponse, error) {
-	out := new(ParseSchemaStringResponse)
+func (c *schemaDesignServiceClient) DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error) {
+	out := new(DiffMetadataResponse)
 	err := c.cc.Invoke(ctx, SchemaDesignService_DiffMetadata_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ type SchemaDesignServiceServer interface {
 	MergeSchemaDesign(context.Context, *MergeSchemaDesignRequest) (*SchemaDesign, error)
 	ParseSchemaString(context.Context, *ParseSchemaStringRequest) (*ParseSchemaStringResponse, error)
 	DeleteSchemaDesign(context.Context, *DeleteSchemaDesignRequest) (*emptypb.Empty, error)
-	DiffMetadata(context.Context, *ParseSchemaStringRequest) (*ParseSchemaStringResponse, error)
+	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
 	mustEmbedUnimplementedSchemaDesignServiceServer()
 }
 
@@ -164,7 +164,7 @@ func (UnimplementedSchemaDesignServiceServer) ParseSchemaString(context.Context,
 func (UnimplementedSchemaDesignServiceServer) DeleteSchemaDesign(context.Context, *DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteSchemaDesign not implemented")
 }
-func (UnimplementedSchemaDesignServiceServer) DiffMetadata(context.Context, *ParseSchemaStringRequest) (*ParseSchemaStringResponse, error) {
+func (UnimplementedSchemaDesignServiceServer) DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffMetadata not implemented")
 }
 func (UnimplementedSchemaDesignServiceServer) mustEmbedUnimplementedSchemaDesignServiceServer() {}
@@ -307,7 +307,7 @@ func _SchemaDesignService_DeleteSchemaDesign_Handler(srv interface{}, ctx contex
 }
 
 func _SchemaDesignService_DiffMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ParseSchemaStringRequest)
+	in := new(DiffMetadataRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -319,7 +319,7 @@ func _SchemaDesignService_DiffMetadata_Handler(srv interface{}, ctx context.Cont
 		FullMethod: SchemaDesignService_DiffMetadata_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SchemaDesignServiceServer).DiffMetadata(ctx, req.(*ParseSchemaStringRequest))
+		return srv.(SchemaDesignServiceServer).DiffMetadata(ctx, req.(*DiffMetadataRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
