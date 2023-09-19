@@ -1868,6 +1868,7 @@ func convertAdviceList(list []advisor.Advice) []*v1pb.Advice {
 			Title:   advice.Title,
 			Content: advice.Content,
 			Line:    int32(advice.Line),
+			Column:  int32(advice.Column),
 			Detail:  advice.Details,
 		})
 	}
