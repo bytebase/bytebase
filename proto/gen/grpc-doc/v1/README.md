@@ -8372,7 +8372,7 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | MergeSchemaDesign | [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | ParseSchemaString | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
 | DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| DiffMetadata | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
+| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  
 
