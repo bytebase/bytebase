@@ -43,10 +43,6 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to create plan")
 	}
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "failed to create rollout")
-	}
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
@@ -54,12 +50,15 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 			Title:       "change database",
 			Description: "change database",
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to create issue")
+	}
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	if err != nil {
+		return nil, nil, nil, errors.Wrapf(err, "failed to create rollout")
 	}
 	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 	if err != nil {
