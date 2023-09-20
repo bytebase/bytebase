@@ -123,7 +123,7 @@ export interface PlanCheckRunResult_Result_SqlSummaryReport {
   /** statement_types are the types of statements that are found in the sql. */
   statementTypes: string[];
   affectedRows: number;
-  changedResources?: ChangedResources | undefined;
+  changedResources: ChangedResources | undefined;
 }
 
 export interface PlanCheckRunResult_Result_SqlReviewReport {

@@ -33,7 +33,7 @@ export interface ListRolesResponse {
 }
 
 export interface CreateRoleRequest {
-  role?:
+  role:
     | Role
     | undefined;
   /**
@@ -47,8 +47,8 @@ export interface CreateRoleRequest {
 }
 
 export interface UpdateRoleRequest {
-  role?: Role | undefined;
-  updateMask?: string[] | undefined;
+  role: Role | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface DeleteRoleRequest {

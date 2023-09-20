@@ -32,7 +32,7 @@ export interface FileDescriptorProto {
   enumType: EnumDescriptorProto[];
   service: ServiceDescriptorProto[];
   extension: FieldDescriptorProto[];
-  options?:
+  options:
     | FileOptions
     | undefined;
   /**
@@ -41,7 +41,7 @@ export interface FileDescriptorProto {
    * functionality of the descriptors -- the information is needed only by
    * development tools.
    */
-  sourceCodeInfo?:
+  sourceCodeInfo:
     | SourceCodeInfo
     | undefined;
   /**
@@ -64,7 +64,7 @@ export interface DescriptorProto {
   enumType: EnumDescriptorProto[];
   extensionRange: DescriptorProto_ExtensionRange[];
   oneofDecl: OneofDescriptorProto[];
-  options?: MessageOptions | undefined;
+  options: MessageOptions | undefined;
   reservedRange: DescriptorProto_ReservedRange[];
   /**
    * Reserved field names, which may not be used by fields in the same message.
@@ -78,7 +78,7 @@ export interface DescriptorProto_ExtensionRange {
   start: number;
   /** Exclusive. */
   end: number;
-  options?: ExtensionRangeOptions | undefined;
+  options: ExtensionRangeOptions | undefined;
 }
 
 /**
@@ -140,7 +140,7 @@ export interface FieldDescriptorProto {
    * it to camelCase.
    */
   jsonName: string;
-  options?:
+  options:
     | FieldOptions
     | undefined;
   /**
@@ -363,14 +363,14 @@ export function fieldDescriptorProto_LabelToJSON(object: FieldDescriptorProto_La
 /** Describes a oneof. */
 export interface OneofDescriptorProto {
   name: string;
-  options?: OneofOptions | undefined;
+  options: OneofOptions | undefined;
 }
 
 /** Describes an enum type. */
 export interface EnumDescriptorProto {
   name: string;
   value: EnumValueDescriptorProto[];
-  options?:
+  options:
     | EnumOptions
     | undefined;
   /**
@@ -405,14 +405,14 @@ export interface EnumDescriptorProto_EnumReservedRange {
 export interface EnumValueDescriptorProto {
   name: string;
   number: number;
-  options?: EnumValueOptions | undefined;
+  options: EnumValueOptions | undefined;
 }
 
 /** Describes a service. */
 export interface ServiceDescriptorProto {
   name: string;
   method: MethodDescriptorProto[];
-  options?: ServiceOptions | undefined;
+  options: ServiceOptions | undefined;
 }
 
 /** Describes a method of a service. */
@@ -424,7 +424,7 @@ export interface MethodDescriptorProto {
    */
   inputType: string;
   outputType: string;
-  options?:
+  options:
     | MethodOptions
     | undefined;
   /** Identifies if client streams multiple client messages */

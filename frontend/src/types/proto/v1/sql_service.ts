@@ -11,7 +11,7 @@ export const protobufPackage = "bytebase.v1";
 export interface DifferPreviewRequest {
   engine: Engine;
   oldSchema: string;
-  newMetadata?: DatabaseMetadata | undefined;
+  newMetadata: DatabaseMetadata | undefined;
 }
 
 export interface DifferPreviewResponse {
@@ -35,7 +35,7 @@ export interface AdminExecuteRequest {
   /** The maximum number of rows to return. */
   limit: number;
   /** The timeout for the request. */
-  timeout?: Duration | undefined;
+  timeout: Duration | undefined;
 }
 
 export interface AdminExecuteResponse {
@@ -90,7 +90,7 @@ export interface QueryRequest {
   /** The maximum number of rows to return. */
   limit: number;
   /** The timeout for the request. */
-  timeout?: Duration | undefined;
+  timeout: Duration | undefined;
 }
 
 export interface QueryResponse {
@@ -119,7 +119,7 @@ export interface QueryResult {
   /** The error message if the query failed. */
   error: string;
   /** The time it takes to execute the query. */
-  latency?:
+  latency:
     | Duration
     | undefined;
   /** The query statement for the result. */

@@ -326,7 +326,7 @@ export interface CreatePolicyRequest {
    */
   parent: string;
   /** The policy to create. */
-  policy?: Policy | undefined;
+  policy: Policy | undefined;
   type: PolicyType;
 }
 
@@ -341,11 +341,11 @@ export interface UpdatePolicyRequest {
    * Instance resource name: instances/instance-id.
    * Database resource name: instances/instance-id/databases/database-name.
    */
-  policy?:
+  policy:
     | Policy
     | undefined;
   /** The list of fields to update. */
-  updateMask?:
+  updateMask:
     | string[]
     | undefined;
   /**
@@ -456,7 +456,7 @@ export interface DeploymentApprovalStrategy {
 
 export interface BackupPlanPolicy {
   schedule: BackupPlanSchedule;
-  retentionDuration?: Duration | undefined;
+  retentionDuration: Duration | undefined;
 }
 
 export interface SlowQueryPolicy {
@@ -513,7 +513,7 @@ export interface MaskingExceptionPolicy_MaskingException {
    */
   member: string;
   /** The condition that is associated with this exception policy instance. */
-  condition?: Expr | undefined;
+  condition: Expr | undefined;
 }
 
 export enum MaskingExceptionPolicy_MaskingException_Action {
@@ -566,7 +566,7 @@ export interface MaskingRulePolicy {
 export interface MaskingRulePolicy_MaskingRule {
   /** A unique identifier for a node in UUID format. */
   id: string;
-  condition?: Expr | undefined;
+  condition: Expr | undefined;
   maskingLevel: MaskingLevel;
 }
 

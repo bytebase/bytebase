@@ -56,7 +56,7 @@ export interface CreatePlanRequest {
    */
   parent: string;
   /** The plan to create. */
-  plan?: Plan | undefined;
+  plan: Plan | undefined;
 }
 
 export interface UpdatePlanRequest {
@@ -66,11 +66,11 @@ export interface UpdatePlanRequest {
    * The plan's `name` field is used to identify the plan to update.
    * Format: projects/{project}/plans/{plan}
    */
-  plan?:
+  plan:
     | Plan
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface Plan {
@@ -98,7 +98,7 @@ export interface Plan_Step {
 
 export interface Plan_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
-  earliestAllowedTime?:
+  earliestAllowedTime:
     | Date
     | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
@@ -383,7 +383,7 @@ export interface PlanCheckRun {
   results: PlanCheckRun_Result[];
   /** error is set if the Status is FAILED. */
   error: string;
-  createTime?: Date | undefined;
+  createTime: Date | undefined;
 }
 
 export enum PlanCheckRun_Type {
@@ -571,7 +571,7 @@ export interface PlanCheckRun_Result_SqlSummaryReport {
   /** statement_types are the types of statements that are found in the sql. */
   statementTypes: string[];
   affectedRows: number;
-  changedResources?: ChangedResources | undefined;
+  changedResources: ChangedResources | undefined;
 }
 
 export interface PlanCheckRun_Result_SqlReviewReport {
@@ -607,7 +607,7 @@ export interface PreviewRolloutRequest {
    */
   project: string;
   /** The plan used to preview rollout. */
-  plan?: Plan | undefined;
+  plan: Plan | undefined;
 }
 
 export interface ListTaskRunsRequest {
@@ -1023,8 +1023,8 @@ export interface TaskRun {
   creator: string;
   /** Format: user/hello@world.com */
   updater: string;
-  createTime?: Date | undefined;
-  updateTime?: Date | undefined;
+  createTime: Date | undefined;
+  updateTime: Date | undefined;
   title: string;
   status: TaskRun_Status;
   /** Below are the results of a task run. */

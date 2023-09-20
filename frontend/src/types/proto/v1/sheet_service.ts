@@ -15,7 +15,7 @@ export interface CreateSheetRequest {
    */
   parent: string;
   /** The sheet to create. */
-  sheet?: Sheet | undefined;
+  sheet: Sheet | undefined;
 }
 
 export interface GetSheetRequest {
@@ -35,7 +35,7 @@ export interface UpdateSheetRequest {
    * The sheet's `name` field is used to identify the sheet to update.
    * Format: projects/{project}/sheets/{sheet}
    */
-  sheet?:
+  sheet:
     | Sheet
     | undefined;
   /**
@@ -48,7 +48,7 @@ export interface UpdateSheetRequest {
    * - `starred`
    * - `visibility`
    */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface UpdateSheetOrganizerRequest {
@@ -58,7 +58,7 @@ export interface UpdateSheetOrganizerRequest {
    * The organizer's `sheet` field is used to identify the sheet.
    * Format: projects/{project}/sheets/{sheet}
    */
-  organizer?:
+  organizer:
     | SheetOrganizer
     | undefined;
   /**
@@ -68,7 +68,7 @@ export interface UpdateSheetOrganizerRequest {
    * - `starred`
    * - `pinned`
    */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface SheetOrganizer {
@@ -162,11 +162,11 @@ export interface Sheet {
    */
   creator: string;
   /** The create time of the sheet. */
-  createTime?:
+  createTime:
     | Date
     | undefined;
   /** The last update time of the sheet. */
-  updateTime?:
+  updateTime:
     | Date
     | undefined;
   /**
@@ -186,7 +186,7 @@ export interface Sheet {
   starred: boolean;
   /** TODO: deprecate this field. */
   payload: string;
-  pushEvent?: PushEvent | undefined;
+  pushEvent: PushEvent | undefined;
 }
 
 export enum Sheet_Visibility {
