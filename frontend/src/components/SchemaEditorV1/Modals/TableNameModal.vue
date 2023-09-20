@@ -37,14 +37,14 @@ import {
   useNotificationStore,
   useSchemaEditorV1Store,
 } from "@/store";
-import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import {
+  BranchSchema,
+  DatabaseSchema,
   SchemaEditorTabType,
   convertColumnMetadataToColumn,
   convertTableMetadataToTable,
@@ -78,11 +78,12 @@ const parentResouce = computed(() => {
     props.parentName
   )!;
 });
+
 const engine = computed(() => {
   if (schemaEditorV1Store.resourceType === "branch") {
-    return (parentResouce.value as any as SchemaDesign).engine;
+    return (parentResouce.value as any as BranchSchema).branch.engine;
   } else if (schemaEditorV1Store.resourceType === "database") {
-    return (parentResouce.value as any as ComposedDatabase).instanceEntity
+    return (parentResouce.value as DatabaseSchema).database.instanceEntity
       .engine;
   } else {
     return Engine.MYSQL;
