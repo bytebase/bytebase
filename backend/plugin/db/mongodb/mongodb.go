@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"time"
 
@@ -228,6 +229,123 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 }
 
 func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
+	rows, err := convertRows(data)
+	if err != nil {
+		return nil, err
+	}
+
+	columns, columnIndexMap, illegal := getColumns(rows)
+	result := &v1pb.QueryResult{
+		ColumnNames: columns,
+	}
+	for range columns {
+		result.ColumnTypeNames = append(result.ColumnTypeNames, "TEXT")
+	}
+
+	for _, v := range rows {
+		m, ok := v.(map[string]any)
+		if !ok || illegal {
+			r, err := json.MarshalIndent(v, "", "	")
+			if err != nil {
+				return nil, err
+			}
+			result.Rows = append(result.Rows, &v1pb.QueryRow{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}},
+				},
+			})
+			continue
+		}
+
+		values := make([]*v1pb.RowValue, len(columns))
+		for k, v := range m {
+			if k == "_id" {
+				id, err := convertIDString(v)
+				if err != nil {
+					return nil, err
+				}
+				values[0] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: id}}
+				continue
+			}
+
+			r, err := json.MarshalIndent(v, "", "	")
+			if err != nil {
+				return nil, err
+			}
+			index := columnIndexMap[k]
+			values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}}
+		}
+		for i := 0; i < len(values); i++ {
+			if values[i] == nil {
+				values[i] = &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{}}
+			}
+		}
+
+		result.Rows = append(result.Rows, &v1pb.QueryRow{
+			Values: values,
+		})
+	}
+	return result, nil
+}
+
+func convertIDString(idObj any) (string, error) {
+	objIDObj, ok := idObj.(map[string]any)
+	if ok {
+		idStr, ok := objIDObj["$oid"].(string)
+		if ok {
+			return idStr, nil
+		}
+	}
+
+	r, err := json.MarshalIndent(idObj, "", "	")
+	if err != nil {
+		return "", err
+	}
+	return string(r), nil
+}
+
+func getColumns(rows []any) ([]string, map[string]int, bool) {
+	columnSet := make(map[string]bool)
+	for _, v := range rows {
+		m, ok := v.(map[string]any)
+		if !ok {
+			return []string{"result"}, map[string]int{"result": 0}, true
+		}
+		for k := range m {
+			if _, ok := columnSet[k]; ok {
+				continue
+			}
+			columnSet[k] = true
+		}
+	}
+
+	columns, columnIndexMap := getOrderedColumns(columnSet)
+	return columns, columnIndexMap, false
+}
+
+func getOrderedColumns(columnSet map[string]bool) ([]string, map[string]int) {
+	var columns []string
+	for k := range columnSet {
+		columns = append(columns, k)
+	}
+	sort.Slice(columns, func(i int, j int) bool {
+		if columns[i] == "_id" {
+			return true
+		}
+		if columns[j] == "_id" {
+			return false
+		}
+		return columns[i] < columns[j]
+	})
+
+	columnIndexMap := make(map[string]int)
+	for i, column := range columns {
+		columnIndexMap[column] = i
+	}
+	return columns, columnIndexMap
+}
+
+func convertRows(data []byte) ([]any, error) {
 	var a any
 	if err := json.Unmarshal(data, &a); err != nil {
 		return nil, err
@@ -239,51 +357,7 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 	} else {
 		rows = []any{a}
 	}
-
-	result := &v1pb.QueryResult{
-		ColumnNames:     []string{"_id", "result"},
-		ColumnTypeNames: []string{"TEXT", "TEXT"},
-	}
-	for _, v := range rows {
-		id := ""
-		m, ok := v.(map[string]any)
-		if ok {
-			// Flatten "_id" object.
-			idObj, ok := m["_id"]
-			if ok {
-				objIDObj, ok := idObj.(map[string]any)
-				if ok {
-					idStr, ok := objIDObj["$oid"].(string)
-					if ok {
-						id = idStr
-					}
-				}
-				if id == "" {
-					r, err := json.MarshalIndent(idObj, "", "	")
-					if err != nil {
-						return nil, err
-					}
-					id = string(r)
-				}
-			}
-
-			// Remove "_id" from result.
-			delete(m, "_id")
-			v = m
-		}
-
-		r, err := json.MarshalIndent(v, "", "	")
-		if err != nil {
-			return nil, err
-		}
-		result.Rows = append(result.Rows, &v1pb.QueryRow{
-			Values: []*v1pb.RowValue{
-				{Kind: &v1pb.RowValue_StringValue{StringValue: id}},
-				{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}},
-			},
-		})
-	}
-	return result, nil
+	return rows, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.
