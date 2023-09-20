@@ -81,7 +81,7 @@ const parentResouce = computed(() => {
 
 const engine = computed(() => {
   if (schemaEditorV1Store.resourceType === "branch") {
-    return (parentResouce.value as any as BranchSchema).branch.engine;
+    return (parentResouce.value as BranchSchema).branch.engine;
   } else if (schemaEditorV1Store.resourceType === "database") {
     return (parentResouce.value as DatabaseSchema).database.instanceEntity
       .engine;
