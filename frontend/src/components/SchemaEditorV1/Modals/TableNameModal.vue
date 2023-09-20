@@ -43,8 +43,6 @@ import {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import {
-  BranchSchema,
-  DatabaseSchema,
   SchemaEditorTabType,
   convertColumnMetadataToColumn,
   convertTableMetadataToTable,
@@ -73,21 +71,8 @@ const state = reactive<LocalState>({
   tableName: "",
 });
 
-const parentResouce = computed(() => {
-  return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
-    props.parentName
-  )!;
-});
-
 const engine = computed(() => {
-  if (schemaEditorV1Store.resourceType === "branch") {
-    return (parentResouce.value as BranchSchema).branch.engine;
-  } else if (schemaEditorV1Store.resourceType === "database") {
-    return (parentResouce.value as DatabaseSchema).database.instanceEntity
-      .engine;
-  } else {
-    return Engine.MYSQL;
-  }
+  return schemaEditorV1Store.getCurrentEngine(props.parentName);
 });
 
 const isCreatingTable = computed(() => {
