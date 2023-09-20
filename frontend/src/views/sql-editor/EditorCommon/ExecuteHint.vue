@@ -53,7 +53,7 @@
         <NButton
           v-if="sqlEditorStore.mode === 'BUNDLED'"
           type="primary"
-          @click="gotoAlterSchema"
+          @click="gotoCreateIssue"
         >
           {{ isDDL ? $t("database.edit-schema") : $t("database.change-data") }}
         </NButton>
@@ -102,7 +102,7 @@ const handleClose = () => {
   emit("close");
 };
 
-const gotoAlterSchema = () => {
+const gotoCreateIssue = () => {
   const { databaseId } = tabStore.currentTab.connection;
   if (databaseId === String(UNKNOWN_ID)) {
     pushNotification({
@@ -124,7 +124,7 @@ const gotoAlterSchema = () => {
     },
     query: {
       template: isDDL.value ? DDLIssueTemplate : DMLIssueTemplate,
-      name: `[${database.name}] ${
+      name: `[${database.databaseName}] ${
         isDDL.value ? "Alter schema" : "Change Data"
       }`,
       project: database.projectEntity.uid,

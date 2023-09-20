@@ -5,7 +5,7 @@
       :dbl-click-splitter="false"
     >
       <Pane v-if="windowWidth >= 800" size="20">
-        <AsidePanel @alter-schema="handleAlterSchema" />
+        <AsidePanel />
       </Pane>
       <template v-else>
         <teleport to="body">
@@ -33,7 +33,7 @@
             width="80vw"
             placement="left"
           >
-            <AsidePanel @alter-schema="handleAlterSchema" />
+            <AsidePanel />
           </NDrawer>
         </teleport>
       </template>
@@ -63,7 +63,7 @@
                         v-if="showSecondarySidebar && windowWidth >= 1024"
                         :size="25"
                       >
-                        <SecondarySidebar @alter-schema="handleAlterSchema" />
+                        <SecondarySidebar />
                       </Pane>
                     </Splitpanes>
                   </div>
@@ -151,6 +151,7 @@ import { Splitpanes, Pane } from "splitpanes";
 import { computed, reactive } from "vue";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -197,7 +198,7 @@ const databaseStore = useDatabaseV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const currentUserV1 = useCurrentUserV1();
 // provide context for SQL Editor
-provideSQLEditorContext();
+const { events: editorEvents } = provideSQLEditorContext();
 // provide context for sheets
 const { showPanel: showSheetPanel } = provideSheetContext();
 const { show: showSecondarySidebar } = provideSecondarySidebarContext();
@@ -232,40 +233,36 @@ const alterSchemaState = reactive<AlterSchemaState>({
   databaseIdList: [],
 });
 
-const handleAlterSchema = async (params: {
-  databaseId: string;
-  schema: string;
-  table: string;
-}) => {
-  const { databaseId, schema, table } = params;
-  const database = databaseStore.getDatabaseByUID(databaseId);
-  if (allowUsingSchemaEditorV1([database])) {
-    // await useProjectV1Store().getOrFetchProjectByUID(
-    //   String(database.projectEntity.uid)
-    // );
-    // TODO: support open selected database tab directly in Schema Editor.
-    alterSchemaState.databaseIdList = [databaseId].map((uid) => Number(uid));
-    alterSchemaState.showModal = true;
-  } else {
-    const exampleSQL = ["ALTER TABLE"];
-    if (table) {
-      if (schema) {
-        exampleSQL.push(`${schema}.${table}`);
-      } else {
-        exampleSQL.push(`${table}`);
+useEmitteryEventListener(
+  editorEvents,
+  "alter-schema",
+  ({ databaseUID, schema, table }) => {
+    const database = databaseStore.getDatabaseByUID(databaseUID);
+    if (allowUsingSchemaEditorV1([database])) {
+      // TODO: support open selected database tab directly in Schema Editor.
+      alterSchemaState.databaseIdList = [databaseUID].map((uid) => Number(uid));
+      alterSchemaState.showModal = true;
+    } else {
+      const exampleSQL = ["ALTER TABLE"];
+      if (table) {
+        if (schema) {
+          exampleSQL.push(`${schema}.${table}`);
+        } else {
+          exampleSQL.push(`${table}`);
+        }
       }
+      const query = {
+        template: "bb.issue.database.schema.update",
+        name: `[${database.name}] Alter schema`,
+        project: database.projectEntity.uid,
+        databaseList: databaseUID,
+        sql: exampleSQL.join(" "),
+      };
+      const url = `/issue/new?${stringify(query)}`;
+      window.open(url, "_blank");
     }
-    const query = {
-      template: "bb.issue.database.schema.update",
-      name: `[${database.name}] Alter schema`,
-      project: database.projectEntity.uid,
-      databaseList: databaseId,
-      sql: exampleSQL.join(" "),
-    };
-    const url = `/issue/new?${stringify(query)}`;
-    window.open(url, "_blank");
   }
-};
+);
 </script>
 
 <style>

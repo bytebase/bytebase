@@ -21,7 +21,6 @@
           :header-clickable="selected !== undefined"
           @click-header="selected = undefined"
           @select-table="handleSelectTable"
-          @alter-schema="emit('alter-schema', $event)"
         />
         <Transition name="slide-up">
           <TableSchema
@@ -32,7 +31,6 @@
             :schema="selected.schema"
             :table="selected.table"
             @close="selected = undefined"
-            @alter-schema="emit('alter-schema', $event)"
           />
         </Transition>
       </template>
@@ -60,13 +58,6 @@ import { useSQLEditorContext } from "@/views/sql-editor/context";
 import DatabaseSchema from "./DatabaseSchema.vue";
 import TableSchema from "./TableSchema.vue";
 import { provideSchemaPanelContext } from "./context";
-
-const emit = defineEmits<{
-  (
-    event: "alter-schema",
-    params: { databaseId: string; schema: string; table: string }
-  ): void;
-}>();
 
 const { selectedDatabaseSchemaByDatabaseName } = useSQLEditorContext();
 
