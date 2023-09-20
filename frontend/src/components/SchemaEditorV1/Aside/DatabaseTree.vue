@@ -830,15 +830,9 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
 };
 </script>
 
-<style lang="postcss">
+<style>
 .schema-editor-database-tree .n-tree-node-wrapper {
-  @apply !p-0;
-}
-.schema-editor-database-tree .n-tree-node-content {
-  @apply !pl-2 text-sm;
-}
-.schema-editor-database-tree .n-tree-node-indent {
-  @apply w-1;
+  @apply !py-px;
 }
 .schema-editor-database-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;
