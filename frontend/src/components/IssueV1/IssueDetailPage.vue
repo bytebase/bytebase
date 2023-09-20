@@ -18,6 +18,7 @@
 
     <div class="w-full border-t my-4" />
 
+    <SQLCheckSection v-if="isCreating" />
     <PlanCheckSection v-if="!isCreating" />
 
     <StatementSection />

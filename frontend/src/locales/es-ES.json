@@ -948,7 +948,11 @@
       "task-is-x-status": "La tarea es {status}",
       "task-is-running-cancel-first": "La tarea se está ejecutando, cancele la tarea antes de cambiar este valor"
     },
-    "you-are-not-allowed-to-change-this-value": "No tienes permitido cambiar este valor."
+    "you-are-not-allowed-to-change-this-value": "No tienes permitido cambiar este valor.",
+    "sql-check": {
+      "sql-checks": "Comprobaciones SQL",
+      "not-executed-yet": "Aún no ejecutado"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
