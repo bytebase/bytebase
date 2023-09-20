@@ -21,8 +21,12 @@
 import { Splitpanes, Pane } from "splitpanes";
 import { onMounted, watch, reactive } from "vue";
 import { useSchemaEditorV1Store, useSettingV1Store } from "@/store";
+import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { ComposedProject, ComposedDatabase } from "@/types";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import {
+  SchemaDesign,
+  SchemaDesign_Type,
+} from "@/types/proto/v1/schema_design_service";
 import Aside from "./Aside/index.vue";
 import Editor from "./Editor.vue";
 import { convertBranchToBranchSchema } from "./utils/branch";
@@ -41,11 +45,25 @@ interface LocalState {
 }
 
 const settingStore = useSettingV1Store();
-
 const schemaEditorV1Store = useSchemaEditorV1Store();
+const schemaDesignStore = useSchemaDesignStore();
 const state = reactive<LocalState>({
   initialized: false,
 });
+
+const prepareBranchContext = async () => {
+  if (props.resourceType !== "branch" || !props.branches) {
+    return;
+  }
+  for (const branch of props.branches) {
+    if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+      // Prepare parent branch for personal draft.
+      await schemaDesignStore.getOrFetchSchemaDesignByName(
+        branch.baselineSheetName
+      );
+    }
+  }
+};
 
 const updateSchemaEditorState = () => {
   schemaEditorV1Store.setState({
@@ -93,6 +111,8 @@ const updateSchemaEditorState = () => {
 // Prepare schema template contexts.
 onMounted(async () => {
   await settingStore.getOrFetchSettingByName("bb.workspace.schema-template");
+  await prepareBranchContext();
+
   updateSchemaEditorState();
   state.initialized = true;
 });
