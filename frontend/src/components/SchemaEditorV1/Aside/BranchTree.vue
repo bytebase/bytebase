@@ -607,13 +607,13 @@ const handleDropdownClickoutside = (e: MouseEvent) => {
 
 <style>
 .schema-designer-database-tree .n-tree-node-wrapper {
-  @apply !py-px;
+  @apply !p-0;
 }
-.schema-designer-database-tree .n-tree-node-content__prefix {
-  @apply shrink-0 !mr-1;
+.schema-designer-database-tree .n-tree-node-content {
+  @apply !pl-2 text-sm;
 }
-.schema-designer-database-tree .n-tree-node-content__text {
-  @apply truncate mr-1;
+.schema-designer-database-tree .n-tree-node-indent {
+  width: 0.25rem;
 }
 .schema-designer-database-tree .n-tree-node-content__suffix {
   @apply rounded-sm !hidden hover:opacity-80;
