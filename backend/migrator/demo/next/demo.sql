@@ -11277,7 +11277,7 @@ SELECT pg_catalog.setval('public.inbox_id_seq', 106, true);
 -- Name: instance_change_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_change_history_id_seq', 102, true);
+SELECT pg_catalog.setval('public.instance_change_history_id_seq', 110, true);
 
 
 --
