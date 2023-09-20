@@ -58,6 +58,11 @@ const (
 		"DELIMITER ;;\n" +
 		"%s ;;\n" +
 		"DELIMITER ;\n"
+	nullRoutineStmtFmt = "" +
+		"--\n" +
+		"-- %s structure for `%s`\n" +
+		"-- NULL statement because user does not have sufficient permissions\n" +
+		"--\n"
 	eventStmtFmt = "" +
 		"--\n" +
 		"-- Event structure for `%s`\n" +
@@ -666,8 +671,11 @@ func getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (strin
 	}
 	if !stmt.Valid {
 		// https://dev.mysql.com/doc/refman/8.0/en/show-create-procedure.html
-		slog.Warn("%s %s.%s statement is null, user does not have sufficient permissions", routineType, dbName, routineName)
-		return "", nil
+		slog.Warn("Statement is null, user does not have sufficient permissions",
+			slog.String("routineType", routineType),
+			slog.String("dbName", dbName),
+			slog.String("routineName", routineName))
+		return fmt.Sprintf(nullRoutineStmtFmt, getReadableRoutineType(routineType), routineName), nil
 	}
 	return fmt.Sprintf(routineStmtFmt, getReadableRoutineType(routineType), routineName, charset, charset, collation, sqlmode, stmt.String), nil
 }
