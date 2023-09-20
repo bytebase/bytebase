@@ -21,6 +21,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/api/gitops"
 	v1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -297,11 +298,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Configure echo server.
 	s.e = echo.New()
 
-	webhookGroup := s.e.Group(webhookAPIPrefix)
-	s.registerWebhookRoutes(webhookGroup)
-	apiGroup := s.e.Group(internalAPIPrefix)
-	s.registerDatabaseRoutes(apiGroup)
-
 	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
 	// the user has to restart the server to take the latest value.
 	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL, TokenDuration: tokenDuration}
@@ -412,6 +408,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	s.rolloutService, s.issueService = rolloutService, issueService
+
+	webhookGroup := s.e.Group(webhookAPIPrefix)
+	gitOpsService := gitops.NewService(s.store, s.dbFactory, s.activityManager, s.stateCfg, s.licenseService, rolloutService, issueService)
+	gitOpsService.RegisterWebhookRoutes(webhookGroup)
+	apiGroup := s.e.Group(internalAPIPrefix)
+	s.registerDatabaseRoutes(apiGroup)
 
 	reflection.Register(s.grpcServer)
 
