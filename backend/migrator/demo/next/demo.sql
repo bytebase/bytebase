@@ -24,7 +24,7 @@ SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE public.principal DISABLE TRIGGER ALL;
 
-INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695180489, 1, 1695180489, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695191772, 1, 1695191772, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (101, 'NORMAL', 1, 1694684977, 101, 1695112774, 'END_USER', 'Demo Owner', 'demo@example.com', '$2a$10$JbwDbh1u86G9UUCMKXehV.uKPQhZYEJIUiLpVXRkVM4pNAUnU1THG', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (102, 'NORMAL', 1, 1695112807, 101, 1695112895, 'END_USER', 'Jerry DBA', 'jerry@example.com', '$2a$10$GH4GKACLebRGpY3B/oAgNuuIg/FA/j0a5x7h9.AQxex1TfD8cb6ZG', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (103, 'NORMAL', 1, 1695112807, 101, 1695112903, 'END_USER', 'Tom Dev', 'tom@example.com', '$2a$10$5d6.P.g/jb8AmSdsdkqZE.fopcsRDPLdlSRSg.Homdbbl7GpEZPVq', '', '{}') ON CONFLICT DO NOTHING;
@@ -68,6 +68,36 @@ INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (127, 'NORMAL', 1, 1695179141, 1, 1695179141, 103, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 103, "taskName": "Create database sakila_staging", "issueName": "Create database ''sakila_staging''", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (128, 'NORMAL', 1, 1695179141, 1, 1695179141, 103, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 103, "issueName": "Create database ''sakila_staging''", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (129, 'NORMAL', 1, 1695179141, 1, 1695179141, 103, 'bb.issue.status.update', 'INFO', '', '{"issueName": "Create database ''sakila_staging''", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (130, 'NORMAL', 101, 1695191946, 101, 1695191946, 101, 'bb.project.member.create', 'INFO', 'Granted Jane Dev to jane@example.com (OWNER).', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (131, 'NORMAL', 101, 1695191967, 101, 1695191967, 101, 'bb.project.member.delete', 'INFO', 'Revoked OWNER from Jane Dev (jane@example.com).', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (132, 'NORMAL', 101, 1695191980, 101, 1695191980, 101, 'bb.project.member.create', 'INFO', 'Granted Jane Dev to jane@example.com (OWNER).', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (133, 'NORMAL', 103, 1695192093, 103, 1695192093, 104, 'bb.issue.create', 'INFO', '', '{"issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (134, 'NORMAL', 1, 1695192098, 1, 1695192098, 104, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (135, 'NORMAL', 104, 1695192179, 104, 1695192179, 104, 'bb.issue.comment.create', 'INFO', '`DELIMITER ;;` is a feature of the MySQL CLI and cannot be understood by the MySQL server. You should delete `DELIMITER ;;` and replace `;;` with `;`.
+
+Also, remove `CREATE SCHEMA sakila`.', '{"issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "approvalEvent": {"status": "REJECTED"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (136, 'NORMAL', 1, 1695192478, 1, 1695192478, 104, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (137, 'NORMAL', 104, 1695192549, 104, 1695192549, 104, 'bb.issue.comment.create', 'INFO', 'LGTM', '{"issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "approvalEvent": {"status": "APPROVED"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (138, 'NORMAL', 1, 1695192549, 1, 1695192549, 104, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (139, 'NORMAL', 102, 1695192562, 102, 1695192562, 104, 'bb.issue.comment.create', 'INFO', '', '{"issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "approvalEvent": {"status": "APPROVED"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (140, 'NORMAL', 1, 1695192562, 1, 1695192562, 104, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 104, "taskName": "DDL(schema) for database \"sakila_test\"", "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (141, 'NORMAL', 1, 1695192562, 1, 1695192562, 104, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 104, "taskName": "DDL(schema) for database \"sakila_test\"", "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "FAILED"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (142, 'NORMAL', 1, 1695192613, 1, 1695192613, 104, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (143, 'NORMAL', 102, 1695192692, 102, 1695192692, 104, 'bb.issue.comment.create', 'INFO', '', '{"issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "approvalEvent": {"status": "APPROVED"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (144, 'NORMAL', 1, 1695192692, 1, 1695192692, 104, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (145, 'NORMAL', 102, 1695192697, 102, 1695192697, 104, 'bb.issue.comment.create', 'INFO', '', '{"issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "approvalEvent": {"status": "APPROVED"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (146, 'NORMAL', 102, 1695192725, 102, 1695192725, 104, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 104, "taskName": "DDL(schema) for database \"sakila_test\"", "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (147, 'NORMAL', 1, 1695192725, 1, 1695192725, 104, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 104, "taskName": "DDL(schema) for database \"sakila_test\"", "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "FAILED"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (148, 'NORMAL', 102, 1695192772, 102, 1695192772, 104, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 104, "taskName": "DDL(schema) for database \"sakila_test\"", "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (149, 'NORMAL', 1, 1695192773, 1, 1695192773, 104, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 104, "taskName": "DDL(schema) for database \"sakila_test\"", "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (150, 'NORMAL', 1, 1695192773, 1, 1695192773, 104, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 104, "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "stageName": "Test Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (151, 'NORMAL', 104, 1695192788, 104, 1695192788, 104, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 105, "taskName": "DDL(schema) for database \"sakila_staging\"", "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (152, 'NORMAL', 1, 1695192788, 1, 1695192788, 104, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 105, "taskName": "DDL(schema) for database \"sakila_staging\"", "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (153, 'NORMAL', 1, 1695192788, 1, 1695192788, 104, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 105, "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "stageName": "Staging Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (154, 'NORMAL', 104, 1695192793, 104, 1695192793, 104, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 106, "taskName": "DDL(schema) for database \"sakila_prod\"", "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (155, 'NORMAL', 1, 1695192793, 1, 1695192793, 104, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 106, "taskName": "DDL(schema) for database \"sakila_prod\"", "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (156, 'NORMAL', 1, 1695192793, 1, 1695192793, 104, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 106, "issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (157, 'NORMAL', 1, 1695192793, 1, 1695192793, 104, 'bb.issue.status.update', 'INFO', '', '{"issueName": "[3 databases] Alter schema @09-20 14:41 UTC+0800", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.activity ENABLE TRIGGER ALL;
@@ -115,7 +145,7 @@ ALTER TABLE public.instance ENABLE TRIGGER ALL;
 
 ALTER TABLE public.project DISABLE TRIGGER ALL;
 
-INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695180489, 1, 1695180489, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695191772, 1, 1695191772, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (101, 'NORMAL', 101, 1694685057, 101, 1695180633, 'sakila', 'SKL', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'test', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 
 
@@ -127,9 +157,9 @@ ALTER TABLE public.project ENABLE TRIGGER ALL;
 
 ALTER TABLE public.db DISABLE TRIGGER ALL;
 
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695178988, 101, 101, 102, NULL, 'OK', 1695178988, '', 'sakila_prod', '{}', false, '', '{"labels": {"bb.environment": "prod"}, "lastSyncTime": "2023-09-20T03:03:08Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (102, 'NORMAL', 1, 1695179054, 1, 1695179054, 101, 101, 101, NULL, 'OK', 1695179054, '', 'sakila_test', '{}', false, '', '{"labels": {"bb.environment": "test"}, "lastSyncTime": "2023-09-20T03:04:14Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (103, 'NORMAL', 1, 1695179141, 1, 1695179141, 101, 101, 103, NULL, 'OK', 1695179141, '', 'sakila_staging', '{}', false, '', '{"labels": {"bb.environment": "staging"}, "lastSyncTime": "2023-09-20T03:05:41Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (102, 'NORMAL', 1, 1695179054, 1, 1695192773, 101, 101, 101, NULL, 'OK', 1695192772, '20230920144133', 'sakila_test', '{}', false, '', '{"labels": {"bb.environment": "test"}, "lastSyncTime": "2023-09-20T06:52:52Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (103, 'NORMAL', 1, 1695179141, 1, 1695192788, 101, 101, 103, NULL, 'OK', 1695192787, '20230920144133', 'sakila_staging', '{}', false, '', '{"labels": {"bb.environment": "staging"}, "lastSyncTime": "2023-09-20T06:53:07Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695192793, 101, 101, 102, NULL, 'OK', 1695192792, '20230920144133', 'sakila_prod', '{}', false, '', '{"labels": {"bb.environment": "prod"}, "lastSyncTime": "2023-09-20T06:53:12Z"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.db ENABLE TRIGGER ALL;
@@ -140,6 +170,7 @@ ALTER TABLE public.db ENABLE TRIGGER ALL;
 
 ALTER TABLE public.anomaly DISABLE TRIGGER ALL;
 
+INSERT INTO public.anomaly (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, type, payload) VALUES (101, 'ARCHIVED', 1, 1695192562, 1, 1695192773, 101, 102, 'bb.anomaly.database.schema.drift', '{"actual": "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\nSET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n--\n-- Temporary view structure for `customer_list`\n--\nCREATE VIEW `customer_list` AS SELECT\n  1 AS `ID`,\n  1 AS `name`,\n  1 AS `address`,\n  1 AS `zip code`,\n  1 AS `phone`,\n  1 AS `city`,\n  1 AS `country`,\n  1 AS `notes`,\n  1 AS `SID`;\n\n\n--\n-- Temporary view structure for `film_list`\n--\nCREATE VIEW `film_list` AS SELECT\n  1 AS `FID`,\n  1 AS `title`,\n  1 AS `description`,\n  1 AS `category`,\n  1 AS `price`,\n  1 AS `length`,\n  1 AS `rating`,\n  1 AS `actors`;\n\n\n--\n-- Temporary view structure for `nicer_but_slower_film_list`\n--\nCREATE VIEW `nicer_but_slower_film_list` AS SELECT\n  1 AS `FID`,\n  1 AS `title`,\n  1 AS `description`,\n  1 AS `category`,\n  1 AS `price`,\n  1 AS `length`,\n  1 AS `rating`,\n  1 AS `actors`;\n\n\n--\n-- Temporary view structure for `sales_by_film_category`\n--\nCREATE VIEW `sales_by_film_category` AS SELECT\n  1 AS `category`,\n  1 AS `total_sales`;\n\n\n--\n-- Temporary view structure for `sales_by_store`\n--\nCREATE VIEW `sales_by_store` AS SELECT\n  1 AS `store`,\n  1 AS `manager`,\n  1 AS `total_sales`;\n\n\n--\n-- Temporary view structure for `staff_list`\n--\nCREATE VIEW `staff_list` AS SELECT\n  1 AS `ID`,\n  1 AS `name`,\n  1 AS `address`,\n  1 AS `zip code`,\n  1 AS `phone`,\n  1 AS `city`,\n  1 AS `country`,\n  1 AS `SID`;\n\n\n--\n-- Table structure for `actor`\n--\nCREATE TABLE `actor` (\n  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `first_name` varchar(45) NOT NULL,\n  `last_name` varchar(45) NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`actor_id`),\n  KEY `idx_actor_last_name` (`last_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `address`\n--\nCREATE TABLE `address` (\n  `address_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `address` varchar(50) NOT NULL,\n  `address2` varchar(50) DEFAULT NULL,\n  `district` varchar(20) NOT NULL,\n  `city_id` smallint unsigned NOT NULL,\n  `postal_code` varchar(10) DEFAULT NULL,\n  `phone` varchar(20) NOT NULL,\n  `location` geometry NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`address_id`),\n  KEY `idx_fk_city_id` (`city_id`),\n  SPATIAL KEY `idx_location` (`location`),\n  CONSTRAINT `fk_address_city` FOREIGN KEY (`city_id`) REFERENCES `city` (`city_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `category`\n--\nCREATE TABLE `category` (\n  `category_id` tinyint unsigned NOT NULL AUTO_INCREMENT,\n  `name` varchar(25) NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`category_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `city`\n--\nCREATE TABLE `city` (\n  `city_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `city` varchar(50) NOT NULL,\n  `country_id` smallint unsigned NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`city_id`),\n  KEY `idx_fk_country_id` (`country_id`),\n  CONSTRAINT `fk_city_country` FOREIGN KEY (`country_id`) REFERENCES `country` (`country_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `country`\n--\nCREATE TABLE `country` (\n  `country_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `country` varchar(50) NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`country_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `customer`\n--\nCREATE TABLE `customer` (\n  `customer_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `store_id` tinyint unsigned NOT NULL,\n  `first_name` varchar(45) NOT NULL,\n  `last_name` varchar(45) NOT NULL,\n  `email` varchar(50) DEFAULT NULL,\n  `address_id` smallint unsigned NOT NULL,\n  `active` tinyint(1) NOT NULL DEFAULT ''1'',\n  `create_date` datetime NOT NULL,\n  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`customer_id`),\n  KEY `idx_fk_store_id` (`store_id`),\n  KEY `idx_fk_address_id` (`address_id`),\n  KEY `idx_last_name` (`last_name`),\n  CONSTRAINT `fk_customer_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `fk_customer_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `film`\n--\nCREATE TABLE `film` (\n  `film_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `title` varchar(255) NOT NULL,\n  `description` text,\n  `release_year` year DEFAULT NULL,\n  `language_id` tinyint unsigned NOT NULL,\n  `original_language_id` tinyint unsigned DEFAULT NULL,\n  `rental_duration` tinyint unsigned NOT NULL DEFAULT ''3'',\n  `rental_rate` decimal(4,2) NOT NULL DEFAULT ''4.99'',\n  `length` smallint unsigned DEFAULT NULL,\n  `replacement_cost` decimal(5,2) NOT NULL DEFAULT ''19.99'',\n  `rating` enum(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',\n  `special_features` set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`film_id`),\n  KEY `idx_title` (`title`),\n  KEY `idx_fk_language_id` (`language_id`),\n  KEY `idx_fk_original_language_id` (`original_language_id`),\n  CONSTRAINT `fk_film_language` FOREIGN KEY (`language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `fk_film_language_original` FOREIGN KEY (`original_language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `film_actor`\n--\nCREATE TABLE `film_actor` (\n  `actor_id` smallint unsigned NOT NULL,\n  `film_id` smallint unsigned NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`actor_id`,`film_id`),\n  KEY `idx_fk_film_id` (`film_id`),\n  CONSTRAINT `fk_film_actor_actor` FOREIGN KEY (`actor_id`) REFERENCES `actor` (`actor_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `fk_film_actor_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `film_category`\n--\nCREATE TABLE `film_category` (\n  `film_id` smallint unsigned NOT NULL,\n  `category_id` tinyint unsigned NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`film_id`,`category_id`),\n  KEY `fk_film_category_category` (`category_id`),\n  CONSTRAINT `fk_film_category_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `fk_film_category_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `film_text`\n--\nCREATE TABLE `film_text` (\n  `film_id` smallint NOT NULL,\n  `title` varchar(255) NOT NULL,\n  `description` text,\n  PRIMARY KEY (`film_id`),\n  FULLTEXT KEY `idx_title_description` (`title`,`description`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `inventory`\n--\nCREATE TABLE `inventory` (\n  `inventory_id` mediumint unsigned NOT NULL AUTO_INCREMENT,\n  `film_id` smallint unsigned NOT NULL,\n  `store_id` tinyint unsigned NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`inventory_id`),\n  KEY `idx_fk_film_id` (`film_id`),\n  KEY `idx_store_id_film_id` (`store_id`,`film_id`),\n  CONSTRAINT `fk_inventory_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `fk_inventory_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `language`\n--\nCREATE TABLE `language` (\n  `language_id` tinyint unsigned NOT NULL AUTO_INCREMENT,\n  `name` char(20) NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`language_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `payment`\n--\nCREATE TABLE `payment` (\n  `payment_id` smallint unsigned NOT NULL AUTO_INCREMENT,\n  `customer_id` smallint unsigned NOT NULL,\n  `staff_id` tinyint unsigned NOT NULL,\n  `rental_id` int DEFAULT NULL,\n  `amount` decimal(5,2) NOT NULL,\n  `payment_date` datetime NOT NULL,\n  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`payment_id`),\n  KEY `idx_fk_staff_id` (`staff_id`),\n  KEY `idx_fk_customer_id` (`customer_id`),\n  KEY `fk_payment_rental` (`rental_id`),\n  CONSTRAINT `fk_payment_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `fk_payment_rental` FOREIGN KEY (`rental_id`) REFERENCES `rental` (`rental_id`) ON DELETE SET NULL ON UPDATE CASCADE,\n  CONSTRAINT `fk_payment_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `rental`\n--\nCREATE TABLE `rental` (\n  `rental_id` int NOT NULL AUTO_INCREMENT,\n  `rental_date` datetime NOT NULL,\n  `inventory_id` mediumint unsigned NOT NULL,\n  `customer_id` smallint unsigned NOT NULL,\n  `return_date` datetime DEFAULT NULL,\n  `staff_id` tinyint unsigned NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`rental_id`),\n  UNIQUE KEY `rental_date` (`rental_date`,`inventory_id`,`customer_id`),\n  KEY `idx_fk_inventory_id` (`inventory_id`),\n  KEY `idx_fk_customer_id` (`customer_id`),\n  KEY `idx_fk_staff_id` (`staff_id`),\n  CONSTRAINT `fk_rental_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `fk_rental_inventory` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`inventory_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `fk_rental_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `staff`\n--\nCREATE TABLE `staff` (\n  `staff_id` tinyint unsigned NOT NULL AUTO_INCREMENT,\n  `first_name` varchar(45) NOT NULL,\n  `last_name` varchar(45) NOT NULL,\n  `address_id` smallint unsigned NOT NULL,\n  `picture` blob,\n  `email` varchar(50) DEFAULT NULL,\n  `store_id` tinyint unsigned NOT NULL,\n  `active` tinyint(1) NOT NULL DEFAULT ''1'',\n  `username` varchar(16) NOT NULL,\n  `password` varchar(40) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`staff_id`),\n  KEY `idx_fk_store_id` (`store_id`),\n  KEY `idx_fk_address_id` (`address_id`),\n  CONSTRAINT `fk_staff_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `fk_staff_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\n--\n-- Table structure for `store`\n--\nCREATE TABLE `store` (\n  `store_id` tinyint unsigned NOT NULL AUTO_INCREMENT,\n  `manager_staff_id` tinyint unsigned NOT NULL,\n  `address_id` smallint unsigned NOT NULL,\n  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`store_id`),\n  UNIQUE KEY `idx_unique_manager` (`manager_staff_id`),\n  KEY `idx_fk_address_id` (`address_id`),\n  CONSTRAINT `fk_store_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `fk_store_staff` FOREIGN KEY (`manager_staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;\n\nDROP VIEW IF EXISTS `customer_list`;\n--\n-- View structure for `customer_list`\n--\nCREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `customer_list` AS select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,_utf8mb3'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,if(`cu`.`active`,_utf8mb3''active'',_utf8mb3'''') AS `notes`,`cu`.`store_id` AS `SID` from (((`customer` `cu` join `address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));\n\nDROP VIEW IF EXISTS `film_list`;\n--\n-- View structure for `film_list`\n--\nCREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(`actor`.`first_name`,_utf8mb3'' '',`actor`.`last_name`) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;\n\nDROP VIEW IF EXISTS `nicer_but_slower_film_list`;\n--\n-- View structure for `nicer_but_slower_film_list`\n--\nCREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `nicer_but_slower_film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`actor`.`first_name`,1,1)),lower(substr(`actor`.`first_name`,2,length(`actor`.`first_name`))),_utf8mb3'' '',concat(upper(substr(`actor`.`last_name`,1,1)),lower(substr(`actor`.`last_name`,2,length(`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;\n\nDROP VIEW IF EXISTS `sales_by_film_category`;\n--\n-- View structure for `sales_by_film_category`\n--\nCREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_film_category` AS select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc;\n\nDROP VIEW IF EXISTS `sales_by_store`;\n--\n-- View structure for `sales_by_store`\n--\nCREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_store` AS select concat(`c`.`city`,_utf8mb3'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,_utf8mb3'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`;\n\nDROP VIEW IF EXISTS `staff_list`;\n--\n-- View structure for `staff_list`\n--\nCREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `staff_list` AS select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,_utf8mb3'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`staff` `s` join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));\n\n--\n-- Trigger structure for `ins_film`\n--\nSET character_set_client  = utf8mb4;\nSET character_set_results = utf8mb4;\nSET collation_connection  = utf8mb4_general_ci;\nSET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';\nDELIMITER ;;\nCREATE DEFINER=`root`@`localhost` TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN\n    INSERT INTO film_text (film_id, title, description)\n        VALUES (new.film_id, new.title, new.description);\n  END ;;\nDELIMITER ;\n\n--\n-- Trigger structure for `upd_film`\n--\nSET character_set_client  = utf8mb4;\nSET character_set_results = utf8mb4;\nSET collation_connection  = utf8mb4_general_ci;\nSET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';\nDELIMITER ;;\nCREATE DEFINER=`root`@`localhost` TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN\n    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)\n    THEN\n        UPDATE film_text\n            SET title=new.title,\n                description=new.description,\n                film_id=new.film_id\n        WHERE film_id=old.film_id;\n    END IF;\n  END ;;\nDELIMITER ;\n\n--\n-- Trigger structure for `del_film`\n--\nSET character_set_client  = utf8mb4;\nSET character_set_results = utf8mb4;\nSET collation_connection  = utf8mb4_general_ci;\nSET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';\nDELIMITER ;;\nCREATE DEFINER=`root`@`localhost` TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN\n    DELETE FROM film_text WHERE film_id = old.film_id;\n  END ;;\nDELIMITER ;\n\nSET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n", "expect": "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\nSET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\nSET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n", "version": "20230920144133"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.anomaly ENABLE TRIGGER ALL;
@@ -224,18 +255,1953 @@ ALTER TABLE public.db_label ENABLE TRIGGER ALL;
 
 ALTER TABLE public.db_schema DISABLE TRIGGER ALL;
 
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695178988, 101, '{"name": "sakila_prod", "schemas": [{}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (102, 'NORMAL', 1, 1695179054, 1, 1695192773, 102, '{"name": "sakila_test", "schemas": [{"views": [{"name": "actor_info", "comment": "VIEW", "definition": "select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`sakila_test`.`film` `f` join `sakila_test`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_test`.`film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`sakila_test`.`actor` `a` left join `sakila_test`.`film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `sakila_test`.`film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `sakila_test`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`"}, {"name": "customer_list", "comment": "VIEW", "definition": "select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_test`.`city`.`city` AS `city`,`sakila_test`.`country`.`country` AS `country`,if(`cu`.`active`,''active'','''') AS `notes`,`cu`.`store_id` AS `SID` from (((`sakila_test`.`customer` `cu` join `sakila_test`.`address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `sakila_test`.`city` on((`a`.`city_id` = `sakila_test`.`city`.`city_id`))) join `sakila_test`.`country` on((`sakila_test`.`city`.`country_id` = `sakila_test`.`country`.`country_id`)))"}, {"name": "film_list", "comment": "VIEW", "definition": "select `sakila_test`.`film`.`film_id` AS `FID`,`sakila_test`.`film`.`title` AS `title`,`sakila_test`.`film`.`description` AS `description`,`sakila_test`.`category`.`name` AS `category`,`sakila_test`.`film`.`rental_rate` AS `price`,`sakila_test`.`film`.`length` AS `length`,`sakila_test`.`film`.`rating` AS `rating`,group_concat(concat(`sakila_test`.`actor`.`first_name`,'' '',`sakila_test`.`actor`.`last_name`) separator '', '') AS `actors` from ((((`sakila_test`.`category` left join `sakila_test`.`film_category` on((`sakila_test`.`category`.`category_id` = `sakila_test`.`film_category`.`category_id`))) left join `sakila_test`.`film` on((`sakila_test`.`film_category`.`film_id` = `sakila_test`.`film`.`film_id`))) join `sakila_test`.`film_actor` on((`sakila_test`.`film`.`film_id` = `sakila_test`.`film_actor`.`film_id`))) join `sakila_test`.`actor` on((`sakila_test`.`film_actor`.`actor_id` = `sakila_test`.`actor`.`actor_id`))) group by `sakila_test`.`film`.`film_id`,`sakila_test`.`category`.`name`"}, {"name": "nicer_but_slower_film_list", "comment": "VIEW", "definition": "select `sakila_test`.`film`.`film_id` AS `FID`,`sakila_test`.`film`.`title` AS `title`,`sakila_test`.`film`.`description` AS `description`,`sakila_test`.`category`.`name` AS `category`,`sakila_test`.`film`.`rental_rate` AS `price`,`sakila_test`.`film`.`length` AS `length`,`sakila_test`.`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`sakila_test`.`actor`.`first_name`,1,1)),lower(substr(`sakila_test`.`actor`.`first_name`,2,length(`sakila_test`.`actor`.`first_name`))),'' '',concat(upper(substr(`sakila_test`.`actor`.`last_name`,1,1)),lower(substr(`sakila_test`.`actor`.`last_name`,2,length(`sakila_test`.`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`sakila_test`.`category` left join `sakila_test`.`film_category` on((`sakila_test`.`category`.`category_id` = `sakila_test`.`film_category`.`category_id`))) left join `sakila_test`.`film` on((`sakila_test`.`film_category`.`film_id` = `sakila_test`.`film`.`film_id`))) join `sakila_test`.`film_actor` on((`sakila_test`.`film`.`film_id` = `sakila_test`.`film_actor`.`film_id`))) join `sakila_test`.`actor` on((`sakila_test`.`film_actor`.`actor_id` = `sakila_test`.`actor`.`actor_id`))) group by `sakila_test`.`film`.`film_id`,`sakila_test`.`category`.`name`"}, {"name": "sales_by_film_category", "comment": "VIEW", "definition": "select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`sakila_test`.`payment` `p` join `sakila_test`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_test`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_test`.`film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `sakila_test`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_test`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc"}, {"name": "sales_by_store", "comment": "VIEW", "definition": "select concat(`c`.`city`,'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`sakila_test`.`payment` `p` join `sakila_test`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_test`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_test`.`store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `sakila_test`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_test`.`city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `sakila_test`.`country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `sakila_test`.`staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`"}, {"name": "staff_list", "comment": "VIEW", "definition": "select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_test`.`city`.`city` AS `city`,`sakila_test`.`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`sakila_test`.`staff` `s` join `sakila_test`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_test`.`city` on((`a`.`city_id` = `sakila_test`.`city`.`city_id`))) join `sakila_test`.`country` on((`sakila_test`.`city`.`country_id` = `sakila_test`.`country`.`country_id`)))"}], "tables": [{"name": "actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id"]}, {"name": "idx_actor_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384"}, {"name": "address", "engine": "InnoDB", "columns": [{"name": "address_id", "type": "smallint unsigned", "position": 1}, {"name": "address", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address2", "type": "varchar(50)", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "district", "type": "varchar(20)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "city_id", "type": "smallint unsigned", "position": 5}, {"name": "postal_code", "type": "varchar(10)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "phone", "type": "varchar(20)", "position": 7, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "location", "type": "geometry", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_city_id", "type": "BTREE", "visible": true, "expressions": ["city_id"]}, {"name": "idx_location", "type": "SPATIAL", "visible": true, "expressions": ["location"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_address_city", "columns": ["city_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "city", "referencedColumns": ["city_id"]}]}, {"name": "category", "engine": "InnoDB", "columns": [{"name": "category_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "varchar(25)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "city", "engine": "InnoDB", "columns": [{"name": "city_id", "type": "smallint unsigned", "position": 1}, {"name": "city", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "country_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["city_id"]}, {"name": "idx_fk_country_id", "type": "BTREE", "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_city_country", "columns": ["country_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "country", "referencedColumns": ["country_id"]}]}, {"name": "country", "engine": "InnoDB", "columns": [{"name": "country_id", "type": "smallint unsigned", "position": 1}, {"name": "country", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "customer", "engine": "InnoDB", "columns": [{"name": "customer_id", "type": "smallint unsigned", "position": 1}, {"name": "store_id", "type": "tinyint unsigned", "position": 2}, {"name": "first_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 5, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 6}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 7}, {"name": "create_date", "type": "datetime", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}, {"name": "idx_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_customer_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_customer_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "film", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "release_year", "type": "year", "nullable": true, "position": 4}, {"name": "language_id", "type": "tinyint unsigned", "position": 5}, {"name": "original_language_id", "type": "tinyint unsigned", "nullable": true, "position": 6}, {"name": "rental_duration", "type": "tinyint unsigned", "default": "3", "position": 7}, {"name": "rental_rate", "type": "decimal(4,2)", "default": "4.99", "position": 8}, {"name": "length", "type": "smallint unsigned", "nullable": true, "position": 9}, {"name": "replacement_cost", "type": "decimal(5,2)", "default": "19.99", "position": 10}, {"name": "rating", "type": "enum(''G'',''PG'',''PG-13'',''R'',''NC-17'')", "default": "G", "nullable": true, "position": 11, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "special_features", "type": "set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'')", "nullable": true, "position": 12, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 13}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_fk_language_id", "type": "BTREE", "visible": true, "expressions": ["language_id"]}, {"name": "idx_fk_original_language_id", "type": "BTREE", "visible": true, "expressions": ["original_language_id"]}, {"name": "idx_title", "type": "BTREE", "visible": true, "expressions": ["title"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_film_language", "columns": ["language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}, {"name": "fk_film_language_original", "columns": ["original_language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}]}, {"name": "film_actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id", "film_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_actor_actor", "columns": ["actor_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "actor", "referencedColumns": ["actor_id"]}, {"name": "fk_film_actor_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_category", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "category_id", "type": "tinyint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id", "category_id"]}, {"name": "fk_film_category_category", "type": "BTREE", "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_category_category", "columns": ["category_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "category", "referencedColumns": ["category_id"]}, {"name": "fk_film_category_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_text", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_title_description", "type": "FULLTEXT", "visible": true, "expressions": ["title", "description"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768"}, {"name": "inventory", "engine": "InnoDB", "columns": [{"name": "inventory_id", "type": "mediumint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "store_id", "type": "tinyint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}, {"name": "idx_store_id_film_id", "type": "BTREE", "visible": true, "expressions": ["store_id", "film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_inventory_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}, {"name": "fk_inventory_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "language", "engine": "InnoDB", "columns": [{"name": "language_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "char(20)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["language_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "payment", "engine": "InnoDB", "columns": [{"name": "payment_id", "type": "smallint unsigned", "position": 1}, {"name": "customer_id", "type": "smallint unsigned", "position": 2}, {"name": "staff_id", "type": "tinyint unsigned", "position": 3}, {"name": "rental_id", "type": "int", "nullable": true, "position": 4}, {"name": "amount", "type": "decimal(5,2)", "position": 5}, {"name": "payment_date", "type": "datetime", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["payment_id"]}, {"name": "fk_payment_rental", "type": "BTREE", "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_payment_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_payment_rental", "columns": ["rental_id"], "onDelete": "SET NULL", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "rental", "referencedColumns": ["rental_id"]}, {"name": "fk_payment_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "rental", "engine": "InnoDB", "columns": [{"name": "rental_id", "type": "int", "position": 1}, {"name": "rental_date", "type": "datetime", "position": 2}, {"name": "inventory_id", "type": "mediumint unsigned", "position": 3}, {"name": "customer_id", "type": "smallint unsigned", "position": 4}, {"name": "return_date", "type": "datetime", "nullable": true, "position": 5}, {"name": "staff_id", "type": "tinyint unsigned", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_inventory_id", "type": "BTREE", "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}, {"name": "rental_date", "type": "BTREE", "unique": true, "visible": true, "expressions": ["rental_date", "inventory_id", "customer_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "65536", "foreignKeys": [{"name": "fk_rental_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_rental_inventory", "columns": ["inventory_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "inventory", "referencedColumns": ["inventory_id"]}, {"name": "fk_rental_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "staff", "engine": "InnoDB", "columns": [{"name": "staff_id", "type": "tinyint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 4}, {"name": "picture", "type": "blob", "nullable": true, "position": 5}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "store_id", "type": "tinyint unsigned", "position": 7}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 8}, {"name": "username", "type": "varchar(16)", "position": 9, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "password", "type": "varchar(40)", "nullable": true, "position": 10, "collation": "utf8mb3_bin", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 11}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["staff_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_staff_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_staff_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "store", "engine": "InnoDB", "columns": [{"name": "store_id", "type": "tinyint unsigned", "position": 1}, {"name": "manager_staff_id", "type": "tinyint unsigned", "position": 2}, {"name": "address_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["store_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_unique_manager", "type": "BTREE", "unique": true, "visible": true, "expressions": ["manager_staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_store_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_store_staff", "columns": ["manager_staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Temporary view structure for `actor_info`
+--
+CREATE VIEW `actor_info` AS SELECT
+  1 AS `actor_id`,
+  1 AS `first_name`,
+  1 AS `last_name`,
+  1 AS `film_info`;
+
+
+--
+-- Temporary view structure for `customer_list`
+--
+CREATE VIEW `customer_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `notes`,
+  1 AS `SID`;
+
+
+--
+-- Temporary view structure for `film_list`
+--
+CREATE VIEW `film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `nicer_but_slower_film_list`
+--
+CREATE VIEW `nicer_but_slower_film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `sales_by_film_category`
+--
+CREATE VIEW `sales_by_film_category` AS SELECT
+  1 AS `category`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `sales_by_store`
+--
+CREATE VIEW `sales_by_store` AS SELECT
+  1 AS `store`,
+  1 AS `manager`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `staff_list`
+--
+CREATE VIEW `staff_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `SID`;
+
+
+--
+-- Table structure for `actor`
+--
+CREATE TABLE `actor` (
+  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`),
+  KEY `idx_actor_last_name` (`last_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `address`
+--
+CREATE TABLE `address` (
+  `address_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `address` varchar(50) NOT NULL,
+  `address2` varchar(50) DEFAULT NULL,
+  `district` varchar(20) NOT NULL,
+  `city_id` smallint unsigned NOT NULL,
+  `postal_code` varchar(10) DEFAULT NULL,
+  `phone` varchar(20) NOT NULL,
+  `location` geometry NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`address_id`),
+  KEY `idx_fk_city_id` (`city_id`),
+  SPATIAL KEY `idx_location` (`location`),
+  CONSTRAINT `fk_address_city` FOREIGN KEY (`city_id`) REFERENCES `city` (`city_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `category`
+--
+CREATE TABLE `category` (
+  `category_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(25) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `city`
+--
+CREATE TABLE `city` (
+  `city_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `city` varchar(50) NOT NULL,
+  `country_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`city_id`),
+  KEY `idx_fk_country_id` (`country_id`),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (`country_id`) REFERENCES `country` (`country_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `country`
+--
+CREATE TABLE `country` (
+  `country_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `country` varchar(50) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`country_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `customer`
+--
+CREATE TABLE `customer` (
+  `customer_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` tinyint unsigned NOT NULL,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `email` varchar(50) DEFAULT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `create_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`customer_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  KEY `idx_last_name` (`last_name`),
+  CONSTRAINT `fk_customer_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_customer_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film`
+--
+CREATE TABLE `film` (
+  `film_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `release_year` year DEFAULT NULL,
+  `language_id` tinyint unsigned NOT NULL,
+  `original_language_id` tinyint unsigned DEFAULT NULL,
+  `rental_duration` tinyint unsigned NOT NULL DEFAULT ''3'',
+  `rental_rate` decimal(4,2) NOT NULL DEFAULT ''4.99'',
+  `length` smallint unsigned DEFAULT NULL,
+  `replacement_cost` decimal(5,2) NOT NULL DEFAULT ''19.99'',
+  `rating` enum(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  `special_features` set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`),
+  KEY `idx_title` (`title`),
+  KEY `idx_fk_language_id` (`language_id`),
+  KEY `idx_fk_original_language_id` (`original_language_id`),
+  CONSTRAINT `fk_film_language` FOREIGN KEY (`language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_language_original` FOREIGN KEY (`original_language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_actor`
+--
+CREATE TABLE `film_actor` (
+  `actor_id` smallint unsigned NOT NULL,
+  `film_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`,`film_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  CONSTRAINT `fk_film_actor_actor` FOREIGN KEY (`actor_id`) REFERENCES `actor` (`actor_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_actor_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_category`
+--
+CREATE TABLE `film_category` (
+  `film_id` smallint unsigned NOT NULL,
+  `category_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`,`category_id`),
+  KEY `fk_film_category_category` (`category_id`),
+  CONSTRAINT `fk_film_category_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_category_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_text`
+--
+CREATE TABLE `film_text` (
+  `film_id` smallint NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  PRIMARY KEY (`film_id`),
+  FULLTEXT KEY `idx_title_description` (`title`,`description`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `inventory`
+--
+CREATE TABLE `inventory` (
+  `inventory_id` mediumint unsigned NOT NULL AUTO_INCREMENT,
+  `film_id` smallint unsigned NOT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`inventory_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  KEY `idx_store_id_film_id` (`store_id`,`film_id`),
+  CONSTRAINT `fk_inventory_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_inventory_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `language`
+--
+CREATE TABLE `language` (
+  `language_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` char(20) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`language_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `payment`
+--
+CREATE TABLE `payment` (
+  `payment_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `customer_id` smallint unsigned NOT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `rental_id` int DEFAULT NULL,
+  `amount` decimal(5,2) NOT NULL,
+  `payment_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`payment_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `fk_payment_rental` (`rental_id`),
+  CONSTRAINT `fk_payment_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_rental` FOREIGN KEY (`rental_id`) REFERENCES `rental` (`rental_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `rental`
+--
+CREATE TABLE `rental` (
+  `rental_id` int NOT NULL AUTO_INCREMENT,
+  `rental_date` datetime NOT NULL,
+  `inventory_id` mediumint unsigned NOT NULL,
+  `customer_id` smallint unsigned NOT NULL,
+  `return_date` datetime DEFAULT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`rental_id`),
+  UNIQUE KEY `rental_date` (`rental_date`,`inventory_id`,`customer_id`),
+  KEY `idx_fk_inventory_id` (`inventory_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  CONSTRAINT `fk_rental_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_inventory` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`inventory_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `staff`
+--
+CREATE TABLE `staff` (
+  `staff_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `picture` blob,
+  `email` varchar(50) DEFAULT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `username` varchar(16) NOT NULL,
+  `password` varchar(40) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`staff_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_staff_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_staff_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `store`
+--
+CREATE TABLE `store` (
+  `store_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `manager_staff_id` tinyint unsigned NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`store_id`),
+  UNIQUE KEY `idx_unique_manager` (`manager_staff_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_store_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_store_staff` FOREIGN KEY (`manager_staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+DROP VIEW IF EXISTS `actor_info`;
+--
+-- View structure for `actor_info`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `actor_info` AS select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`film` `f` join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`actor` `a` left join `film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`;
+
+DROP VIEW IF EXISTS `customer_list`;
+--
+-- View structure for `customer_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `customer_list` AS select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,_utf8mb3'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,if(`cu`.`active`,_utf8mb3''active'',_utf8mb3'''') AS `notes`,`cu`.`store_id` AS `SID` from (((`customer` `cu` join `address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+DROP VIEW IF EXISTS `film_list`;
+--
+-- View structure for `film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(`actor`.`first_name`,_utf8mb3'' '',`actor`.`last_name`) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `nicer_but_slower_film_list`;
+--
+-- View structure for `nicer_but_slower_film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `nicer_but_slower_film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`actor`.`first_name`,1,1)),lower(substr(`actor`.`first_name`,2,length(`actor`.`first_name`))),_utf8mb3'' '',concat(upper(substr(`actor`.`last_name`,1,1)),lower(substr(`actor`.`last_name`,2,length(`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `sales_by_film_category`;
+--
+-- View structure for `sales_by_film_category`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_film_category` AS select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc;
+
+DROP VIEW IF EXISTS `sales_by_store`;
+--
+-- View structure for `sales_by_store`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_store` AS select concat(`c`.`city`,_utf8mb3'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,_utf8mb3'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`;
+
+DROP VIEW IF EXISTS `staff_list`;
+--
+-- View structure for `staff_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `staff_list` AS select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,_utf8mb3'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`staff` `s` join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+--
+-- Function structure for `get_customer_balance`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_customer_balance`(p_customer_id INT, p_effective_date DATETIME) RETURNS decimal(5,2)
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_held_by_customer`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_held_by_customer`(p_inventory_id INT) RETURNS int
+    READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_in_stock`(p_inventory_id INT) RETURNS tinyint(1)
+    READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_not_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_not_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `rewards_report`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `rewards_report`(
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+    READS SQL DATA
+    COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END; ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `ins_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `upd_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `del_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END ;;
+DELIMITER ;
+
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 ') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (102, 'NORMAL', 1, 1695179054, 1, 1695179054, 102, '{"name": "sakila_test", "schemas": [{}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (103, 'NORMAL', 1, 1695179141, 1, 1695192788, 103, '{"name": "sakila_staging", "schemas": [{"views": [{"name": "actor_info", "comment": "VIEW", "definition": "select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`sakila_staging`.`film` `f` join `sakila_staging`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_staging`.`film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`sakila_staging`.`actor` `a` left join `sakila_staging`.`film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `sakila_staging`.`film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `sakila_staging`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`"}, {"name": "customer_list", "comment": "VIEW", "definition": "select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_staging`.`city`.`city` AS `city`,`sakila_staging`.`country`.`country` AS `country`,if(`cu`.`active`,''active'','''') AS `notes`,`cu`.`store_id` AS `SID` from (((`sakila_staging`.`customer` `cu` join `sakila_staging`.`address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `sakila_staging`.`city` on((`a`.`city_id` = `sakila_staging`.`city`.`city_id`))) join `sakila_staging`.`country` on((`sakila_staging`.`city`.`country_id` = `sakila_staging`.`country`.`country_id`)))"}, {"name": "film_list", "comment": "VIEW", "definition": "select `sakila_staging`.`film`.`film_id` AS `FID`,`sakila_staging`.`film`.`title` AS `title`,`sakila_staging`.`film`.`description` AS `description`,`sakila_staging`.`category`.`name` AS `category`,`sakila_staging`.`film`.`rental_rate` AS `price`,`sakila_staging`.`film`.`length` AS `length`,`sakila_staging`.`film`.`rating` AS `rating`,group_concat(concat(`sakila_staging`.`actor`.`first_name`,'' '',`sakila_staging`.`actor`.`last_name`) separator '', '') AS `actors` from ((((`sakila_staging`.`category` left join `sakila_staging`.`film_category` on((`sakila_staging`.`category`.`category_id` = `sakila_staging`.`film_category`.`category_id`))) left join `sakila_staging`.`film` on((`sakila_staging`.`film_category`.`film_id` = `sakila_staging`.`film`.`film_id`))) join `sakila_staging`.`film_actor` on((`sakila_staging`.`film`.`film_id` = `sakila_staging`.`film_actor`.`film_id`))) join `sakila_staging`.`actor` on((`sakila_staging`.`film_actor`.`actor_id` = `sakila_staging`.`actor`.`actor_id`))) group by `sakila_staging`.`film`.`film_id`,`sakila_staging`.`category`.`name`"}, {"name": "nicer_but_slower_film_list", "comment": "VIEW", "definition": "select `sakila_staging`.`film`.`film_id` AS `FID`,`sakila_staging`.`film`.`title` AS `title`,`sakila_staging`.`film`.`description` AS `description`,`sakila_staging`.`category`.`name` AS `category`,`sakila_staging`.`film`.`rental_rate` AS `price`,`sakila_staging`.`film`.`length` AS `length`,`sakila_staging`.`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`sakila_staging`.`actor`.`first_name`,1,1)),lower(substr(`sakila_staging`.`actor`.`first_name`,2,length(`sakila_staging`.`actor`.`first_name`))),'' '',concat(upper(substr(`sakila_staging`.`actor`.`last_name`,1,1)),lower(substr(`sakila_staging`.`actor`.`last_name`,2,length(`sakila_staging`.`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`sakila_staging`.`category` left join `sakila_staging`.`film_category` on((`sakila_staging`.`category`.`category_id` = `sakila_staging`.`film_category`.`category_id`))) left join `sakila_staging`.`film` on((`sakila_staging`.`film_category`.`film_id` = `sakila_staging`.`film`.`film_id`))) join `sakila_staging`.`film_actor` on((`sakila_staging`.`film`.`film_id` = `sakila_staging`.`film_actor`.`film_id`))) join `sakila_staging`.`actor` on((`sakila_staging`.`film_actor`.`actor_id` = `sakila_staging`.`actor`.`actor_id`))) group by `sakila_staging`.`film`.`film_id`,`sakila_staging`.`category`.`name`"}, {"name": "sales_by_film_category", "comment": "VIEW", "definition": "select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`sakila_staging`.`payment` `p` join `sakila_staging`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_staging`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_staging`.`film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `sakila_staging`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_staging`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc"}, {"name": "sales_by_store", "comment": "VIEW", "definition": "select concat(`c`.`city`,'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`sakila_staging`.`payment` `p` join `sakila_staging`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_staging`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_staging`.`store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `sakila_staging`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_staging`.`city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `sakila_staging`.`country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `sakila_staging`.`staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`"}, {"name": "staff_list", "comment": "VIEW", "definition": "select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_staging`.`city`.`city` AS `city`,`sakila_staging`.`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`sakila_staging`.`staff` `s` join `sakila_staging`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_staging`.`city` on((`a`.`city_id` = `sakila_staging`.`city`.`city_id`))) join `sakila_staging`.`country` on((`sakila_staging`.`city`.`country_id` = `sakila_staging`.`country`.`country_id`)))"}], "tables": [{"name": "actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id"]}, {"name": "idx_actor_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384"}, {"name": "address", "engine": "InnoDB", "columns": [{"name": "address_id", "type": "smallint unsigned", "position": 1}, {"name": "address", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address2", "type": "varchar(50)", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "district", "type": "varchar(20)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "city_id", "type": "smallint unsigned", "position": 5}, {"name": "postal_code", "type": "varchar(10)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "phone", "type": "varchar(20)", "position": 7, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "location", "type": "geometry", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_city_id", "type": "BTREE", "visible": true, "expressions": ["city_id"]}, {"name": "idx_location", "type": "SPATIAL", "visible": true, "expressions": ["location"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_address_city", "columns": ["city_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "city", "referencedColumns": ["city_id"]}]}, {"name": "category", "engine": "InnoDB", "columns": [{"name": "category_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "varchar(25)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "city", "engine": "InnoDB", "columns": [{"name": "city_id", "type": "smallint unsigned", "position": 1}, {"name": "city", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "country_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["city_id"]}, {"name": "idx_fk_country_id", "type": "BTREE", "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_city_country", "columns": ["country_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "country", "referencedColumns": ["country_id"]}]}, {"name": "country", "engine": "InnoDB", "columns": [{"name": "country_id", "type": "smallint unsigned", "position": 1}, {"name": "country", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "customer", "engine": "InnoDB", "columns": [{"name": "customer_id", "type": "smallint unsigned", "position": 1}, {"name": "store_id", "type": "tinyint unsigned", "position": 2}, {"name": "first_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 5, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 6}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 7}, {"name": "create_date", "type": "datetime", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}, {"name": "idx_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_customer_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_customer_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "film", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "release_year", "type": "year", "nullable": true, "position": 4}, {"name": "language_id", "type": "tinyint unsigned", "position": 5}, {"name": "original_language_id", "type": "tinyint unsigned", "nullable": true, "position": 6}, {"name": "rental_duration", "type": "tinyint unsigned", "default": "3", "position": 7}, {"name": "rental_rate", "type": "decimal(4,2)", "default": "4.99", "position": 8}, {"name": "length", "type": "smallint unsigned", "nullable": true, "position": 9}, {"name": "replacement_cost", "type": "decimal(5,2)", "default": "19.99", "position": 10}, {"name": "rating", "type": "enum(''G'',''PG'',''PG-13'',''R'',''NC-17'')", "default": "G", "nullable": true, "position": 11, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "special_features", "type": "set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'')", "nullable": true, "position": 12, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 13}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_fk_language_id", "type": "BTREE", "visible": true, "expressions": ["language_id"]}, {"name": "idx_fk_original_language_id", "type": "BTREE", "visible": true, "expressions": ["original_language_id"]}, {"name": "idx_title", "type": "BTREE", "visible": true, "expressions": ["title"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_film_language", "columns": ["language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}, {"name": "fk_film_language_original", "columns": ["original_language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}]}, {"name": "film_actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id", "film_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_actor_actor", "columns": ["actor_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "actor", "referencedColumns": ["actor_id"]}, {"name": "fk_film_actor_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_category", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "category_id", "type": "tinyint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id", "category_id"]}, {"name": "fk_film_category_category", "type": "BTREE", "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_category_category", "columns": ["category_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "category", "referencedColumns": ["category_id"]}, {"name": "fk_film_category_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_text", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_title_description", "type": "FULLTEXT", "visible": true, "expressions": ["title", "description"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768"}, {"name": "inventory", "engine": "InnoDB", "columns": [{"name": "inventory_id", "type": "mediumint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "store_id", "type": "tinyint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}, {"name": "idx_store_id_film_id", "type": "BTREE", "visible": true, "expressions": ["store_id", "film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_inventory_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}, {"name": "fk_inventory_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "language", "engine": "InnoDB", "columns": [{"name": "language_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "char(20)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["language_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "payment", "engine": "InnoDB", "columns": [{"name": "payment_id", "type": "smallint unsigned", "position": 1}, {"name": "customer_id", "type": "smallint unsigned", "position": 2}, {"name": "staff_id", "type": "tinyint unsigned", "position": 3}, {"name": "rental_id", "type": "int", "nullable": true, "position": 4}, {"name": "amount", "type": "decimal(5,2)", "position": 5}, {"name": "payment_date", "type": "datetime", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["payment_id"]}, {"name": "fk_payment_rental", "type": "BTREE", "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_payment_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_payment_rental", "columns": ["rental_id"], "onDelete": "SET NULL", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "rental", "referencedColumns": ["rental_id"]}, {"name": "fk_payment_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "rental", "engine": "InnoDB", "columns": [{"name": "rental_id", "type": "int", "position": 1}, {"name": "rental_date", "type": "datetime", "position": 2}, {"name": "inventory_id", "type": "mediumint unsigned", "position": 3}, {"name": "customer_id", "type": "smallint unsigned", "position": 4}, {"name": "return_date", "type": "datetime", "nullable": true, "position": 5}, {"name": "staff_id", "type": "tinyint unsigned", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_inventory_id", "type": "BTREE", "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}, {"name": "rental_date", "type": "BTREE", "unique": true, "visible": true, "expressions": ["rental_date", "inventory_id", "customer_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "65536", "foreignKeys": [{"name": "fk_rental_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_rental_inventory", "columns": ["inventory_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "inventory", "referencedColumns": ["inventory_id"]}, {"name": "fk_rental_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "staff", "engine": "InnoDB", "columns": [{"name": "staff_id", "type": "tinyint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 4}, {"name": "picture", "type": "blob", "nullable": true, "position": 5}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "store_id", "type": "tinyint unsigned", "position": 7}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 8}, {"name": "username", "type": "varchar(16)", "position": 9, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "password", "type": "varchar(40)", "nullable": true, "position": 10, "collation": "utf8mb3_bin", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 11}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["staff_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_staff_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_staff_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "store", "engine": "InnoDB", "columns": [{"name": "store_id", "type": "tinyint unsigned", "position": 1}, {"name": "manager_staff_id", "type": "tinyint unsigned", "position": 2}, {"name": "address_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["store_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_unique_manager", "type": "BTREE", "unique": true, "visible": true, "expressions": ["manager_staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_store_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_store_staff", "columns": ["manager_staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Temporary view structure for `actor_info`
+--
+CREATE VIEW `actor_info` AS SELECT
+  1 AS `actor_id`,
+  1 AS `first_name`,
+  1 AS `last_name`,
+  1 AS `film_info`;
+
+
+--
+-- Temporary view structure for `customer_list`
+--
+CREATE VIEW `customer_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `notes`,
+  1 AS `SID`;
+
+
+--
+-- Temporary view structure for `film_list`
+--
+CREATE VIEW `film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `nicer_but_slower_film_list`
+--
+CREATE VIEW `nicer_but_slower_film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `sales_by_film_category`
+--
+CREATE VIEW `sales_by_film_category` AS SELECT
+  1 AS `category`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `sales_by_store`
+--
+CREATE VIEW `sales_by_store` AS SELECT
+  1 AS `store`,
+  1 AS `manager`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `staff_list`
+--
+CREATE VIEW `staff_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `SID`;
+
+
+--
+-- Table structure for `actor`
+--
+CREATE TABLE `actor` (
+  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`),
+  KEY `idx_actor_last_name` (`last_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `address`
+--
+CREATE TABLE `address` (
+  `address_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `address` varchar(50) NOT NULL,
+  `address2` varchar(50) DEFAULT NULL,
+  `district` varchar(20) NOT NULL,
+  `city_id` smallint unsigned NOT NULL,
+  `postal_code` varchar(10) DEFAULT NULL,
+  `phone` varchar(20) NOT NULL,
+  `location` geometry NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`address_id`),
+  KEY `idx_fk_city_id` (`city_id`),
+  SPATIAL KEY `idx_location` (`location`),
+  CONSTRAINT `fk_address_city` FOREIGN KEY (`city_id`) REFERENCES `city` (`city_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `category`
+--
+CREATE TABLE `category` (
+  `category_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(25) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `city`
+--
+CREATE TABLE `city` (
+  `city_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `city` varchar(50) NOT NULL,
+  `country_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`city_id`),
+  KEY `idx_fk_country_id` (`country_id`),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (`country_id`) REFERENCES `country` (`country_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `country`
+--
+CREATE TABLE `country` (
+  `country_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `country` varchar(50) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`country_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `customer`
+--
+CREATE TABLE `customer` (
+  `customer_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` tinyint unsigned NOT NULL,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `email` varchar(50) DEFAULT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `create_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`customer_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  KEY `idx_last_name` (`last_name`),
+  CONSTRAINT `fk_customer_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_customer_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film`
+--
+CREATE TABLE `film` (
+  `film_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `release_year` year DEFAULT NULL,
+  `language_id` tinyint unsigned NOT NULL,
+  `original_language_id` tinyint unsigned DEFAULT NULL,
+  `rental_duration` tinyint unsigned NOT NULL DEFAULT ''3'',
+  `rental_rate` decimal(4,2) NOT NULL DEFAULT ''4.99'',
+  `length` smallint unsigned DEFAULT NULL,
+  `replacement_cost` decimal(5,2) NOT NULL DEFAULT ''19.99'',
+  `rating` enum(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  `special_features` set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`),
+  KEY `idx_title` (`title`),
+  KEY `idx_fk_language_id` (`language_id`),
+  KEY `idx_fk_original_language_id` (`original_language_id`),
+  CONSTRAINT `fk_film_language` FOREIGN KEY (`language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_language_original` FOREIGN KEY (`original_language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_actor`
+--
+CREATE TABLE `film_actor` (
+  `actor_id` smallint unsigned NOT NULL,
+  `film_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`,`film_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  CONSTRAINT `fk_film_actor_actor` FOREIGN KEY (`actor_id`) REFERENCES `actor` (`actor_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_actor_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_category`
+--
+CREATE TABLE `film_category` (
+  `film_id` smallint unsigned NOT NULL,
+  `category_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`,`category_id`),
+  KEY `fk_film_category_category` (`category_id`),
+  CONSTRAINT `fk_film_category_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_category_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_text`
+--
+CREATE TABLE `film_text` (
+  `film_id` smallint NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  PRIMARY KEY (`film_id`),
+  FULLTEXT KEY `idx_title_description` (`title`,`description`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `inventory`
+--
+CREATE TABLE `inventory` (
+  `inventory_id` mediumint unsigned NOT NULL AUTO_INCREMENT,
+  `film_id` smallint unsigned NOT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`inventory_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  KEY `idx_store_id_film_id` (`store_id`,`film_id`),
+  CONSTRAINT `fk_inventory_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_inventory_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `language`
+--
+CREATE TABLE `language` (
+  `language_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` char(20) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`language_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `payment`
+--
+CREATE TABLE `payment` (
+  `payment_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `customer_id` smallint unsigned NOT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `rental_id` int DEFAULT NULL,
+  `amount` decimal(5,2) NOT NULL,
+  `payment_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`payment_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `fk_payment_rental` (`rental_id`),
+  CONSTRAINT `fk_payment_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_rental` FOREIGN KEY (`rental_id`) REFERENCES `rental` (`rental_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `rental`
+--
+CREATE TABLE `rental` (
+  `rental_id` int NOT NULL AUTO_INCREMENT,
+  `rental_date` datetime NOT NULL,
+  `inventory_id` mediumint unsigned NOT NULL,
+  `customer_id` smallint unsigned NOT NULL,
+  `return_date` datetime DEFAULT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`rental_id`),
+  UNIQUE KEY `rental_date` (`rental_date`,`inventory_id`,`customer_id`),
+  KEY `idx_fk_inventory_id` (`inventory_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  CONSTRAINT `fk_rental_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_inventory` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`inventory_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `staff`
+--
+CREATE TABLE `staff` (
+  `staff_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `picture` blob,
+  `email` varchar(50) DEFAULT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `username` varchar(16) NOT NULL,
+  `password` varchar(40) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`staff_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_staff_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_staff_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `store`
+--
+CREATE TABLE `store` (
+  `store_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `manager_staff_id` tinyint unsigned NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`store_id`),
+  UNIQUE KEY `idx_unique_manager` (`manager_staff_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_store_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_store_staff` FOREIGN KEY (`manager_staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+DROP VIEW IF EXISTS `actor_info`;
+--
+-- View structure for `actor_info`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `actor_info` AS select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`film` `f` join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`actor` `a` left join `film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`;
+
+DROP VIEW IF EXISTS `customer_list`;
+--
+-- View structure for `customer_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `customer_list` AS select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,_utf8mb3'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,if(`cu`.`active`,_utf8mb3''active'',_utf8mb3'''') AS `notes`,`cu`.`store_id` AS `SID` from (((`customer` `cu` join `address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+DROP VIEW IF EXISTS `film_list`;
+--
+-- View structure for `film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(`actor`.`first_name`,_utf8mb3'' '',`actor`.`last_name`) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `nicer_but_slower_film_list`;
+--
+-- View structure for `nicer_but_slower_film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `nicer_but_slower_film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`actor`.`first_name`,1,1)),lower(substr(`actor`.`first_name`,2,length(`actor`.`first_name`))),_utf8mb3'' '',concat(upper(substr(`actor`.`last_name`,1,1)),lower(substr(`actor`.`last_name`,2,length(`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `sales_by_film_category`;
+--
+-- View structure for `sales_by_film_category`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_film_category` AS select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc;
+
+DROP VIEW IF EXISTS `sales_by_store`;
+--
+-- View structure for `sales_by_store`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_store` AS select concat(`c`.`city`,_utf8mb3'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,_utf8mb3'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`;
+
+DROP VIEW IF EXISTS `staff_list`;
+--
+-- View structure for `staff_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `staff_list` AS select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,_utf8mb3'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`staff` `s` join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+--
+-- Function structure for `get_customer_balance`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_customer_balance`(p_customer_id INT, p_effective_date DATETIME) RETURNS decimal(5,2)
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_held_by_customer`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_held_by_customer`(p_inventory_id INT) RETURNS int
+    READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_in_stock`(p_inventory_id INT) RETURNS tinyint(1)
+    READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_not_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_not_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `rewards_report`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `rewards_report`(
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+    READS SQL DATA
+    COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END; ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `ins_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `upd_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `del_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END ;;
+DELIMITER ;
+
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 ') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (103, 'NORMAL', 1, 1695179141, 1, 1695179141, 103, '{"name": "sakila_staging", "schemas": [{}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695192793, 101, '{"name": "sakila_prod", "schemas": [{"views": [{"name": "actor_info", "comment": "VIEW", "definition": "select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`sakila_prod`.`film` `f` join `sakila_prod`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_prod`.`film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`sakila_prod`.`actor` `a` left join `sakila_prod`.`film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `sakila_prod`.`film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `sakila_prod`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`"}, {"name": "customer_list", "comment": "VIEW", "definition": "select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_prod`.`city`.`city` AS `city`,`sakila_prod`.`country`.`country` AS `country`,if(`cu`.`active`,''active'','''') AS `notes`,`cu`.`store_id` AS `SID` from (((`sakila_prod`.`customer` `cu` join `sakila_prod`.`address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `sakila_prod`.`city` on((`a`.`city_id` = `sakila_prod`.`city`.`city_id`))) join `sakila_prod`.`country` on((`sakila_prod`.`city`.`country_id` = `sakila_prod`.`country`.`country_id`)))"}, {"name": "film_list", "comment": "VIEW", "definition": "select `sakila_prod`.`film`.`film_id` AS `FID`,`sakila_prod`.`film`.`title` AS `title`,`sakila_prod`.`film`.`description` AS `description`,`sakila_prod`.`category`.`name` AS `category`,`sakila_prod`.`film`.`rental_rate` AS `price`,`sakila_prod`.`film`.`length` AS `length`,`sakila_prod`.`film`.`rating` AS `rating`,group_concat(concat(`sakila_prod`.`actor`.`first_name`,'' '',`sakila_prod`.`actor`.`last_name`) separator '', '') AS `actors` from ((((`sakila_prod`.`category` left join `sakila_prod`.`film_category` on((`sakila_prod`.`category`.`category_id` = `sakila_prod`.`film_category`.`category_id`))) left join `sakila_prod`.`film` on((`sakila_prod`.`film_category`.`film_id` = `sakila_prod`.`film`.`film_id`))) join `sakila_prod`.`film_actor` on((`sakila_prod`.`film`.`film_id` = `sakila_prod`.`film_actor`.`film_id`))) join `sakila_prod`.`actor` on((`sakila_prod`.`film_actor`.`actor_id` = `sakila_prod`.`actor`.`actor_id`))) group by `sakila_prod`.`film`.`film_id`,`sakila_prod`.`category`.`name`"}, {"name": "nicer_but_slower_film_list", "comment": "VIEW", "definition": "select `sakila_prod`.`film`.`film_id` AS `FID`,`sakila_prod`.`film`.`title` AS `title`,`sakila_prod`.`film`.`description` AS `description`,`sakila_prod`.`category`.`name` AS `category`,`sakila_prod`.`film`.`rental_rate` AS `price`,`sakila_prod`.`film`.`length` AS `length`,`sakila_prod`.`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`sakila_prod`.`actor`.`first_name`,1,1)),lower(substr(`sakila_prod`.`actor`.`first_name`,2,length(`sakila_prod`.`actor`.`first_name`))),'' '',concat(upper(substr(`sakila_prod`.`actor`.`last_name`,1,1)),lower(substr(`sakila_prod`.`actor`.`last_name`,2,length(`sakila_prod`.`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`sakila_prod`.`category` left join `sakila_prod`.`film_category` on((`sakila_prod`.`category`.`category_id` = `sakila_prod`.`film_category`.`category_id`))) left join `sakila_prod`.`film` on((`sakila_prod`.`film_category`.`film_id` = `sakila_prod`.`film`.`film_id`))) join `sakila_prod`.`film_actor` on((`sakila_prod`.`film`.`film_id` = `sakila_prod`.`film_actor`.`film_id`))) join `sakila_prod`.`actor` on((`sakila_prod`.`film_actor`.`actor_id` = `sakila_prod`.`actor`.`actor_id`))) group by `sakila_prod`.`film`.`film_id`,`sakila_prod`.`category`.`name`"}, {"name": "sales_by_film_category", "comment": "VIEW", "definition": "select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`sakila_prod`.`payment` `p` join `sakila_prod`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_prod`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_prod`.`film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `sakila_prod`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_prod`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc"}, {"name": "sales_by_store", "comment": "VIEW", "definition": "select concat(`c`.`city`,'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`sakila_prod`.`payment` `p` join `sakila_prod`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_prod`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_prod`.`store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `sakila_prod`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_prod`.`city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `sakila_prod`.`country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `sakila_prod`.`staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`"}, {"name": "staff_list", "comment": "VIEW", "definition": "select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_prod`.`city`.`city` AS `city`,`sakila_prod`.`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`sakila_prod`.`staff` `s` join `sakila_prod`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_prod`.`city` on((`a`.`city_id` = `sakila_prod`.`city`.`city_id`))) join `sakila_prod`.`country` on((`sakila_prod`.`city`.`country_id` = `sakila_prod`.`country`.`country_id`)))"}], "tables": [{"name": "actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id"]}, {"name": "idx_actor_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384"}, {"name": "address", "engine": "InnoDB", "columns": [{"name": "address_id", "type": "smallint unsigned", "position": 1}, {"name": "address", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address2", "type": "varchar(50)", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "district", "type": "varchar(20)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "city_id", "type": "smallint unsigned", "position": 5}, {"name": "postal_code", "type": "varchar(10)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "phone", "type": "varchar(20)", "position": 7, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "location", "type": "geometry", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_city_id", "type": "BTREE", "visible": true, "expressions": ["city_id"]}, {"name": "idx_location", "type": "SPATIAL", "visible": true, "expressions": ["location"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_address_city", "columns": ["city_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "city", "referencedColumns": ["city_id"]}]}, {"name": "category", "engine": "InnoDB", "columns": [{"name": "category_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "varchar(25)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "city", "engine": "InnoDB", "columns": [{"name": "city_id", "type": "smallint unsigned", "position": 1}, {"name": "city", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "country_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["city_id"]}, {"name": "idx_fk_country_id", "type": "BTREE", "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_city_country", "columns": ["country_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "country", "referencedColumns": ["country_id"]}]}, {"name": "country", "engine": "InnoDB", "columns": [{"name": "country_id", "type": "smallint unsigned", "position": 1}, {"name": "country", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "customer", "engine": "InnoDB", "columns": [{"name": "customer_id", "type": "smallint unsigned", "position": 1}, {"name": "store_id", "type": "tinyint unsigned", "position": 2}, {"name": "first_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 5, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 6}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 7}, {"name": "create_date", "type": "datetime", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}, {"name": "idx_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_customer_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_customer_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "film", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "release_year", "type": "year", "nullable": true, "position": 4}, {"name": "language_id", "type": "tinyint unsigned", "position": 5}, {"name": "original_language_id", "type": "tinyint unsigned", "nullable": true, "position": 6}, {"name": "rental_duration", "type": "tinyint unsigned", "default": "3", "position": 7}, {"name": "rental_rate", "type": "decimal(4,2)", "default": "4.99", "position": 8}, {"name": "length", "type": "smallint unsigned", "nullable": true, "position": 9}, {"name": "replacement_cost", "type": "decimal(5,2)", "default": "19.99", "position": 10}, {"name": "rating", "type": "enum(''G'',''PG'',''PG-13'',''R'',''NC-17'')", "default": "G", "nullable": true, "position": 11, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "special_features", "type": "set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'')", "nullable": true, "position": 12, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 13}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_fk_language_id", "type": "BTREE", "visible": true, "expressions": ["language_id"]}, {"name": "idx_fk_original_language_id", "type": "BTREE", "visible": true, "expressions": ["original_language_id"]}, {"name": "idx_title", "type": "BTREE", "visible": true, "expressions": ["title"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_film_language", "columns": ["language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}, {"name": "fk_film_language_original", "columns": ["original_language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}]}, {"name": "film_actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id", "film_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_actor_actor", "columns": ["actor_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "actor", "referencedColumns": ["actor_id"]}, {"name": "fk_film_actor_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_category", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "category_id", "type": "tinyint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id", "category_id"]}, {"name": "fk_film_category_category", "type": "BTREE", "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_category_category", "columns": ["category_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "category", "referencedColumns": ["category_id"]}, {"name": "fk_film_category_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_text", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_title_description", "type": "FULLTEXT", "visible": true, "expressions": ["title", "description"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768"}, {"name": "inventory", "engine": "InnoDB", "columns": [{"name": "inventory_id", "type": "mediumint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "store_id", "type": "tinyint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}, {"name": "idx_store_id_film_id", "type": "BTREE", "visible": true, "expressions": ["store_id", "film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_inventory_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}, {"name": "fk_inventory_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "language", "engine": "InnoDB", "columns": [{"name": "language_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "char(20)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["language_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "payment", "engine": "InnoDB", "columns": [{"name": "payment_id", "type": "smallint unsigned", "position": 1}, {"name": "customer_id", "type": "smallint unsigned", "position": 2}, {"name": "staff_id", "type": "tinyint unsigned", "position": 3}, {"name": "rental_id", "type": "int", "nullable": true, "position": 4}, {"name": "amount", "type": "decimal(5,2)", "position": 5}, {"name": "payment_date", "type": "datetime", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["payment_id"]}, {"name": "fk_payment_rental", "type": "BTREE", "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_payment_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_payment_rental", "columns": ["rental_id"], "onDelete": "SET NULL", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "rental", "referencedColumns": ["rental_id"]}, {"name": "fk_payment_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "rental", "engine": "InnoDB", "columns": [{"name": "rental_id", "type": "int", "position": 1}, {"name": "rental_date", "type": "datetime", "position": 2}, {"name": "inventory_id", "type": "mediumint unsigned", "position": 3}, {"name": "customer_id", "type": "smallint unsigned", "position": 4}, {"name": "return_date", "type": "datetime", "nullable": true, "position": 5}, {"name": "staff_id", "type": "tinyint unsigned", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_inventory_id", "type": "BTREE", "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}, {"name": "rental_date", "type": "BTREE", "unique": true, "visible": true, "expressions": ["rental_date", "inventory_id", "customer_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "65536", "foreignKeys": [{"name": "fk_rental_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_rental_inventory", "columns": ["inventory_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "inventory", "referencedColumns": ["inventory_id"]}, {"name": "fk_rental_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "staff", "engine": "InnoDB", "columns": [{"name": "staff_id", "type": "tinyint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 4}, {"name": "picture", "type": "blob", "nullable": true, "position": 5}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "store_id", "type": "tinyint unsigned", "position": 7}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 8}, {"name": "username", "type": "varchar(16)", "position": 9, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "password", "type": "varchar(40)", "nullable": true, "position": 10, "collation": "utf8mb3_bin", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 11}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["staff_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_staff_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_staff_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "store", "engine": "InnoDB", "columns": [{"name": "store_id", "type": "tinyint unsigned", "position": 1}, {"name": "manager_staff_id", "type": "tinyint unsigned", "position": 2}, {"name": "address_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["store_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_unique_manager", "type": "BTREE", "unique": true, "visible": true, "expressions": ["manager_staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_store_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_store_staff", "columns": ["manager_staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Temporary view structure for `actor_info`
+--
+CREATE VIEW `actor_info` AS SELECT
+  1 AS `actor_id`,
+  1 AS `first_name`,
+  1 AS `last_name`,
+  1 AS `film_info`;
+
+
+--
+-- Temporary view structure for `customer_list`
+--
+CREATE VIEW `customer_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `notes`,
+  1 AS `SID`;
+
+
+--
+-- Temporary view structure for `film_list`
+--
+CREATE VIEW `film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `nicer_but_slower_film_list`
+--
+CREATE VIEW `nicer_but_slower_film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `sales_by_film_category`
+--
+CREATE VIEW `sales_by_film_category` AS SELECT
+  1 AS `category`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `sales_by_store`
+--
+CREATE VIEW `sales_by_store` AS SELECT
+  1 AS `store`,
+  1 AS `manager`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `staff_list`
+--
+CREATE VIEW `staff_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `SID`;
+
+
+--
+-- Table structure for `actor`
+--
+CREATE TABLE `actor` (
+  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`),
+  KEY `idx_actor_last_name` (`last_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `address`
+--
+CREATE TABLE `address` (
+  `address_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `address` varchar(50) NOT NULL,
+  `address2` varchar(50) DEFAULT NULL,
+  `district` varchar(20) NOT NULL,
+  `city_id` smallint unsigned NOT NULL,
+  `postal_code` varchar(10) DEFAULT NULL,
+  `phone` varchar(20) NOT NULL,
+  `location` geometry NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`address_id`),
+  KEY `idx_fk_city_id` (`city_id`),
+  SPATIAL KEY `idx_location` (`location`),
+  CONSTRAINT `fk_address_city` FOREIGN KEY (`city_id`) REFERENCES `city` (`city_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `category`
+--
+CREATE TABLE `category` (
+  `category_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(25) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `city`
+--
+CREATE TABLE `city` (
+  `city_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `city` varchar(50) NOT NULL,
+  `country_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`city_id`),
+  KEY `idx_fk_country_id` (`country_id`),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (`country_id`) REFERENCES `country` (`country_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `country`
+--
+CREATE TABLE `country` (
+  `country_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `country` varchar(50) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`country_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `customer`
+--
+CREATE TABLE `customer` (
+  `customer_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` tinyint unsigned NOT NULL,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `email` varchar(50) DEFAULT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `create_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`customer_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  KEY `idx_last_name` (`last_name`),
+  CONSTRAINT `fk_customer_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_customer_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film`
+--
+CREATE TABLE `film` (
+  `film_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `release_year` year DEFAULT NULL,
+  `language_id` tinyint unsigned NOT NULL,
+  `original_language_id` tinyint unsigned DEFAULT NULL,
+  `rental_duration` tinyint unsigned NOT NULL DEFAULT ''3'',
+  `rental_rate` decimal(4,2) NOT NULL DEFAULT ''4.99'',
+  `length` smallint unsigned DEFAULT NULL,
+  `replacement_cost` decimal(5,2) NOT NULL DEFAULT ''19.99'',
+  `rating` enum(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  `special_features` set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`),
+  KEY `idx_title` (`title`),
+  KEY `idx_fk_language_id` (`language_id`),
+  KEY `idx_fk_original_language_id` (`original_language_id`),
+  CONSTRAINT `fk_film_language` FOREIGN KEY (`language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_language_original` FOREIGN KEY (`original_language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_actor`
+--
+CREATE TABLE `film_actor` (
+  `actor_id` smallint unsigned NOT NULL,
+  `film_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`,`film_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  CONSTRAINT `fk_film_actor_actor` FOREIGN KEY (`actor_id`) REFERENCES `actor` (`actor_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_actor_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_category`
+--
+CREATE TABLE `film_category` (
+  `film_id` smallint unsigned NOT NULL,
+  `category_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`,`category_id`),
+  KEY `fk_film_category_category` (`category_id`),
+  CONSTRAINT `fk_film_category_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_category_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_text`
+--
+CREATE TABLE `film_text` (
+  `film_id` smallint NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  PRIMARY KEY (`film_id`),
+  FULLTEXT KEY `idx_title_description` (`title`,`description`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `inventory`
+--
+CREATE TABLE `inventory` (
+  `inventory_id` mediumint unsigned NOT NULL AUTO_INCREMENT,
+  `film_id` smallint unsigned NOT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`inventory_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  KEY `idx_store_id_film_id` (`store_id`,`film_id`),
+  CONSTRAINT `fk_inventory_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_inventory_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `language`
+--
+CREATE TABLE `language` (
+  `language_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` char(20) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`language_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `payment`
+--
+CREATE TABLE `payment` (
+  `payment_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `customer_id` smallint unsigned NOT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `rental_id` int DEFAULT NULL,
+  `amount` decimal(5,2) NOT NULL,
+  `payment_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`payment_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `fk_payment_rental` (`rental_id`),
+  CONSTRAINT `fk_payment_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_rental` FOREIGN KEY (`rental_id`) REFERENCES `rental` (`rental_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `rental`
+--
+CREATE TABLE `rental` (
+  `rental_id` int NOT NULL AUTO_INCREMENT,
+  `rental_date` datetime NOT NULL,
+  `inventory_id` mediumint unsigned NOT NULL,
+  `customer_id` smallint unsigned NOT NULL,
+  `return_date` datetime DEFAULT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`rental_id`),
+  UNIQUE KEY `rental_date` (`rental_date`,`inventory_id`,`customer_id`),
+  KEY `idx_fk_inventory_id` (`inventory_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  CONSTRAINT `fk_rental_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_inventory` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`inventory_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `staff`
+--
+CREATE TABLE `staff` (
+  `staff_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `picture` blob,
+  `email` varchar(50) DEFAULT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `username` varchar(16) NOT NULL,
+  `password` varchar(40) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`staff_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_staff_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_staff_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `store`
+--
+CREATE TABLE `store` (
+  `store_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `manager_staff_id` tinyint unsigned NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`store_id`),
+  UNIQUE KEY `idx_unique_manager` (`manager_staff_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_store_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_store_staff` FOREIGN KEY (`manager_staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+DROP VIEW IF EXISTS `actor_info`;
+--
+-- View structure for `actor_info`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `actor_info` AS select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`film` `f` join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`actor` `a` left join `film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`;
+
+DROP VIEW IF EXISTS `customer_list`;
+--
+-- View structure for `customer_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `customer_list` AS select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,_utf8mb3'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,if(`cu`.`active`,_utf8mb3''active'',_utf8mb3'''') AS `notes`,`cu`.`store_id` AS `SID` from (((`customer` `cu` join `address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+DROP VIEW IF EXISTS `film_list`;
+--
+-- View structure for `film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(`actor`.`first_name`,_utf8mb3'' '',`actor`.`last_name`) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `nicer_but_slower_film_list`;
+--
+-- View structure for `nicer_but_slower_film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `nicer_but_slower_film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`actor`.`first_name`,1,1)),lower(substr(`actor`.`first_name`,2,length(`actor`.`first_name`))),_utf8mb3'' '',concat(upper(substr(`actor`.`last_name`,1,1)),lower(substr(`actor`.`last_name`,2,length(`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `sales_by_film_category`;
+--
+-- View structure for `sales_by_film_category`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_film_category` AS select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc;
+
+DROP VIEW IF EXISTS `sales_by_store`;
+--
+-- View structure for `sales_by_store`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_store` AS select concat(`c`.`city`,_utf8mb3'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,_utf8mb3'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`;
+
+DROP VIEW IF EXISTS `staff_list`;
+--
+-- View structure for `staff_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `staff_list` AS select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,_utf8mb3'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`staff` `s` join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+--
+-- Function structure for `get_customer_balance`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_customer_balance`(p_customer_id INT, p_effective_date DATETIME) RETURNS decimal(5,2)
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_held_by_customer`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_held_by_customer`(p_inventory_id INT) RETURNS int
+    READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_in_stock`(p_inventory_id INT) RETURNS tinyint(1)
+    READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_not_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_not_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `rewards_report`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `rewards_report`(
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+    READS SQL DATA
+    COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END; ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `ins_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `upd_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `del_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END ;;
+DELIMITER ;
+
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 ') ON CONFLICT DO NOTHING;
@@ -262,6 +2228,7 @@ ALTER TABLE public.pipeline DISABLE TRIGGER ALL;
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (101, 'NORMAL', 101, 1695178711, 101, 1695178711, 101, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (102, 'NORMAL', 101, 1695179030, 101, 1695179030, 101, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (103, 'NORMAL', 101, 1695179078, 101, 1695179078, 101, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (104, 'NORMAL', 103, 1695192093, 103, 1695192093, 101, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.pipeline ENABLE TRIGGER ALL;
@@ -275,6 +2242,7 @@ ALTER TABLE public.plan DISABLE TRIGGER ALL;
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (101, 'NORMAL', 101, 1695178711, 101, 1695178711, 101, 101, '', '', '{"steps": [{"specs": [{"id": "494f897d-66e9-4562-8b97-5d213fdf6ef4", "createDatabaseConfig": {"labels": {"bb.environment": "prod"}, "target": "instances/mysql-prod", "database": "sakila_prod", "collation": "utf8mb4_general_ci", "environment": "environments/prod", "characterSet": "utf8mb4"}}]}]}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (102, 'NORMAL', 101, 1695179030, 101, 1695179030, 101, 102, '', '', '{"steps": [{"specs": [{"id": "11025977-45ca-4043-88fb-8002af053350", "createDatabaseConfig": {"labels": {"bb.environment": "test"}, "target": "instances/mysql-prod", "database": "sakila_test", "collation": "utf8mb4_general_ci", "environment": "environments/test", "characterSet": "utf8mb4"}}]}]}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (103, 'NORMAL', 101, 1695179078, 101, 1695179078, 101, 103, '', '', '{"steps": [{"specs": [{"id": "51e70d6c-d734-4ac5-bd74-16f01e8d6698", "createDatabaseConfig": {"labels": {"bb.environment": "staging"}, "target": "instances/mysql-prod", "database": "sakila_staging", "collation": "utf8mb4_general_ci", "environment": "environments/staging", "characterSet": "utf8mb4"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (104, 'NORMAL', 103, 1695192093, 102, 1695192607, 101, 104, '', '', '{"steps": [{"specs": [{"id": "f9fad3de-76d4-47dd-b921-c16955fc1623", "changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/test/sheets/111", "target": "instances/mysql-prod/databases/sakila_test"}}]}, {"specs": [{"id": "4461833c-8ffe-44bb-b2b2-3432fa8aa5c4", "changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/test/sheets/111", "target": "instances/mysql-prod/databases/sakila_staging"}}]}, {"specs": [{"id": "96451bdc-8afc-4f3e-b51c-6c4f81d51c43", "changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/test/sheets/111", "target": "instances/mysql-prod/databases/sakila_prod"}}]}]}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.plan ENABLE TRIGGER ALL;
@@ -288,6 +2256,7 @@ ALTER TABLE public.issue DISABLE TRIGGER ALL;
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (101, 'NORMAL', 101, 1695178711, 1, 1695178988, 101, 101, 101, 'Create database ''sakila_prod''', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "DBA", "creatorId": 1, "description": "系统定义的流程。只需要 DBA 审批"}], "approvalFindingDone": true}}', '''create'':1 ''database'':2 ''prod'':4 ''sakila'':3') ON CONFLICT DO NOTHING;
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (102, 'NORMAL', 101, 1695179030, 1, 1695179054, 101, 102, 102, 'Create database ''sakila_test''', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "DBA", "creatorId": 1, "description": "系统定义的流程。只需要 DBA 审批"}], "approvalFindingDone": true}}', '''create'':1 ''database'':2 ''sakila'':3 ''test'':4') ON CONFLICT DO NOTHING;
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (103, 'NORMAL', 101, 1695179078, 1, 1695179141, 101, 103, 103, 'Create database ''sakila_staging''', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "DBA", "creatorId": 1, "description": "系统定义的流程。只需要 DBA 审批"}], "approvalFindingDone": true}}', '''create'':1 ''database'':2 ''sakila'':3 ''staging'':4') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (104, 'NORMAL', 103, 1695192093, 1, 1695192793, 101, 104, 104, '[3 databases] Alter schema @09-20 14:41 UTC+0800', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 102}, {"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "项目所有者 -> DBA", "creatorId": 1, "description": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。"}], "approvalFindingDone": true}}', '''0800'':10 ''09'':5 ''14'':7 ''20'':6 ''3'':1 ''41'':8 ''alter'':3 ''databases'':2 ''schema'':4 ''utc'':9') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.issue ENABLE TRIGGER ALL;
@@ -324,6 +2293,10 @@ INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (103, 101
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (104, 101, 122, 'UNREAD') ON CONFLICT DO NOTHING;
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (105, 101, 123, 'UNREAD') ON CONFLICT DO NOTHING;
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (106, 101, 129, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (107, 103, 133, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (108, 101, 133, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (109, 103, 157, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (110, 101, 157, 'UNREAD') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.inbox ENABLE TRIGGER ALL;
@@ -334,7 +2307,7 @@ ALTER TABLE public.inbox ENABLE TRIGGER ALL;
 
 ALTER TABLE public.instance_change_history DISABLE TRIGGER ALL;
 
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695180489, 1, 1695180489, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230920112808', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695191772, 1, 1695191772, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230920143611', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
 CREATE TYPE row_status AS ENUM (''NORMAL'', ''ARCHIVED'');
 
 -- updated_ts trigger.
@@ -3067,7 +5040,7 @@ VALUES
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 103;
 ', '', 0, '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695180489, 1, 1695180489, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695191772, 1, 1695191772, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
 ', NULL, '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -6978,7 +8951,7 @@ ALTER TABLE ONLY public.vcs
 ALTER TABLE ONLY public.vcs
     ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
 
-', 168058000, '{}') ON CONFLICT DO NOTHING;
+', 62118000, '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (103, 'NORMAL', 1, 1695110681, 1, 1695110681, NULL, NULL, NULL, 'development', 3, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919160440', 'Migrate version 2.8.4 server version development with files migration/prod/2.8/0004##issue_type.sql.', 'ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts;
 
 UPDATE issue
@@ -10899,6 +12872,3828 @@ ALTER TABLE ONLY public.vcs
     ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
 
 ', 62228000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (111, 'NORMAL', 103, 1695192562, 103, 1695192772, 101, 102, 104, 'development', 1, 'UI', 'MIGRATE', 'DONE', '0000.0000.0000-20230920144133', '[3 databases] Alter schema @09-20 14:41 UTC+0800 - DDL(schema) for database "sakila_test"', '-- Sakila Spatial Sample Database Schema
+-- Version 0.9
+
+-- Copyright (c) 2014, Oracle Corporation
+-- All rights reserved.
+
+-- Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+--  * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+--  * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+--  * Neither the name of Oracle Corporation nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-- Modified in September 2015 by Giuseppe Maxia
+-- The schema and data can now be loaded by any MySQL 5.x version.
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE=''TRADITIONAL'';
+
+--
+-- Table structure for table `actor`
+--
+
+CREATE TABLE actor (
+  actor_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id),
+  KEY idx_actor_last_name (last_name)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `address`
+--
+
+CREATE TABLE address (
+  address_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  address VARCHAR(50) NOT NULL,
+  address2 VARCHAR(50) DEFAULT NULL,
+  district VARCHAR(20) NOT NULL,
+  city_id SMALLINT UNSIGNED NOT NULL,
+  postal_code VARCHAR(10) DEFAULT NULL,
+  phone VARCHAR(20) NOT NULL,
+  /*!50705 location GEOMETRY NOT NULL,*/
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (address_id),
+  KEY idx_fk_city_id (city_id),
+  /*!50705 SPATIAL KEY `idx_location` (location),*/
+  CONSTRAINT `fk_address_city` FOREIGN KEY (city_id) REFERENCES city (city_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `category`
+--
+
+CREATE TABLE category (
+  category_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(25) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `city`
+--
+
+CREATE TABLE city (
+  city_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  city VARCHAR(50) NOT NULL,
+  country_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (city_id),
+  KEY idx_fk_country_id (country_id),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (country_id) REFERENCES country (country_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `country`
+--
+
+CREATE TABLE country (
+  country_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  country VARCHAR(50) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (country_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `customer`
+--
+
+CREATE TABLE customer (
+  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id TINYINT UNSIGNED NOT NULL,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  create_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (customer_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  KEY idx_last_name (last_name),
+  CONSTRAINT fk_customer_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_customer_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film`
+--
+
+CREATE TABLE film (
+  film_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
+  release_year YEAR DEFAULT NULL,
+  language_id TINYINT UNSIGNED NOT NULL,
+  original_language_id TINYINT UNSIGNED DEFAULT NULL,
+  rental_duration TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  rental_rate DECIMAL(4,2) NOT NULL DEFAULT 4.99,
+  length SMALLINT UNSIGNED DEFAULT NULL,
+  replacement_cost DECIMAL(5,2) NOT NULL DEFAULT 19.99,
+  rating ENUM(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  special_features SET(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (film_id),
+  KEY idx_title (title),
+  KEY idx_fk_language_id (language_id),
+  KEY idx_fk_original_language_id (original_language_id),
+  CONSTRAINT fk_film_language FOREIGN KEY (language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_language_original FOREIGN KEY (original_language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_actor`
+--
+
+CREATE TABLE film_actor (
+  actor_id SMALLINT UNSIGNED NOT NULL,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id,film_id),
+  KEY idx_fk_film_id (`film_id`),
+  CONSTRAINT fk_film_actor_actor FOREIGN KEY (actor_id) REFERENCES actor (actor_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_actor_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_category`
+--
+
+CREATE TABLE film_category (
+  film_id SMALLINT UNSIGNED NOT NULL,
+  category_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (film_id, category_id),
+  CONSTRAINT fk_film_category_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_category_category FOREIGN KEY (category_id) REFERENCES category (category_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_text`
+--
+
+CREATE TABLE film_text (
+  film_id SMALLINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  PRIMARY KEY  (film_id),
+  FULLTEXT KEY idx_title_description (title,description)
+)ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- After MySQL 5.6.10, InnoDB supports fulltext indexes
+/*!50610 ALTER TABLE film_text engine=InnoDB */;
+
+--
+-- Triggers for loading film_text from film
+--
+
+CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END;
+
+
+CREATE TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END;
+
+
+CREATE TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END;
+
+
+--
+-- Table structure for table `inventory`
+--
+
+CREATE TABLE inventory (
+  inventory_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (inventory_id),
+  KEY idx_fk_film_id (film_id),
+  KEY idx_store_id_film_id (store_id,film_id),
+  CONSTRAINT fk_inventory_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_inventory_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `language`
+--
+
+CREATE TABLE language (
+  language_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name CHAR(20) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (language_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `payment`
+--
+
+CREATE TABLE payment (
+  payment_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  rental_id INT DEFAULT NULL,
+  amount DECIMAL(5,2) NOT NULL,
+  payment_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (payment_id),
+  KEY idx_fk_staff_id (staff_id),
+  KEY idx_fk_customer_id (customer_id),
+  CONSTRAINT fk_payment_rental FOREIGN KEY (rental_id) REFERENCES rental (rental_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `rental`
+--
+
+CREATE TABLE rental (
+  rental_id INT NOT NULL AUTO_INCREMENT,
+  rental_date DATETIME NOT NULL,
+  inventory_id MEDIUMINT UNSIGNED NOT NULL,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  return_date DATETIME DEFAULT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (rental_id),
+  UNIQUE KEY  (rental_date,inventory_id,customer_id),
+  KEY idx_fk_inventory_id (inventory_id),
+  KEY idx_fk_customer_id (customer_id),
+  KEY idx_fk_staff_id (staff_id),
+  CONSTRAINT fk_rental_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_inventory FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `staff`
+--
+
+CREATE TABLE staff (
+  staff_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  picture BLOB DEFAULT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  username VARCHAR(16) NOT NULL,
+  password VARCHAR(40) BINARY DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (staff_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `store`
+--
+
+CREATE TABLE store (
+  store_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  manager_staff_id TINYINT UNSIGNED NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (store_id),
+  UNIQUE KEY idx_unique_manager (manager_staff_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_store_staff FOREIGN KEY (manager_staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_store_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- View structure for view `customer_list`
+--
+
+CREATE VIEW customer_list
+AS
+SELECT cu.customer_id AS ID, CONCAT(cu.first_name, _utf8'' '', cu.last_name) AS name, a.address AS address, a.postal_code AS `zip code`,
+	a.phone AS phone, city.city AS city, country.country AS country, IF(cu.active, _utf8''active'',_utf8'''') AS notes, cu.store_id AS SID
+FROM customer AS cu JOIN address AS a ON cu.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `film_list`
+--
+
+CREATE VIEW film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(actor.first_name, _utf8'' '', actor.last_name) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `nicer_but_slower_film_list`
+--
+
+CREATE VIEW nicer_but_slower_film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(CONCAT(UCASE(SUBSTR(actor.first_name,1,1)),
+	LCASE(SUBSTR(actor.first_name,2,LENGTH(actor.first_name))),_utf8'' '',CONCAT(UCASE(SUBSTR(actor.last_name,1,1)),
+	LCASE(SUBSTR(actor.last_name,2,LENGTH(actor.last_name)))))) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `staff_list`
+--
+
+CREATE VIEW staff_list
+AS
+SELECT s.staff_id AS ID, CONCAT(s.first_name, _utf8'' '', s.last_name) AS name, a.address AS address, a.postal_code AS `zip code`, a.phone AS phone,
+	city.city AS city, country.country AS country, s.store_id AS SID
+FROM staff AS s JOIN address AS a ON s.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `sales_by_store`
+--
+
+CREATE VIEW sales_by_store
+AS
+SELECT
+CONCAT(c.city, _utf8'','', cy.country) AS store
+, CONCAT(m.first_name, _utf8'' '', m.last_name) AS manager
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN store AS s ON i.store_id = s.store_id
+INNER JOIN address AS a ON s.address_id = a.address_id
+INNER JOIN city AS c ON a.city_id = c.city_id
+INNER JOIN country AS cy ON c.country_id = cy.country_id
+INNER JOIN staff AS m ON s.manager_staff_id = m.staff_id
+GROUP BY s.store_id
+ORDER BY cy.country, c.city;
+
+--
+-- View structure for view `sales_by_film_category`
+--
+-- Note that total sales will add up to >100% because
+-- some titles belong to more than 1 category
+--
+
+CREATE VIEW sales_by_film_category
+AS
+SELECT
+c.name AS category
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN film AS f ON i.film_id = f.film_id
+INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+INNER JOIN category AS c ON fc.category_id = c.category_id
+GROUP BY c.name
+ORDER BY total_sales DESC;
+
+--
+-- View structure for view `actor_info`
+--
+
+CREATE DEFINER=CURRENT_USER SQL SECURITY INVOKER VIEW actor_info
+AS
+SELECT
+a.actor_id,
+a.first_name,
+a.last_name,
+GROUP_CONCAT(DISTINCT CONCAT(c.name, '': '',
+		(SELECT GROUP_CONCAT(f.title ORDER BY f.title SEPARATOR '', '')
+                    FROM sakila.film f
+                    INNER JOIN sakila.film_category fc
+                      ON f.film_id = fc.film_id
+                    INNER JOIN sakila.film_actor fa
+                      ON f.film_id = fa.film_id
+                    WHERE fc.category_id = c.category_id
+                    AND fa.actor_id = a.actor_id
+                 )
+             )
+             ORDER BY c.name SEPARATOR ''; '')
+AS film_info
+FROM sakila.actor a
+LEFT JOIN sakila.film_actor fa
+  ON a.actor_id = fa.actor_id
+LEFT JOIN sakila.film_category fc
+  ON fa.film_id = fc.film_id
+LEFT JOIN sakila.category c
+  ON fc.category_id = c.category_id
+GROUP BY a.actor_id, a.first_name, a.last_name;
+
+--
+-- Procedure structure for procedure `rewards_report`
+--
+
+
+CREATE PROCEDURE rewards_report (
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+LANGUAGE SQL
+NOT DETERMINISTIC
+READS SQL DATA
+SQL SECURITY DEFINER
+COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END;
+
+CREATE FUNCTION get_customer_balance(p_customer_id INT, p_effective_date DATETIME) RETURNS DECIMAL(5,2)
+    DETERMINISTIC
+    READS SQL DATA
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END;
+
+CREATE PROCEDURE film_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END;
+
+
+CREATE PROCEDURE film_not_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END;
+
+CREATE FUNCTION inventory_held_by_customer(p_inventory_id INT) RETURNS INT
+READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END;
+
+CREATE FUNCTION inventory_in_stock(p_inventory_id INT) RETURNS BOOLEAN
+READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 110, 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Temporary view structure for `actor_info`
+--
+CREATE VIEW `actor_info` AS SELECT
+  1 AS `actor_id`,
+  1 AS `first_name`,
+  1 AS `last_name`,
+  1 AS `film_info`;
+
+
+--
+-- Temporary view structure for `customer_list`
+--
+CREATE VIEW `customer_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `notes`,
+  1 AS `SID`;
+
+
+--
+-- Temporary view structure for `film_list`
+--
+CREATE VIEW `film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `nicer_but_slower_film_list`
+--
+CREATE VIEW `nicer_but_slower_film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `sales_by_film_category`
+--
+CREATE VIEW `sales_by_film_category` AS SELECT
+  1 AS `category`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `sales_by_store`
+--
+CREATE VIEW `sales_by_store` AS SELECT
+  1 AS `store`,
+  1 AS `manager`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `staff_list`
+--
+CREATE VIEW `staff_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `SID`;
+
+
+--
+-- Table structure for `actor`
+--
+CREATE TABLE `actor` (
+  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`),
+  KEY `idx_actor_last_name` (`last_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `address`
+--
+CREATE TABLE `address` (
+  `address_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `address` varchar(50) NOT NULL,
+  `address2` varchar(50) DEFAULT NULL,
+  `district` varchar(20) NOT NULL,
+  `city_id` smallint unsigned NOT NULL,
+  `postal_code` varchar(10) DEFAULT NULL,
+  `phone` varchar(20) NOT NULL,
+  `location` geometry NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`address_id`),
+  KEY `idx_fk_city_id` (`city_id`),
+  SPATIAL KEY `idx_location` (`location`),
+  CONSTRAINT `fk_address_city` FOREIGN KEY (`city_id`) REFERENCES `city` (`city_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `category`
+--
+CREATE TABLE `category` (
+  `category_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(25) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `city`
+--
+CREATE TABLE `city` (
+  `city_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `city` varchar(50) NOT NULL,
+  `country_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`city_id`),
+  KEY `idx_fk_country_id` (`country_id`),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (`country_id`) REFERENCES `country` (`country_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `country`
+--
+CREATE TABLE `country` (
+  `country_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `country` varchar(50) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`country_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `customer`
+--
+CREATE TABLE `customer` (
+  `customer_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` tinyint unsigned NOT NULL,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `email` varchar(50) DEFAULT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `create_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`customer_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  KEY `idx_last_name` (`last_name`),
+  CONSTRAINT `fk_customer_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_customer_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film`
+--
+CREATE TABLE `film` (
+  `film_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `release_year` year DEFAULT NULL,
+  `language_id` tinyint unsigned NOT NULL,
+  `original_language_id` tinyint unsigned DEFAULT NULL,
+  `rental_duration` tinyint unsigned NOT NULL DEFAULT ''3'',
+  `rental_rate` decimal(4,2) NOT NULL DEFAULT ''4.99'',
+  `length` smallint unsigned DEFAULT NULL,
+  `replacement_cost` decimal(5,2) NOT NULL DEFAULT ''19.99'',
+  `rating` enum(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  `special_features` set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`),
+  KEY `idx_title` (`title`),
+  KEY `idx_fk_language_id` (`language_id`),
+  KEY `idx_fk_original_language_id` (`original_language_id`),
+  CONSTRAINT `fk_film_language` FOREIGN KEY (`language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_language_original` FOREIGN KEY (`original_language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_actor`
+--
+CREATE TABLE `film_actor` (
+  `actor_id` smallint unsigned NOT NULL,
+  `film_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`,`film_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  CONSTRAINT `fk_film_actor_actor` FOREIGN KEY (`actor_id`) REFERENCES `actor` (`actor_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_actor_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_category`
+--
+CREATE TABLE `film_category` (
+  `film_id` smallint unsigned NOT NULL,
+  `category_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`,`category_id`),
+  KEY `fk_film_category_category` (`category_id`),
+  CONSTRAINT `fk_film_category_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_category_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_text`
+--
+CREATE TABLE `film_text` (
+  `film_id` smallint NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  PRIMARY KEY (`film_id`),
+  FULLTEXT KEY `idx_title_description` (`title`,`description`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `inventory`
+--
+CREATE TABLE `inventory` (
+  `inventory_id` mediumint unsigned NOT NULL AUTO_INCREMENT,
+  `film_id` smallint unsigned NOT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`inventory_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  KEY `idx_store_id_film_id` (`store_id`,`film_id`),
+  CONSTRAINT `fk_inventory_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_inventory_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `language`
+--
+CREATE TABLE `language` (
+  `language_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` char(20) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`language_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `payment`
+--
+CREATE TABLE `payment` (
+  `payment_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `customer_id` smallint unsigned NOT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `rental_id` int DEFAULT NULL,
+  `amount` decimal(5,2) NOT NULL,
+  `payment_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`payment_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `fk_payment_rental` (`rental_id`),
+  CONSTRAINT `fk_payment_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_rental` FOREIGN KEY (`rental_id`) REFERENCES `rental` (`rental_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `rental`
+--
+CREATE TABLE `rental` (
+  `rental_id` int NOT NULL AUTO_INCREMENT,
+  `rental_date` datetime NOT NULL,
+  `inventory_id` mediumint unsigned NOT NULL,
+  `customer_id` smallint unsigned NOT NULL,
+  `return_date` datetime DEFAULT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`rental_id`),
+  UNIQUE KEY `rental_date` (`rental_date`,`inventory_id`,`customer_id`),
+  KEY `idx_fk_inventory_id` (`inventory_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  CONSTRAINT `fk_rental_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_inventory` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`inventory_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `staff`
+--
+CREATE TABLE `staff` (
+  `staff_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `picture` blob,
+  `email` varchar(50) DEFAULT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `username` varchar(16) NOT NULL,
+  `password` varchar(40) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`staff_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_staff_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_staff_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `store`
+--
+CREATE TABLE `store` (
+  `store_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `manager_staff_id` tinyint unsigned NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`store_id`),
+  UNIQUE KEY `idx_unique_manager` (`manager_staff_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_store_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_store_staff` FOREIGN KEY (`manager_staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+DROP VIEW IF EXISTS `actor_info`;
+--
+-- View structure for `actor_info`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `actor_info` AS select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`film` `f` join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`actor` `a` left join `film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`;
+
+DROP VIEW IF EXISTS `customer_list`;
+--
+-- View structure for `customer_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `customer_list` AS select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,_utf8mb3'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,if(`cu`.`active`,_utf8mb3''active'',_utf8mb3'''') AS `notes`,`cu`.`store_id` AS `SID` from (((`customer` `cu` join `address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+DROP VIEW IF EXISTS `film_list`;
+--
+-- View structure for `film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(`actor`.`first_name`,_utf8mb3'' '',`actor`.`last_name`) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `nicer_but_slower_film_list`;
+--
+-- View structure for `nicer_but_slower_film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `nicer_but_slower_film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`actor`.`first_name`,1,1)),lower(substr(`actor`.`first_name`,2,length(`actor`.`first_name`))),_utf8mb3'' '',concat(upper(substr(`actor`.`last_name`,1,1)),lower(substr(`actor`.`last_name`,2,length(`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `sales_by_film_category`;
+--
+-- View structure for `sales_by_film_category`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_film_category` AS select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc;
+
+DROP VIEW IF EXISTS `sales_by_store`;
+--
+-- View structure for `sales_by_store`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_store` AS select concat(`c`.`city`,_utf8mb3'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,_utf8mb3'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`;
+
+DROP VIEW IF EXISTS `staff_list`;
+--
+-- View structure for `staff_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `staff_list` AS select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,_utf8mb3'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`staff` `s` join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+--
+-- Function structure for `get_customer_balance`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_customer_balance`(p_customer_id INT, p_effective_date DATETIME) RETURNS decimal(5,2)
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_held_by_customer`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_held_by_customer`(p_inventory_id INT) RETURNS int
+    READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_in_stock`(p_inventory_id INT) RETURNS tinyint(1)
+    READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_not_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_not_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `rewards_report`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `rewards_report`(
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+    READS SQL DATA
+    COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END; ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `ins_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `upd_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `del_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END ;;
+DELIMITER ;
+
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 212919000, '{"changedResources": {"databases": [{"name": "sakila_test", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (112, 'NORMAL', 103, 1695192788, 103, 1695192788, 101, 103, 104, 'development', 1, 'UI', 'MIGRATE', 'DONE', '0000.0000.0000-20230920144133', '[3 databases] Alter schema @09-20 14:41 UTC+0800 - DDL(schema) for database "sakila_staging"', '-- Sakila Spatial Sample Database Schema
+-- Version 0.9
+
+-- Copyright (c) 2014, Oracle Corporation
+-- All rights reserved.
+
+-- Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+--  * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+--  * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+--  * Neither the name of Oracle Corporation nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-- Modified in September 2015 by Giuseppe Maxia
+-- The schema and data can now be loaded by any MySQL 5.x version.
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE=''TRADITIONAL'';
+
+--
+-- Table structure for table `actor`
+--
+
+CREATE TABLE actor (
+  actor_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id),
+  KEY idx_actor_last_name (last_name)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `address`
+--
+
+CREATE TABLE address (
+  address_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  address VARCHAR(50) NOT NULL,
+  address2 VARCHAR(50) DEFAULT NULL,
+  district VARCHAR(20) NOT NULL,
+  city_id SMALLINT UNSIGNED NOT NULL,
+  postal_code VARCHAR(10) DEFAULT NULL,
+  phone VARCHAR(20) NOT NULL,
+  /*!50705 location GEOMETRY NOT NULL,*/
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (address_id),
+  KEY idx_fk_city_id (city_id),
+  /*!50705 SPATIAL KEY `idx_location` (location),*/
+  CONSTRAINT `fk_address_city` FOREIGN KEY (city_id) REFERENCES city (city_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `category`
+--
+
+CREATE TABLE category (
+  category_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(25) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `city`
+--
+
+CREATE TABLE city (
+  city_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  city VARCHAR(50) NOT NULL,
+  country_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (city_id),
+  KEY idx_fk_country_id (country_id),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (country_id) REFERENCES country (country_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `country`
+--
+
+CREATE TABLE country (
+  country_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  country VARCHAR(50) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (country_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `customer`
+--
+
+CREATE TABLE customer (
+  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id TINYINT UNSIGNED NOT NULL,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  create_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (customer_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  KEY idx_last_name (last_name),
+  CONSTRAINT fk_customer_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_customer_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film`
+--
+
+CREATE TABLE film (
+  film_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
+  release_year YEAR DEFAULT NULL,
+  language_id TINYINT UNSIGNED NOT NULL,
+  original_language_id TINYINT UNSIGNED DEFAULT NULL,
+  rental_duration TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  rental_rate DECIMAL(4,2) NOT NULL DEFAULT 4.99,
+  length SMALLINT UNSIGNED DEFAULT NULL,
+  replacement_cost DECIMAL(5,2) NOT NULL DEFAULT 19.99,
+  rating ENUM(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  special_features SET(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (film_id),
+  KEY idx_title (title),
+  KEY idx_fk_language_id (language_id),
+  KEY idx_fk_original_language_id (original_language_id),
+  CONSTRAINT fk_film_language FOREIGN KEY (language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_language_original FOREIGN KEY (original_language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_actor`
+--
+
+CREATE TABLE film_actor (
+  actor_id SMALLINT UNSIGNED NOT NULL,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id,film_id),
+  KEY idx_fk_film_id (`film_id`),
+  CONSTRAINT fk_film_actor_actor FOREIGN KEY (actor_id) REFERENCES actor (actor_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_actor_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_category`
+--
+
+CREATE TABLE film_category (
+  film_id SMALLINT UNSIGNED NOT NULL,
+  category_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (film_id, category_id),
+  CONSTRAINT fk_film_category_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_category_category FOREIGN KEY (category_id) REFERENCES category (category_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_text`
+--
+
+CREATE TABLE film_text (
+  film_id SMALLINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  PRIMARY KEY  (film_id),
+  FULLTEXT KEY idx_title_description (title,description)
+)ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- After MySQL 5.6.10, InnoDB supports fulltext indexes
+/*!50610 ALTER TABLE film_text engine=InnoDB */;
+
+--
+-- Triggers for loading film_text from film
+--
+
+CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END;
+
+
+CREATE TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END;
+
+
+CREATE TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END;
+
+
+--
+-- Table structure for table `inventory`
+--
+
+CREATE TABLE inventory (
+  inventory_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (inventory_id),
+  KEY idx_fk_film_id (film_id),
+  KEY idx_store_id_film_id (store_id,film_id),
+  CONSTRAINT fk_inventory_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_inventory_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `language`
+--
+
+CREATE TABLE language (
+  language_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name CHAR(20) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (language_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `payment`
+--
+
+CREATE TABLE payment (
+  payment_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  rental_id INT DEFAULT NULL,
+  amount DECIMAL(5,2) NOT NULL,
+  payment_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (payment_id),
+  KEY idx_fk_staff_id (staff_id),
+  KEY idx_fk_customer_id (customer_id),
+  CONSTRAINT fk_payment_rental FOREIGN KEY (rental_id) REFERENCES rental (rental_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `rental`
+--
+
+CREATE TABLE rental (
+  rental_id INT NOT NULL AUTO_INCREMENT,
+  rental_date DATETIME NOT NULL,
+  inventory_id MEDIUMINT UNSIGNED NOT NULL,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  return_date DATETIME DEFAULT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (rental_id),
+  UNIQUE KEY  (rental_date,inventory_id,customer_id),
+  KEY idx_fk_inventory_id (inventory_id),
+  KEY idx_fk_customer_id (customer_id),
+  KEY idx_fk_staff_id (staff_id),
+  CONSTRAINT fk_rental_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_inventory FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `staff`
+--
+
+CREATE TABLE staff (
+  staff_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  picture BLOB DEFAULT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  username VARCHAR(16) NOT NULL,
+  password VARCHAR(40) BINARY DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (staff_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `store`
+--
+
+CREATE TABLE store (
+  store_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  manager_staff_id TINYINT UNSIGNED NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (store_id),
+  UNIQUE KEY idx_unique_manager (manager_staff_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_store_staff FOREIGN KEY (manager_staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_store_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- View structure for view `customer_list`
+--
+
+CREATE VIEW customer_list
+AS
+SELECT cu.customer_id AS ID, CONCAT(cu.first_name, _utf8'' '', cu.last_name) AS name, a.address AS address, a.postal_code AS `zip code`,
+	a.phone AS phone, city.city AS city, country.country AS country, IF(cu.active, _utf8''active'',_utf8'''') AS notes, cu.store_id AS SID
+FROM customer AS cu JOIN address AS a ON cu.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `film_list`
+--
+
+CREATE VIEW film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(actor.first_name, _utf8'' '', actor.last_name) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `nicer_but_slower_film_list`
+--
+
+CREATE VIEW nicer_but_slower_film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(CONCAT(UCASE(SUBSTR(actor.first_name,1,1)),
+	LCASE(SUBSTR(actor.first_name,2,LENGTH(actor.first_name))),_utf8'' '',CONCAT(UCASE(SUBSTR(actor.last_name,1,1)),
+	LCASE(SUBSTR(actor.last_name,2,LENGTH(actor.last_name)))))) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `staff_list`
+--
+
+CREATE VIEW staff_list
+AS
+SELECT s.staff_id AS ID, CONCAT(s.first_name, _utf8'' '', s.last_name) AS name, a.address AS address, a.postal_code AS `zip code`, a.phone AS phone,
+	city.city AS city, country.country AS country, s.store_id AS SID
+FROM staff AS s JOIN address AS a ON s.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `sales_by_store`
+--
+
+CREATE VIEW sales_by_store
+AS
+SELECT
+CONCAT(c.city, _utf8'','', cy.country) AS store
+, CONCAT(m.first_name, _utf8'' '', m.last_name) AS manager
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN store AS s ON i.store_id = s.store_id
+INNER JOIN address AS a ON s.address_id = a.address_id
+INNER JOIN city AS c ON a.city_id = c.city_id
+INNER JOIN country AS cy ON c.country_id = cy.country_id
+INNER JOIN staff AS m ON s.manager_staff_id = m.staff_id
+GROUP BY s.store_id
+ORDER BY cy.country, c.city;
+
+--
+-- View structure for view `sales_by_film_category`
+--
+-- Note that total sales will add up to >100% because
+-- some titles belong to more than 1 category
+--
+
+CREATE VIEW sales_by_film_category
+AS
+SELECT
+c.name AS category
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN film AS f ON i.film_id = f.film_id
+INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+INNER JOIN category AS c ON fc.category_id = c.category_id
+GROUP BY c.name
+ORDER BY total_sales DESC;
+
+--
+-- View structure for view `actor_info`
+--
+
+CREATE DEFINER=CURRENT_USER SQL SECURITY INVOKER VIEW actor_info
+AS
+SELECT
+a.actor_id,
+a.first_name,
+a.last_name,
+GROUP_CONCAT(DISTINCT CONCAT(c.name, '': '',
+		(SELECT GROUP_CONCAT(f.title ORDER BY f.title SEPARATOR '', '')
+                    FROM film f
+                    INNER JOIN film_category fc
+                      ON f.film_id = fc.film_id
+                    INNER JOIN film_actor fa
+                      ON f.film_id = fa.film_id
+                    WHERE fc.category_id = c.category_id
+                    AND fa.actor_id = a.actor_id
+                 )
+             )
+             ORDER BY c.name SEPARATOR ''; '')
+AS film_info
+FROM actor a
+LEFT JOIN film_actor fa
+  ON a.actor_id = fa.actor_id
+LEFT JOIN film_category fc
+  ON fa.film_id = fc.film_id
+LEFT JOIN category c
+  ON fc.category_id = c.category_id
+GROUP BY a.actor_id, a.first_name, a.last_name;
+
+--
+-- Procedure structure for procedure `rewards_report`
+--
+
+
+CREATE PROCEDURE rewards_report (
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+LANGUAGE SQL
+NOT DETERMINISTIC
+READS SQL DATA
+SQL SECURITY DEFINER
+COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END;
+
+CREATE FUNCTION get_customer_balance(p_customer_id INT, p_effective_date DATETIME) RETURNS DECIMAL(5,2)
+    DETERMINISTIC
+    READS SQL DATA
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END;
+
+CREATE PROCEDURE film_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END;
+
+
+CREATE PROCEDURE film_not_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END;
+
+CREATE FUNCTION inventory_held_by_customer(p_inventory_id INT) RETURNS INT
+READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END;
+
+CREATE FUNCTION inventory_in_stock(p_inventory_id INT) RETURNS BOOLEAN
+READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 111, 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Temporary view structure for `actor_info`
+--
+CREATE VIEW `actor_info` AS SELECT
+  1 AS `actor_id`,
+  1 AS `first_name`,
+  1 AS `last_name`,
+  1 AS `film_info`;
+
+
+--
+-- Temporary view structure for `customer_list`
+--
+CREATE VIEW `customer_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `notes`,
+  1 AS `SID`;
+
+
+--
+-- Temporary view structure for `film_list`
+--
+CREATE VIEW `film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `nicer_but_slower_film_list`
+--
+CREATE VIEW `nicer_but_slower_film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `sales_by_film_category`
+--
+CREATE VIEW `sales_by_film_category` AS SELECT
+  1 AS `category`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `sales_by_store`
+--
+CREATE VIEW `sales_by_store` AS SELECT
+  1 AS `store`,
+  1 AS `manager`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `staff_list`
+--
+CREATE VIEW `staff_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `SID`;
+
+
+--
+-- Table structure for `actor`
+--
+CREATE TABLE `actor` (
+  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`),
+  KEY `idx_actor_last_name` (`last_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `address`
+--
+CREATE TABLE `address` (
+  `address_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `address` varchar(50) NOT NULL,
+  `address2` varchar(50) DEFAULT NULL,
+  `district` varchar(20) NOT NULL,
+  `city_id` smallint unsigned NOT NULL,
+  `postal_code` varchar(10) DEFAULT NULL,
+  `phone` varchar(20) NOT NULL,
+  `location` geometry NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`address_id`),
+  KEY `idx_fk_city_id` (`city_id`),
+  SPATIAL KEY `idx_location` (`location`),
+  CONSTRAINT `fk_address_city` FOREIGN KEY (`city_id`) REFERENCES `city` (`city_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `category`
+--
+CREATE TABLE `category` (
+  `category_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(25) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `city`
+--
+CREATE TABLE `city` (
+  `city_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `city` varchar(50) NOT NULL,
+  `country_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`city_id`),
+  KEY `idx_fk_country_id` (`country_id`),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (`country_id`) REFERENCES `country` (`country_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `country`
+--
+CREATE TABLE `country` (
+  `country_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `country` varchar(50) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`country_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `customer`
+--
+CREATE TABLE `customer` (
+  `customer_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` tinyint unsigned NOT NULL,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `email` varchar(50) DEFAULT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `create_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`customer_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  KEY `idx_last_name` (`last_name`),
+  CONSTRAINT `fk_customer_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_customer_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film`
+--
+CREATE TABLE `film` (
+  `film_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `release_year` year DEFAULT NULL,
+  `language_id` tinyint unsigned NOT NULL,
+  `original_language_id` tinyint unsigned DEFAULT NULL,
+  `rental_duration` tinyint unsigned NOT NULL DEFAULT ''3'',
+  `rental_rate` decimal(4,2) NOT NULL DEFAULT ''4.99'',
+  `length` smallint unsigned DEFAULT NULL,
+  `replacement_cost` decimal(5,2) NOT NULL DEFAULT ''19.99'',
+  `rating` enum(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  `special_features` set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`),
+  KEY `idx_title` (`title`),
+  KEY `idx_fk_language_id` (`language_id`),
+  KEY `idx_fk_original_language_id` (`original_language_id`),
+  CONSTRAINT `fk_film_language` FOREIGN KEY (`language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_language_original` FOREIGN KEY (`original_language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_actor`
+--
+CREATE TABLE `film_actor` (
+  `actor_id` smallint unsigned NOT NULL,
+  `film_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`,`film_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  CONSTRAINT `fk_film_actor_actor` FOREIGN KEY (`actor_id`) REFERENCES `actor` (`actor_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_actor_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_category`
+--
+CREATE TABLE `film_category` (
+  `film_id` smallint unsigned NOT NULL,
+  `category_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`,`category_id`),
+  KEY `fk_film_category_category` (`category_id`),
+  CONSTRAINT `fk_film_category_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_category_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_text`
+--
+CREATE TABLE `film_text` (
+  `film_id` smallint NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  PRIMARY KEY (`film_id`),
+  FULLTEXT KEY `idx_title_description` (`title`,`description`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `inventory`
+--
+CREATE TABLE `inventory` (
+  `inventory_id` mediumint unsigned NOT NULL AUTO_INCREMENT,
+  `film_id` smallint unsigned NOT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`inventory_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  KEY `idx_store_id_film_id` (`store_id`,`film_id`),
+  CONSTRAINT `fk_inventory_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_inventory_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `language`
+--
+CREATE TABLE `language` (
+  `language_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` char(20) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`language_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `payment`
+--
+CREATE TABLE `payment` (
+  `payment_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `customer_id` smallint unsigned NOT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `rental_id` int DEFAULT NULL,
+  `amount` decimal(5,2) NOT NULL,
+  `payment_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`payment_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `fk_payment_rental` (`rental_id`),
+  CONSTRAINT `fk_payment_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_rental` FOREIGN KEY (`rental_id`) REFERENCES `rental` (`rental_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `rental`
+--
+CREATE TABLE `rental` (
+  `rental_id` int NOT NULL AUTO_INCREMENT,
+  `rental_date` datetime NOT NULL,
+  `inventory_id` mediumint unsigned NOT NULL,
+  `customer_id` smallint unsigned NOT NULL,
+  `return_date` datetime DEFAULT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`rental_id`),
+  UNIQUE KEY `rental_date` (`rental_date`,`inventory_id`,`customer_id`),
+  KEY `idx_fk_inventory_id` (`inventory_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  CONSTRAINT `fk_rental_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_inventory` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`inventory_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `staff`
+--
+CREATE TABLE `staff` (
+  `staff_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `picture` blob,
+  `email` varchar(50) DEFAULT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `username` varchar(16) NOT NULL,
+  `password` varchar(40) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`staff_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_staff_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_staff_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `store`
+--
+CREATE TABLE `store` (
+  `store_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `manager_staff_id` tinyint unsigned NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`store_id`),
+  UNIQUE KEY `idx_unique_manager` (`manager_staff_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_store_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_store_staff` FOREIGN KEY (`manager_staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+DROP VIEW IF EXISTS `actor_info`;
+--
+-- View structure for `actor_info`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `actor_info` AS select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`film` `f` join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`actor` `a` left join `film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`;
+
+DROP VIEW IF EXISTS `customer_list`;
+--
+-- View structure for `customer_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `customer_list` AS select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,_utf8mb3'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,if(`cu`.`active`,_utf8mb3''active'',_utf8mb3'''') AS `notes`,`cu`.`store_id` AS `SID` from (((`customer` `cu` join `address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+DROP VIEW IF EXISTS `film_list`;
+--
+-- View structure for `film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(`actor`.`first_name`,_utf8mb3'' '',`actor`.`last_name`) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `nicer_but_slower_film_list`;
+--
+-- View structure for `nicer_but_slower_film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `nicer_but_slower_film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`actor`.`first_name`,1,1)),lower(substr(`actor`.`first_name`,2,length(`actor`.`first_name`))),_utf8mb3'' '',concat(upper(substr(`actor`.`last_name`,1,1)),lower(substr(`actor`.`last_name`,2,length(`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `sales_by_film_category`;
+--
+-- View structure for `sales_by_film_category`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_film_category` AS select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc;
+
+DROP VIEW IF EXISTS `sales_by_store`;
+--
+-- View structure for `sales_by_store`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_store` AS select concat(`c`.`city`,_utf8mb3'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,_utf8mb3'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`;
+
+DROP VIEW IF EXISTS `staff_list`;
+--
+-- View structure for `staff_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `staff_list` AS select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,_utf8mb3'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`staff` `s` join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+--
+-- Function structure for `get_customer_balance`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_customer_balance`(p_customer_id INT, p_effective_date DATETIME) RETURNS decimal(5,2)
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_held_by_customer`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_held_by_customer`(p_inventory_id INT) RETURNS int
+    READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_in_stock`(p_inventory_id INT) RETURNS tinyint(1)
+    READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_not_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_not_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `rewards_report`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `rewards_report`(
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+    READS SQL DATA
+    COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END; ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `ins_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `upd_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `del_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END ;;
+DELIMITER ;
+
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 153264000, '{"changedResources": {"databases": [{"name": "sakila_staging", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (113, 'NORMAL', 103, 1695192793, 103, 1695192793, 101, 101, 104, 'development', 1, 'UI', 'MIGRATE', 'DONE', '0000.0000.0000-20230920144133', '[3 databases] Alter schema @09-20 14:41 UTC+0800 - DDL(schema) for database "sakila_prod"', '-- Sakila Spatial Sample Database Schema
+-- Version 0.9
+
+-- Copyright (c) 2014, Oracle Corporation
+-- All rights reserved.
+
+-- Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+--  * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+--  * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+--  * Neither the name of Oracle Corporation nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-- Modified in September 2015 by Giuseppe Maxia
+-- The schema and data can now be loaded by any MySQL 5.x version.
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE=''TRADITIONAL'';
+
+--
+-- Table structure for table `actor`
+--
+
+CREATE TABLE actor (
+  actor_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id),
+  KEY idx_actor_last_name (last_name)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `address`
+--
+
+CREATE TABLE address (
+  address_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  address VARCHAR(50) NOT NULL,
+  address2 VARCHAR(50) DEFAULT NULL,
+  district VARCHAR(20) NOT NULL,
+  city_id SMALLINT UNSIGNED NOT NULL,
+  postal_code VARCHAR(10) DEFAULT NULL,
+  phone VARCHAR(20) NOT NULL,
+  /*!50705 location GEOMETRY NOT NULL,*/
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (address_id),
+  KEY idx_fk_city_id (city_id),
+  /*!50705 SPATIAL KEY `idx_location` (location),*/
+  CONSTRAINT `fk_address_city` FOREIGN KEY (city_id) REFERENCES city (city_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `category`
+--
+
+CREATE TABLE category (
+  category_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(25) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `city`
+--
+
+CREATE TABLE city (
+  city_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  city VARCHAR(50) NOT NULL,
+  country_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (city_id),
+  KEY idx_fk_country_id (country_id),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (country_id) REFERENCES country (country_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `country`
+--
+
+CREATE TABLE country (
+  country_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  country VARCHAR(50) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (country_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `customer`
+--
+
+CREATE TABLE customer (
+  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id TINYINT UNSIGNED NOT NULL,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  create_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (customer_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  KEY idx_last_name (last_name),
+  CONSTRAINT fk_customer_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_customer_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film`
+--
+
+CREATE TABLE film (
+  film_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
+  release_year YEAR DEFAULT NULL,
+  language_id TINYINT UNSIGNED NOT NULL,
+  original_language_id TINYINT UNSIGNED DEFAULT NULL,
+  rental_duration TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  rental_rate DECIMAL(4,2) NOT NULL DEFAULT 4.99,
+  length SMALLINT UNSIGNED DEFAULT NULL,
+  replacement_cost DECIMAL(5,2) NOT NULL DEFAULT 19.99,
+  rating ENUM(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  special_features SET(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (film_id),
+  KEY idx_title (title),
+  KEY idx_fk_language_id (language_id),
+  KEY idx_fk_original_language_id (original_language_id),
+  CONSTRAINT fk_film_language FOREIGN KEY (language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_language_original FOREIGN KEY (original_language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_actor`
+--
+
+CREATE TABLE film_actor (
+  actor_id SMALLINT UNSIGNED NOT NULL,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id,film_id),
+  KEY idx_fk_film_id (`film_id`),
+  CONSTRAINT fk_film_actor_actor FOREIGN KEY (actor_id) REFERENCES actor (actor_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_actor_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_category`
+--
+
+CREATE TABLE film_category (
+  film_id SMALLINT UNSIGNED NOT NULL,
+  category_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (film_id, category_id),
+  CONSTRAINT fk_film_category_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_category_category FOREIGN KEY (category_id) REFERENCES category (category_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_text`
+--
+
+CREATE TABLE film_text (
+  film_id SMALLINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  PRIMARY KEY  (film_id),
+  FULLTEXT KEY idx_title_description (title,description)
+)ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- After MySQL 5.6.10, InnoDB supports fulltext indexes
+/*!50610 ALTER TABLE film_text engine=InnoDB */;
+
+--
+-- Triggers for loading film_text from film
+--
+
+CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END;
+
+
+CREATE TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END;
+
+
+CREATE TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END;
+
+
+--
+-- Table structure for table `inventory`
+--
+
+CREATE TABLE inventory (
+  inventory_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (inventory_id),
+  KEY idx_fk_film_id (film_id),
+  KEY idx_store_id_film_id (store_id,film_id),
+  CONSTRAINT fk_inventory_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_inventory_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `language`
+--
+
+CREATE TABLE language (
+  language_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name CHAR(20) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (language_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `payment`
+--
+
+CREATE TABLE payment (
+  payment_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  rental_id INT DEFAULT NULL,
+  amount DECIMAL(5,2) NOT NULL,
+  payment_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (payment_id),
+  KEY idx_fk_staff_id (staff_id),
+  KEY idx_fk_customer_id (customer_id),
+  CONSTRAINT fk_payment_rental FOREIGN KEY (rental_id) REFERENCES rental (rental_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `rental`
+--
+
+CREATE TABLE rental (
+  rental_id INT NOT NULL AUTO_INCREMENT,
+  rental_date DATETIME NOT NULL,
+  inventory_id MEDIUMINT UNSIGNED NOT NULL,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  return_date DATETIME DEFAULT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (rental_id),
+  UNIQUE KEY  (rental_date,inventory_id,customer_id),
+  KEY idx_fk_inventory_id (inventory_id),
+  KEY idx_fk_customer_id (customer_id),
+  KEY idx_fk_staff_id (staff_id),
+  CONSTRAINT fk_rental_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_inventory FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `staff`
+--
+
+CREATE TABLE staff (
+  staff_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  picture BLOB DEFAULT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  username VARCHAR(16) NOT NULL,
+  password VARCHAR(40) BINARY DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (staff_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `store`
+--
+
+CREATE TABLE store (
+  store_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  manager_staff_id TINYINT UNSIGNED NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (store_id),
+  UNIQUE KEY idx_unique_manager (manager_staff_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_store_staff FOREIGN KEY (manager_staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_store_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- View structure for view `customer_list`
+--
+
+CREATE VIEW customer_list
+AS
+SELECT cu.customer_id AS ID, CONCAT(cu.first_name, _utf8'' '', cu.last_name) AS name, a.address AS address, a.postal_code AS `zip code`,
+	a.phone AS phone, city.city AS city, country.country AS country, IF(cu.active, _utf8''active'',_utf8'''') AS notes, cu.store_id AS SID
+FROM customer AS cu JOIN address AS a ON cu.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `film_list`
+--
+
+CREATE VIEW film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(actor.first_name, _utf8'' '', actor.last_name) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `nicer_but_slower_film_list`
+--
+
+CREATE VIEW nicer_but_slower_film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(CONCAT(UCASE(SUBSTR(actor.first_name,1,1)),
+	LCASE(SUBSTR(actor.first_name,2,LENGTH(actor.first_name))),_utf8'' '',CONCAT(UCASE(SUBSTR(actor.last_name,1,1)),
+	LCASE(SUBSTR(actor.last_name,2,LENGTH(actor.last_name)))))) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `staff_list`
+--
+
+CREATE VIEW staff_list
+AS
+SELECT s.staff_id AS ID, CONCAT(s.first_name, _utf8'' '', s.last_name) AS name, a.address AS address, a.postal_code AS `zip code`, a.phone AS phone,
+	city.city AS city, country.country AS country, s.store_id AS SID
+FROM staff AS s JOIN address AS a ON s.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `sales_by_store`
+--
+
+CREATE VIEW sales_by_store
+AS
+SELECT
+CONCAT(c.city, _utf8'','', cy.country) AS store
+, CONCAT(m.first_name, _utf8'' '', m.last_name) AS manager
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN store AS s ON i.store_id = s.store_id
+INNER JOIN address AS a ON s.address_id = a.address_id
+INNER JOIN city AS c ON a.city_id = c.city_id
+INNER JOIN country AS cy ON c.country_id = cy.country_id
+INNER JOIN staff AS m ON s.manager_staff_id = m.staff_id
+GROUP BY s.store_id
+ORDER BY cy.country, c.city;
+
+--
+-- View structure for view `sales_by_film_category`
+--
+-- Note that total sales will add up to >100% because
+-- some titles belong to more than 1 category
+--
+
+CREATE VIEW sales_by_film_category
+AS
+SELECT
+c.name AS category
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN film AS f ON i.film_id = f.film_id
+INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+INNER JOIN category AS c ON fc.category_id = c.category_id
+GROUP BY c.name
+ORDER BY total_sales DESC;
+
+--
+-- View structure for view `actor_info`
+--
+
+CREATE DEFINER=CURRENT_USER SQL SECURITY INVOKER VIEW actor_info
+AS
+SELECT
+a.actor_id,
+a.first_name,
+a.last_name,
+GROUP_CONCAT(DISTINCT CONCAT(c.name, '': '',
+		(SELECT GROUP_CONCAT(f.title ORDER BY f.title SEPARATOR '', '')
+                    FROM film f
+                    INNER JOIN film_category fc
+                      ON f.film_id = fc.film_id
+                    INNER JOIN film_actor fa
+                      ON f.film_id = fa.film_id
+                    WHERE fc.category_id = c.category_id
+                    AND fa.actor_id = a.actor_id
+                 )
+             )
+             ORDER BY c.name SEPARATOR ''; '')
+AS film_info
+FROM actor a
+LEFT JOIN film_actor fa
+  ON a.actor_id = fa.actor_id
+LEFT JOIN film_category fc
+  ON fa.film_id = fc.film_id
+LEFT JOIN category c
+  ON fc.category_id = c.category_id
+GROUP BY a.actor_id, a.first_name, a.last_name;
+
+--
+-- Procedure structure for procedure `rewards_report`
+--
+
+
+CREATE PROCEDURE rewards_report (
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+LANGUAGE SQL
+NOT DETERMINISTIC
+READS SQL DATA
+SQL SECURITY DEFINER
+COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END;
+
+CREATE FUNCTION get_customer_balance(p_customer_id INT, p_effective_date DATETIME) RETURNS DECIMAL(5,2)
+    DETERMINISTIC
+    READS SQL DATA
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END;
+
+CREATE PROCEDURE film_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END;
+
+
+CREATE PROCEDURE film_not_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END;
+
+CREATE FUNCTION inventory_held_by_customer(p_inventory_id INT) RETURNS INT
+READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END;
+
+CREATE FUNCTION inventory_in_stock(p_inventory_id INT) RETURNS BOOLEAN
+READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 111, 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Temporary view structure for `actor_info`
+--
+CREATE VIEW `actor_info` AS SELECT
+  1 AS `actor_id`,
+  1 AS `first_name`,
+  1 AS `last_name`,
+  1 AS `film_info`;
+
+
+--
+-- Temporary view structure for `customer_list`
+--
+CREATE VIEW `customer_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `notes`,
+  1 AS `SID`;
+
+
+--
+-- Temporary view structure for `film_list`
+--
+CREATE VIEW `film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `nicer_but_slower_film_list`
+--
+CREATE VIEW `nicer_but_slower_film_list` AS SELECT
+  1 AS `FID`,
+  1 AS `title`,
+  1 AS `description`,
+  1 AS `category`,
+  1 AS `price`,
+  1 AS `length`,
+  1 AS `rating`,
+  1 AS `actors`;
+
+
+--
+-- Temporary view structure for `sales_by_film_category`
+--
+CREATE VIEW `sales_by_film_category` AS SELECT
+  1 AS `category`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `sales_by_store`
+--
+CREATE VIEW `sales_by_store` AS SELECT
+  1 AS `store`,
+  1 AS `manager`,
+  1 AS `total_sales`;
+
+
+--
+-- Temporary view structure for `staff_list`
+--
+CREATE VIEW `staff_list` AS SELECT
+  1 AS `ID`,
+  1 AS `name`,
+  1 AS `address`,
+  1 AS `zip code`,
+  1 AS `phone`,
+  1 AS `city`,
+  1 AS `country`,
+  1 AS `SID`;
+
+
+--
+-- Table structure for `actor`
+--
+CREATE TABLE `actor` (
+  `actor_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`),
+  KEY `idx_actor_last_name` (`last_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `address`
+--
+CREATE TABLE `address` (
+  `address_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `address` varchar(50) NOT NULL,
+  `address2` varchar(50) DEFAULT NULL,
+  `district` varchar(20) NOT NULL,
+  `city_id` smallint unsigned NOT NULL,
+  `postal_code` varchar(10) DEFAULT NULL,
+  `phone` varchar(20) NOT NULL,
+  `location` geometry NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`address_id`),
+  KEY `idx_fk_city_id` (`city_id`),
+  SPATIAL KEY `idx_location` (`location`),
+  CONSTRAINT `fk_address_city` FOREIGN KEY (`city_id`) REFERENCES `city` (`city_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `category`
+--
+CREATE TABLE `category` (
+  `category_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(25) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `city`
+--
+CREATE TABLE `city` (
+  `city_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `city` varchar(50) NOT NULL,
+  `country_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`city_id`),
+  KEY `idx_fk_country_id` (`country_id`),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (`country_id`) REFERENCES `country` (`country_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `country`
+--
+CREATE TABLE `country` (
+  `country_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `country` varchar(50) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`country_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `customer`
+--
+CREATE TABLE `customer` (
+  `customer_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` tinyint unsigned NOT NULL,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `email` varchar(50) DEFAULT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `create_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`customer_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  KEY `idx_last_name` (`last_name`),
+  CONSTRAINT `fk_customer_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_customer_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film`
+--
+CREATE TABLE `film` (
+  `film_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `release_year` year DEFAULT NULL,
+  `language_id` tinyint unsigned NOT NULL,
+  `original_language_id` tinyint unsigned DEFAULT NULL,
+  `rental_duration` tinyint unsigned NOT NULL DEFAULT ''3'',
+  `rental_rate` decimal(4,2) NOT NULL DEFAULT ''4.99'',
+  `length` smallint unsigned DEFAULT NULL,
+  `replacement_cost` decimal(5,2) NOT NULL DEFAULT ''19.99'',
+  `rating` enum(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  `special_features` set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`),
+  KEY `idx_title` (`title`),
+  KEY `idx_fk_language_id` (`language_id`),
+  KEY `idx_fk_original_language_id` (`original_language_id`),
+  CONSTRAINT `fk_film_language` FOREIGN KEY (`language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_language_original` FOREIGN KEY (`original_language_id`) REFERENCES `language` (`language_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_actor`
+--
+CREATE TABLE `film_actor` (
+  `actor_id` smallint unsigned NOT NULL,
+  `film_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`actor_id`,`film_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  CONSTRAINT `fk_film_actor_actor` FOREIGN KEY (`actor_id`) REFERENCES `actor` (`actor_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_actor_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_category`
+--
+CREATE TABLE `film_category` (
+  `film_id` smallint unsigned NOT NULL,
+  `category_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`film_id`,`category_id`),
+  KEY `fk_film_category_category` (`category_id`),
+  CONSTRAINT `fk_film_category_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_category_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `film_text`
+--
+CREATE TABLE `film_text` (
+  `film_id` smallint NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  PRIMARY KEY (`film_id`),
+  FULLTEXT KEY `idx_title_description` (`title`,`description`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `inventory`
+--
+CREATE TABLE `inventory` (
+  `inventory_id` mediumint unsigned NOT NULL AUTO_INCREMENT,
+  `film_id` smallint unsigned NOT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`inventory_id`),
+  KEY `idx_fk_film_id` (`film_id`),
+  KEY `idx_store_id_film_id` (`store_id`,`film_id`),
+  CONSTRAINT `fk_inventory_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_inventory_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `language`
+--
+CREATE TABLE `language` (
+  `language_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `name` char(20) NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`language_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `payment`
+--
+CREATE TABLE `payment` (
+  `payment_id` smallint unsigned NOT NULL AUTO_INCREMENT,
+  `customer_id` smallint unsigned NOT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `rental_id` int DEFAULT NULL,
+  `amount` decimal(5,2) NOT NULL,
+  `payment_date` datetime NOT NULL,
+  `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`payment_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `fk_payment_rental` (`rental_id`),
+  CONSTRAINT `fk_payment_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_rental` FOREIGN KEY (`rental_id`) REFERENCES `rental` (`rental_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_payment_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `rental`
+--
+CREATE TABLE `rental` (
+  `rental_id` int NOT NULL AUTO_INCREMENT,
+  `rental_date` datetime NOT NULL,
+  `inventory_id` mediumint unsigned NOT NULL,
+  `customer_id` smallint unsigned NOT NULL,
+  `return_date` datetime DEFAULT NULL,
+  `staff_id` tinyint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`rental_id`),
+  UNIQUE KEY `rental_date` (`rental_date`,`inventory_id`,`customer_id`),
+  KEY `idx_fk_inventory_id` (`inventory_id`),
+  KEY `idx_fk_customer_id` (`customer_id`),
+  KEY `idx_fk_staff_id` (`staff_id`),
+  CONSTRAINT `fk_rental_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_inventory` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`inventory_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_rental_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `staff`
+--
+CREATE TABLE `staff` (
+  `staff_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(45) NOT NULL,
+  `last_name` varchar(45) NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `picture` blob,
+  `email` varchar(50) DEFAULT NULL,
+  `store_id` tinyint unsigned NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT ''1'',
+  `username` varchar(16) NOT NULL,
+  `password` varchar(40) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`staff_id`),
+  KEY `idx_fk_store_id` (`store_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_staff_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_staff_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`store_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Table structure for `store`
+--
+CREATE TABLE `store` (
+  `store_id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `manager_staff_id` tinyint unsigned NOT NULL,
+  `address_id` smallint unsigned NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`store_id`),
+  UNIQUE KEY `idx_unique_manager` (`manager_staff_id`),
+  KEY `idx_fk_address_id` (`address_id`),
+  CONSTRAINT `fk_store_address` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_store_staff` FOREIGN KEY (`manager_staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+DROP VIEW IF EXISTS `actor_info`;
+--
+-- View structure for `actor_info`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `actor_info` AS select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`film` `f` join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`actor` `a` left join `film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`;
+
+DROP VIEW IF EXISTS `customer_list`;
+--
+-- View structure for `customer_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `customer_list` AS select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,_utf8mb3'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,if(`cu`.`active`,_utf8mb3''active'',_utf8mb3'''') AS `notes`,`cu`.`store_id` AS `SID` from (((`customer` `cu` join `address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+DROP VIEW IF EXISTS `film_list`;
+--
+-- View structure for `film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(`actor`.`first_name`,_utf8mb3'' '',`actor`.`last_name`) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `nicer_but_slower_film_list`;
+--
+-- View structure for `nicer_but_slower_film_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `nicer_but_slower_film_list` AS select `film`.`film_id` AS `FID`,`film`.`title` AS `title`,`film`.`description` AS `description`,`category`.`name` AS `category`,`film`.`rental_rate` AS `price`,`film`.`length` AS `length`,`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`actor`.`first_name`,1,1)),lower(substr(`actor`.`first_name`,2,length(`actor`.`first_name`))),_utf8mb3'' '',concat(upper(substr(`actor`.`last_name`,1,1)),lower(substr(`actor`.`last_name`,2,length(`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`category` left join `film_category` on((`category`.`category_id` = `film_category`.`category_id`))) left join `film` on((`film_category`.`film_id` = `film`.`film_id`))) join `film_actor` on((`film`.`film_id` = `film_actor`.`film_id`))) join `actor` on((`film_actor`.`actor_id` = `actor`.`actor_id`))) group by `film`.`film_id`,`category`.`name`;
+
+DROP VIEW IF EXISTS `sales_by_film_category`;
+--
+-- View structure for `sales_by_film_category`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_film_category` AS select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc;
+
+DROP VIEW IF EXISTS `sales_by_store`;
+--
+-- View structure for `sales_by_store`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_by_store` AS select concat(`c`.`city`,_utf8mb3'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,_utf8mb3'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`payment` `p` join `rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`;
+
+DROP VIEW IF EXISTS `staff_list`;
+--
+-- View structure for `staff_list`
+--
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `staff_list` AS select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,_utf8mb3'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`city`.`city` AS `city`,`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`staff` `s` join `address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `city` on((`a`.`city_id` = `city`.`city_id`))) join `country` on((`city`.`country_id` = `country`.`country_id`)));
+
+--
+-- Function structure for `get_customer_balance`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_customer_balance`(p_customer_id INT, p_effective_date DATETIME) RETURNS decimal(5,2)
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_held_by_customer`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_held_by_customer`(p_inventory_id INT) RETURNS int
+    READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END ;;
+DELIMITER ;
+
+--
+-- Function structure for `inventory_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` FUNCTION `inventory_in_stock`(p_inventory_id INT) RETURNS tinyint(1)
+    READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `film_not_in_stock`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `film_not_in_stock`(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+    READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END ;;
+DELIMITER ;
+
+--
+-- Procedure structure for `rewards_report`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `rewards_report`(
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+    READS SQL DATA
+    COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END; ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `ins_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `upd_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END ;;
+DELIMITER ;
+
+--
+-- Trigger structure for `del_film`
+--
+SET character_set_client  = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection  = utf8mb4_general_ci;
+SET sql_mode              = ''STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_ENGINE_SUBSTITUTION'';
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END ;;
+DELIMITER ;
+
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 173100000, '{"changedResources": {"databases": [{"name": "sakila_prod", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance_change_history ENABLE TRIGGER ALL;
@@ -10968,6 +16763,42 @@ ALTER TABLE public.member ENABLE TRIGGER ALL;
 
 ALTER TABLE public.plan_check_run DISABLE TRIGGER ALL;
 
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (105, 1, 1695192093, 1, 1695192093, 104, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_staging"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_staging\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (101, 1, 1695192093, 1, 1695192093, 104, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_test"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_test\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (109, 1, 1695192093, 1, 1695192093, 104, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_prod"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_prod\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (110, 1, 1695192093, 1, 1695192093, 104, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 109, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DDL"}', '{"results": [{"code": "403", "title": "Cannot drop database", "status": "ERROR", "content": "The statement \"\nDROP SCHEMA IF EXISTS sakila;\" drops database"}, {"code": "404", "title": "Cannot create database", "status": "ERROR", "content": "The statement \"\nCREATE SCHEMA sakila;\" creates database"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (102, 1, 1695192093, 1, 1695192093, 104, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 107, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DDL"}', '{"results": [{"code": "403", "title": "Cannot drop database", "status": "ERROR", "content": "The statement \"\nDROP SCHEMA IF EXISTS sakila;\" drops database"}, {"code": "404", "title": "Cannot create database", "status": "ERROR", "content": "The statement \"\nCREATE SCHEMA sakila;\" creates database"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (106, 1, 1695192093, 1, 1695192093, 104, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 108, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DDL"}', '{"results": [{"code": "403", "title": "Cannot drop database", "status": "ERROR", "content": "The statement \"\nDROP SCHEMA IF EXISTS sakila;\" drops database"}, {"code": "404", "title": "Cannot create database", "status": "ERROR", "content": "The statement \"\nCREATE SCHEMA sakila;\" creates database"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (107, 1, 1695192093, 1, 1695192093, 104, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 108, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DDL"}', '{"results": [{"title": "Syntax error", "status": "ERROR", "content": "Syntax error at line 6:0 \nrelated text: ers for loading film_text from film\n--\n\nDELIMITER", "sqlReviewReport": {"code": "201", "line": "6"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (103, 1, 1695192093, 1, 1695192093, 104, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 107, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DDL"}', '{"results": [{"title": "Syntax error", "status": "ERROR", "content": "Syntax error at line 6:0 \nrelated text: ers for loading film_text from film\n--\n\nDELIMITER", "sqlReviewReport": {"code": "201", "line": "6"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (108, 1, 1695192093, 1, 1695192094, 104, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 108, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"statementTypes": ["CREATE_VIEW", "UNKNOWN", "DROP_DATABASE", "CREATE_DATABASE", "CREATE_TABLE"], "changedResources": {"databases": [{"name": "sakila_staging", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (111, 1, 1695192093, 1, 1695192097, 104, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 109, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "Syntax error", "status": "ERROR", "content": "Syntax error at line 6:0 \nrelated text: ers for loading film_text from film\n--\n\nDELIMITER", "sqlReviewReport": {"code": "201", "line": "6"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (112, 1, 1695192093, 1, 1695192097, 104, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 109, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"statementTypes": ["UNKNOWN", "DROP_DATABASE", "CREATE_DATABASE", "CREATE_TABLE", "CREATE_VIEW"], "changedResources": {"databases": [{"name": "sakila_prod", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (133, 1, 1695192607, 1, 1695192607, 104, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_prod"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_prod\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (134, 1, 1695192607, 1, 1695192607, 104, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 111, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (130, 1, 1695192607, 1, 1695192607, 104, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 111, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (135, 1, 1695192607, 1, 1695192607, 104, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 111, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (104, 1, 1695192093, 1, 1695192094, 104, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 107, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"statementTypes": ["UNKNOWN", "DROP_DATABASE", "CREATE_DATABASE", "CREATE_TABLE", "CREATE_VIEW"], "changedResources": {"databases": [{"name": "sakila_test", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (122, 1, 1695192468, 1, 1695192472, 104, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 110, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (121, 1, 1695192468, 1, 1695192472, 104, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_prod"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_prod\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (117, 1, 1695192468, 1, 1695192472, 104, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_staging"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_staging\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (113, 1, 1695192468, 1, 1695192472, 104, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_test"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_test\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (114, 1, 1695192468, 1, 1695192472, 104, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 110, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (118, 1, 1695192468, 1, 1695192472, 104, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 110, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (120, 1, 1695192468, 1, 1695192472, 104, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 110, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"statementTypes": ["CREATE_TABLE", "ALTER_TABLE", "CREATE_VIEW", "UNKNOWN"], "changedResources": {"databases": [{"name": "sakila_staging", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (116, 1, 1695192468, 1, 1695192472, 104, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 110, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"statementTypes": ["CREATE_VIEW", "UNKNOWN", "CREATE_TABLE", "ALTER_TABLE"], "changedResources": {"databases": [{"name": "sakila_test", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (115, 1, 1695192468, 1, 1695192472, 104, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 110, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (119, 1, 1695192468, 1, 1695192472, 104, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 110, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (123, 1, 1695192468, 1, 1695192477, 104, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 110, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (124, 1, 1695192468, 1, 1695192477, 104, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 110, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"statementTypes": ["UNKNOWN", "CREATE_TABLE", "ALTER_TABLE", "CREATE_VIEW"], "changedResources": {"databases": [{"name": "sakila_prod", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (127, 1, 1695192607, 1, 1695192607, 104, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 111, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (129, 1, 1695192607, 1, 1695192612, 104, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_staging"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_staging\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (125, 1, 1695192607, 1, 1695192607, 104, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_test"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_test\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (126, 1, 1695192607, 1, 1695192607, 104, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 111, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (131, 1, 1695192607, 1, 1695192607, 104, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 111, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (128, 1, 1695192607, 1, 1695192607, 104, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 111, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"statementTypes": ["UNKNOWN", "CREATE_TABLE", "ALTER_TABLE", "CREATE_VIEW"], "changedResources": {"databases": [{"name": "sakila_test", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (132, 1, 1695192607, 1, 1695192607, 104, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 111, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"statementTypes": ["UNKNOWN", "CREATE_TABLE", "ALTER_TABLE", "CREATE_VIEW"], "changedResources": {"databases": [{"name": "sakila_staging", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (136, 1, 1695192607, 1, 1695192612, 104, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 111, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"statementTypes": ["UNKNOWN", "CREATE_TABLE", "ALTER_TABLE", "CREATE_VIEW"], "changedResources": {"databases": [{"name": "sakila_prod", "schemas": [{"tables": [{"name": "actor"}, {"name": "category"}, {"name": "city"}, {"name": "country"}, {"name": "customer"}, {"name": "film"}, {"name": "film_actor"}, {"name": "film_category"}, {"name": "film_text"}, {"name": "film_text"}, {"name": "inventory"}, {"name": "language"}, {"name": "payment"}, {"name": "rental"}, {"name": "staff"}, {"name": "store"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.plan_check_run ENABLE TRIGGER ALL;
@@ -10996,6 +16827,7 @@ ALTER TABLE public.project_member DISABLE TRIGGER ALL;
 INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (102, 'NORMAL', 101, 1695112950, 101, 1695112950, 101, 'DEVELOPER', 103, '{"title": "Developer"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (103, 'NORMAL', 101, 1695112950, 101, 1695112950, 101, 'OWNER', 102, '{"title": "Owner"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (104, 'NORMAL', 101, 1695113006, 101, 1695113006, 101, 'DEVELOPER', 101, '{"title": "Developer"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (106, 'NORMAL', 101, 1695191980, 101, 1695191980, 101, 'OWNER', 104, '{"title": "Owner"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.project_member ENABLE TRIGGER ALL;
@@ -11078,7 +16910,7 @@ INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, 
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (110, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.schema-template', '{}', 'The schema template setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (111, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.data-classification', '{}', 'The data classification setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (112, 'NORMAL', 1, 1694683928, 101, 1695177966, 'bb.workspace.approval', '{"rules":[{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"项目所有者 -> DBA","description":"系统定义的流程。先由项目所有者审批，再由 DBA 审批。","creatorId":1},"condition":{"expression":"source == 1 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]}]},"title":"项目所有者","description":"系统定义的流程。只需要项目所有者审批。","creatorId":1},"condition":{"expression":"source == 2 && level == 0 || source == 4 && level == 0 || source == 5 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"DBA","description":"系统定义的流程。只需要 DBA 审批","creatorId":1},"condition":{"expression":"source == 3 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"工作空间所有者","description":"系统定义的流程。只需要管理员审批","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"项目所有者 -> DBA -> 工作空间所有者","description":"系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。","creatorId":1},"condition":{}}]}', 'The workspace approval setting') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695180489, 'bb.workspace.profile', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695191772, 'bb.workspace.profile', '{}', '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.setting ENABLE TRIGGER ALL;
@@ -11095,6 +16927,3201 @@ INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, up
 INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (103, 'NORMAL', 1, 1695179030, 1, 1695179054, 101, NULL, 'Sheet for creating database sakila_test', 'CREATE DATABASE `sakila_test` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (106, 'NORMAL', 1, 1695179079, 1, 1695179079, 101, NULL, 'Sheet for creating database sakila_staging', 'CREATE DATABASE `sakila_staging` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (105, 'NORMAL', 1, 1695179078, 1, 1695179141, 101, NULL, 'Sheet for creating database sakila_staging', 'CREATE DATABASE `sakila_staging` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (107, 'NORMAL', 103, 1695192093, 103, 1695192093, 101, 102, '[3 databases] Alter schema @09-20 14:41 UTC+0800', '-- Sakila Spatial Sample Database Schema
+-- Version 0.9
+
+-- Copyright (c) 2014, Oracle Corporation
+-- All rights reserved.
+
+-- Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+--  * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+--  * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+--  * Neither the name of Oracle Corporation nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-- Modified in September 2015 by Giuseppe Maxia
+-- The schema and data can now be loaded by any MySQL 5.x version.
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE=''TRADITIONAL'';
+
+DROP SCHEMA IF EXISTS sakila;
+CREATE SCHEMA sakila;
+USE sakila;
+
+--
+-- Table structure for table `actor`
+--
+
+CREATE TABLE actor (
+  actor_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id),
+  KEY idx_actor_last_name (last_name)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `address`
+--
+
+CREATE TABLE address (
+  address_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  address VARCHAR(50) NOT NULL,
+  address2 VARCHAR(50) DEFAULT NULL,
+  district VARCHAR(20) NOT NULL,
+  city_id SMALLINT UNSIGNED NOT NULL,
+  postal_code VARCHAR(10) DEFAULT NULL,
+  phone VARCHAR(20) NOT NULL,
+  /*!50705 location GEOMETRY NOT NULL,*/
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (address_id),
+  KEY idx_fk_city_id (city_id),
+  /*!50705 SPATIAL KEY `idx_location` (location),*/
+  CONSTRAINT `fk_address_city` FOREIGN KEY (city_id) REFERENCES city (city_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `category`
+--
+
+CREATE TABLE category (
+  category_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(25) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `city`
+--
+
+CREATE TABLE city (
+  city_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  city VARCHAR(50) NOT NULL,
+  country_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (city_id),
+  KEY idx_fk_country_id (country_id),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (country_id) REFERENCES country (country_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `country`
+--
+
+CREATE TABLE country (
+  country_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  country VARCHAR(50) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (country_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `customer`
+--
+
+CREATE TABLE customer (
+  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id TINYINT UNSIGNED NOT NULL,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  create_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (customer_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  KEY idx_last_name (last_name),
+  CONSTRAINT fk_customer_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_customer_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film`
+--
+
+CREATE TABLE film (
+  film_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
+  release_year YEAR DEFAULT NULL,
+  language_id TINYINT UNSIGNED NOT NULL,
+  original_language_id TINYINT UNSIGNED DEFAULT NULL,
+  rental_duration TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  rental_rate DECIMAL(4,2) NOT NULL DEFAULT 4.99,
+  length SMALLINT UNSIGNED DEFAULT NULL,
+  replacement_cost DECIMAL(5,2) NOT NULL DEFAULT 19.99,
+  rating ENUM(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  special_features SET(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (film_id),
+  KEY idx_title (title),
+  KEY idx_fk_language_id (language_id),
+  KEY idx_fk_original_language_id (original_language_id),
+  CONSTRAINT fk_film_language FOREIGN KEY (language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_language_original FOREIGN KEY (original_language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_actor`
+--
+
+CREATE TABLE film_actor (
+  actor_id SMALLINT UNSIGNED NOT NULL,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id,film_id),
+  KEY idx_fk_film_id (`film_id`),
+  CONSTRAINT fk_film_actor_actor FOREIGN KEY (actor_id) REFERENCES actor (actor_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_actor_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_category`
+--
+
+CREATE TABLE film_category (
+  film_id SMALLINT UNSIGNED NOT NULL,
+  category_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (film_id, category_id),
+  CONSTRAINT fk_film_category_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_category_category FOREIGN KEY (category_id) REFERENCES category (category_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_text`
+--
+
+CREATE TABLE film_text (
+  film_id SMALLINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  PRIMARY KEY  (film_id),
+  FULLTEXT KEY idx_title_description (title,description)
+)ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- After MySQL 5.6.10, InnoDB supports fulltext indexes
+/*!50610 ALTER TABLE film_text engine=InnoDB */;
+
+--
+-- Triggers for loading film_text from film
+--
+
+DELIMITER ;;
+CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END;;
+
+
+CREATE TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END;;
+
+
+CREATE TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END;;
+
+DELIMITER ;
+
+--
+-- Table structure for table `inventory`
+--
+
+CREATE TABLE inventory (
+  inventory_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (inventory_id),
+  KEY idx_fk_film_id (film_id),
+  KEY idx_store_id_film_id (store_id,film_id),
+  CONSTRAINT fk_inventory_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_inventory_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `language`
+--
+
+CREATE TABLE language (
+  language_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name CHAR(20) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (language_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `payment`
+--
+
+CREATE TABLE payment (
+  payment_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  rental_id INT DEFAULT NULL,
+  amount DECIMAL(5,2) NOT NULL,
+  payment_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (payment_id),
+  KEY idx_fk_staff_id (staff_id),
+  KEY idx_fk_customer_id (customer_id),
+  CONSTRAINT fk_payment_rental FOREIGN KEY (rental_id) REFERENCES rental (rental_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `rental`
+--
+
+CREATE TABLE rental (
+  rental_id INT NOT NULL AUTO_INCREMENT,
+  rental_date DATETIME NOT NULL,
+  inventory_id MEDIUMINT UNSIGNED NOT NULL,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  return_date DATETIME DEFAULT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (rental_id),
+  UNIQUE KEY  (rental_date,inventory_id,customer_id),
+  KEY idx_fk_inventory_id (inventory_id),
+  KEY idx_fk_customer_id (customer_id),
+  KEY idx_fk_staff_id (staff_id),
+  CONSTRAINT fk_rental_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_inventory FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `staff`
+--
+
+CREATE TABLE staff (
+  staff_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  picture BLOB DEFAULT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  username VARCHAR(16) NOT NULL,
+  password VARCHAR(40) BINARY DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (staff_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `store`
+--
+
+CREATE TABLE store (
+  store_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  manager_staff_id TINYINT UNSIGNED NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (store_id),
+  UNIQUE KEY idx_unique_manager (manager_staff_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_store_staff FOREIGN KEY (manager_staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_store_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- View structure for view `customer_list`
+--
+
+CREATE VIEW customer_list
+AS
+SELECT cu.customer_id AS ID, CONCAT(cu.first_name, _utf8'' '', cu.last_name) AS name, a.address AS address, a.postal_code AS `zip code`,
+	a.phone AS phone, city.city AS city, country.country AS country, IF(cu.active, _utf8''active'',_utf8'''') AS notes, cu.store_id AS SID
+FROM customer AS cu JOIN address AS a ON cu.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `film_list`
+--
+
+CREATE VIEW film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(actor.first_name, _utf8'' '', actor.last_name) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `nicer_but_slower_film_list`
+--
+
+CREATE VIEW nicer_but_slower_film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(CONCAT(UCASE(SUBSTR(actor.first_name,1,1)),
+	LCASE(SUBSTR(actor.first_name,2,LENGTH(actor.first_name))),_utf8'' '',CONCAT(UCASE(SUBSTR(actor.last_name,1,1)),
+	LCASE(SUBSTR(actor.last_name,2,LENGTH(actor.last_name)))))) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `staff_list`
+--
+
+CREATE VIEW staff_list
+AS
+SELECT s.staff_id AS ID, CONCAT(s.first_name, _utf8'' '', s.last_name) AS name, a.address AS address, a.postal_code AS `zip code`, a.phone AS phone,
+	city.city AS city, country.country AS country, s.store_id AS SID
+FROM staff AS s JOIN address AS a ON s.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `sales_by_store`
+--
+
+CREATE VIEW sales_by_store
+AS
+SELECT
+CONCAT(c.city, _utf8'','', cy.country) AS store
+, CONCAT(m.first_name, _utf8'' '', m.last_name) AS manager
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN store AS s ON i.store_id = s.store_id
+INNER JOIN address AS a ON s.address_id = a.address_id
+INNER JOIN city AS c ON a.city_id = c.city_id
+INNER JOIN country AS cy ON c.country_id = cy.country_id
+INNER JOIN staff AS m ON s.manager_staff_id = m.staff_id
+GROUP BY s.store_id
+ORDER BY cy.country, c.city;
+
+--
+-- View structure for view `sales_by_film_category`
+--
+-- Note that total sales will add up to >100% because
+-- some titles belong to more than 1 category
+--
+
+CREATE VIEW sales_by_film_category
+AS
+SELECT
+c.name AS category
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN film AS f ON i.film_id = f.film_id
+INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+INNER JOIN category AS c ON fc.category_id = c.category_id
+GROUP BY c.name
+ORDER BY total_sales DESC;
+
+--
+-- View structure for view `actor_info`
+--
+
+CREATE DEFINER=CURRENT_USER SQL SECURITY INVOKER VIEW actor_info
+AS
+SELECT
+a.actor_id,
+a.first_name,
+a.last_name,
+GROUP_CONCAT(DISTINCT CONCAT(c.name, '': '',
+		(SELECT GROUP_CONCAT(f.title ORDER BY f.title SEPARATOR '', '')
+                    FROM sakila.film f
+                    INNER JOIN sakila.film_category fc
+                      ON f.film_id = fc.film_id
+                    INNER JOIN sakila.film_actor fa
+                      ON f.film_id = fa.film_id
+                    WHERE fc.category_id = c.category_id
+                    AND fa.actor_id = a.actor_id
+                 )
+             )
+             ORDER BY c.name SEPARATOR ''; '')
+AS film_info
+FROM sakila.actor a
+LEFT JOIN sakila.film_actor fa
+  ON a.actor_id = fa.actor_id
+LEFT JOIN sakila.film_category fc
+  ON fa.film_id = fc.film_id
+LEFT JOIN sakila.category c
+  ON fc.category_id = c.category_id
+GROUP BY a.actor_id, a.first_name, a.last_name;
+
+--
+-- Procedure structure for procedure `rewards_report`
+--
+
+DELIMITER //
+
+CREATE PROCEDURE rewards_report (
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+LANGUAGE SQL
+NOT DETERMINISTIC
+READS SQL DATA
+SQL SECURITY DEFINER
+COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END //
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE FUNCTION get_customer_balance(p_customer_id INT, p_effective_date DATETIME) RETURNS DECIMAL(5,2)
+    DETERMINISTIC
+    READS SQL DATA
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE film_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE film_not_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE FUNCTION inventory_held_by_customer(p_inventory_id INT) RETURNS INT
+READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE FUNCTION inventory_in_stock(p_inventory_id INT) RETURNS BOOLEAN
+READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END $$
+
+DELIMITER ;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+
+', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (108, 'NORMAL', 103, 1695192093, 103, 1695192093, 101, 103, '[3 databases] Alter schema @09-20 14:41 UTC+0800', '-- Sakila Spatial Sample Database Schema
+-- Version 0.9
+
+-- Copyright (c) 2014, Oracle Corporation
+-- All rights reserved.
+
+-- Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+--  * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+--  * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+--  * Neither the name of Oracle Corporation nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-- Modified in September 2015 by Giuseppe Maxia
+-- The schema and data can now be loaded by any MySQL 5.x version.
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE=''TRADITIONAL'';
+
+DROP SCHEMA IF EXISTS sakila;
+CREATE SCHEMA sakila;
+USE sakila;
+
+--
+-- Table structure for table `actor`
+--
+
+CREATE TABLE actor (
+  actor_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id),
+  KEY idx_actor_last_name (last_name)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `address`
+--
+
+CREATE TABLE address (
+  address_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  address VARCHAR(50) NOT NULL,
+  address2 VARCHAR(50) DEFAULT NULL,
+  district VARCHAR(20) NOT NULL,
+  city_id SMALLINT UNSIGNED NOT NULL,
+  postal_code VARCHAR(10) DEFAULT NULL,
+  phone VARCHAR(20) NOT NULL,
+  /*!50705 location GEOMETRY NOT NULL,*/
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (address_id),
+  KEY idx_fk_city_id (city_id),
+  /*!50705 SPATIAL KEY `idx_location` (location),*/
+  CONSTRAINT `fk_address_city` FOREIGN KEY (city_id) REFERENCES city (city_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `category`
+--
+
+CREATE TABLE category (
+  category_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(25) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `city`
+--
+
+CREATE TABLE city (
+  city_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  city VARCHAR(50) NOT NULL,
+  country_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (city_id),
+  KEY idx_fk_country_id (country_id),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (country_id) REFERENCES country (country_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `country`
+--
+
+CREATE TABLE country (
+  country_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  country VARCHAR(50) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (country_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `customer`
+--
+
+CREATE TABLE customer (
+  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id TINYINT UNSIGNED NOT NULL,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  create_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (customer_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  KEY idx_last_name (last_name),
+  CONSTRAINT fk_customer_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_customer_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film`
+--
+
+CREATE TABLE film (
+  film_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
+  release_year YEAR DEFAULT NULL,
+  language_id TINYINT UNSIGNED NOT NULL,
+  original_language_id TINYINT UNSIGNED DEFAULT NULL,
+  rental_duration TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  rental_rate DECIMAL(4,2) NOT NULL DEFAULT 4.99,
+  length SMALLINT UNSIGNED DEFAULT NULL,
+  replacement_cost DECIMAL(5,2) NOT NULL DEFAULT 19.99,
+  rating ENUM(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  special_features SET(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (film_id),
+  KEY idx_title (title),
+  KEY idx_fk_language_id (language_id),
+  KEY idx_fk_original_language_id (original_language_id),
+  CONSTRAINT fk_film_language FOREIGN KEY (language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_language_original FOREIGN KEY (original_language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_actor`
+--
+
+CREATE TABLE film_actor (
+  actor_id SMALLINT UNSIGNED NOT NULL,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id,film_id),
+  KEY idx_fk_film_id (`film_id`),
+  CONSTRAINT fk_film_actor_actor FOREIGN KEY (actor_id) REFERENCES actor (actor_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_actor_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_category`
+--
+
+CREATE TABLE film_category (
+  film_id SMALLINT UNSIGNED NOT NULL,
+  category_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (film_id, category_id),
+  CONSTRAINT fk_film_category_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_category_category FOREIGN KEY (category_id) REFERENCES category (category_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_text`
+--
+
+CREATE TABLE film_text (
+  film_id SMALLINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  PRIMARY KEY  (film_id),
+  FULLTEXT KEY idx_title_description (title,description)
+)ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- After MySQL 5.6.10, InnoDB supports fulltext indexes
+/*!50610 ALTER TABLE film_text engine=InnoDB */;
+
+--
+-- Triggers for loading film_text from film
+--
+
+DELIMITER ;;
+CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END;;
+
+
+CREATE TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END;;
+
+
+CREATE TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END;;
+
+DELIMITER ;
+
+--
+-- Table structure for table `inventory`
+--
+
+CREATE TABLE inventory (
+  inventory_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (inventory_id),
+  KEY idx_fk_film_id (film_id),
+  KEY idx_store_id_film_id (store_id,film_id),
+  CONSTRAINT fk_inventory_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_inventory_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `language`
+--
+
+CREATE TABLE language (
+  language_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name CHAR(20) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (language_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `payment`
+--
+
+CREATE TABLE payment (
+  payment_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  rental_id INT DEFAULT NULL,
+  amount DECIMAL(5,2) NOT NULL,
+  payment_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (payment_id),
+  KEY idx_fk_staff_id (staff_id),
+  KEY idx_fk_customer_id (customer_id),
+  CONSTRAINT fk_payment_rental FOREIGN KEY (rental_id) REFERENCES rental (rental_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `rental`
+--
+
+CREATE TABLE rental (
+  rental_id INT NOT NULL AUTO_INCREMENT,
+  rental_date DATETIME NOT NULL,
+  inventory_id MEDIUMINT UNSIGNED NOT NULL,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  return_date DATETIME DEFAULT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (rental_id),
+  UNIQUE KEY  (rental_date,inventory_id,customer_id),
+  KEY idx_fk_inventory_id (inventory_id),
+  KEY idx_fk_customer_id (customer_id),
+  KEY idx_fk_staff_id (staff_id),
+  CONSTRAINT fk_rental_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_inventory FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `staff`
+--
+
+CREATE TABLE staff (
+  staff_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  picture BLOB DEFAULT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  username VARCHAR(16) NOT NULL,
+  password VARCHAR(40) BINARY DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (staff_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `store`
+--
+
+CREATE TABLE store (
+  store_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  manager_staff_id TINYINT UNSIGNED NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (store_id),
+  UNIQUE KEY idx_unique_manager (manager_staff_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_store_staff FOREIGN KEY (manager_staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_store_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- View structure for view `customer_list`
+--
+
+CREATE VIEW customer_list
+AS
+SELECT cu.customer_id AS ID, CONCAT(cu.first_name, _utf8'' '', cu.last_name) AS name, a.address AS address, a.postal_code AS `zip code`,
+	a.phone AS phone, city.city AS city, country.country AS country, IF(cu.active, _utf8''active'',_utf8'''') AS notes, cu.store_id AS SID
+FROM customer AS cu JOIN address AS a ON cu.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `film_list`
+--
+
+CREATE VIEW film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(actor.first_name, _utf8'' '', actor.last_name) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `nicer_but_slower_film_list`
+--
+
+CREATE VIEW nicer_but_slower_film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(CONCAT(UCASE(SUBSTR(actor.first_name,1,1)),
+	LCASE(SUBSTR(actor.first_name,2,LENGTH(actor.first_name))),_utf8'' '',CONCAT(UCASE(SUBSTR(actor.last_name,1,1)),
+	LCASE(SUBSTR(actor.last_name,2,LENGTH(actor.last_name)))))) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `staff_list`
+--
+
+CREATE VIEW staff_list
+AS
+SELECT s.staff_id AS ID, CONCAT(s.first_name, _utf8'' '', s.last_name) AS name, a.address AS address, a.postal_code AS `zip code`, a.phone AS phone,
+	city.city AS city, country.country AS country, s.store_id AS SID
+FROM staff AS s JOIN address AS a ON s.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `sales_by_store`
+--
+
+CREATE VIEW sales_by_store
+AS
+SELECT
+CONCAT(c.city, _utf8'','', cy.country) AS store
+, CONCAT(m.first_name, _utf8'' '', m.last_name) AS manager
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN store AS s ON i.store_id = s.store_id
+INNER JOIN address AS a ON s.address_id = a.address_id
+INNER JOIN city AS c ON a.city_id = c.city_id
+INNER JOIN country AS cy ON c.country_id = cy.country_id
+INNER JOIN staff AS m ON s.manager_staff_id = m.staff_id
+GROUP BY s.store_id
+ORDER BY cy.country, c.city;
+
+--
+-- View structure for view `sales_by_film_category`
+--
+-- Note that total sales will add up to >100% because
+-- some titles belong to more than 1 category
+--
+
+CREATE VIEW sales_by_film_category
+AS
+SELECT
+c.name AS category
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN film AS f ON i.film_id = f.film_id
+INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+INNER JOIN category AS c ON fc.category_id = c.category_id
+GROUP BY c.name
+ORDER BY total_sales DESC;
+
+--
+-- View structure for view `actor_info`
+--
+
+CREATE DEFINER=CURRENT_USER SQL SECURITY INVOKER VIEW actor_info
+AS
+SELECT
+a.actor_id,
+a.first_name,
+a.last_name,
+GROUP_CONCAT(DISTINCT CONCAT(c.name, '': '',
+		(SELECT GROUP_CONCAT(f.title ORDER BY f.title SEPARATOR '', '')
+                    FROM sakila.film f
+                    INNER JOIN sakila.film_category fc
+                      ON f.film_id = fc.film_id
+                    INNER JOIN sakila.film_actor fa
+                      ON f.film_id = fa.film_id
+                    WHERE fc.category_id = c.category_id
+                    AND fa.actor_id = a.actor_id
+                 )
+             )
+             ORDER BY c.name SEPARATOR ''; '')
+AS film_info
+FROM sakila.actor a
+LEFT JOIN sakila.film_actor fa
+  ON a.actor_id = fa.actor_id
+LEFT JOIN sakila.film_category fc
+  ON fa.film_id = fc.film_id
+LEFT JOIN sakila.category c
+  ON fc.category_id = c.category_id
+GROUP BY a.actor_id, a.first_name, a.last_name;
+
+--
+-- Procedure structure for procedure `rewards_report`
+--
+
+DELIMITER //
+
+CREATE PROCEDURE rewards_report (
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+LANGUAGE SQL
+NOT DETERMINISTIC
+READS SQL DATA
+SQL SECURITY DEFINER
+COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END //
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE FUNCTION get_customer_balance(p_customer_id INT, p_effective_date DATETIME) RETURNS DECIMAL(5,2)
+    DETERMINISTIC
+    READS SQL DATA
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE film_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE film_not_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE FUNCTION inventory_held_by_customer(p_inventory_id INT) RETURNS INT
+READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE FUNCTION inventory_in_stock(p_inventory_id INT) RETURNS BOOLEAN
+READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END $$
+
+DELIMITER ;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+
+', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (109, 'NORMAL', 103, 1695192093, 103, 1695192093, 101, 101, '[3 databases] Alter schema @09-20 14:41 UTC+0800', '-- Sakila Spatial Sample Database Schema
+-- Version 0.9
+
+-- Copyright (c) 2014, Oracle Corporation
+-- All rights reserved.
+
+-- Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+--  * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+--  * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+--  * Neither the name of Oracle Corporation nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-- Modified in September 2015 by Giuseppe Maxia
+-- The schema and data can now be loaded by any MySQL 5.x version.
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE=''TRADITIONAL'';
+
+DROP SCHEMA IF EXISTS sakila;
+CREATE SCHEMA sakila;
+USE sakila;
+
+--
+-- Table structure for table `actor`
+--
+
+CREATE TABLE actor (
+  actor_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id),
+  KEY idx_actor_last_name (last_name)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `address`
+--
+
+CREATE TABLE address (
+  address_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  address VARCHAR(50) NOT NULL,
+  address2 VARCHAR(50) DEFAULT NULL,
+  district VARCHAR(20) NOT NULL,
+  city_id SMALLINT UNSIGNED NOT NULL,
+  postal_code VARCHAR(10) DEFAULT NULL,
+  phone VARCHAR(20) NOT NULL,
+  /*!50705 location GEOMETRY NOT NULL,*/
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (address_id),
+  KEY idx_fk_city_id (city_id),
+  /*!50705 SPATIAL KEY `idx_location` (location),*/
+  CONSTRAINT `fk_address_city` FOREIGN KEY (city_id) REFERENCES city (city_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `category`
+--
+
+CREATE TABLE category (
+  category_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(25) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `city`
+--
+
+CREATE TABLE city (
+  city_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  city VARCHAR(50) NOT NULL,
+  country_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (city_id),
+  KEY idx_fk_country_id (country_id),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (country_id) REFERENCES country (country_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `country`
+--
+
+CREATE TABLE country (
+  country_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  country VARCHAR(50) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (country_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `customer`
+--
+
+CREATE TABLE customer (
+  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id TINYINT UNSIGNED NOT NULL,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  create_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (customer_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  KEY idx_last_name (last_name),
+  CONSTRAINT fk_customer_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_customer_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film`
+--
+
+CREATE TABLE film (
+  film_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
+  release_year YEAR DEFAULT NULL,
+  language_id TINYINT UNSIGNED NOT NULL,
+  original_language_id TINYINT UNSIGNED DEFAULT NULL,
+  rental_duration TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  rental_rate DECIMAL(4,2) NOT NULL DEFAULT 4.99,
+  length SMALLINT UNSIGNED DEFAULT NULL,
+  replacement_cost DECIMAL(5,2) NOT NULL DEFAULT 19.99,
+  rating ENUM(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  special_features SET(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (film_id),
+  KEY idx_title (title),
+  KEY idx_fk_language_id (language_id),
+  KEY idx_fk_original_language_id (original_language_id),
+  CONSTRAINT fk_film_language FOREIGN KEY (language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_language_original FOREIGN KEY (original_language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_actor`
+--
+
+CREATE TABLE film_actor (
+  actor_id SMALLINT UNSIGNED NOT NULL,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id,film_id),
+  KEY idx_fk_film_id (`film_id`),
+  CONSTRAINT fk_film_actor_actor FOREIGN KEY (actor_id) REFERENCES actor (actor_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_actor_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_category`
+--
+
+CREATE TABLE film_category (
+  film_id SMALLINT UNSIGNED NOT NULL,
+  category_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (film_id, category_id),
+  CONSTRAINT fk_film_category_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_category_category FOREIGN KEY (category_id) REFERENCES category (category_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_text`
+--
+
+CREATE TABLE film_text (
+  film_id SMALLINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  PRIMARY KEY  (film_id),
+  FULLTEXT KEY idx_title_description (title,description)
+)ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- After MySQL 5.6.10, InnoDB supports fulltext indexes
+/*!50610 ALTER TABLE film_text engine=InnoDB */;
+
+--
+-- Triggers for loading film_text from film
+--
+
+DELIMITER ;;
+CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END;;
+
+
+CREATE TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END;;
+
+
+CREATE TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END;;
+
+DELIMITER ;
+
+--
+-- Table structure for table `inventory`
+--
+
+CREATE TABLE inventory (
+  inventory_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (inventory_id),
+  KEY idx_fk_film_id (film_id),
+  KEY idx_store_id_film_id (store_id,film_id),
+  CONSTRAINT fk_inventory_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_inventory_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `language`
+--
+
+CREATE TABLE language (
+  language_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name CHAR(20) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (language_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `payment`
+--
+
+CREATE TABLE payment (
+  payment_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  rental_id INT DEFAULT NULL,
+  amount DECIMAL(5,2) NOT NULL,
+  payment_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (payment_id),
+  KEY idx_fk_staff_id (staff_id),
+  KEY idx_fk_customer_id (customer_id),
+  CONSTRAINT fk_payment_rental FOREIGN KEY (rental_id) REFERENCES rental (rental_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `rental`
+--
+
+CREATE TABLE rental (
+  rental_id INT NOT NULL AUTO_INCREMENT,
+  rental_date DATETIME NOT NULL,
+  inventory_id MEDIUMINT UNSIGNED NOT NULL,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  return_date DATETIME DEFAULT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (rental_id),
+  UNIQUE KEY  (rental_date,inventory_id,customer_id),
+  KEY idx_fk_inventory_id (inventory_id),
+  KEY idx_fk_customer_id (customer_id),
+  KEY idx_fk_staff_id (staff_id),
+  CONSTRAINT fk_rental_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_inventory FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `staff`
+--
+
+CREATE TABLE staff (
+  staff_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  picture BLOB DEFAULT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  username VARCHAR(16) NOT NULL,
+  password VARCHAR(40) BINARY DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (staff_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `store`
+--
+
+CREATE TABLE store (
+  store_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  manager_staff_id TINYINT UNSIGNED NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (store_id),
+  UNIQUE KEY idx_unique_manager (manager_staff_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_store_staff FOREIGN KEY (manager_staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_store_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- View structure for view `customer_list`
+--
+
+CREATE VIEW customer_list
+AS
+SELECT cu.customer_id AS ID, CONCAT(cu.first_name, _utf8'' '', cu.last_name) AS name, a.address AS address, a.postal_code AS `zip code`,
+	a.phone AS phone, city.city AS city, country.country AS country, IF(cu.active, _utf8''active'',_utf8'''') AS notes, cu.store_id AS SID
+FROM customer AS cu JOIN address AS a ON cu.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `film_list`
+--
+
+CREATE VIEW film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(actor.first_name, _utf8'' '', actor.last_name) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `nicer_but_slower_film_list`
+--
+
+CREATE VIEW nicer_but_slower_film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(CONCAT(UCASE(SUBSTR(actor.first_name,1,1)),
+	LCASE(SUBSTR(actor.first_name,2,LENGTH(actor.first_name))),_utf8'' '',CONCAT(UCASE(SUBSTR(actor.last_name,1,1)),
+	LCASE(SUBSTR(actor.last_name,2,LENGTH(actor.last_name)))))) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `staff_list`
+--
+
+CREATE VIEW staff_list
+AS
+SELECT s.staff_id AS ID, CONCAT(s.first_name, _utf8'' '', s.last_name) AS name, a.address AS address, a.postal_code AS `zip code`, a.phone AS phone,
+	city.city AS city, country.country AS country, s.store_id AS SID
+FROM staff AS s JOIN address AS a ON s.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `sales_by_store`
+--
+
+CREATE VIEW sales_by_store
+AS
+SELECT
+CONCAT(c.city, _utf8'','', cy.country) AS store
+, CONCAT(m.first_name, _utf8'' '', m.last_name) AS manager
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN store AS s ON i.store_id = s.store_id
+INNER JOIN address AS a ON s.address_id = a.address_id
+INNER JOIN city AS c ON a.city_id = c.city_id
+INNER JOIN country AS cy ON c.country_id = cy.country_id
+INNER JOIN staff AS m ON s.manager_staff_id = m.staff_id
+GROUP BY s.store_id
+ORDER BY cy.country, c.city;
+
+--
+-- View structure for view `sales_by_film_category`
+--
+-- Note that total sales will add up to >100% because
+-- some titles belong to more than 1 category
+--
+
+CREATE VIEW sales_by_film_category
+AS
+SELECT
+c.name AS category
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN film AS f ON i.film_id = f.film_id
+INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+INNER JOIN category AS c ON fc.category_id = c.category_id
+GROUP BY c.name
+ORDER BY total_sales DESC;
+
+--
+-- View structure for view `actor_info`
+--
+
+CREATE DEFINER=CURRENT_USER SQL SECURITY INVOKER VIEW actor_info
+AS
+SELECT
+a.actor_id,
+a.first_name,
+a.last_name,
+GROUP_CONCAT(DISTINCT CONCAT(c.name, '': '',
+		(SELECT GROUP_CONCAT(f.title ORDER BY f.title SEPARATOR '', '')
+                    FROM sakila.film f
+                    INNER JOIN sakila.film_category fc
+                      ON f.film_id = fc.film_id
+                    INNER JOIN sakila.film_actor fa
+                      ON f.film_id = fa.film_id
+                    WHERE fc.category_id = c.category_id
+                    AND fa.actor_id = a.actor_id
+                 )
+             )
+             ORDER BY c.name SEPARATOR ''; '')
+AS film_info
+FROM sakila.actor a
+LEFT JOIN sakila.film_actor fa
+  ON a.actor_id = fa.actor_id
+LEFT JOIN sakila.film_category fc
+  ON fa.film_id = fc.film_id
+LEFT JOIN sakila.category c
+  ON fc.category_id = c.category_id
+GROUP BY a.actor_id, a.first_name, a.last_name;
+
+--
+-- Procedure structure for procedure `rewards_report`
+--
+
+DELIMITER //
+
+CREATE PROCEDURE rewards_report (
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+LANGUAGE SQL
+NOT DETERMINISTIC
+READS SQL DATA
+SQL SECURITY DEFINER
+COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END //
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE FUNCTION get_customer_balance(p_customer_id INT, p_effective_date DATETIME) RETURNS DECIMAL(5,2)
+    DETERMINISTIC
+    READS SQL DATA
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE film_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE film_not_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE FUNCTION inventory_held_by_customer(p_inventory_id INT) RETURNS INT
+READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE FUNCTION inventory_in_stock(p_inventory_id INT) RETURNS BOOLEAN
+READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END $$
+
+DELIMITER ;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+
+', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (110, 'NORMAL', 103, 1695192468, 103, 1695192468, 101, NULL, '[3 databases] Alter schema @09-20 14:41 UTC+0800', '-- Sakila Spatial Sample Database Schema
+-- Version 0.9
+
+-- Copyright (c) 2014, Oracle Corporation
+-- All rights reserved.
+
+-- Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+--  * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+--  * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+--  * Neither the name of Oracle Corporation nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-- Modified in September 2015 by Giuseppe Maxia
+-- The schema and data can now be loaded by any MySQL 5.x version.
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE=''TRADITIONAL'';
+
+--
+-- Table structure for table `actor`
+--
+
+CREATE TABLE actor (
+  actor_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id),
+  KEY idx_actor_last_name (last_name)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `address`
+--
+
+CREATE TABLE address (
+  address_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  address VARCHAR(50) NOT NULL,
+  address2 VARCHAR(50) DEFAULT NULL,
+  district VARCHAR(20) NOT NULL,
+  city_id SMALLINT UNSIGNED NOT NULL,
+  postal_code VARCHAR(10) DEFAULT NULL,
+  phone VARCHAR(20) NOT NULL,
+  /*!50705 location GEOMETRY NOT NULL,*/
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (address_id),
+  KEY idx_fk_city_id (city_id),
+  /*!50705 SPATIAL KEY `idx_location` (location),*/
+  CONSTRAINT `fk_address_city` FOREIGN KEY (city_id) REFERENCES city (city_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `category`
+--
+
+CREATE TABLE category (
+  category_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(25) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `city`
+--
+
+CREATE TABLE city (
+  city_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  city VARCHAR(50) NOT NULL,
+  country_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (city_id),
+  KEY idx_fk_country_id (country_id),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (country_id) REFERENCES country (country_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `country`
+--
+
+CREATE TABLE country (
+  country_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  country VARCHAR(50) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (country_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `customer`
+--
+
+CREATE TABLE customer (
+  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id TINYINT UNSIGNED NOT NULL,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  create_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (customer_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  KEY idx_last_name (last_name),
+  CONSTRAINT fk_customer_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_customer_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film`
+--
+
+CREATE TABLE film (
+  film_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
+  release_year YEAR DEFAULT NULL,
+  language_id TINYINT UNSIGNED NOT NULL,
+  original_language_id TINYINT UNSIGNED DEFAULT NULL,
+  rental_duration TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  rental_rate DECIMAL(4,2) NOT NULL DEFAULT 4.99,
+  length SMALLINT UNSIGNED DEFAULT NULL,
+  replacement_cost DECIMAL(5,2) NOT NULL DEFAULT 19.99,
+  rating ENUM(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  special_features SET(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (film_id),
+  KEY idx_title (title),
+  KEY idx_fk_language_id (language_id),
+  KEY idx_fk_original_language_id (original_language_id),
+  CONSTRAINT fk_film_language FOREIGN KEY (language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_language_original FOREIGN KEY (original_language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_actor`
+--
+
+CREATE TABLE film_actor (
+  actor_id SMALLINT UNSIGNED NOT NULL,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id,film_id),
+  KEY idx_fk_film_id (`film_id`),
+  CONSTRAINT fk_film_actor_actor FOREIGN KEY (actor_id) REFERENCES actor (actor_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_actor_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_category`
+--
+
+CREATE TABLE film_category (
+  film_id SMALLINT UNSIGNED NOT NULL,
+  category_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (film_id, category_id),
+  CONSTRAINT fk_film_category_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_category_category FOREIGN KEY (category_id) REFERENCES category (category_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_text`
+--
+
+CREATE TABLE film_text (
+  film_id SMALLINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  PRIMARY KEY  (film_id),
+  FULLTEXT KEY idx_title_description (title,description)
+)ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- After MySQL 5.6.10, InnoDB supports fulltext indexes
+/*!50610 ALTER TABLE film_text engine=InnoDB */;
+
+--
+-- Triggers for loading film_text from film
+--
+
+CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END;
+
+
+CREATE TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END;
+
+
+CREATE TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END;
+
+
+--
+-- Table structure for table `inventory`
+--
+
+CREATE TABLE inventory (
+  inventory_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (inventory_id),
+  KEY idx_fk_film_id (film_id),
+  KEY idx_store_id_film_id (store_id,film_id),
+  CONSTRAINT fk_inventory_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_inventory_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `language`
+--
+
+CREATE TABLE language (
+  language_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name CHAR(20) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (language_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `payment`
+--
+
+CREATE TABLE payment (
+  payment_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  rental_id INT DEFAULT NULL,
+  amount DECIMAL(5,2) NOT NULL,
+  payment_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (payment_id),
+  KEY idx_fk_staff_id (staff_id),
+  KEY idx_fk_customer_id (customer_id),
+  CONSTRAINT fk_payment_rental FOREIGN KEY (rental_id) REFERENCES rental (rental_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `rental`
+--
+
+CREATE TABLE rental (
+  rental_id INT NOT NULL AUTO_INCREMENT,
+  rental_date DATETIME NOT NULL,
+  inventory_id MEDIUMINT UNSIGNED NOT NULL,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  return_date DATETIME DEFAULT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (rental_id),
+  UNIQUE KEY  (rental_date,inventory_id,customer_id),
+  KEY idx_fk_inventory_id (inventory_id),
+  KEY idx_fk_customer_id (customer_id),
+  KEY idx_fk_staff_id (staff_id),
+  CONSTRAINT fk_rental_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_inventory FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `staff`
+--
+
+CREATE TABLE staff (
+  staff_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  picture BLOB DEFAULT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  username VARCHAR(16) NOT NULL,
+  password VARCHAR(40) BINARY DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (staff_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `store`
+--
+
+CREATE TABLE store (
+  store_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  manager_staff_id TINYINT UNSIGNED NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (store_id),
+  UNIQUE KEY idx_unique_manager (manager_staff_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_store_staff FOREIGN KEY (manager_staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_store_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- View structure for view `customer_list`
+--
+
+CREATE VIEW customer_list
+AS
+SELECT cu.customer_id AS ID, CONCAT(cu.first_name, _utf8'' '', cu.last_name) AS name, a.address AS address, a.postal_code AS `zip code`,
+	a.phone AS phone, city.city AS city, country.country AS country, IF(cu.active, _utf8''active'',_utf8'''') AS notes, cu.store_id AS SID
+FROM customer AS cu JOIN address AS a ON cu.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `film_list`
+--
+
+CREATE VIEW film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(actor.first_name, _utf8'' '', actor.last_name) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `nicer_but_slower_film_list`
+--
+
+CREATE VIEW nicer_but_slower_film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(CONCAT(UCASE(SUBSTR(actor.first_name,1,1)),
+	LCASE(SUBSTR(actor.first_name,2,LENGTH(actor.first_name))),_utf8'' '',CONCAT(UCASE(SUBSTR(actor.last_name,1,1)),
+	LCASE(SUBSTR(actor.last_name,2,LENGTH(actor.last_name)))))) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `staff_list`
+--
+
+CREATE VIEW staff_list
+AS
+SELECT s.staff_id AS ID, CONCAT(s.first_name, _utf8'' '', s.last_name) AS name, a.address AS address, a.postal_code AS `zip code`, a.phone AS phone,
+	city.city AS city, country.country AS country, s.store_id AS SID
+FROM staff AS s JOIN address AS a ON s.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `sales_by_store`
+--
+
+CREATE VIEW sales_by_store
+AS
+SELECT
+CONCAT(c.city, _utf8'','', cy.country) AS store
+, CONCAT(m.first_name, _utf8'' '', m.last_name) AS manager
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN store AS s ON i.store_id = s.store_id
+INNER JOIN address AS a ON s.address_id = a.address_id
+INNER JOIN city AS c ON a.city_id = c.city_id
+INNER JOIN country AS cy ON c.country_id = cy.country_id
+INNER JOIN staff AS m ON s.manager_staff_id = m.staff_id
+GROUP BY s.store_id
+ORDER BY cy.country, c.city;
+
+--
+-- View structure for view `sales_by_film_category`
+--
+-- Note that total sales will add up to >100% because
+-- some titles belong to more than 1 category
+--
+
+CREATE VIEW sales_by_film_category
+AS
+SELECT
+c.name AS category
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN film AS f ON i.film_id = f.film_id
+INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+INNER JOIN category AS c ON fc.category_id = c.category_id
+GROUP BY c.name
+ORDER BY total_sales DESC;
+
+--
+-- View structure for view `actor_info`
+--
+
+CREATE DEFINER=CURRENT_USER SQL SECURITY INVOKER VIEW actor_info
+AS
+SELECT
+a.actor_id,
+a.first_name,
+a.last_name,
+GROUP_CONCAT(DISTINCT CONCAT(c.name, '': '',
+		(SELECT GROUP_CONCAT(f.title ORDER BY f.title SEPARATOR '', '')
+                    FROM sakila.film f
+                    INNER JOIN sakila.film_category fc
+                      ON f.film_id = fc.film_id
+                    INNER JOIN sakila.film_actor fa
+                      ON f.film_id = fa.film_id
+                    WHERE fc.category_id = c.category_id
+                    AND fa.actor_id = a.actor_id
+                 )
+             )
+             ORDER BY c.name SEPARATOR ''; '')
+AS film_info
+FROM sakila.actor a
+LEFT JOIN sakila.film_actor fa
+  ON a.actor_id = fa.actor_id
+LEFT JOIN sakila.film_category fc
+  ON fa.film_id = fc.film_id
+LEFT JOIN sakila.category c
+  ON fc.category_id = c.category_id
+GROUP BY a.actor_id, a.first_name, a.last_name;
+
+--
+-- Procedure structure for procedure `rewards_report`
+--
+
+
+CREATE PROCEDURE rewards_report (
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+LANGUAGE SQL
+NOT DETERMINISTIC
+READS SQL DATA
+SQL SECURITY DEFINER
+COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END;
+
+CREATE FUNCTION get_customer_balance(p_customer_id INT, p_effective_date DATETIME) RETURNS DECIMAL(5,2)
+    DETERMINISTIC
+    READS SQL DATA
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END;
+
+CREATE PROCEDURE film_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END;
+
+
+CREATE PROCEDURE film_not_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END;
+
+CREATE FUNCTION inventory_held_by_customer(p_inventory_id INT) RETURNS INT
+READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END;
+
+CREATE FUNCTION inventory_in_stock(p_inventory_id INT) RETURNS BOOLEAN
+READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (111, 'NORMAL', 102, 1695192607, 102, 1695192607, 101, NULL, '[3 databases] Alter schema @09-20 14:41 UTC+0800', '-- Sakila Spatial Sample Database Schema
+-- Version 0.9
+
+-- Copyright (c) 2014, Oracle Corporation
+-- All rights reserved.
+
+-- Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+--  * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+--  * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+--  * Neither the name of Oracle Corporation nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-- Modified in September 2015 by Giuseppe Maxia
+-- The schema and data can now be loaded by any MySQL 5.x version.
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE=''TRADITIONAL'';
+
+--
+-- Table structure for table `actor`
+--
+
+CREATE TABLE actor (
+  actor_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id),
+  KEY idx_actor_last_name (last_name)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `address`
+--
+
+CREATE TABLE address (
+  address_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  address VARCHAR(50) NOT NULL,
+  address2 VARCHAR(50) DEFAULT NULL,
+  district VARCHAR(20) NOT NULL,
+  city_id SMALLINT UNSIGNED NOT NULL,
+  postal_code VARCHAR(10) DEFAULT NULL,
+  phone VARCHAR(20) NOT NULL,
+  /*!50705 location GEOMETRY NOT NULL,*/
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (address_id),
+  KEY idx_fk_city_id (city_id),
+  /*!50705 SPATIAL KEY `idx_location` (location),*/
+  CONSTRAINT `fk_address_city` FOREIGN KEY (city_id) REFERENCES city (city_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `category`
+--
+
+CREATE TABLE category (
+  category_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(25) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `city`
+--
+
+CREATE TABLE city (
+  city_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  city VARCHAR(50) NOT NULL,
+  country_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (city_id),
+  KEY idx_fk_country_id (country_id),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (country_id) REFERENCES country (country_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `country`
+--
+
+CREATE TABLE country (
+  country_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  country VARCHAR(50) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (country_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `customer`
+--
+
+CREATE TABLE customer (
+  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id TINYINT UNSIGNED NOT NULL,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  create_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (customer_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  KEY idx_last_name (last_name),
+  CONSTRAINT fk_customer_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_customer_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film`
+--
+
+CREATE TABLE film (
+  film_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
+  release_year YEAR DEFAULT NULL,
+  language_id TINYINT UNSIGNED NOT NULL,
+  original_language_id TINYINT UNSIGNED DEFAULT NULL,
+  rental_duration TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  rental_rate DECIMAL(4,2) NOT NULL DEFAULT 4.99,
+  length SMALLINT UNSIGNED DEFAULT NULL,
+  replacement_cost DECIMAL(5,2) NOT NULL DEFAULT 19.99,
+  rating ENUM(''G'',''PG'',''PG-13'',''R'',''NC-17'') DEFAULT ''G'',
+  special_features SET(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'') DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (film_id),
+  KEY idx_title (title),
+  KEY idx_fk_language_id (language_id),
+  KEY idx_fk_original_language_id (original_language_id),
+  CONSTRAINT fk_film_language FOREIGN KEY (language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_language_original FOREIGN KEY (original_language_id) REFERENCES language (language_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_actor`
+--
+
+CREATE TABLE film_actor (
+  actor_id SMALLINT UNSIGNED NOT NULL,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id,film_id),
+  KEY idx_fk_film_id (`film_id`),
+  CONSTRAINT fk_film_actor_actor FOREIGN KEY (actor_id) REFERENCES actor (actor_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_actor_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_category`
+--
+
+CREATE TABLE film_category (
+  film_id SMALLINT UNSIGNED NOT NULL,
+  category_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (film_id, category_id),
+  CONSTRAINT fk_film_category_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_category_category FOREIGN KEY (category_id) REFERENCES category (category_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `film_text`
+--
+
+CREATE TABLE film_text (
+  film_id SMALLINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  PRIMARY KEY  (film_id),
+  FULLTEXT KEY idx_title_description (title,description)
+)ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- After MySQL 5.6.10, InnoDB supports fulltext indexes
+/*!50610 ALTER TABLE film_text engine=InnoDB */;
+
+--
+-- Triggers for loading film_text from film
+--
+
+CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+    INSERT INTO film_text (film_id, title, description)
+        VALUES (new.film_id, new.title, new.description);
+  END;
+
+
+CREATE TRIGGER `upd_film` AFTER UPDATE ON `film` FOR EACH ROW BEGIN
+    IF (old.title != new.title) OR (old.description != new.description) OR (old.film_id != new.film_id)
+    THEN
+        UPDATE film_text
+            SET title=new.title,
+                description=new.description,
+                film_id=new.film_id
+        WHERE film_id=old.film_id;
+    END IF;
+  END;
+
+
+CREATE TRIGGER `del_film` AFTER DELETE ON `film` FOR EACH ROW BEGIN
+    DELETE FROM film_text WHERE film_id = old.film_id;
+  END;
+
+
+--
+-- Table structure for table `inventory`
+--
+
+CREATE TABLE inventory (
+  inventory_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  film_id SMALLINT UNSIGNED NOT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (inventory_id),
+  KEY idx_fk_film_id (film_id),
+  KEY idx_store_id_film_id (store_id,film_id),
+  CONSTRAINT fk_inventory_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_inventory_film FOREIGN KEY (film_id) REFERENCES film (film_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `language`
+--
+
+CREATE TABLE language (
+  language_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name CHAR(20) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (language_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `payment`
+--
+
+CREATE TABLE payment (
+  payment_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  rental_id INT DEFAULT NULL,
+  amount DECIMAL(5,2) NOT NULL,
+  payment_date DATETIME NOT NULL,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (payment_id),
+  KEY idx_fk_staff_id (staff_id),
+  KEY idx_fk_customer_id (customer_id),
+  CONSTRAINT fk_payment_rental FOREIGN KEY (rental_id) REFERENCES rental (rental_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `rental`
+--
+
+CREATE TABLE rental (
+  rental_id INT NOT NULL AUTO_INCREMENT,
+  rental_date DATETIME NOT NULL,
+  inventory_id MEDIUMINT UNSIGNED NOT NULL,
+  customer_id SMALLINT UNSIGNED NOT NULL,
+  return_date DATETIME DEFAULT NULL,
+  staff_id TINYINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (rental_id),
+  UNIQUE KEY  (rental_date,inventory_id,customer_id),
+  KEY idx_fk_inventory_id (inventory_id),
+  KEY idx_fk_customer_id (customer_id),
+  KEY idx_fk_staff_id (staff_id),
+  CONSTRAINT fk_rental_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_inventory FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `staff`
+--
+
+CREATE TABLE staff (
+  staff_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(45) NOT NULL,
+  last_name VARCHAR(45) NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  picture BLOB DEFAULT NULL,
+  email VARCHAR(50) DEFAULT NULL,
+  store_id TINYINT UNSIGNED NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  username VARCHAR(16) NOT NULL,
+  password VARCHAR(40) BINARY DEFAULT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (staff_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `store`
+--
+
+CREATE TABLE store (
+  store_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  manager_staff_id TINYINT UNSIGNED NOT NULL,
+  address_id SMALLINT UNSIGNED NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (store_id),
+  UNIQUE KEY idx_unique_manager (manager_staff_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_store_staff FOREIGN KEY (manager_staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_store_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- View structure for view `customer_list`
+--
+
+CREATE VIEW customer_list
+AS
+SELECT cu.customer_id AS ID, CONCAT(cu.first_name, _utf8'' '', cu.last_name) AS name, a.address AS address, a.postal_code AS `zip code`,
+	a.phone AS phone, city.city AS city, country.country AS country, IF(cu.active, _utf8''active'',_utf8'''') AS notes, cu.store_id AS SID
+FROM customer AS cu JOIN address AS a ON cu.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `film_list`
+--
+
+CREATE VIEW film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(actor.first_name, _utf8'' '', actor.last_name) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `nicer_but_slower_film_list`
+--
+
+CREATE VIEW nicer_but_slower_film_list
+AS
+SELECT film.film_id AS FID, film.title AS title, film.description AS description, category.name AS category, film.rental_rate AS price,
+	film.length AS length, film.rating AS rating, GROUP_CONCAT(CONCAT(CONCAT(UCASE(SUBSTR(actor.first_name,1,1)),
+	LCASE(SUBSTR(actor.first_name,2,LENGTH(actor.first_name))),_utf8'' '',CONCAT(UCASE(SUBSTR(actor.last_name,1,1)),
+	LCASE(SUBSTR(actor.last_name,2,LENGTH(actor.last_name)))))) SEPARATOR '', '') AS actors
+FROM category LEFT JOIN film_category ON category.category_id = film_category.category_id LEFT JOIN film ON film_category.film_id = film.film_id
+        JOIN film_actor ON film.film_id = film_actor.film_id
+	JOIN actor ON film_actor.actor_id = actor.actor_id
+GROUP BY film.film_id, category.name;
+
+--
+-- View structure for view `staff_list`
+--
+
+CREATE VIEW staff_list
+AS
+SELECT s.staff_id AS ID, CONCAT(s.first_name, _utf8'' '', s.last_name) AS name, a.address AS address, a.postal_code AS `zip code`, a.phone AS phone,
+	city.city AS city, country.country AS country, s.store_id AS SID
+FROM staff AS s JOIN address AS a ON s.address_id = a.address_id JOIN city ON a.city_id = city.city_id
+	JOIN country ON city.country_id = country.country_id;
+
+--
+-- View structure for view `sales_by_store`
+--
+
+CREATE VIEW sales_by_store
+AS
+SELECT
+CONCAT(c.city, _utf8'','', cy.country) AS store
+, CONCAT(m.first_name, _utf8'' '', m.last_name) AS manager
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN store AS s ON i.store_id = s.store_id
+INNER JOIN address AS a ON s.address_id = a.address_id
+INNER JOIN city AS c ON a.city_id = c.city_id
+INNER JOIN country AS cy ON c.country_id = cy.country_id
+INNER JOIN staff AS m ON s.manager_staff_id = m.staff_id
+GROUP BY s.store_id
+ORDER BY cy.country, c.city;
+
+--
+-- View structure for view `sales_by_film_category`
+--
+-- Note that total sales will add up to >100% because
+-- some titles belong to more than 1 category
+--
+
+CREATE VIEW sales_by_film_category
+AS
+SELECT
+c.name AS category
+, SUM(p.amount) AS total_sales
+FROM payment AS p
+INNER JOIN rental AS r ON p.rental_id = r.rental_id
+INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+INNER JOIN film AS f ON i.film_id = f.film_id
+INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+INNER JOIN category AS c ON fc.category_id = c.category_id
+GROUP BY c.name
+ORDER BY total_sales DESC;
+
+--
+-- View structure for view `actor_info`
+--
+
+CREATE DEFINER=CURRENT_USER SQL SECURITY INVOKER VIEW actor_info
+AS
+SELECT
+a.actor_id,
+a.first_name,
+a.last_name,
+GROUP_CONCAT(DISTINCT CONCAT(c.name, '': '',
+		(SELECT GROUP_CONCAT(f.title ORDER BY f.title SEPARATOR '', '')
+                    FROM film f
+                    INNER JOIN film_category fc
+                      ON f.film_id = fc.film_id
+                    INNER JOIN film_actor fa
+                      ON f.film_id = fa.film_id
+                    WHERE fc.category_id = c.category_id
+                    AND fa.actor_id = a.actor_id
+                 )
+             )
+             ORDER BY c.name SEPARATOR ''; '')
+AS film_info
+FROM actor a
+LEFT JOIN film_actor fa
+  ON a.actor_id = fa.actor_id
+LEFT JOIN film_category fc
+  ON fa.film_id = fc.film_id
+LEFT JOIN category c
+  ON fc.category_id = c.category_id
+GROUP BY a.actor_id, a.first_name, a.last_name;
+
+--
+-- Procedure structure for procedure `rewards_report`
+--
+
+
+CREATE PROCEDURE rewards_report (
+    IN min_monthly_purchases TINYINT UNSIGNED
+    , IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED
+    , OUT count_rewardees INT
+)
+LANGUAGE SQL
+NOT DETERMINISTIC
+READS SQL DATA
+SQL SECURITY DEFINER
+COMMENT ''Provides a customizable report on best customers''
+proc: BEGIN
+
+    DECLARE last_month_start DATE;
+    DECLARE last_month_end DATE;
+
+    /* Some sanity checks... */
+    IF min_monthly_purchases = 0 THEN
+        SELECT ''Minimum monthly purchases parameter must be > 0'';
+        LEAVE proc;
+    END IF;
+    IF min_dollar_amount_purchased = 0.00 THEN
+        SELECT ''Minimum monthly dollar amount purchased parameter must be > $0.00'';
+        LEAVE proc;
+    END IF;
+
+    /* Determine start and end time periods */
+    SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+    SET last_month_start = STR_TO_DATE(CONCAT(YEAR(last_month_start),''-'',MONTH(last_month_start),''-01''),''%Y-%m-%d'');
+    SET last_month_end = LAST_DAY(last_month_start);
+
+    /*
+        Create a temporary storage area for
+        Customer IDs.
+    */
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+    /*
+        Find all customers meeting the
+        monthly purchase requirements
+    */
+    INSERT INTO tmpCustomer (customer_id)
+    SELECT p.customer_id
+    FROM payment AS p
+    WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+    GROUP BY customer_id
+    HAVING SUM(p.amount) > min_dollar_amount_purchased
+    AND COUNT(customer_id) > min_monthly_purchases;
+
+    /* Populate OUT parameter with count of found customers */
+    SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+    /*
+        Output ALL customer information of matching rewardees.
+        Customize output as needed.
+    */
+    SELECT c.*
+    FROM tmpCustomer AS t
+    INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+    /* Clean up */
+    DROP TABLE tmpCustomer;
+END;
+
+CREATE FUNCTION get_customer_balance(p_customer_id INT, p_effective_date DATETIME) RETURNS DECIMAL(5,2)
+    DETERMINISTIC
+    READS SQL DATA
+BEGIN
+
+       #OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+       #THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+       #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+       #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+       #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+       #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED
+
+  DECLARE v_rentfees DECIMAL(5,2); #FEES PAID TO RENT THE VIDEOS INITIALLY
+  DECLARE v_overfees INTEGER;      #LATE FEES FOR PRIOR RENTALS
+  DECLARE v_payments DECIMAL(5,2); #SUM OF PAYMENTS MADE PREVIOUSLY
+
+  SELECT IFNULL(SUM(film.rental_rate),0) INTO v_rentfees
+    FROM film, inventory, rental
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+  SELECT IFNULL(SUM(IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) > film.rental_duration,
+        ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration),0)),0) INTO v_overfees
+    FROM rental, inventory, film
+    WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date <= p_effective_date
+      AND rental.customer_id = p_customer_id;
+
+
+  SELECT IFNULL(SUM(payment.amount),0) INTO v_payments
+    FROM payment
+
+    WHERE payment.payment_date <= p_effective_date
+    AND payment.customer_id = p_customer_id;
+
+  RETURN v_rentfees + v_overfees - v_payments;
+END;
+
+CREATE PROCEDURE film_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END;
+
+
+CREATE PROCEDURE film_not_in_stock(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+     SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+     AND store_id = p_store_id
+     AND NOT inventory_in_stock(inventory_id);
+
+     SELECT FOUND_ROWS() INTO p_film_count;
+END;
+
+CREATE FUNCTION inventory_held_by_customer(p_inventory_id INT) RETURNS INT
+READS SQL DATA
+BEGIN
+  DECLARE v_customer_id INT;
+  DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+  SELECT customer_id INTO v_customer_id
+  FROM rental
+  WHERE return_date IS NULL
+  AND inventory_id = p_inventory_id;
+
+  RETURN v_customer_id;
+END;
+
+CREATE FUNCTION inventory_in_stock(p_inventory_id INT) RETURNS BOOLEAN
+READS SQL DATA
+BEGIN
+    DECLARE v_rentals INT;
+    DECLARE v_out     INT;
+
+    #AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+    #FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED
+
+    SELECT COUNT(*) INTO v_rentals
+    FROM rental
+    WHERE inventory_id = p_inventory_id;
+
+    IF v_rentals = 0 THEN
+      RETURN TRUE;
+    END IF;
+
+    SELECT COUNT(rental_id) INTO v_out
+    FROM inventory LEFT JOIN rental USING(inventory_id)
+    WHERE inventory.inventory_id = p_inventory_id
+    AND rental.return_date IS NULL;
+
+    IF v_out > 0 THEN
+      RETURN FALSE;
+    ELSE
+      RETURN TRUE;
+    END IF;
+END;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.sheet ENABLE TRIGGER ALL;
@@ -11128,6 +20155,9 @@ ALTER TABLE public.stage DISABLE TRIGGER ALL;
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (101, 'NORMAL', 101, 1695178711, 101, 1695178711, 101, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (102, 'NORMAL', 101, 1695179030, 101, 1695179030, 102, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (103, 'NORMAL', 101, 1695179078, 101, 1695179078, 103, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (104, 'NORMAL', 103, 1695192093, 103, 1695192093, 104, 101, 'Test Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (105, 'NORMAL', 103, 1695192093, 103, 1695192093, 104, 103, 'Staging Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (106, 'NORMAL', 103, 1695192093, 103, 1695192093, 104, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.stage ENABLE TRIGGER ALL;
@@ -11141,6 +20171,9 @@ ALTER TABLE public.task DISABLE TRIGGER ALL;
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (101, 'NORMAL', 101, 1695178711, 1, 1695178988, 101, 101, 101, 101, 'Create database sakila_prod', 'PENDING_APPROVAL', 'bb.task.database.create', '{"labels": "[{\"key\":\"bb.environment\",\"value\":\"prod\"}]", "specId": "494f897d-66e9-4562-8b97-5d213fdf6ef4", "sheetId": 101, "character": "utf8mb4", "collation": "utf8mb4_general_ci", "projectId": 101, "databaseName": "sakila_prod", "environmentId": "prod"}', 0) ON CONFLICT DO NOTHING;
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (102, 'NORMAL', 101, 1695179030, 1, 1695179054, 102, 102, 101, 102, 'Create database sakila_test', 'PENDING_APPROVAL', 'bb.task.database.create', '{"labels": "[{\"key\":\"bb.environment\",\"value\":\"test\"}]", "specId": "11025977-45ca-4043-88fb-8002af053350", "sheetId": 103, "character": "utf8mb4", "collation": "utf8mb4_general_ci", "projectId": 101, "databaseName": "sakila_test", "environmentId": "test"}', 0) ON CONFLICT DO NOTHING;
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (103, 'NORMAL', 101, 1695179078, 1, 1695179141, 103, 103, 101, 103, 'Create database sakila_staging', 'PENDING_APPROVAL', 'bb.task.database.create', '{"labels": "[{\"key\":\"bb.environment\",\"value\":\"staging\"}]", "specId": "51e70d6c-d734-4ac5-bd74-16f01e8d6698", "sheetId": 105, "character": "utf8mb4", "collation": "utf8mb4_general_ci", "projectId": 101, "databaseName": "sakila_staging", "environmentId": "staging"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (104, 'NORMAL', 103, 1695192093, 102, 1695192607, 104, 104, 101, 102, 'DDL(schema) for database "sakila_test"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"specId": "f9fad3de-76d4-47dd-b921-c16955fc1623", "sheetId": 111, "schemaVersion": "20230920144133"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (105, 'NORMAL', 103, 1695192093, 102, 1695192607, 104, 105, 101, 103, 'DDL(schema) for database "sakila_staging"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"specId": "4461833c-8ffe-44bb-b2b2-3432fa8aa5c4", "sheetId": 111, "schemaVersion": "20230920144133"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (106, 'NORMAL', 103, 1695192093, 102, 1695192607, 104, 106, 101, 101, 'DDL(schema) for database "sakila_prod"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"specId": "96451bdc-8afc-4f3e-b51c-6c4f81d51c43", "sheetId": 111, "schemaVersion": "20230920144133"}', 0) ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.task ENABLE TRIGGER ALL;
@@ -11164,6 +20197,11 @@ ALTER TABLE public.task_run DISABLE TRIGGER ALL;
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (101, 101, 1695178988, 1, 1695178988, 101, 0, 'Create database sakila_prod 1695178988', 'DONE', 0, '{"detail": "Created database \"sakila_prod\""}') ON CONFLICT DO NOTHING;
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (102, 101, 1695179054, 1, 1695179054, 102, 0, 'Create database sakila_test 1695179054', 'DONE', 0, '{"detail": "Created database \"sakila_test\""}') ON CONFLICT DO NOTHING;
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (103, 101, 1695179141, 1, 1695179141, 103, 0, 'Create database sakila_staging 1695179141', 'DONE', 0, '{"detail": "Created database \"sakila_staging\""}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (104, 1, 1695192562, 1, 1695192562, 104, 0, 'DDL(schema) for database "sakila_test" 1695192562', 'FAILED', 1, '{"detail": "failed to execute context in a transaction: Error 1049 (42000): Unknown database ''sakila''"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (105, 102, 1695192725, 1, 1695192725, 104, 1, 'DDL(schema) for database "sakila_test" 1695192724', 'FAILED', 1, '{"detail": "failed to execute context in a transaction: Error 1050 (42S01): Table ''actor'' already exists"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (106, 102, 1695192772, 1, 1695192773, 104, 2, 'DDL(schema) for database "sakila_test" 1695192772', 'DONE', 0, '{"detail": "Applied migration version 20230920144133 to database \"sakila_test\".", "version": "20230920144133", "changeHistory": "instances/mysql-prod/databases/sakila_test/changeHistories/111"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (107, 104, 1695192788, 1, 1695192788, 105, 0, 'DDL(schema) for database "sakila_staging" 1695192787', 'DONE', 0, '{"detail": "Applied migration version 20230920144133 to database \"sakila_staging\".", "version": "20230920144133", "changeHistory": "instances/mysql-prod/databases/sakila_staging/changeHistories/112"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (108, 104, 1695192793, 1, 1695192793, 106, 0, 'DDL(schema) for database "sakila_prod" 1695192792', 'DONE', 0, '{"detail": "Applied migration version 20230920144133 to database \"sakila_prod\".", "version": "20230920144133", "changeHistory": "instances/mysql-prod/databases/sakila_prod/changeHistories/113"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.task_run ENABLE TRIGGER ALL;
@@ -11172,14 +20210,14 @@ ALTER TABLE public.task_run ENABLE TRIGGER ALL;
 -- Name: activity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.activity_id_seq', 129, true);
+SELECT pg_catalog.setval('public.activity_id_seq', 157, true);
 
 
 --
 -- Name: anomaly_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.anomaly_id_seq', 101, false);
+SELECT pg_catalog.setval('public.anomaly_id_seq', 101, true);
 
 
 --
@@ -11235,7 +20273,7 @@ SELECT pg_catalog.setval('public.db_label_id_seq', 101, false);
 -- Name: db_schema_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.db_schema_id_seq', 103, true);
+SELECT pg_catalog.setval('public.db_schema_id_seq', 107, true);
 
 
 --
@@ -11270,14 +20308,14 @@ SELECT pg_catalog.setval('public.idp_id_seq', 101, false);
 -- Name: inbox_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.inbox_id_seq', 106, true);
+SELECT pg_catalog.setval('public.inbox_id_seq', 110, true);
 
 
 --
 -- Name: instance_change_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_change_history_id_seq', 110, true);
+SELECT pg_catalog.setval('public.instance_change_history_id_seq', 113, true);
 
 
 --
@@ -11298,7 +20336,7 @@ SELECT pg_catalog.setval('public.instance_user_id_seq', 103, true);
 -- Name: issue_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.issue_id_seq', 103, true);
+SELECT pg_catalog.setval('public.issue_id_seq', 104, true);
 
 
 --
@@ -11326,21 +20364,21 @@ SELECT pg_catalog.setval('public.member_id_seq', 104, true);
 -- Name: pipeline_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.pipeline_id_seq', 103, true);
+SELECT pg_catalog.setval('public.pipeline_id_seq', 104, true);
 
 
 --
 -- Name: plan_check_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.plan_check_run_id_seq', 101, false);
+SELECT pg_catalog.setval('public.plan_check_run_id_seq', 136, true);
 
 
 --
 -- Name: plan_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.plan_id_seq', 103, true);
+SELECT pg_catalog.setval('public.plan_id_seq', 104, true);
 
 
 --
@@ -11368,7 +20406,7 @@ SELECT pg_catalog.setval('public.project_id_seq', 101, true);
 -- Name: project_member_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.project_member_id_seq', 104, true);
+SELECT pg_catalog.setval('public.project_member_id_seq', 106, true);
 
 
 --
@@ -11410,14 +20448,14 @@ SELECT pg_catalog.setval('public.schema_group_id_seq', 101, false);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 116, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 117, true);
 
 
 --
 -- Name: sheet_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.sheet_id_seq', 106, true);
+SELECT pg_catalog.setval('public.sheet_id_seq', 111, true);
 
 
 --
@@ -11438,7 +20476,7 @@ SELECT pg_catalog.setval('public.slow_query_id_seq', 101, false);
 -- Name: stage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.stage_id_seq', 103, true);
+SELECT pg_catalog.setval('public.stage_id_seq', 106, true);
 
 
 --
@@ -11452,14 +20490,14 @@ SELECT pg_catalog.setval('public.task_dag_id_seq', 101, false);
 -- Name: task_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_id_seq', 103, true);
+SELECT pg_catalog.setval('public.task_id_seq', 106, true);
 
 
 --
 -- Name: task_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_run_id_seq', 103, true);
+SELECT pg_catalog.setval('public.task_run_id_seq', 108, true);
 
 
 --
