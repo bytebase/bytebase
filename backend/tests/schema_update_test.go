@@ -2071,8 +2071,6 @@ func TestMarkTaskAsDone(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: ctl.project.Name, Plan: plan.Name})
-	a.NoError(err)
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: ctl.project.Name,
 		Issue: &v1pb.Issue{
@@ -2080,10 +2078,11 @@ func TestMarkTaskAsDone(t *testing.T) {
 			Title:       fmt.Sprintf("change database %s", database.Name),
 			Description: fmt.Sprintf("change database %s", database.Name),
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: ctl.project.Name, Plan: plan.Name})
 	a.NoError(err)
 
 	// Skip the task.
