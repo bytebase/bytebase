@@ -24,7 +24,7 @@ SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE public.principal DISABLE TRIGGER ALL;
 
-INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695177890, 1, 1695177890, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695178575, 1, 1695178575, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (101, 'NORMAL', 1, 1694684977, 101, 1695112774, 'END_USER', 'Demo Owner', 'demo@example.com', '$2a$10$JbwDbh1u86G9UUCMKXehV.uKPQhZYEJIUiLpVXRkVM4pNAUnU1THG', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (102, 'NORMAL', 1, 1695112807, 101, 1695112895, 'END_USER', 'Jerry DBA', 'jerry@example.com', '$2a$10$GH4GKACLebRGpY3B/oAgNuuIg/FA/j0a5x7h9.AQxex1TfD8cb6ZG', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (103, 'NORMAL', 1, 1695112807, 101, 1695112903, 'END_USER', 'Tom Dev', 'tom@example.com', '$2a$10$5d6.P.g/jb8AmSdsdkqZE.fopcsRDPLdlSRSg.Homdbbl7GpEZPVq', '', '{}') ON CONFLICT DO NOTHING;
@@ -47,6 +47,27 @@ INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (106, 'NORMAL', 101, 1695112950, 101, 1695112950, 101, 'bb.project.member.create', 'INFO', 'Granted Jerry DBA to jerry@example.com (OWNER).', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (107, 'NORMAL', 101, 1695113006, 101, 1695113006, 101, 'bb.project.member.create', 'INFO', 'Granted Demo Owner to demo@example.com (DEVELOPER).', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (108, 'NORMAL', 101, 1695113011, 101, 1695113011, 101, 'bb.project.member.delete', 'INFO', 'Revoked OWNER from Demo Owner (demo@example.com).', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (109, 'NORMAL', 101, 1695178711, 101, 1695178711, 101, 'bb.issue.create', 'INFO', '', '{"issueName": "Create database ''sakila_prod''"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (110, 'NORMAL', 1, 1695178711, 1, 1695178711, 101, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (111, 'NORMAL', 102, 1695178964, 102, 1695178964, 101, 'bb.issue.comment.create', 'INFO', '', '{"issueName": "Create database ''sakila_prod''", "approvalEvent": {"status": "APPROVED"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (112, 'NORMAL', 101, 1695178988, 101, 1695178988, 101, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 101, "taskName": "Create database sakila_prod", "issueName": "Create database ''sakila_prod''", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (113, 'NORMAL', 1, 1695178988, 1, 1695178988, 101, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 101, "taskName": "Create database sakila_prod", "issueName": "Create database ''sakila_prod''", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (114, 'NORMAL', 1, 1695178988, 1, 1695178988, 101, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 101, "issueName": "Create database ''sakila_prod''", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (115, 'NORMAL', 1, 1695178988, 1, 1695178988, 101, 'bb.issue.status.update', 'INFO', '', '{"issueName": "Create database ''sakila_prod''", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (116, 'NORMAL', 101, 1695179030, 101, 1695179030, 102, 'bb.issue.create', 'INFO', '', '{"issueName": "Create database ''sakila_test''"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (117, 'NORMAL', 1, 1695179030, 1, 1695179030, 102, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (118, 'NORMAL', 102, 1695179041, 102, 1695179041, 102, 'bb.issue.comment.create', 'INFO', '', '{"issueName": "Create database ''sakila_test''", "approvalEvent": {"status": "APPROVED"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (119, 'NORMAL', 101, 1695179054, 101, 1695179054, 102, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 102, "taskName": "Create database sakila_test", "issueName": "Create database ''sakila_test''", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (120, 'NORMAL', 1, 1695179054, 1, 1695179054, 102, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 102, "taskName": "Create database sakila_test", "issueName": "Create database ''sakila_test''", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (121, 'NORMAL', 1, 1695179054, 1, 1695179054, 102, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 102, "issueName": "Create database ''sakila_test''", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (122, 'NORMAL', 1, 1695179054, 1, 1695179054, 102, 'bb.issue.status.update', 'INFO', '', '{"issueName": "Create database ''sakila_test''", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (123, 'NORMAL', 101, 1695179078, 101, 1695179078, 103, 'bb.issue.create', 'INFO', '', '{"issueName": "Create database ''sakila_staging''"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (124, 'NORMAL', 1, 1695179079, 1, 1695179079, 103, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (125, 'NORMAL', 102, 1695179089, 102, 1695179089, 103, 'bb.issue.comment.create', 'INFO', '', '{"issueName": "Create database ''sakila_staging''", "approvalEvent": {"status": "APPROVED"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (126, 'NORMAL', 101, 1695179141, 101, 1695179141, 103, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 103, "taskName": "Create database sakila_staging", "issueName": "Create database ''sakila_staging''", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (127, 'NORMAL', 1, 1695179141, 1, 1695179141, 103, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 103, "taskName": "Create database sakila_staging", "issueName": "Create database ''sakila_staging''", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (128, 'NORMAL', 1, 1695179141, 1, 1695179141, 103, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 103, "issueName": "Create database ''sakila_staging''", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (129, 'NORMAL', 1, 1695179141, 1, 1695179141, 103, 'bb.issue.status.update', 'INFO', '', '{"issueName": "Create database ''sakila_staging''", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.activity ENABLE TRIGGER ALL;
@@ -94,8 +115,8 @@ ALTER TABLE public.instance ENABLE TRIGGER ALL;
 
 ALTER TABLE public.project DISABLE TRIGGER ALL;
 
-INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695177890, 1, 1695177890, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
-INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (101, 'NORMAL', 101, 1694685057, 101, 1694685057, 'Test', 'TEST', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'test', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695178575, 1, 1695178575, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (101, 'NORMAL', 101, 1694685057, 101, 1695178641, 'sakila', 'TEST', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'test', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.project ENABLE TRIGGER ALL;
@@ -106,6 +127,9 @@ ALTER TABLE public.project ENABLE TRIGGER ALL;
 
 ALTER TABLE public.db DISABLE TRIGGER ALL;
 
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695178988, 101, 101, 102, NULL, 'OK', 1695178988, '', 'sakila_prod', '{}', false, '', '{"labels": {"bb.environment": "prod"}, "lastSyncTime": "2023-09-20T03:03:08Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (102, 'NORMAL', 1, 1695179054, 1, 1695179054, 101, 101, 101, NULL, 'OK', 1695179054, '', 'sakila_test', '{}', false, '', '{"labels": {"bb.environment": "test"}, "lastSyncTime": "2023-09-20T03:04:14Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (103, 'NORMAL', 1, 1695179141, 1, 1695179141, 101, 101, 103, NULL, 'OK', 1695179141, '', 'sakila_staging', '{}', false, '', '{"labels": {"bb.environment": "staging"}, "lastSyncTime": "2023-09-20T03:05:41Z"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.db ENABLE TRIGGER ALL;
@@ -200,6 +224,21 @@ ALTER TABLE public.db_label ENABLE TRIGGER ALL;
 
 ALTER TABLE public.db_schema DISABLE TRIGGER ALL;
 
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695178988, 101, '{"name": "sakila_prod", "schemas": [{}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (102, 'NORMAL', 1, 1695179054, 1, 1695179054, 102, '{"name": "sakila_test", "schemas": [{}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (103, 'NORMAL', 1, 1695179141, 1, 1695179141, 103, '{"name": "sakila_staging", "schemas": [{}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.db_schema ENABLE TRIGGER ALL;
@@ -220,6 +259,9 @@ ALTER TABLE public.deployment_config ENABLE TRIGGER ALL;
 
 ALTER TABLE public.pipeline DISABLE TRIGGER ALL;
 
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (101, 'NORMAL', 101, 1695178711, 101, 1695178711, 101, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (102, 'NORMAL', 101, 1695179030, 101, 1695179030, 101, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (103, 'NORMAL', 101, 1695179078, 101, 1695179078, 101, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.pipeline ENABLE TRIGGER ALL;
@@ -230,6 +272,9 @@ ALTER TABLE public.pipeline ENABLE TRIGGER ALL;
 
 ALTER TABLE public.plan DISABLE TRIGGER ALL;
 
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (101, 'NORMAL', 101, 1695178711, 101, 1695178711, 101, 101, '', '', '{"steps": [{"specs": [{"id": "494f897d-66e9-4562-8b97-5d213fdf6ef4", "createDatabaseConfig": {"labels": {"bb.environment": "prod"}, "target": "instances/mysql-prod", "database": "sakila_prod", "collation": "utf8mb4_general_ci", "environment": "environments/prod", "characterSet": "utf8mb4"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (102, 'NORMAL', 101, 1695179030, 101, 1695179030, 101, 102, '', '', '{"steps": [{"specs": [{"id": "11025977-45ca-4043-88fb-8002af053350", "createDatabaseConfig": {"labels": {"bb.environment": "test"}, "target": "instances/mysql-prod", "database": "sakila_test", "collation": "utf8mb4_general_ci", "environment": "environments/test", "characterSet": "utf8mb4"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (103, 'NORMAL', 101, 1695179078, 101, 1695179078, 101, 103, '', '', '{"steps": [{"specs": [{"id": "51e70d6c-d734-4ac5-bd74-16f01e8d6698", "createDatabaseConfig": {"labels": {"bb.environment": "staging"}, "target": "instances/mysql-prod", "database": "sakila_staging", "collation": "utf8mb4_general_ci", "environment": "environments/staging", "characterSet": "utf8mb4"}}]}]}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.plan ENABLE TRIGGER ALL;
@@ -240,6 +285,9 @@ ALTER TABLE public.plan ENABLE TRIGGER ALL;
 
 ALTER TABLE public.issue DISABLE TRIGGER ALL;
 
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (101, 'NORMAL', 101, 1695178711, 1, 1695178988, 101, 101, 101, 'Create database ''sakila_prod''', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "DBA", "creatorId": 1, "description": "系统定义的流程。只需要 DBA 审批"}], "approvalFindingDone": true}}', '''create'':1 ''database'':2 ''prod'':4 ''sakila'':3') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (102, 'NORMAL', 101, 1695179030, 1, 1695179054, 101, 102, 102, 'Create database ''sakila_test''', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "DBA", "creatorId": 1, "description": "系统定义的流程。只需要 DBA 审批"}], "approvalFindingDone": true}}', '''create'':1 ''database'':2 ''sakila'':3 ''test'':4') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (103, 'NORMAL', 101, 1695179078, 1, 1695179141, 101, 103, 103, 'Create database ''sakila_staging''', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "DBA", "creatorId": 1, "description": "系统定义的流程。只需要 DBA 审批"}], "approvalFindingDone": true}}', '''create'':1 ''database'':2 ''sakila'':3 ''staging'':4') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.issue ENABLE TRIGGER ALL;
@@ -270,6 +318,12 @@ ALTER TABLE public.idp ENABLE TRIGGER ALL;
 
 ALTER TABLE public.inbox DISABLE TRIGGER ALL;
 
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (101, 101, 109, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (102, 101, 115, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (103, 101, 116, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (104, 101, 122, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (105, 101, 123, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (106, 101, 129, 'UNREAD') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.inbox ENABLE TRIGGER ALL;
@@ -280,7 +334,7 @@ ALTER TABLE public.inbox ENABLE TRIGGER ALL;
 
 ALTER TABLE public.instance_change_history DISABLE TRIGGER ALL;
 
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695177890, 1, 1695177890, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230920104450', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695178575, 1, 1695178575, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230920105614', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
 CREATE TYPE row_status AS ENUM (''NORMAL'', ''ARCHIVED'');
 
 -- updated_ts trigger.
@@ -3013,7 +3067,7 @@ VALUES
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 103;
 ', '', 0, '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695177890, 1, 1695177890, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695178575, 1, 1695178575, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
 ', NULL, '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -6924,7 +6978,7 @@ ALTER TABLE ONLY public.vcs
 ALTER TABLE ONLY public.vcs
     ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
 
-', 62447000, '{}') ON CONFLICT DO NOTHING;
+', 88775000, '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (103, 'NORMAL', 1, 1695110681, 1, 1695110681, NULL, NULL, NULL, 'development', 3, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919160440', 'Migrate version 2.8.4 server version development with files migration/prod/2.8/0004##issue_type.sql.', 'ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts;
 
 UPDATE issue
@@ -11023,8 +11077,8 @@ INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, 
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (109, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.approval.external', '{}', 'The external approval setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (110, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.schema-template', '{}', 'The schema template setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (111, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.data-classification', '{}', 'The data classification setting') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695177890, 'bb.workspace.profile', '{}', '') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (112, 'NORMAL', 1, 1694683928, 101, 1695177966, 'bb.workspace.approval', '{"rules":[{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"项目所有者 -> DBA","description":"系统定义的流程。先由项目所有者审批，再由 DBA 审批。","creatorId":1},"condition":{"expression":"source == 1 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]}]},"title":"项目所有者","description":"系统定义的流程。只需要项目所有者审批。","creatorId":1},"condition":{"expression":"source == 2 && level == 0 || source == 4 && level == 0 || source == 5 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"DBA","description":"系统定义的流程。只需要 DBA 审批","creatorId":1},"condition":{"expression":"source == 3 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"工作空间所有者","description":"系统定义的流程。只需要管理员审批","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"项目所有者 -> DBA -> 工作空间所有者","description":"系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。","creatorId":1},"condition":{}}]}', 'The workspace approval setting') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695178575, 'bb.workspace.profile', '{}', '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.setting ENABLE TRIGGER ALL;
@@ -11035,6 +11089,12 @@ ALTER TABLE public.setting ENABLE TRIGGER ALL;
 
 ALTER TABLE public.sheet DISABLE TRIGGER ALL;
 
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (102, 'NORMAL', 1, 1695178711, 1, 1695178711, 101, NULL, 'Sheet for creating database sakila_prod', 'CREATE DATABASE `sakila_prod` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (101, 'NORMAL', 1, 1695178711, 1, 1695178988, 101, NULL, 'Sheet for creating database sakila_prod', 'CREATE DATABASE `sakila_prod` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (104, 'NORMAL', 1, 1695179030, 1, 1695179030, 101, NULL, 'Sheet for creating database sakila_test', 'CREATE DATABASE `sakila_test` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (103, 'NORMAL', 1, 1695179030, 1, 1695179054, 101, NULL, 'Sheet for creating database sakila_test', 'CREATE DATABASE `sakila_test` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (106, 'NORMAL', 1, 1695179079, 1, 1695179079, 101, NULL, 'Sheet for creating database sakila_staging', 'CREATE DATABASE `sakila_staging` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (105, 'NORMAL', 1, 1695179078, 1, 1695179141, 101, NULL, 'Sheet for creating database sakila_staging', 'CREATE DATABASE `sakila_staging` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.sheet ENABLE TRIGGER ALL;
@@ -11065,6 +11125,9 @@ ALTER TABLE public.slow_query ENABLE TRIGGER ALL;
 
 ALTER TABLE public.stage DISABLE TRIGGER ALL;
 
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (101, 'NORMAL', 101, 1695178711, 101, 1695178711, 101, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (102, 'NORMAL', 101, 1695179030, 101, 1695179030, 102, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (103, 'NORMAL', 101, 1695179078, 101, 1695179078, 103, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.stage ENABLE TRIGGER ALL;
@@ -11075,6 +11138,9 @@ ALTER TABLE public.stage ENABLE TRIGGER ALL;
 
 ALTER TABLE public.task DISABLE TRIGGER ALL;
 
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (101, 'NORMAL', 101, 1695178711, 1, 1695178988, 101, 101, 101, 101, 'Create database sakila_prod', 'PENDING_APPROVAL', 'bb.task.database.create', '{"labels": "[{\"key\":\"bb.environment\",\"value\":\"prod\"}]", "specId": "494f897d-66e9-4562-8b97-5d213fdf6ef4", "sheetId": 101, "character": "utf8mb4", "collation": "utf8mb4_general_ci", "projectId": 101, "databaseName": "sakila_prod", "environmentId": "prod"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (102, 'NORMAL', 101, 1695179030, 1, 1695179054, 102, 102, 101, 102, 'Create database sakila_test', 'PENDING_APPROVAL', 'bb.task.database.create', '{"labels": "[{\"key\":\"bb.environment\",\"value\":\"test\"}]", "specId": "11025977-45ca-4043-88fb-8002af053350", "sheetId": 103, "character": "utf8mb4", "collation": "utf8mb4_general_ci", "projectId": 101, "databaseName": "sakila_test", "environmentId": "test"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (103, 'NORMAL', 101, 1695179078, 1, 1695179141, 103, 103, 101, 103, 'Create database sakila_staging', 'PENDING_APPROVAL', 'bb.task.database.create', '{"labels": "[{\"key\":\"bb.environment\",\"value\":\"staging\"}]", "specId": "51e70d6c-d734-4ac5-bd74-16f01e8d6698", "sheetId": 105, "character": "utf8mb4", "collation": "utf8mb4_general_ci", "projectId": 101, "databaseName": "sakila_staging", "environmentId": "staging"}', 0) ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.task ENABLE TRIGGER ALL;
@@ -11095,6 +11161,9 @@ ALTER TABLE public.task_dag ENABLE TRIGGER ALL;
 
 ALTER TABLE public.task_run DISABLE TRIGGER ALL;
 
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (101, 101, 1695178988, 1, 1695178988, 101, 0, 'Create database sakila_prod 1695178988', 'DONE', 0, '{"detail": "Created database \"sakila_prod\""}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (102, 101, 1695179054, 1, 1695179054, 102, 0, 'Create database sakila_test 1695179054', 'DONE', 0, '{"detail": "Created database \"sakila_test\""}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (103, 101, 1695179141, 1, 1695179141, 103, 0, 'Create database sakila_staging 1695179141', 'DONE', 0, '{"detail": "Created database \"sakila_staging\""}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.task_run ENABLE TRIGGER ALL;
@@ -11103,7 +11172,7 @@ ALTER TABLE public.task_run ENABLE TRIGGER ALL;
 -- Name: activity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.activity_id_seq', 108, true);
+SELECT pg_catalog.setval('public.activity_id_seq', 129, true);
 
 
 --
@@ -11152,7 +11221,7 @@ SELECT pg_catalog.setval('public.db_group_id_seq', 101, false);
 -- Name: db_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.db_id_seq', 101, false);
+SELECT pg_catalog.setval('public.db_id_seq', 103, true);
 
 
 --
@@ -11166,7 +11235,7 @@ SELECT pg_catalog.setval('public.db_label_id_seq', 101, false);
 -- Name: db_schema_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.db_schema_id_seq', 101, false);
+SELECT pg_catalog.setval('public.db_schema_id_seq', 103, true);
 
 
 --
@@ -11201,7 +11270,7 @@ SELECT pg_catalog.setval('public.idp_id_seq', 101, false);
 -- Name: inbox_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.inbox_id_seq', 101, false);
+SELECT pg_catalog.setval('public.inbox_id_seq', 106, true);
 
 
 --
@@ -11229,7 +11298,7 @@ SELECT pg_catalog.setval('public.instance_user_id_seq', 103, true);
 -- Name: issue_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.issue_id_seq', 101, false);
+SELECT pg_catalog.setval('public.issue_id_seq', 103, true);
 
 
 --
@@ -11257,7 +11326,7 @@ SELECT pg_catalog.setval('public.member_id_seq', 104, true);
 -- Name: pipeline_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.pipeline_id_seq', 101, false);
+SELECT pg_catalog.setval('public.pipeline_id_seq', 103, true);
 
 
 --
@@ -11271,7 +11340,7 @@ SELECT pg_catalog.setval('public.plan_check_run_id_seq', 101, false);
 -- Name: plan_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.plan_id_seq', 101, false);
+SELECT pg_catalog.setval('public.plan_id_seq', 103, true);
 
 
 --
@@ -11341,14 +11410,14 @@ SELECT pg_catalog.setval('public.schema_group_id_seq', 101, false);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 114, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 115, true);
 
 
 --
 -- Name: sheet_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.sheet_id_seq', 101, false);
+SELECT pg_catalog.setval('public.sheet_id_seq', 106, true);
 
 
 --
@@ -11369,7 +11438,7 @@ SELECT pg_catalog.setval('public.slow_query_id_seq', 101, false);
 -- Name: stage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.stage_id_seq', 101, false);
+SELECT pg_catalog.setval('public.stage_id_seq', 103, true);
 
 
 --
@@ -11383,14 +11452,14 @@ SELECT pg_catalog.setval('public.task_dag_id_seq', 101, false);
 -- Name: task_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_id_seq', 101, false);
+SELECT pg_catalog.setval('public.task_id_seq', 103, true);
 
 
 --
 -- Name: task_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_run_id_seq', 101, false);
+SELECT pg_catalog.setval('public.task_run_id_seq', 103, true);
 
 
 --
