@@ -2258,6 +2258,7 @@ func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, _ i
 			&trigger.TriggerName,
 			&trigger.TriggerType,
 			&trigger.TriggerEvent,
+			&trigger.TableOwner,
 			&trigger.BaseObjectType,
 			&trigger.TableName,
 			&trigger.NestedColumn,
