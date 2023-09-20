@@ -1643,13 +1643,6 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 	if err != nil {
 		return errors.Wrapf(err, "failed to create plan")
 	}
-	rollout, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
-		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
-		Plan:   plan.Name,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create rollout")
-	}
 	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
 		Issue: &v1pb.Issue{
@@ -1658,12 +1651,18 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 		},
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create issue")
 	}
+	if _, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Plan:   plan.Name,
+	}); err != nil {
+		return errors.Wrapf(err, "failed to create rollout")
+	}
+
 	issueUID, err := strconv.Atoi(issue.Uid)
 	if err != nil {
 		return err
