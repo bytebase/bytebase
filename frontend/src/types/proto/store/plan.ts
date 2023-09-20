@@ -14,7 +14,7 @@ export interface PlanConfig_Step {
 
 export interface PlanConfig_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
-  earliestAllowedTime?:
+  earliestAllowedTime:
     | Date
     | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */

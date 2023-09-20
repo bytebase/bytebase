@@ -9,11 +9,11 @@ export interface ParseRequest {
 }
 
 export interface ParseResponse {
-  expression?: ParsedExpr | undefined;
+  expression: ParsedExpr | undefined;
 }
 
 export interface DeparseRequest {
-  expression?: ParsedExpr | undefined;
+  expression: ParsedExpr | undefined;
 }
 
 export interface DeparseResponse {

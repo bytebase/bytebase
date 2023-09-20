@@ -136,7 +136,7 @@ export interface ListUsersResponse {
 
 export interface CreateUserRequest {
   /** The user to create. */
-  user?: User | undefined;
+  user: User | undefined;
 }
 
 export interface UpdateUserRequest {
@@ -146,11 +146,11 @@ export interface UpdateUserRequest {
    * The user's `name` field is used to identify the user to update.
    * Format: users/{user}
    */
-  user?:
+  user:
     | User
     | undefined;
   /** The list of fields to update. */
-  updateMask?:
+  updateMask:
     | string[]
     | undefined;
   /** The otp_code is used to verify the user's identity by MFA. */
@@ -193,7 +193,7 @@ export interface LoginRequest {
    */
   idpName: string;
   /** The idp_context is using to get the user information from identity provider. */
-  idpContext?:
+  idpContext:
     | IdentityProviderContext
     | undefined;
   /** The otp_code is used to verify the user's identity by MFA. */

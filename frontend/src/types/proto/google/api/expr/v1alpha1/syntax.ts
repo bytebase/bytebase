@@ -10,11 +10,11 @@ export const protobufPackage = "google.api.expr.v1alpha1";
 /** An expression together with source information as returned by the parser. */
 export interface ParsedExpr {
   /** The parsed expression. */
-  expr?:
+  expr:
     | Expr
     | undefined;
   /** The source info derived from input that generated the parsed `expr`. */
-  sourceInfo?: SourceInfo | undefined;
+  sourceInfo: SourceInfo | undefined;
 }
 
 /**
@@ -88,7 +88,7 @@ export interface Expr_Select {
    * For example, in the select expression `request.auth`, the `request`
    * portion of the expression is the `operand`.
    */
-  operand?:
+  operand:
     | Expr
     | undefined;
   /**
@@ -116,7 +116,7 @@ export interface Expr_Call {
    * The target of an method call-style expression. For example, `x` in
    * `x.f()`.
    */
-  target?:
+  target:
     | Expr
     | undefined;
   /** Required. The name of the function or method being called. */
@@ -185,7 +185,7 @@ export interface Expr_CreateStruct_Entry {
    * optional-typed value. If the optional value is present, the key will be
    * set; however, if the optional value is absent, the key will be unset.
    */
-  value?:
+  value:
     | Expr
     | undefined;
   /** Whether the key-value pair is optional. */
@@ -224,13 +224,13 @@ export interface Expr_Comprehension {
   /** The name of the iteration variable. */
   iterVar: string;
   /** The range over which var iterates. */
-  iterRange?:
+  iterRange:
     | Expr
     | undefined;
   /** The name of the variable used for accumulation of the result. */
   accuVar: string;
   /** The initial value of the accumulator. */
-  accuInit?:
+  accuInit:
     | Expr
     | undefined;
   /**
@@ -239,7 +239,7 @@ export interface Expr_Comprehension {
    * Returns false when the result has been computed and may be used as
    * a hint to short-circuit the remainder of the comprehension.
    */
-  loopCondition?:
+  loopCondition:
     | Expr
     | undefined;
   /**
@@ -247,7 +247,7 @@ export interface Expr_Comprehension {
    *
    * Computes the next value of accu_var.
    */
-  loopStep?:
+  loopStep:
     | Expr
     | undefined;
   /**
@@ -255,7 +255,7 @@ export interface Expr_Comprehension {
    *
    * Computes the result.
    */
-  result?: Expr | undefined;
+  result: Expr | undefined;
 }
 
 /**
@@ -368,7 +368,7 @@ export interface SourceInfo_PositionsEntry {
 
 export interface SourceInfo_MacroCallsEntry {
   key: number;
-  value?: Expr | undefined;
+  value: Expr | undefined;
 }
 
 /** A specific position in source. */

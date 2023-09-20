@@ -16,7 +16,7 @@ export interface PushEvent {
   repositoryFullPath: string;
   authorName: string;
   commits: Commit[];
-  fileCommit?: FileCommit | undefined;
+  fileCommit: FileCommit | undefined;
 }
 
 export interface Commit {
