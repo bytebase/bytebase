@@ -1183,6 +1183,7 @@ type triggerMeta struct {
 	TriggerName      sql.NullString
 	TriggerType      sql.NullString
 	TriggerEvent     sql.NullString
+	TableOwner       sql.NullString
 	BaseObjectType   sql.NullString
 	TableName        sql.NullString
 	NestedColumn     sql.NullString
