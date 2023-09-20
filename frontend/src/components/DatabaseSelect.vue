@@ -29,7 +29,6 @@ import {
   PropType,
   defineComponent,
 } from "vue";
-import { isNullOrUndefined } from "@/plugins/demo/utils";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -37,6 +36,7 @@ import {
   useInstanceV1Store,
 } from "@/store";
 import { Engine, State } from "@/types/proto/v1/common";
+import { isNullOrUndefined } from "@/utils";
 import {
   UNKNOWN_ID,
   ComposedDatabase,

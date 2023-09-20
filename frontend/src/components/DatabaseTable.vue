@@ -233,8 +233,8 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
 import DatabaseName from "@/components/DatabaseName.vue";
-import { getScrollParent } from "@/plugins/demo/utils";
 import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import { getScrollParent } from "@/utils";
 import { BBGridColumn } from "../bbkit/types";
 import { Database } from "../types";
 import {
