@@ -132,14 +132,17 @@
 <script lang="ts" setup>
 import axios from "axios";
 import dayjs from "dayjs";
-import { head, uniq } from "lodash-es";
+import { cloneDeep, head, uniq } from "lodash-es";
 import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
+import { schemaDesignServiceClient } from "@/grpcweb";
 import {
+  pushNotification,
+  useDBSchemaV1Store,
   useDatabaseV1Store,
   useNotificationStore,
   useSchemaEditorV1Store,
@@ -162,6 +165,10 @@ import {
 } from "@/utils/schemaEditor/diffSchema";
 import { validateDatabaseEdit } from "@/utils/schemaEditor/validate";
 import MonacoEditor from "../MonacoEditor";
+import {
+  mergeSchemaEditToMetadata,
+  validateDatabaseMetadata,
+} from "../SchemaEditorV1/utils";
 import GhostDialog from "./GhostDialog.vue";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
@@ -202,6 +209,7 @@ const state = reactive<LocalState>({
 });
 const schemaEditorV1Store = useSchemaEditorV1Store();
 const databaseV1Store = useDatabaseV1Store();
+const dbSchemaV1Store = useDBSchemaV1Store();
 const notificationStore = useNotificationStore();
 const statementFromSchemaEditor = ref<string>();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
@@ -347,24 +355,60 @@ const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
   const databaseEditMap: Map<string, string> = new Map();
   if (databaseEditList.length > 0) {
     for (const databaseEdit of databaseEditList) {
-      const databaseEditResult = await postDatabaseEdit(databaseEdit);
-      if (databaseEditResult.validateResultList.length > 0) {
-        notificationStore.pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: "Invalid request",
-          description: databaseEditResult.validateResultList
-            .map((result) => result.message)
-            .join("\n"),
+      const database = databaseV1Store.getDatabaseByUID(
+        String(databaseEdit.databaseId)
+      );
+      // Use `SchemaDesignService.DiffMetadata` for MySQL as we only support MySQL for now.
+      if (database.instanceEntity.engine === Engine.MYSQL) {
+        const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
+          database.name
+        );
+        if (!databaseSchema) {
+          continue;
+        }
+
+        const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata(
+          database.name
+        );
+        const mergedMetadata = mergeSchemaEditToMetadata(
+          databaseSchema.schemaList,
+          cloneDeep(metadata)
+        );
+        const validationMessages = validateDatabaseMetadata(mergedMetadata);
+        if (validationMessages.length > 0) {
+          pushNotification({
+            module: "bytebase",
+            style: "WARN",
+            title: "Invalid schema structure",
+            description: validationMessages.join("\n"),
+          });
+          return;
+        }
+        const { diff } = await schemaDesignServiceClient.diffMetadata({
+          sourceMetadata: metadata,
+          targetMetadata: mergedMetadata,
+          engine: database.instanceEntity.engine,
         });
-        return;
+        databaseEditMap.set(database.uid, diff);
+      } else {
+        // Use legacy `DatabaseEdit` for non-MySQL databases.
+        const databaseEditResult = await postDatabaseEdit(databaseEdit);
+        if (databaseEditResult.validateResultList.length > 0) {
+          notificationStore.pushNotification({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: "Invalid request",
+            description: databaseEditResult.validateResultList
+              .map((result) => result.message)
+              .join("\n"),
+          });
+          return;
+        }
+        databaseEditMap.set(
+          String(databaseEdit.databaseId),
+          databaseEditResult.statement
+        );
       }
-      const previousStatement =
-        databaseEditMap.get(String(databaseEdit.databaseId)) || "";
-      const statement = `${previousStatement}${previousStatement && "\n"}${
-        databaseEditResult.statement
-      }`;
-      databaseEditMap.set(String(databaseEdit.databaseId), statement);
     }
   }
   return databaseEditMap;

@@ -13,6 +13,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -449,6 +451,48 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete sheet: %v", err))
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
+	if request.Engine != v1pb.Engine_MYSQL {
+		return nil, status.Errorf(codes.InvalidArgument, "only MySQL is supported")
+	}
+	if request.SourceMetadata == nil || request.TargetMetadata == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
+	}
+
+	sourceSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.SourceMetadata)
+	if err != nil {
+		return nil, err
+	}
+	targetSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.TargetMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	diff, err := differ.SchemaDiff(convertEngineToParserType(request.Engine), sourceSchema, targetSchema, false /* ignoreCaseSensitive */)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
+	}
+
+	return &v1pb.DiffMetadataResponse{
+		Diff: diff,
+	}, nil
+}
+
+func convertEngineToParserType(engine v1pb.Engine) parser.EngineType {
+	switch engine {
+	case v1pb.Engine_POSTGRES:
+		return parser.Postgres
+	case v1pb.Engine_MYSQL:
+		return parser.MySQL
+	case v1pb.Engine_TIDB:
+		return parser.TiDB
+	case v1pb.Engine_ORACLE:
+		return parser.Oracle
+	default:
+		return parser.Standard
+	}
 }
 
 func (s *SchemaDesignService) listSheets(ctx context.Context, find *store.FindSheetMessage) ([]*store.SheetMessage, error) {
