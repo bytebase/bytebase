@@ -2069,6 +2069,7 @@
       "invalid-column-name": "Nombre de columna inválido",
       "duplicated-column-name": "Nombre de columna duplicado",
       "invalid-column-type": "Tipo de columna inválido",
+      "schema-not-found": "Esquema no encontrado",
       "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos"
     },
     "confirm-to-close": {
