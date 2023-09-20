@@ -127,6 +127,7 @@ import { getLogId } from "@/store/modules/v1/common";
 import {
   ActivityIssueCommentCreatePayload,
   ActivityIssueFieldUpdatePayload,
+  UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import type { ComposedIssue } from "@/types";
 import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
@@ -156,17 +157,22 @@ const state = reactive<LocalState>({
 const currentUser = useCurrentUserV1();
 const issueV1Store = useIssueV1Store();
 
-const prepareActivityList = async () => {
-  const [_, list] = await Promise.all([
-    activityV1Store.fetchActivityListForIssueV1(issue.value),
-    issueV1Store.listIssues({
-      find: {
-        project: issue.value.project,
-        query: "",
-      },
-    }),
-  ]);
+const prepareIssueListForMarkdownEditor = async () => {
+  const project = issue.value.project;
+  issueList.value = [];
+  if (project === UNKNOWN_PROJECT_NAME) return;
+
+  const list = await issueV1Store.listIssues({
+    find: {
+      project,
+      query: "",
+    },
+  });
   issueList.value = list.issues;
+};
+
+const prepareActivityList = () => {
+  activityV1Store.fetchActivityListForIssueV1(issue.value);
 };
 
 watchEffect(prepareActivityList);
@@ -296,4 +302,12 @@ onMounted(() => {
     }
   );
 });
+
+watch(
+  () => issue.value.project,
+  () => {
+    prepareIssueListForMarkdownEditor();
+  },
+  { immediate: true }
+);
 </script>
