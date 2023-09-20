@@ -665,6 +665,7 @@ func getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (strin
 		return "", err
 	}
 	if !stmt.Valid {
+		// https://dev.mysql.com/doc/refman/8.0/en/show-create-procedure.html
 		slog.Warn("%s %s.%s statement is null, user does not have sufficient permissions", routineType, dbName, routineName)
 		return "", nil
 	}
