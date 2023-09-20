@@ -1,7 +1,10 @@
 import { isUndefined, uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { ComposedDatabase, emptyProject } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
+  BranchSchema,
+  DatabaseSchema,
   SchemaEditorV1State,
   Table,
   TabContext,
@@ -50,6 +53,19 @@ export const useSchemaEditorV1Store = defineStore("SchemaEditorV1", {
     },
   },
   actions: {
+    getCurrentEngine(parentName: string) {
+      const parentResouce = this.resourceMap[this.resourceType].get(parentName);
+      if (!parentResouce) {
+        return Engine.MYSQL;
+      }
+      if (this.resourceType === "database") {
+        return (parentResouce as DatabaseSchema).database.instanceEntity.engine;
+      } else if (this.resourceType === "branch") {
+        return (parentResouce as BranchSchema).branch.engine;
+      } else {
+        return Engine.MYSQL;
+      }
+    },
     setState(state: Partial<SchemaEditorV1State>) {
       Object.assign(this, state);
     },
