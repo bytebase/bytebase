@@ -2073,6 +2073,7 @@
       "invalid-column-name": "Invalid column name",
       "duplicated-column-name": "Duplicated column name",
       "invalid-column-type": "Invalid column type",
+      "schema-not-found": "Schame not found",
       "failed-to-fetch-database-schema": "Failed to fetch database schema"
     },
     "confirm-to-close": {
