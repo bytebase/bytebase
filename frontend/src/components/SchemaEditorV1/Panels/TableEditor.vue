@@ -39,205 +39,24 @@
       </div>
     </div>
 
-    <!-- column table -->
-    <div
-      id="table-editor-container"
-      ref="tableEditorContainerRef"
-      class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto"
-    >
-      <!-- column table header -->
-      <div
-        class="sticky top-0 z-10 grid grid-cols-[6rem_minmax(0,_1.5fr)_repeat(3,_minmax(0,_0.8fr))_repeat(2,_80px)_minmax(0,_7rem)_20px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
-        :class="shownColumnList.length > 0 && 'border-b'"
-      >
-        <span
-          v-for="header in columnHeaderList"
-          :key="header.key"
-          class="table-header-item-container"
-          >{{ header.label }}</span
-        >
-        <span></span>
-      </div>
-      <!-- column table body -->
-      <div class="w-full">
-        <div
-          v-for="(column, index) in shownColumnList"
-          :key="`${index}-${column.id}`"
-          class="grid grid-cols-[6rem_minmax(0,_1.5fr)_repeat(3,_minmax(0,_0.8fr))_repeat(2,_80px)_minmax(0,_7rem)_20px] gr text-sm even:bg-gray-50"
-          :class="[
-            `column-${column.id}`,
-            getColumnItemComputedClassList(column),
-          ]"
-        >
-          <div class="table-body-item-container">
-            <input
-              v-model="column.name"
-              :disabled="disableAlterColumn(column)"
-              placeholder="column name"
-              class="column-field-input column-name-input"
-              type="text"
-            />
-          </div>
-          <div
-            class="table-body-item-container flex items-center gap-x-2 ml-3 text-sm"
-          >
-            <ClassificationLevelBadge
-              v-if="column.classification && classificationConfig"
-              :classification="column.classification"
-              :classification-config="classificationConfig"
-            />
-            <div
-              v-if="classificationConfig && !disableChangeTable"
-              class="flex"
-            >
-              <button
-                v-if="column.classification"
-                class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-                @click.prevent="column.classification = ''"
-              >
-                <heroicons-outline:x class="w-3 h-3" />
-              </button>
-              <button
-                class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-                @click.prevent="state.pendingUpdateColumnIndex = index"
-              >
-                <heroicons-outline:pencil class="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-          <div
-            class="table-body-item-container flex flex-row justify-between items-center"
-          >
-            <input
-              v-model="column.type"
-              :disabled="
-                disableAlterColumn(column) ||
-                schemaTemplateColumnTypes.length > 0
-              "
-              placeholder="column type"
-              class="column-field-input column-type-input !pr-8"
-              type="text"
-            />
-            <NDropdown
-              trigger="click"
-              :disabled="disableAlterColumn(column)"
-              :options="columnTypeOptions"
-              @select="(dataType: string) => (column.type = dataType)"
-            >
-              <button class="absolute right-5">
-                <heroicons-solid:chevron-up-down
-                  class="w-4 h-auto text-gray-400"
-                />
-              </button>
-            </NDropdown>
-          </div>
-          <div
-            class="table-body-item-container flex flex-row justify-between items-center"
-          >
-            <input
-              v-model="column.default"
-              :disabled="disableAlterColumn(column)"
-              :placeholder="column.default === undefined ? 'EMPTY' : 'NULL'"
-              class="column-field-input !pr-8"
-              type="text"
-            />
-            <NDropdown
-              trigger="click"
-              :disabled="disableAlterColumn(column)"
-              :options="dataDefaultOptions"
-              @select="(defaultString:string)=>handleColumnDefaultFieldChange(column, defaultString)"
-            >
-              <button class="absolute right-5">
-                <heroicons-solid:chevron-up-down
-                  class="w-4 h-auto text-gray-400"
-                />
-              </button>
-            </NDropdown>
-          </div>
-          <div class="table-body-item-container">
-            <input
-              v-model="column.userComment"
-              :disabled="disableAlterColumn(column)"
-              placeholder="comment"
-              class="column-field-input"
-              type="text"
-            />
-          </div>
-          <div
-            class="table-body-item-container flex justify-start items-center"
-          >
-            <BBCheckbox
-              class="ml-3"
-              :value="!column.nullable"
-              :disabled="
-                disableAlterColumn(column) || isColumnPrimaryKey(column)
-              "
-              @toggle="(value) => (column.nullable = !value)"
-            />
-          </div>
-          <div
-            class="table-body-item-container flex justify-start items-center"
-          >
-            <BBCheckbox
-              class="ml-3"
-              :value="isColumnPrimaryKey(column)"
-              :disabled="disableAlterColumn(column)"
-              @toggle="(value) => setColumnPrimaryKey(column, value)"
-            />
-          </div>
-          <div
-            class="table-body-item-container foreign-key-field flex justify-start items-center"
-          >
-            <span
-              v-if="checkColumnHasForeignKey(column)"
-              class="column-field-text cursor-pointer !w-auto hover:opacity-80"
-              @click="gotoForeignKeyReferencedTable(column)"
-            >
-              {{ getReferencedForeignKeyName(column) }}
-            </span>
-            <span v-else class="column-field-text italic text-gray-400 !w-auto"
-              >EMPTY</span
-            >
-            <button
-              v-if="!readonly"
-              class="foreign-key-edit-button hidden cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-              :disabled="disableAlterColumn(column)"
-              @click="handleEditColumnForeignKey(column)"
-            >
-              <heroicons:pencil-square class="w-4 h-auto text-gray-400" />
-            </button>
-          </div>
-          <div class="w-full flex justify-start items-center">
-            <template v-if="!readonly">
-              <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
-                <template #trigger>
-                  <button
-                    :disabled="disableChangeTable"
-                    class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-                    @click="handleDropColumn(column)"
-                  >
-                    <heroicons:trash class="w-4 h-auto" />
-                  </button>
-                </template>
-                <span>{{ $t("schema-editor.actions.drop-column") }}</span>
-              </n-tooltip>
-              <n-tooltip v-else trigger="hover">
-                <template #trigger>
-                  <button
-                    class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-                    :disabled="disableChangeTable"
-                    @click="handleRestoreColumn(column)"
-                  >
-                    <heroicons:arrow-uturn-left class="w-4 h-auto" />
-                  </button>
-                </template>
-                <span>{{ $t("schema-editor.actions.restore") }}</span>
-              </n-tooltip>
-            </template>
-          </div>
-        </div>
-      </div>
-    </div>
+    <TableColumnEditor
+      :readonly="readonly"
+      :show-foreign-key="true"
+      :table="table"
+      :engine="engine"
+      :foreign-key-list="foreignKeyList"
+      :classification-config-id="project.dataClassificationConfigId"
+      :disable-change-table="disableChangeTable"
+      :filter-column="(column: Column) => column.name.includes(searchPattern.trim())"
+      :disable-alter-column="disableAlterColumn"
+      :get-referenced-foreign-key-name="getReferencedForeignKeyName"
+      :get-column-item-computed-class-list="getColumnItemComputedClassList"
+      @on-drop="handleDropColumn"
+      @on-restore="handleRestoreColumn"
+      @on-primary-key-set="setColumnPrimaryKey"
+      @on-foreign-key-edit="handleEditColumnForeignKey"
+      @on-foreign-key-click="gotoForeignKeyReferencedTable"
+    />
   </div>
 
   <EditColumnForeignKeyModal
@@ -268,28 +87,16 @@
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
-
-  <SelectClassificationDrawer
-    v-if="classificationConfig"
-    :show="state.pendingUpdateColumnIndex >= 0"
-    :classification-config="classificationConfig"
-    @dismiss="state.pendingUpdateColumnIndex = -1"
-    @select="onClassificationSelect"
-  />
 </template>
 
 <script lang="ts" setup>
 import { isUndefined, flatten } from "lodash-es";
-import { NDropdown } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { BBCheckbox } from "@/bbkit";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   hasFeature,
   generateUniqueTabId,
-  useSettingV1Store,
   useSchemaEditorV1Store,
 } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
@@ -304,21 +111,18 @@ import {
   SchemaEditorTabType,
 } from "@/types/v1/schemaEditor";
 import { TableTabContext } from "@/types/v1/schemaEditor";
-import { getDataTypeSuggestionList } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { isColumnChanged } from "../utils";
+import TableColumnEditor from "./TableColumnEditor.vue";
 
 interface LocalState {
   showEditColumnForeignKeyModal: boolean;
   showSchemaTemplateDrawer: boolean;
   showFeatureModal: boolean;
-  pendingUpdateColumnIndex: number;
 }
 
-const { t } = useI18n();
 const schemaEditorV1Store = useSchemaEditorV1Store();
-const settingStore = useSettingV1Store();
 const currentTab = computed(
   () => schemaEditorV1Store.currentTab as TableTabContext
 );
@@ -337,7 +141,6 @@ const state = reactive<LocalState>({
   showEditColumnForeignKeyModal: false,
   showSchemaTemplateDrawer: false,
   showFeatureModal: false,
-  pendingUpdateColumnIndex: -1,
 });
 
 const schema = computed(() => {
@@ -359,89 +162,14 @@ const foreignKeyList = computed(() => {
 });
 
 const searchPattern = ref("");
-const tableEditorContainerRef = ref<HTMLDivElement>();
 const editForeignKeyColumn = ref<Column>();
 
-const shownColumnList = computed(() => {
-  return table.value.columnList.filter((column) =>
-    column.name.includes(searchPattern.value.trim())
-  );
-});
 const isDroppedSchema = computed(() => {
   return schema.value.status === "dropped";
 });
 
 const isDroppedTable = computed(() => {
   return table.value.status === "dropped";
-});
-
-const columnHeaderList = computed(() => {
-  return [
-    {
-      key: "name",
-      label: t("schema-editor.column.name"),
-    },
-    {
-      key: "classification",
-      label: t("schema-editor.column.classification"),
-    },
-    {
-      key: "type",
-      label: t("schema-editor.column.type"),
-    },
-    {
-      key: "default",
-      label: t("schema-editor.column.default"),
-    },
-    {
-      key: "comment",
-      label: t("schema-editor.column.comment"),
-    },
-    {
-      key: "nullable",
-      label: t("schema-editor.column.not-null"),
-    },
-    {
-      key: "primary",
-      label: t("schema-editor.column.primary"),
-    },
-    {
-      key: "foreign_key",
-      label: t("schema-editor.column.foreign-key"),
-    },
-  ];
-});
-
-const schemaTemplateColumnTypes = computed(() => {
-  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
-  const columnTypes = setting?.value?.schemaTemplateSettingValue?.columnTypes;
-  if (columnTypes && columnTypes.length > 0) {
-    const columnType = columnTypes.find(
-      (columnType) => columnType.engine === engine.value
-    );
-    if (columnType && columnType.enabled) {
-      return columnType.types;
-    }
-  }
-  return [];
-});
-
-const columnTypeOptions = computed(() => {
-  if (schemaTemplateColumnTypes.value.length > 0) {
-    return schemaTemplateColumnTypes.value.map((columnType) => {
-      return {
-        label: columnType,
-        key: columnType,
-      };
-    });
-  }
-
-  return getDataTypeSuggestionList(engine.value).map((dataType) => {
-    return {
-      label: dataType,
-      key: dataType,
-    };
-  });
 });
 
 const getColumnItemComputedClassList = (column: Column) => {
@@ -462,21 +190,6 @@ const getColumnItemComputedClassList = (column: Column) => {
   return [];
 };
 
-const dataDefaultOptions = [
-  {
-    label: "NULL",
-    key: "NULL",
-  },
-  {
-    label: "EMPTY",
-    key: "EMPTY",
-  },
-];
-
-const isColumnPrimaryKey = (column: Column): boolean => {
-  return table.value.primaryKey.columnIdList.includes(column.id);
-};
-
 const checkColumnHasForeignKey = (column: Column): boolean => {
   const columnIdList = flatten(
     foreignKeyList.value.map((fk) => fk.columnIdList)
@@ -486,7 +199,7 @@ const checkColumnHasForeignKey = (column: Column): boolean => {
 
 const getReferencedForeignKeyName = (column: Column) => {
   if (!checkColumnHasForeignKey(column)) {
-    return;
+    return "";
   }
   const fk = foreignKeyList.value.find(
     (fk) =>
@@ -497,7 +210,7 @@ const getReferencedForeignKeyName = (column: Column) => {
   );
 
   if (isUndefined(fk) || isUndefined(index) || index < 0) {
-    return;
+    return "";
   }
   const referencedSchema = parentResouce.value.schemaList.find(
     (schema) => schema.id === fk.referencedSchemaId
@@ -506,7 +219,7 @@ const getReferencedForeignKeyName = (column: Column) => {
     (table) => table.id === fk.referencedTableId
   );
   if (!referencedTable) {
-    return;
+    return "";
   }
   const referColumn = referencedTable.columnList.find(
     (column) => column.id === fk.referencedColumnIdList[index]
@@ -523,15 +236,12 @@ const isDroppedColumn = (column: Column): boolean => {
 };
 
 const disableChangeTable = computed(() => {
-  return readonly.value || isDroppedSchema.value || isDroppedTable.value;
+  return isDroppedSchema.value || isDroppedTable.value;
 });
 
 const disableAlterColumn = (column: Column): boolean => {
   return (
-    readonly.value ||
-    isDroppedSchema.value ||
-    isDroppedTable.value ||
-    isDroppedColumn(column)
+    isDroppedSchema.value || isDroppedTable.value || isDroppedColumn(column)
   );
 };
 
@@ -552,8 +262,9 @@ const handleAddColumn = () => {
   column.status = "created";
   table.value.columnList.push(column);
   nextTick(() => {
+    const container = document.querySelector("#table-editor-container");
     (
-      tableEditorContainerRef.value?.querySelector(
+      container?.querySelector(
         `.column-${column.id} .column-name-input`
       ) as HTMLInputElement
     )?.focus();
@@ -574,17 +285,6 @@ const handleApplyColumnTemplate = (
   column.status = "created";
   table.value.columnList.push(column);
   state.showSchemaTemplateDrawer = false;
-};
-
-const handleColumnDefaultFieldChange = (
-  column: Column,
-  defaultString: string
-) => {
-  if (defaultString === "NULL") {
-    column.default = "NULL";
-  } else if (defaultString === "EMPTY") {
-    column.default = undefined;
-  }
 };
 
 const gotoForeignKeyReferencedTable = (column: Column) => {
@@ -676,40 +376,4 @@ const handleRestoreColumn = (column: Column) => {
   }
   column.status = "normal";
 };
-
-const classificationConfig = computed(() => {
-  if (!project.value || !project.value.dataClassificationConfigId) {
-    return;
-  }
-  return settingStore.getProjectClassification(
-    project.value.dataClassificationConfigId
-  );
-});
-
-const onClassificationSelect = (classificationId: string) => {
-  if (!table.value.columnList[state.pendingUpdateColumnIndex]) {
-    return;
-  }
-  table.value.columnList[state.pendingUpdateColumnIndex].classification =
-    classificationId;
-  state.pendingUpdateColumnIndex = -1;
-};
 </script>
-
-<style scoped>
-.table-header-item-container {
-  @apply py-2 px-3;
-}
-.table-body-item-container {
-  @apply w-full h-10 box-border p-px pr-2 relative;
-}
-.column-field-input {
-  @apply w-full pr-1 box-border border-transparent truncate select-none rounded bg-transparent text-sm placeholder:italic placeholder:text-gray-400 focus:bg-white focus:text-black;
-}
-.column-field-text {
-  @apply w-full pl-3 pr-1 box-border border-transparent truncate select-none rounded bg-transparent text-sm placeholder:italic placeholder:text-gray-400 focus:bg-white focus:text-black;
-}
-.foreign-key-field:hover .foreign-key-edit-button {
-  @apply block;
-}
-</style>
