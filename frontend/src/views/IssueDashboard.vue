@@ -120,6 +120,7 @@ import {
   extractUserUID,
   hasWorkspacePermissionV1,
   projectV1Slug,
+  extractProjectResourceName,
 } from "@/utils";
 
 const TABS = ["OPEN", "CLOSED"] as const;
@@ -162,7 +163,7 @@ const initSearchParams = computed((): SearchParams => {
     scopes: [
       {
         id: "project",
-        value: projectName,
+        value: extractProjectResourceName(projectName),
       },
     ],
   };
