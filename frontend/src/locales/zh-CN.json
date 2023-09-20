@@ -946,7 +946,11 @@
       "task-is-x-status": "任务状态是{status}",
       "task-is-running-cancel-first": "任务运行中，需要取消任务才能修改这项值"
     },
-    "you-are-not-allowed-to-change-this-value": "您无权更改这项值"
+    "you-are-not-allowed-to-change-this-value": "您无权更改这项值",
+    "sql-check": {
+      "sql-checks": "SQL 检查项",
+      "not-executed-yet": "尚未执行"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
