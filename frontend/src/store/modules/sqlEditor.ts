@@ -4,7 +4,6 @@ import {
   QueryInfo,
   QueryHistory,
   ActivitySQLEditorQueryPayload,
-  SingleSQLResult,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { QueryResult } from "@/types/proto/v1/sql_service";
@@ -100,13 +99,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
   },
 });
-
-export const mockAffectedRows0 = (): SingleSQLResult => {
-  return {
-    data: [["Affected Rows"], ["BIGINT"], [[0]], [false]],
-    error: "",
-  };
-};
 
 export const mockAffectedV1Rows0 = (): QueryResult => {
   return QueryResult.fromPartial({

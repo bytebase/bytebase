@@ -297,3 +297,21 @@ export const keyboardShortcutStr = (str: string) => {
     })
     .join("+");
 };
+
+export const isNullOrUndefined = (value: any) => {
+  return value === null || value === undefined;
+};
+
+export const getScrollParent = (
+  element: HTMLElement | null | undefined
+): HTMLElement => {
+  if (!element) {
+    return document.body;
+  }
+
+  if (element.scrollHeight > element.clientHeight) {
+    return element;
+  } else {
+    return getScrollParent(element.parentElement);
+  }
+};
