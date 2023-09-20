@@ -197,7 +197,7 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 	return util.RunStatement(ctx, parser.Oracle, conn, statement)
 }
 
-func (driver *Driver) getDatabaseVersion(ctx context.Context) (string, error) {
+func (driver *Driver) getMajorVersion(ctx context.Context) (string, error) {
     var version string
     if err := driver.db.QueryRowContext(ctx, "SELECT version FROM v$instance").Scan(&version); err != nil {
         return "", fmt.Errorf("database query error: %v", err)
