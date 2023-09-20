@@ -649,7 +649,8 @@ func getRoutines(txn *sql.Tx, dbType db.Type, dbName string) ([]*routineSchema, 
 // getRoutineStmt gets the create statement of a routine.
 func getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE %s `%s`.`%s`;", routineType, dbName, routineName)
-	var sqlmode, stmt, charset, collation, unused string
+	var sqlmode, charset, collation, unused string
+	var stmt sql.NullString
 	if err := txn.QueryRow(query).Scan(
 		&unused,
 		&sqlmode,
@@ -663,7 +664,11 @@ func getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (strin
 		}
 		return "", err
 	}
-	return fmt.Sprintf(routineStmtFmt, getReadableRoutineType(routineType), routineName, charset, charset, collation, sqlmode, stmt), nil
+	if !stmt.Valid {
+		slog.Warn("%s %s.%s statement is null, user does not have sufficient permissions", routineType, dbName, routineName)
+		return "", nil
+	}
+	return fmt.Sprintf(routineStmtFmt, getReadableRoutineType(routineType), routineName, charset, charset, collation, sqlmode, stmt.String), nil
 }
 
 // getReadableRoutineType gets the printable routine type.
