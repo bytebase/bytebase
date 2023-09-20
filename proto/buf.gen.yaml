@@ -16,7 +16,6 @@ plugins:
     # reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md#using-ts-proto
     opt:
       - env=browser
-      - useOptionals=messages
       - outputServices=generic-definitions
       - useExactTypes=false
       - esModuleInterop=true

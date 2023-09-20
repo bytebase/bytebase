@@ -147,11 +147,11 @@ export interface UpdateDatabaseRequest {
    * The database's `name` field is used to identify the database to update.
    * Format: instances/{instance}/databases/{database}
    */
-  database?:
+  database:
     | Database
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface BatchUpdateDatabasesRequest {
@@ -236,7 +236,7 @@ export interface GetBackupSettingRequest {
 
 export interface UpdateBackupSettingRequest {
   /** The database backup setting to update. */
-  setting?: BackupSetting | undefined;
+  setting: BackupSetting | undefined;
 }
 
 /** CreateBackupRequest is the request message for CreateBackup. */
@@ -246,7 +246,7 @@ export interface CreateBackupRequest {
    * Format: instances/{instance}/databases/{database}
    */
   parent: string;
-  backup?: Backup | undefined;
+  backup: Backup | undefined;
 }
 
 /** ListBackupsRequest is the request message for ListBackup. */
@@ -295,7 +295,7 @@ export interface Database {
   /** The existence of a database on latest sync. */
   syncState: State;
   /** The latest synchronization time. */
-  successfulSyncTime?:
+  successfulSyncTime:
     | Date
     | undefined;
   /**
@@ -401,7 +401,7 @@ export interface ColumnMetadata {
   /** The position is the position in columns. */
   position: number;
   /** The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. */
-  default?:
+  default:
     | string
     | undefined;
   /** The nullable is the nullable of a column. */
@@ -699,7 +699,7 @@ export interface BackupSetting {
    * If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.
    * It will be rounded up to the number of days.
    */
-  backupRetainDuration?:
+  backupRetainDuration:
     | Duration
     | undefined;
   /**
@@ -721,11 +721,11 @@ export interface Backup {
    */
   name: string;
   /** The timestamp when the backup resource was created initially. */
-  createTime?:
+  createTime:
     | Date
     | undefined;
   /** The timestamp when the backup resource was updated. */
-  updateTime?:
+  updateTime:
     | Date
     | undefined;
   /** The state of the backup. */
@@ -885,7 +885,7 @@ export interface SlowQueryLog {
    */
   project: string;
   /** The statistics of the slow query log. */
-  statistics?: SlowQueryStatistics | undefined;
+  statistics: SlowQueryStatistics | undefined;
 }
 
 /** SlowQueryStatistics is the statistics of the slow query log. */
@@ -895,15 +895,15 @@ export interface SlowQueryStatistics {
   /** The count of the slow query log. */
   count: number;
   /** The latest log time of the slow query log. */
-  latestLogTime?:
+  latestLogTime:
     | Date
     | undefined;
   /** The average query time of the slow query log. */
-  averageQueryTime?:
+  averageQueryTime:
     | Duration
     | undefined;
   /** The maximum query time of the slow query log. */
-  maximumQueryTime?:
+  maximumQueryTime:
     | Duration
     | undefined;
   /** The average rows sent of the slow query log. */
@@ -925,15 +925,15 @@ export interface SlowQueryStatistics {
 /** SlowQueryDetails is the details of the slow query log. */
 export interface SlowQueryDetails {
   /** The start time of the slow query log. */
-  startTime?:
+  startTime:
     | Date
     | undefined;
   /** The query time of the slow query log. */
-  queryTime?:
+  queryTime:
     | Duration
     | undefined;
   /** The lock time of the slow query log. */
-  lockTime?:
+  lockTime:
     | Duration
     | undefined;
   /** The rows sent of the slow query log. */
@@ -979,11 +979,11 @@ export interface ListSecretsResponse {
 
 export interface UpdateSecretRequest {
   /** The secret to be created or updated. */
-  secret?:
+  secret:
     | Secret
     | undefined;
   /** The mask of the fields to be updated. */
-  updateMask?:
+  updateMask:
     | string[]
     | undefined;
   /** If true, the secret will be created if it does not exist. */
@@ -1008,11 +1008,11 @@ export interface Secret {
    */
   name: string;
   /** Not used. The timestamp when the secret resource was created initially. */
-  createdTime?:
+  createdTime:
     | Date
     | undefined;
   /** Not used. The timestamp when the secret resource was updated. */
-  updatedTime?:
+  updatedTime:
     | Date
     | undefined;
   /** The value of the secret. */
@@ -1047,8 +1047,8 @@ export interface ChangeHistory {
   creator: string;
   /** Format: users/hello@world.com */
   updater: string;
-  createTime?: Date | undefined;
-  updateTime?:
+  createTime: Date | undefined;
+  updateTime:
     | Date
     | undefined;
   /** release version of Bytebase */
@@ -1061,13 +1061,13 @@ export interface ChangeHistory {
   statement: string;
   schema: string;
   prevSchema: string;
-  executionDuration?:
+  executionDuration:
     | Duration
     | undefined;
   /** Format: projects/{project}/issues/{issue} */
   issue: string;
-  pushEvent?: PushEvent | undefined;
-  changedResources?: ChangedResources | undefined;
+  pushEvent: PushEvent | undefined;
+  changedResources: ChangedResources | undefined;
 }
 
 export enum ChangeHistory_Source {

@@ -46,13 +46,13 @@ export interface GetSettingRequest {
 
 /** The response message for getting a setting. */
 export interface GetSettingResponse {
-  setting?: Setting | undefined;
+  setting: Setting | undefined;
 }
 
 /** The request message for updating a setting. */
 export interface SetSettingRequest {
   /** The setting to update. */
-  setting?:
+  setting:
     | Setting
     | undefined;
   /**
@@ -72,7 +72,7 @@ export interface Setting {
    */
   name: string;
   /** The value of the setting. */
-  value?: Value | undefined;
+  value: Value | undefined;
 }
 
 /** The data in setting value. */
@@ -224,7 +224,7 @@ export interface AppIMSetting {
   imType: AppIMSetting_IMType;
   appId: string;
   appSecret: string;
-  externalApproval?: AppIMSetting_ExternalApproval | undefined;
+  externalApproval: AppIMSetting_ExternalApproval | undefined;
 }
 
 export enum AppIMSetting_IMType {
@@ -290,11 +290,11 @@ export interface WorkspaceProfileSetting {
   /** The webhook URL for the GitOps workflow. */
   gitopsWebhookUrl: string;
   /** The duration for token. */
-  tokenDuration?:
+  tokenDuration:
     | Duration
     | undefined;
   /** The setting of custom announcement */
-  announcement?: Announcement | undefined;
+  announcement: Announcement | undefined;
 }
 
 export interface Announcement {
@@ -357,8 +357,8 @@ export interface WorkspaceApprovalSetting {
 }
 
 export interface WorkspaceApprovalSetting_Rule {
-  template?: ApprovalTemplate | undefined;
-  condition?: Expr | undefined;
+  template: ApprovalTemplate | undefined;
+  condition: Expr | undefined;
 }
 
 export interface ExternalApprovalSetting {
@@ -386,7 +386,7 @@ export interface SchemaTemplateSetting_FieldTemplate {
   id: string;
   engine: Engine;
   category: string;
-  column?: ColumnMetadata | undefined;
+  column: ColumnMetadata | undefined;
 }
 
 export interface SchemaTemplateSetting_ColumnType {
@@ -397,8 +397,8 @@ export interface SchemaTemplateSetting_ColumnType {
 
 export interface WorkspaceTrialSetting {
   instanceCount: number;
-  expireTime?: Date | undefined;
-  issuedTime?: Date | undefined;
+  expireTime: Date | undefined;
+  issuedTime: Date | undefined;
   subject: string;
   orgName: string;
   plan: PlanType;
@@ -440,7 +440,7 @@ export interface DataClassificationSetting_DataClassificationConfig_DataClassifi
 
 export interface DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
   key: string;
-  value?: DataClassificationSetting_DataClassificationConfig_DataClassification | undefined;
+  value: DataClassificationSetting_DataClassificationConfig_DataClassification | undefined;
 }
 
 export interface SemanticTypesSetting {

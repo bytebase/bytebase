@@ -6,7 +6,7 @@ export const protobufPackage = "bytebase.v1";
 
 export interface CreateBookmarkRequest {
   /** The bookmark to create. */
-  bookmark?: Bookmark | undefined;
+  bookmark: Bookmark | undefined;
 }
 
 export interface DeleteBookmarkRequest {

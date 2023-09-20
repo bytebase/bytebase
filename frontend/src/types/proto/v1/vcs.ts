@@ -60,14 +60,14 @@ export interface PushEvent {
   repositoryFullPath: string;
   authorName: string;
   commits: Commit[];
-  fileCommit?: FileCommit | undefined;
+  fileCommit: FileCommit | undefined;
 }
 
 export interface Commit {
   id: string;
   title: string;
   message: string;
-  createdTime?: Date | undefined;
+  createdTime: Date | undefined;
   url: string;
   authorName: string;
   authorEmail: string;
@@ -79,7 +79,7 @@ export interface FileCommit {
   id: string;
   title: string;
   message: string;
-  createdTime?: Date | undefined;
+  createdTime: Date | undefined;
   url: string;
   authorName: string;
   authorEmail: string;

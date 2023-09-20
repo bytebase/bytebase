@@ -9,7 +9,7 @@ export const protobufPackage = "bytebase.store";
 /** DatabaseMetadata is the metadata for databases. */
 export interface DatabaseMetadata {
   labels: { [key: string]: string };
-  lastSyncTime?: Date | undefined;
+  lastSyncTime: Date | undefined;
 }
 
 export interface DatabaseMetadata_LabelsEntry {
@@ -260,7 +260,7 @@ export interface ColumnMetadata {
   /** The position is the position in columns. */
   position: number;
   /** The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. */
-  default?:
+  default:
     | string
     | undefined;
   /** The nullable is the nullable of a column. */

@@ -54,7 +54,7 @@ export interface Struct {
 
 export interface Struct_FieldsEntry {
   key: string;
-  value?: any | undefined;
+  value: any | undefined;
 }
 
 /**
