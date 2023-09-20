@@ -187,8 +187,8 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { Table } from "@/types/schemaEditor/atomType";
 import {
+  Table,
   DatabaseTabContext,
   DatabaseSchema,
   SchemaEditorTabType,
