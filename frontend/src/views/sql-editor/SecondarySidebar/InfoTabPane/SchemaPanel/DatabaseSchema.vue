@@ -27,8 +27,8 @@
           "
           :database="database"
           @click="
-            emit('alter-schema', {
-              databaseId: database.uid,
+            editorEvents.emit('alter-schema', {
+              databaseUID: database.uid,
               schema: '',
               table: '',
             })
@@ -62,6 +62,7 @@ import {
   instanceV1HasAlterSchema,
   isTableQueryable,
 } from "@/utils";
+import { useSQLEditorContext } from "@/views/sql-editor/context";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
 import SchemaDiagramButton from "./SchemaDiagramButton.vue";
@@ -76,12 +77,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "click-header"): void;
   (e: "select-table", schema: SchemaMetadata, table: TableMetadata): void;
-  (
-    event: "alter-schema",
-    params: { databaseId: string; schema: string; table: string }
-  ): void;
 }>();
 
+const { events: editorEvents } = useSQLEditorContext();
 const currentUser = useCurrentUserV1();
 const sqlEditorStore = useSQLEditorStore();
 

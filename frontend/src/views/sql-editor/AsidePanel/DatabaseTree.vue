@@ -69,7 +69,7 @@ import {
   CONNECTION_TREE_DELIMITER,
   useDBSchemaV1Store,
 } from "@/store";
-import type { ConnectionAtom, CoreTabInfo, DatabaseId } from "@/types";
+import type { ConnectionAtom, CoreTabInfo } from "@/types";
 import {
   ConnectionTreeMode,
   ConnectionTreeState,
@@ -105,11 +105,7 @@ const props = defineProps<{
   searchPattern?: string;
 }>();
 
-const emit = defineEmits<{
-  (
-    event: "alter-schema",
-    params: { databaseId: DatabaseId; schema: string; table: string }
-  ): void;
+defineEmits<{
   (event: "update:search-pattern", keyword: string): void;
 }>();
 
@@ -122,7 +118,8 @@ const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUserV1 = useCurrentUserV1();
 const sqlEditorStore = useSQLEditorStore();
-const { selectedDatabaseSchemaByDatabaseName } = useSQLEditorContext();
+const { selectedDatabaseSchemaByDatabaseName, events: editorEvents } =
+  useSQLEditorContext();
 
 const mounted = useMounted();
 const treeRef = ref<InstanceType<typeof NTree>>();
@@ -301,8 +298,8 @@ const handleSelect = (key: string) => {
   }
 
   if (key === "alter-schema") {
-    emit("alter-schema", {
-      databaseId: option.item.id,
+    editorEvents.emit("alter-schema", {
+      databaseUID: option.item.id,
       schema: "",
       table: "",
     });

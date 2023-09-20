@@ -9,6 +9,11 @@ import {
 
 type SQLEditorEvents = Emittery<{
   "save-sheet": { title: string };
+  "alter-schema": {
+    databaseUID: string;
+    schema: string;
+    table: string;
+  };
 }>;
 
 export type SelectedDatabaseSchema = {
