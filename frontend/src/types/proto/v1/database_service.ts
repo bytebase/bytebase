@@ -207,7 +207,7 @@ export interface DiffSchemaRequest {
   /**
    * The name of the database or change history.
    * Format:
-   * databse: instances/{instance}/databases/{database}
+   * database: instances/{instance}/databases/{database}
    * change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
    */
   name: string;
