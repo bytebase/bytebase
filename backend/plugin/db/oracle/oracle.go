@@ -197,15 +197,11 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 	return util.RunStatement(ctx, parser.Oracle, conn, statement)
 }
 
-func (driver *Driver) getMajorVersion(ctx context.Context) (int, error) {
-	var banner string
-	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version").Scan(&banner); err != nil {
-		return 0, err
-	}
-	re := regexp.MustCompile(`(\d+)`)
-	match := re.FindStringSubmatch(banner)
-	if len(match) > 0 {
-		return strconv.Atoi(match[0])
-	}
-	return 0, errors.Errorf("failed to parse major version from banner: %s", banner)
+func (driver *Driver) getDatabaseVersion(ctx context.Context) (string, error) {
+    var version string
+    if err := driver.db.QueryRowContext(ctx, "SELECT version FROM v$instance").Scan(&version); err != nil {
+        return "", fmt.Errorf("database query error: %v", err)
+    }
+
+    return version, nil
 }
