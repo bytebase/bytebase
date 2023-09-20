@@ -1,4 +1,4 @@
-package server
+package gitops
 
 import (
 	"context"
@@ -55,11 +55,12 @@ const (
 	// issueNameTemplate should be consistent with UI issue names generated from the frontend except for the timestamp.
 	// Because we cannot get the correct timezone of the client here.
 	// Example: "[db-5] Alter schema: add an email column".
-	issueNameTemplate    = "[%s] %s: %s"
-	sdlIssueNameTemplate = "[%s] %s"
+	issueNameTemplate      = "[%s] %s: %s"
+	sdlIssueNameTemplate   = "[%s] %s"
+	batchIssueNameTemplate = "%s: %s"
 )
 
-func (s *Server) registerWebhookRoutes(g *echo.Group) {
+func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
@@ -714,7 +715,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapperContent map[string]string, commitID string, repoInfo *repoInfo) (map[string][]advisor.Advice, error) {
+func (s *Service) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapperContent map[string]string, commitID string, repoInfo *repoInfo) (map[string][]advisor.Advice, error) {
 	if len(mybatisMapperContent) == 0 {
 		return map[string][]advisor.Advice{}, nil
 	}
@@ -766,7 +767,7 @@ func (s *Server) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapp
 	return sqlCheckAdvices, nil
 }
 
-func (s *Server) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybatisMapperXMLFileDatum) ([]advisor.Advice, error) {
+func (s *Service) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybatisMapperXMLFileDatum) ([]advisor.Advice, error) {
 	var result []advisor.Advice
 	var environmentIDs []string
 	// If the configuration file is found, we extract the environment from the configuration file.
@@ -852,7 +853,7 @@ func (s *Server) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybat
 	return result, nil
 }
 
-func (s *Server) sqlAdviceForSQLFiles(
+func (s *Service) sqlAdviceForSQLFiles(
 	ctx context.Context,
 	repoInfoList []*repoInfo,
 	prFiles []*vcs.PullRequestFile,
@@ -908,7 +909,7 @@ func (s *Server) sqlAdviceForSQLFiles(
 	return sqlCheckAdvice
 }
 
-func (s *Server) sqlAdviceForFile(
+func (s *Service) sqlAdviceForFile(
 	ctx context.Context,
 	fileInfo fileInfo,
 	externalURL string,
@@ -1059,7 +1060,7 @@ type repoInfo struct {
 	vcs        *store.ExternalVersionControlMessage
 }
 
-func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRepositoryID string, filter repositoryFilter) ([]*repoInfo, error) {
+func (s *Service) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRepositoryID string, filter repositoryFilter) ([]*repoInfo, error) {
 	repos, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
@@ -1135,7 +1136,7 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 	return filteredRepos, nil
 }
 
-func (*Server) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
+func (*Service) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
 	branch, err := parseBranchNameFromRefs(pushEventRef)
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid ref: %s", pushEventRef)).SetInternal(err)
@@ -1183,7 +1184,7 @@ func parseBranchNameFromRefs(ref string) (string, error) {
 	return ref[len(expectedPrefix):], nil
 }
 
-func (s *Server) processPushEvent(ctx context.Context, repoInfoList []*repoInfo, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
+func (s *Service) processPushEvent(ctx context.Context, repoInfoList []*repoInfo, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
 	if len(repoInfoList) == 0 {
 		return nil, errors.Errorf("empty repository list")
 	}
@@ -1263,7 +1264,7 @@ func (s *Server) processPushEvent(ctx context.Context, repoInfoList []*repoInfo,
 // In that case, the commits in the push event contains files which are not added in this PR/MR.
 // We use the compare API to get the file diffs and filter files by the diffs.
 // TODO(dragonly): generate distinct file change list from the commits diff instead of filter.
-func (s *Server) filterFilesByCommitsDiff(
+func (s *Service) filterFilesByCommitsDiff(
 	ctx context.Context,
 	repoInfo *repoInfo,
 	distinctFileList []vcs.DistinctFileItem,
@@ -1434,11 +1435,12 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.M
 // It returns "created=true" when new issue(s) has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
+func (s *Service) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
 			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
 		}
+		return s.processFilesInBatchProject(ctx, pushEvent, repoInfo, fileInfoList)
 	}
 
 	var migrationDetailList []*api.MigrationDetail
@@ -1506,6 +1508,54 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	return fmt.Sprintf("Created issue %q from push event", strings.Join(createdIssueList, ",")), true, activityCreateList, nil
 }
 
+// processFilesInBatchProject creates issues for a batch project.
+func (s *Service) processFilesInBatchProject(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
+	var activityCreateList []*store.ActivityMessage
+	var createdIssueList []string
+
+	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
+	for _, fileInfo := range fileInfoList {
+		if fileInfo.fType == fileTypeSchema {
+			if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
+				// Create one issue per schema file for SDL project.
+				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repoInfo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
+				activityCreateList = append(activityCreateList, activityCreateListForFile...)
+				if len(migrationDetailListForFile) != 0 {
+					databaseName := fileInfo.migrationInfo.Database
+					issueName := fmt.Sprintf(sdlIssueNameTemplate, databaseName, "Alter schema")
+					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
+					if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
+						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
+					}
+					createdIssueList = append(createdIssueList, issueName)
+				}
+			} else {
+				slog.Debug("Ignored schema file for non-SDL project", slog.String("fileName", fileInfo.item.FileName), slog.String("type", string(fileInfo.item.ItemType)))
+			}
+		} else { // fileInfo.fType == fileTypeMigration
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repoInfo, pushEvent, fileInfo)
+			if len(migrationDetailListForFile) != 1 {
+				slog.Error("Unexpected number of file number")
+			}
+			migrationDetail := migrationDetailListForFile[0]
+			activityCreateList = append(activityCreateList, activityCreateListForFile...)
+			migrateType := "Change data"
+			if migrationDetail.MigrationType == db.Migrate {
+				migrateType = "Alter schema"
+			}
+			description := strings.ReplaceAll(fileInfoList[0].migrationInfo.Description, "_", " ")
+			issueName := fmt.Sprintf(batchIssueNameTemplate, migrateType, description)
+			issueDescription := fmt.Sprintf("By VCS file: %s\n", fileInfo.item.FileName)
+			if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
+				return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
+			}
+			createdIssueList = append(createdIssueList, issueName)
+		}
+	}
+
+	return fmt.Sprintf("Created issue %q from push event", strings.Join(createdIssueList, ",")), true, activityCreateList, nil
+}
+
 func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 	var ret []fileInfo
 	ret = append(ret, fileInfoList...)
@@ -1526,7 +1576,7 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 	return ret
 }
 
-func (s *Server) createIssueFromMigrationDetailsV2(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*api.MigrationDetail) error {
+func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*api.MigrationDetail) error {
 	var steps []*v1pb.Plan_Step
 	if len(migrationDetailList) == 1 && migrationDetailList[0].DatabaseID == 0 {
 		migrationDetail := migrationDetailList[0]
@@ -1659,7 +1709,7 @@ func getChangeType(migrationType db.MigrationType) v1pb.Plan_ChangeDatabaseConfi
 	return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 }
 
-func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
+func (s *Service) getIssueCreatorID(ctx context.Context, email string) int {
 	creatorID := api.SystemBotID
 	if email != "" {
 		committerPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
@@ -1679,7 +1729,7 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 // findProjectDatabases finds the list of databases with given name in the
 // project. If the environmentResourceID is not empty, it will be used as a filter condition
 // for the result list.
-func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, environmentResourceID string) ([]*store.DatabaseMessage, error) {
+func (s *Service) findProjectDatabases(ctx context.Context, projectID int, dbName, environmentResourceID string) ([]*store.DatabaseMessage, error) {
 	// Retrieve the current schema from the database
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 	if err != nil {
@@ -1779,7 +1829,7 @@ func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file s
 }
 
 // readFileContent reads the content of the given file from the given repository.
-func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, file string) (string, error) {
+func (s *Service) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, file string) (string, error) {
 	// Retrieve the latest AccessToken and RefreshToken as the previous
 	// ReadFileContent call may have updated the stored token pair. ReadFileContent
 	// will fetch and store the new token pair if the existing token pair has
@@ -1825,7 +1875,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 
 // prepareIssueFromSDLFile returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*store.ActivityMessage) {
+func (s *Service) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*store.ActivityMessage) {
 	dbName := schemaInfo.Database
 	if dbName == "" && repoInfo.project.TenantMode == api.TenantModeDisabled {
 		slog.Debug("Ignored schema file without a database name", slog.String("file", file))
@@ -1889,7 +1939,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo
 
 // prepareIssueFromFile returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromFile(
+func (s *Service) prepareIssueFromFile(
 	ctx context.Context,
 	repoInfo *repoInfo,
 	pushEvent vcs.PushEvent,
@@ -2046,7 +2096,7 @@ func (s *Server) prepareIssueFromFile(
 	return nil, nil
 }
 
-func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases []*store.DatabaseMessage, fileName, schemaVersion, statement string, pushEvent vcs.PushEvent) error {
+func (s *Service) tryUpdateTasksFromModifiedFile(ctx context.Context, databases []*store.DatabaseMessage, fileName, schemaVersion, statement string, pushEvent vcs.PushEvent) error {
 	// For modified files, we try to update the existing issue's statement.
 	for _, database := range databases {
 		taskList, err := s.store.ListTasks(ctx, &api.TaskFind{
@@ -2446,7 +2496,7 @@ type mybatisMapperXMLFileDatum struct {
 //	repo: the repository will be list file tree and get file content from.
 //	commitID: the commitID is the snapshot of the file tree and file content.
 //	mapperFiles: the map of the mybatis mapper XML file path and content.
-func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *repoInfo, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
+func (s *Service) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *repoInfo, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
 	if len(mapperFiles) == 0 {
 		return []*mybatisMapperXMLFileDatum{}, nil
 	}
