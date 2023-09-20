@@ -61,7 +61,7 @@ const (
 	nullRoutineStmtFmt = "" +
 		"--\n" +
 		"-- %s structure for `%s`\n" +
-		"-- NULL statement because user does not have sufficient permissions\n" +
+		"-- NULL statement because user has insufficient permissions.\n" +
 		"--\n"
 	eventStmtFmt = "" +
 		"--\n" +
