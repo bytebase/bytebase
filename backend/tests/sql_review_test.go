@@ -467,8 +467,6 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 		a.NotNil(result)
 		a.Len(result.Results, 1)
 		a.Equal(v1pb.PlanCheckRun_Result_SUCCESS, result.Results[0].Status)
-		rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-		a.NoError(err)
 		issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 			Parent: project.Name,
 			Issue: &v1pb.Issue{
@@ -476,10 +474,11 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 				Title:       fmt.Sprintf("change database %s", database.Name),
 				Description: fmt.Sprintf("change database %s", database.Name),
 				Plan:        plan.Name,
-				Rollout:     rollout.Name,
 				Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 			},
 		})
+		a.NoError(err)
+		rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 		a.NoError(err)
 		time.Sleep(time.Second)
 		err = ctl.waitRollout(ctx, issue.Name, rollout.Name)

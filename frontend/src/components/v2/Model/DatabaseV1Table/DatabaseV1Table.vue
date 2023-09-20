@@ -150,7 +150,6 @@ import {
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit/types";
-import { getScrollParent } from "@/plugins/demo/utils";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
@@ -160,6 +159,7 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
+import { getScrollParent } from "@/utils";
 import {
   databaseV1Slug,
   isDatabaseV1Queryable,

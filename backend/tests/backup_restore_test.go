@@ -67,8 +67,6 @@ func TestRestoreToNewDatabase(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-	a.NoError(err)
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
@@ -76,10 +74,11 @@ func TestRestoreToNewDatabase(t *testing.T) {
 			Title:       fmt.Sprintf("restore database %s", database.Name),
 			Description: fmt.Sprintf("restore database %s", database.Name),
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
 	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
@@ -160,8 +159,6 @@ func TestPITRGeneral(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-	a.NoError(err)
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
@@ -169,10 +166,11 @@ func TestPITRGeneral(t *testing.T) {
 			Title:       "restore database",
 			Description: "restore database",
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
 
 	// Restore stage.
@@ -242,8 +240,6 @@ func TestPITRDropDatabase(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-	a.NoError(err)
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
@@ -251,10 +247,11 @@ func TestPITRDropDatabase(t *testing.T) {
 			Title:       "restore database",
 			Description: "restore database",
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
 
 	// Restore stage.
@@ -308,8 +305,6 @@ func TestPITRTwice(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-	a.NoError(err)
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
@@ -317,10 +312,11 @@ func TestPITRTwice(t *testing.T) {
 			Title:       "restore database",
 			Description: "restore database",
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
 
 	// Restore stage.
@@ -380,8 +376,6 @@ func TestPITRTwice(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err = ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-	a.NoError(err)
 	issue, err = ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
@@ -389,10 +383,11 @@ func TestPITRTwice(t *testing.T) {
 			Title:       "restore database",
 			Description: "restore database",
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
+	a.NoError(err)
+	rollout, err = ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
 
 	// Restore stage.
@@ -480,8 +475,6 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-	a.NoError(err)
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
@@ -489,10 +482,11 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 			Title:       "restore database",
 			Description: "restore database",
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
 
 	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
@@ -539,8 +533,6 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-	a.NoError(err)
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
@@ -548,10 +540,11 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 			Title:       "restore database",
 			Description: "restore database",
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
+	a.NoError(err)
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	a.NoError(err)
 
 	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
