@@ -27,11 +27,11 @@ export interface WorkspaceProfileSetting {
   /** The webhook URL for the GitOps workflow. */
   gitopsWebhookUrl: string;
   /** The duration for token. */
-  tokenDuration?:
+  tokenDuration:
     | Duration
     | undefined;
   /** The setting of custom announcement */
-  announcement?: Announcement | undefined;
+  announcement: Announcement | undefined;
 }
 
 export interface Announcement {
@@ -101,9 +101,9 @@ export interface WorkspaceApprovalSetting {
 }
 
 export interface WorkspaceApprovalSetting_Rule {
-  expression?: ParsedExpr | undefined;
-  template?: ApprovalTemplate | undefined;
-  condition?: Expr | undefined;
+  expression: ParsedExpr | undefined;
+  template: ApprovalTemplate | undefined;
+  condition: Expr | undefined;
 }
 
 export interface ExternalApprovalSetting {
@@ -247,7 +247,7 @@ export interface SchemaTemplateSetting_FieldTemplate {
   id: string;
   engine: Engine;
   category: string;
-  column?: ColumnMetadata | undefined;
+  column: ColumnMetadata | undefined;
 }
 
 export interface SchemaTemplateSetting_ColumnType {
@@ -292,7 +292,7 @@ export interface DataClassificationSetting_DataClassificationConfig_DataClassifi
 
 export interface DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
   key: string;
-  value?: DataClassificationSetting_DataClassificationConfig_DataClassification | undefined;
+  value: DataClassificationSetting_DataClassificationConfig_DataClassification | undefined;
 }
 
 export interface SemanticTypesSetting {

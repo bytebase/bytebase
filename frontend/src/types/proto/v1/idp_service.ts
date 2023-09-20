@@ -134,7 +134,7 @@ export interface ListIdentityProvidersResponse {
 
 export interface CreateIdentityProviderRequest {
   /** The identity provider to create. */
-  identityProvider?:
+  identityProvider:
     | IdentityProvider
     | undefined;
   /**
@@ -154,11 +154,11 @@ export interface UpdateIdentityProviderRequest {
    * The identity provider's `name` field is used to identify the identity provider to update.
    * Format: idps/{identity_provider}
    */
-  identityProvider?:
+  identityProvider:
     | IdentityProvider
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface DeleteIdentityProviderRequest {
@@ -179,7 +179,7 @@ export interface UndeleteIdentityProviderRequest {
 
 export interface TestIdentityProviderRequest {
   /** The identity provider to test connection including uncreated. */
-  identityProvider?: IdentityProvider | undefined;
+  identityProvider: IdentityProvider | undefined;
   oauth2Context?: OAuth2IdentityProviderTestRequestContext | undefined;
 }
 
@@ -203,7 +203,7 @@ export interface IdentityProvider {
   title: string;
   domain: string;
   type: IdentityProviderType;
-  config?: IdentityProviderConfig | undefined;
+  config: IdentityProviderConfig | undefined;
 }
 
 export interface IdentityProviderConfig {
@@ -220,7 +220,7 @@ export interface OAuth2IdentityProviderConfig {
   clientId: string;
   clientSecret: string;
   scopes: string[];
-  fieldMapping?: FieldMapping | undefined;
+  fieldMapping: FieldMapping | undefined;
   skipTlsVerify: boolean;
   authStyle: OAuth2AuthStyle;
 }
@@ -231,7 +231,7 @@ export interface OIDCIdentityProviderConfig {
   clientId: string;
   clientSecret: string;
   scopes: string[];
-  fieldMapping?: FieldMapping | undefined;
+  fieldMapping: FieldMapping | undefined;
   skipTlsVerify: boolean;
   authStyle: OAuth2AuthStyle;
 }
@@ -272,7 +272,7 @@ export interface LDAPIdentityProviderConfig {
    * FieldMapping is the mapping of the user attributes returned by the LDAP
    * server.
    */
-  fieldMapping?: FieldMapping | undefined;
+  fieldMapping: FieldMapping | undefined;
 }
 
 /**

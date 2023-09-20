@@ -180,7 +180,7 @@ export function activityIssueCommentCreatePayload_ApprovalEvent_StatusToJSON(
 }
 
 export interface ActivityIssueApprovalNotifyPayload {
-  approvalStep?: ApprovalStep | undefined;
+  approvalStep: ApprovalStep | undefined;
 }
 
 function createBaseActivityIssueCreatePayload(): ActivityIssueCreatePayload {

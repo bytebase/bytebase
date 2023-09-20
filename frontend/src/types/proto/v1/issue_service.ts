@@ -68,7 +68,7 @@ export interface CreateIssueRequest {
    */
   parent: string;
   /** The issue to create. */
-  issue?: Issue | undefined;
+  issue: Issue | undefined;
 }
 
 export interface ListIssuesRequest {
@@ -114,11 +114,11 @@ export interface UpdateIssueRequest {
    * The issue's `name` field is used to identify the issue to update.
    * Format: projects/{project}/issues/{issue}
    */
-  issue?:
+  issue:
     | Issue
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface SearchIssuesRequest {
@@ -259,8 +259,8 @@ export interface Issue {
   subscribers: string[];
   /** Format: users/hello@world.com */
   creator: string;
-  createTime?: Date | undefined;
-  updateTime?:
+  createTime: Date | undefined;
+  updateTime:
     | Date
     | undefined;
   /**
@@ -276,7 +276,7 @@ export interface Issue {
    */
   rollout: string;
   /** Used if the issue type is GRANT_REQUEST. */
-  grantRequest?: GrantRequest | undefined;
+  grantRequest: GrantRequest | undefined;
 }
 
 export enum Issue_Type {
@@ -381,12 +381,12 @@ export interface GrantRequest {
    * Format: users/{email}.
    */
   user: string;
-  condition?: Expr | undefined;
-  expiration?: Duration | undefined;
+  condition: Expr | undefined;
+  expiration: Duration | undefined;
 }
 
 export interface ApprovalTemplate {
-  flow?: ApprovalFlow | undefined;
+  flow: ApprovalFlow | undefined;
   title: string;
   description: string;
   /**
@@ -562,7 +562,7 @@ export interface CreateIssueCommentRequest {
    * Format: projects/{project}/issues/{issue}
    */
   parent: string;
-  issueComment?: IssueComment | undefined;
+  issueComment: IssueComment | undefined;
 }
 
 export interface UpdateIssueCommentRequest {
@@ -571,11 +571,11 @@ export interface UpdateIssueCommentRequest {
    * Format: projects/{project}/issues/{issue}
    */
   parent: string;
-  issueComment?:
+  issueComment:
     | IssueComment
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface IssueComment {
@@ -583,8 +583,8 @@ export interface IssueComment {
   comment: string;
   /** TODO: use struct message instead. */
   payload: string;
-  createTime?: Date | undefined;
-  updateTime?: Date | undefined;
+  createTime: Date | undefined;
+  updateTime: Date | undefined;
 }
 
 function createBaseGetIssueRequest(): GetIssueRequest {
