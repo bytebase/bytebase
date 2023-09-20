@@ -9,8 +9,6 @@ import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 import dataSourceType from "./directives/data-source-type";
 import dayjs from "./plugins/dayjs";
-import mountDemoApp from "./plugins/demo";
-import "./plugins/demo/style.css";
 import highlight from "./plugins/highlight";
 import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
@@ -193,10 +191,4 @@ Promise.all([
   // Install router after the necessary data fetching is complete.
   app.use(router).use(highlight).use(i18n).use(NaiveUI);
   app.mount("#app");
-
-  // Try to mount demo vue app instance
-  const serverInfo = useActuatorV1Store().serverInfo;
-  if ((serverInfo && serverInfo.demoName) || isDev()) {
-    mountDemoApp();
-  }
 });

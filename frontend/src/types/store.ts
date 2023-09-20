@@ -1,4 +1,4 @@
-import { MigrationHistoryId, QueryHistory, OnboardingGuideType } from ".";
+import { MigrationHistoryId, QueryHistory } from ".";
 import { InstanceUser } from "./InstanceUser";
 import { Backup } from "./backup";
 import { Command } from "./common";
@@ -104,8 +104,4 @@ export interface SQLEditorState {
 
 export interface DebugState {
   isDebug: boolean;
-}
-
-export interface OnboardingGuideState {
-  guideName?: OnboardingGuideType;
 }
