@@ -1208,7 +1208,7 @@ type DiffSchemaRequest struct {
 
 	// The name of the database or change history.
 	// Format:
-	// databse: instances/{instance}/databases/{database}
+	// database: instances/{instance}/databases/{database}
 	// change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are assignable to Target:

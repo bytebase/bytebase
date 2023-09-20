@@ -1183,6 +1183,7 @@ type triggerMeta struct {
 	TriggerName      sql.NullString
 	TriggerType      sql.NullString
 	TriggerEvent     sql.NullString
+	TableOwner       sql.NullString
 	BaseObjectType   sql.NullString
 	TableName        sql.NullString
 	NestedColumn     sql.NullString
@@ -1587,7 +1588,9 @@ SELECT
 	CYCLE_FLAG,
 	ORDER_FLAG,
 	CACHE_SIZE,
-	LAST_NUMBER
+	LAST_NUMBER,
+	NULL,
+	NULL
 FROM
 	SYS.ALL_SEQUENCES
 WHERE
@@ -2255,6 +2258,7 @@ func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, _ i
 			&trigger.TriggerName,
 			&trigger.TriggerType,
 			&trigger.TriggerEvent,
+			&trigger.TableOwner,
 			&trigger.BaseObjectType,
 			&trigger.TableName,
 			&trigger.NestedColumn,

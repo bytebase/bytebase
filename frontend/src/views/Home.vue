@@ -2,7 +2,7 @@
   <div class="flex flex-col">
     <div class="px-2 flex items-center">
       <div class="flex-1 overflow-hidden">
-        <TabFilter v-model:value="state.tab" :items="tabItemList" />
+        <TabFilter v-model:value="tab" :items="tabItemList" />
       </div>
       <div class="p-0.5">
         <SearchBox
@@ -13,7 +13,7 @@
         />
       </div>
     </div>
-    <div v-show="state.tab === 'WAITING_APPROVAL'" class="mt-2">
+    <div v-show="tab === 'WAITING_APPROVAL'" class="mt-2">
       <WaitingForMyApprovalIssueTableV1
         v-if="hasCustomApprovalFeature"
         session-key="home-waiting-approval"
@@ -30,7 +30,7 @@
       </WaitingForMyApprovalIssueTableV1>
     </div>
 
-    <div v-show="state.tab === 'WAITING_ROLLOUT'" class="mt-2">
+    <div v-show="tab === 'WAITING_ROLLOUT'" class="mt-2">
       <!-- show OPEN Assigned issues with pageSize=10 -->
       <PagedIssueTableV1
         method="LIST"
@@ -54,7 +54,7 @@
       </PagedIssueTableV1>
     </div>
 
-    <div v-show="state.tab === 'CREATED'" class="mt-2">
+    <div v-show="tab === 'CREATED'" class="mt-2">
       <!-- show OPEN Created issues with pageSize=10 -->
       <PagedIssueTableV1
         session-key="home-created"
@@ -78,7 +78,7 @@
       </PagedIssueTableV1>
     </div>
 
-    <div v-show="state.tab === 'SUBSCRIBED'" class="mt-2">
+    <div v-show="tab === 'SUBSCRIBED'" class="mt-2">
       <!-- show OPEN Subscribed issues with pageSize=10 -->
       <PagedIssueTableV1
         session-key="home-subscribed"
@@ -102,7 +102,7 @@
       </PagedIssueTableV1>
     </div>
 
-    <div v-show="state.tab === 'RECENTLY_CLOSED'" class="mt-2">
+    <div v-show="tab === 'RECENTLY_CLOSED'" class="mt-2">
       <!-- show the first 5 DONE or CANCELED issues -->
       <!-- But won't show "Load more", since we have a "View all closed" link below -->
       <PagedIssueTableV1
@@ -201,6 +201,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useLocalStorage } from "@vueuse/core";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
@@ -229,7 +230,6 @@ type TabValue = typeof TABS[number];
 
 interface LocalState {
   searchText: string;
-  tab: TabValue;
   showTrialStartModal: boolean;
 }
 
@@ -239,10 +239,24 @@ const MAX_CLOSED_ISSUE = 5;
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
 const onboardingStateStore = useOnboardingStateStore();
+const tab = useLocalStorage<TabValue>(
+  "bb.home.issue-list-tab",
+  "WAITING_APPROVAL",
+  {
+    serializer: {
+      read(raw: TabValue) {
+        if (!TABS.includes(raw)) return "WAITING_APPROVAL";
+        return raw;
+      },
+      write(value) {
+        return value;
+      },
+    },
+  }
+);
 
 const state = reactive<LocalState>({
   searchText: "",
-  tab: "WAITING_APPROVAL",
   showTrialStartModal: false,
 });
 
@@ -301,10 +315,10 @@ const changeSearchText = (searchText: string) => {
 };
 
 watch(
-  [hasCustomApprovalFeature, () => state.tab],
+  [hasCustomApprovalFeature, tab],
   () => {
-    if (!hasCustomApprovalFeature.value && state.tab === "WAITING_APPROVAL") {
-      state.tab = "WAITING_ROLLOUT";
+    if (!hasCustomApprovalFeature.value && tab.value === "WAITING_APPROVAL") {
+      tab.value = "WAITING_ROLLOUT";
     }
   },
   { immediate: true }

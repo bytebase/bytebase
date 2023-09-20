@@ -838,16 +838,10 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
   @apply !pl-2 text-sm;
 }
 .schema-editor-database-tree .n-tree-node-indent {
-  @apply w-1;
+  width: 0.25rem;
 }
 .schema-editor-database-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;
-}
-.schema-editor-database-tree .n-tree-node-content__text {
-  @apply truncate mr-1;
-}
-.schema-editor-database-tree .n-tree-node-content__suffix {
-  @apply rounded-sm !hidden hover:opacity-80;
 }
 .schema-editor-database-tree
   .n-tree-node-wrapper:hover
