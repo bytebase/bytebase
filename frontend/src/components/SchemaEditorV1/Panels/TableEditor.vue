@@ -329,13 +329,7 @@ const parentResouce = computed(() => {
   )!;
 });
 const engine = computed(() => {
-  if (schemaEditorV1Store.resourceType === "branch") {
-    return (parentResouce.value as any).branch.engine;
-  } else if (schemaEditorV1Store.resourceType === "database") {
-    return (parentResouce.value as any).database.instanceEntity.engine;
-  } else {
-    return Engine.MYSQL;
-  }
+  return schemaEditorV1Store.getCurrentEngine(currentTab.value.parentName);
 });
 const readonly = computed(() => schemaEditorV1Store.readonly);
 const project = computed(() => schemaEditorV1Store.project);
