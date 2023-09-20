@@ -12,14 +12,12 @@
         <DatabaseTree
           key="sql-editor-database-tree"
           v-model:search-pattern="searchPattern"
-          @alter-schema="$emit('alter-schema', $event)"
         />
       </NTabPane>
       <NTabPane name="instances" :tab="$t('common.instances')">
         <DatabaseTree
           key="sql-editor-database-tree"
           v-model:search-pattern="searchPattern"
-          @alter-schema="$emit('alter-schema', $event)"
         />
       </NTabPane>
     </NTabs>
@@ -27,7 +25,6 @@
       <DatabaseTree
         key="sql-editor-database-tree"
         v-model:search-pattern="searchPattern"
-        @alter-schema="$emit('alter-schema', $event)"
       />
     </div>
   </div>
@@ -40,13 +37,6 @@ import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
 import { ConnectionTreeMode } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import DatabaseTree from "./DatabaseTree.vue";
-
-defineEmits<{
-  (
-    event: "alter-schema",
-    params: { databaseId: string; schema: string; table: string }
-  ): void;
-}>();
 
 const currentUserV1 = useCurrentUserV1();
 const connectionTreeStore = useConnectionTreeStore();
