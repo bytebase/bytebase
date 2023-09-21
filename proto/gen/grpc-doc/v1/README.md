@@ -178,6 +178,7 @@
     - [TableMetadataConfig](#bytebase-v1-TableMetadataConfig)
     - [TaskMetadata](#bytebase-v1-TaskMetadata)
     - [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest)
+    - [UpdateDatabaseMetadataConfigRequest](#bytebase-v1-UpdateDatabaseMetadataConfigRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
@@ -3244,6 +3245,24 @@ TableMetadata is the metadata for tables.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | setting | [BackupSetting](#bytebase-v1-BackupSetting) |  | The database backup setting to update. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateDatabaseMetadataConfigRequest"></a>
+
+### UpdateDatabaseMetadataConfigRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database_metadata_config | [DatabaseMetadataConfig](#bytebase-v1-DatabaseMetadataConfig) |  | The database metadata config to update.
+
+The database_metadata_config&#39;s `name` field is used to identify the database metadata config to update. Format: instances/{instance}/databases/{database}/metadataConfig |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
 

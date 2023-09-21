@@ -201,6 +201,20 @@ export interface GetDatabaseMetadataConfigRequest {
   name: string;
 }
 
+export interface UpdateDatabaseMetadataConfigRequest {
+  /**
+   * The database metadata config to update.
+   *
+   * The database_metadata_config's `name` field is used to identify the database metadata config to update.
+   * Format: instances/{instance}/databases/{database}/metadataConfig
+   */
+  databaseMetadataConfig:
+    | DatabaseMetadataConfig
+    | undefined;
+  /** The list of fields to update. */
+  updateMask: string[] | undefined;
+}
+
 export interface GetDatabaseSchemaRequest {
   /**
    * The name of the database to retrieve schema.
@@ -2165,6 +2179,84 @@ export const GetDatabaseMetadataConfigRequest = {
   fromPartial(object: DeepPartial<GetDatabaseMetadataConfigRequest>): GetDatabaseMetadataConfigRequest {
     const message = createBaseGetDatabaseMetadataConfigRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateDatabaseMetadataConfigRequest(): UpdateDatabaseMetadataConfigRequest {
+  return { databaseMetadataConfig: undefined, updateMask: undefined };
+}
+
+export const UpdateDatabaseMetadataConfigRequest = {
+  encode(message: UpdateDatabaseMetadataConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.databaseMetadataConfig !== undefined) {
+      DatabaseMetadataConfig.encode(message.databaseMetadataConfig, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDatabaseMetadataConfigRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateDatabaseMetadataConfigRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databaseMetadataConfig = DatabaseMetadataConfig.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateDatabaseMetadataConfigRequest {
+    return {
+      databaseMetadataConfig: isSet(object.databaseMetadataConfig)
+        ? DatabaseMetadataConfig.fromJSON(object.databaseMetadataConfig)
+        : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateDatabaseMetadataConfigRequest): unknown {
+    const obj: any = {};
+    message.databaseMetadataConfig !== undefined && (obj.databaseMetadataConfig = message.databaseMetadataConfig
+      ? DatabaseMetadataConfig.toJSON(message.databaseMetadataConfig)
+      : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateDatabaseMetadataConfigRequest>): UpdateDatabaseMetadataConfigRequest {
+    return UpdateDatabaseMetadataConfigRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<UpdateDatabaseMetadataConfigRequest>): UpdateDatabaseMetadataConfigRequest {
+    const message = createBaseUpdateDatabaseMetadataConfigRequest();
+    message.databaseMetadataConfig =
+      (object.databaseMetadataConfig !== undefined && object.databaseMetadataConfig !== null)
+        ? DatabaseMetadataConfig.fromPartial(object.databaseMetadataConfig)
+        : undefined;
+    message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };

@@ -253,6 +253,17 @@ message GetDatabaseMetadataConfigRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message UpdateDatabaseMetadataConfigRequest {
+  // The database metadata config to update.
+  //
+  // The database_metadata_config's `name` field is used to identify the database metadata config to update.
+  // Format: instances/{instance}/databases/{database}/metadataConfig
+  DatabaseMetadataConfig database_metadata_config = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
 message GetDatabaseSchemaRequest {
   // The name of the database to retrieve schema.
   // Format: instances/{instance}/databases/{database}/schema
