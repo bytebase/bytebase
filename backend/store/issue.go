@@ -389,11 +389,10 @@ type UpdateIssueMessage struct {
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
-	UID                *int
-	ProjectResourceID  *string
-	InstanceResourceID *string
-	PlanUID            *int64
-	PipelineID         *int
+	UID               *int
+	ProjectResourceID *string
+	PlanUID           *int64
+	PipelineID        *int
 	// Find issues where principalID is either creator, assignee or subscriber.
 	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
@@ -406,6 +405,10 @@ type FindIssueMessage struct {
 
 	StatusList []api.IssueStatus
 	TaskTypes  *[]api.TaskType
+	// Any of the task in the issue changes the instance with InstanceResourceID.
+	InstanceResourceID *string
+	// Any of the task in the issue changes the database with DatabaseUID.
+	DatabaseUID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit  *int
 	Offset *int
@@ -687,6 +690,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.InstanceResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task LEFT JOIN instance ON instance.id = task.instance_id WHERE task.pipeline_id = issue.pipeline_id AND instance.resource_id = $%d)", len(args)+1)), append(args, *v)
+	}
+	if v := find.DatabaseUID; v != nil {
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.database_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.PrincipalID; v != nil {
 		if find.CreatorID != nil || find.AssigneeID != nil || find.SubscriberID != nil {
