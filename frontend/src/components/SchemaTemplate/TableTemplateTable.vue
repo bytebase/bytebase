@@ -6,25 +6,13 @@
     class="border"
     @click-row="clickRow"
   >
-    <template #item="{ item }: { item: SchemaTemplateSetting_FieldTemplate }">
+    <template #item="{ item }: { item: SchemaTemplateSetting_TableTemplate }">
       <div class="bb-grid-cell flex justify-start items-center">
         <EngineIcon :engine="item.engine" custom-class="ml-0 mr-1" />
-        {{ item.column?.name }}
-      </div>
-      <div class="bb-grid-cell flex gap-x-1">
-        <ClassificationLevelBadge
-          :classification="item.column?.classification"
-          :classification-config="classificationConfig"
-        />
+        {{ item.table?.name }}
       </div>
       <div class="bb-grid-cell">
-        {{ item.column?.type }}
-      </div>
-      <div class="bb-grid-cell">
-        {{ getDefaultValue(item.column) }}
-      </div>
-      <div class="bb-grid-cell">
-        {{ item.column?.comment }}
+        {{ item.table?.comment }}
       </div>
       <div class="bb-grid-cell flex items-center justify-start gap-x-5">
         <button
@@ -45,7 +33,7 @@
           </template>
 
           <div class="whitespace-nowrap">
-            {{ $t("common.delete") + ` '${item.column?.name}'?` }}
+            {{ $t("common.delete") + ` '${item.table?.name}'?` }}
           </div>
         </NPopconfirm>
       </div>
@@ -63,19 +51,18 @@ import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   SchemaTemplateSetting,
-  SchemaTemplateSetting_FieldTemplate,
+  SchemaTemplateSetting_TableTemplate,
 } from "@/types/proto/v1/setting_service";
-import { getDefaultValue } from "./utils";
 
 const props = defineProps<{
   engine?: Engine;
   readonly: boolean;
-  templateList: SchemaTemplateSetting_FieldTemplate[];
+  templateList: SchemaTemplateSetting_TableTemplate[];
 }>();
 
 const emit = defineEmits<{
-  (event: "view", item: SchemaTemplateSetting_FieldTemplate): void;
-  (event: "apply", item: SchemaTemplateSetting_FieldTemplate): void;
+  (event: "view", item: SchemaTemplateSetting_TableTemplate): void;
+  (event: "apply", item: SchemaTemplateSetting_TableTemplate): void;
 }>();
 
 const { t } = useI18n();
@@ -84,23 +71,8 @@ const settingStore = useSettingV1Store();
 const columnList = computed((): BBGridColumn[] => {
   return [
     {
-      title: t("schema-template.form.column-name"),
-      width: "auto",
-      class: "capitalize",
-    },
-    {
-      title: t("schema-template.classification.self"),
-      width: "auto",
-      class: "capitalize",
-    },
-    {
-      title: t("schema-template.form.column-type"),
-      width: "auto",
-      class: "capitalize",
-    },
-    {
-      title: t("schema-template.form.default-value"),
-      width: "auto",
+      title: t("schema-template.form.table-name"),
+      width: "15rem",
       class: "capitalize",
     },
     {
@@ -116,11 +88,11 @@ const columnList = computed((): BBGridColumn[] => {
   ];
 });
 
-const clickRow = (template: SchemaTemplateSetting_FieldTemplate) => {
+const clickRow = (template: SchemaTemplateSetting_TableTemplate) => {
   emit("apply", template);
 };
 
-const isRowClickable = (template: SchemaTemplateSetting_FieldTemplate) => {
+const isRowClickable = (template: SchemaTemplateSetting_TableTemplate) => {
   return template.engine === props.engine;
 };
 
@@ -134,9 +106,9 @@ const deleteTemplate = async (id: string) => {
     Object.assign(settingValue, setting.value.schemaTemplateSettingValue);
   }
 
-  const index = settingValue.fieldTemplates.findIndex((t) => t.id === id);
+  const index = settingValue.tableTemplates.findIndex((t) => t.id === id);
   if (index >= 0) {
-    pullAt(settingValue.fieldTemplates, index);
+    pullAt(settingValue.tableTemplates, index);
 
     await settingStore.upsertSetting({
       name: "bb.workspace.schema-template",
@@ -146,8 +118,4 @@ const deleteTemplate = async (id: string) => {
     });
   }
 };
-
-const classificationConfig = computed(() => {
-  return settingStore.classification[0];
-});
 </script>

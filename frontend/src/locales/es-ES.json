@@ -2845,6 +2845,7 @@
     "self": "Plantilla de esquema",
     "field-template": {
       "self": "Plantilla de campo",
+      "add": "Agregar plantilla de campo",
       "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
     },
     "column-type-restriction": {
@@ -2860,7 +2861,11 @@
         "one-allowed-type-per-line": "Un tipo permitido por línea"
       }
     },
-    "add-field": "Agregar plantilla de campo",
+    "table-template": {
+      "self": "Plantilla de tabla",
+      "add": "Agregar plantilla de tabla",
+      "description": "Puede predefinir la plantilla de tabla y luego aplicar la plantilla durante el cambio de esquema."
+    },
     "search-by-name-or-comment": "Buscar por nombre o comentario",
     "form": {
       "category": "Categoría",
@@ -2870,7 +2875,8 @@
       "column-type": "Tipo de columna",
       "default-value": "Valor por defecto",
       "comment": "Comentario",
-      "nullable": "Anulable"
+      "nullable": "Anulable",
+      "table-name": "Nombre de la tabla"
     },
     "classification": {
       "self": "Clasificación de datos",

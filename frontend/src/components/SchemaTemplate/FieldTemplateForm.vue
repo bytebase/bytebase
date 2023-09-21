@@ -56,6 +56,7 @@
                     type="radio"
                     class="btn mr-2"
                     :checked="state.engine === engine"
+                    :disabled="!allowEdit"
                   />
                   <EngineIcon
                     :engine="engine"
@@ -98,30 +99,20 @@
                 :classification="state.column?.classification"
                 :classification-config="classificationConfig"
               />
-              <div class="flex">
-                <template v-if="allowEdit">
-                  <button
-                    v-if="state.column?.classification"
-                    class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-                    @click.prevent="state.column!.classification = ''"
-                  >
-                    <heroicons-outline:x class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-                    @click.prevent="state.showClassificationDrawer = true"
-                  >
-                    <heroicons-outline:pencil class="w-4 h-4" />
-                  </button>
-                </template>
-                <template v-else>
-                  <input
-                    name="classification"
-                    type="text"
-                    class="textfield w-full"
-                    :disabled="true"
-                  />
-                </template>
+              <div v-if="allowEdit" class="flex">
+                <button
+                  v-if="state.column?.classification"
+                  class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                  @click.prevent="state.column!.classification = ''"
+                >
+                  <heroicons-outline:x class="w-4 h-4" />
+                </button>
+                <button
+                  class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                  @click.prevent="state.showClassificationDrawer = true"
+                >
+                  <heroicons-outline:pencil class="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -226,7 +217,7 @@
             {{ $t("common.cancel") }}
           </NButton>
           <NButton
-            v-if="!readonly && allowEdit"
+            v-if="allowEdit"
             :disabled="sumbitDisabled"
             type="primary"
             @click.prevent="sumbit"
@@ -248,7 +239,7 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual } from "lodash-es";
+import { isEqual, cloneDeep } from "lodash-es";
 import { computed, reactive } from "vue";
 import { DrawerContent } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
@@ -364,7 +355,10 @@ const sumbit = async () => {
 
   const settingValue = SchemaTemplateSetting.fromJSON({});
   if (setting?.value?.schemaTemplateSettingValue) {
-    Object.assign(settingValue, setting.value.schemaTemplateSettingValue);
+    Object.assign(
+      settingValue,
+      cloneDeep(setting.value.schemaTemplateSettingValue)
+    );
   }
 
   const index = settingValue.fieldTemplates.findIndex(
