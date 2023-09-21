@@ -151,26 +151,6 @@ func (s *Store) GetWorkspaceExternalApprovalSetting(ctx context.Context) (*store
 	return payload, nil
 }
 
-// GetSchemaTemplateSetting gets the schema template setting.
-func (s *Store) GetSchemaTemplateSetting(ctx context.Context) (*storepb.SchemaTemplateSetting, error) {
-	settingName := api.SettingSchemaTemplate
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name: &settingName,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
-	}
-	if setting == nil {
-		return &storepb.SchemaTemplateSetting{}, nil
-	}
-
-	payload := new(storepb.SchemaTemplateSetting)
-	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
-		return nil, err
-	}
-	return payload, nil
-}
-
 // GetDataClassificationSetting gets the data classification setting.
 func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.DataClassificationSetting, error) {
 	settingName := api.SettingDataClassification

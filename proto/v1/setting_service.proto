@@ -270,6 +270,18 @@ message SchemaTemplateSetting {
   }
 
   repeated ColumnType column_types = 2;
+
+  message TableTemplate {
+    string id = 1;
+
+    Engine engine = 2;
+
+    string category = 3;
+
+    TableMetadata table = 4;
+  }
+
+  repeated TableTemplate table_templates = 3;
 }
 
 message WorkspaceTrialSetting {
