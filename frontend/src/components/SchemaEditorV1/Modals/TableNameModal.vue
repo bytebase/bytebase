@@ -44,7 +44,6 @@ import {
 } from "@/types/proto/v1/database_service";
 import {
   SchemaEditorTabType,
-  convertColumnMetadataToColumn,
   convertTableMetadataToTable,
 } from "@/types/v1/schemaEditor";
 
@@ -116,8 +115,6 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (isCreatingTable.value) {
-    const table = TableMetadata.fromPartial({});
-    table.name = state.tableName;
     const column = ColumnMetadata.fromPartial({});
     column.name = "id";
     if (engine.value === Engine.POSTGRES) {
@@ -126,12 +123,14 @@ const handleConfirmButtonClick = async () => {
       column.type = "INT";
     }
     column.comment = "ID";
-    const columnEdit = convertColumnMetadataToColumn(column);
-    columnEdit.status = "created";
-    const tableEdit = convertTableMetadataToTable(table);
-    tableEdit.status = "created";
-    tableEdit.columnList.push(columnEdit);
-    tableEdit.primaryKey.columnIdList.push(columnEdit.id);
+    const table = TableMetadata.fromPartial({
+      name: state.tableName,
+      columns: [column],
+    });
+    const tableEdit = convertTableMetadataToTable(table, "created");
+    tableEdit.primaryKey.columnIdList.push(
+      ...tableEdit.columnList.map((col) => col.id)
+    );
     schema.tableList.push(tableEdit);
     schemaEditorV1Store.addTab({
       id: generateUniqueTabId(),
