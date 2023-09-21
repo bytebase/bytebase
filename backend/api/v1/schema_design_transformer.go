@@ -14,6 +14,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	pgSchemaEngine "github.com/bytebase/bytebase/backend/plugin/schema-engine/pg"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -31,6 +32,8 @@ func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) 
 		switch engine {
 		case v1pb.Engine_MYSQL:
 			return parseMySQLSchemaStringToDatabaseMetadata(schema)
+		case v1pb.Engine_POSTGRES:
+			return pgSchemaEngine.ParseToMetadata(schema)
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
 		}

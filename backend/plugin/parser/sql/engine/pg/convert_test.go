@@ -2224,13 +2224,29 @@ func TestUnconvertStmt(t *testing.T) {
 func TestCommentStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "COMMENT ON TABLE tech_book IS 'This is a comment.'",
+			stmt: "COMMENT ON TABLE public.tech_book IS 'This is a comment.'",
 			want: []ast.Node{&ast.CommentStmt{
+				Type:    ast.ObjectTypeTable,
+				Object:  &ast.TableDef{Schema: "public", Name: "tech_book"},
 				Comment: "This is a comment.",
 			}},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "COMMENT ON TABLE tech_book IS 'This is a comment.'",
+					Text:     "COMMENT ON TABLE public.tech_book IS 'This is a comment.'",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "COMMENT ON COLUMN public.tech_book.a IS 'This is a comment.'",
+			want: []ast.Node{&ast.CommentStmt{
+				Type:    ast.ObjectTypeColumn,
+				Object:  &ast.ColumnNameDef{Table: &ast.TableDef{Schema: "public", Name: "tech_book"}, ColumnName: "a"},
+				Comment: "This is a comment.",
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "COMMENT ON COLUMN public.tech_book.a IS 'This is a comment.'",
 					LastLine: 1,
 				},
 			},
