@@ -56,7 +56,7 @@ export interface CreateInstanceRoleRequest {
    */
   parent: string;
   /** The role to create. */
-  role?: InstanceRole | undefined;
+  role: InstanceRole | undefined;
 }
 
 export interface UpdateInstanceRoleRequest {
@@ -66,11 +66,11 @@ export interface UpdateInstanceRoleRequest {
    * The role's `name` and `instance` field is used to identify the role to update.
    * Format: instances/{instance}/roles/{role name}
    */
-  role?:
+  role:
     | InstanceRole
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface DeleteInstanceRoleRequest {

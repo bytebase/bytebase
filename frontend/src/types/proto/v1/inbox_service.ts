@@ -44,11 +44,11 @@ export interface GetInboxSummaryRequest {
 
 export interface UpdateInboxRequest {
   /** The inbox message to update. */
-  inboxMessage?:
+  inboxMessage:
     | InboxMessage
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface InboxMessage {
@@ -56,7 +56,7 @@ export interface InboxMessage {
   name: string;
   activityUid: string;
   status: InboxMessage_Status;
-  activity?: LogEntity | undefined;
+  activity: LogEntity | undefined;
 }
 
 export enum InboxMessage_Status {

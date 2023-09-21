@@ -8,8 +8,8 @@ export const protobufPackage = "bytebase.store";
 
 export interface SheetPayload {
   type: SheetPayload_Type;
-  vcsPayload?: SheetPayload_VCSPayload | undefined;
-  schemaDesign?: SheetPayload_SchemaDesign | undefined;
+  vcsPayload: SheetPayload_VCSPayload | undefined;
+  schemaDesign: SheetPayload_SchemaDesign | undefined;
 }
 
 /** Type of the SheetPayload. */
@@ -53,7 +53,7 @@ export interface SheetPayload_VCSPayload {
   author: string;
   lastCommitId: string;
   lastSyncTs: number;
-  pushEvent?: PushEvent | undefined;
+  pushEvent: PushEvent | undefined;
 }
 
 export interface SheetPayload_SchemaDesign {
@@ -68,7 +68,7 @@ export interface SheetPayload_SchemaDesign {
   /** The id of the baseline change history including the baseline change history.(optional) */
   baselineChangeHistoryId: string;
   /** The protection of the schema design. */
-  protection?: SheetPayload_SchemaDesign_Protection | undefined;
+  protection: SheetPayload_SchemaDesign_Protection | undefined;
 }
 
 export enum SheetPayload_SchemaDesign_Type {

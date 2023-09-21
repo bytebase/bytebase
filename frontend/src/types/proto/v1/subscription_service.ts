@@ -56,11 +56,11 @@ export interface GetFeatureMatrixRequest {
 }
 
 export interface UpdateSubscriptionRequest {
-  patch?: PatchSubscription | undefined;
+  patch: PatchSubscription | undefined;
 }
 
 export interface TrialSubscriptionRequest {
-  trial?: TrialSubscription | undefined;
+  trial: TrialSubscription | undefined;
 }
 
 export interface PatchSubscription {
@@ -75,8 +75,8 @@ export interface TrialSubscription {
 
 export interface Subscription {
   instanceCount: number;
-  expiresTime?: Date | undefined;
-  startedTime?: Date | undefined;
+  expiresTime: Date | undefined;
+  startedTime: Date | undefined;
   plan: PlanType;
   trialing: boolean;
   orgId: string;

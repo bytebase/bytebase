@@ -20,13 +20,13 @@ export interface SchemaDesign {
   /** The schema of schema design. AKA sheet's statement. */
   schema: string;
   /** The metadata of the current editing schema. */
-  schemaMetadata?:
+  schemaMetadata:
     | DatabaseMetadata
     | undefined;
   /** The baseline schema. */
   baselineSchema: string;
   /** The metadata of the baseline schema. */
-  baselineSchemaMetadata?:
+  baselineSchemaMetadata:
     | DatabaseMetadata
     | undefined;
   /** The database engine of the schema design. */
@@ -51,7 +51,7 @@ export interface SchemaDesign {
   /** The etag of the schema design. */
   etag: string;
   /** The protection of the schema design branch. */
-  protection?:
+  protection:
     | SchemaDesign_Protection
     | undefined;
   /**
@@ -65,11 +65,11 @@ export interface SchemaDesign {
    */
   updater: string;
   /** The timestamp when the schema design was created. */
-  createTime?:
+  createTime:
     | Date
     | undefined;
   /** The timestamp when the schema design was last updated. */
-  updateTime?: Date | undefined;
+  updateTime: Date | undefined;
 }
 
 export enum SchemaDesign_Type {
@@ -167,7 +167,7 @@ export interface CreateSchemaDesignRequest {
    * Format: project/{project}
    */
   parent: string;
-  schemaDesign?: SchemaDesign | undefined;
+  schemaDesign: SchemaDesign | undefined;
 }
 
 export interface UpdateSchemaDesignRequest {
@@ -177,11 +177,11 @@ export interface UpdateSchemaDesignRequest {
    * The schema design's `name` field is used to identify the schema design to update.
    * Format: projects/{project}/schemaDesigns/{schemaDesign}
    */
-  schemaDesign?:
+  schemaDesign:
     | SchemaDesign
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface MergeSchemaDesignRequest {
@@ -206,7 +206,7 @@ export interface ParseSchemaStringRequest {
 
 export interface ParseSchemaStringResponse {
   /** The metadata of the parsed schema. */
-  schemaMetadata?: DatabaseMetadata | undefined;
+  schemaMetadata: DatabaseMetadata | undefined;
 }
 
 export interface DeleteSchemaDesignRequest {
@@ -219,11 +219,11 @@ export interface DeleteSchemaDesignRequest {
 
 export interface DiffMetadataRequest {
   /** The metadata of the source schema. */
-  sourceMetadata?:
+  sourceMetadata:
     | DatabaseMetadata
     | undefined;
   /** The metadata of the target schema. */
-  targetMetadata?:
+  targetMetadata:
     | DatabaseMetadata
     | undefined;
   /** The database engine of the schema. */

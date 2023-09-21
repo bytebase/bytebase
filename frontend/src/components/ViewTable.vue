@@ -1,29 +1,29 @@
 <template>
-  <BBTable
+  <BBGrid
     :column-list="columnList"
     :data-source="viewList"
     :show-header="true"
-    :left-bordered="true"
-    :right-bordered="true"
     :row-clickable="false"
+    class="border"
   >
-    <template #body="{ rowData: view }">
-      <BBTableCell :left-padding="4" class="w-16">
+    <template #item="{ item: view }: BBGridRow<ViewMetadata>">
+      <div class="bb-grid-cell">
         {{ getViewName(view.name) }}
-      </BBTableCell>
-      <BBTableCell class="w-64">
+      </div>
+      <div class="bb-grid-cell break-all">
         {{ view.definition }}
-      </BBTableCell>
-      <BBTableCell class="w-8">
+      </div>
+      <div class="bb-grid-cell">
         {{ view.comment }}
-      </BBTableCell>
+      </div>
     </template>
-  </BBTable>
+  </BBGrid>
 </template>
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
 import { ComposedDatabase } from "@/types";
 import { ViewMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
@@ -55,15 +55,18 @@ const hasSchemaProperty = computed(() => {
   );
 });
 
-const columnList = computed(() => [
+const columnList = computed((): BBGridColumn[] => [
   {
     title: t("common.name"),
+    width: "minmax(auto, 1fr)",
   },
   {
     title: t("common.definition"),
+    width: "3fr",
   },
   {
     title: t("database.comment"),
+    width: "minmax(auto, 12rem)",
   },
 ]);
 
