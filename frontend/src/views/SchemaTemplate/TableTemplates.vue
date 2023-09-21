@@ -7,7 +7,7 @@
     <div v-if="!readonly" class="space-y-4">
       <div class="flex items-center justify-between gap-x-6">
         <div class="flex-1 textinfolabel">
-          {{ $t("schema-template.field-template.description") }}
+          {{ $t("schema-template.table-template.description") }}
         </div>
         <div>
           <NButton
@@ -15,7 +15,7 @@
             :disabled="!hasPermission"
             @click="createSchemaTemplate"
           >
-            {{ $t("schema-template.field-template.add") }}
+            {{ $t("schema-template.table-template.add") }}
           </NButton>
         </div>
       </div>
@@ -49,7 +49,7 @@
         @change-text="(val: string) => state.searchText = val"
       />
     </div>
-    <FieldTemplateView
+    <TableTemplateView
       :engine="engine"
       :readonly="!hasPermission || !!readonly"
       :template-list="filteredTemplateList"
@@ -58,9 +58,9 @@
     />
   </div>
   <Drawer :show="state.showDrawer" @close="state.showDrawer = false">
-    <FieldTemplateForm
+    <TableTemplateForm
       :readonly="!hasPermission || !!readonly"
-      :create="!state.template.column?.name"
+      :create="!state.template.table?.name"
       :template="state.template"
       @dismiss="state.showDrawer = false"
     />
@@ -80,12 +80,12 @@ import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer } from "@/components/v2";
 import { featureToRef, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import { TableMetadata } from "@/types/proto/v1/database_service";
+import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 import { useWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
-  template: SchemaTemplateSetting_FieldTemplate;
+  template: SchemaTemplateSetting_TableTemplate;
   showDrawer: boolean;
   showFeatureModal: boolean;
   searchText: string;
@@ -99,21 +99,17 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  (event: "apply", item: SchemaTemplateSetting_FieldTemplate): void;
+  (event: "apply", item: SchemaTemplateSetting_TableTemplate): void;
 }>();
 
-const initialTemplate = () => ({
+const initialTemplate = (): SchemaTemplateSetting_TableTemplate => ({
   id: uuidv1(),
   engine: props.engine ?? Engine.MYSQL,
   category: "",
-  column: ColumnMetadata.fromPartial({
+  table: TableMetadata.fromPartial({
     name: "",
-    type: "",
-    nullable: false,
     comment: "",
-    position: 0,
-    characterSet: "",
-    collation: "",
+    columns: [],
   }),
 });
 
@@ -145,7 +141,7 @@ const createSchemaTemplate = () => {
   state.showDrawer = true;
 };
 
-const editSchemaTemplate = (template: SchemaTemplateSetting_FieldTemplate) => {
+const editSchemaTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   state.template = template;
   state.showDrawer = true;
 };
@@ -162,7 +158,7 @@ const settingStore = useSettingV1Store();
 
 const schemaTemplateList = computed(() => {
   const setting = settingStore.getSettingByName("bb.workspace.schema-template");
-  return setting?.value?.schemaTemplateSettingValue?.fieldTemplates ?? [];
+  return setting?.value?.schemaTemplateSettingValue?.tableTemplates ?? [];
 });
 
 const countTemplateByEngine = (engine: Engine) => {
@@ -183,14 +179,14 @@ const filteredTemplateList = computed(() => {
 });
 
 const filterTemplateByKeyword = (
-  template: SchemaTemplateSetting_FieldTemplate
+  template: SchemaTemplateSetting_TableTemplate
 ) => {
   const keyword = state.searchText.trim().toLowerCase();
   if (!keyword) return true;
-  if (template.column?.name.toLowerCase().includes(keyword)) {
+  if (template.table?.name.toLowerCase().includes(keyword)) {
     return true;
   }
-  if (template.column?.comment.toLowerCase().includes(keyword)) {
+  if (template.table?.comment.toLowerCase().includes(keyword)) {
     return true;
   }
   return false;

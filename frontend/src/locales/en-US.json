@@ -2848,6 +2848,7 @@
     "self": "Schema template",
     "field-template": {
       "self": "Field Template",
+      "add": "Add field template",
       "description": "You can pre-define the field template, then apply the template during the schema change."
     },
     "column-type-restriction": {
@@ -2863,7 +2864,11 @@
         "one-allowed-type-per-line": "One allowed data type per line"
       }
     },
-    "add-field": "Add field template",
+    "table-template": {
+      "self": "Table Template",
+      "add": "Add table template",
+      "description": "You can pre-define the table template, then apply the template during the schema change."
+    },
     "search-by-name-or-comment": "Search by name or comment",
     "form": {
       "category": "Category",
@@ -2873,7 +2878,8 @@
       "column-type": "Column type",
       "default-value": "Default value",
       "comment": "Comment",
-      "nullable": "Nullable"
+      "nullable": "Nullable",
+      "table-name": "Table name"
     },
     "classification": {
       "self": "Data classification",

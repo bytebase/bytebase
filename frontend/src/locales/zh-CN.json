@@ -2841,7 +2841,8 @@
     "self": "Schema 模板",
     "field-template": {
       "self": "字段模板",
-      "description": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。"
+      "add": "新增字段模板",
+      "description": "预定义字段模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "column-type-restriction": {
       "self": "列类型约束",
@@ -2856,7 +2857,11 @@
         "one-allowed-type-per-line": "每行放一个允许的数据类型"
       }
     },
-    "add-field": "新增字段模板",
+    "table-template": {
+      "self": "表模板",
+      "add": "新增表模板",
+      "description": "预定义表模板，之后可以在变更或设计 Schema 时应用这些模板。"
+    },
     "search-by-name-or-comment": "根据名称或备注搜索",
     "form": {
       "category": "分类",
@@ -2866,7 +2871,8 @@
       "column-type": "字段类型",
       "default-value": "默认值",
       "comment": "备注",
-      "nullable": "可为空"
+      "nullable": "可为空",
+      "table-name": "表名"
     },
     "classification": {
       "self": "数据分类分级",
