@@ -4,7 +4,7 @@ import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
-import { ColumnMetadata } from "./database_service";
+import { ColumnMetadata, TableMetadata } from "./database_service";
 import { ApprovalTemplate } from "./issue_service";
 import { PlanType, planTypeFromJSON, planTypeToJSON } from "./subscription_service";
 
@@ -380,6 +380,7 @@ export interface ExternalApprovalSetting_Node {
 export interface SchemaTemplateSetting {
   fieldTemplates: SchemaTemplateSetting_FieldTemplate[];
   columnTypes: SchemaTemplateSetting_ColumnType[];
+  tableTemplates: SchemaTemplateSetting_TableTemplate[];
 }
 
 export interface SchemaTemplateSetting_FieldTemplate {
@@ -393,6 +394,13 @@ export interface SchemaTemplateSetting_ColumnType {
   engine: Engine;
   enabled: boolean;
   types: string[];
+}
+
+export interface SchemaTemplateSetting_TableTemplate {
+  id: string;
+  engine: Engine;
+  category: string;
+  table?: TableMetadata | undefined;
 }
 
 export interface WorkspaceTrialSetting {
@@ -2144,7 +2152,7 @@ export const ExternalApprovalSetting_Node = {
 };
 
 function createBaseSchemaTemplateSetting(): SchemaTemplateSetting {
-  return { fieldTemplates: [], columnTypes: [] };
+  return { fieldTemplates: [], columnTypes: [], tableTemplates: [] };
 }
 
 export const SchemaTemplateSetting = {
@@ -2154,6 +2162,9 @@ export const SchemaTemplateSetting = {
     }
     for (const v of message.columnTypes) {
       SchemaTemplateSetting_ColumnType.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    for (const v of message.tableTemplates) {
+      SchemaTemplateSetting_TableTemplate.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -2179,6 +2190,13 @@ export const SchemaTemplateSetting = {
 
           message.columnTypes.push(SchemaTemplateSetting_ColumnType.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.tableTemplates.push(SchemaTemplateSetting_TableTemplate.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2195,6 +2213,9 @@ export const SchemaTemplateSetting = {
         : [],
       columnTypes: Array.isArray(object?.columnTypes)
         ? object.columnTypes.map((e: any) => SchemaTemplateSetting_ColumnType.fromJSON(e))
+        : [],
+      tableTemplates: Array.isArray(object?.tableTemplates)
+        ? object.tableTemplates.map((e: any) => SchemaTemplateSetting_TableTemplate.fromJSON(e))
         : [],
     };
   },
@@ -2213,6 +2234,13 @@ export const SchemaTemplateSetting = {
     } else {
       obj.columnTypes = [];
     }
+    if (message.tableTemplates) {
+      obj.tableTemplates = message.tableTemplates.map((e) =>
+        e ? SchemaTemplateSetting_TableTemplate.toJSON(e) : undefined
+      );
+    } else {
+      obj.tableTemplates = [];
+    }
     return obj;
   },
 
@@ -2225,6 +2253,8 @@ export const SchemaTemplateSetting = {
     message.fieldTemplates = object.fieldTemplates?.map((e) => SchemaTemplateSetting_FieldTemplate.fromPartial(e)) ||
       [];
     message.columnTypes = object.columnTypes?.map((e) => SchemaTemplateSetting_ColumnType.fromPartial(e)) || [];
+    message.tableTemplates = object.tableTemplates?.map((e) => SchemaTemplateSetting_TableTemplate.fromPartial(e)) ||
+      [];
     return message;
   },
 };
@@ -2412,6 +2442,105 @@ export const SchemaTemplateSetting_ColumnType = {
     message.engine = object.engine ?? 0;
     message.enabled = object.enabled ?? false;
     message.types = object.types?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseSchemaTemplateSetting_TableTemplate(): SchemaTemplateSetting_TableTemplate {
+  return { id: "", engine: 0, category: "", table: undefined };
+}
+
+export const SchemaTemplateSetting_TableTemplate = {
+  encode(message: SchemaTemplateSetting_TableTemplate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
+    }
+    if (message.category !== "") {
+      writer.uint32(26).string(message.category);
+    }
+    if (message.table !== undefined) {
+      TableMetadata.encode(message.table, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaTemplateSetting_TableTemplate {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaTemplateSetting_TableTemplate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.category = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.table = TableMetadata.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaTemplateSetting_TableTemplate {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      category: isSet(object.category) ? String(object.category) : "",
+      table: isSet(object.table) ? TableMetadata.fromJSON(object.table) : undefined,
+    };
+  },
+
+  toJSON(message: SchemaTemplateSetting_TableTemplate): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.category !== undefined && (obj.category = message.category);
+    message.table !== undefined && (obj.table = message.table ? TableMetadata.toJSON(message.table) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaTemplateSetting_TableTemplate>): SchemaTemplateSetting_TableTemplate {
+    return SchemaTemplateSetting_TableTemplate.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaTemplateSetting_TableTemplate>): SchemaTemplateSetting_TableTemplate {
+    const message = createBaseSchemaTemplateSetting_TableTemplate();
+    message.id = object.id ?? "";
+    message.engine = object.engine ?? 0;
+    message.category = object.category ?? "";
+    message.table = (object.table !== undefined && object.table !== null)
+      ? TableMetadata.fromPartial(object.table)
+      : undefined;
     return message;
   },
 };
