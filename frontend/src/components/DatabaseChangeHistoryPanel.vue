@@ -3,26 +3,7 @@
     <div
       class="w-full flex flex-row justify-between items-center text-lg leading-6 font-medium text-main space-x-2"
     >
-      <div class="flex flex-row justify-start items-center space-x-2">
-        <span>{{ $t("change-history.self") }}</span>
-        <BBSpin
-          v-if="state.loading"
-          :title="$t('change-history.refreshing-history')"
-        />
-      </div>
-      <div class="flex flex-row justify-end items-center grow space-x-2">
-        <label
-          v-for="item in CHANGE_TYPES"
-          :key="item"
-          class="flex items-center gap-x-2 text-sm text-gray-600"
-        >
-          <NCheckbox
-            :checked="state.selectedChangeType.has(item)"
-            @update:checked="toggleChangeType(item, $event)"
-          >
-            {{ item }}
-          </NCheckbox>
-        </label>
+      <div class="flex flex-row justify-start items-center space-x-4">
         <div class="w-44">
           <BBSelect
             :selected-item="state.selectedAffectedTable"
@@ -39,6 +20,26 @@
             </template>
           </BBSelect>
         </div>
+        <div class="flex items-center">
+          <label
+            v-for="item in CHANGE_TYPES"
+            :key="item"
+            class="text-sm text-gray-600"
+          >
+            <NCheckbox
+              :checked="state.selectedChangeType.has(item)"
+              @update:checked="toggleChangeType(item, $event)"
+            >
+              {{ item }}
+            </NCheckbox>
+          </label>
+        </div>
+      </div>
+      <div class="flex flex-row justify-end items-center grow space-x-2">
+        <BBSpin
+          v-if="state.loading"
+          :title="$t('change-history.refreshing-history')"
+        />
         <BBTooltipButton
           type="normal"
           :disabled="!allowExportChangeHistory || state.isExporting"
