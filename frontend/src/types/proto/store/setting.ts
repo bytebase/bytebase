@@ -261,7 +261,7 @@ export interface SchemaTemplateSetting_TableTemplate {
   id: string;
   engine: Engine;
   category: string;
-  table?: TableMetadata | undefined;
+  table: TableMetadata | undefined;
 }
 
 export interface DataClassificationSetting {

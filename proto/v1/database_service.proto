@@ -58,6 +58,10 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
   }
 
+  rpc GetDatabaseMetadataConfig(GetDatabaseMetadataConfigRequest) returns (DatabaseMetadataConfig) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadataConfig}"};
+  }
+
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
@@ -240,6 +244,12 @@ message SyncDatabaseResponse {}
 message GetDatabaseMetadataRequest {
   // The name of the database to retrieve metadata.
   // Format: instances/{instance}/databases/{database}/metadata
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetDatabaseMetadataConfigRequest {
+  // The name of the database to retrieve metadata.
+  // Format: instances/{instance}/databases/{database}/metadataConfig
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -658,6 +668,37 @@ message ForeignKeyMetadata {
   // The match_type is the PostgreSQL specific field.
   // It's empty string for other databases.
   string match_type = 8;
+}
+
+message DatabaseMetadataConfig {
+  string name = 1;
+
+  // The schema_configs is the list of configs for schemas in a database.
+  repeated SchemaMetadataConfig schema_configs = 2;
+}
+
+message SchemaMetadataConfig {
+  // The name is the schema name.
+  // It is an empty string for databases without such concept such as MySQL.
+  string name = 1;
+
+  // The table_configs is the list of configs for tables in a schema.
+  repeated TableMetadataConfig table_configs = 2;
+}
+
+message TableMetadataConfig {
+  // The name is the name of a table.
+  string name = 1;
+
+  // The column_configs is the ordered list of configs for columns in a table.
+  repeated ColumnMetadataConfig column_configs = 2;
+}
+
+message ColumnMetadataConfig {
+  // The name is the name of a column.
+  string name = 1;
+
+  string semantic_type_id = 2;
 }
 
 // DatabaseMetadata is the metadata for databases.

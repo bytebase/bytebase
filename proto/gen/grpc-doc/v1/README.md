@@ -132,10 +132,12 @@
     - [ChangedResourceTable](#bytebase-v1-ChangedResourceTable)
     - [ChangedResources](#bytebase-v1-ChangedResources)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
+    - [ColumnMetadataConfig](#bytebase-v1-ColumnMetadataConfig)
     - [CreateBackupRequest](#bytebase-v1-CreateBackupRequest)
     - [Database](#bytebase-v1-Database)
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
+    - [DatabaseMetadataConfig](#bytebase-v1-DatabaseMetadataConfig)
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
     - [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest)
     - [DependentColumn](#bytebase-v1-DependentColumn)
@@ -146,6 +148,7 @@
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest)
     - [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest)
+    - [GetDatabaseMetadataConfigRequest](#bytebase-v1-GetDatabaseMetadataConfigRequest)
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
@@ -161,6 +164,7 @@
     - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
+    - [SchemaMetadataConfig](#bytebase-v1-SchemaMetadataConfig)
     - [SearchDatabasesRequest](#bytebase-v1-SearchDatabasesRequest)
     - [SearchDatabasesResponse](#bytebase-v1-SearchDatabasesResponse)
     - [Secret](#bytebase-v1-Secret)
@@ -171,6 +175,7 @@
     - [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest)
     - [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse)
     - [TableMetadata](#bytebase-v1-TableMetadata)
+    - [TableMetadataConfig](#bytebase-v1-TableMetadataConfig)
     - [TaskMetadata](#bytebase-v1-TaskMetadata)
     - [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
@@ -2426,6 +2431,22 @@ ColumnMetadata is the metadata for columns.
 
 
 
+<a name="bytebase-v1-ColumnMetadataConfig"></a>
+
+### ColumnMetadataConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a column. |
+| semantic_type_id | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateBackupRequest"></a>
 
 ### CreateBackupRequest
@@ -2494,6 +2515,22 @@ DatabaseMetadata is the metadata for databases.
 | character_set | [string](#string) |  | The character_set is the character set of a database. |
 | collation | [string](#string) |  | The collation is the collation of a database. |
 | extensions | [ExtensionMetadata](#bytebase-v1-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseMetadataConfig"></a>
+
+### DatabaseMetadataConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schema_configs | [SchemaMetadataConfig](#bytebase-v1-SchemaMetadataConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
 
 
 
@@ -2661,6 +2698,21 @@ FunctionMetadata is the metadata for functions.
 | name | [string](#string) |  | The name of the change history to retrieve. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
 | sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseMetadataConfigRequest"></a>
+
+### GetDatabaseMetadataConfigRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadataConfig |
 
 
 
@@ -2934,6 +2986,22 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 
 
+<a name="bytebase-v1-SchemaMetadataConfig"></a>
+
+### SchemaMetadataConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
+| table_configs | [TableMetadataConfig](#bytebase-v1-TableMetadataConfig) | repeated | The table_configs is the list of configs for tables in a schema. |
+
+
+
+
+
+
 <a name="bytebase-v1-SearchDatabasesRequest"></a>
 
 ### SearchDatabasesRequest
@@ -3121,6 +3189,22 @@ TableMetadata is the metadata for tables.
 | classification | [string](#string) |  | The classification is the classification of a table parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
+
+
+
+
+
+
+<a name="bytebase-v1-TableMetadataConfig"></a>
+
+### TableMetadataConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table. |
+| column_configs | [ColumnMetadataConfig](#bytebase-v1-ColumnMetadataConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 
 
 
@@ -3364,6 +3448,7 @@ The type of the backup.
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) |  |
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
+| GetDatabaseMetadataConfig | [GetDatabaseMetadataConfigRequest](#bytebase-v1-GetDatabaseMetadataConfigRequest) | [DatabaseMetadataConfig](#bytebase-v1-DatabaseMetadataConfig) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
