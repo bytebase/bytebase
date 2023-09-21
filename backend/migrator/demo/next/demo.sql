@@ -24,7 +24,7 @@ SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE public.principal DISABLE TRIGGER ALL;
 
-INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695287996, 1, 1695287996, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695288380, 1, 1695288380, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (101, 'NORMAL', 1, 1694684977, 101, 1695112774, 'END_USER', 'Demo Owner', 'demo@example.com', '$2a$10$JbwDbh1u86G9UUCMKXehV.uKPQhZYEJIUiLpVXRkVM4pNAUnU1THG', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (102, 'NORMAL', 1, 1695112807, 101, 1695112895, 'END_USER', 'Jerry DBA', 'jerry@example.com', '$2a$10$GH4GKACLebRGpY3B/oAgNuuIg/FA/j0a5x7h9.AQxex1TfD8cb6ZG', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (103, 'NORMAL', 1, 1695112807, 101, 1695112903, 'END_USER', 'Tom Dev', 'tom@example.com', '$2a$10$5d6.P.g/jb8AmSdsdkqZE.fopcsRDPLdlSRSg.Homdbbl7GpEZPVq', '', '{}') ON CONFLICT DO NOTHING;
@@ -149,6 +149,16 @@ INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (206, 'NORMAL', 1, 1695282638, 1, 1695282638, 110, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (207, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 'bb.issue.create', 'INFO', '', '{"issueName": "👉👉👉 [START HERE] Add email column to Employee table"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (208, 'NORMAL', 1, 1695287998, 1, 1695287998, 111, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (209, 'NORMAL', 101, 1695288454, 101, 1695288454, 112, 'bb.issue.create', 'INFO', '', '{"issueName": "Establish \"employee\" baseline"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (210, 'NORMAL', 101, 1695288459, 101, 1695288459, 112, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 119, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (211, 'NORMAL', 1, 1695288459, 1, 1695288459, 112, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 119, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (212, 'NORMAL', 1, 1695288459, 1, 1695288459, 112, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 119, "issueName": "Establish \"employee\" baseline", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (213, 'NORMAL', 1, 1695288459, 1, 1695288459, 112, 'bb.issue.status.update', 'INFO', '', '{"issueName": "Establish \"employee\" baseline", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (214, 'NORMAL', 101, 1695288476, 101, 1695288476, 113, 'bb.issue.create', 'INFO', '', '{"issueName": "Establish \"employee\" baseline"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (215, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 120, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (216, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 120, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (217, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 120, "issueName": "Establish \"employee\" baseline", "stageName": "Test Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (218, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.issue.status.update', 'INFO', '', '{"issueName": "Establish \"employee\" baseline", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.activity ENABLE TRIGGER ALL;
@@ -198,7 +208,7 @@ ALTER TABLE public.instance ENABLE TRIGGER ALL;
 
 ALTER TABLE public.project DISABLE TRIGGER ALL;
 
-INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695287996, 1, 1695287996, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695288380, 1, 1695288380, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (101, 'NORMAL', 101, 1694685057, 101, 1695180633, 'sakila', 'SKL', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'test', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (102, 'NORMAL', 101, 1695197199, 101, 1695197660, 'blog', 'BLG', 'VCS', 'PUBLIC', 'DISABLED', '', 'DDL', 'blog', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (103, 'NORMAL', 101, 1695287997, 101, 1695287997, 'Sample Project', 'SAM', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'project-sample', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
@@ -217,8 +227,8 @@ INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updat
 INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695192793, 101, 101, 102, NULL, 'OK', 1695192792, '20230920144133', 'sakila_prod', '{}', false, '', '{"labels": {"bb.environment": "prod"}, "lastSyncTime": "2023-09-20T06:53:12Z"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (104, 'NORMAL', 1, 1695197715, 1, 1695198629, 101, 102, 101, NULL, 'OK', 1695198629, '202309201624-ddl', 'blog_test', '{}', false, '', '{"labels": {"bb.environment": "test"}, "lastSyncTime": "2023-09-20T08:30:29Z"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (105, 'NORMAL', 1, 1695197772, 1, 1695199122, 101, 102, 102, NULL, 'OK', 1695199122, '202309201624-ddl', 'blog_prod', '{}', false, '', '{"labels": {"bb.environment": "prod"}, "lastSyncTime": "2023-09-20T08:38:42Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (106, 'NORMAL', 1, 1695287997, 1, 1695287997, 115, 103, NULL, NULL, 'OK', 1695287996, '', 'employee', '{}', false, '', '{"lastSyncTime": "2023-09-21T09:19:56Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (107, 'NORMAL', 1, 1695287997, 1, 1695287997, 116, 103, NULL, NULL, 'OK', 1695287997, '', 'employee', '{}', false, '', '{"lastSyncTime": "2023-09-21T09:19:57Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (107, 'NORMAL', 1, 1695287997, 1, 1695288459, 116, 103, NULL, NULL, 'OK', 1695288459, '20230921172734', 'employee', '{}', false, '', '{"lastSyncTime": "2023-09-21T09:27:39Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (106, 'NORMAL', 1, 1695287997, 1, 1695288476, 115, 103, NULL, NULL, 'OK', 1695288475, '20230921172755', 'employee', '{}', false, '', '{"lastSyncTime": "2023-09-21T09:27:55Z"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.db ENABLE TRIGGER ALL;
@@ -2588,6 +2598,8 @@ INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (109, 'NORMAL', 1, 1695198626, 1, 1695198626, 102, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (110, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (111, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (112, 'NORMAL', 101, 1695288454, 101, 1695288454, 103, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (113, 'NORMAL', 101, 1695288476, 101, 1695288476, 103, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.pipeline ENABLE TRIGGER ALL;
@@ -2609,6 +2621,8 @@ INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, upd
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (109, 'NORMAL', 1, 1695198626, 1, 1695198626, 102, 109, '[blog_prod] Alter schema: Create table blog', '', '{"steps": [{"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/blog/sheets/120", "target": "instances/mysql-prod/databases/blog_prod", "schemaVersion": "202309201624-ddl"}}]}]}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (110, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 110, '', '', '{"steps": [{"specs": [{"id": "eb4143ae-1950-4267-81a6-4fc3ba1a29e0", "changeDatabaseConfig": {"type": "DATA", "sheet": "projects/test/sheets/121", "target": "instances/mysql-prod/databases/sakila_test"}}]}, {"specs": [{"id": "ed0acc88-7161-42fc-a77e-b5c140590ee9", "changeDatabaseConfig": {"type": "DATA", "sheet": "projects/test/sheets/122", "target": "instances/mysql-prod/databases/sakila_staging"}}]}, {"specs": [{"id": "395ce918-ab68-4546-9ed5-c3f7ccd36cc0", "changeDatabaseConfig": {"type": "DATA", "sheet": "projects/test/sheets/123", "target": "instances/mysql-prod/databases/sakila_prod"}}]}]}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (111, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 111, 'Onboarding sample plan for adding email column to Employee table', '', '{"steps": [{"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/project-sample/sheets/125", "target": "instances/test-sample-instance/databases/employee"}}]}, {"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/project-sample/sheets/126", "target": "instances/prod-sample-instance/databases/employee"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (112, 'NORMAL', 101, 1695288454, 101, 1695288454, 103, 112, '', '', '{"steps": [{"specs": [{"id": "877416ee-9737-44b0-a766-7120779b719d", "changeDatabaseConfig": {"type": "BASELINE", "sheet": "projects/project-sample/sheets/127", "target": "instances/prod-sample-instance/databases/employee"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (113, 'NORMAL', 101, 1695288476, 101, 1695288476, 103, 113, '', '', '{"steps": [{"specs": [{"id": "aa543d00-91e8-442c-bedb-b9bd78335132", "changeDatabaseConfig": {"type": "BASELINE", "sheet": "projects/project-sample/sheets/128", "target": "instances/test-sample-instance/databases/employee"}}]}]}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.plan ENABLE TRIGGER ALL;
@@ -2638,6 +2652,8 @@ INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, up
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (111, 'NORMAL', 101, 1695287997, 1, 1695287998, 103, 111, 111, '👉👉👉 [START HERE] Add email column to Employee table', 'OPEN', 'bb.issue.database.general', 'A sample issue to showcase how to review database schema change.
 
 				Click "Approve" button to apply the schema update.', 101, false, '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "项目所有者 -> DBA", "creatorId": 1, "description": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。"}], "approvalFindingDone": true}}', '''a'':9 ''add'':3 ''apply'':24 ''approve'':21 ''button'':22 ''change'':19 ''click'':20 ''column'':5 ''database'':17 ''email'':4 ''employee'':7 ''here'':2 ''how'':14 ''issue'':11 ''review'':16 ''sample'':10 ''schema'':18,26 ''showcase'':13 ''start'':1 ''table'':8 ''the'':25 ''to'':6,12,15,23 ''update'':27') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (112, 'NORMAL', 101, 1695288454, 1, 1695288459, 103, 112, 112, 'Establish "employee" baseline', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvalFindingDone": true}}', '''baseline'':3 ''employee'':2 ''establish'':1') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (113, 'NORMAL', 101, 1695288476, 1, 1695288476, 103, 113, 113, 'Establish "employee" baseline', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvalFindingDone": true}}', '''baseline'':3 ''employee'':2 ''establish'':1') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.issue ENABLE TRIGGER ALL;
@@ -2690,6 +2706,10 @@ INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (119, 101
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (120, 103, 205, 'UNREAD') ON CONFLICT DO NOTHING;
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (121, 101, 205, 'UNREAD') ON CONFLICT DO NOTHING;
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (122, 101, 207, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (123, 101, 209, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (124, 101, 213, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (125, 101, 214, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (126, 101, 218, 'UNREAD') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.inbox ENABLE TRIGGER ALL;
@@ -2700,7 +2720,7 @@ ALTER TABLE public.inbox ENABLE TRIGGER ALL;
 
 ALTER TABLE public.instance_change_history DISABLE TRIGGER ALL;
 
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695287997, 1, 1695287997, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230921171956', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695288380, 1, 1695288380, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230921172620', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
 CREATE TYPE row_status AS ENUM (''NORMAL'', ''ARCHIVED'');
 
 -- updated_ts trigger.
@@ -5433,7 +5453,7 @@ VALUES
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 103;
 ', '', 0, '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695287997, 1, 1695287997, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695288381, 1, 1695288381, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
 ', NULL, '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -9344,7 +9364,7 @@ ALTER TABLE ONLY public.vcs
 ALTER TABLE ONLY public.vcs
     ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
 
-', 67445000, '{}') ON CONFLICT DO NOTHING;
+', 72241000, '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (103, 'NORMAL', 1, 1695110681, 1, 1695110681, NULL, NULL, NULL, 'development', 3, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919160440', 'Migrate version 2.8.4 server version development with files migration/prod/2.8/0004##issue_type.sql.', 'ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts;
 
 UPDATE issue
@@ -20410,6 +20430,524 @@ SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 ', 22577000, '{"changedResources": {"databases": [{"name": "blog_prod", "schemas": [{"tables": [{"name": "blog"}]}]}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (119, 'NORMAL', 101, 1695288459, 101, 1695288459, 116, 107, 112, 'development', 1, 'UI', 'BASELINE', 'DONE', '0000.0000.0000-20230921172734', 'Establish "employee" baseline - Establish baseline for database "employee"', '', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', 33233000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (120, 'NORMAL', 101, 1695288476, 101, 1695288476, 115, 106, 113, 'development', 1, 'UI', 'BASELINE', 'DONE', '0000.0000.0000-20230921172755', 'Establish "employee" baseline - Establish baseline for database "employee"', '', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', 34359000, '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance_change_history ENABLE TRIGGER ALL;
@@ -20557,6 +21095,8 @@ INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updat
 INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (170, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 115, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (174, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 116, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (176, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 126, "instanceUid": 116, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "column.no-null", "status": "WARNING", "content": "Column \"email\" in \"public\".\"employee\" cannot have NULL value", "sqlReviewReport": {"code": "402", "line": "1"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (178, 1, 1695288454, 1, 1695288454, 112, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 116, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (179, 1, 1695288476, 1, 1695288476, 113, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 115, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.plan_check_run ENABLE TRIGGER ALL;
@@ -20676,7 +21216,7 @@ INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, 
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (110, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.schema-template', '{}', 'The schema template setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (111, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.data-classification', '{}', 'The data classification setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (112, 'NORMAL', 1, 1694683928, 101, 1695177966, 'bb.workspace.approval', '{"rules":[{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"项目所有者 -> DBA","description":"系统定义的流程。先由项目所有者审批，再由 DBA 审批。","creatorId":1},"condition":{"expression":"source == 1 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]}]},"title":"项目所有者","description":"系统定义的流程。只需要项目所有者审批。","creatorId":1},"condition":{"expression":"source == 2 && level == 0 || source == 4 && level == 0 || source == 5 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"DBA","description":"系统定义的流程。只需要 DBA 审批","creatorId":1},"condition":{"expression":"source == 3 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"工作空间所有者","description":"系统定义的流程。只需要管理员审批","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"项目所有者 -> DBA -> 工作空间所有者","description":"系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。","creatorId":1},"condition":{}}]}', 'The workspace approval setting') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695287997, 'bb.workspace.profile', '{"externalUrl":"https://demo.bytebase.com"}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695288381, 'bb.workspace.profile', '{"externalUrl":"https://demo.bytebase.com"}', '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.setting ENABLE TRIGGER ALL;
@@ -23946,6 +24486,8 @@ INSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),
 INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (124, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 107, 'Sample Sheet', 'SELECT * FROM salary;', 'PROJECT', 'BYTEBASE', 'SQL', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (125, 'NORMAL', 1, 1695287997, 1, 1695287997, 103, 106, 'Alter table to test sample instance for sample issue', 'ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '''';', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (126, 'NORMAL', 1, 1695287997, 1, 1695287997, 103, 107, 'Alter table to prod sample instance for sample issue', 'ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '''';', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (127, 'NORMAL', 101, 1695288454, 101, 1695288454, 103, 107, 'Establish "employee" baseline', '', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (128, 'NORMAL', 101, 1695288476, 101, 1695288476, 103, 106, 'Establish "employee" baseline', '', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.sheet ENABLE TRIGGER ALL;
@@ -23994,6 +24536,8 @@ INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, up
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (116, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (117, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 101, 'Test Stage') ON CONFLICT DO NOTHING;
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (118, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (119, 'NORMAL', 101, 1695288454, 101, 1695288454, 112, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (120, 'NORMAL', 101, 1695288476, 101, 1695288476, 113, 101, 'Test Stage') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.stage ENABLE TRIGGER ALL;
@@ -24022,6 +24566,8 @@ INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, upd
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (116, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 116, 101, 101, 'DML(data) for database "sakila_prod"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "395ce918-ab68-4546-9ed5-c3f7ccd36cc0", "sheetId": 123, "schemaVersion": "20230921155035", "rollbackSqlStatus": "PENDING"}', 0) ON CONFLICT DO NOTHING;
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (117, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 117, 115, 106, 'DDL(schema) for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 125, "schemaVersion": "20230921171957"}', 0) ON CONFLICT DO NOTHING;
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (118, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 118, 116, 107, 'DDL(schema) for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 126, "schemaVersion": "20230921171957"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (119, 'NORMAL', 101, 1695288454, 101, 1695288454, 112, 119, 116, 107, 'Establish baseline for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.baseline', '{"specId": "877416ee-9737-44b0-a766-7120779b719d", "schemaVersion": "20230921172734"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (120, 'NORMAL', 101, 1695288476, 101, 1695288476, 113, 120, 115, 106, 'Establish baseline for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.baseline', '{"specId": "aa543d00-91e8-442c-bedb-b9bd78335132", "schemaVersion": "20230921172755"}', 0) ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.task ENABLE TRIGGER ALL;
@@ -24058,6 +24604,8 @@ INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts,
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (114, 101, 1695197772, 1, 1695197772, 111, 0, 'Create database blog_prod 1695197771', 'DONE', 0, '{"detail": "Created database \"blog_prod\""}') ON CONFLICT DO NOTHING;
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (115, 1, 1695198626, 1, 1695198629, 112, 0, 'DDL(schema) for database "blog_test" 1695198625', 'DONE', 0, '{"detail": "Applied migration version 202309201624-ddl to database \"blog_test\".", "version": "202309201624-ddl", "changeHistory": "instances/mysql-prod/databases/blog_test/changeHistories/117"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (116, 101, 1695199119, 1, 1695199122, 113, 0, 'DDL(schema) for database "blog_prod" 1695199118', 'DONE', 0, '{"detail": "Applied migration version 202309201624-ddl to database \"blog_prod\".", "version": "202309201624-ddl", "changeHistory": "instances/mysql-prod/databases/blog_prod/changeHistories/118"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (117, 101, 1695288459, 1, 1695288459, 119, 0, 'Establish baseline for database "employee" 1695288459', 'DONE', 0, '{"detail": "Established baseline version 20230921172734 for database \"employee\".", "version": "20230921172734", "changeHistory": "instances/prod-sample-instance/databases/employee/changeHistories/119"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (118, 1, 1695288476, 1, 1695288476, 120, 0, 'Establish baseline for database "employee" 1695288475', 'DONE', 0, '{"detail": "Established baseline version 20230921172755 for database \"employee\".", "version": "20230921172755", "changeHistory": "instances/test-sample-instance/databases/employee/changeHistories/120"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.task_run ENABLE TRIGGER ALL;
@@ -24066,7 +24614,7 @@ ALTER TABLE public.task_run ENABLE TRIGGER ALL;
 -- Name: activity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.activity_id_seq', 208, true);
+SELECT pg_catalog.setval('public.activity_id_seq', 218, true);
 
 
 --
@@ -24164,14 +24712,14 @@ SELECT pg_catalog.setval('public.idp_id_seq', 101, false);
 -- Name: inbox_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.inbox_id_seq', 122, true);
+SELECT pg_catalog.setval('public.inbox_id_seq', 126, true);
 
 
 --
 -- Name: instance_change_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_change_history_id_seq', 118, true);
+SELECT pg_catalog.setval('public.instance_change_history_id_seq', 120, true);
 
 
 --
@@ -24192,7 +24740,7 @@ SELECT pg_catalog.setval('public.instance_user_id_seq', 105, true);
 -- Name: issue_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.issue_id_seq', 111, true);
+SELECT pg_catalog.setval('public.issue_id_seq', 113, true);
 
 
 --
@@ -24220,21 +24768,21 @@ SELECT pg_catalog.setval('public.member_id_seq', 104, true);
 -- Name: pipeline_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.pipeline_id_seq', 111, true);
+SELECT pg_catalog.setval('public.pipeline_id_seq', 113, true);
 
 
 --
 -- Name: plan_check_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.plan_check_run_id_seq', 177, true);
+SELECT pg_catalog.setval('public.plan_check_run_id_seq', 179, true);
 
 
 --
 -- Name: plan_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.plan_id_seq', 111, true);
+SELECT pg_catalog.setval('public.plan_id_seq', 113, true);
 
 
 --
@@ -24304,14 +24852,14 @@ SELECT pg_catalog.setval('public.schema_group_id_seq', 101, false);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 124, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 125, true);
 
 
 --
 -- Name: sheet_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.sheet_id_seq', 126, true);
+SELECT pg_catalog.setval('public.sheet_id_seq', 128, true);
 
 
 --
@@ -24332,7 +24880,7 @@ SELECT pg_catalog.setval('public.slow_query_id_seq', 101, false);
 -- Name: stage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.stage_id_seq', 118, true);
+SELECT pg_catalog.setval('public.stage_id_seq', 120, true);
 
 
 --
@@ -24346,14 +24894,14 @@ SELECT pg_catalog.setval('public.task_dag_id_seq', 101, false);
 -- Name: task_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_id_seq', 118, true);
+SELECT pg_catalog.setval('public.task_id_seq', 120, true);
 
 
 --
 -- Name: task_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_run_id_seq', 116, true);
+SELECT pg_catalog.setval('public.task_run_id_seq', 118, true);
 
 
 --
