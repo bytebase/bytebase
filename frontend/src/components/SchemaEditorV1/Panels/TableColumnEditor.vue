@@ -203,7 +203,7 @@
     v-if="classificationConfig"
     :show="state.pendingUpdateColumn !== undefined"
     :classification-config="classificationConfig"
-    @dismiss="state.pendingUpdateColumn == undefined"
+    @dismiss="state.pendingUpdateColumn = undefined"
     @select="onClassificationSelect"
   />
 </template>
