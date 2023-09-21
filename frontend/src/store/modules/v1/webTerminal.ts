@@ -220,6 +220,7 @@ const createStreamingQueryController = (tab: TabInfo) => {
           status: extractGrpcStatusCode(error),
           advices: [],
           results: [],
+          allowExport: false,
         };
         if (result.status === Status.ABORTED && !result.error) {
           result.error = "Aborted";
@@ -274,7 +275,7 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
 };
 
 export const mockAffectedV1Rows0 = (): QueryResult => {
-  return {
+  return QueryResult.fromPartial({
     columnNames: ["Affected Rows"],
     columnTypeNames: ["BIGINT"],
     masked: [false],
@@ -289,7 +290,7 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
         ],
       },
     ],
-  };
+  });
 };
 
 const mapRequest = (
