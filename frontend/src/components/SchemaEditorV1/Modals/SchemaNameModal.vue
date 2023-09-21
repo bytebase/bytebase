@@ -79,9 +79,9 @@ const handleConfirmButtonClick = async () => {
   const schema = convertSchemaMetadataToSchema(
     SchemaMetadata.fromPartial({
       name: state.schemaName,
-    })
+    }),
+    "created"
   );
-  schema.status = "created";
   parentResource.schemaList.push(schema);
   // TODO(steven): Open the schema tab.
   dismissModal();

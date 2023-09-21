@@ -116,7 +116,8 @@ export const convertTableMetadataToTable = (
 };
 
 export const convertSchemaMetadataToSchema = (
-  schemaMetadata: SchemaMetadata
+  schemaMetadata: SchemaMetadata,
+  status: Status = "normal"
 ): Schema => {
   const tableList: Table[] = [];
 
@@ -126,7 +127,7 @@ export const convertSchemaMetadataToSchema = (
       continue;
     }
 
-    const table = convertTableMetadataToTable(tableMetadata);
+    const table = convertTableMetadataToTable(tableMetadata, status);
     tableList.push(table);
   }
 
@@ -134,7 +135,7 @@ export const convertSchemaMetadataToSchema = (
     id: uuidv1(),
     name: schemaMetadata.name,
     tableList: tableList,
-    status: "normal",
+    status,
   };
 };
 
