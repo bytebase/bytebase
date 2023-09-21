@@ -420,7 +420,8 @@ CREATE TABLE db_schema (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id) ON DELETE CASCADE,
     metadata JSONB NOT NULL DEFAULT '{}',
-    raw_dump TEXT NOT NULL DEFAULT ''
+    raw_dump TEXT NOT NULL DEFAULT '',
+    config JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON db_schema(database_id);
