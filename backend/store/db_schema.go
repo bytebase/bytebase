@@ -17,6 +17,7 @@ import (
 type DBSchema struct {
 	Metadata *storepb.DatabaseSchemaMetadata
 	Schema   []byte
+	Config   *storepb.DatabaseConfig
 }
 
 // TableExists checks if the table exists.
@@ -162,17 +163,19 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	defer tx.Rollback()
 
 	dbSchema := &DBSchema{}
-	var metadata []byte
+	var metadata, config []byte
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
 			metadata,
-			raw_dump
+			raw_dump,
+			config
 		FROM db_schema
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	).Scan(
 		&metadata,
 		&dbSchema.Schema,
+		config,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -184,11 +187,16 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	}
 
 	var databaseSchema storepb.DatabaseSchemaMetadata
+	var databaseConfig storepb.DatabaseConfig
 	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err := decoder.Unmarshal(metadata, &databaseSchema); err != nil {
 		return nil, err
 	}
+	if err := decoder.Unmarshal(config, &databaseConfig); err != nil {
+		return nil, err
+	}
 	dbSchema.Metadata = &databaseSchema
+	dbSchema.Config = &databaseConfig
 
 	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
 	return dbSchema, nil
