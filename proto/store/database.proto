@@ -345,3 +345,34 @@ message SecretItem {
   // The description is the description of the secret.
   string description = 3;
 }
+
+message DatabaseConfig {
+  string name = 1;
+
+  // The schema_configs is the list of configs for schemas in a database.
+  repeated SchemaConfig schema_configs = 2;
+}
+
+message SchemaConfig {
+  // The name is the schema name.
+  // It is an empty string for databases without such concept such as MySQL.
+  string name = 1;
+
+  // The table_configs is the list of configs for tables in a schema.
+  repeated TableConfig table_configs = 2;
+}
+
+message TableConfig {
+  // The name is the name of a table.
+  string name = 1;
+
+  // The column_configs is the ordered list of configs for columns in a table.
+  repeated ColumnConfig column_configs = 2;
+}
+
+message ColumnConfig {
+  // The name is the name of a column.
+  string name = 1;
+
+  string semantic_type_id = 2;
+}
