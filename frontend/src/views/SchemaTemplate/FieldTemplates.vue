@@ -1,20 +1,12 @@
 <template>
   <div class="w-full space-y-4 text-sm">
-    <FeatureAttention
-      feature="bb.feature.schema-template"
-      custom-class="my-4"
-    />
     <div v-if="!readonly" class="space-y-4">
       <div class="flex items-center justify-between gap-x-6">
         <div class="flex-1 textinfolabel">
           {{ $t("schema-template.field-template.description") }}
         </div>
         <div>
-          <NButton
-            type="primary"
-            :disabled="!hasPermission"
-            @click="createSchemaTemplate"
-          >
+          <NButton type="primary" @click="createSchemaTemplate">
             {{ $t("schema-template.field-template.add") }}
           </NButton>
         </div>
@@ -51,7 +43,7 @@
     </div>
     <FieldTemplateView
       :engine="engine"
-      :readonly="!hasPermission || !!readonly"
+      :readonly="!!readonly"
       :template-list="filteredTemplateList"
       @view="editSchemaTemplate"
       @apply="$emit('apply', $event)"
@@ -59,17 +51,12 @@
   </div>
   <Drawer :show="state.showDrawer" @close="state.showDrawer = false">
     <FieldTemplateForm
-      :readonly="!hasPermission || !!readonly"
+      :readonly="!!readonly"
       :create="!state.template.column?.name"
       :template="state.template"
       @dismiss="state.showDrawer = false"
     />
   </Drawer>
-  <FeatureModal
-    feature="bb.feature.schema-template"
-    :open="state.showFeatureModal"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -78,16 +65,14 @@ import { v1 as uuidv1 } from "uuid";
 import { reactive, computed, onMounted } from "vue";
 import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer } from "@/components/v2";
-import { featureToRef, useSettingV1Store } from "@/store";
+import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import { useWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   template: SchemaTemplateSetting_FieldTemplate;
   showDrawer: boolean;
-  showFeatureModal: boolean;
   searchText: string;
   selectedEngine: Set<Engine>;
 }
@@ -119,7 +104,6 @@ const initialTemplate = () => ({
 
 const state = reactive<LocalState>({
   showDrawer: false,
-  showFeatureModal: false,
   template: initialTemplate(),
   searchText: "",
   selectedEngine: new Set<Engine>(),
@@ -131,16 +115,7 @@ onMounted(() => {
   }
 });
 
-const hasFeature = featureToRef("bb.feature.schema-template");
-const hasPermission = useWorkspacePermissionV1(
-  "bb.permission.workspace.manage-general"
-);
-
 const createSchemaTemplate = () => {
-  if (!hasFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
   state.template = initialTemplate();
   state.showDrawer = true;
 };

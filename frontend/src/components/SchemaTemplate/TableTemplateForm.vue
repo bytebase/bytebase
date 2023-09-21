@@ -165,7 +165,7 @@
       <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
         <FieldTemplates
           :engine="state.engine"
-          :readonly="true"
+          :readonly="false"
           @apply="handleApplyColumnTemplate"
         />
       </div>

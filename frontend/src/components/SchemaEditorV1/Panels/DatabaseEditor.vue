@@ -191,6 +191,12 @@
       </div>
     </DrawerContent>
   </Drawer>
+
+  <FeatureModal
+    feature="bb.feature.schema-template"
+    :open="state.showFeatureModal"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -202,6 +208,7 @@ import { useI18n } from "vue-i18n";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
+  hasFeature,
   generateUniqueTabId,
   useDatabaseV1Store,
   useSchemaEditorV1Store,
@@ -232,6 +239,7 @@ interface LocalState {
   selectedSchemaId: string;
   isFetchingDDL: boolean;
   statement: string;
+  showFeatureModal: boolean;
   showSchemaTemplateDrawer: boolean;
   tableNameModalContext?: {
     parentName: string;
@@ -249,6 +257,7 @@ const state = reactive<LocalState>({
   selectedSchemaId: "",
   isFetchingDDL: false,
   statement: "",
+  showFeatureModal: false,
   showSchemaTemplateDrawer: false,
 });
 const databaseSchema = computed(() => {
@@ -443,24 +452,30 @@ const tryEditColumn = async (
 };
 
 const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
-  if (template.table) {
-    const tableEdit = convertTableMetadataToTable(template.table, "created");
-
-    const selectedSchema = schemaList.value.find(
-      (schema) => schema.id === state.selectedSchemaId
-    );
-    if (selectedSchema) {
-      selectedSchema.tableList.push(tableEdit);
-      editorStore.addTab({
-        id: generateUniqueTabId(),
-        type: SchemaEditorTabType.TabForTable,
-        parentName: database.value.name,
-        schemaId: state.selectedSchemaId,
-        tableId: tableEdit.id,
-      });
-    }
-  }
   state.showSchemaTemplateDrawer = false;
+  if (!hasFeature("bb.feature.schema-template")) {
+    state.showFeatureModal = true;
+    return;
+  }
+  if (!template.table || template.engine !== databaseEngine.value) {
+    return;
+  }
+
+  const tableEdit = convertTableMetadataToTable(template.table, "created");
+
+  const selectedSchema = schemaList.value.find(
+    (schema) => schema.id === state.selectedSchemaId
+  );
+  if (selectedSchema) {
+    selectedSchema.tableList.push(tableEdit);
+    editorStore.addTab({
+      id: generateUniqueTabId(),
+      type: SchemaEditorTabType.TabForTable,
+      parentName: database.value.name,
+      schemaId: state.selectedSchemaId,
+      tableId: tableEdit.id,
+    });
+  }
 };
 </script>
 
