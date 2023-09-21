@@ -24,7 +24,7 @@ SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE public.principal DISABLE TRIGGER ALL;
 
-INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695196354, 1, 1695196354, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695288380, 1, 1695288380, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (101, 'NORMAL', 1, 1694684977, 101, 1695112774, 'END_USER', 'Demo Owner', 'demo@example.com', '$2a$10$JbwDbh1u86G9UUCMKXehV.uKPQhZYEJIUiLpVXRkVM4pNAUnU1THG', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (102, 'NORMAL', 1, 1695112807, 101, 1695112895, 'END_USER', 'Jerry DBA', 'jerry@example.com', '$2a$10$GH4GKACLebRGpY3B/oAgNuuIg/FA/j0a5x7h9.AQxex1TfD8cb6ZG', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (103, 'NORMAL', 1, 1695112807, 101, 1695112903, 'END_USER', 'Tom Dev', 'tom@example.com', '$2a$10$5d6.P.g/jb8AmSdsdkqZE.fopcsRDPLdlSRSg.Homdbbl7GpEZPVq', '', '{}') ON CONFLICT DO NOTHING;
@@ -145,6 +145,20 @@ INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (202, 'NORMAL', 1, 1695199122, 1, 1695199122, 109, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 113, "taskName": "DDL(schema) for database \"blog_prod\"", "issueName": "[blog_prod] Alter schema: Create table blog", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (203, 'NORMAL', 1, 1695199122, 1, 1695199122, 109, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 113, "issueName": "[blog_prod] Alter schema: Create table blog", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (204, 'NORMAL', 1, 1695199122, 1, 1695199122, 109, 'bb.issue.status.update', 'INFO', '', '{"issueName": "[blog_prod] Alter schema: Create table blog", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (205, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 'bb.issue.create', 'INFO', '', '{"issueName": "[3 databases] Import data but secretly drops tables @09-21 15:47 UTC+0800"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (206, 'NORMAL', 1, 1695282638, 1, 1695282638, 110, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (207, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 'bb.issue.create', 'INFO', '', '{"issueName": "👉👉👉 [START HERE] Add email column to Employee table"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (208, 'NORMAL', 1, 1695287998, 1, 1695287998, 111, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (209, 'NORMAL', 101, 1695288454, 101, 1695288454, 112, 'bb.issue.create', 'INFO', '', '{"issueName": "Establish \"employee\" baseline"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (210, 'NORMAL', 101, 1695288459, 101, 1695288459, 112, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 119, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (211, 'NORMAL', 1, 1695288459, 1, 1695288459, 112, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 119, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (212, 'NORMAL', 1, 1695288459, 1, 1695288459, 112, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 119, "issueName": "Establish \"employee\" baseline", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (213, 'NORMAL', 1, 1695288459, 1, 1695288459, 112, 'bb.issue.status.update', 'INFO', '', '{"issueName": "Establish \"employee\" baseline", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (214, 'NORMAL', 101, 1695288476, 101, 1695288476, 113, 'bb.issue.create', 'INFO', '', '{"issueName": "Establish \"employee\" baseline"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (215, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 120, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (216, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 120, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (217, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 120, "issueName": "Establish \"employee\" baseline", "stageName": "Test Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (218, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.issue.status.update', 'INFO', '', '{"issueName": "Establish \"employee\" baseline", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.activity ENABLE TRIGGER ALL;
@@ -182,6 +196,8 @@ INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (114, 'NORMAL', 101, 1695026377, 101, 1695026377, 102, 'risingwave', 'RISINGWAVE', '', '', 'risingwave', true, '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (102, 'NORMAL', 101, 1695025945, 1, 1695177903, 102, 'postgres', 'POSTGRES', '14.3', '', 'pg-prod', true, '{}', '{"lastSyncTime": "2023-09-20T02:45:02.695639Z"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (101, 'NORMAL', 101, 1695025927, 1, 1695177909, 102, 'mysql', 'MYSQL', '8.0.33', '', 'mysql-prod', true, '{}', '{"lastSyncTime": "2023-09-20T02:45:08.853376Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (115, 'NORMAL', 101, 1695287997, 1, 1695288194, 101, 'Test Sample Instance', 'POSTGRES', '14.2', '', 'test-sample-instance', true, '{}', '{"lastSyncTime": "2023-09-21T09:23:13.527088Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (116, 'NORMAL', 101, 1695287997, 1, 1695288197, 102, 'Prod Sample Instance', 'POSTGRES', '14.2', '', 'prod-sample-instance', true, '{}', '{"lastSyncTime": "2023-09-21T09:23:17.093125Z"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance ENABLE TRIGGER ALL;
@@ -192,9 +208,10 @@ ALTER TABLE public.instance ENABLE TRIGGER ALL;
 
 ALTER TABLE public.project DISABLE TRIGGER ALL;
 
-INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695196354, 1, 1695196354, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695288380, 1, 1695288380, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (101, 'NORMAL', 101, 1694685057, 101, 1695180633, 'sakila', 'SKL', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'test', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (102, 'NORMAL', 101, 1695197199, 101, 1695197660, 'blog', 'BLG', 'VCS', 'PUBLIC', 'DISABLED', '', 'DDL', 'blog', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (103, 'NORMAL', 101, 1695287997, 101, 1695287997, 'Sample Project', 'SAM', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'project-sample', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.project ENABLE TRIGGER ALL;
@@ -210,6 +227,8 @@ INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updat
 INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695192793, 101, 101, 102, NULL, 'OK', 1695192792, '20230920144133', 'sakila_prod', '{}', false, '', '{"labels": {"bb.environment": "prod"}, "lastSyncTime": "2023-09-20T06:53:12Z"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (104, 'NORMAL', 1, 1695197715, 1, 1695198629, 101, 102, 101, NULL, 'OK', 1695198629, '202309201624-ddl', 'blog_test', '{}', false, '', '{"labels": {"bb.environment": "test"}, "lastSyncTime": "2023-09-20T08:30:29Z"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (105, 'NORMAL', 1, 1695197772, 1, 1695199122, 101, 102, 102, NULL, 'OK', 1695199122, '202309201624-ddl', 'blog_prod', '{}', false, '', '{"labels": {"bb.environment": "prod"}, "lastSyncTime": "2023-09-20T08:38:42Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (107, 'NORMAL', 1, 1695287997, 1, 1695288459, 116, 103, NULL, NULL, 'OK', 1695288459, '20230921172734', 'employee', '{}', false, '', '{"lastSyncTime": "2023-09-21T09:27:39Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (106, 'NORMAL', 1, 1695287997, 1, 1695288476, 115, 103, NULL, NULL, 'OK', 1695288475, '20230921172755', 'employee', '{}', false, '', '{"lastSyncTime": "2023-09-21T09:27:55Z"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.db ENABLE TRIGGER ALL;
@@ -251,6 +270,7 @@ ALTER TABLE public.backup_setting ENABLE TRIGGER ALL;
 
 ALTER TABLE public.bookmark DISABLE TRIGGER ALL;
 
+INSERT INTO public.bookmark (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, link) VALUES (101, 'NORMAL', 101, 1695287997, 101, 1695287997, 'Sample Issue', '/issue/start-here-add-email-column-to-employee-table-111') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.bookmark ENABLE TRIGGER ALL;
@@ -275,6 +295,8 @@ INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_
 INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (112, 'NORMAL', 101, 1695026350, 101, 1695026350, 112, 'c69ae443-0684-4683-b0a9-cade8f446ba9', 'ADMIN', '', '', '', '', '', '127.0.0.1', '1433', '{}', '') ON CONFLICT DO NOTHING;
 INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (113, 'NORMAL', 101, 1695026361, 101, 1695026361, 113, '9b9bb649-7a63-4d3e-a16b-8725dc32a15e', 'ADMIN', '', '', '', '', '', '127.0.0.1', '5439', '{}', '') ON CONFLICT DO NOTHING;
 INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (114, 'NORMAL', 101, 1695026377, 101, 1695026377, 114, 'b449371a-3305-4418-8297-86682012f719', 'ADMIN', '', '', '', '', '', '127.0.0.1', '3306', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (115, 'NORMAL', 101, 1695287997, 101, 1695287997, 115, 'admin', 'ADMIN', 'bbsample', '', '', '', '', '/tmp', '446', '{}', 'employee') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (116, 'NORMAL', 101, 1695287997, 101, 1695287997, 116, 'admin', 'ADMIN', 'bbsample', '', '', '', '', '/tmp', '447', '{}', 'employee') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.data_source ENABLE TRIGGER ALL;
@@ -2285,6 +2307,266 @@ CREATE TABLE `blog` (
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 ') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (112, 'NORMAL', 1, 1695287997, 1, 1695287997, 106, '{"name": "employee", "schemas": [{"name": "public", "views": [{"name": "dept_emp_latest_date", "definition": " SELECT dept_emp.emp_no,\n    max(dept_emp.from_date) AS from_date,\n    max(dept_emp.to_date) AS to_date\n   FROM dept_emp\n  GROUP BY dept_emp.emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}, {"name": "pg_stat_statements_info", "definition": " SELECT pg_stat_statements_info.dealloc,\n    pg_stat_statements_info.stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT pg_stat_statements.userid,\n    pg_stat_statements.dbid,\n    pg_stat_statements.toplevel,\n    pg_stat_statements.queryid,\n    pg_stat_statements.query,\n    pg_stat_statements.plans,\n    pg_stat_statements.total_plan_time,\n    pg_stat_statements.min_plan_time,\n    pg_stat_statements.max_plan_time,\n    pg_stat_statements.mean_plan_time,\n    pg_stat_statements.stddev_plan_time,\n    pg_stat_statements.calls,\n    pg_stat_statements.total_exec_time,\n    pg_stat_statements.min_exec_time,\n    pg_stat_statements.max_exec_time,\n    pg_stat_statements.mean_exec_time,\n    pg_stat_statements.stddev_exec_time,\n    pg_stat_statements.rows,\n    pg_stat_statements.shared_blks_hit,\n    pg_stat_statements.shared_blks_read,\n    pg_stat_statements.shared_blks_dirtied,\n    pg_stat_statements.shared_blks_written,\n    pg_stat_statements.local_blks_hit,\n    pg_stat_statements.local_blks_read,\n    pg_stat_statements.local_blks_dirtied,\n    pg_stat_statements.local_blks_written,\n    pg_stat_statements.temp_blks_read,\n    pg_stat_statements.temp_blks_written,\n    pg_stat_statements.blk_read_time,\n    pg_stat_statements.blk_write_time,\n    pg_stat_statements.wal_records,\n    pg_stat_statements.wal_fpi,\n    pg_stat_statements.wal_bytes\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, wal_records, wal_fpi, wal_bytes);"}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "default": "nextval(''employee_emp_no_seq''::regclass)", "position": 1}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_9$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.9", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (113, 'NORMAL', 1, 1695287997, 1, 1695287997, 107, '{"name": "employee", "schemas": [{"name": "public", "views": [{"name": "dept_emp_latest_date", "definition": " SELECT dept_emp.emp_no,\n    max(dept_emp.from_date) AS from_date,\n    max(dept_emp.to_date) AS to_date\n   FROM dept_emp\n  GROUP BY dept_emp.emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}, {"name": "pg_stat_statements_info", "definition": " SELECT pg_stat_statements_info.dealloc,\n    pg_stat_statements_info.stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT pg_stat_statements.userid,\n    pg_stat_statements.dbid,\n    pg_stat_statements.toplevel,\n    pg_stat_statements.queryid,\n    pg_stat_statements.query,\n    pg_stat_statements.plans,\n    pg_stat_statements.total_plan_time,\n    pg_stat_statements.min_plan_time,\n    pg_stat_statements.max_plan_time,\n    pg_stat_statements.mean_plan_time,\n    pg_stat_statements.stddev_plan_time,\n    pg_stat_statements.calls,\n    pg_stat_statements.total_exec_time,\n    pg_stat_statements.min_exec_time,\n    pg_stat_statements.max_exec_time,\n    pg_stat_statements.mean_exec_time,\n    pg_stat_statements.stddev_exec_time,\n    pg_stat_statements.rows,\n    pg_stat_statements.shared_blks_hit,\n    pg_stat_statements.shared_blks_read,\n    pg_stat_statements.shared_blks_dirtied,\n    pg_stat_statements.shared_blks_written,\n    pg_stat_statements.local_blks_hit,\n    pg_stat_statements.local_blks_read,\n    pg_stat_statements.local_blks_dirtied,\n    pg_stat_statements.local_blks_written,\n    pg_stat_statements.temp_blks_read,\n    pg_stat_statements.temp_blks_written,\n    pg_stat_statements.blk_read_time,\n    pg_stat_statements.blk_write_time,\n    pg_stat_statements.wal_records,\n    pg_stat_statements.wal_fpi,\n    pg_stat_statements.wal_bytes\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, wal_records, wal_fpi, wal_bytes);"}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "default": "nextval(''employee_emp_no_seq''::regclass)", "position": 1}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_9$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.9", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.db_schema ENABLE TRIGGER ALL;
@@ -2314,6 +2596,10 @@ INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (107, 'NORMAL', 101, 1695197737, 101, 1695197737, 102, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (108, 'NORMAL', 1, 1695198626, 1, 1695198626, 102, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (109, 'NORMAL', 1, 1695198626, 1, 1695198626, 102, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (110, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (111, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (112, 'NORMAL', 101, 1695288454, 101, 1695288454, 103, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (113, 'NORMAL', 101, 1695288476, 101, 1695288476, 103, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.pipeline ENABLE TRIGGER ALL;
@@ -2333,6 +2619,10 @@ INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, upd
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (107, 'NORMAL', 101, 1695197736, 101, 1695197737, 102, 107, '', '', '{"steps": [{"specs": [{"id": "726bfba4-d0cd-4059-978b-3e85729a2eab", "createDatabaseConfig": {"labels": {"bb.environment": "prod"}, "target": "instances/mysql-prod", "database": "blog_prod", "collation": "utf8mb4_general_ci", "environment": "environments/prod", "characterSet": "utf8mb4"}}]}]}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (108, 'NORMAL', 1, 1695198626, 1, 1695198626, 102, 108, '[blog_test] Alter schema: Create table blog', '', '{"steps": [{"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/blog/sheets/119", "target": "instances/mysql-prod/databases/blog_test", "schemaVersion": "202309201624-ddl"}}]}]}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (109, 'NORMAL', 1, 1695198626, 1, 1695198626, 102, 109, '[blog_prod] Alter schema: Create table blog', '', '{"steps": [{"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/blog/sheets/120", "target": "instances/mysql-prod/databases/blog_prod", "schemaVersion": "202309201624-ddl"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (110, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 110, '', '', '{"steps": [{"specs": [{"id": "eb4143ae-1950-4267-81a6-4fc3ba1a29e0", "changeDatabaseConfig": {"type": "DATA", "sheet": "projects/test/sheets/121", "target": "instances/mysql-prod/databases/sakila_test"}}]}, {"specs": [{"id": "ed0acc88-7161-42fc-a77e-b5c140590ee9", "changeDatabaseConfig": {"type": "DATA", "sheet": "projects/test/sheets/122", "target": "instances/mysql-prod/databases/sakila_staging"}}]}, {"specs": [{"id": "395ce918-ab68-4546-9ed5-c3f7ccd36cc0", "changeDatabaseConfig": {"type": "DATA", "sheet": "projects/test/sheets/123", "target": "instances/mysql-prod/databases/sakila_prod"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (111, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 111, 'Onboarding sample plan for adding email column to Employee table', '', '{"steps": [{"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/project-sample/sheets/125", "target": "instances/test-sample-instance/databases/employee"}}]}, {"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/project-sample/sheets/126", "target": "instances/prod-sample-instance/databases/employee"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (112, 'NORMAL', 101, 1695288454, 101, 1695288454, 103, 112, '', '', '{"steps": [{"specs": [{"id": "877416ee-9737-44b0-a766-7120779b719d", "changeDatabaseConfig": {"type": "BASELINE", "sheet": "projects/project-sample/sheets/127", "target": "instances/prod-sample-instance/databases/employee"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (113, 'NORMAL', 101, 1695288476, 101, 1695288476, 103, 113, '', '', '{"steps": [{"specs": [{"id": "aa543d00-91e8-442c-bedb-b9bd78335132", "changeDatabaseConfig": {"type": "BASELINE", "sheet": "projects/project-sample/sheets/128", "target": "instances/test-sample-instance/databases/employee"}}]}]}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.plan ENABLE TRIGGER ALL;
@@ -2358,6 +2648,12 @@ INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, up
 
 prod/blog_prod##202309201624##ddl##create_table_blog.sql
 ', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 101}, {"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "项目所有者 -> DBA", "creatorId": 1, "description": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。"}], "approvalFindingDone": true}}', '''202309201624'':14 ''alter'':3 ''blog'':1,7,12,18 ''by'':8 ''create'':5,16 ''ddl'':15 ''files'':10 ''prod'':2,11,13 ''schema'':4 ''sql'':19 ''table'':6,17 ''vcs'':9') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (110, 'NORMAL', 103, 1695282636, 1, 1695282638, 101, 110, 110, '[3 databases] Import data but secretly drops tables @09-21 15:47 UTC+0800', 'OPEN', 'bb.issue.database.general', 'Oops... I forgot to delete the `DROP TABLE` lines used for testing.', 101, false, '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}]}, "title": "项目所有者", "creatorId": 1, "description": "系统定义的流程。只需要项目所有者审批。"}], "approvalFindingDone": true}}', '''0800'':14 ''09'':9 ''15'':11 ''21'':10 ''3'':1 ''47'':12 ''but'':5 ''data'':4 ''databases'':2 ''delete'':19 ''drop'':21 ''drops'':7 ''for'':25 ''forgot'':17 ''i'':16 ''import'':3 ''lines'':23 ''oops'':15 ''secretly'':6 ''table'':22 ''tables'':8 ''testing'':26 ''the'':20 ''to'':18 ''used'':24 ''utc'':13') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (111, 'NORMAL', 101, 1695287997, 1, 1695287998, 103, 111, 111, '👉👉👉 [START HERE] Add email column to Employee table', 'OPEN', 'bb.issue.database.general', 'A sample issue to showcase how to review database schema change.
+
+				Click "Approve" button to apply the schema update.', 101, false, '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "项目所有者 -> DBA", "creatorId": 1, "description": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。"}], "approvalFindingDone": true}}', '''a'':9 ''add'':3 ''apply'':24 ''approve'':21 ''button'':22 ''change'':19 ''click'':20 ''column'':5 ''database'':17 ''email'':4 ''employee'':7 ''here'':2 ''how'':14 ''issue'':11 ''review'':16 ''sample'':10 ''schema'':18,26 ''showcase'':13 ''start'':1 ''table'':8 ''the'':25 ''to'':6,12,15,23 ''update'':27') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (112, 'NORMAL', 101, 1695288454, 1, 1695288459, 103, 112, 112, 'Establish "employee" baseline', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvalFindingDone": true}}', '''baseline'':3 ''employee'':2 ''establish'':1') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (113, 'NORMAL', 101, 1695288476, 1, 1695288476, 103, 113, 113, 'Establish "employee" baseline', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvalFindingDone": true}}', '''baseline'':3 ''employee'':2 ''establish'':1') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.issue ENABLE TRIGGER ALL;
@@ -2407,6 +2703,13 @@ INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (116, 101
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (117, 101, 180, 'UNREAD') ON CONFLICT DO NOTHING;
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (118, 101, 186, 'UNREAD') ON CONFLICT DO NOTHING;
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (119, 101, 204, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (120, 103, 205, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (121, 101, 205, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (122, 101, 207, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (123, 101, 209, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (124, 101, 213, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (125, 101, 214, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (126, 101, 218, 'UNREAD') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.inbox ENABLE TRIGGER ALL;
@@ -2417,7 +2720,7 @@ ALTER TABLE public.inbox ENABLE TRIGGER ALL;
 
 ALTER TABLE public.instance_change_history DISABLE TRIGGER ALL;
 
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695196354, 1, 1695196354, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230920155233', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695288380, 1, 1695288380, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230921172620', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
 CREATE TYPE row_status AS ENUM (''NORMAL'', ''ARCHIVED'');
 
 -- updated_ts trigger.
@@ -5150,7 +5453,7 @@ VALUES
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 103;
 ', '', 0, '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695196354, 1, 1695196354, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695288381, 1, 1695288381, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
 ', NULL, '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -9061,7 +9364,7 @@ ALTER TABLE ONLY public.vcs
 ALTER TABLE ONLY public.vcs
     ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
 
-', 201180000, '{}') ON CONFLICT DO NOTHING;
+', 72241000, '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (103, 'NORMAL', 1, 1695110681, 1, 1695110681, NULL, NULL, NULL, 'development', 3, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919160440', 'Migrate version 2.8.4 server version development with files migration/prod/2.8/0004##issue_type.sql.', 'ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts;
 
 UPDATE issue
@@ -20127,6 +20430,524 @@ SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 ', 22577000, '{"changedResources": {"databases": [{"name": "blog_prod", "schemas": [{"tables": [{"name": "blog"}]}]}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (119, 'NORMAL', 101, 1695288459, 101, 1695288459, 116, 107, 112, 'development', 1, 'UI', 'BASELINE', 'DONE', '0000.0000.0000-20230921172734', 'Establish "employee" baseline - Establish baseline for database "employee"', '', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', 33233000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (120, 'NORMAL', 101, 1695288476, 101, 1695288476, 115, 106, 113, 'development', 1, 'UI', 'BASELINE', 'DONE', '0000.0000.0000-20230921172755', 'Establish "employee" baseline - Establish baseline for database "employee"', '', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', 34359000, '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance_change_history ENABLE TRIGGER ALL;
@@ -20142,6 +20963,8 @@ GRANT APPLICATION_PASSWORD_ADMIN,AUDIT_ADMIN,AUTHENTICATION_POLICY_ADMIN,BACKUP_
 GRANT PROXY ON ``@`` TO `root`@`localhost` WITH GRANT OPTION') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (102, 'NORMAL', 1, 1695025945, 1, 1695025945, 102, 'postgres', 'Superuser, Create role, Create DB, Replication, Bypass RLS+') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (103, 'NORMAL', 1, 1695025945, 1, 1695025945, 102, 'david', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (104, 'NORMAL', 1, 1695287997, 1, 1695287997, 115, 'bbsample', 'Superuser, Create role, Create DB, Replication, Bypass RLS+') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (105, 'NORMAL', 1, 1695287997, 1, 1695287997, 116, 'bbsample', 'Superuser, Create role, Create DB, Replication, Bypass RLS+') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance_user ENABLE TRIGGER ALL;
@@ -20252,6 +21075,28 @@ INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updat
 INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (153, 1, 1695198626, 1, 1695198626, 109, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "blog_prod"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"blog_prod\""}]}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (155, 1, 1695198626, 1, 1695198626, 109, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 120, "instanceUid": 101, "databaseName": "blog_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (154, 1, 1695198626, 1, 1695198626, 109, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 120, "instanceUid": 101, "databaseName": "blog_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (161, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_staging"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_staging\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (157, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_test"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_test\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (168, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 123, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DML"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"affectedRows": "9", "statementTypes": ["INSERT", "DROP_TABLE"], "changedResources": {"databases": [{"name": "sakila_prod", "schemas": [{"tables": [{"name": "city"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (166, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 123, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DML"}', '{"results": [{"code": "401", "title": "Data change can only run DML", "status": "WARNING", "content": "\"\nDROP TABLE city;\" is not DML"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (165, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_prod"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_prod\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (164, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 122, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DML"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"affectedRows": "9", "statementTypes": ["INSERT", "DROP_TABLE"], "changedResources": {"databases": [{"name": "sakila_staging", "schemas": [{"tables": [{"name": "city"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (162, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 122, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DML"}', '{"results": [{"code": "401", "title": "Data change can only run DML", "status": "WARNING", "content": "\"\nDROP TABLE city;\" is not DML"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (167, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 123, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DML"}', '{"results": [{"title": "table.drop-naming-convention", "status": "ERROR", "content": "`city` mismatches drop table naming convention, naming format should be \"_del$\"", "sqlReviewReport": {"code": "603", "line": "4"}}, {"title": "statement.insert.must-specify-column", "status": "ERROR", "content": "The INSERT statement must specify columns but \"INSERT INTO film_actor VALUES (1,1,''2006-02-15 05:05:03''),\n(1,23,''2006-02-15 05:05:03''),\n(1,25,''2006-02-15 05:05:03'');\" does not", "sqlReviewReport": {"code": "1107", "line": "3"}}, {"title": "statement.insert.must-specify-column", "status": "ERROR", "content": "The INSERT statement must specify columns but \"\nINSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),\n(2,''Italian'',''2006-02-15 05:02:19''),\n(3,''Japanese'',''2006-02-15 05:02:19''),\n(4,''Mandarin'',''2006-02-15 05:02:19''),\n(5,''French'',''2006-02-15 05:02:19''),\n(6,''German'',''2006-02-15 05:02:19'')\n;\" does not", "sqlReviewReport": {"code": "1107", "line": "11"}}, {"title": "schema.backward-compatibility", "status": "WARNING", "content": "\"\nDROP TABLE city;\" may cause incompatibility with the existing data and code", "sqlReviewReport": {"code": "103", "line": "4"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (163, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 122, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DML"}', '{"results": [{"title": "table.drop-naming-convention", "status": "ERROR", "content": "`city` mismatches drop table naming convention, naming format should be \"_del$\"", "sqlReviewReport": {"code": "603", "line": "4"}}, {"title": "schema.backward-compatibility", "status": "WARNING", "content": "\"\nDROP TABLE city;\" may cause incompatibility with the existing data and code", "sqlReviewReport": {"code": "103", "line": "4"}}, {"title": "statement.insert.must-specify-column", "status": "WARNING", "content": "The INSERT statement must specify columns but \"INSERT INTO film_actor VALUES (1,1,''2006-02-15 05:05:03''),\n(1,23,''2006-02-15 05:05:03''),\n(1,25,''2006-02-15 05:05:03'');\" does not", "sqlReviewReport": {"code": "1107", "line": "3"}}, {"title": "statement.insert.must-specify-column", "status": "WARNING", "content": "The INSERT statement must specify columns but \"\nINSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),\n(2,''Italian'',''2006-02-15 05:02:19''),\n(3,''Japanese'',''2006-02-15 05:02:19''),\n(4,''Mandarin'',''2006-02-15 05:02:19''),\n(5,''French'',''2006-02-15 05:02:19''),\n(6,''German'',''2006-02-15 05:02:19'')\n;\" does not", "sqlReviewReport": {"code": "1107", "line": "11"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (160, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 121, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DML"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"affectedRows": "9", "statementTypes": ["DROP_TABLE", "INSERT"], "changedResources": {"databases": [{"name": "sakila_test", "schemas": [{"tables": [{"name": "city"}, {"name": "rental"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (159, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 121, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DML"}', '{"results": [{"title": "table.drop-naming-convention", "status": "ERROR", "content": "`city` mismatches drop table naming convention, naming format should be \"_del$\"", "sqlReviewReport": {"code": "603", "line": "4"}}, {"title": "table.drop-naming-convention", "status": "ERROR", "content": "`rental` mismatches drop table naming convention, naming format should be \"_del$\"", "sqlReviewReport": {"code": "603", "line": "5"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (158, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 121, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DML"}', '{"results": [{"code": "401", "title": "Data change can only run DML", "status": "WARNING", "content": "\"\nDROP TABLE city;\" is not DML"}, {"code": "401", "title": "Data change can only run DML", "status": "WARNING", "content": "\"\nDROP TABLE  rental;\" is not DML"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (177, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 126, "instanceUid": 116, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"affectedRows": "1000", "statementTypes": ["ALTER_TABLE"], "changedResources": {"databases": [{"name": "employee", "schemas": [{"name": "public", "tables": [{"name": "employee"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (171, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 125, "instanceUid": 115, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (173, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 125, "instanceUid": 115, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"affectedRows": "1000", "statementTypes": ["ALTER_TABLE"], "changedResources": {"databases": [{"name": "employee", "schemas": [{"name": "public", "tables": [{"name": "employee"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (175, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 126, "instanceUid": 116, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (172, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 125, "instanceUid": 115, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (170, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 115, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (174, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 116, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (176, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 126, "instanceUid": 116, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "column.no-null", "status": "WARNING", "content": "Column \"email\" in \"public\".\"employee\" cannot have NULL value", "sqlReviewReport": {"code": "402", "line": "1"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (178, 1, 1695288454, 1, 1695288454, 112, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 116, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (179, 1, 1695288476, 1, 1695288476, 113, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 115, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.plan_check_run ENABLE TRIGGER ALL;
@@ -20267,6 +21112,10 @@ INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, u
 INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (104, 'NORMAL', 101, 1695110903, 101, 1695110903, 'bb.policy.backup-plan', '{"schedule": "UNSET", "retentionPeriodTs": 0}', 'ENVIRONMENT', 103, false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (105, 'NORMAL', 101, 1695110903, 101, 1695110903, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_ALWAYS", "assigneeGroupList": [{"value": "PROJECT_OWNER", "issueType": "bb.issue.database.schema.update"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.data.update"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.schema.update.ghost"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.general"}]}', 'ENVIRONMENT', 103, false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (102, 'NORMAL', 1, 1694683927, 101, 1695177922, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_ALWAYS", "assigneeGroupList": [{"value": "PROJECT_OWNER", "issueType": "bb.issue.database.schema.update"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.data.update"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.schema.update.ghost"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.general"}]}', 'ENVIRONMENT', 102, true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (107, 'NORMAL', 101, 1695282690, 101, 1695282690, 'bb.policy.sql-review', '{"name": "SQL review policy", "ruleList": [{"type": "database.drop-empty-database", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "system.charset.allowlist", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.collation.allowlist", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.comment.length", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":64}"}, {"type": "column.required", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"list\":[\"ID\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"list\":[\"ID\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.type-disallow-list", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.no-null", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "ERROR", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.comment", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.comment", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.comment", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.maximum-character-length", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-varchar-length", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.maximum-varchar-length", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.maximum-varchar-length", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.auto-increment-initial-value", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.auto-increment-initial-value", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.auto-increment-initial-value", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.current-time-count-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.current-time-count-limit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.current-time-count-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MSSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.disallow-partition", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.comment", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "table.comment", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "table.comment", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.row-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.insert.row-limit", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.insert.row-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.dml-dry-run", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.dml-dry-run", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.dml-dry-run", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-add-column-with-default", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.add-check-not-valid", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.disallow-add-not-null", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "naming.table", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table.no-keyword", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "naming.table.no-keyword", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "naming.table.no-keyword", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "naming.column", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.pk", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^pk_{{table}}_{{column_list}}$\"}"}, {"type": "naming.index.idx", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.identifier.no-keyword", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "naming.identifier.no-keyword", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "naming.identifier.no-keyword", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "naming.identifier.case", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"upper\":true}"}, {"type": "naming.identifier.case", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"upper\":true}"}, {"type": "index.no-duplicate-column", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.key-number-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.primary-key-type-allowlist", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.create-concurrently", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "engine.mysql.use-innodb", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}]}', 'ENVIRONMENT', 103, true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (106, 'NORMAL', 101, 1695282683, 101, 1695287880, 'bb.policy.sql-review', '{"name": "SQL review policy", "ruleList": [{"type": "database.drop-empty-database", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MSSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "database.drop-empty-database", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "engine.mysql.use-innodb", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.comment", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "table.comment", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "table.comment", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.row-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.insert.row-limit", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.insert.row-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.dml-dry-run", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.dml-dry-run", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.dml-dry-run", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-add-column-with-default", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.add-check-not-valid", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.disallow-add-not-null", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "naming.table", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table.no-keyword", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "naming.table.no-keyword", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "naming.table.no-keyword", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "naming.column", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.pk", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^pk_{{table}}_{{column_list}}$\"}"}, {"type": "naming.index.idx", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.identifier.no-keyword", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "naming.identifier.no-keyword", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "naming.identifier.no-keyword", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "naming.identifier.case", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"upper\":true}"}, {"type": "naming.identifier.case", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"upper\":true}"}, {"type": "column.required", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"list\":[\"ID\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"list\":[\"ID\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.type-disallow-list", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.disallow-change-type", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.comment", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.comment", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.comment", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.maximum-character-length", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-varchar-length", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.maximum-varchar-length", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.maximum-varchar-length", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.auto-increment-initial-value", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.auto-increment-initial-value", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.auto-increment-initial-value", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.current-time-count-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.current-time-count-limit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.current-time-count-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.key-number-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.primary-key-type-allowlist", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.create-concurrently", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "system.charset.allowlist", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.collation.allowlist", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.comment.length", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":64}"}]}', 'ENVIRONMENT', 101, true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (108, 'NORMAL', 101, 1695282698, 101, 1695287997, 'bb.policy.sql-review', '{"name": "SQL Review Sample Policy", "ruleList": [{"type": "database.drop-empty-database", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "MARIADB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "MARIADB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MARIADB", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"_del$\"}"}]}', 'ENVIRONMENT', 102, true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (110, 'NORMAL', 101, 1695287997, 101, 1695287997, 'bb.policy.masking', '{"mask_data": [{"table": "salary", "column": "amount", "schema": "public", "masking_level": 3}]}', 'DATABASE', 107, true) ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.policy ENABLE TRIGGER ALL;
@@ -20282,6 +21131,7 @@ INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updat
 INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (104, 'NORMAL', 101, 1695113006, 101, 1695113006, 101, 'DEVELOPER', 101, '{"title": "Developer"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (106, 'NORMAL', 101, 1695191980, 101, 1695191980, 101, 'OWNER', 104, '{"title": "Owner"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (107, 'NORMAL', 101, 1695197199, 101, 1695197199, 102, 'OWNER', 101, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (108, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 'OWNER', 101, '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.project_member ENABLE TRIGGER ALL;
@@ -20366,7 +21216,7 @@ INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, 
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (110, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.schema-template', '{}', 'The schema template setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (111, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.data-classification', '{}', 'The data classification setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (112, 'NORMAL', 1, 1694683928, 101, 1695177966, 'bb.workspace.approval', '{"rules":[{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"项目所有者 -> DBA","description":"系统定义的流程。先由项目所有者审批，再由 DBA 审批。","creatorId":1},"condition":{"expression":"source == 1 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]}]},"title":"项目所有者","description":"系统定义的流程。只需要项目所有者审批。","creatorId":1},"condition":{"expression":"source == 2 && level == 0 || source == 4 && level == 0 || source == 5 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"DBA","description":"系统定义的流程。只需要 DBA 审批","creatorId":1},"condition":{"expression":"source == 3 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"工作空间所有者","description":"系统定义的流程。只需要管理员审批","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"项目所有者 -> DBA -> 工作空间所有者","description":"系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。","creatorId":1},"condition":{}}]}', 'The workspace approval setting') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 101, 1695199279, 'bb.workspace.profile', '{"externalUrl":"https://demo.bytebase.com"}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695288381, 'bb.workspace.profile', '{"externalUrl":"https://demo.bytebase.com"}', '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.setting ENABLE TRIGGER ALL;
@@ -23602,6 +24452,42 @@ INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, up
   PRIMARY KEY (id)
 );
 ', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{"vcsPayload": {"pushEvent": {"ref": "refs/heads/main", "after": "6ca80541b4253ee6193393cf15b074cabb585764", "before": "ab1d6e3ee4a5d5f1f75072618a0a19e175f7f1a6", "commits": [{"id": "6ca80541b4253ee6193393cf15b074cabb585764", "url": "https://github.com/s-bytebase/hello-world/commit/6ca80541b4253ee6193393cf15b074cabb585764", "title": "create blog table", "message": "create blog table", "addedList": ["prod/blog_prod##202309201624##ddl##create_table_blog.sql", "test/blog_test##202309201624##ddl##create_table_blog.sql"], "createdTs": "1695198616", "authorName": "p0ny", "authorEmail": "p0uy@outlook.com"}], "vcsType": "GITHUB", "authorName": "RainbowDashy", "fileCommit": {}, "repositoryId": "s-bytebase/hello-world", "repositoryUrl": "https://github.com/s-bytebase/hello-world", "repositoryFullPath": "s-bytebase/hello-world"}}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (121, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 102, '[3 databases] Import data but secretly drops tables @09-21 15:47 UTC+0800', 'INSERT INTO film_actor VALUES (1,1,''2006-02-15 05:05:03''),
+(1,23,''2006-02-15 05:05:03''),
+(1,25,''2006-02-15 05:05:03'');
+DROP TABLE city;
+DROP TABLE  rental;
+INSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),
+(2,''Italian'',''2006-02-15 05:02:19''),
+(3,''Japanese'',''2006-02-15 05:02:19''),
+(4,''Mandarin'',''2006-02-15 05:02:19''),
+(5,''French'',''2006-02-15 05:02:19''),
+(6,''German'',''2006-02-15 05:02:19'');', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (122, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 103, '[3 databases] Import data but secretly drops tables @09-21 15:47 UTC+0800', 'INSERT INTO film_actor VALUES (1,1,''2006-02-15 05:05:03''),
+(1,23,''2006-02-15 05:05:03''),
+(1,25,''2006-02-15 05:05:03'');
+DROP TABLE city;
+INSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),
+(2,''Italian'',''2006-02-15 05:02:19''),
+(3,''Japanese'',''2006-02-15 05:02:19''),
+(4,''Mandarin'',''2006-02-15 05:02:19''),
+(5,''French'',''2006-02-15 05:02:19''),
+(6,''German'',''2006-02-15 05:02:19'');', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (123, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 101, '[3 databases] Import data but secretly drops tables @09-21 15:47 UTC+0800', 'INSERT INTO film_actor VALUES (1,1,''2006-02-15 05:05:03''),
+(1,23,''2006-02-15 05:05:03''),
+(1,25,''2006-02-15 05:05:03'');
+DROP TABLE city;
+INSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),
+(2,''Italian'',''2006-02-15 05:02:19''),
+(3,''Japanese'',''2006-02-15 05:02:19''),
+(4,''Mandarin'',''2006-02-15 05:02:19''),
+(5,''French'',''2006-02-15 05:02:19''),
+(6,''German'',''2006-02-15 05:02:19'');', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (124, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 107, 'Sample Sheet', 'SELECT * FROM salary;', 'PROJECT', 'BYTEBASE', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (125, 'NORMAL', 1, 1695287997, 1, 1695287997, 103, 106, 'Alter table to test sample instance for sample issue', 'ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '''';', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (126, 'NORMAL', 1, 1695287997, 1, 1695287997, 103, 107, 'Alter table to prod sample instance for sample issue', 'ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '''';', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (127, 'NORMAL', 101, 1695288454, 101, 1695288454, 103, 107, 'Establish "employee" baseline', '', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (128, 'NORMAL', 101, 1695288476, 101, 1695288476, 103, 106, 'Establish "employee" baseline', '', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.sheet ENABLE TRIGGER ALL;
@@ -23645,6 +24531,13 @@ INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, up
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (111, 'NORMAL', 101, 1695197737, 101, 1695197737, 107, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (112, 'NORMAL', 1, 1695198626, 1, 1695198626, 108, 101, 'Test Stage') ON CONFLICT DO NOTHING;
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (113, 'NORMAL', 1, 1695198626, 1, 1695198626, 109, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (114, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 101, 'Test Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (115, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 103, 'Staging Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (116, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (117, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 101, 'Test Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (118, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (119, 'NORMAL', 101, 1695288454, 101, 1695288454, 112, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (120, 'NORMAL', 101, 1695288476, 101, 1695288476, 113, 101, 'Test Stage') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.stage ENABLE TRIGGER ALL;
@@ -23668,6 +24561,13 @@ INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, upd
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (111, 'NORMAL', 101, 1695197737, 1, 1695197772, 107, 111, 101, 105, 'Create database blog_prod', 'PENDING_APPROVAL', 'bb.task.database.create', '{"labels": "[{\"key\":\"bb.environment\",\"value\":\"prod\"}]", "specId": "726bfba4-d0cd-4059-978b-3e85729a2eab", "sheetId": 117, "character": "utf8mb4", "collation": "utf8mb4_general_ci", "projectId": 102, "databaseName": "blog_prod", "environmentId": "prod"}', 0) ON CONFLICT DO NOTHING;
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (112, 'NORMAL', 1, 1695198626, 1, 1695198626, 108, 112, 101, 104, 'DDL(schema) for database "blog_test"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 119, "schemaVersion": "202309201624-ddl"}', 0) ON CONFLICT DO NOTHING;
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (113, 'NORMAL', 1, 1695198626, 1, 1695198626, 109, 113, 101, 105, 'DDL(schema) for database "blog_prod"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 120, "schemaVersion": "202309201624-ddl"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (114, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 114, 101, 102, 'DML(data) for database "sakila_test"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "eb4143ae-1950-4267-81a6-4fc3ba1a29e0", "sheetId": 121, "schemaVersion": "20230921155035", "rollbackSqlStatus": "PENDING"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (115, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 115, 101, 103, 'DML(data) for database "sakila_staging"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "ed0acc88-7161-42fc-a77e-b5c140590ee9", "sheetId": 122, "schemaVersion": "20230921155035", "rollbackSqlStatus": "PENDING"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (116, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 116, 101, 101, 'DML(data) for database "sakila_prod"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "395ce918-ab68-4546-9ed5-c3f7ccd36cc0", "sheetId": 123, "schemaVersion": "20230921155035", "rollbackSqlStatus": "PENDING"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (117, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 117, 115, 106, 'DDL(schema) for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 125, "schemaVersion": "20230921171957"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (118, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 118, 116, 107, 'DDL(schema) for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 126, "schemaVersion": "20230921171957"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (119, 'NORMAL', 101, 1695288454, 101, 1695288454, 112, 119, 116, 107, 'Establish baseline for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.baseline', '{"specId": "877416ee-9737-44b0-a766-7120779b719d", "schemaVersion": "20230921172734"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (120, 'NORMAL', 101, 1695288476, 101, 1695288476, 113, 120, 115, 106, 'Establish baseline for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.baseline', '{"specId": "aa543d00-91e8-442c-bedb-b9bd78335132", "schemaVersion": "20230921172755"}', 0) ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.task ENABLE TRIGGER ALL;
@@ -23704,6 +24604,8 @@ INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts,
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (114, 101, 1695197772, 1, 1695197772, 111, 0, 'Create database blog_prod 1695197771', 'DONE', 0, '{"detail": "Created database \"blog_prod\""}') ON CONFLICT DO NOTHING;
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (115, 1, 1695198626, 1, 1695198629, 112, 0, 'DDL(schema) for database "blog_test" 1695198625', 'DONE', 0, '{"detail": "Applied migration version 202309201624-ddl to database \"blog_test\".", "version": "202309201624-ddl", "changeHistory": "instances/mysql-prod/databases/blog_test/changeHistories/117"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (116, 101, 1695199119, 1, 1695199122, 113, 0, 'DDL(schema) for database "blog_prod" 1695199118', 'DONE', 0, '{"detail": "Applied migration version 202309201624-ddl to database \"blog_prod\".", "version": "202309201624-ddl", "changeHistory": "instances/mysql-prod/databases/blog_prod/changeHistories/118"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (117, 101, 1695288459, 1, 1695288459, 119, 0, 'Establish baseline for database "employee" 1695288459', 'DONE', 0, '{"detail": "Established baseline version 20230921172734 for database \"employee\".", "version": "20230921172734", "changeHistory": "instances/prod-sample-instance/databases/employee/changeHistories/119"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (118, 1, 1695288476, 1, 1695288476, 120, 0, 'Establish baseline for database "employee" 1695288475', 'DONE', 0, '{"detail": "Established baseline version 20230921172755 for database \"employee\".", "version": "20230921172755", "changeHistory": "instances/test-sample-instance/databases/employee/changeHistories/120"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.task_run ENABLE TRIGGER ALL;
@@ -23712,7 +24614,7 @@ ALTER TABLE public.task_run ENABLE TRIGGER ALL;
 -- Name: activity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.activity_id_seq', 204, true);
+SELECT pg_catalog.setval('public.activity_id_seq', 218, true);
 
 
 --
@@ -23740,14 +24642,14 @@ SELECT pg_catalog.setval('public.backup_setting_id_seq', 101, false);
 -- Name: bookmark_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.bookmark_id_seq', 101, false);
+SELECT pg_catalog.setval('public.bookmark_id_seq', 101, true);
 
 
 --
 -- Name: data_source_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.data_source_id_seq', 114, true);
+SELECT pg_catalog.setval('public.data_source_id_seq', 116, true);
 
 
 --
@@ -23761,7 +24663,7 @@ SELECT pg_catalog.setval('public.db_group_id_seq', 101, false);
 -- Name: db_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.db_id_seq', 105, true);
+SELECT pg_catalog.setval('public.db_id_seq', 107, true);
 
 
 --
@@ -23775,7 +24677,7 @@ SELECT pg_catalog.setval('public.db_label_id_seq', 101, false);
 -- Name: db_schema_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.db_schema_id_seq', 111, true);
+SELECT pg_catalog.setval('public.db_schema_id_seq', 113, true);
 
 
 --
@@ -23810,35 +24712,35 @@ SELECT pg_catalog.setval('public.idp_id_seq', 101, false);
 -- Name: inbox_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.inbox_id_seq', 119, true);
+SELECT pg_catalog.setval('public.inbox_id_seq', 126, true);
 
 
 --
 -- Name: instance_change_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_change_history_id_seq', 118, true);
+SELECT pg_catalog.setval('public.instance_change_history_id_seq', 120, true);
 
 
 --
 -- Name: instance_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_id_seq', 114, true);
+SELECT pg_catalog.setval('public.instance_id_seq', 116, true);
 
 
 --
 -- Name: instance_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_user_id_seq', 103, true);
+SELECT pg_catalog.setval('public.instance_user_id_seq', 105, true);
 
 
 --
 -- Name: issue_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.issue_id_seq', 109, true);
+SELECT pg_catalog.setval('public.issue_id_seq', 113, true);
 
 
 --
@@ -23866,28 +24768,28 @@ SELECT pg_catalog.setval('public.member_id_seq', 104, true);
 -- Name: pipeline_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.pipeline_id_seq', 109, true);
+SELECT pg_catalog.setval('public.pipeline_id_seq', 113, true);
 
 
 --
 -- Name: plan_check_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.plan_check_run_id_seq', 156, true);
+SELECT pg_catalog.setval('public.plan_check_run_id_seq', 179, true);
 
 
 --
 -- Name: plan_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.plan_id_seq', 109, true);
+SELECT pg_catalog.setval('public.plan_id_seq', 113, true);
 
 
 --
 -- Name: policy_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.policy_id_seq', 105, true);
+SELECT pg_catalog.setval('public.policy_id_seq', 110, true);
 
 
 --
@@ -23901,14 +24803,14 @@ SELECT pg_catalog.setval('public.principal_id_seq', 104, true);
 -- Name: project_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.project_id_seq', 102, true);
+SELECT pg_catalog.setval('public.project_id_seq', 103, true);
 
 
 --
 -- Name: project_member_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.project_member_id_seq', 107, true);
+SELECT pg_catalog.setval('public.project_member_id_seq', 108, true);
 
 
 --
@@ -23950,14 +24852,14 @@ SELECT pg_catalog.setval('public.schema_group_id_seq', 101, false);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 121, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 125, true);
 
 
 --
 -- Name: sheet_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.sheet_id_seq', 120, true);
+SELECT pg_catalog.setval('public.sheet_id_seq', 128, true);
 
 
 --
@@ -23978,7 +24880,7 @@ SELECT pg_catalog.setval('public.slow_query_id_seq', 101, false);
 -- Name: stage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.stage_id_seq', 113, true);
+SELECT pg_catalog.setval('public.stage_id_seq', 120, true);
 
 
 --
@@ -23992,14 +24894,14 @@ SELECT pg_catalog.setval('public.task_dag_id_seq', 101, false);
 -- Name: task_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_id_seq', 113, true);
+SELECT pg_catalog.setval('public.task_id_seq', 120, true);
 
 
 --
 -- Name: task_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_run_id_seq', 116, true);
+SELECT pg_catalog.setval('public.task_run_id_seq', 118, true);
 
 
 --
