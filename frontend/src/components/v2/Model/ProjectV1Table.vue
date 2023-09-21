@@ -14,7 +14,7 @@
             v-if="project.tenantMode === TenantMode.TENANT_MODE_ENABLED"
           >
             <template #trigger>
-              <TenantIcon class="ml-1 w-4 h-4 text-control" />
+              <TenantIcon class="ml-1 text-control" />
             </template>
             <span class="whitespace-nowrap">
               {{ $t("project.mode.batch") }}
