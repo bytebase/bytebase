@@ -62,6 +62,13 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/config}"};
   }
 
+  rpc UpdateDatabaseConfig(UpdateDatabaseConfigRequest) returns (DatabaseConfig) {
+    option (google.api.http) = {
+      patch: "/v1/{database_config.name=instances/*/databases/*/config}"
+      body: "database_config"
+    };
+  }
+
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
@@ -254,11 +261,11 @@ message GetDatabaseConfigRequest {
 }
 
 message UpdateDatabaseConfigRequest {
-  // The database metadata config to update.
+  // The database config to update.
   //
-  // The database_metadata_config's `name` field is used to identify the database metadata config to update.
+  // The database_config's `name` field is used to identify the database metadata config to update.
   // Format: instances/{instance}/databases/{database}/config
-  DatabaseConfig database_metadata_config = 1 [(google.api.field_behavior) = REQUIRED];
+  DatabaseConfig database_config = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;

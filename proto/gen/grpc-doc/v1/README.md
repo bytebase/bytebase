@@ -3259,9 +3259,9 @@ TableMetadata is the metadata for tables.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database_metadata_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The database metadata config to update.
+| database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The database config to update.
 
-The database_metadata_config&#39;s `name` field is used to identify the database metadata config to update. Format: instances/{instance}/databases/{database}/config |
+The database_config&#39;s `name` field is used to identify the database metadata config to update. Format: instances/{instance}/databases/{database}/config |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
@@ -3468,6 +3468,7 @@ The type of the backup.
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseConfig | [GetDatabaseConfigRequest](#bytebase-v1-GetDatabaseConfigRequest) | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  |
+| UpdateDatabaseConfig | [UpdateDatabaseConfigRequest](#bytebase-v1-UpdateDatabaseConfigRequest) | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |

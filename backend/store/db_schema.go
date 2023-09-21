@@ -20,6 +20,11 @@ type DBSchema struct {
 	Config   *storepb.DatabaseConfig
 }
 
+// UpdateDBSchemaMessage is the message for updating db schema.
+type UpdateDBSchemaMessage struct {
+	Config *storepb.DatabaseConfig
+}
+
 // TableExists checks if the table exists.
 func (s *DBSchema) TableExists(schemaName string, tableName string, ignoreCaseSensitive bool) bool {
 	if ignoreCaseSensitive {
@@ -244,5 +249,38 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 	}
 
 	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
+	return nil
+}
+
+// UpdateDBSchema updates a database schema.
+func (s *Store) UpdateDBSchema(ctx context.Context, databaseID int, patch *UpdateDBSchemaMessage, updaterID int) error {
+	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
+	if v := patch.Config; v != nil {
+		bytes, err := protojson.Marshal(v)
+		if err != nil {
+			return err
+		}
+		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, bytes)
+	}
+	args = append(args, databaseID)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
+			UPDATE db_schema
+			SET `+strings.Join(set, ", ")+`
+			WHERE database_id = $%d
+		`, len(args)),
+	); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	// Invalid the cache and read the value again.
+	s.dbSchemaCache.Del(databaseID)
 	return nil
 }
