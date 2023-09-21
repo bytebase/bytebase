@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	// Import PostgreSQL parser.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
