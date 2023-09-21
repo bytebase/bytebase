@@ -193,23 +193,23 @@ export interface GetDatabaseMetadataRequest {
   name: string;
 }
 
-export interface GetDatabaseMetadataConfigRequest {
+export interface GetDatabaseConfigRequest {
   /**
    * The name of the database to retrieve metadata.
-   * Format: instances/{instance}/databases/{database}/metadataConfig
+   * Format: instances/{instance}/databases/{database}/config
    */
   name: string;
 }
 
-export interface UpdateDatabaseMetadataConfigRequest {
+export interface UpdateDatabaseConfigRequest {
   /**
    * The database metadata config to update.
    *
    * The database_metadata_config's `name` field is used to identify the database metadata config to update.
-   * Format: instances/{instance}/databases/{database}/metadataConfig
+   * Format: instances/{instance}/databases/{database}/config
    */
   databaseMetadataConfig:
-    | DatabaseMetadataConfig
+    | DatabaseConfig
     | undefined;
   /** The list of fields to update. */
   updateMask: string[] | undefined;
@@ -702,30 +702,30 @@ export interface ForeignKeyMetadata {
   matchType: string;
 }
 
-export interface DatabaseMetadataConfig {
+export interface DatabaseConfig {
   name: string;
   /** The schema_configs is the list of configs for schemas in a database. */
-  schemaConfigs: SchemaMetadataConfig[];
+  schemaConfigs: SchemaConfig[];
 }
 
-export interface SchemaMetadataConfig {
+export interface SchemaConfig {
   /**
    * The name is the schema name.
    * It is an empty string for databases without such concept such as MySQL.
    */
   name: string;
   /** The table_configs is the list of configs for tables in a schema. */
-  tableConfigs: TableMetadataConfig[];
+  tableConfigs: TableConfig[];
 }
 
-export interface TableMetadataConfig {
+export interface TableConfig {
   /** The name is the name of a table. */
   name: string;
   /** The column_configs is the ordered list of configs for columns in a table. */
-  columnConfigs: ColumnMetadataConfig[];
+  columnConfigs: ColumnConfig[];
 }
 
-export interface ColumnMetadataConfig {
+export interface ColumnConfig {
   /** The name is the name of a column. */
   name: string;
   semanticTypeId: string;
@@ -2127,22 +2127,22 @@ export const GetDatabaseMetadataRequest = {
   },
 };
 
-function createBaseGetDatabaseMetadataConfigRequest(): GetDatabaseMetadataConfigRequest {
+function createBaseGetDatabaseConfigRequest(): GetDatabaseConfigRequest {
   return { name: "" };
 }
 
-export const GetDatabaseMetadataConfigRequest = {
-  encode(message: GetDatabaseMetadataConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const GetDatabaseConfigRequest = {
+  encode(message: GetDatabaseConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseMetadataConfigRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseConfigRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetDatabaseMetadataConfigRequest();
+    const message = createBaseGetDatabaseConfigRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2162,35 +2162,35 @@ export const GetDatabaseMetadataConfigRequest = {
     return message;
   },
 
-  fromJSON(object: any): GetDatabaseMetadataConfigRequest {
+  fromJSON(object: any): GetDatabaseConfigRequest {
     return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
-  toJSON(message: GetDatabaseMetadataConfigRequest): unknown {
+  toJSON(message: GetDatabaseConfigRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
-  create(base?: DeepPartial<GetDatabaseMetadataConfigRequest>): GetDatabaseMetadataConfigRequest {
-    return GetDatabaseMetadataConfigRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<GetDatabaseConfigRequest>): GetDatabaseConfigRequest {
+    return GetDatabaseConfigRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<GetDatabaseMetadataConfigRequest>): GetDatabaseMetadataConfigRequest {
-    const message = createBaseGetDatabaseMetadataConfigRequest();
+  fromPartial(object: DeepPartial<GetDatabaseConfigRequest>): GetDatabaseConfigRequest {
+    const message = createBaseGetDatabaseConfigRequest();
     message.name = object.name ?? "";
     return message;
   },
 };
 
-function createBaseUpdateDatabaseMetadataConfigRequest(): UpdateDatabaseMetadataConfigRequest {
+function createBaseUpdateDatabaseConfigRequest(): UpdateDatabaseConfigRequest {
   return { databaseMetadataConfig: undefined, updateMask: undefined };
 }
 
-export const UpdateDatabaseMetadataConfigRequest = {
-  encode(message: UpdateDatabaseMetadataConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const UpdateDatabaseConfigRequest = {
+  encode(message: UpdateDatabaseConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.databaseMetadataConfig !== undefined) {
-      DatabaseMetadataConfig.encode(message.databaseMetadataConfig, writer.uint32(10).fork()).ldelim();
+      DatabaseConfig.encode(message.databaseMetadataConfig, writer.uint32(10).fork()).ldelim();
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
@@ -2198,10 +2198,10 @@ export const UpdateDatabaseMetadataConfigRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDatabaseMetadataConfigRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDatabaseConfigRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateDatabaseMetadataConfigRequest();
+    const message = createBaseUpdateDatabaseConfigRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2210,7 +2210,7 @@ export const UpdateDatabaseMetadataConfigRequest = {
             break;
           }
 
-          message.databaseMetadataConfig = DatabaseMetadataConfig.decode(reader, reader.uint32());
+          message.databaseMetadataConfig = DatabaseConfig.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -2228,33 +2228,33 @@ export const UpdateDatabaseMetadataConfigRequest = {
     return message;
   },
 
-  fromJSON(object: any): UpdateDatabaseMetadataConfigRequest {
+  fromJSON(object: any): UpdateDatabaseConfigRequest {
     return {
       databaseMetadataConfig: isSet(object.databaseMetadataConfig)
-        ? DatabaseMetadataConfig.fromJSON(object.databaseMetadataConfig)
+        ? DatabaseConfig.fromJSON(object.databaseMetadataConfig)
         : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
-  toJSON(message: UpdateDatabaseMetadataConfigRequest): unknown {
+  toJSON(message: UpdateDatabaseConfigRequest): unknown {
     const obj: any = {};
     message.databaseMetadataConfig !== undefined && (obj.databaseMetadataConfig = message.databaseMetadataConfig
-      ? DatabaseMetadataConfig.toJSON(message.databaseMetadataConfig)
+      ? DatabaseConfig.toJSON(message.databaseMetadataConfig)
       : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
-  create(base?: DeepPartial<UpdateDatabaseMetadataConfigRequest>): UpdateDatabaseMetadataConfigRequest {
-    return UpdateDatabaseMetadataConfigRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UpdateDatabaseConfigRequest>): UpdateDatabaseConfigRequest {
+    return UpdateDatabaseConfigRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<UpdateDatabaseMetadataConfigRequest>): UpdateDatabaseMetadataConfigRequest {
-    const message = createBaseUpdateDatabaseMetadataConfigRequest();
+  fromPartial(object: DeepPartial<UpdateDatabaseConfigRequest>): UpdateDatabaseConfigRequest {
+    const message = createBaseUpdateDatabaseConfigRequest();
     message.databaseMetadataConfig =
       (object.databaseMetadataConfig !== undefined && object.databaseMetadataConfig !== null)
-        ? DatabaseMetadataConfig.fromPartial(object.databaseMetadataConfig)
+        ? DatabaseConfig.fromPartial(object.databaseMetadataConfig)
         : undefined;
     message.updateMask = object.updateMask ?? undefined;
     return message;
@@ -4801,25 +4801,25 @@ export const ForeignKeyMetadata = {
   },
 };
 
-function createBaseDatabaseMetadataConfig(): DatabaseMetadataConfig {
+function createBaseDatabaseConfig(): DatabaseConfig {
   return { name: "", schemaConfigs: [] };
 }
 
-export const DatabaseMetadataConfig = {
-  encode(message: DatabaseMetadataConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const DatabaseConfig = {
+  encode(message: DatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     for (const v of message.schemaConfigs) {
-      SchemaMetadataConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+      SchemaConfig.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseMetadataConfig {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseConfig {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDatabaseMetadataConfig();
+    const message = createBaseDatabaseConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4835,7 +4835,7 @@ export const DatabaseMetadataConfig = {
             break;
           }
 
-          message.schemaConfigs.push(SchemaMetadataConfig.decode(reader, reader.uint32()));
+          message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4846,57 +4846,57 @@ export const DatabaseMetadataConfig = {
     return message;
   },
 
-  fromJSON(object: any): DatabaseMetadataConfig {
+  fromJSON(object: any): DatabaseConfig {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       schemaConfigs: Array.isArray(object?.schemaConfigs)
-        ? object.schemaConfigs.map((e: any) => SchemaMetadataConfig.fromJSON(e))
+        ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: DatabaseMetadataConfig): unknown {
+  toJSON(message: DatabaseConfig): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.schemaConfigs) {
-      obj.schemaConfigs = message.schemaConfigs.map((e) => e ? SchemaMetadataConfig.toJSON(e) : undefined);
+      obj.schemaConfigs = message.schemaConfigs.map((e) => e ? SchemaConfig.toJSON(e) : undefined);
     } else {
       obj.schemaConfigs = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<DatabaseMetadataConfig>): DatabaseMetadataConfig {
-    return DatabaseMetadataConfig.fromPartial(base ?? {});
+  create(base?: DeepPartial<DatabaseConfig>): DatabaseConfig {
+    return DatabaseConfig.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<DatabaseMetadataConfig>): DatabaseMetadataConfig {
-    const message = createBaseDatabaseMetadataConfig();
+  fromPartial(object: DeepPartial<DatabaseConfig>): DatabaseConfig {
+    const message = createBaseDatabaseConfig();
     message.name = object.name ?? "";
-    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaMetadataConfig.fromPartial(e)) || [];
+    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseSchemaMetadataConfig(): SchemaMetadataConfig {
+function createBaseSchemaConfig(): SchemaConfig {
   return { name: "", tableConfigs: [] };
 }
 
-export const SchemaMetadataConfig = {
-  encode(message: SchemaMetadataConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const SchemaConfig = {
+  encode(message: SchemaConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     for (const v of message.tableConfigs) {
-      TableMetadataConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+      TableConfig.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaMetadataConfig {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaConfig {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSchemaMetadataConfig();
+    const message = createBaseSchemaConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4912,7 +4912,7 @@ export const SchemaMetadataConfig = {
             break;
           }
 
-          message.tableConfigs.push(TableMetadataConfig.decode(reader, reader.uint32()));
+          message.tableConfigs.push(TableConfig.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4923,57 +4923,57 @@ export const SchemaMetadataConfig = {
     return message;
   },
 
-  fromJSON(object: any): SchemaMetadataConfig {
+  fromJSON(object: any): SchemaConfig {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       tableConfigs: Array.isArray(object?.tableConfigs)
-        ? object.tableConfigs.map((e: any) => TableMetadataConfig.fromJSON(e))
+        ? object.tableConfigs.map((e: any) => TableConfig.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: SchemaMetadataConfig): unknown {
+  toJSON(message: SchemaConfig): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.tableConfigs) {
-      obj.tableConfigs = message.tableConfigs.map((e) => e ? TableMetadataConfig.toJSON(e) : undefined);
+      obj.tableConfigs = message.tableConfigs.map((e) => e ? TableConfig.toJSON(e) : undefined);
     } else {
       obj.tableConfigs = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<SchemaMetadataConfig>): SchemaMetadataConfig {
-    return SchemaMetadataConfig.fromPartial(base ?? {});
+  create(base?: DeepPartial<SchemaConfig>): SchemaConfig {
+    return SchemaConfig.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SchemaMetadataConfig>): SchemaMetadataConfig {
-    const message = createBaseSchemaMetadataConfig();
+  fromPartial(object: DeepPartial<SchemaConfig>): SchemaConfig {
+    const message = createBaseSchemaConfig();
     message.name = object.name ?? "";
-    message.tableConfigs = object.tableConfigs?.map((e) => TableMetadataConfig.fromPartial(e)) || [];
+    message.tableConfigs = object.tableConfigs?.map((e) => TableConfig.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseTableMetadataConfig(): TableMetadataConfig {
+function createBaseTableConfig(): TableConfig {
   return { name: "", columnConfigs: [] };
 }
 
-export const TableMetadataConfig = {
-  encode(message: TableMetadataConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const TableConfig = {
+  encode(message: TableConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     for (const v of message.columnConfigs) {
-      ColumnMetadataConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+      ColumnConfig.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): TableMetadataConfig {
+  decode(input: _m0.Reader | Uint8Array, length?: number): TableConfig {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTableMetadataConfig();
+    const message = createBaseTableConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4989,7 +4989,7 @@ export const TableMetadataConfig = {
             break;
           }
 
-          message.columnConfigs.push(ColumnMetadataConfig.decode(reader, reader.uint32()));
+          message.columnConfigs.push(ColumnConfig.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -5000,44 +5000,44 @@ export const TableMetadataConfig = {
     return message;
   },
 
-  fromJSON(object: any): TableMetadataConfig {
+  fromJSON(object: any): TableConfig {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       columnConfigs: Array.isArray(object?.columnConfigs)
-        ? object.columnConfigs.map((e: any) => ColumnMetadataConfig.fromJSON(e))
+        ? object.columnConfigs.map((e: any) => ColumnConfig.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: TableMetadataConfig): unknown {
+  toJSON(message: TableConfig): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.columnConfigs) {
-      obj.columnConfigs = message.columnConfigs.map((e) => e ? ColumnMetadataConfig.toJSON(e) : undefined);
+      obj.columnConfigs = message.columnConfigs.map((e) => e ? ColumnConfig.toJSON(e) : undefined);
     } else {
       obj.columnConfigs = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<TableMetadataConfig>): TableMetadataConfig {
-    return TableMetadataConfig.fromPartial(base ?? {});
+  create(base?: DeepPartial<TableConfig>): TableConfig {
+    return TableConfig.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<TableMetadataConfig>): TableMetadataConfig {
-    const message = createBaseTableMetadataConfig();
+  fromPartial(object: DeepPartial<TableConfig>): TableConfig {
+    const message = createBaseTableConfig();
     message.name = object.name ?? "";
-    message.columnConfigs = object.columnConfigs?.map((e) => ColumnMetadataConfig.fromPartial(e)) || [];
+    message.columnConfigs = object.columnConfigs?.map((e) => ColumnConfig.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseColumnMetadataConfig(): ColumnMetadataConfig {
+function createBaseColumnConfig(): ColumnConfig {
   return { name: "", semanticTypeId: "" };
 }
 
-export const ColumnMetadataConfig = {
-  encode(message: ColumnMetadataConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ColumnConfig = {
+  encode(message: ColumnConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -5047,10 +5047,10 @@ export const ColumnMetadataConfig = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ColumnMetadataConfig {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ColumnConfig {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseColumnMetadataConfig();
+    const message = createBaseColumnConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -5077,26 +5077,26 @@ export const ColumnMetadataConfig = {
     return message;
   },
 
-  fromJSON(object: any): ColumnMetadataConfig {
+  fromJSON(object: any): ColumnConfig {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       semanticTypeId: isSet(object.semanticTypeId) ? String(object.semanticTypeId) : "",
     };
   },
 
-  toJSON(message: ColumnMetadataConfig): unknown {
+  toJSON(message: ColumnConfig): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.semanticTypeId !== undefined && (obj.semanticTypeId = message.semanticTypeId);
     return obj;
   },
 
-  create(base?: DeepPartial<ColumnMetadataConfig>): ColumnMetadataConfig {
-    return ColumnMetadataConfig.fromPartial(base ?? {});
+  create(base?: DeepPartial<ColumnConfig>): ColumnConfig {
+    return ColumnConfig.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ColumnMetadataConfig>): ColumnMetadataConfig {
-    const message = createBaseColumnMetadataConfig();
+  fromPartial(object: DeepPartial<ColumnConfig>): ColumnConfig {
+    const message = createBaseColumnConfig();
     message.name = object.name ?? "";
     message.semanticTypeId = object.semanticTypeId ?? "";
     return message;
@@ -7869,19 +7869,19 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    getDatabaseMetadataConfig: {
-      name: "GetDatabaseMetadataConfig",
-      requestType: GetDatabaseMetadataConfigRequest,
+    getDatabaseConfig: {
+      name: "GetDatabaseConfig",
+      requestType: GetDatabaseConfigRequest,
       requestStream: false,
-      responseType: DatabaseMetadataConfig,
+      responseType: DatabaseConfig,
       responseStream: false,
       options: {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              51,
+              43,
               18,
-              49,
+              41,
               47,
               118,
               49,
@@ -7916,15 +7916,7 @@ export const DatabaseServiceDefinition = {
               47,
               42,
               47,
-              109,
-              101,
-              116,
-              97,
-              100,
-              97,
-              116,
-              97,
-              67,
+              99,
               111,
               110,
               102,
