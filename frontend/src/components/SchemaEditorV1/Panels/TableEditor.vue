@@ -276,6 +276,7 @@ const handleAddColumn = () => {
 const handleApplyColumnTemplate = (
   template: SchemaTemplateSetting_FieldTemplate
 ) => {
+  state.showSchemaTemplateDrawer = false;
   if (!hasFeature("bb.feature.schema-template")) {
     state.showFeatureModal = true;
     return;
@@ -285,7 +286,6 @@ const handleApplyColumnTemplate = (
   }
   const column = convertColumnMetadataToColumn(template.column, "created");
   table.value.columnList.push(column);
-  state.showSchemaTemplateDrawer = false;
 };
 
 const gotoForeignKeyReferencedTable = (column: Column) => {
