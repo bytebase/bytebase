@@ -78,7 +78,7 @@
               <span class="tooltip whitespace-nowrap">
                 {{ $t("project.mode.batch") }}
               </span>
-              <TenantIcon class="w-4 h-4 text-control" />
+              <TenantIcon class="text-control" />
             </div>
             <div class="tooltip-wrapper">
               <svg
