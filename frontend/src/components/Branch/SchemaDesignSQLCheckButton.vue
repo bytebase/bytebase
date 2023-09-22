@@ -147,14 +147,7 @@ const watchKey = computed(() => {
   ].join("\n");
 });
 
-const debouncedEvaluateTargetMetadataAndDiff = debounce(
-  evaluateTargetMetadataAndDiff,
-  250
-);
-
-watch(watchKey, () => {
-  debouncedEvaluateTargetMetadataAndDiff();
-});
-
 evaluateTargetMetadataAndDiff();
+// Won't update too frequently since this costs pretty high.
+watch(watchKey, debounce(evaluateTargetMetadataAndDiff, 250));
 </script>
