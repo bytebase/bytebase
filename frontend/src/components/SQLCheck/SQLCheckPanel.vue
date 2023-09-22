@@ -6,15 +6,17 @@
     container-class="!pt-0 -mt-px"
     @close="$emit('close')"
   >
-    <SQLCheckDetail :advices="advices" />
+    <SQLCheckDetail :database="database" :advices="advices" />
   </BBModal>
 </template>
 
 <script setup lang="ts">
+import { ComposedDatabase } from "@/types";
 import { Advice } from "@/types/proto/v1/sql_service";
 import SQLCheckDetail from "./SQLCheckDetail.vue";
 
 defineProps<{
+  database: ComposedDatabase;
   advices: Advice[];
 }>();
 
