@@ -71,7 +71,6 @@ import {
   InstanceV1Name,
   InstanceV1EngineIcon,
   DatabaseV1Name,
-  EnvironmentV1Name,
 } from "@/components/v2";
 import {
   useProjectV1ListByCurrentUser,
