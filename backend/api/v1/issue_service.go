@@ -375,15 +375,18 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "database" filter`)
 			}
-			_, databaseName, err := common.GetInstanceDatabaseID(spec.value)
+			instanceID, databaseName, err := common.GetInstanceDatabaseID(spec.value)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
-			databaseUID, isNumber := isNumber(databaseName)
-			if !isNumber {
-				return nil, status.Errorf(codes.InvalidArgument, "database id should be number")
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
 			}
-			issueFind.DatabaseUID = &databaseUID
+			issueFind.DatabaseUID = &database.UID
 		}
 	}
 

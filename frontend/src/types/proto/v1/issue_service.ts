@@ -166,7 +166,7 @@ export interface SearchIssuesRequest {
    * - instance, example:
    *    - instance = "instancs/{resource id}"
    * - database, example:
-   *    - database = "instancs/{instance resource id}/databases/{database uid}"
+   *    - database = "instancs/{instance resource id}/databases/{database name}"
    * - type, only support "DDL" or "DML", example:
    *    - type = "DDL"
    */

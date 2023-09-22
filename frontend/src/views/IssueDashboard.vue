@@ -108,12 +108,16 @@ import AdvancedSearch, { SearchParams } from "@/components/AdvancedSearch.vue";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { UserSelect, SearchBox, TabFilterItem } from "@/components/v2";
-import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
+import {
+  useCurrentUserV1,
+  useProjectV1Store,
+  useDatabaseV1Store,
+  useUserStore,
+} from "@/store";
 import {
   projectNamePrefix,
   userNamePrefix,
   instanceNamePrefix,
-  databaseNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID, IssueFilter, ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -140,6 +144,7 @@ const route = useRoute();
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
+const databaseV1Store = useDatabaseV1Store();
 
 const statusList = computed((): string[] =>
   route.query.status ? (route.query.status as string).split(",") : []
@@ -357,7 +362,10 @@ const issueFilter = computed((): IssueFilter => {
   }
   let database = "";
   if (databaseScope) {
-    database = `${instanceNamePrefix}-/${databaseNamePrefix}${databaseScope.value}`;
+    const db = databaseV1Store.getDatabaseByUID(databaseScope.value);
+    if (db.uid !== `${UNKNOWN_ID}`) {
+      database = db.name;
+    }
   }
   let principal = "";
   if (selectedUser.value) {
