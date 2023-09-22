@@ -386,6 +386,9 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())
 			}
+			if database == nil {
+				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, spec.value)
+			}
 			issueFind.DatabaseUID = &database.UID
 		}
 	}
