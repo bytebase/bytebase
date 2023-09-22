@@ -831,6 +831,10 @@
           "title": "Instance",
           "description": "Include only issues related with the instance"
         },
+        "database": {
+          "title": "Database",
+          "description": "Include only issues related with the database"
+        },
         "type": {
           "title": "Change Type",
           "description": "The database change type for issues"
