@@ -447,6 +447,13 @@ func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMe
 		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
 	}
 
+	if err := checkDatabaseMetadata(request.Engine, request.SourceMetadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source metadata: %v", err))
+	}
+	if err := checkDatabaseMetadata(request.Engine, request.TargetMetadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
+	}
+
 	sourceSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.SourceMetadata)
 	if err != nil {
 		return nil, err
