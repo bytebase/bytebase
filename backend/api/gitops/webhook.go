@@ -1203,14 +1203,16 @@ func (s *Service) processPushEvent(ctx context.Context, repoInfoList []*repoInfo
 	}
 
 	repo := repoInfoList[0]
-	filteredDistinctFileList := distinctFileList
-	// The before commit ID is all zeros when the branch is just created and contains no commits yet, and we will encounter an error when we try to get the diff.
-	if baseVCSPushEvent.Before != strings.Repeat("0", 40) {
-		var err error
-		filteredDistinctFileList, err = s.filterFilesByCommitsDiff(ctx, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
-		if err != nil {
-			return nil, err
+
+	filteredDistinctFileList, err := func() ([]vcs.DistinctFileItem, error) {
+		// The before commit ID is all zeros when the branch is just created and contains no commits yet.
+		if baseVCSPushEvent.Before == strings.Repeat("0", 40) {
+			return distinctFileList, nil
 		}
+		return s.filterFilesByCommitsDiff(ctx, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
+	}()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to filtered distinct files by commits diff")
 	}
 
 	repoID2FileItemList := groupFileInfoByRepo(filteredDistinctFileList, repoInfoList)
@@ -1600,21 +1602,22 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 	} else {
 		var specs []*v1pb.Plan_Spec
 		for _, migrationDetail := range migrationDetailList {
-			changeType := getChangeType(migrationDetail.MigrationType)
-			var target string
-			if migrationDetail.DatabaseID != 0 {
-				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.DatabaseID})
-				if err != nil {
-					return err
-				}
-				if database == nil {
-					return errors.Errorf("database %d not found", migrationDetail.DatabaseID)
-				}
-				target = fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
-			} else {
+			if migrationDetail.DatabaseID == 0 {
 				// TODO(d): should never reach this.
 				return errors.Errorf("tenant database is not supported yet")
 			}
+
+			changeType := getChangeType(migrationDetail.MigrationType)
+
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.DatabaseID})
+			if err != nil {
+				return err
+			}
+			if database == nil {
+				return errors.Errorf("database %d not found", migrationDetail.DatabaseID)
+			}
+			target := fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
+
 			specs = append(specs, &v1pb.Plan_Spec{
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
