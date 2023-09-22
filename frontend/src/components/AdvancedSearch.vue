@@ -198,7 +198,7 @@ const searchScopes = computed((): SearchScope[] => {
       description: t("issue.advanced-search.scope.database.description"),
       options: databaseList.value.map((db) => {
         return {
-          id: db.uid,
+          id: `${db.databaseName}-${db.uid}`,
           label: h("div", { class: "flex items-center gap-x-1" }, [
             h(InstanceV1EngineIcon, { instance: db.instanceEntity }),
             h(DatabaseV1Name, { database: db, link: false }),

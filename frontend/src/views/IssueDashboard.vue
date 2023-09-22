@@ -362,7 +362,8 @@ const issueFilter = computed((): IssueFilter => {
   }
   let database = "";
   if (databaseScope) {
-    const db = databaseV1Store.getDatabaseByUID(databaseScope.value);
+    const uid = databaseScope.value.split("-").slice(-1)[0];
+    const db = databaseV1Store.getDatabaseByUID(uid);
     if (db.uid !== `${UNKNOWN_ID}`) {
       database = db.name;
     }
