@@ -150,7 +150,6 @@ export const instanceV1HasStructuredQueryResult = (
   instanceOrEngine: Instance | Engine
 ): boolean => {
   const engine = engineOfInstanceV1(instanceOrEngine);
-  if (engine === Engine.MONGODB) return false;
   if (engine === Engine.REDIS) return false;
   return true;
 };
