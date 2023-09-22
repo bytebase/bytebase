@@ -838,6 +838,18 @@
         "type": {
           "title": "Change Type",
           "description": "The database change type for issues"
+        },
+        "creator": {
+          "title": "Creator",
+          "description": "Search by the issue creator"
+        },
+        "assignee": {
+          "title": "Assignee",
+          "description": "Search by the issue assignee"
+        },
+        "subscriber": {
+          "title": "Subscriber",
+          "description": "Search by the issue subscriber"
         }
       }
     },

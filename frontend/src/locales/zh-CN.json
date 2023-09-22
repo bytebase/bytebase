@@ -835,6 +835,18 @@
         "type": {
           "title": "变更类型",
           "description": "根据数据库变更类型搜索"
+        },
+        "creator": {
+          "title": "创建人",
+          "description": "根据工单创建人搜索"
+        },
+        "assignee": {
+          "title": "发布人",
+          "description": "根据工单发布人搜索"
+        },
+        "subscriber": {
+          "title": "订阅人",
+          "description": "根据工单订阅人搜索"
         }
       }
     },
