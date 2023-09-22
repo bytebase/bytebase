@@ -476,6 +476,83 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	return v1pbMetadata, nil
 }
 
+// GetDatabaseConfig gets the metadata config of a database.
+func (s *DatabaseService) GetDatabaseConfig(ctx context.Context, request *v1pb.GetDatabaseConfigRequest) (*v1pb.DatabaseConfig, error) {
+	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.Name, common.ConfigSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	var config *storepb.DatabaseConfig
+	if dbSchema != nil {
+		config = dbSchema.Config
+	}
+	v1Config := convertDatabaseConfig(config)
+	// The name is the database config name.
+	v1Config.Name = request.Name
+	return v1Config, nil
+}
+
+// UpdateDatabaseConfig updates the metadata config of a database.
+func (s *DatabaseService) UpdateDatabaseConfig(ctx context.Context, request *v1pb.UpdateDatabaseConfigRequest) (*v1pb.DatabaseConfig, error) {
+	if request.DatabaseConfig == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty database config")
+	}
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.DatabaseConfig.Name, common.ConfigSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if dbSchema == nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "database schema metadata not found")
+	}
+	databaseConfig := convertV1DatabaseConfig(database.DatabaseName, request.DatabaseConfig)
+	if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: nil}, principalID); err != nil {
+		return nil, err
+	}
+	v1Config := convertDatabaseConfig(databaseConfig)
+	// The name is the database config name.
+	v1Config.Name = request.DatabaseConfig.Name
+	return v1Config, nil
+}
+
 // GetDatabaseSchema gets the schema of a database.
 func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.GetDatabaseSchemaRequest) (*v1pb.DatabaseSchema, error) {
 	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.Name, common.SchemaSuffix)
@@ -1850,6 +1927,60 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *v1pb.Dat
 			Version:     extension.Version,
 			Description: extension.Description,
 		})
+	}
+	return m
+}
+
+func convertDatabaseConfig(config *storepb.DatabaseConfig) *v1pb.DatabaseConfig {
+	m := &v1pb.DatabaseConfig{}
+	if config == nil {
+		return m
+	}
+	for _, schema := range config.SchemaConfigs {
+		s := &v1pb.SchemaConfig{
+			Name: schema.Name,
+		}
+		for _, table := range schema.TableConfigs {
+			t := &v1pb.TableConfig{
+				Name: table.Name,
+			}
+			for _, column := range table.ColumnConfigs {
+				t.ColumnConfigs = append(t.ColumnConfigs, &v1pb.ColumnConfig{
+					Name:           column.Name,
+					SemanticTypeId: column.SemanticTypeId,
+				})
+			}
+			s.TableConfigs = append(s.TableConfigs, t)
+		}
+		m.SchemaConfigs = append(m.SchemaConfigs, s)
+	}
+	return m
+}
+
+func convertV1DatabaseConfig(databaseName string, config *v1pb.DatabaseConfig) *storepb.DatabaseConfig {
+	m := &storepb.DatabaseConfig{
+		Name: databaseName,
+	}
+	if config == nil {
+		return m
+	}
+	for _, schema := range config.SchemaConfigs {
+		s := &storepb.SchemaConfig{
+			Name: schema.Name,
+		}
+		for _, table := range schema.TableConfigs {
+			t := &storepb.TableConfig{
+				Name: table.Name,
+			}
+			for _, column := range table.ColumnConfigs {
+				t.ColumnConfigs = append(t.ColumnConfigs, &storepb.ColumnConfig{
+					Name:           column.Name,
+					SemanticTypeId: column.SemanticTypeId,
+				})
+			}
+			s.TableConfigs = append(s.TableConfigs, t)
+		}
+		m.SchemaConfigs = append(m.SchemaConfigs, s)
 	}
 	return m
 }

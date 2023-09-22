@@ -30,30 +30,10 @@ if [ $2 ]; then
     DEMO_NAME=$2
 fi
 
-seedDemoData() {
-    echo 'Seeding data for online demo'
+startDemo() {
+    echo "Starting Bytebase in demo mode with ${DEMO_NAME} demo on port ${ONLINE_DEMO_PORT}, visiting from ${ONLINE_DEMO_EXTERNAL_URL}..."
 
-    bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} --demo ${DEMO_NAME} --data /var/opt/bytebase &
-
-    until [ -f /var/opt/bytebase/pgdata-demo/default/PG_VERSION ]; do
-        echo "waiting..."
-        sleep 1
-    done
-    echo 'Sleep 120 seconds for Bytebase to finish migration...'
-    sleep 120
-
-    echo 'Killing seeding program'
-
-    killall bytebase
-
-    sleep 20
+    bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} --demo ${DEMO_NAME} --data /var/opt/bytebase
 }
 
-startReadonly() {
-    echo "Starting Bytebase in readonly and demo mode on port ${ONLINE_DEMO_PORT}, visiting from ${ONLINE_DEMO_EXTERNAL_URL}..."
-
-    bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} --readonly --demo ${DEMO_NAME} --data /var/opt/bytebase
-}
-
-seedDemoData
-startReadonly
+startDemo
