@@ -71,7 +71,12 @@
           </div>
         </div>
       </div>
-      <div class="w-full flex flex-row justify-end gap-2">
+      <div class="flex-1 flex flex-row justify-end gap-2">
+        <SchemaDesignSQLCheckButton
+          class="justify-end"
+          :schema-design="schemaDesign"
+        />
+
         <template v-if="!state.isEditing">
           <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
         </template>
@@ -141,6 +146,7 @@ import {
 import { projectV1Slug } from "@/utils";
 import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
+import SchemaDesignSQLCheckButton from "./SchemaDesignSQLCheckButton.vue";
 import {
   generateForkedBranchName,
   mergeSchemaEditToMetadata,
