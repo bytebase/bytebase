@@ -203,12 +203,12 @@ export interface GetDatabaseConfigRequest {
 
 export interface UpdateDatabaseConfigRequest {
   /**
-   * The database metadata config to update.
+   * The database config to update.
    *
-   * The database_metadata_config's `name` field is used to identify the database metadata config to update.
+   * The database_config's `name` field is used to identify the database metadata config to update.
    * Format: instances/{instance}/databases/{database}/config
    */
-  databaseMetadataConfig:
+  databaseConfig:
     | DatabaseConfig
     | undefined;
   /** The list of fields to update. */
@@ -2184,13 +2184,13 @@ export const GetDatabaseConfigRequest = {
 };
 
 function createBaseUpdateDatabaseConfigRequest(): UpdateDatabaseConfigRequest {
-  return { databaseMetadataConfig: undefined, updateMask: undefined };
+  return { databaseConfig: undefined, updateMask: undefined };
 }
 
 export const UpdateDatabaseConfigRequest = {
   encode(message: UpdateDatabaseConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.databaseMetadataConfig !== undefined) {
-      DatabaseConfig.encode(message.databaseMetadataConfig, writer.uint32(10).fork()).ldelim();
+    if (message.databaseConfig !== undefined) {
+      DatabaseConfig.encode(message.databaseConfig, writer.uint32(10).fork()).ldelim();
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
@@ -2210,7 +2210,7 @@ export const UpdateDatabaseConfigRequest = {
             break;
           }
 
-          message.databaseMetadataConfig = DatabaseConfig.decode(reader, reader.uint32());
+          message.databaseConfig = DatabaseConfig.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -2230,18 +2230,15 @@ export const UpdateDatabaseConfigRequest = {
 
   fromJSON(object: any): UpdateDatabaseConfigRequest {
     return {
-      databaseMetadataConfig: isSet(object.databaseMetadataConfig)
-        ? DatabaseConfig.fromJSON(object.databaseMetadataConfig)
-        : undefined,
+      databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
   toJSON(message: UpdateDatabaseConfigRequest): unknown {
     const obj: any = {};
-    message.databaseMetadataConfig !== undefined && (obj.databaseMetadataConfig = message.databaseMetadataConfig
-      ? DatabaseConfig.toJSON(message.databaseMetadataConfig)
-      : undefined);
+    message.databaseConfig !== undefined &&
+      (obj.databaseConfig = message.databaseConfig ? DatabaseConfig.toJSON(message.databaseConfig) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
@@ -2252,10 +2249,9 @@ export const UpdateDatabaseConfigRequest = {
 
   fromPartial(object: DeepPartial<UpdateDatabaseConfigRequest>): UpdateDatabaseConfigRequest {
     const message = createBaseUpdateDatabaseConfigRequest();
-    message.databaseMetadataConfig =
-      (object.databaseMetadataConfig !== undefined && object.databaseMetadataConfig !== null)
-        ? DatabaseConfig.fromPartial(object.databaseMetadataConfig)
-        : undefined;
+    message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
+      ? DatabaseConfig.fromPartial(object.databaseConfig)
+      : undefined;
     message.updateMask = object.updateMask ?? undefined;
     return message;
   },
@@ -7887,6 +7883,98 @@ export const DatabaseServiceDefinition = {
               49,
               47,
               123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              99,
+              111,
+              110,
+              102,
+              105,
+              103,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    updateDatabaseConfig: {
+      name: "UpdateDatabaseConfig",
+      requestType: UpdateDatabaseConfigRequest,
+      requestStream: false,
+      responseType: DatabaseConfig,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              76,
+              58,
+              15,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              95,
+              99,
+              111,
+              110,
+              102,
+              105,
+              103,
+              50,
+              57,
+              47,
+              118,
+              49,
+              47,
+              123,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              95,
+              99,
+              111,
+              110,
+              102,
+              105,
+              103,
+              46,
               110,
               97,
               109,
