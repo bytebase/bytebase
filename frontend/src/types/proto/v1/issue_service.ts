@@ -165,6 +165,8 @@ export interface SearchIssuesRequest {
    *    - create_time >= "2022-01-01T12:00:00.000Z"
    * - instance, example:
    *    - instance = "instancs/{resource id}"
+   * - database, example:
+   *    - database = "instancs/{instance resource id}/databases/{database name}"
    * - type, only support "DDL" or "DML", example:
    *    - type = "DDL"
    */
