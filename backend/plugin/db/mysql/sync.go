@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -126,7 +127,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, err
 	}
-	isMySQL8 := strings.HasPrefix(version, "8.0")
+	semVersion, err := semver.Make(version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse MySQL version %s to semantic version", version)
+	}
+	atLeastMySQL8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
 
 	// Query index info.
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
@@ -144,7 +149,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		FROM information_schema.STATISTICS
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
-	if isMySQL8 {
+	// MySQL 8.0.13 introduced the EXPRESSION column in the INFORMATION_SCHEMA.STATISTICS table.
+	// https://dev.mysql.com/doc/refman/8.0/en/information-schema-statistics-table.html
+	if atLeastMySQL8_0_13 {
 		indexQuery = `
 			SELECT
 				TABLE_NAME,
