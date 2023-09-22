@@ -642,10 +642,11 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get instance")
 				}
 				args := map[string]any{
-					"environment_id":  database.EffectiveEnvironmentID,
-					"project_id":      issue.Project.ResourceID,
-					"database_name":   database.DatabaseName,
-					"db_engine":       instance.Engine,
+					"environment_id": database.EffectiveEnvironmentID,
+					"project_id":     issue.Project.ResourceID,
+					"database_name":  database.DatabaseName,
+					// convert to string type otherwise cel-go will complain that db.Type is not string type.
+					"db_engine":       string(instance.Engine),
 					"export_rows":     factors.ExportRows,
 					"expiration_days": expirationDays,
 				}
@@ -673,10 +674,11 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get instance")
 				}
 				args := map[string]any{
-					"environment_id":  database.EffectiveEnvironmentID,
-					"project_id":      issue.Project.ResourceID,
-					"database_name":   database.DatabaseName,
-					"db_engine":       instance.Engine,
+					"environment_id": database.EffectiveEnvironmentID,
+					"project_id":     issue.Project.ResourceID,
+					"database_name":  database.DatabaseName,
+					// convert to string type otherwise cel-go will complain that db.Type is not string type.
+					"db_engine":       string(instance.Engine),
 					"expiration_days": expirationDays,
 				}
 				res, _, err := prg.Eval(args)
