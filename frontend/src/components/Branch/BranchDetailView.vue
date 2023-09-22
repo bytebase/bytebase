@@ -53,7 +53,7 @@
           class="flex-nowrap mr-4 shrink-0"
           :database="baselineDatabase"
         />
-        <div>
+        <div class="shrink-0 flex-nowrap">
           <NTooltip v-if="changeHistory" trigger="hover">
             <template #trigger> @{{ changeHistory.version }} </template>
             <div class="w-full flex flex-row justify-start items-center">
@@ -71,7 +71,12 @@
           </div>
         </div>
       </div>
-      <div class="w-full flex flex-row justify-end gap-2">
+      <div class="flex-1 flex flex-row justify-end gap-2">
+        <SchemaDesignSQLCheckButton
+          class="justify-end"
+          :schema-design="schemaDesign"
+        />
+
         <template v-if="!state.isEditing">
           <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
         </template>
@@ -141,6 +146,7 @@ import {
 import { projectV1Slug } from "@/utils";
 import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
+import SchemaDesignSQLCheckButton from "./SchemaDesignSQLCheckButton.vue";
 import {
   generateForkedBranchName,
   mergeSchemaEditToMetadata,
@@ -199,7 +205,13 @@ const parentBranch = computed(() => {
 
 const changeHistory = computed(() => {
   const changeHistoryName = `${baselineDatabase.value.name}/changeHistories/${schemaDesign.value.baselineChangeHistoryId}`;
-  return changeHistoryStore.getChangeHistoryByName(changeHistoryName);
+  if (
+    schemaDesign.value.baselineChangeHistoryId &&
+    schemaDesign.value.baselineChangeHistoryId !== String(UNKNOWN_ID)
+  ) {
+    return changeHistoryStore.getChangeHistoryByName(changeHistoryName);
+  }
+  return undefined;
 });
 
 const isSchemaDesignDraft = computed(() => {

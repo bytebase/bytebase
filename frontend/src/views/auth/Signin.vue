@@ -13,10 +13,10 @@
           default-value="standard"
           size="small"
           animated
-          pane-style="padding: 12px 2px 0 2px"
+          pane-style="padding: 12px 0 0 0"
         >
           <n-tab-pane name="standard" tab="Standard">
-            <form class="space-y-6" @submit.prevent="trySignin()">
+            <form class="space-y-6 px-1" @submit.prevent="trySignin()">
               <div>
                 <label
                   for="email"
@@ -207,7 +207,7 @@
       </n-card>
     </div>
 
-    <div v-if="separatedIdentityProviderList.length > 0" class="mb-3">
+    <div v-if="separatedIdentityProviderList.length > 0" class="mb-3 px-1">
       <div class="relative my-4">
         <div class="absolute inset-0 flex items-center" aria-hidden="true">
           <div class="w-full border-t border-control-border"></div>
