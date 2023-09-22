@@ -828,6 +828,10 @@
           "title": "实例",
           "description": "仅搜索与某个实例关联的工单"
         },
+        "database": {
+          "title": "数据库",
+          "description": "仅搜索与某个数据库关联的工单"
+        },
         "type": {
           "title": "变更类型",
           "description": "根据数据库变更类型搜索"

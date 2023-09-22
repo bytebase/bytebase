@@ -67,16 +67,25 @@ import { NInput } from "naive-ui";
 import { reactive, computed, h, VNode, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import GitIcon from "@/components/GitIcon.vue";
-import { InstanceV1Name } from "@/components/v2";
-import { useProjectV1ListByCurrentUser, useInstanceV1List } from "@/store";
+import {
+  InstanceV1Name,
+  InstanceV1EngineIcon,
+  DatabaseV1Name,
+} from "@/components/v2";
+import {
+  useProjectV1ListByCurrentUser,
+  useInstanceV1List,
+  useSearchDatabaseV1List,
+} from "@/store";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
   projectV1Name,
+  environmentV1Name,
   extractProjectResourceName,
   extractInstanceResourceName,
 } from "@/utils";
 
-type SearchScopeId = "project" | "instance" | "type";
+type SearchScopeId = "project" | "instance" | "database" | "type";
 
 export interface SearchParams {
   query: string;
@@ -142,6 +151,9 @@ const inputRef = ref<InstanceType<typeof NInput>>();
 
 const { projectList } = useProjectV1ListByCurrentUser();
 const { instanceList } = useInstanceV1List(false /* !showDeleted */);
+const { databaseList } = useSearchDatabaseV1List({
+  parent: "instances/-",
+});
 
 const searchScopes = computed((): SearchScope[] => {
   // TODO(ed): The scope options should have relevance.
@@ -160,7 +172,7 @@ const searchScopes = computed((): SearchScope[] => {
         }
         return {
           id: extractProjectResourceName(proj.name),
-          label: h("div", { class: "flex gap-x-2" }, children),
+          label: h("div", { class: "flex items-center gap-x-2" }, children),
         };
       }),
     },
@@ -171,7 +183,31 @@ const searchScopes = computed((): SearchScope[] => {
       options: instanceList.value.map((ins) => {
         return {
           id: extractInstanceResourceName(ins.name),
-          label: h(InstanceV1Name, { instance: ins }),
+          label: h("div", { class: "flex items-center gap-x-1" }, [
+            h(InstanceV1Name, { instance: ins }),
+            h("span", {
+              innerHTML: `(${environmentV1Name(ins.environmentEntity)})`,
+            }),
+          ]),
+        };
+      }),
+    },
+    {
+      id: "database",
+      title: t("issue.advanced-search.scope.database.title"),
+      description: t("issue.advanced-search.scope.database.description"),
+      options: databaseList.value.map((db) => {
+        return {
+          id: `${db.databaseName}-${db.uid}`,
+          label: h("div", { class: "flex items-center gap-x-1" }, [
+            h(InstanceV1EngineIcon, { instance: db.instanceEntity }),
+            h(DatabaseV1Name, { database: db, link: false }),
+            h("span", {
+              innerHTML: `(${environmentV1Name(
+                db.effectiveEnvironmentEntity
+              )})`,
+            }),
+          ]),
         };
       }),
     },
