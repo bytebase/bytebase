@@ -66,6 +66,7 @@ import { debounce } from "lodash-es";
 import { NInput } from "naive-ui";
 import { reactive, computed, h, VNode, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import BBAvatar from "@/bbkit/BBAvatar.vue";
 import GitIcon from "@/components/GitIcon.vue";
 import {
   InstanceV1Name,
@@ -76,7 +77,9 @@ import {
   useProjectV1ListByCurrentUser,
   useInstanceV1List,
   useSearchDatabaseV1List,
+  useUserStore,
 } from "@/store";
+import { UserType } from "@/types/proto/v1/auth_service";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
   projectV1Name,
@@ -85,7 +88,14 @@ import {
   extractInstanceResourceName,
 } from "@/utils";
 
-type SearchScopeId = "project" | "instance" | "database" | "type";
+export type SearchScopeId =
+  | "project"
+  | "instance"
+  | "database"
+  | "type"
+  | "creator"
+  | "assignee"
+  | "subscriber";
 
 export interface SearchParams {
   query: string;
@@ -148,11 +158,24 @@ const state = reactive<LocalState>({
   showSearchScopes: false,
 });
 const inputRef = ref<InstanceType<typeof NInput>>();
+const userStore = useUserStore();
 
 const { projectList } = useProjectV1ListByCurrentUser();
 const { instanceList } = useInstanceV1List(false /* !showDeleted */);
 const { databaseList } = useSearchDatabaseV1List({
   parent: "instances/-",
+});
+
+const principalSearchOptions = computed(() => {
+  return userStore.activeUserList.map((user) => {
+    return {
+      id: user.email,
+      label: h("div", { class: "flex items-center gap-x-1" }, [
+        h(BBAvatar, { size: "TINY", username: user.title }),
+        h("span", { innerHTML: user.title }),
+      ]),
+    };
+  });
 });
 
 const searchScopes = computed((): SearchScope[] => {
@@ -225,6 +248,24 @@ const searchScopes = computed((): SearchScope[] => {
           label: h("span", { innerHTML: "Data Manipulation Language" }),
         },
       ],
+    },
+    {
+      id: "creator",
+      title: t("issue.advanced-search.scope.creator.title"),
+      description: t("issue.advanced-search.scope.creator.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "assignee",
+      title: t("issue.advanced-search.scope.assignee.title"),
+      description: t("issue.advanced-search.scope.assignee.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "subscriber",
+      title: t("issue.advanced-search.scope.subscriber.title"),
+      description: t("issue.advanced-search.scope.subscriber.description"),
+      options: principalSearchOptions.value,
     },
   ];
   return scopes;
