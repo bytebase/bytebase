@@ -86,7 +86,6 @@
           class="mt-1"
           required
           name="environment"
-          :disabled="!allowEditEnvironment"
           :environment="state.environmentId"
           @update:environment="selectEnvironment"
         />
@@ -385,11 +384,6 @@ const allowCreate = computed(() => {
 // If project has been specified, then we disallow changing it.
 const allowEditProject = computed(() => {
   return !props.projectId;
-});
-
-// If environment has been specified, then we disallow changing it.
-const allowEditEnvironment = computed(() => {
-  return !props.environmentId;
 });
 
 // If instance has been specified, then we disallow changing it.
