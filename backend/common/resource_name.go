@@ -47,6 +47,7 @@ const (
 	BackupSettingSuffix = "/backupSetting"
 	SchemaSuffix        = "/schema"
 	MetadataSuffix      = "/metadata"
+	ConfigSuffix        = "/config"
 	GitOpsInfoSuffix    = "/gitOpsInfo"
 )
 
