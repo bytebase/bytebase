@@ -518,13 +518,14 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		UID: sheet.DatabaseUID,
+		UID:         sheet.DatabaseUID,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get database: %v", err))
 	}
 	if database == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the database: %d", sheet.DatabaseUID))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the database: %d", *sheet.DatabaseUID))
 	}
 
 	creator, err := s.store.GetUserByID(ctx, sheet.CreatorID)
