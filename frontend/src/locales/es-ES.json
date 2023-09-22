@@ -830,6 +830,10 @@
           "title": "Instancia",
           "description": "Incluir solo problemas relacionados con la instancia"
         },
+        "database": {
+          "title": "Base de datos",
+          "description": "Incluir sólo cuestiones relacionadas con la base de datos"
+        },
         "type": {
           "title": "Tipo de cambio",
           "description": "El tipo de cambio de base de datos para problemas"

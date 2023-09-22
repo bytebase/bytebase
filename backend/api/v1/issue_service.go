@@ -371,6 +371,19 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 				return nil, status.Errorf(codes.InvalidArgument, `invalid instance resource id "%s": %v`, spec.value, err.Error())
 			}
 			issueFind.InstanceResourceID = &instanceResourceID
+		case "database":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+			}
+			_, databaseName, err := common.GetInstanceDatabaseID(spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			databaseUID, isNumber := isNumber(databaseName)
+			if !isNumber {
+				return nil, status.Errorf(codes.InvalidArgument, "database id should be number")
+			}
+			issueFind.DatabaseUID = &databaseUID
 		}
 	}
 

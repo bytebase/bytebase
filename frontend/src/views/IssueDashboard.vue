@@ -113,6 +113,7 @@ import {
   projectNamePrefix,
   userNamePrefix,
   instanceNamePrefix,
+  databaseNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID, IssueFilter, ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -348,10 +349,15 @@ const issueFilter = computed((): IssueFilter => {
   const projectScope = scopes.find((s) => s.id === "project");
   const instanceScope = scopes.find((s) => s.id === "instance");
   const typeScope = scopes.find((s) => s.id === "type");
+  const databaseScope = scopes.find((s) => s.id === "database");
 
   let instance = "";
   if (instanceScope) {
     instance = `${instanceNamePrefix}${instanceScope.value}`;
+  }
+  let database = "";
+  if (databaseScope) {
+    database = `${instanceNamePrefix}-/${databaseNamePrefix}${databaseScope.value}`;
   }
   let principal = "";
   if (selectedUser.value) {
@@ -361,6 +367,7 @@ const issueFilter = computed((): IssueFilter => {
     query,
     principal,
     instance,
+    database,
     project: `${projectNamePrefix}${projectScope?.value ?? "-"}`,
     createdTsAfter: selectedTimeRange.value
       ? selectedTimeRange.value[0]
