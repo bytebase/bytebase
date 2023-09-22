@@ -7,9 +7,9 @@
       :placeholder="$t('issue.advanced-search.self')"
       style="width: 100%"
       @update:value="onUpdate($event)"
-      @focus="state.showSearchScopes = true"
       @blur="onClear"
       @keyup="onKeydown"
+      @click="onKeydown"
     >
       <template #prefix>
         <heroicons-outline:search class="h-4 w-4 text-control-placeholder" />
@@ -23,12 +23,7 @@
         v-for="item in searchScopes"
         :key="item.id"
         class="flex gap-x-3 p-2 items-center cursor-pointer hover:bg-gray-100"
-        @mousedown.prevent.stop="
-          () => {
-            state.showSearchScopes = false;
-            state.currentScope = item.id;
-          }
-        "
+        @mousedown.prevent.stop="onScopeSelect(item.id)"
       >
         <heroicons-outline:filter class="h-4 w-4 text-control" />
         <div class="space-x-1">
@@ -49,9 +44,7 @@
           v-for="option in searchOptions"
           :key="option.id"
           class="flex gap-x-2 px-3 py-1 items-center cursor-pointer hover:bg-gray-100"
-          @mousedown.prevent.stop="
-            onOptionSelect(state.currentScope, option.id)
-          "
+          @mousedown.prevent.stop="onOptionSelect(option.id)"
         >
           <component :is="option.label" class="text-control text-sm" />
           <span class="text-control-light text-sm">{{ option.id }}</span>
@@ -64,7 +57,7 @@
 <script lang="ts" setup>
 import { debounce } from "lodash-es";
 import { NInput } from "naive-ui";
-import { reactive, computed, h, VNode, onMounted, ref } from "vue";
+import { reactive, computed, h, watch, VNode, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import GitIcon from "@/components/GitIcon.vue";
@@ -159,6 +152,13 @@ const state = reactive<LocalState>({
 const inputRef = ref<InstanceType<typeof NInput>>();
 const userStore = useUserStore();
 
+watch(
+  () => state.showSearchScopes,
+  (show) => {
+    if (show) state.currentScope = undefined;
+  }
+);
+
 const { projectList } = useProjectV1ListByCurrentUser();
 const { instanceList } = useInstanceV1List(false /* !showDeleted */);
 const { databaseList } = useSearchDatabaseV1List({
@@ -177,7 +177,7 @@ const principalSearchOptions = computed(() => {
   });
 });
 
-const searchScopes = computed((): SearchScope[] => {
+const fullScopes = computed((): SearchScope[] => {
   // TODO(ed): The scope options should have relevance.
   // For example, if users select a specific project, we should only allow them select instances related with this project.
   const scopes: SearchScope[] = [
@@ -267,24 +267,39 @@ const searchScopes = computed((): SearchScope[] => {
       options: principalSearchOptions.value,
     },
   ];
+
   return scopes;
 });
 
+const searchScopes = computed((): SearchScope[] => {
+  const params = getSearchParamsByText(state.searchText);
+  const existedScope = new Set(params.scopes.map((scope) => scope.id));
+
+  return fullScopes.value.filter((scope) => {
+    return !existedScope.has(scope.id);
+  });
+});
+
 const searchOptions = computed((): SearchOption[] => {
-  const item = searchScopes.value.find(
-    (item) => item.id === state.currentScope
-  );
+  const item = fullScopes.value.find((item) => item.id === state.currentScope);
   return item?.options ?? [];
 });
 
 const searchKeyword = computed(() => {
-  const scope = searchScopes.value.find(
-    (item) => item.id === state.currentScope
-  );
+  const scope = fullScopes.value.find((item) => item.id === state.currentScope);
   return scope?.title ?? "";
 });
 
-const onOptionSelect = (scopeId: SearchScopeId, scopeValue: string) => {
+const onScopeSelect = (scopeId: SearchScopeId) => {
+  state.showSearchScopes = false;
+  state.currentScope = scopeId;
+};
+
+const onOptionSelect = (scopeValue: string) => {
+  const scopeId = state.currentScope;
+  if (!scopeId) {
+    return;
+  }
   const params = getSearchParamsByText(state.searchText);
   const index = params.scopes.findIndex((s) => s.id === scopeId);
   if (index < 0) {
@@ -302,7 +317,7 @@ const onOptionSelect = (scopeId: SearchScopeId, scopeValue: string) => {
   debouncedUpdate();
   onClear();
 
-  if (params.scopes.length < searchScopes.value.length) {
+  if (params.scopes.length < fullScopes.value.length) {
     state.showSearchScopes = true;
   }
 };
@@ -328,7 +343,7 @@ const query = computed(() => {
     const section = sections[i];
     const keyword = section.split(":")[0];
     const exist =
-      searchScopes.value.findIndex((item) => item.id === keyword) >= 0;
+      fullScopes.value.findIndex((item) => item.id === keyword) >= 0;
     if (!exist) {
       break;
     }
@@ -360,7 +375,7 @@ onMounted(() => {
   }
 });
 
-const onKeydown = (e: KeyboardEvent) => {
+const onKeydown = () => {
   if (!inputRef.value || !inputRef.value.inputElRef) {
     return;
   }
@@ -378,21 +393,31 @@ const onKeydown = (e: KeyboardEvent) => {
 
   // Try to find the active section the cursor in.
   // For example, the searchText is (the | is the current cursor):
-  // project:xxx insta|nce:yyy custom search text
-  // Then the active section is instance:yyy, we should should the instances selector
+  // example 1:
+  // project:xxx insta|nce:yyy custom-search-text
+  // then the active section is instance:yyy, we should show the instances selector
+  //
+  // example 2:
+  // project:xxx| instance:yyy custom-search-text
+  // then the active section is project:xxx, we should show the projects selector
+  //
+  // example 3:
+  // project:xxx instance:yyy |
+  // we should NOT show any selector.
   const sections = state.searchText.split(" ");
   let i = 0;
   let len = 0;
   while (i < sections.length) {
     len += sections[i].length;
     if (i < sections.length - 1) {
-      len += 1;
+      len += 1; // this is the length for empty space " " between sections.
     }
-    if (len >= start) {
+    if (len > start) {
       break;
     }
     i++;
   }
+
   if (i >= sections.length) {
     onClear();
     state.showSearchScopes = true;
@@ -401,7 +426,7 @@ const onKeydown = (e: KeyboardEvent) => {
 
   const currentScope = sections[i].split(":")[0] as SearchScopeId;
   const existed =
-    searchScopes.value.findIndex((item) => item.id === currentScope) >= 0;
+    fullScopes.value.findIndex((item) => item.id === currentScope) >= 0;
   if (!existed) {
     onClear();
     state.showSearchScopes = true;
