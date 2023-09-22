@@ -295,8 +295,11 @@ watch(
 );
 </script>
 
-<style>
+<style lang="postcss">
 .bb-user-select .n-base-selection--active .bb-user-select--avatar {
   opacity: 0.3;
+}
+.bb-user-select .n-base-selection-input:focus {
+  @apply !ring-0;
 }
 </style>
