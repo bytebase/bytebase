@@ -53,7 +53,7 @@
           class="flex-nowrap mr-4 shrink-0"
           :database="baselineDatabase"
         />
-        <div>
+        <div class="shrink-0 flex-nowrap">
           <NTooltip v-if="changeHistory" trigger="hover">
             <template #trigger> @{{ changeHistory.version }} </template>
             <div class="w-full flex flex-row justify-start items-center">
@@ -199,7 +199,13 @@ const parentBranch = computed(() => {
 
 const changeHistory = computed(() => {
   const changeHistoryName = `${baselineDatabase.value.name}/changeHistories/${schemaDesign.value.baselineChangeHistoryId}`;
-  return changeHistoryStore.getChangeHistoryByName(changeHistoryName);
+  if (
+    schemaDesign.value.baselineChangeHistoryId &&
+    schemaDesign.value.baselineChangeHistoryId !== String(UNKNOWN_ID)
+  ) {
+    return changeHistoryStore.getChangeHistoryByName(changeHistoryName);
+  }
+  return undefined;
 });
 
 const isSchemaDesignDraft = computed(() => {

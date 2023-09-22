@@ -21,6 +21,7 @@ import {
   useUserStore,
 } from "@/store";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
+import { UNKNOWN_ID } from "@/types";
 import {
   SchemaDesign,
   SchemaDesign_Type,
@@ -60,7 +61,11 @@ watch(
       const database = await databaseStore.getOrFetchDatabaseByName(
         branch.baselineDatabase
       );
-      if (database && branch.baselineChangeHistoryId) {
+      if (
+        database &&
+        branch.baselineChangeHistoryId &&
+        branch.baselineChangeHistoryId !== String(UNKNOWN_ID)
+      ) {
         const changeHistoryName = `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`;
         await changeHistoryStore.getOrFetchChangeHistoryByName(
           changeHistoryName
@@ -87,11 +92,13 @@ const dataTableRows = computed(() => {
     const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
     const project = projectV1Store.getProjectByName(`projects/${projectName}`);
     const database = databaseStore.getDatabaseByName(branch.baselineDatabase);
-    const changeHistory = branch.baselineChangeHistoryId
-      ? changeHistoryStore.getChangeHistoryByName(
-          `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`
-        )
-      : undefined;
+    const changeHistory =
+      branch.baselineChangeHistoryId &&
+      branch.baselineChangeHistoryId !== String(UNKNOWN_ID)
+        ? changeHistoryStore.getChangeHistoryByName(
+            `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`
+          )
+        : undefined;
     const baselineVersion = `(${database.effectiveEnvironmentEntity.title}) ${
       database.databaseName
     } @${changeHistory ? changeHistory.version : "Previously latest schema"}`;
