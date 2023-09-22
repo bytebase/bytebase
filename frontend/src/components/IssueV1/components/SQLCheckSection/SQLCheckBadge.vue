@@ -25,6 +25,7 @@
 
     <SQLCheckPanel
       v-if="showDetailPanel"
+      :database="database"
       :advices="advices"
       @close="showDetailPanel = false"
     />
@@ -33,8 +34,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { SQLCheckPanel } from "@/components/SQLCheck";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
-import SQLCheckPanel from "./SQLCheckPanel.vue";
+import { databaseForTask, useIssueContext } from "../../logic";
 
 const props = defineProps<{
   isRunning: boolean;
@@ -45,7 +47,12 @@ defineEmits<{
   (event: "click"): void;
 }>();
 
+const { issue, selectedTask } = useIssueContext();
 const showDetailPanel = ref(false);
+
+const database = computed(() => {
+  return databaseForTask(issue.value, selectedTask.value);
+});
 
 const status = computed(() => {
   const { isRunning, advices } = props;

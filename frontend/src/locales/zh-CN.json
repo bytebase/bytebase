@@ -2078,7 +2078,8 @@
       "duplicated-column-name": "重复的列名",
       "invalid-column-type": "无效的列类型",
       "schema-not-found": "找不到 Schema",
-      "failed-to-fetch-database-schema": "请求数据库 Schema 失败"
+      "failed-to-fetch-database-schema": "请求数据库 Schema 失败",
+      "invalid-schema": "无效的 Schema"
     },
     "confirm-to-close": {
       "title": "确定关闭？",
