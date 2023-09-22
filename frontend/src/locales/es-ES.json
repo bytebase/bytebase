@@ -837,6 +837,18 @@
         "type": {
           "title": "Tipo de cambio",
           "description": "El tipo de cambio de base de datos para problemas"
+        },
+        "creator": {
+          "title": "Creador",
+          "description": "Búsqueda por tema creador"
+        },
+        "assignee": {
+          "title": "Cesionario",
+          "description": "Buscar por el responsable del problema"
+        },
+        "subscriber": {
+          "title": "Abonado",
+          "description": "Buscar por suscriptor del problema"
         }
       }
     },
