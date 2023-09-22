@@ -33,7 +33,7 @@
       </div>
       <div class="bb-grid-cell">
         <div>
-          <span>{{ row.advice.content }}</span>
+          <span>{{ row.content }}</span>
           <template v-if="getActiveRule(row.advice.title as RuleType)">
             <span
               class="ml-1 normal-link"
@@ -71,11 +71,11 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
 import { LocalizedSQLRuleErrorCodes } from "@/components/Issue/const";
-import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
 import { useReviewPolicyByEnvironmentId } from "@/store";
 import {
+  ComposedDatabase,
   GeneralErrorCode,
   RuleTemplate,
   RuleType,
@@ -103,6 +103,7 @@ type TableRow = {
   advice: Advice;
   category: string;
   title: string;
+  content: string;
   link: ErrorCodeLink | undefined;
 };
 
@@ -112,6 +113,7 @@ type LocalState = {
 };
 
 const props = defineProps<{
+  database: ComposedDatabase;
   advices: Advice[];
 }>();
 
@@ -120,7 +122,6 @@ const state = reactive<LocalState>({
   activeRule: undefined,
   activeResultDefinition: undefined,
 });
-const { issue, selectedTask } = useIssueContext();
 
 const statusIconClass = (status: Advice_Status) => {
   switch (status) {
@@ -189,11 +190,13 @@ const errorCodeLink = (advice: Advice): ErrorCodeLink | undefined => {
 const tableRows = computed(() => {
   return props.advices.map<TableRow>((advice) => {
     const [category, title] = categoryAndTitle(advice);
+    const content = advice.content.trim();
     const link = errorCodeLink(advice);
     return {
       advice,
       category,
       title,
+      content,
       link,
     };
   });
@@ -226,13 +229,10 @@ const COLUMN_LIST = computed(() => {
   return [STATUS, TITLE, CONTENT];
 });
 
-const reviewPolicy = useReviewPolicyByEnvironmentId(
-  computed(() => {
-    const task = selectedTask.value;
-    const database = databaseForTask(issue.value, task);
-    return database.effectiveEnvironmentEntity.uid;
-  })
+const environmentUID = computed(
+  () => props.database.effectiveEnvironmentEntity.uid
 );
+const reviewPolicy = useReviewPolicyByEnvironmentId(environmentUID);
 const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
   const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
   if (!rule) {
