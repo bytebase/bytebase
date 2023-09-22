@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
 
@@ -117,8 +116,8 @@ export interface LogEntity {
    * Format: users/{email}
    */
   creator: string;
-  createTime?: Date | undefined;
-  updateTime?: Date | undefined;
+  createTime: Date | undefined;
+  updateTime: Date | undefined;
   action: LogEntity_Action;
   level: LogEntity_Level;
   /**
@@ -1002,24 +1001,6 @@ export const LoggingServiceDefinition = {
     },
   },
 } as const;
-
-export interface LoggingServiceImplementation<CallContextExt = {}> {
-  listLogs(request: ListLogsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListLogsResponse>>;
-  getLog(request: GetLogRequest, context: CallContext & CallContextExt): Promise<DeepPartial<LogEntity>>;
-  exportLogs(
-    request: ExportLogsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ExportLogsResponse>>;
-}
-
-export interface LoggingServiceClient<CallOptionsExt = {}> {
-  listLogs(request: DeepPartial<ListLogsRequest>, options?: CallOptions & CallOptionsExt): Promise<ListLogsResponse>;
-  getLog(request: DeepPartial<GetLogRequest>, options?: CallOptions & CallOptionsExt): Promise<LogEntity>;
-  exportLogs(
-    request: DeepPartial<ExportLogsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ExportLogsResponse>;
-}
 
 declare const self: any | undefined;
 declare const window: any | undefined;

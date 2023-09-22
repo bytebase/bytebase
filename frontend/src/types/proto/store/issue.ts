@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Expr } from "../google/type/expr";
 import { IssuePayloadApproval } from "./approval";
@@ -7,8 +7,8 @@ import { IssuePayloadApproval } from "./approval";
 export const protobufPackage = "bytebase.store";
 
 export interface IssuePayload {
-  approval?: IssuePayloadApproval | undefined;
-  grantRequest?: GrantRequest | undefined;
+  approval: IssuePayloadApproval | undefined;
+  grantRequest: GrantRequest | undefined;
 }
 
 export interface GrantRequest {
@@ -22,8 +22,8 @@ export interface GrantRequest {
    * Format: users/{userUID}.
    */
   user: string;
-  condition?: Expr | undefined;
-  expiration?: Duration | undefined;
+  condition: Expr | undefined;
+  expiration: Duration | undefined;
 }
 
 function createBaseIssuePayload(): IssuePayload {

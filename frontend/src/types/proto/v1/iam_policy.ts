@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Expr } from "../google/type/expr";
 
@@ -26,11 +26,11 @@ export interface Binding {
    * If the condition evaluates to true, then this binding applies to the current request.
    * If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
    */
-  condition?:
+  condition:
     | Expr
     | undefined;
   /** The parsed expression of the condition. */
-  parsedExpr?: ParsedExpr | undefined;
+  parsedExpr: ParsedExpr | undefined;
 }
 
 function createBaseIamPolicy(): IamPolicy {

@@ -13,9 +13,11 @@
       feature="bb.feature.issue-advanced-search"
     />
 
-    <div class="px-4 py-2 flex justify-between items-center">
-      <div><!-- empty --></div>
-      <div class="flex flex-row space-x-4">
+    <div class="px-2 flex items-center">
+      <div class="flex-1 overflow-hidden">
+        <TabFilter v-model:value="state.tab" :items="tabItemList" />
+      </div>
+      <div class="flex flex-row space-x-4 p-0.5">
         <NButton v-if="project" @click="goProject">
           {{ project.key }}
         </NButton>
@@ -47,49 +49,52 @@
       </div>
     </div>
 
-    <!-- show all OPEN issues with pageSize=10  -->
-    <PagedIssueTableV1
-      v-if="showOpen"
-      session-key="dashboard-open"
-      method="SEARCH"
-      :issue-filter="{
-        ...issueFilter,
-        statusList: [IssueStatus.OPEN],
-      }"
-      :page-size="10"
-    >
-      <template #table="{ issueList, loading }">
-        <IssueTableV1
-          class="border-x-0"
-          :show-placeholder="!loading"
-          :title="$t('issue.table.open')"
-          :issue-list="issueList.filter(filter)"
-          :highlight-text="state.searchParams.query"
-        />
-      </template>
-    </PagedIssueTableV1>
+    <div v-show="state.tab === 'OPEN'" class="mt-2">
+      <!-- show all OPEN issues with pageSize=10  -->
+      <PagedIssueTableV1
+        session-key="dashboard-open"
+        method="SEARCH"
+        :issue-filter="{
+          ...issueFilter,
+          statusList: [IssueStatus.OPEN],
+        }"
+        :page-size="10"
+      >
+        <template #table="{ issueList, loading }">
+          <IssueTableV1
+            class="border-x-0"
+            :show-placeholder="!loading"
+            :issue-list="issueList.filter(filter)"
+            :highlight-text="state.searchParams.query"
+            title=""
+          />
+        </template>
+      </PagedIssueTableV1>
+    </div>
 
-    <!-- show all DONE and CANCELED issues with pageSize=10 -->
-    <PagedIssueTableV1
-      v-if="showClosed"
-      session-key="dashboard-closed"
-      method="SEARCH"
-      :issue-filter="{
-        ...issueFilter,
-        statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
-      }"
-      :page-size="10"
-    >
-      <template #table="{ issueList, loading }">
-        <IssueTableV1
-          class="-mt-px border-x-0"
-          :show-placeholder="!loading"
-          :title="$t('issue.table.closed')"
-          :issue-list="issueList.filter(filter)"
-          :highlight-text="state.searchParams.query"
-        />
-      </template>
-    </PagedIssueTableV1>
+    <div v-show="state.tab === 'CLOSED'" class="mt-2">
+      <!-- show all DONE and CANCELED issues with pageSize=10 -->
+      <PagedIssueTableV1
+        v-if="showClosed"
+        session-key="dashboard-closed"
+        method="SEARCH"
+        :issue-filter="{
+          ...issueFilter,
+          statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
+        }"
+        :page-size="10"
+      >
+        <template #table="{ issueList, loading }">
+          <IssueTableV1
+            class="border-x-0"
+            :show-placeholder="!loading"
+            :issue-list="issueList.filter(filter)"
+            :highlight-text="state.searchParams.query"
+            title=""
+          />
+        </template>
+      </PagedIssueTableV1>
+    </div>
   </div>
 </template>
 
@@ -97,11 +102,12 @@
 import dayjs from "dayjs";
 import { NInputGroup, NButton, NDatePicker } from "naive-ui";
 import { reactive, computed, watchEffect, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch, { SearchParams } from "@/components/AdvancedSearch.vue";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
-import { UserSelect, SearchBox } from "@/components/v2";
+import { UserSelect, SearchBox, TabFilterItem } from "@/components/v2";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
 import {
   projectNamePrefix,
@@ -114,9 +120,15 @@ import {
   extractUserUID,
   hasWorkspacePermissionV1,
   projectV1Slug,
+  extractProjectResourceName,
 } from "@/utils";
 
+const TABS = ["OPEN", "CLOSED"] as const;
+
+type TabValue = typeof TABS[number];
+
 interface LocalState {
+  tab: TabValue;
   filterText: string;
   searchParams: SearchParams;
 }
@@ -124,6 +136,7 @@ interface LocalState {
 const router = useRouter();
 const route = useRoute();
 
+const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 
@@ -150,13 +163,14 @@ const initSearchParams = computed((): SearchParams => {
     scopes: [
       {
         id: "project",
-        value: projectName,
+        value: extractProjectResourceName(projectName),
       },
     ],
   };
 });
 
 const state = reactive<LocalState>({
+  tab: "OPEN",
   filterText: "",
   searchParams: {
     query: "",
@@ -177,6 +191,25 @@ const showOpen = computed(
 const showClosed = computed(
   () => statusList.value.length === 0 || statusList.value.includes("closed")
 );
+
+const tabItemList = computed((): TabFilterItem<TabValue>[] => {
+  const OPEN: TabFilterItem<TabValue> = {
+    value: "OPEN",
+    label: t("issue.table.open"),
+  };
+  const CLOSED: TabFilterItem<TabValue> = {
+    value: "CLOSED",
+    label: t("issue.table.closed"),
+  };
+  const list: TabFilterItem<TabValue>[] = [];
+  if (showOpen.value) {
+    list.push(OPEN);
+  }
+  if (showClosed.value) {
+    list.push(CLOSED);
+  }
+  return list;
+});
 
 const allowFilterUsers = computed(() => {
   if (

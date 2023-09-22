@@ -1,7 +1,6 @@
 /* eslint-disable */
-import * as Long from "long";
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
@@ -148,11 +147,11 @@ export interface UpdateDatabaseRequest {
    * The database's `name` field is used to identify the database to update.
    * Format: instances/{instance}/databases/{database}
    */
-  database?:
+  database:
     | Database
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface BatchUpdateDatabasesRequest {
@@ -194,6 +193,28 @@ export interface GetDatabaseMetadataRequest {
   name: string;
 }
 
+export interface GetDatabaseConfigRequest {
+  /**
+   * The name of the database to retrieve metadata.
+   * Format: instances/{instance}/databases/{database}/config
+   */
+  name: string;
+}
+
+export interface UpdateDatabaseConfigRequest {
+  /**
+   * The database metadata config to update.
+   *
+   * The database_metadata_config's `name` field is used to identify the database metadata config to update.
+   * Format: instances/{instance}/databases/{database}/config
+   */
+  databaseMetadataConfig:
+    | DatabaseConfig
+    | undefined;
+  /** The list of fields to update. */
+  updateMask: string[] | undefined;
+}
+
 export interface GetDatabaseSchemaRequest {
   /**
    * The name of the database to retrieve schema.
@@ -208,7 +229,7 @@ export interface DiffSchemaRequest {
   /**
    * The name of the database or change history.
    * Format:
-   * databse: instances/{instance}/databases/{database}
+   * database: instances/{instance}/databases/{database}
    * change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
    */
   name: string;
@@ -237,7 +258,7 @@ export interface GetBackupSettingRequest {
 
 export interface UpdateBackupSettingRequest {
   /** The database backup setting to update. */
-  setting?: BackupSetting | undefined;
+  setting: BackupSetting | undefined;
 }
 
 /** CreateBackupRequest is the request message for CreateBackup. */
@@ -247,7 +268,7 @@ export interface CreateBackupRequest {
    * Format: instances/{instance}/databases/{database}
    */
   parent: string;
-  backup?: Backup | undefined;
+  backup: Backup | undefined;
 }
 
 /** ListBackupsRequest is the request message for ListBackup. */
@@ -296,7 +317,7 @@ export interface Database {
   /** The existence of a database on latest sync. */
   syncState: State;
   /** The latest synchronization time. */
-  successfulSyncTime?:
+  successfulSyncTime:
     | Date
     | undefined;
   /**
@@ -402,7 +423,7 @@ export interface ColumnMetadata {
   /** The position is the position in columns. */
   position: number;
   /** The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. */
-  default?:
+  default:
     | string
     | undefined;
   /** The nullable is the nullable of a column. */
@@ -681,6 +702,35 @@ export interface ForeignKeyMetadata {
   matchType: string;
 }
 
+export interface DatabaseConfig {
+  name: string;
+  /** The schema_configs is the list of configs for schemas in a database. */
+  schemaConfigs: SchemaConfig[];
+}
+
+export interface SchemaConfig {
+  /**
+   * The name is the schema name.
+   * It is an empty string for databases without such concept such as MySQL.
+   */
+  name: string;
+  /** The table_configs is the list of configs for tables in a schema. */
+  tableConfigs: TableConfig[];
+}
+
+export interface TableConfig {
+  /** The name is the name of a table. */
+  name: string;
+  /** The column_configs is the ordered list of configs for columns in a table. */
+  columnConfigs: ColumnConfig[];
+}
+
+export interface ColumnConfig {
+  /** The name is the name of a column. */
+  name: string;
+  semanticTypeId: string;
+}
+
 /** DatabaseMetadata is the metadata for databases. */
 export interface DatabaseSchema {
   /** The schema dump from database. */
@@ -700,7 +750,7 @@ export interface BackupSetting {
    * If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.
    * It will be rounded up to the number of days.
    */
-  backupRetainDuration?:
+  backupRetainDuration:
     | Duration
     | undefined;
   /**
@@ -722,11 +772,11 @@ export interface Backup {
    */
   name: string;
   /** The timestamp when the backup resource was created initially. */
-  createTime?:
+  createTime:
     | Date
     | undefined;
   /** The timestamp when the backup resource was updated. */
-  updateTime?:
+  updateTime:
     | Date
     | undefined;
   /** The state of the backup. */
@@ -886,7 +936,7 @@ export interface SlowQueryLog {
    */
   project: string;
   /** The statistics of the slow query log. */
-  statistics?: SlowQueryStatistics | undefined;
+  statistics: SlowQueryStatistics | undefined;
 }
 
 /** SlowQueryStatistics is the statistics of the slow query log. */
@@ -896,15 +946,15 @@ export interface SlowQueryStatistics {
   /** The count of the slow query log. */
   count: number;
   /** The latest log time of the slow query log. */
-  latestLogTime?:
+  latestLogTime:
     | Date
     | undefined;
   /** The average query time of the slow query log. */
-  averageQueryTime?:
+  averageQueryTime:
     | Duration
     | undefined;
   /** The maximum query time of the slow query log. */
-  maximumQueryTime?:
+  maximumQueryTime:
     | Duration
     | undefined;
   /** The average rows sent of the slow query log. */
@@ -926,15 +976,15 @@ export interface SlowQueryStatistics {
 /** SlowQueryDetails is the details of the slow query log. */
 export interface SlowQueryDetails {
   /** The start time of the slow query log. */
-  startTime?:
+  startTime:
     | Date
     | undefined;
   /** The query time of the slow query log. */
-  queryTime?:
+  queryTime:
     | Duration
     | undefined;
   /** The lock time of the slow query log. */
-  lockTime?:
+  lockTime:
     | Duration
     | undefined;
   /** The rows sent of the slow query log. */
@@ -980,11 +1030,11 @@ export interface ListSecretsResponse {
 
 export interface UpdateSecretRequest {
   /** The secret to be created or updated. */
-  secret?:
+  secret:
     | Secret
     | undefined;
   /** The mask of the fields to be updated. */
-  updateMask?:
+  updateMask:
     | string[]
     | undefined;
   /** If true, the secret will be created if it does not exist. */
@@ -1009,11 +1059,11 @@ export interface Secret {
    */
   name: string;
   /** Not used. The timestamp when the secret resource was created initially. */
-  createdTime?:
+  createdTime:
     | Date
     | undefined;
   /** Not used. The timestamp when the secret resource was updated. */
-  updatedTime?:
+  updatedTime:
     | Date
     | undefined;
   /** The value of the secret. */
@@ -1048,8 +1098,8 @@ export interface ChangeHistory {
   creator: string;
   /** Format: users/hello@world.com */
   updater: string;
-  createTime?: Date | undefined;
-  updateTime?:
+  createTime: Date | undefined;
+  updateTime:
     | Date
     | undefined;
   /** release version of Bytebase */
@@ -1062,13 +1112,13 @@ export interface ChangeHistory {
   statement: string;
   schema: string;
   prevSchema: string;
-  executionDuration?:
+  executionDuration:
     | Duration
     | undefined;
   /** Format: projects/{project}/issues/{issue} */
   issue: string;
-  pushEvent?: PushEvent | undefined;
-  changedResources?: ChangedResources | undefined;
+  pushEvent: PushEvent | undefined;
+  changedResources: ChangedResources | undefined;
 }
 
 export enum ChangeHistory_Source {
@@ -2073,6 +2123,140 @@ export const GetDatabaseMetadataRequest = {
   fromPartial(object: DeepPartial<GetDatabaseMetadataRequest>): GetDatabaseMetadataRequest {
     const message = createBaseGetDatabaseMetadataRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseGetDatabaseConfigRequest(): GetDatabaseConfigRequest {
+  return { name: "" };
+}
+
+export const GetDatabaseConfigRequest = {
+  encode(message: GetDatabaseConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseConfigRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetDatabaseConfigRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetDatabaseConfigRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetDatabaseConfigRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetDatabaseConfigRequest>): GetDatabaseConfigRequest {
+    return GetDatabaseConfigRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<GetDatabaseConfigRequest>): GetDatabaseConfigRequest {
+    const message = createBaseGetDatabaseConfigRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateDatabaseConfigRequest(): UpdateDatabaseConfigRequest {
+  return { databaseMetadataConfig: undefined, updateMask: undefined };
+}
+
+export const UpdateDatabaseConfigRequest = {
+  encode(message: UpdateDatabaseConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.databaseMetadataConfig !== undefined) {
+      DatabaseConfig.encode(message.databaseMetadataConfig, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDatabaseConfigRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateDatabaseConfigRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databaseMetadataConfig = DatabaseConfig.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateDatabaseConfigRequest {
+    return {
+      databaseMetadataConfig: isSet(object.databaseMetadataConfig)
+        ? DatabaseConfig.fromJSON(object.databaseMetadataConfig)
+        : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateDatabaseConfigRequest): unknown {
+    const obj: any = {};
+    message.databaseMetadataConfig !== undefined && (obj.databaseMetadataConfig = message.databaseMetadataConfig
+      ? DatabaseConfig.toJSON(message.databaseMetadataConfig)
+      : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateDatabaseConfigRequest>): UpdateDatabaseConfigRequest {
+    return UpdateDatabaseConfigRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<UpdateDatabaseConfigRequest>): UpdateDatabaseConfigRequest {
+    const message = createBaseUpdateDatabaseConfigRequest();
+    message.databaseMetadataConfig =
+      (object.databaseMetadataConfig !== undefined && object.databaseMetadataConfig !== null)
+        ? DatabaseConfig.fromPartial(object.databaseMetadataConfig)
+        : undefined;
+    message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
@@ -4613,6 +4797,308 @@ export const ForeignKeyMetadata = {
     message.onDelete = object.onDelete ?? "";
     message.onUpdate = object.onUpdate ?? "";
     message.matchType = object.matchType ?? "";
+    return message;
+  },
+};
+
+function createBaseDatabaseConfig(): DatabaseConfig {
+  return { name: "", schemaConfigs: [] };
+}
+
+export const DatabaseConfig = {
+  encode(message: DatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.schemaConfigs) {
+      SchemaConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      schemaConfigs: Array.isArray(object?.schemaConfigs)
+        ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: DatabaseConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.schemaConfigs) {
+      obj.schemaConfigs = message.schemaConfigs.map((e) => e ? SchemaConfig.toJSON(e) : undefined);
+    } else {
+      obj.schemaConfigs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseConfig>): DatabaseConfig {
+    return DatabaseConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DatabaseConfig>): DatabaseConfig {
+    const message = createBaseDatabaseConfig();
+    message.name = object.name ?? "";
+    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSchemaConfig(): SchemaConfig {
+  return { name: "", tableConfigs: [] };
+}
+
+export const SchemaConfig = {
+  encode(message: SchemaConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.tableConfigs) {
+      TableConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tableConfigs.push(TableConfig.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      tableConfigs: Array.isArray(object?.tableConfigs)
+        ? object.tableConfigs.map((e: any) => TableConfig.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SchemaConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.tableConfigs) {
+      obj.tableConfigs = message.tableConfigs.map((e) => e ? TableConfig.toJSON(e) : undefined);
+    } else {
+      obj.tableConfigs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaConfig>): SchemaConfig {
+    return SchemaConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaConfig>): SchemaConfig {
+    const message = createBaseSchemaConfig();
+    message.name = object.name ?? "";
+    message.tableConfigs = object.tableConfigs?.map((e) => TableConfig.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseTableConfig(): TableConfig {
+  return { name: "", columnConfigs: [] };
+}
+
+export const TableConfig = {
+  encode(message: TableConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.columnConfigs) {
+      ColumnConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TableConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTableConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.columnConfigs.push(ColumnConfig.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TableConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      columnConfigs: Array.isArray(object?.columnConfigs)
+        ? object.columnConfigs.map((e: any) => ColumnConfig.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: TableConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.columnConfigs) {
+      obj.columnConfigs = message.columnConfigs.map((e) => e ? ColumnConfig.toJSON(e) : undefined);
+    } else {
+      obj.columnConfigs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TableConfig>): TableConfig {
+    return TableConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<TableConfig>): TableConfig {
+    const message = createBaseTableConfig();
+    message.name = object.name ?? "";
+    message.columnConfigs = object.columnConfigs?.map((e) => ColumnConfig.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseColumnConfig(): ColumnConfig {
+  return { name: "", semanticTypeId: "" };
+}
+
+export const ColumnConfig = {
+  encode(message: ColumnConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.semanticTypeId !== "") {
+      writer.uint32(18).string(message.semanticTypeId);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ColumnConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseColumnConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.semanticTypeId = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ColumnConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      semanticTypeId: isSet(object.semanticTypeId) ? String(object.semanticTypeId) : "",
+    };
+  },
+
+  toJSON(message: ColumnConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.semanticTypeId !== undefined && (obj.semanticTypeId = message.semanticTypeId);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ColumnConfig>): ColumnConfig {
+    return ColumnConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ColumnConfig>): ColumnConfig {
+    const message = createBaseColumnConfig();
+    message.name = object.name ?? "";
+    message.semanticTypeId = object.semanticTypeId ?? "";
     return message;
   },
 };
@@ -7383,6 +7869,65 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    getDatabaseConfig: {
+      name: "GetDatabaseConfig",
+      requestType: GetDatabaseConfigRequest,
+      requestStream: false,
+      responseType: DatabaseConfig,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              43,
+              18,
+              41,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              99,
+              111,
+              110,
+              102,
+              105,
+              103,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
     getDatabaseSchema: {
       name: "GetDatabaseSchema",
       requestType: GetDatabaseSchemaRequest,
@@ -8338,147 +8883,6 @@ export const DatabaseServiceDefinition = {
   },
 } as const;
 
-export interface DatabaseServiceImplementation<CallContextExt = {}> {
-  getDatabase(request: GetDatabaseRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Database>>;
-  listDatabases(
-    request: ListDatabasesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListDatabasesResponse>>;
-  /** Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. */
-  searchDatabases(
-    request: SearchDatabasesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchDatabasesResponse>>;
-  updateDatabase(request: UpdateDatabaseRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Database>>;
-  batchUpdateDatabases(
-    request: BatchUpdateDatabasesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchUpdateDatabasesResponse>>;
-  syncDatabase(
-    request: SyncDatabaseRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SyncDatabaseResponse>>;
-  getDatabaseMetadata(
-    request: GetDatabaseMetadataRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseMetadata>>;
-  getDatabaseSchema(
-    request: GetDatabaseSchemaRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseSchema>>;
-  diffSchema(
-    request: DiffSchemaRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DiffSchemaResponse>>;
-  getBackupSetting(
-    request: GetBackupSettingRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BackupSetting>>;
-  updateBackupSetting(
-    request: UpdateBackupSettingRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BackupSetting>>;
-  createBackup(request: CreateBackupRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Backup>>;
-  listBackups(
-    request: ListBackupsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListBackupsResponse>>;
-  listSlowQueries(
-    request: ListSlowQueriesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSlowQueriesResponse>>;
-  listSecrets(
-    request: ListSecretsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSecretsResponse>>;
-  updateSecret(request: UpdateSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Secret>>;
-  deleteSecret(request: DeleteSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  adviseIndex(
-    request: AdviseIndexRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<AdviseIndexResponse>>;
-  listChangeHistories(
-    request: ListChangeHistoriesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListChangeHistoriesResponse>>;
-  getChangeHistory(
-    request: GetChangeHistoryRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ChangeHistory>>;
-}
-
-export interface DatabaseServiceClient<CallOptionsExt = {}> {
-  getDatabase(request: DeepPartial<GetDatabaseRequest>, options?: CallOptions & CallOptionsExt): Promise<Database>;
-  listDatabases(
-    request: DeepPartial<ListDatabasesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListDatabasesResponse>;
-  /** Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. */
-  searchDatabases(
-    request: DeepPartial<SearchDatabasesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchDatabasesResponse>;
-  updateDatabase(
-    request: DeepPartial<UpdateDatabaseRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Database>;
-  batchUpdateDatabases(
-    request: DeepPartial<BatchUpdateDatabasesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchUpdateDatabasesResponse>;
-  syncDatabase(
-    request: DeepPartial<SyncDatabaseRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SyncDatabaseResponse>;
-  getDatabaseMetadata(
-    request: DeepPartial<GetDatabaseMetadataRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseMetadata>;
-  getDatabaseSchema(
-    request: DeepPartial<GetDatabaseSchemaRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseSchema>;
-  diffSchema(
-    request: DeepPartial<DiffSchemaRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DiffSchemaResponse>;
-  getBackupSetting(
-    request: DeepPartial<GetBackupSettingRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BackupSetting>;
-  updateBackupSetting(
-    request: DeepPartial<UpdateBackupSettingRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BackupSetting>;
-  createBackup(request: DeepPartial<CreateBackupRequest>, options?: CallOptions & CallOptionsExt): Promise<Backup>;
-  listBackups(
-    request: DeepPartial<ListBackupsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListBackupsResponse>;
-  listSlowQueries(
-    request: DeepPartial<ListSlowQueriesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSlowQueriesResponse>;
-  listSecrets(
-    request: DeepPartial<ListSecretsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSecretsResponse>;
-  updateSecret(request: DeepPartial<UpdateSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Secret>;
-  deleteSecret(request: DeepPartial<DeleteSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  adviseIndex(
-    request: DeepPartial<AdviseIndexRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<AdviseIndexResponse>;
-  listChangeHistories(
-    request: DeepPartial<ListChangeHistoriesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListChangeHistoriesResponse>;
-  getChangeHistory(
-    request: DeepPartial<GetChangeHistoryRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ChangeHistory>;
-}
-
 declare const self: any | undefined;
 declare const window: any | undefined;
 declare const global: any | undefined;
@@ -8534,8 +8938,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

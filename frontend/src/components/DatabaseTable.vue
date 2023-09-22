@@ -78,7 +78,7 @@
               <span class="tooltip whitespace-nowrap">
                 {{ $t("project.mode.batch") }}
               </span>
-              <TenantIcon class="w-4 h-4 text-control" />
+              <TenantIcon class="text-control" />
             </div>
             <div class="tooltip-wrapper">
               <svg
@@ -233,8 +233,8 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
 import DatabaseName from "@/components/DatabaseName.vue";
-import { getScrollParent } from "@/plugins/demo/utils";
 import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import { getScrollParent } from "@/utils";
 import { BBGridColumn } from "../bbkit/types";
 import { Database } from "../types";
 import {

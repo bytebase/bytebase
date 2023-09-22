@@ -112,20 +112,6 @@
   
     - [CelService](#bytebase-v1-CelService)
   
-- [v1/database_edit.proto](#v1_database_edit-proto)
-    - [AddColumnContext](#bytebase-v1-AddColumnContext)
-    - [AddForeignKeyContext](#bytebase-v1-AddForeignKeyContext)
-    - [AlterColumnContext](#bytebase-v1-AlterColumnContext)
-    - [AlterTableContext](#bytebase-v1-AlterTableContext)
-    - [CreateSchemaContext](#bytebase-v1-CreateSchemaContext)
-    - [CreateTableContext](#bytebase-v1-CreateTableContext)
-    - [DatabaseEdit](#bytebase-v1-DatabaseEdit)
-    - [DropColumnContext](#bytebase-v1-DropColumnContext)
-    - [DropSchemaContext](#bytebase-v1-DropSchemaContext)
-    - [DropTableContext](#bytebase-v1-DropTableContext)
-    - [RenameSchemaContext](#bytebase-v1-RenameSchemaContext)
-    - [RenameTableContext](#bytebase-v1-RenameTableContext)
-  
 - [v1/vcs.proto](#v1_vcs-proto)
     - [Commit](#bytebase-v1-Commit)
     - [FileCommit](#bytebase-v1-FileCommit)
@@ -145,10 +131,12 @@
     - [ChangedResourceSchema](#bytebase-v1-ChangedResourceSchema)
     - [ChangedResourceTable](#bytebase-v1-ChangedResourceTable)
     - [ChangedResources](#bytebase-v1-ChangedResources)
+    - [ColumnConfig](#bytebase-v1-ColumnConfig)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
     - [CreateBackupRequest](#bytebase-v1-CreateBackupRequest)
     - [Database](#bytebase-v1-Database)
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
+    - [DatabaseConfig](#bytebase-v1-DatabaseConfig)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
     - [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest)
@@ -160,6 +148,7 @@
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest)
     - [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest)
+    - [GetDatabaseConfigRequest](#bytebase-v1-GetDatabaseConfigRequest)
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
@@ -174,6 +163,7 @@
     - [ListSecretsResponse](#bytebase-v1-ListSecretsResponse)
     - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
+    - [SchemaConfig](#bytebase-v1-SchemaConfig)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [SearchDatabasesRequest](#bytebase-v1-SearchDatabasesRequest)
     - [SearchDatabasesResponse](#bytebase-v1-SearchDatabasesResponse)
@@ -184,9 +174,11 @@
     - [StreamMetadata](#bytebase-v1-StreamMetadata)
     - [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest)
     - [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse)
+    - [TableConfig](#bytebase-v1-TableConfig)
     - [TableMetadata](#bytebase-v1-TableMetadata)
     - [TaskMetadata](#bytebase-v1-TaskMetadata)
     - [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest)
+    - [UpdateDatabaseConfigRequest](#bytebase-v1-UpdateDatabaseConfigRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
@@ -503,6 +495,8 @@
 - [v1/schema_design_service.proto](#v1_schema_design_service-proto)
     - [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest)
     - [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest)
+    - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
+    - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest)
     - [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest)
     - [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse)
@@ -555,6 +549,7 @@
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
+    - [SchemaTemplateSetting.TableTemplate](#bytebase-v1-SchemaTemplateSetting-TableTemplate)
     - [SemanticTypesSetting](#bytebase-v1-SemanticTypesSetting)
     - [SemanticTypesSetting.SemanticType](#bytebase-v1-SemanticTypesSetting-SemanticType)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
@@ -609,7 +604,6 @@
     - [RowValue](#bytebase-v1-RowValue)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
-    - [CheckRequest.ChangeDatabaseType](#bytebase-v1-CheckRequest-ChangeDatabaseType)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -648,7 +642,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
 | gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
-| development_use_v2_scheduler | [bool](#bool) |  | development_use_v2_scheduler flag means if the server uses the v2 task run scheduler. this flag is only used for development purpose and will be removed once we switch to the v2 scheduler. |
 
 
 
@@ -2107,247 +2100,6 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 
 
 
-<a name="v1_database_edit-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/database_edit.proto
-
-
-
-<a name="bytebase-v1-AddColumnContext"></a>
-
-### AddColumnContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the column to add. |
-| type | [string](#string) |  | The type of the column. |
-| character_set | [string](#string) |  | The character set of the column. |
-| collation | [string](#string) |  | The collation of the column. |
-| comment | [string](#string) |  | The comment of the column. |
-| nullable | [bool](#bool) |  | Whether the column is nullable. |
-| default_value | [string](#string) |  | The default value of the column. |
-| has_default_value | [bool](#bool) |  | Whether the column has a default value. |
-
-
-
-
-
-
-<a name="bytebase-v1-AddForeignKeyContext"></a>
-
-### AddForeignKeyContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| column | [string](#string) |  | The column of the foreign key. |
-| referenced_schema | [string](#string) |  | The referenced schema of the foreign key. |
-| referenced_table | [string](#string) |  | The referenced table of the foreign key. |
-| referenced_column | [string](#string) |  | The referenced column of the foreign key. |
-
-
-
-
-
-
-<a name="bytebase-v1-AlterColumnContext"></a>
-
-### AlterColumnContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| old_name | [string](#string) |  | The old name of the column. |
-| new_name | [string](#string) |  | The new name of the column. |
-| type | [string](#string) |  | The type of the column. |
-| character_set | [string](#string) |  | The character set of the column. |
-| collation | [string](#string) |  | The collation of the column. |
-| comment | [string](#string) |  | The comment of the column. |
-| nullable | [bool](#bool) |  | Whether the column is nullable. |
-| default_value | [string](#string) |  | The default value of the column. |
-| is_default_value_changed | [bool](#bool) |  | Whether the default value of the column has changed. |
-
-
-
-
-
-
-<a name="bytebase-v1-AlterTableContext"></a>
-
-### AlterTableContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the table to alter. |
-| schema | [string](#string) |  | The schema of the table. |
-| add_column_contexts | [AddColumnContext](#bytebase-v1-AddColumnContext) | repeated | List of column addition contexts. |
-| alter_column_contexts | [AlterColumnContext](#bytebase-v1-AlterColumnContext) | repeated | List of column alteration contexts. |
-| drop_column_contexts | [DropColumnContext](#bytebase-v1-DropColumnContext) | repeated | List of column dropping contexts. |
-| drop_primary_keys | [string](#string) | repeated | List of primary key columns to be dropped. |
-| primary_keys | [string](#string) | repeated | List of primary key columns. |
-| drop_foreign_keys | [string](#string) | repeated | List of foreign key columns to be dropped. |
-| add_foreign_key_contexts | [AddForeignKeyContext](#bytebase-v1-AddForeignKeyContext) | repeated | List of foreign key addition contexts. |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateSchemaContext"></a>
-
-### CreateSchemaContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the schema to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateTableContext"></a>
-
-### CreateTableContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the table to create. |
-| schema | [string](#string) |  | The schema of the table. |
-| type | [string](#string) |  | The type of the table. |
-| engine | [string](#string) |  | The engine of the table. |
-| character_set | [string](#string) |  | The character set of the table. |
-| collation | [string](#string) |  | The collation of the table. |
-| comment | [string](#string) |  | The comment of the table. |
-| add_column_contexts | [AddColumnContext](#bytebase-v1-AddColumnContext) | repeated | List of column addition contexts. |
-| primary_keys | [string](#string) | repeated | List of primary key columns. |
-| add_foreign_key_contexts | [AddForeignKeyContext](#bytebase-v1-AddForeignKeyContext) | repeated | List of foreign key addition contexts. |
-
-
-
-
-
-
-<a name="bytebase-v1-DatabaseEdit"></a>
-
-### DatabaseEdit
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| create_schema_contexts | [CreateSchemaContext](#bytebase-v1-CreateSchemaContext) | repeated | List of schema creation contexts. |
-| rename_schema_contexts | [RenameSchemaContext](#bytebase-v1-RenameSchemaContext) | repeated | List of schema renaming contexts. |
-| drop_schema_contexts | [DropSchemaContext](#bytebase-v1-DropSchemaContext) | repeated | List of schema dropping contexts. |
-| create_table_contexts | [CreateTableContext](#bytebase-v1-CreateTableContext) | repeated | List of table creation contexts. |
-| alter_table_contexts | [AlterTableContext](#bytebase-v1-AlterTableContext) | repeated | List of table alteration contexts. |
-| rename_table_contexts | [RenameTableContext](#bytebase-v1-RenameTableContext) | repeated | List of table renaming contexts. |
-| drop_table_contexts | [DropTableContext](#bytebase-v1-DropTableContext) | repeated | List of table dropping contexts. |
-
-
-
-
-
-
-<a name="bytebase-v1-DropColumnContext"></a>
-
-### DropColumnContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the column to drop. |
-
-
-
-
-
-
-<a name="bytebase-v1-DropSchemaContext"></a>
-
-### DropSchemaContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the schema to drop. |
-
-
-
-
-
-
-<a name="bytebase-v1-DropTableContext"></a>
-
-### DropTableContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the table to drop. |
-| schema | [string](#string) |  | The schema of the table. |
-
-
-
-
-
-
-<a name="bytebase-v1-RenameSchemaContext"></a>
-
-### RenameSchemaContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| old_name | [string](#string) |  | The old name of the schema. |
-| new_name | [string](#string) |  | The new name of the schema. |
-
-
-
-
-
-
-<a name="bytebase-v1-RenameTableContext"></a>
-
-### RenameTableContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  | The schema of the table. |
-| old_name | [string](#string) |  | The old name of the table. |
-| new_name | [string](#string) |  | The new name of the table. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="v1_vcs-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2655,6 +2407,22 @@ Default (empty): Disable automatic backup. |
 
 
 
+<a name="bytebase-v1-ColumnConfig"></a>
+
+### ColumnConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a column. |
+| semantic_type_id | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ColumnMetadata"></a>
 
 ### ColumnMetadata
@@ -2735,6 +2503,22 @@ CreateBackupRequest is the request message for CreateBackup.
 
 
 
+<a name="bytebase-v1-DatabaseConfig"></a>
+
+### DatabaseConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schema_configs | [SchemaConfig](#bytebase-v1-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
+
+
+
+
+
+
 <a name="bytebase-v1-DatabaseMetadata"></a>
 
 ### DatabaseMetadata
@@ -2809,7 +2593,7 @@ DependentColumn is the metadata for dependent columns.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database or change history. Format: databse: instances/{instance}/databases/{database} change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| name | [string](#string) |  | The name of the database or change history. Format: database: instances/{instance}/databases/{database} change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | schema | [string](#string) |  | The target schema. |
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 
@@ -2915,6 +2699,21 @@ FunctionMetadata is the metadata for functions.
 | name | [string](#string) |  | The name of the change history to retrieve. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
 | sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseConfigRequest"></a>
+
+### GetDatabaseConfigRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/config |
 
 
 
@@ -3167,6 +2966,22 @@ ListSlowQueriesResponse is the response of listing slow query.
 
 
 
+<a name="bytebase-v1-SchemaConfig"></a>
+
+### SchemaConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
+| table_configs | [TableConfig](#bytebase-v1-TableConfig) | repeated | The table_configs is the list of configs for tables in a schema. |
+
+
+
+
+
+
 <a name="bytebase-v1-SchemaMetadata"></a>
 
 ### SchemaMetadata
@@ -3353,6 +3168,22 @@ SlowQueryStatistics is the statistics of the slow query log.
 
 
 
+<a name="bytebase-v1-TableConfig"></a>
+
+### TableConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table. |
+| column_configs | [ColumnConfig](#bytebase-v1-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
+
+
+
+
+
+
 <a name="bytebase-v1-TableMetadata"></a>
 
 ### TableMetadata
@@ -3414,6 +3245,24 @@ TableMetadata is the metadata for tables.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | setting | [BackupSetting](#bytebase-v1-BackupSetting) |  | The database backup setting to update. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateDatabaseConfigRequest"></a>
+
+### UpdateDatabaseConfigRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database_metadata_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The database metadata config to update.
+
+The database_metadata_config&#39;s `name` field is used to identify the database metadata config to update. Format: instances/{instance}/databases/{database}/config |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
 
@@ -3618,6 +3467,7 @@ The type of the backup.
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) |  |
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
+| GetDatabaseConfig | [GetDatabaseConfigRequest](#bytebase-v1-GetDatabaseConfigRequest) | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
@@ -8144,6 +7994,38 @@ Type is the database change type.
 
 
 
+<a name="bytebase-v1-DiffMetadataRequest"></a>
+
+### DiffMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
+| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffMetadataResponse"></a>
+
+### DiffMetadataResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  | The diff of the metadata. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetSchemaDesignRequest"></a>
 
 ### GetSchemaDesignRequest
@@ -8339,6 +8221,7 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | MergeSchemaDesign | [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | ParseSchemaString | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
 | DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  
 
@@ -8689,7 +8572,6 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| sensitive | [bool](#bool) |  |  |
 
 
 
@@ -8861,6 +8743,7 @@ If we need to support the custom masking algorithm, we need to define the payloa
 | ----- | ---- | ----- | ----------- |
 | field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate) | repeated |  |
 | column_types | [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType) | repeated |  |
+| table_templates | [SchemaTemplateSetting.TableTemplate](#bytebase-v1-SchemaTemplateSetting-TableTemplate) | repeated |  |
 
 
 
@@ -8896,6 +8779,24 @@ If we need to support the custom masking algorithm, we need to define the payloa
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | category | [string](#string) |  |  |
 | column | [ColumnMetadata](#bytebase-v1-ColumnMetadata) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaTemplateSetting-TableTemplate"></a>
+
+### SchemaTemplateSetting.TableTemplate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| category | [string](#string) |  |  |
+| table | [TableMetadata](#bytebase-v1-TableMetadata) |  |  |
 
 
 
@@ -9455,6 +9356,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | title | [string](#string) |  | The advice title. |
 | content | [string](#string) |  | The advice content. |
 | line | [int32](#int32) |  | The advice line number in the SQL statement. |
+| column | [int32](#int32) |  | The advice column number in the SQL statement. |
 | detail | [string](#string) |  | The advice detail. |
 
 
@@ -9471,8 +9373,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | statement | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| change_database_type | [CheckRequest.ChangeDatabaseType](#bytebase-v1-CheckRequest-ChangeDatabaseType) |  |  |
 | database | [string](#string) |  | Format: instances/{instance}/databases/{databaseName} |
 
 
@@ -9706,20 +9606,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | SUCCESS | 1 |  |
 | WARNING | 2 |  |
 | ERROR | 3 |  |
-
-
-
-<a name="bytebase-v1-CheckRequest-ChangeDatabaseType"></a>
-
-### CheckRequest.ChangeDatabaseType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DML | 2 |  |
-| SDL | 3 |  |
 
 
  

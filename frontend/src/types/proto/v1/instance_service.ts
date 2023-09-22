@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
@@ -87,7 +86,7 @@ export interface ListInstancesResponse {
 
 export interface CreateInstanceRequest {
   /** The instance to create. */
-  instance?:
+  instance:
     | Instance
     | undefined;
   /**
@@ -109,11 +108,11 @@ export interface UpdateInstanceRequest {
    * The instance's `name` field is used to identify the instance to update.
    * Format: instances/{instance}
    */
-  instance?:
+  instance:
     | Instance
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface DeleteInstanceRequest {
@@ -155,7 +154,7 @@ export interface AddDataSourceRequest {
    * Identified by type.
    * Only READ_ONLY data source can be added.
    */
-  dataSource?:
+  dataSource:
     | DataSource
     | undefined;
   /** Validate only also tests the data source connection. */
@@ -172,7 +171,7 @@ export interface RemoveDataSourceRequest {
    * Identified by type.
    * Only READ_ONLY data source can be removed.
    */
-  dataSource?: DataSource | undefined;
+  dataSource: DataSource | undefined;
 }
 
 export interface UpdateDataSourceRequest {
@@ -182,11 +181,11 @@ export interface UpdateDataSourceRequest {
    */
   instance: string;
   /** Identified by type. */
-  dataSource?:
+  dataSource:
     | DataSource
     | undefined;
   /** The list of fields to update. */
-  updateMask?:
+  updateMask:
     | string[]
     | undefined;
   /** Validate only also tests the data source connection. */
@@ -210,7 +209,7 @@ export interface InstanceOptions {
    */
   schemaTenantMode: boolean;
   /** How often the instance is synced. */
-  syncInterval?: Duration | undefined;
+  syncInterval: Duration | undefined;
 }
 
 export interface Instance {
@@ -233,7 +232,7 @@ export interface Instance {
    */
   environment: string;
   activation: boolean;
-  options?: InstanceOptions | undefined;
+  options: InstanceOptions | undefined;
 }
 
 export interface DataSource {
@@ -2407,70 +2406,6 @@ export const InstanceServiceDefinition = {
     },
   },
 } as const;
-
-export interface InstanceServiceImplementation<CallContextExt = {}> {
-  getInstance(request: GetInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
-  listInstances(
-    request: ListInstancesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListInstancesResponse>>;
-  createInstance(request: CreateInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
-  updateInstance(request: UpdateInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
-  deleteInstance(request: DeleteInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  undeleteInstance(
-    request: UndeleteInstanceRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Instance>>;
-  syncInstance(
-    request: SyncInstanceRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SyncInstanceResponse>>;
-  addDataSource(request: AddDataSourceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
-  removeDataSource(
-    request: RemoveDataSourceRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Instance>>;
-  updateDataSource(
-    request: UpdateDataSourceRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Instance>>;
-  syncSlowQueries(request: SyncSlowQueriesRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-}
-
-export interface InstanceServiceClient<CallOptionsExt = {}> {
-  getInstance(request: DeepPartial<GetInstanceRequest>, options?: CallOptions & CallOptionsExt): Promise<Instance>;
-  listInstances(
-    request: DeepPartial<ListInstancesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListInstancesResponse>;
-  createInstance(
-    request: DeepPartial<CreateInstanceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Instance>;
-  updateInstance(
-    request: DeepPartial<UpdateInstanceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Instance>;
-  deleteInstance(request: DeepPartial<DeleteInstanceRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  undeleteInstance(
-    request: DeepPartial<UndeleteInstanceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Instance>;
-  syncInstance(
-    request: DeepPartial<SyncInstanceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SyncInstanceResponse>;
-  addDataSource(request: DeepPartial<AddDataSourceRequest>, options?: CallOptions & CallOptionsExt): Promise<Instance>;
-  removeDataSource(
-    request: DeepPartial<RemoveDataSourceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Instance>;
-  updateDataSource(
-    request: DeepPartial<UpdateDataSourceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Instance>;
-  syncSlowQueries(request: DeepPartial<SyncSlowQueriesRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

@@ -54,23 +54,20 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 	if err != nil {
 		return err
 	}
-
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-	if err != nil {
-		return err
-	}
-
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Title:       fmt.Sprintf("create database %q", databaseName),
 			Description: fmt.Sprintf("This creates a database %q.", databaseName),
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
+	if err != nil {
+		return err
+	}
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	if err != nil {
 		return err
 	}
@@ -129,23 +126,20 @@ func (ctl *controller) createDatabaseFromBackup(ctx context.Context, project *v1
 	if err != nil {
 		return err
 	}
-
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
-	if err != nil {
-		return err
-	}
-
 	issue, err := ctl.issueServiceClient.CreateIssue(ctx, &v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Title:       fmt.Sprintf("create database %q", databaseName),
 			Description: fmt.Sprintf("This creates a database %q.", databaseName),
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
+	if err != nil {
+		return err
+	}
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
 	if err != nil {
 		return err
 	}

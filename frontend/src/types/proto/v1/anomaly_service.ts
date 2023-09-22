@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { BackupPlanSchedule, backupPlanScheduleFromJSON, backupPlanScheduleToJSON } from "./org_policy_service";
 
@@ -60,8 +59,8 @@ export interface Anomaly {
   databaseBackupPolicyViolationDetail?: Anomaly_DatabaseBackupPolicyViolationDetail | undefined;
   databaseBackupMissingDetail?: Anomaly_DatabaseBackupMissingDetail | undefined;
   databaseSchemaDriftDetail?: Anomaly_DatabaseSchemaDriftDetail | undefined;
-  createTime?: Date | undefined;
-  updateTime?: Date | undefined;
+  createTime: Date | undefined;
+  updateTime: Date | undefined;
 }
 
 /** AnomalyType is the type of the anomaly. */
@@ -235,7 +234,7 @@ export interface Anomaly_DatabaseBackupMissingDetail {
   /** expected_schedule is the expected backup plan schedule in the database. */
   expectedSchedule: BackupPlanSchedule;
   /** latest_backup_time is the latest backup time in the database. */
-  latestBackupTime?: Date | undefined;
+  latestBackupTime: Date | undefined;
 }
 
 /** DatabaseSchemaDriftDetail is the detail for database schema drift anomaly. */
@@ -1038,20 +1037,6 @@ export const AnomalyServiceDefinition = {
     },
   },
 } as const;
-
-export interface AnomalyServiceImplementation<CallContextExt = {}> {
-  searchAnomalies(
-    request: SearchAnomaliesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchAnomaliesResponse>>;
-}
-
-export interface AnomalyServiceClient<CallOptionsExt = {}> {
-  searchAnomalies(
-    request: DeepPartial<SearchAnomaliesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchAnomaliesResponse>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

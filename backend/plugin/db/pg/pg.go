@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,22 +31,6 @@ import (
 )
 
 var (
-	// ExcludedDatabaseList is the list of system or internal databases.
-	ExcludedDatabaseList = map[string]bool{
-		// Skip our internal "bytebase" database
-		"bytebase": true,
-		// Skip internal databases from cloud service providers
-		// see https://github.com/bytebase/bytebase/issues/30
-		// aws
-		"rdsadmin": true,
-		// gcp
-		"cloudsql":      true,
-		"cloudsqladmin": true,
-		// system templates.
-		"template0": true,
-		"template1": true,
-	}
-
 	// driverName is the driver name that our driver dependence register, now is "pgx".
 	driverName = "pgx"
 
@@ -251,6 +236,13 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 		}
 		return "", util.FormatErrorWithQuery(err, query)
 	}
+	versionNum, err := strconv.Atoi(version)
+	if err != nil {
+		return "", err
+	}
+	// https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION
+	const majorMultiplier = 10_000
+	version = fmt.Sprintf("%d.%d", versionNum/majorMultiplier, versionNum%majorMultiplier)
 	return version, nil
 }
 

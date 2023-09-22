@@ -34,14 +34,20 @@
         >
           {{ $t("common.view") }}
         </button>
-        <BBButtonConfirm
-          v-if="!readonly"
-          :style="'DELETE'"
-          :ok-text="$t('common.delete')"
-          :confirm-title="$t('common.delete') + ` '${item.column?.name}'?`"
-          :require-confirm="true"
-          @confirm="() => deleteTemplate(item.id)"
-        />
+        <NPopconfirm v-if="!readonly" @positive-click="deleteTemplate(item.id)">
+          <template #trigger>
+            <button
+              class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+              @click.stop=""
+            >
+              <heroicons-outline:trash class="w-4 h-4" />
+            </button>
+          </template>
+
+          <div class="whitespace-nowrap">
+            {{ $t("common.delete") + ` '${item.column?.name}'?` }}
+          </div>
+        </NPopconfirm>
       </div>
     </template>
   </BBGrid>
@@ -49,6 +55,7 @@
 
 <script lang="ts" setup>
 import { pullAt } from "lodash-es";
+import { NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn } from "@/bbkit";

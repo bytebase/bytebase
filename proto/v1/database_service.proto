@@ -58,6 +58,10 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
   }
 
+  rpc GetDatabaseConfig(GetDatabaseConfigRequest) returns (DatabaseConfig) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/config}"};
+  }
+
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
@@ -243,6 +247,23 @@ message GetDatabaseMetadataRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message GetDatabaseConfigRequest {
+  // The name of the database to retrieve metadata.
+  // Format: instances/{instance}/databases/{database}/config
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateDatabaseConfigRequest {
+  // The database metadata config to update.
+  //
+  // The database_metadata_config's `name` field is used to identify the database metadata config to update.
+  // Format: instances/{instance}/databases/{database}/config
+  DatabaseConfig database_metadata_config = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
 message GetDatabaseSchemaRequest {
   // The name of the database to retrieve schema.
   // Format: instances/{instance}/databases/{database}/schema
@@ -255,7 +276,7 @@ message GetDatabaseSchemaRequest {
 message DiffSchemaRequest {
   // The name of the database or change history.
   // Format:
-  // databse: instances/{instance}/databases/{database}
+  // database: instances/{instance}/databases/{database}
   // change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
@@ -658,6 +679,37 @@ message ForeignKeyMetadata {
   // The match_type is the PostgreSQL specific field.
   // It's empty string for other databases.
   string match_type = 8;
+}
+
+message DatabaseConfig {
+  string name = 1;
+
+  // The schema_configs is the list of configs for schemas in a database.
+  repeated SchemaConfig schema_configs = 2;
+}
+
+message SchemaConfig {
+  // The name is the schema name.
+  // It is an empty string for databases without such concept such as MySQL.
+  string name = 1;
+
+  // The table_configs is the list of configs for tables in a schema.
+  repeated TableConfig table_configs = 2;
+}
+
+message TableConfig {
+  // The name is the name of a table.
+  string name = 1;
+
+  // The column_configs is the ordered list of configs for columns in a table.
+  repeated ColumnConfig column_configs = 2;
+}
+
+message ColumnConfig {
+  // The name is the name of a column.
+  string name = 1;
+
+  string semantic_type_id = 2;
 }
 
 // DatabaseMetadata is the metadata for databases.

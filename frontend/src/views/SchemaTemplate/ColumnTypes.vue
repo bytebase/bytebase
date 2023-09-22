@@ -1,9 +1,5 @@
 <template>
   <div class="w-full space-y-4 text-sm">
-    <FeatureAttention
-      feature="bb.feature.schema-template"
-      custom-class="my-4"
-    />
     <div class="space-y-4">
       <div class="flex items-center justify-between gap-x-6">
         <div class="flex-1 textinfolabel !leading-8">
@@ -20,7 +16,7 @@
         <NRadioGroup
           v-model:value="columnTypeTemplateForMySQL.enabled"
           class="gap-x-2"
-          :disabled="!hasPermission || !hasFeature"
+          :disabled="readonly"
           @change="handleMySQLEnabledChange"
         >
           <NRadio
@@ -38,7 +34,7 @@
       <NInput
         v-if="columnTypeTemplateForMySQL.enabled"
         v-model:value="columnTypesForMySQL"
-        :disabled="!hasPermission || !hasFeature"
+        :disabled="readonly"
         type="textarea"
         :placeholder="
           $t(
@@ -53,11 +49,7 @@
       <div class="w-full flex flex-row justify-end items-center">
         <NButton
           type="primary"
-          :disabled="
-            !hasPermission ||
-            !hasFeature ||
-            !allowToUpdateColumnTypeTemplateForMySQL
-          "
+          :disabled="!allowToUpdateColumnTypeTemplateForMySQL"
           @click="handleMySQLTypesChange"
         >
           {{ $t("common.update") }}
@@ -74,7 +66,7 @@
         <NRadioGroup
           v-model:value="columnTypeTemplateForPostgreSQL.enabled"
           class="gap-x-2"
-          :disabled="!hasPermission || !hasFeature"
+          :disabled="readonly"
           @change="handlePostgreSQLEnabledChange"
         >
           <NRadio
@@ -90,9 +82,9 @@
         </NRadioGroup>
       </div>
       <NInput
-        v-if="hasFeature && columnTypeTemplateForPostgreSQL.enabled"
+        v-if="columnTypeTemplateForPostgreSQL.enabled"
         v-model:value="columnTypesForPostgreSQL"
-        :disabled="!hasPermission || !hasFeature"
+        :disabled="readonly"
         type="textarea"
         :placeholder="
           $t(
@@ -107,23 +99,13 @@
       <div class="w-full flex flex-row justify-end items-center">
         <NButton
           type="primary"
-          :disabled="
-            !hasPermission ||
-            !hasFeature ||
-            !allowToUpdateColumnTypeTemplateForPostgreSQL
-          "
+          :disabled="!allowToUpdateColumnTypeTemplateForPostgreSQL"
           @click="handlePostgreSQLTypesChange"
           >{{ $t("common.update") }}</NButton
         >
       </div>
     </div>
   </div>
-
-  <FeatureModal
-    feature="bb.feature.schema-template"
-    :open="state.showFeatureModal"
-    @cancel="state.showFeatureModal = false"
-  />
 
   <ColumnTypesUpdateFailedModal
     v-if="unmatchedFieldTemplates.length > 0"
@@ -138,28 +120,21 @@ import { cloneDeep, isEqual, uniq, uniqBy } from "lodash-es";
 import { NButton, NDivider, NInput, NRadioGroup, NRadio } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
 import EngineIcon from "@/components/Icon/EngineIcon.vue";
-import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
+import { pushNotification, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_ColumnType,
   SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto/v1/setting_service";
-import { getDataTypeSuggestionList, useWorkspacePermissionV1 } from "@/utils";
+import { getDataTypeSuggestionList } from "@/utils";
 import ColumnTypesUpdateFailedModal from "./ColumnTypesUpdateFailedModal.vue";
 
-interface LocalState {
-  showFeatureModal: boolean;
-}
+const props = defineProps<{
+  readonly?: boolean;
+}>();
 
 const settingStore = useSettingV1Store();
-const state = ref<LocalState>({
-  showFeatureModal: false,
-});
-const hasFeature = featureToRef("bb.feature.schema-template");
-const hasPermission = useWorkspacePermissionV1(
-  "bb.permission.workspace.manage-general"
-);
 const columnTypeTemplateForMySQL = ref(
   SchemaTemplateSetting_ColumnType.fromPartial({
     engine: Engine.MYSQL,
@@ -175,7 +150,7 @@ const columnTypesForPostgreSQL = ref<string>("");
 const unmatchedFieldTemplates = ref<SchemaTemplateSetting_FieldTemplate[]>([]);
 
 const allowToUpdateColumnTypeTemplateForMySQL = computed(() => {
-  if (!hasFeature.value || !hasPermission.value) {
+  if (props.readonly) {
     return false;
   }
   const setting = settingStore.getSettingByName("bb.workspace.schema-template");
@@ -205,7 +180,7 @@ const allowToUpdateColumnTypeTemplateForMySQL = computed(() => {
 });
 
 const allowToUpdateColumnTypeTemplateForPostgreSQL = computed(() => {
-  if (!hasFeature.value || !hasPermission.value) {
+  if (props.readonly) {
     return false;
   }
   const setting = settingStore.getSettingByName("bb.workspace.schema-template");
@@ -239,7 +214,7 @@ const getOrFetchSchemaTemplate = async () => {
     "bb.workspace.schema-template"
   );
   const columnTypes =
-    setting.value?.schemaTemplateSettingValue?.columnTypes || [];
+    setting?.value?.schemaTemplateSettingValue?.columnTypes || [];
   const mysqlColumnTypes = columnTypes.find(
     (item) => item.engine === Engine.MYSQL
   );
@@ -248,7 +223,7 @@ const getOrFetchSchemaTemplate = async () => {
   );
   return {
     fieldTemplates:
-      setting.value?.schemaTemplateSettingValue?.fieldTemplates || [],
+      setting?.value?.schemaTemplateSettingValue?.fieldTemplates || [],
     mysqlColumnTypes,
     postgresqlColumnTypes,
   };
@@ -349,27 +324,8 @@ const handleMySQLTypesChange = async () => {
     }
   }
 
-  const setting = await settingStore.getOrFetchSettingByName(
-    "bb.workspace.schema-template"
-  );
-  setting.value!.schemaTemplateSettingValue = SchemaTemplateSetting.fromPartial(
-    {
-      ...setting.value?.schemaTemplateSettingValue,
-      columnTypes: uniqBy(
-        [
-          columnTypeTemplateForMySQL.value,
-          ...(setting.value?.schemaTemplateSettingValue?.columnTypes || []),
-        ],
-        "engine"
-      ),
-    }
-  );
-  await settingStore.upsertSetting({
-    name: "bb.workspace.schema-template",
-    value: {
-      schemaTemplateSettingValue: setting.value?.schemaTemplateSettingValue,
-    },
-  });
+  await upsertSchemaTemplateSetting(columnTypeTemplateForMySQL.value);
+
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -378,11 +334,6 @@ const handleMySQLTypesChange = async () => {
 };
 
 const handlePostgreSQLEnabledChange = (event: InputEvent) => {
-  if (!hasFeature.value) {
-    state.value.showFeatureModal = true;
-    return;
-  }
-
   const enabled = (event.target as HTMLInputElement).value === "true";
   columnTypeTemplateForPostgreSQL.value.enabled = enabled;
   if (enabled) {
@@ -445,31 +396,36 @@ const handlePostgreSQLTypesChange = async () => {
     }
   }
 
-  const setting = await settingStore.getOrFetchSettingByName(
-    "bb.workspace.schema-template"
-  );
-  setting.value!.schemaTemplateSettingValue = SchemaTemplateSetting.fromPartial(
-    {
-      ...setting.value?.schemaTemplateSettingValue,
-      columnTypes: uniqBy(
-        [
-          columnTypeTemplateForPostgreSQL.value,
-          ...(setting.value?.schemaTemplateSettingValue?.columnTypes || []),
-        ],
-        "engine"
-      ),
-    }
-  );
-  await settingStore.upsertSetting({
-    name: "bb.workspace.schema-template",
-    value: {
-      schemaTemplateSettingValue: setting.value?.schemaTemplateSettingValue,
-    },
-  });
+  await upsertSchemaTemplateSetting(columnTypeTemplateForPostgreSQL.value);
+
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
     title: "Success to update column types",
+  });
+};
+
+const upsertSchemaTemplateSetting = async (
+  columnType: SchemaTemplateSetting_ColumnType
+) => {
+  const setting = await settingStore.getOrFetchSettingByName(
+    "bb.workspace.schema-template"
+  );
+  const schemaTemplateSettingValue = SchemaTemplateSetting.fromPartial({
+    ...setting?.value?.schemaTemplateSettingValue,
+    columnTypes: uniqBy(
+      [
+        columnType,
+        ...(setting?.value?.schemaTemplateSettingValue?.columnTypes || []),
+      ],
+      "engine"
+    ),
+  });
+  await settingStore.upsertSetting({
+    name: "bb.workspace.schema-template",
+    value: {
+      schemaTemplateSettingValue,
+    },
   });
 };
 </script>

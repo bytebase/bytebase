@@ -2,6 +2,18 @@
   <div class="w-full mx-auto">
     <FeatureAttention custom-class="my-4" feature="bb.feature.rbac" />
 
+    <div class="mb-4 textinfolabel">
+      {{ $t("project.members.description") }}
+      <a
+        href="https://www.bytebase.com/docs/concepts/roles-and-permissions/#project-roles?source=console"
+        target="_blank"
+        class="normal-link inline-flex flex-row items-center"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4" />
+      </a>
+    </div>
+
     <div class="mb-4 w-full flex flex-row justify-between items-center">
       <div>
         <SearchBox

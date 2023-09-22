@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../protobuf/duration";
 import { LaunchStage, launchStageFromJSON, launchStageToJSON } from "./launch_stage";
 
@@ -164,35 +164,35 @@ export interface ClientLibrarySettings {
    */
   restNumericEnums: boolean;
   /** Settings for legacy Java features, supported in the Service YAML. */
-  javaSettings?:
+  javaSettings:
     | JavaSettings
     | undefined;
   /** Settings for C++ client libraries. */
-  cppSettings?:
+  cppSettings:
     | CppSettings
     | undefined;
   /** Settings for PHP client libraries. */
-  phpSettings?:
+  phpSettings:
     | PhpSettings
     | undefined;
   /** Settings for Python client libraries. */
-  pythonSettings?:
+  pythonSettings:
     | PythonSettings
     | undefined;
   /** Settings for Node client libraries. */
-  nodeSettings?:
+  nodeSettings:
     | NodeSettings
     | undefined;
   /** Settings for .NET client libraries. */
-  dotnetSettings?:
+  dotnetSettings:
     | DotnetSettings
     | undefined;
   /** Settings for Ruby client libraries. */
-  rubySettings?:
+  rubySettings:
     | RubySettings
     | undefined;
   /** Settings for Go client libraries. */
-  goSettings?: GoSettings | undefined;
+  goSettings: GoSettings | undefined;
 }
 
 /**
@@ -283,7 +283,7 @@ export interface JavaSettings {
    */
   serviceClassNames: { [key: string]: string };
   /** Some settings. */
-  common?: CommonLanguageSettings | undefined;
+  common: CommonLanguageSettings | undefined;
 }
 
 export interface JavaSettings_ServiceClassNamesEntry {
@@ -294,31 +294,31 @@ export interface JavaSettings_ServiceClassNamesEntry {
 /** Settings for C++ client libraries. */
 export interface CppSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings | undefined;
+  common: CommonLanguageSettings | undefined;
 }
 
 /** Settings for Php client libraries. */
 export interface PhpSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings | undefined;
+  common: CommonLanguageSettings | undefined;
 }
 
 /** Settings for Python client libraries. */
 export interface PythonSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings | undefined;
+  common: CommonLanguageSettings | undefined;
 }
 
 /** Settings for Node client libraries. */
 export interface NodeSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings | undefined;
+  common: CommonLanguageSettings | undefined;
 }
 
 /** Settings for Dotnet client libraries. */
 export interface DotnetSettings {
   /** Some settings. */
-  common?:
+  common:
     | CommonLanguageSettings
     | undefined;
   /**
@@ -371,13 +371,13 @@ export interface DotnetSettings_RenamedResourcesEntry {
 /** Settings for Ruby client libraries. */
 export interface RubySettings {
   /** Some settings. */
-  common?: CommonLanguageSettings | undefined;
+  common: CommonLanguageSettings | undefined;
 }
 
 /** Settings for Go client libraries. */
 export interface GoSettings {
   /** Some settings. */
-  common?: CommonLanguageSettings | undefined;
+  common: CommonLanguageSettings | undefined;
 }
 
 /** Describes the generator configuration for a method. */
@@ -406,7 +406,7 @@ export interface MethodSettings {
    *          total_poll_timeout:
    *             seconds: 54000 # 90 minutes
    */
-  longRunning?: MethodSettings_LongRunning | undefined;
+  longRunning: MethodSettings_LongRunning | undefined;
 }
 
 /**
@@ -421,7 +421,7 @@ export interface MethodSettings_LongRunning {
    * Initial delay after which the first poll request will be made.
    * Default value: 5 seconds.
    */
-  initialPollDelay?:
+  initialPollDelay:
     | Duration
     | undefined;
   /**
@@ -434,14 +434,14 @@ export interface MethodSettings_LongRunning {
    * Maximum time between two subsequent poll requests.
    * Default value: 45 seconds.
    */
-  maxPollDelay?:
+  maxPollDelay:
     | Duration
     | undefined;
   /**
    * Total polling timeout.
    * Default value: 5 minutes.
    */
-  totalPollTimeout?: Duration | undefined;
+  totalPollTimeout: Duration | undefined;
 }
 
 function createBaseCommonLanguageSettings(): CommonLanguageSettings {

@@ -4,10 +4,8 @@ import {
   QueryInfo,
   QueryHistory,
   ActivitySQLEditorQueryPayload,
-  SingleSQLResult,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { QueryResult } from "@/types/proto/v1/sql_service";
 import { useLegacySQLStore } from "./sql";
 import { useTabStore } from "./tab";
 import { useInstanceV1Store, useSQLStore, useActivityV1Store } from "./v1";
@@ -100,29 +98,3 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
   },
 });
-
-export const mockAffectedRows0 = (): SingleSQLResult => {
-  return {
-    data: [["Affected Rows"], ["BIGINT"], [[0]], [false]],
-    error: "",
-  };
-};
-
-export const mockAffectedV1Rows0 = (): QueryResult => {
-  return QueryResult.fromPartial({
-    columnNames: ["Affected Rows"],
-    columnTypeNames: ["BIGINT"],
-    masked: [false],
-    error: "",
-    statement: "",
-    rows: [
-      {
-        values: [
-          {
-            int64Value: 0,
-          },
-        ],
-      },
-    ],
-  });
-};

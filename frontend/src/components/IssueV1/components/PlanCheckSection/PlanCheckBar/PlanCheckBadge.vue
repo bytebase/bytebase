@@ -52,6 +52,7 @@ import {
   PlanCheckRun_Status,
   PlanCheckRun_Type,
 } from "@/types/proto/v1/rollout_service";
+import { TaskSpinner } from "../../common";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];

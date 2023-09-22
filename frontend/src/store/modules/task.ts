@@ -1,30 +1,22 @@
-import axios from "axios";
 import { defineStore } from "pinia";
 import {
   empty,
   Instance,
-  Issue,
-  IssueId,
   Pipeline,
   PipelineId,
   ResourceIdentifier,
   ResourceObject,
   Stage,
-  StageAllTaskStatusPatch,
   StageId,
   Task,
   TaskCheckRun,
-  TaskId,
-  TaskPatch,
   TaskProgress,
   TaskRun,
   TaskState,
-  TaskStatusPatch,
   unknown,
 } from "@/types";
 import { useLegacyDatabaseStore } from "./database";
 import { useLegacyInstanceStore } from "./instance";
-import { useIssueStore } from "./issue";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convertTaskRun(
@@ -224,114 +216,6 @@ export const useTaskStore = defineStore("task", {
         pipeline,
         stage,
       } as Task;
-    },
-    async updateStatus({
-      issueId,
-      pipelineId,
-      taskId,
-      taskStatusPatch,
-    }: {
-      issueId: IssueId;
-      pipelineId: PipelineId;
-      taskId: TaskId;
-      taskStatusPatch: TaskStatusPatch;
-    }) {
-      const data = (
-        await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}/status`, {
-          data: {
-            type: "taskStatusPatch",
-            attributes: taskStatusPatch,
-          },
-        })
-      ).data;
-      const task = this.convertPartial(data.data, data.included);
-
-      useIssueStore().fetchIssueById(issueId);
-
-      return task;
-    },
-    async updateStageAllTaskStatus({
-      issue,
-      stage,
-      patch,
-    }: {
-      issue: Issue;
-      stage: Stage;
-      patch: StageAllTaskStatusPatch;
-    }) {
-      const { pipeline } = stage;
-      await axios.patch(
-        `/api/pipeline/${pipeline.id}/stage/${stage.id}/status`,
-        {
-          data: {
-            type: "stageAllTaskStatusPatch",
-            attributes: patch,
-          },
-        }
-      );
-
-      useIssueStore().fetchIssueById(issue.id);
-    },
-    async patchTask({
-      issueId,
-      pipelineId,
-      taskId,
-      taskPatch,
-    }: {
-      issueId: IssueId;
-      pipelineId: PipelineId;
-      taskId: TaskId;
-      taskPatch: TaskPatch;
-    }) {
-      const data = (
-        await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}`, {
-          data: {
-            type: "taskPatch",
-            attributes: taskPatch,
-          },
-        })
-      ).data;
-      const task = this.convertPartial(data.data, data.included);
-
-      useIssueStore().fetchIssueById(issueId);
-
-      return task;
-    },
-    async patchAllTasksInIssue({
-      issueId,
-      pipelineId,
-      taskPatch,
-    }: {
-      issueId: IssueId;
-      pipelineId: PipelineId;
-      taskPatch: TaskPatch;
-    }) {
-      await axios.patch(`/api/pipeline/${pipelineId}/task/all`, {
-        data: {
-          type: "taskPatch",
-          attributes: taskPatch,
-        },
-      });
-
-      useIssueStore().fetchIssueById(issueId);
-    },
-    async runChecks({
-      issueId,
-      pipelineId,
-      taskId,
-    }: {
-      issueId: IssueId;
-      pipelineId: PipelineId;
-      taskId: TaskId;
-    }) {
-      const data = (
-        await axios.post(`/api/pipeline/${pipelineId}/task/${taskId}/check`)
-      ).data;
-      const task = this.convertPartial(data.data, data.included);
-
-      useIssueStore().fetchIssueById(issueId);
-
-      return task;
     },
   },
 });

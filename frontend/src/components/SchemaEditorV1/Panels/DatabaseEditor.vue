@@ -6,10 +6,10 @@
           v-if="state.selectedSubtab === 'table-list'"
           class="w-full flex justify-between items-center space-x-2"
         >
-          <div class="flex flex-row justify-start items-center">
+          <div class="flex flex-row justify-start items-center space-x-3">
             <div
               v-if="shouldShowSchemaSelector"
-              class="ml-2 flex flex-row justify-start items-center mr-3 text-sm"
+              class="ml-2 flex flex-row justify-start items-center text-sm"
             >
               <span class="mr-1">Schema:</span>
               <n-select
@@ -25,6 +25,15 @@
             >
               <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
               {{ $t("schema-editor.actions.create-table") }}
+            </button>
+            <button
+              class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="!allowCreateTable"
+              @click="state.showSchemaTemplateDrawer = true"
+            >
+              <FeatureBadge feature="bb.feature.schema-template" />
+              <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+              {{ $t("schema-editor.actions.add-from-template") }}
             </button>
           </div>
         </div>
@@ -167,6 +176,27 @@
     :table-name="state.tableNameModalContext.tableName"
     @close="state.tableNameModalContext = undefined"
   />
+
+  <Drawer
+    :show="state.showSchemaTemplateDrawer"
+    @close="state.showSchemaTemplateDrawer = false"
+  >
+    <DrawerContent :title="$t('schema-template.table-template.self')">
+      <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
+        <TableTemplates
+          :engine="databaseEngine"
+          :readonly="true"
+          @apply="handleApplyTemplate"
+        />
+      </div>
+    </DrawerContent>
+  </Drawer>
+
+  <FeatureModal
+    feature="bb.feature.schema-template"
+    :open="state.showFeatureModal"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -176,7 +206,9 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
+  hasFeature,
   generateUniqueTabId,
   useDatabaseV1Store,
   useSchemaEditorV1Store,
@@ -187,13 +219,16 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { Table } from "@/types/schemaEditor/atomType";
+import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 import {
+  Table,
   DatabaseTabContext,
   DatabaseSchema,
   SchemaEditorTabType,
+  convertTableMetadataToTable,
 } from "@/types/v1/schemaEditor";
 import { bytesToString } from "@/utils";
+import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
 
@@ -204,6 +239,8 @@ interface LocalState {
   selectedSchemaId: string;
   isFetchingDDL: boolean;
   statement: string;
+  showFeatureModal: boolean;
+  showSchemaTemplateDrawer: boolean;
   tableNameModalContext?: {
     parentName: string;
     schemaId: string;
@@ -220,6 +257,8 @@ const state = reactive<LocalState>({
   selectedSchemaId: "",
   isFetchingDDL: false,
   statement: "",
+  showFeatureModal: false,
+  showSchemaTemplateDrawer: false,
 });
 const databaseSchema = computed(() => {
   return editorStore.resourceMap["database"].get(
@@ -409,6 +448,33 @@ const tryEditColumn = async (
       input.focus();
       scrollIntoView(input);
     }
+  }
+};
+
+const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
+  state.showSchemaTemplateDrawer = false;
+  if (!hasFeature("bb.feature.schema-template")) {
+    state.showFeatureModal = true;
+    return;
+  }
+  if (!template.table || template.engine !== databaseEngine.value) {
+    return;
+  }
+
+  const tableEdit = convertTableMetadataToTable(template.table, "created");
+
+  const selectedSchema = schemaList.value.find(
+    (schema) => schema.id === state.selectedSchemaId
+  );
+  if (selectedSchema) {
+    selectedSchema.tableList.push(tableEdit);
+    editorStore.addTab({
+      id: generateUniqueTabId(),
+      type: SchemaEditorTabType.TabForTable,
+      parentName: database.value.name,
+      schemaId: state.selectedSchemaId,
+      tableId: tableEdit.id,
+    });
   }
 };
 </script>

@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
 
@@ -109,7 +109,7 @@ export interface OAuth2IdentityProviderConfig {
   clientId: string;
   clientSecret: string;
   scopes: string[];
-  fieldMapping?: FieldMapping | undefined;
+  fieldMapping: FieldMapping | undefined;
   skipTlsVerify: boolean;
   authStyle: OAuth2AuthStyle;
 }
@@ -119,7 +119,7 @@ export interface OIDCIdentityProviderConfig {
   issuer: string;
   clientId: string;
   clientSecret: string;
-  fieldMapping?: FieldMapping | undefined;
+  fieldMapping: FieldMapping | undefined;
   skipTlsVerify: boolean;
   authStyle: OAuth2AuthStyle;
 }
@@ -160,7 +160,7 @@ export interface LDAPIdentityProviderConfig {
    * FieldMapping is the mapping of the user attributes returned by the LDAP
    * server.
    */
-  fieldMapping?: FieldMapping | undefined;
+  fieldMapping: FieldMapping | undefined;
 }
 
 /**

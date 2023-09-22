@@ -389,11 +389,10 @@ type UpdateIssueMessage struct {
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
-	UID                *int
-	ProjectResourceID  *string
-	InstanceResourceID *string
-	PlanUID            *int64
-	PipelineID         *int
+	UID               *int
+	ProjectResourceID *string
+	PlanUID           *int64
+	PipelineID        *int
 	// Find issues where principalID is either creator, assignee or subscriber.
 	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
@@ -405,14 +404,14 @@ type FindIssueMessage struct {
 	CreatedTsAfter  *int64
 
 	StatusList []api.IssueStatus
-	TypeList   []api.IssueType
-	// If specified, only find issues whose ID is smaller that SinceID.
-	SinceID *int
+	TaskTypes  *[]api.TaskType
+	// Any of the task in the issue changes the instance with InstanceResourceID.
+	InstanceResourceID *string
+	// Any of the task in the issue changes the database with DatabaseUID.
+	DatabaseUID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit  *int
 	Offset *int
-
-	Stripped bool
 
 	Query *string
 }
@@ -686,19 +685,15 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.PlanUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
 	}
-
-	join := []string{}
 	if v := find.ProjectResourceID; v != nil {
-		join = append(join, "LEFT JOIN project ON project.id = issue.project_id")
-		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM project WHERE project.id = issue.project_id AND project.resource_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceResourceID; v != nil {
-		join = append(join, "LEFT JOIN pipeline ON pipeline.id = issue.pipeline_id")
-		join = append(join, "LEFT JOIN task ON task.pipeline_id = pipeline.id")
-		join = append(join, "LEFT JOIN instance ON instance.id = task.instance_id")
-		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task LEFT JOIN instance ON instance.id = task.instance_id WHERE task.pipeline_id = issue.pipeline_id AND instance.resource_id = $%d)", len(args)+1)), append(args, *v)
 	}
-
+	if v := find.DatabaseUID; v != nil {
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.database_id = $%d)", len(args)+1)), append(args, *v)
+	}
 	if v := find.PrincipalID; v != nil {
 		if find.CreatorID != nil || find.AssigneeID != nil || find.SubscriberID != nil {
 			return nil, &common.Error{Code: common.Invalid, Err: errors.New("principal_id cannot be used with creator_id, assignee_id, or subscriber_id")}
@@ -723,9 +718,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.SubscriberID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d)", len(args)+1)), append(args, *v)
 	}
-	if v := find.SinceID; v != nil {
-		where, args = append(where, fmt.Sprintf("issue.id <= $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.Query; v != nil && *v != "" {
 		if tsQuery := getTsQuery(*v); tsQuery != "" {
 			from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
@@ -742,13 +734,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		where = append(where, fmt.Sprintf("issue.status IN (%s)", strings.Join(list, ", ")))
 	}
-	if len(find.TypeList) != 0 {
-		var list []string
-		for _, issueType := range find.TypeList {
-			list = append(list, fmt.Sprintf("$%d", len(args)+1))
-			args = append(args, issueType)
-		}
-		where = append(where, fmt.Sprintf("issue.type IN (%s)", strings.Join(list, ", ")))
+	if v := find.TaskTypes; v != nil {
+		where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY($%d))", len(args)+1))
+		args = append(args, *v)
 	}
 	limitOffsetClause := ""
 	if v := find.Limit; v != nil {
@@ -783,10 +771,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.payload,
 		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers
 	FROM %s
-	%s
 	WHERE %s
 	%s
-	%s`, from, strings.Join(join, "\n"), strings.Join(where, " AND "), orderByClause, limitOffsetClause)
+	%s`, from, strings.Join(where, " AND "), orderByClause, limitOffsetClause)
 
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {

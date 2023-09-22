@@ -362,6 +362,9 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		); err != nil {
 			return nil, err
 		}
+		if IsSystemUser(role) {
+			continue
+		}
 
 		var attributes []string
 		if super {

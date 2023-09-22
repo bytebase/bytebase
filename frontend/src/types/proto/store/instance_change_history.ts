@@ -1,12 +1,12 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.store";
 
 export interface InstanceChangeHistoryPayload {
-  pushEvent?: PushEvent | undefined;
-  changedResources?: ChangedResources | undefined;
+  pushEvent: PushEvent | undefined;
+  changedResources: ChangedResources | undefined;
 }
 
 export interface ChangedResources {

@@ -58,7 +58,8 @@ export interface Schema {
 }
 
 export const convertColumnMetadataToColumn = (
-  columnMetadata: ColumnMetadata
+  columnMetadata: ColumnMetadata,
+  status: Status = "normal"
 ): Column => {
   return {
     id: uuidv1(),
@@ -69,12 +70,13 @@ export const convertColumnMetadataToColumn = (
     userComment: columnMetadata.userComment,
     default: columnMetadata.default,
     classification: columnMetadata.classification,
-    status: "normal",
+    status,
   };
 };
 
 export const convertTableMetadataToTable = (
-  tableMetadata: TableMetadata
+  tableMetadata: TableMetadata,
+  status: Status = "normal"
 ): Table => {
   const table: Table = {
     id: uuidv1(),
@@ -85,14 +87,14 @@ export const convertTableMetadataToTable = (
     dataSize: tableMetadata.dataSize,
     comment: tableMetadata.comment,
     columnList: tableMetadata.columns.map((column) =>
-      convertColumnMetadataToColumn(column)
+      convertColumnMetadataToColumn(column, status)
     ),
     primaryKey: {
       name: "",
       columnIdList: [],
     },
     foreignKeyList: [],
-    status: "normal",
+    status,
   };
 
   for (const indexMetadata of tableMetadata.indexes) {
@@ -114,7 +116,8 @@ export const convertTableMetadataToTable = (
 };
 
 export const convertSchemaMetadataToSchema = (
-  schemaMetadata: SchemaMetadata
+  schemaMetadata: SchemaMetadata,
+  status: Status = "normal"
 ): Schema => {
   const tableList: Table[] = [];
 
@@ -124,7 +127,7 @@ export const convertSchemaMetadataToSchema = (
       continue;
     }
 
-    const table = convertTableMetadataToTable(tableMetadata);
+    const table = convertTableMetadataToTable(tableMetadata, status);
     tableList.push(table);
   }
 
@@ -132,7 +135,7 @@ export const convertSchemaMetadataToSchema = (
     id: uuidv1(),
     name: schemaMetadata.name,
     tableList: tableList,
-    status: "normal",
+    status,
   };
 };
 

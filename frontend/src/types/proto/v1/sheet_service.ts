@@ -1,7 +1,6 @@
 /* eslint-disable */
-import * as Long from "long";
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -16,7 +15,7 @@ export interface CreateSheetRequest {
    */
   parent: string;
   /** The sheet to create. */
-  sheet?: Sheet | undefined;
+  sheet: Sheet | undefined;
 }
 
 export interface GetSheetRequest {
@@ -36,7 +35,7 @@ export interface UpdateSheetRequest {
    * The sheet's `name` field is used to identify the sheet to update.
    * Format: projects/{project}/sheets/{sheet}
    */
-  sheet?:
+  sheet:
     | Sheet
     | undefined;
   /**
@@ -49,7 +48,7 @@ export interface UpdateSheetRequest {
    * - `starred`
    * - `visibility`
    */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface UpdateSheetOrganizerRequest {
@@ -59,7 +58,7 @@ export interface UpdateSheetOrganizerRequest {
    * The organizer's `sheet` field is used to identify the sheet.
    * Format: projects/{project}/sheets/{sheet}
    */
-  organizer?:
+  organizer:
     | SheetOrganizer
     | undefined;
   /**
@@ -69,7 +68,7 @@ export interface UpdateSheetOrganizerRequest {
    * - `starred`
    * - `pinned`
    */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface SheetOrganizer {
@@ -163,11 +162,11 @@ export interface Sheet {
    */
   creator: string;
   /** The create time of the sheet. */
-  createTime?:
+  createTime:
     | Date
     | undefined;
   /** The last update time of the sheet. */
-  updateTime?:
+  updateTime:
     | Date
     | undefined;
   /**
@@ -187,7 +186,7 @@ export interface Sheet {
   starred: boolean;
   /** TODO: deprecate this field. */
   payload: string;
-  pushEvent?: PushEvent | undefined;
+  pushEvent: PushEvent | undefined;
 }
 
 export enum Sheet_Visibility {
@@ -1673,38 +1672,6 @@ export const SheetServiceDefinition = {
   },
 } as const;
 
-export interface SheetServiceImplementation<CallContextExt = {}> {
-  createSheet(request: CreateSheetRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Sheet>>;
-  getSheet(request: GetSheetRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Sheet>>;
-  searchSheets(
-    request: SearchSheetsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchSheetsResponse>>;
-  updateSheet(request: UpdateSheetRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Sheet>>;
-  updateSheetOrganizer(
-    request: UpdateSheetOrganizerRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SheetOrganizer>>;
-  deleteSheet(request: DeleteSheetRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  syncSheets(request: SyncSheetsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-}
-
-export interface SheetServiceClient<CallOptionsExt = {}> {
-  createSheet(request: DeepPartial<CreateSheetRequest>, options?: CallOptions & CallOptionsExt): Promise<Sheet>;
-  getSheet(request: DeepPartial<GetSheetRequest>, options?: CallOptions & CallOptionsExt): Promise<Sheet>;
-  searchSheets(
-    request: DeepPartial<SearchSheetsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchSheetsResponse>;
-  updateSheet(request: DeepPartial<UpdateSheetRequest>, options?: CallOptions & CallOptionsExt): Promise<Sheet>;
-  updateSheetOrganizer(
-    request: DeepPartial<UpdateSheetOrganizerRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SheetOrganizer>;
-  deleteSheet(request: DeepPartial<DeleteSheetRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  syncSheets(request: DeepPartial<SyncSheetsRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-}
-
 declare const self: any | undefined;
 declare const window: any | undefined;
 declare const global: any | undefined;
@@ -1785,8 +1752,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

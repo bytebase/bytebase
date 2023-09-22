@@ -6,13 +6,22 @@ import {
 } from "@/types";
 import { Column, Table } from "@/types/v1/schemaEditor";
 
+export const getColumnComment = (column: Column): string => {
+  return [
+    defaultTo(column.classification, ""),
+    defaultTo(column.userComment, ""),
+  ]
+    .filter((val) => val)
+    .join("-");
+};
+
 export const transformColumnToAddColumnContext = (
   column: Column
 ): AddColumnContext => {
   return {
     name: defaultTo(column.name, ""),
     type: defaultTo(column.type, ""),
-    comment: defaultTo(column.comment, ""),
+    comment: getColumnComment(column),
     nullable: defaultTo(column.nullable, false),
     default: defaultTo(column.default, undefined),
     characterSet: "",
@@ -28,7 +37,7 @@ export const transformColumnToChangeColumnContext = (
     oldName: defaultTo(originColumn.name, ""),
     newName: defaultTo(column.name, ""),
     type: defaultTo(column.type, ""),
-    comment: defaultTo(column.comment, ""),
+    comment: getColumnComment(column),
     nullable: defaultTo(column.nullable, false),
     default: defaultTo(column.default, undefined),
     characterSet: "",

@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
@@ -327,7 +326,7 @@ export interface CreatePolicyRequest {
    */
   parent: string;
   /** The policy to create. */
-  policy?: Policy | undefined;
+  policy: Policy | undefined;
   type: PolicyType;
 }
 
@@ -342,11 +341,11 @@ export interface UpdatePolicyRequest {
    * Instance resource name: instances/instance-id.
    * Database resource name: instances/instance-id/databases/database-name.
    */
-  policy?:
+  policy:
     | Policy
     | undefined;
   /** The list of fields to update. */
-  updateMask?:
+  updateMask:
     | string[]
     | undefined;
   /**
@@ -457,7 +456,7 @@ export interface DeploymentApprovalStrategy {
 
 export interface BackupPlanPolicy {
   schedule: BackupPlanSchedule;
-  retentionDuration?: Duration | undefined;
+  retentionDuration: Duration | undefined;
 }
 
 export interface SlowQueryPolicy {
@@ -514,7 +513,7 @@ export interface MaskingExceptionPolicy_MaskingException {
    */
   member: string;
   /** The condition that is associated with this exception policy instance. */
-  condition?: Expr | undefined;
+  condition: Expr | undefined;
 }
 
 export enum MaskingExceptionPolicy_MaskingException_Action {
@@ -567,7 +566,7 @@ export interface MaskingRulePolicy {
 export interface MaskingRulePolicy_MaskingRule {
   /** A unique identifier for a node in UUID format. */
   id: string;
-  condition?: Expr | undefined;
+  condition: Expr | undefined;
   maskingLevel: MaskingLevel;
 }
 
@@ -3532,28 +3531,6 @@ export const OrgPolicyServiceDefinition = {
     },
   },
 } as const;
-
-export interface OrgPolicyServiceImplementation<CallContextExt = {}> {
-  getPolicy(request: GetPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
-  listPolicies(
-    request: ListPoliciesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListPoliciesResponse>>;
-  createPolicy(request: CreatePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
-  updatePolicy(request: UpdatePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
-  deletePolicy(request: DeletePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-}
-
-export interface OrgPolicyServiceClient<CallOptionsExt = {}> {
-  getPolicy(request: DeepPartial<GetPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
-  listPolicies(
-    request: DeepPartial<ListPoliciesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListPoliciesResponse>;
-  createPolicy(request: DeepPartial<CreatePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
-  updatePolicy(request: DeepPartial<UpdatePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
-  deletePolicy(request: DeepPartial<DeletePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

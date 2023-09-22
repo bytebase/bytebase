@@ -364,8 +364,7 @@ export const rebuildEditableSchemas = (
           (item) => item.name === column.name
         );
         if (!editableColumn) {
-          const newColumn = convertColumnMetadataToColumn(column);
-          newColumn.status = "created";
+          const newColumn = convertColumnMetadataToColumn(column, "created");
           editableTable.columnList.push(newColumn);
         }
       }
@@ -395,11 +394,7 @@ export const rebuildEditableSchemas = (
         (item) => item.name === table.name
       );
       if (!editableTable) {
-        const newTable = convertTableMetadataToTable(table);
-        newTable.status = "created";
-        for (const column of newTable.columnList) {
-          column.status = "created";
-        }
+        const newTable = convertTableMetadataToTable(table, "created");
         editableSchema.tableList.push(newTable);
       }
     }
@@ -410,14 +405,7 @@ export const rebuildEditableSchemas = (
       (item) => item.name === schema.name
     );
     if (!editableSchema) {
-      const newSchema = convertSchemaMetadataToSchema(schema);
-      newSchema.status = "created";
-      for (const table of newSchema.tableList) {
-        table.status = "created";
-        for (const column of table.columnList) {
-          column.status = "created";
-        }
-      }
+      const newSchema = convertSchemaMetadataToSchema(schema, "created");
       editableSchemas.push(newSchema);
     }
   }

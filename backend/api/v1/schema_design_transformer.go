@@ -17,6 +17,15 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+func transformDatabaseMetadataToSchemaString(engine v1pb.Engine, database *v1pb.DatabaseMetadata) (string, error) {
+	switch engine {
+	case v1pb.Engine_MYSQL:
+		return getMySQLDesignSchema("", database)
+	default:
+		return "", status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
+	}
+}
+
 func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) (*v1pb.DatabaseMetadata, error) {
 	dbSchema, err := func() (*v1pb.DatabaseMetadata, error) {
 		switch engine {
@@ -151,6 +160,19 @@ type tableState struct {
 	foreignKeys map[string]*foreignKeyState
 }
 
+func (t *tableState) removeUnsupportedIndex() {
+	unsupported := []string{}
+	for name, index := range t.indexes {
+		if index.primary {
+			continue
+		}
+		unsupported = append(unsupported, name)
+	}
+	for _, name := range unsupported {
+		delete(t.indexes, name)
+	}
+}
+
 func (t *tableState) toString(buf *strings.Builder) error {
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
@@ -174,6 +196,7 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	}
 
 	indexes := []*indexState{}
+	t.removeUnsupportedIndex()
 	for _, index := range t.indexes {
 		indexes = append(indexes, index)
 	}

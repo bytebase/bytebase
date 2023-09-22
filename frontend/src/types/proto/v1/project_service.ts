@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
@@ -407,7 +406,7 @@ export interface SearchProjectsResponse {
 
 export interface CreateProjectRequest {
   /** The project to create. */
-  project?:
+  project:
     | Project
     | undefined;
   /**
@@ -427,11 +426,11 @@ export interface UpdateProjectRequest {
    * The project's `name` field is used to identify the project to update.
    * Format: projects/{project}
    */
-  project?:
+  project:
     | Project
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface DeleteProjectRequest {
@@ -472,7 +471,7 @@ export interface BatchGetIamPolicyResponse {
 
 export interface BatchGetIamPolicyResponse_PolicyResult {
   project: string;
-  policy?: IamPolicy | undefined;
+  policy: IamPolicy | undefined;
 }
 
 export interface SetIamPolicyRequest {
@@ -481,7 +480,7 @@ export interface SetIamPolicyRequest {
    * Format: projects/{project}
    */
   project: string;
-  policy?: IamPolicy | undefined;
+  policy: IamPolicy | undefined;
 }
 
 export interface GetDeploymentConfigRequest {
@@ -493,16 +492,16 @@ export interface GetDeploymentConfigRequest {
 }
 
 export interface UpdateDeploymentConfigRequest {
-  config?: DeploymentConfig | undefined;
+  config: DeploymentConfig | undefined;
 }
 
 export interface UpdateProjectGitOpsInfoRequest {
   /** The binding for the project and external version control. */
-  projectGitopsInfo?:
+  projectGitopsInfo:
     | ProjectGitOpsInfo
     | undefined;
   /** The mask of the fields to be updated. */
-  updateMask?:
+  updateMask:
     | string[]
     | undefined;
   /** If true, the gitops will be created if it does not exist. */
@@ -567,21 +566,21 @@ export interface AddWebhookRequest {
    */
   project: string;
   /** The webhook to add. */
-  webhook?: Webhook | undefined;
+  webhook: Webhook | undefined;
 }
 
 export interface UpdateWebhookRequest {
   /** The webhook to modify. */
-  webhook?:
+  webhook:
     | Webhook
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface RemoveWebhookRequest {
   /** The webhook to remove. Identified by its url. */
-  webhook?: Webhook | undefined;
+  webhook: Webhook | undefined;
 }
 
 export interface TestWebhookRequest {
@@ -591,7 +590,7 @@ export interface TestWebhookRequest {
    */
   project: string;
   /** The webhook to test. Identified by its url. */
-  webhook?: Webhook | undefined;
+  webhook: Webhook | undefined;
 }
 
 export interface TestWebhookResponse {
@@ -702,7 +701,7 @@ export interface DeploymentConfig {
   name: string;
   /** The title of the deployment config. */
   title: string;
-  schedule?: Schedule | undefined;
+  schedule: Schedule | undefined;
 }
 
 export interface Schedule {
@@ -712,11 +711,11 @@ export interface Schedule {
 export interface ScheduleDeployment {
   /** The title of the deployment (stage) in a schedule. */
   title: string;
-  spec?: DeploymentSpec | undefined;
+  spec: DeploymentSpec | undefined;
 }
 
 export interface DeploymentSpec {
-  labelSelector?: LabelSelector | undefined;
+  labelSelector: LabelSelector | undefined;
 }
 
 export interface LabelSelector {
@@ -976,7 +975,7 @@ export interface CreateDatabaseGroupRequest {
    */
   parent: string;
   /** The database group to create. */
-  databaseGroup?:
+  databaseGroup:
     | DatabaseGroup
     | undefined;
   /**
@@ -998,11 +997,11 @@ export interface UpdateDatabaseGroupRequest {
    * The database group's `name` field is used to identify the database group to update.
    * Format: projects/{project}/databaseGroups/{databaseGroup}
    */
-  databaseGroup?:
+  databaseGroup:
     | DatabaseGroup
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface DeleteDatabaseGroupRequest {
@@ -1025,7 +1024,7 @@ export interface DatabaseGroup {
    */
   databasePlaceholder: string;
   /** The condition that is associated with this database group. */
-  databaseExpr?:
+  databaseExpr:
     | Expr
     | undefined;
   /** The list of databases that match the database group condition. */
@@ -1049,7 +1048,7 @@ export interface CreateSchemaGroupRequest {
    */
   parent: string;
   /** The schema group to create. */
-  schemaGroup?:
+  schemaGroup:
     | SchemaGroup
     | undefined;
   /**
@@ -1071,11 +1070,11 @@ export interface UpdateSchemaGroupRequest {
    * The schema group's `name` field is used to identify the schema group to update.
    * Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
    */
-  schemaGroup?:
+  schemaGroup:
     | SchemaGroup
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface DeleteSchemaGroupRequest {
@@ -1139,7 +1138,7 @@ export interface SchemaGroup {
    * The table condition that is associated with this schema group.
    * The table_placeholder in the sheet script will be rendered to the actual table name.
    */
-  tableExpr?:
+  tableExpr:
     | Expr
     | undefined;
   /**
@@ -7040,200 +7039,6 @@ export const ProjectServiceDefinition = {
     },
   },
 } as const;
-
-export interface ProjectServiceImplementation<CallContextExt = {}> {
-  getProject(request: GetProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  listProjects(
-    request: ListProjectsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListProjectsResponse>>;
-  /** Search for projects that the caller has both projects.get permission on, and also satisfy the specified query. */
-  searchProjects(
-    request: SearchProjectsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchProjectsResponse>>;
-  createProject(request: CreateProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  updateProject(request: UpdateProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  deleteProject(request: DeleteProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  undeleteProject(
-    request: UndeleteProjectRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Project>>;
-  getIamPolicy(request: GetIamPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<IamPolicy>>;
-  batchGetIamPolicy(
-    request: BatchGetIamPolicyRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchGetIamPolicyResponse>>;
-  setIamPolicy(request: SetIamPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<IamPolicy>>;
-  getDeploymentConfig(
-    request: GetDeploymentConfigRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DeploymentConfig>>;
-  updateDeploymentConfig(
-    request: UpdateDeploymentConfigRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DeploymentConfig>>;
-  addWebhook(request: AddWebhookRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  updateWebhook(request: UpdateWebhookRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  removeWebhook(request: RemoveWebhookRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
-  testWebhook(
-    request: TestWebhookRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<TestWebhookResponse>>;
-  updateProjectGitOpsInfo(
-    request: UpdateProjectGitOpsInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ProjectGitOpsInfo>>;
-  unsetProjectGitOpsInfo(
-    request: UnsetProjectGitOpsInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-  setupProjectSQLReviewCI(
-    request: SetupSQLReviewCIRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SetupSQLReviewCIResponse>>;
-  getProjectGitOpsInfo(
-    request: GetProjectGitOpsInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ProjectGitOpsInfo>>;
-  listDatabaseGroups(
-    request: ListDatabaseGroupsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListDatabaseGroupsResponse>>;
-  getDatabaseGroup(
-    request: GetDatabaseGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseGroup>>;
-  createDatabaseGroup(
-    request: CreateDatabaseGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseGroup>>;
-  updateDatabaseGroup(
-    request: UpdateDatabaseGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseGroup>>;
-  deleteDatabaseGroup(
-    request: DeleteDatabaseGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-  listSchemaGroups(
-    request: ListSchemaGroupsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSchemaGroupsResponse>>;
-  getSchemaGroup(
-    request: GetSchemaGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaGroup>>;
-  createSchemaGroup(
-    request: CreateSchemaGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaGroup>>;
-  updateSchemaGroup(
-    request: UpdateSchemaGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaGroup>>;
-  deleteSchemaGroup(
-    request: DeleteSchemaGroupRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-}
-
-export interface ProjectServiceClient<CallOptionsExt = {}> {
-  getProject(request: DeepPartial<GetProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  listProjects(
-    request: DeepPartial<ListProjectsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListProjectsResponse>;
-  /** Search for projects that the caller has both projects.get permission on, and also satisfy the specified query. */
-  searchProjects(
-    request: DeepPartial<SearchProjectsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchProjectsResponse>;
-  createProject(request: DeepPartial<CreateProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  updateProject(request: DeepPartial<UpdateProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  deleteProject(request: DeepPartial<DeleteProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  undeleteProject(
-    request: DeepPartial<UndeleteProjectRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Project>;
-  getIamPolicy(request: DeepPartial<GetIamPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<IamPolicy>;
-  batchGetIamPolicy(
-    request: DeepPartial<BatchGetIamPolicyRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchGetIamPolicyResponse>;
-  setIamPolicy(request: DeepPartial<SetIamPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<IamPolicy>;
-  getDeploymentConfig(
-    request: DeepPartial<GetDeploymentConfigRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DeploymentConfig>;
-  updateDeploymentConfig(
-    request: DeepPartial<UpdateDeploymentConfigRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DeploymentConfig>;
-  addWebhook(request: DeepPartial<AddWebhookRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  updateWebhook(request: DeepPartial<UpdateWebhookRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  removeWebhook(request: DeepPartial<RemoveWebhookRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
-  testWebhook(
-    request: DeepPartial<TestWebhookRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<TestWebhookResponse>;
-  updateProjectGitOpsInfo(
-    request: DeepPartial<UpdateProjectGitOpsInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ProjectGitOpsInfo>;
-  unsetProjectGitOpsInfo(
-    request: DeepPartial<UnsetProjectGitOpsInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-  setupProjectSQLReviewCI(
-    request: DeepPartial<SetupSQLReviewCIRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SetupSQLReviewCIResponse>;
-  getProjectGitOpsInfo(
-    request: DeepPartial<GetProjectGitOpsInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ProjectGitOpsInfo>;
-  listDatabaseGroups(
-    request: DeepPartial<ListDatabaseGroupsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListDatabaseGroupsResponse>;
-  getDatabaseGroup(
-    request: DeepPartial<GetDatabaseGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseGroup>;
-  createDatabaseGroup(
-    request: DeepPartial<CreateDatabaseGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseGroup>;
-  updateDatabaseGroup(
-    request: DeepPartial<UpdateDatabaseGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseGroup>;
-  deleteDatabaseGroup(
-    request: DeepPartial<DeleteDatabaseGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-  listSchemaGroups(
-    request: DeepPartial<ListSchemaGroupsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSchemaGroupsResponse>;
-  getSchemaGroup(
-    request: DeepPartial<GetSchemaGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaGroup>;
-  createSchemaGroup(
-    request: DeepPartial<CreateSchemaGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaGroup>;
-  updateSchemaGroup(
-    request: DeepPartial<UpdateSchemaGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaGroup>;
-  deleteSchemaGroup(
-    request: DeepPartial<DeleteSchemaGroupRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

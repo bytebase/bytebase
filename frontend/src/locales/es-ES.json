@@ -625,16 +625,27 @@
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
       "sensitive-column-list": "Lista de columnas enmascaradas explícitas",
       "global-masking-rule": "Regla de enmascaramiento global",
-      "semantic-types": "Tipos semánticos",
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
       "global-rules": {
+        "self": "Regla de enmascaramiento global",
         "description": "Utilice la regla global para aplicar niveles de enmascaramiento por lotes, p. Todas las columnas denominadas \"correo electrónico\" se enmascararán con el nivel \"Parcial\".",
         "condition-order": "Orden de condición",
         "add-rule": "Agregar regla",
         "re-order": "Reordenar",
         "delete-rule-tip": "¿Eliminar esta regla?",
         "check-rules": "Check global rules"
+      },
+      "semantic-types": {
+        "self": "Tipos semánticos",
+        "add-type": "Agregar tipo",
+        "table": {
+          "semantic-type": "Tipo semántico",
+          "description": "Descripción",
+          "full-masking-algorithm": "Algoritmo de enmascaramiento completo",
+          "partial-masking-algorithm": "Algoritmo de enmascaramiento parcial",
+          "delete": "¿Eliminar este tipo semántico?"
+        }
       },
       "column-detail": {
         "masking-setting-for-column": "Configuración de enmascaramiento para \"{columna}\"",
@@ -937,7 +948,11 @@
       "task-is-x-status": "La tarea es {status}",
       "task-is-running-cancel-first": "La tarea se está ejecutando, cancele la tarea antes de cambiar este valor"
     },
-    "you-are-not-allowed-to-change-this-value": "No tienes permitido cambiar este valor."
+    "you-are-not-allowed-to-change-this-value": "No tienes permitido cambiar este valor.",
+    "sql-check": {
+      "sql-checks": "Comprobaciones SQL",
+      "not-executed-yet": "Aún no ejecutado"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1672,6 +1687,7 @@
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos."
     },
     "members": {
+      "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el propietario del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "add-member": "Agregar miembro",
       "revoke-member": "Revocar miembro",
       "revoke-access": "Revocar acceso",
@@ -2057,6 +2073,7 @@
       "invalid-column-name": "Nombre de columna inválido",
       "duplicated-column-name": "Nombre de columna duplicado",
       "invalid-column-type": "Tipo de columna inválido",
+      "schema-not-found": "Esquema no encontrado",
       "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos"
     },
     "confirm-to-close": {
@@ -2089,7 +2106,7 @@
     "setting": {
       "description": "Una etiqueta es un par clave-valor que le ayuda a identificar el inquilino para una base de datos. {link}."
     },
-    "db-name-template-tips": "Si tus bases de datos de inquilinos siguen una plantilla de nombres, puedes especificarla aquí. Por ejemplo, si las bases de datos se llaman db1__SH, db1__BJ, db1__GZ, entonces la plantilla podría ser {placeholder}. {link}.",
+    "db-name-template-tips": "Especifique una plantilla para aplicar la denominación de la base de datos. Por ejemplo, si su base de datos db1 está dividida geográficamente en EE. UU., Asia y Europa y desea aplicar nombres como db1__US, db1__ASIA, db1__EU, entonces la plantilla podría ser {placeholder}. {link}.",
     "confirm-change": "¿Estás seguro de cambiar '{label}'?",
     "parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
     "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}."
@@ -2828,6 +2845,7 @@
     "self": "Plantilla de esquema",
     "field-template": {
       "self": "Plantilla de campo",
+      "add": "Agregar plantilla de campo",
       "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
     },
     "column-type-restriction": {
@@ -2843,7 +2861,11 @@
         "one-allowed-type-per-line": "Un tipo permitido por línea"
       }
     },
-    "add-field": "Agregar plantilla de campo",
+    "table-template": {
+      "self": "Plantilla de tabla",
+      "add": "Agregar plantilla de tabla",
+      "description": "Puede predefinir la plantilla de tabla y luego aplicar la plantilla durante el cambio de esquema."
+    },
     "search-by-name-or-comment": "Buscar por nombre o comentario",
     "form": {
       "category": "Categoría",
@@ -2853,7 +2875,8 @@
       "column-type": "Tipo de columna",
       "default-value": "Valor por defecto",
       "comment": "Comentario",
-      "nullable": "Anulable"
+      "nullable": "Anulable",
+      "table-name": "Nombre de la tabla"
     },
     "classification": {
       "self": "Clasificación de datos",
@@ -2937,6 +2960,7 @@
     "schema-version": "Versión del esquema",
     "personal-draft": "Borrador personal",
     "baseline-version": "Versión de referencia",
+    "new-branch": "Nueva rama",
     "parent-branch": "Rama principal",
     "save-draft": "Guardar borrador",
     "merge-branch": "Fusionar rama",

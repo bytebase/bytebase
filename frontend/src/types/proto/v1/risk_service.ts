@@ -1,7 +1,6 @@
 /* eslint-disable */
-import * as Long from "long";
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
@@ -37,7 +36,7 @@ export interface ListRisksResponse {
 
 export interface CreateRiskRequest {
   /** The risk to create. */
-  risk?: Risk | undefined;
+  risk: Risk | undefined;
 }
 
 export interface UpdateRiskRequest {
@@ -47,11 +46,11 @@ export interface UpdateRiskRequest {
    * The risk's `name` field is used to identify the risk to update.
    * Format: risks/{risk}
    */
-  risk?:
+  risk:
     | Risk
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface DeleteRiskRequest {
@@ -71,7 +70,7 @@ export interface Risk {
   title: string;
   level: number;
   active: boolean;
-  condition?: Expr | undefined;
+  condition: Expr | undefined;
 }
 
 export enum Risk_Source {
@@ -716,20 +715,6 @@ export const RiskServiceDefinition = {
   },
 } as const;
 
-export interface RiskServiceImplementation<CallContextExt = {}> {
-  listRisks(request: ListRisksRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListRisksResponse>>;
-  createRisk(request: CreateRiskRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Risk>>;
-  updateRisk(request: UpdateRiskRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Risk>>;
-  deleteRisk(request: DeleteRiskRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-}
-
-export interface RiskServiceClient<CallOptionsExt = {}> {
-  listRisks(request: DeepPartial<ListRisksRequest>, options?: CallOptions & CallOptionsExt): Promise<ListRisksResponse>;
-  createRisk(request: DeepPartial<CreateRiskRequest>, options?: CallOptions & CallOptionsExt): Promise<Risk>;
-  updateRisk(request: DeepPartial<UpdateRiskRequest>, options?: CallOptions & CallOptionsExt): Promise<Risk>;
-  deleteRisk(request: DeepPartial<DeleteRiskRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-}
-
 declare const self: any | undefined;
 declare const window: any | undefined;
 declare const global: any | undefined;
@@ -763,8 +748,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

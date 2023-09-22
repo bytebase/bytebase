@@ -216,8 +216,11 @@ message Advice {
   // The advice line number in the SQL statement.
   int32 line = 5;
 
+  // The advice column number in the SQL statement.
+  int32 column = 6;
+
   // The advice detail.
-  string detail = 6;
+  string detail = 7;
 }
 
 message PrettyRequest {
@@ -242,18 +245,8 @@ message PrettyResponse {
 message CheckRequest {
   string statement = 1;
 
-  Engine engine = 2;
-
-  enum ChangeDatabaseType {
-    CHANGE_DATABASE_TYPE_UNSPECIFIED = 0;
-    DDL = 1;
-    DML = 2;
-    SDL = 3;
-  }
-  ChangeDatabaseType change_database_type = 3;
-
   // Format: instances/{instance}/databases/{databaseName}
-  string database = 4;
+  string database = 2;
 }
 
 message CheckResponse {

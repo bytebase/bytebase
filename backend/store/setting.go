@@ -42,7 +42,16 @@ var (
 	// Currently, we do not persist the algorithm setting, in order to use it conveniently, we hard code it here.
 	// TODO(zp): remove the following hard code when we persist the algorithm setting.
 	mockAlgorithmSetting = &v1pb.MaskingAlgorithmSetting{
-		Algorithms: []*v1pb.MaskingAlgorithmSetting_MaskingAlgorithm{},
+		Algorithms: []*v1pb.MaskingAlgorithmSetting_MaskingAlgorithm{
+			{
+				Id:    "substitution",
+				Title: "Substitution algorithm",
+			},
+			{
+				Id:    "hash-md5",
+				Title: "MD5 encryption",
+			},
+		},
 	}
 )
 
@@ -136,26 +145,6 @@ func (s *Store) GetWorkspaceExternalApprovalSetting(ctx context.Context) (*store
 	}
 
 	payload := new(storepb.ExternalApprovalSetting)
-	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
-		return nil, err
-	}
-	return payload, nil
-}
-
-// GetSchemaTemplateSetting gets the schema template setting.
-func (s *Store) GetSchemaTemplateSetting(ctx context.Context) (*storepb.SchemaTemplateSetting, error) {
-	settingName := api.SettingSchemaTemplate
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name: &settingName,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
-	}
-	if setting == nil {
-		return &storepb.SchemaTemplateSetting{}, nil
-	}
-
-	payload := new(storepb.SchemaTemplateSetting)
 	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
 		return nil, err
 	}

@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -69,7 +68,7 @@ export interface CreateIssueRequest {
    */
   parent: string;
   /** The issue to create. */
-  issue?: Issue | undefined;
+  issue: Issue | undefined;
 }
 
 export interface ListIssuesRequest {
@@ -115,11 +114,11 @@ export interface UpdateIssueRequest {
    * The issue's `name` field is used to identify the issue to update.
    * Format: projects/{project}/issues/{issue}
    */
-  issue?:
+  issue:
     | Issue
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface SearchIssuesRequest {
@@ -260,8 +259,8 @@ export interface Issue {
   subscribers: string[];
   /** Format: users/hello@world.com */
   creator: string;
-  createTime?: Date | undefined;
-  updateTime?:
+  createTime: Date | undefined;
+  updateTime:
     | Date
     | undefined;
   /**
@@ -277,7 +276,7 @@ export interface Issue {
    */
   rollout: string;
   /** Used if the issue type is GRANT_REQUEST. */
-  grantRequest?: GrantRequest | undefined;
+  grantRequest: GrantRequest | undefined;
 }
 
 export enum Issue_Type {
@@ -382,12 +381,12 @@ export interface GrantRequest {
    * Format: users/{email}.
    */
   user: string;
-  condition?: Expr | undefined;
-  expiration?: Duration | undefined;
+  condition: Expr | undefined;
+  expiration: Duration | undefined;
 }
 
 export interface ApprovalTemplate {
-  flow?: ApprovalFlow | undefined;
+  flow: ApprovalFlow | undefined;
   title: string;
   description: string;
   /**
@@ -563,7 +562,7 @@ export interface CreateIssueCommentRequest {
    * Format: projects/{project}/issues/{issue}
    */
   parent: string;
-  issueComment?: IssueComment | undefined;
+  issueComment: IssueComment | undefined;
 }
 
 export interface UpdateIssueCommentRequest {
@@ -572,11 +571,11 @@ export interface UpdateIssueCommentRequest {
    * Format: projects/{project}/issues/{issue}
    */
   parent: string;
-  issueComment?:
+  issueComment:
     | IssueComment
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface IssueComment {
@@ -584,8 +583,8 @@ export interface IssueComment {
   comment: string;
   /** TODO: use struct message instead. */
   payload: string;
-  createTime?: Date | undefined;
-  updateTime?: Date | undefined;
+  createTime: Date | undefined;
+  updateTime: Date | undefined;
 }
 
 function createBaseGetIssueRequest(): GetIssueRequest {
@@ -3355,64 +3354,6 @@ export const IssueServiceDefinition = {
     },
   },
 } as const;
-
-export interface IssueServiceImplementation<CallContextExt = {}> {
-  getIssue(request: GetIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
-  createIssue(request: CreateIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
-  listIssues(
-    request: ListIssuesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListIssuesResponse>>;
-  updateIssue(request: UpdateIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
-  searchIssues(
-    request: SearchIssuesRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchIssuesResponse>>;
-  createIssueComment(
-    request: CreateIssueCommentRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IssueComment>>;
-  updateIssueComment(
-    request: UpdateIssueCommentRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IssueComment>>;
-  batchUpdateIssuesStatus(
-    request: BatchUpdateIssuesStatusRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<BatchUpdateIssuesStatusResponse>>;
-  approveIssue(request: ApproveIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
-  rejectIssue(request: RejectIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
-  requestIssue(request: RequestIssueRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Issue>>;
-}
-
-export interface IssueServiceClient<CallOptionsExt = {}> {
-  getIssue(request: DeepPartial<GetIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
-  createIssue(request: DeepPartial<CreateIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
-  listIssues(
-    request: DeepPartial<ListIssuesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListIssuesResponse>;
-  updateIssue(request: DeepPartial<UpdateIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
-  searchIssues(
-    request: DeepPartial<SearchIssuesRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchIssuesResponse>;
-  createIssueComment(
-    request: DeepPartial<CreateIssueCommentRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IssueComment>;
-  updateIssueComment(
-    request: DeepPartial<UpdateIssueCommentRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IssueComment>;
-  batchUpdateIssuesStatus(
-    request: DeepPartial<BatchUpdateIssuesStatusRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<BatchUpdateIssuesStatusResponse>;
-  approveIssue(request: DeepPartial<ApproveIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
-  rejectIssue(request: DeepPartial<RejectIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
-  requestIssue(request: DeepPartial<RequestIssueRequest>, options?: CallOptions & CallOptionsExt): Promise<Issue>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "google.protobuf";
 
@@ -54,7 +54,7 @@ export interface Struct {
 
 export interface Struct_FieldsEntry {
   key: string;
-  value?: any | undefined;
+  value: any | undefined;
 }
 
 /**

@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -8,7 +7,7 @@ import { Timestamp } from "../google/protobuf/timestamp";
 export const protobufPackage = "bytebase.v1";
 
 export interface CreateExternalVersionControlRequest {
-  externalVersionControl?: ExternalVersionControl | undefined;
+  externalVersionControl: ExternalVersionControl | undefined;
 }
 
 export interface GetExternalVersionControlRequest {
@@ -44,11 +43,11 @@ export interface ListExternalVersionControlsResponse {
 }
 
 export interface UpdateExternalVersionControlRequest {
-  externalVersionControl?:
+  externalVersionControl:
     | ExternalVersionControl
     | undefined;
   /** The list of fields to be updated. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface DeleteExternalVersionControlRequest {
@@ -218,12 +217,12 @@ export interface ProjectGitOpsInfo {
   /** The webhook endpoint ID of the repository. */
   webhookEndpointId: string;
   accessToken: string;
-  expiresTime?: Date | undefined;
+  expiresTime: Date | undefined;
   refreshToken: string;
 }
 
 export interface ExchangeTokenRequest {
-  exchangeToken?: ExchangeToken | undefined;
+  exchangeToken: ExchangeToken | undefined;
 }
 
 export interface ExchangeToken {
@@ -242,7 +241,7 @@ export interface ExchangeToken {
 export interface OAuthToken {
   accessToken: string;
   refreshToken: string;
-  expiresTime?: Date | undefined;
+  expiresTime: Date | undefined;
 }
 
 function createBaseCreateExternalVersionControlRequest(): CreateExternalVersionControlRequest {
@@ -2319,73 +2318,6 @@ export const ExternalVersionControlServiceDefinition = {
     },
   },
 } as const;
-
-export interface ExternalVersionControlServiceImplementation<CallContextExt = {}> {
-  getExternalVersionControl(
-    request: GetExternalVersionControlRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ExternalVersionControl>>;
-  listExternalVersionControls(
-    request: ListExternalVersionControlsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListExternalVersionControlsResponse>>;
-  createExternalVersionControl(
-    request: CreateExternalVersionControlRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ExternalVersionControl>>;
-  updateExternalVersionControl(
-    request: UpdateExternalVersionControlRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ExternalVersionControl>>;
-  exchangeToken(request: ExchangeTokenRequest, context: CallContext & CallContextExt): Promise<DeepPartial<OAuthToken>>;
-  deleteExternalVersionControl(
-    request: DeleteExternalVersionControlRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-  searchExternalVersionControlProjects(
-    request: SearchExternalVersionControlProjectsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SearchExternalVersionControlProjectsResponse>>;
-  listProjectGitOpsInfo(
-    request: ListProjectGitOpsInfoRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListProjectGitOpsInfoResponse>>;
-}
-
-export interface ExternalVersionControlServiceClient<CallOptionsExt = {}> {
-  getExternalVersionControl(
-    request: DeepPartial<GetExternalVersionControlRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ExternalVersionControl>;
-  listExternalVersionControls(
-    request: DeepPartial<ListExternalVersionControlsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListExternalVersionControlsResponse>;
-  createExternalVersionControl(
-    request: DeepPartial<CreateExternalVersionControlRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ExternalVersionControl>;
-  updateExternalVersionControl(
-    request: DeepPartial<UpdateExternalVersionControlRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ExternalVersionControl>;
-  exchangeToken(
-    request: DeepPartial<ExchangeTokenRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<OAuthToken>;
-  deleteExternalVersionControl(
-    request: DeepPartial<DeleteExternalVersionControlRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-  searchExternalVersionControlProjects(
-    request: DeepPartial<SearchExternalVersionControlProjectsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SearchExternalVersionControlProjectsResponse>;
-  listProjectGitOpsInfo(
-    request: DeepPartial<ListProjectGitOpsInfoRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListProjectGitOpsInfoResponse>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

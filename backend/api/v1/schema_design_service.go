@@ -13,6 +13,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -157,7 +159,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
-	_, baselineSheetID, err := common.GetProjectResourceIDSheetID(schemaDesign.BaselineSheetName)
+	_, baselineSheetUID, err := common.GetProjectResourceIDSheetUID(schemaDesign.BaselineSheetName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -172,15 +174,11 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		},
 	}
 	if schemaDesignType == storepb.SheetPayload_SchemaDesign_MAIN_BRANCH {
-		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = baselineSheetID
+		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = fmt.Sprintf("%d", baselineSheetUID)
 	} else if schemaDesignType == storepb.SheetPayload_SchemaDesign_PERSONAL_DRAFT {
 		// Create a new sheet to save the baseline full schema of the personal draft schema design.
-		sheetUID, err := strconv.Atoi(baselineSheetID)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", baselineSheetID))
-		}
 		baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
-			UID: &sheetUID,
+			UID: &baselineSheetUID,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
@@ -202,7 +200,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		}
 		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = strconv.Itoa(sheet.UID)
 		// baselineSheetID is a reference to the baseline schema design.
-		schemaDesignSheetPayload.SchemaDesign.BaselineSchemaDesignId = baselineSheetID
+		schemaDesignSheetPayload.SchemaDesign.BaselineSchemaDesignId = fmt.Sprintf("%d", baselineSheetUID)
 	}
 	if schemaDesign.BaselineChangeHistoryId != nil {
 		schemaDesignSheetPayload.SchemaDesign.BaselineChangeHistoryId = *schemaDesign.BaselineChangeHistoryId
@@ -275,11 +273,11 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	}
 	// Update baseline schema design id for personal draft schema design.
 	if slices.Contains(request.UpdateMask.Paths, "baseline_sheet_name") {
-		_, sheetID, err := common.GetProjectResourceIDSheetID(schemaDesign.BaselineSheetName)
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(schemaDesign.BaselineSheetName)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		sheet.Payload.SchemaDesign.BaselineSheetId = sheetID
+		sheet.Payload.SchemaDesign.BaselineSheetId = fmt.Sprintf("%d", sheetUID)
 		sheetUpdate.Payload = sheet.Payload
 	}
 
@@ -439,6 +437,48 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete sheet: %v", err))
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
+	if request.Engine != v1pb.Engine_MYSQL {
+		return nil, status.Errorf(codes.InvalidArgument, "only MySQL is supported")
+	}
+	if request.SourceMetadata == nil || request.TargetMetadata == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
+	}
+
+	sourceSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.SourceMetadata)
+	if err != nil {
+		return nil, err
+	}
+	targetSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.TargetMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	diff, err := differ.SchemaDiff(convertEngineToParserType(request.Engine), sourceSchema, targetSchema, false /* ignoreCaseSensitive */)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
+	}
+
+	return &v1pb.DiffMetadataResponse{
+		Diff: diff,
+	}, nil
+}
+
+func convertEngineToParserType(engine v1pb.Engine) parser.EngineType {
+	switch engine {
+	case v1pb.Engine_POSTGRES:
+		return parser.Postgres
+	case v1pb.Engine_MYSQL:
+		return parser.MySQL
+	case v1pb.Engine_TIDB:
+		return parser.TiDB
+	case v1pb.Engine_ORACLE:
+		return parser.Oracle
+	default:
+		return parser.Standard
+	}
 }
 
 func (s *SchemaDesignService) listSheets(ctx context.Context, find *store.FindSheetMessage) ([]*store.SheetMessage, error) {

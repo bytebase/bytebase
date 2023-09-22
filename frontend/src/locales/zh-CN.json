@@ -624,16 +624,27 @@
       "remove-sensitive-column-tips": "不再对此列数据脱敏？",
       "sensitive-column-list": "被显式标记的脱敏列",
       "global-masking-rule": "全局脱敏规则",
-      "semantic-types": "语义类型",
       "grant-access": "授权访问",
       "never-expires": "无过期时间",
       "global-rules": {
+        "self": "全局脱敏规则",
         "description": "全局规则用于批量指定脱敏程度，比如所有列名是 email 的字段都被设置为半脱敏。",
         "condition-order": "条件序列",
         "add-rule": "添加规则",
         "re-order": "排序",
         "delete-rule-tip": "删除这条规则？",
         "check-rules": "查看全局配置"
+      },
+      "semantic-types": {
+        "self": "语义类型",
+        "add-type": "新增类型",
+        "table": {
+          "semantic-type": "语义类型",
+          "description": "描述",
+          "full-masking-algorithm": "全脱敏算法",
+          "partial-masking-algorithm": "半脱敏算法",
+          "delete": "删除这个语义类型？"
+        }
       },
       "column-detail": {
         "masking-setting-for-column": "\"{column}\" 脱敏设置",
@@ -935,7 +946,11 @@
       "task-is-x-status": "任务状态是{status}",
       "task-is-running-cancel-first": "任务运行中，需要取消任务才能修改这项值"
     },
-    "you-are-not-allowed-to-change-this-value": "您无权更改这项值"
+    "you-are-not-allowed-to-change-this-value": "您无权更改这项值",
+    "sql-check": {
+      "sql-checks": "SQL 检查项",
+      "not-executed-yet": "尚未执行"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1668,6 +1683,7 @@
       "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。"
     },
     "members": {
+      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间的所有者和 DBA 都具有项目所有的权限。",
       "add-member": "添加成员",
       "revoke-member": "撤销成员",
       "revoke-access": "撤销访问",
@@ -2057,6 +2073,7 @@
       "invalid-column-name": "无效的列名",
       "duplicated-column-name": "重复的列名",
       "invalid-column-type": "无效的列类型",
+      "schema-not-found": "找不到 Schema",
       "failed-to-fetch-database-schema": "请求数据库 Schema 失败"
     },
     "confirm-to-close": {
@@ -2089,7 +2106,7 @@
     "setting": {
       "description": "标签是一组可用于标识数据库租户的键值对。{link}。"
     },
-    "db-name-template-tips": "如果您的租户数据库名字遵循命名模版，您可以在这里指定。例如：数据库名字为 db1__SH, db1__BJ, db1__GZ，此时命名模板可以是 {placeholder}。{link}。",
+    "db-name-template-tips": "使用模版来约束数据库命名。例如：您的数据库 db1 是按照地域分割为 US，Asia，Europe 并且您希望它们的名字是 db1__US, db1__ASIA, db1__EU，那么模版可以指定为 {placeholder}。{link}。",
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
     "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。"
@@ -2824,7 +2841,8 @@
     "self": "Schema 模板",
     "field-template": {
       "self": "字段模板",
-      "description": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。"
+      "add": "新增字段模板",
+      "description": "预定义字段模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "column-type-restriction": {
       "self": "列类型约束",
@@ -2839,7 +2857,11 @@
         "one-allowed-type-per-line": "每行放一个允许的数据类型"
       }
     },
-    "add-field": "新增字段模板",
+    "table-template": {
+      "self": "表模板",
+      "add": "新增表模板",
+      "description": "预定义表模板，之后可以在变更或设计 Schema 时应用这些模板。"
+    },
     "search-by-name-or-comment": "根据名称或备注搜索",
     "form": {
       "category": "分类",
@@ -2849,7 +2871,8 @@
       "column-type": "字段类型",
       "default-value": "默认值",
       "comment": "备注",
-      "nullable": "可为空"
+      "nullable": "可为空",
+      "table-name": "表名"
     },
     "classification": {
       "self": "数据分类分级",
@@ -2932,6 +2955,7 @@
     "schema-version": "Schema 版本",
     "personal-draft": "个人草稿",
     "baseline-version": "基线版本",
+    "new-branch": "新建分支",
     "parent-branch": "父分支",
     "save-draft": "保存草稿",
     "merge-branch": "合并分支",

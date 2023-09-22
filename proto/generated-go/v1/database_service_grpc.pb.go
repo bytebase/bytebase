@@ -27,6 +27,7 @@ const (
 	DatabaseService_BatchUpdateDatabases_FullMethodName = "/bytebase.v1.DatabaseService/BatchUpdateDatabases"
 	DatabaseService_SyncDatabase_FullMethodName         = "/bytebase.v1.DatabaseService/SyncDatabase"
 	DatabaseService_GetDatabaseMetadata_FullMethodName  = "/bytebase.v1.DatabaseService/GetDatabaseMetadata"
+	DatabaseService_GetDatabaseConfig_FullMethodName    = "/bytebase.v1.DatabaseService/GetDatabaseConfig"
 	DatabaseService_GetDatabaseSchema_FullMethodName    = "/bytebase.v1.DatabaseService/GetDatabaseSchema"
 	DatabaseService_DiffSchema_FullMethodName           = "/bytebase.v1.DatabaseService/DiffSchema"
 	DatabaseService_GetBackupSetting_FullMethodName     = "/bytebase.v1.DatabaseService/GetBackupSetting"
@@ -54,6 +55,7 @@ type DatabaseServiceClient interface {
 	BatchUpdateDatabases(ctx context.Context, in *BatchUpdateDatabasesRequest, opts ...grpc.CallOption) (*BatchUpdateDatabasesResponse, error)
 	SyncDatabase(ctx context.Context, in *SyncDatabaseRequest, opts ...grpc.CallOption) (*SyncDatabaseResponse, error)
 	GetDatabaseMetadata(ctx context.Context, in *GetDatabaseMetadataRequest, opts ...grpc.CallOption) (*DatabaseMetadata, error)
+	GetDatabaseConfig(ctx context.Context, in *GetDatabaseConfigRequest, opts ...grpc.CallOption) (*DatabaseConfig, error)
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
 	DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error)
 	GetBackupSetting(ctx context.Context, in *GetBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
@@ -134,6 +136,15 @@ func (c *databaseServiceClient) SyncDatabase(ctx context.Context, in *SyncDataba
 func (c *databaseServiceClient) GetDatabaseMetadata(ctx context.Context, in *GetDatabaseMetadataRequest, opts ...grpc.CallOption) (*DatabaseMetadata, error) {
 	out := new(DatabaseMetadata)
 	err := c.cc.Invoke(ctx, DatabaseService_GetDatabaseMetadata_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *databaseServiceClient) GetDatabaseConfig(ctx context.Context, in *GetDatabaseConfigRequest, opts ...grpc.CallOption) (*DatabaseConfig, error) {
+	out := new(DatabaseConfig)
+	err := c.cc.Invoke(ctx, DatabaseService_GetDatabaseConfig_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -269,6 +280,7 @@ type DatabaseServiceServer interface {
 	BatchUpdateDatabases(context.Context, *BatchUpdateDatabasesRequest) (*BatchUpdateDatabasesResponse, error)
 	SyncDatabase(context.Context, *SyncDatabaseRequest) (*SyncDatabaseResponse, error)
 	GetDatabaseMetadata(context.Context, *GetDatabaseMetadataRequest) (*DatabaseMetadata, error)
+	GetDatabaseConfig(context.Context, *GetDatabaseConfigRequest) (*DatabaseConfig, error)
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
 	DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error)
 	GetBackupSetting(context.Context, *GetBackupSettingRequest) (*BackupSetting, error)
@@ -309,6 +321,9 @@ func (UnimplementedDatabaseServiceServer) SyncDatabase(context.Context, *SyncDat
 }
 func (UnimplementedDatabaseServiceServer) GetDatabaseMetadata(context.Context, *GetDatabaseMetadataRequest) (*DatabaseMetadata, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDatabaseMetadata not implemented")
+}
+func (UnimplementedDatabaseServiceServer) GetDatabaseConfig(context.Context, *GetDatabaseConfigRequest) (*DatabaseConfig, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDatabaseConfig not implemented")
 }
 func (UnimplementedDatabaseServiceServer) GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDatabaseSchema not implemented")
@@ -484,6 +499,24 @@ func _DatabaseService_GetDatabaseMetadata_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DatabaseServiceServer).GetDatabaseMetadata(ctx, req.(*GetDatabaseMetadataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DatabaseService_GetDatabaseConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDatabaseConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).GetDatabaseConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_GetDatabaseConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).GetDatabaseConfig(ctx, req.(*GetDatabaseConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -756,6 +789,10 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDatabaseMetadata",
 			Handler:    _DatabaseService_GetDatabaseMetadata_Handler,
+		},
+		{
+			MethodName: "GetDatabaseConfig",
+			Handler:    _DatabaseService_GetDatabaseConfig_Handler,
 		},
 		{
 			MethodName: "GetDatabaseSchema",

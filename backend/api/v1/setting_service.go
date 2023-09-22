@@ -384,55 +384,13 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	case api.SettingEnterpriseTrial:
 		return nil, status.Errorf(codes.InvalidArgument, "cannot set setting %s", settingName)
 	case api.SettingSchemaTemplate:
-		oldSetting, err := s.store.GetSchemaTemplateSetting(ctx)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get schema template setting: %v", err)
-		}
-		oldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
-		for _, template := range convertToSchemaTemplateSetting(oldSetting).FieldTemplates {
-			oldTemplateMap[template.Id] = template
-		}
-
 		schemaTemplateSetting := request.Setting.Value.GetSchemaTemplateSettingValue()
 		if schemaTemplateSetting == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "value cannot be nil when setting schema template setting")
 		}
 
-		// validate the changed template
-		for _, template := range schemaTemplateSetting.FieldTemplates {
-			oldTemplate, ok := oldTemplateMap[template.Id]
-			if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
-				continue
-			}
-			engineType := parser.EngineType(template.Engine.String())
-			var defaultVal string
-			if template.Column.Default != nil {
-				defaultVal = template.Column.Default.Value
-			}
-			validateResultList, err := edit.ValidateDatabaseEdit(engineType, &api.DatabaseEdit{
-				DatabaseID: api.UnknownID,
-				CreateTableList: []*api.CreateTableContext{
-					{
-						Name: "validation",
-						Type: "BASE TABLE",
-						AddColumnList: []*api.AddColumnContext{
-							{
-								Name:     template.Column.Name,
-								Type:     template.Column.Type,
-								Default:  &defaultVal,
-								Nullable: template.Column.Nullable,
-								Comment:  template.Column.Comment,
-							},
-						},
-					},
-				},
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to validate template, error: %v", err)
-			}
-			if len(validateResultList) != 0 {
-				return nil, status.Errorf(codes.InvalidArgument, validateResultList[0].Message)
-			}
+		if err := s.validateSchemaTemplate(ctx, schemaTemplateSetting); err != nil {
+			return nil, err
 		}
 
 		payload := new(storepb.SchemaTemplateSetting)
@@ -651,11 +609,11 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		}, nil
 	case api.SettingSchemaTemplate:
-		storeValue := new(storepb.SchemaTemplateSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting values for %s with error: %v", setting.Name, err)
+		v1Value := new(v1pb.SchemaTemplateSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
-		v1Value := convertToSchemaTemplateSetting(storeValue)
+
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
@@ -714,6 +672,110 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		}, nil
 	}
+}
+
+func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTemplateSetting *v1pb.SchemaTemplateSetting) error {
+	settingName := api.SettingSchemaTemplate
+	oldStoreSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
+		Name: &settingName,
+	})
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to get setting %q: %v", settingName, err)
+	}
+	settingValue := "{}"
+	if oldStoreSetting != nil {
+		settingValue = oldStoreSetting.Value
+	}
+
+	v1Value := new(v1pb.SchemaTemplateSetting)
+	if err := protojson.Unmarshal([]byte(settingValue), v1Value); err != nil {
+		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", settingName, err)
+	}
+
+	// validate the changed field template.
+	oldFieldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
+	for _, template := range v1Value.FieldTemplates {
+		oldFieldTemplateMap[template.Id] = template
+	}
+	for _, template := range schemaTemplateSetting.FieldTemplates {
+		oldTemplate, ok := oldFieldTemplateMap[template.Id]
+		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
+			continue
+		}
+		if err := validateDatabaseEdit(template.Engine, &api.CreateTableContext{
+			Name: "validation",
+			Type: "BASE TABLE",
+			AddColumnList: []*api.AddColumnContext{
+				convertToAddColumnContext(template.Column),
+			},
+		}); err != nil {
+			return err
+		}
+	}
+
+	// validate the changed table template.
+	oldTableTemplateMap := map[string]*v1pb.SchemaTemplateSetting_TableTemplate{}
+	for _, template := range v1Value.TableTemplates {
+		oldTableTemplateMap[template.Id] = template
+	}
+	for _, template := range schemaTemplateSetting.TableTemplates {
+		oldTemplate, ok := oldTableTemplateMap[template.Id]
+		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
+			continue
+		}
+
+		createTableContext := &api.CreateTableContext{
+			Name:          template.Table.Name,
+			Comment:       template.Table.Comment,
+			Type:          "BASE TABLE",
+			AddColumnList: []*api.AddColumnContext{},
+		}
+		for _, column := range template.Table.Columns {
+			createTableContext.AddColumnList = append(createTableContext.AddColumnList, convertToAddColumnContext(column))
+		}
+		if err := validateDatabaseEdit(template.Engine, createTableContext); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func convertToAddColumnContext(column *v1pb.ColumnMetadata) *api.AddColumnContext {
+	var defaultVal string
+	if column.Default != nil {
+		defaultVal = column.Default.Value
+	}
+
+	return &api.AddColumnContext{
+		Name:     column.Name,
+		Type:     column.Type,
+		Default:  &defaultVal,
+		Nullable: column.Nullable,
+		Comment:  column.Comment,
+	}
+}
+
+func validateDatabaseEdit(engine v1pb.Engine, createTableContext *api.CreateTableContext) error {
+	engineType := parser.EngineType(engine.String())
+	databaseEdit := &api.DatabaseEdit{
+		DatabaseID: api.UnknownID,
+		CreateTableList: []*api.CreateTableContext{
+			createTableContext,
+		},
+	}
+
+	validateResultList, err := edit.ValidateDatabaseEdit(engineType, databaseEdit)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to validate template, error: %v", err)
+	}
+	if len(validateResultList) != 0 {
+		return status.Errorf(codes.InvalidArgument, validateResultList[0].Message)
+	}
+	if _, err := edit.DeparseDatabaseEdit(engineType, databaseEdit); err != nil {
+		return status.Errorf(codes.InvalidArgument, "failed to deparse statement with error: %v", err.Error())
+	}
+	return nil
 }
 
 func convertToIMType(imType v1pb.AppIMSetting_IMType) (api.IMType, error) {
@@ -932,38 +994,6 @@ func convertToExternalApprovalSettingNode(o *storepb.ExternalApprovalSetting_Nod
 		Id:       o.Id,
 		Title:    o.Title,
 		Endpoint: o.Endpoint,
-	}
-}
-
-func convertToSchemaTemplateSetting(s *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
-	v1FieldTemplates := []*v1pb.SchemaTemplateSetting_FieldTemplate{}
-	v1ColumnTypes := []*v1pb.SchemaTemplateSetting_ColumnType{}
-	for _, template := range s.FieldTemplates {
-		v1FieldTemplates = append(v1FieldTemplates, &v1pb.SchemaTemplateSetting_FieldTemplate{
-			Id:       template.Id,
-			Engine:   v1pb.Engine(template.Engine),
-			Category: template.Category,
-			Column: &v1pb.ColumnMetadata{
-				Name:           template.Column.Name,
-				Type:           template.Column.Type,
-				Default:        template.Column.Default,
-				Nullable:       template.Column.Nullable,
-				Comment:        template.Column.Comment,
-				Classification: template.Column.Classification,
-			},
-		})
-	}
-	for _, columnType := range s.ColumnTypes {
-		v1ColumnTypes = append(v1ColumnTypes, &v1pb.SchemaTemplateSetting_ColumnType{
-			Engine:  v1pb.Engine(columnType.Engine),
-			Enabled: columnType.Enabled,
-			Types:   columnType.Types,
-		})
-	}
-
-	return &v1pb.SchemaTemplateSetting{
-		FieldTemplates: v1FieldTemplates,
-		ColumnTypes:    v1ColumnTypes,
 	}
 }
 

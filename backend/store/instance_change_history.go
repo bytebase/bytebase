@@ -354,7 +354,12 @@ func generateResourceFilter(filter string) (string, error) {
 	rewriter := &expressionRewriter{
 		metaMap: make(databaseMap),
 	}
-	if err := rewriter.rewriteExpression(ast.Expr()); err != nil {
+
+	parsedExpr, err := cel.AstToParsedExpr(ast)
+	if err != nil {
+		return "", err
+	}
+	if err := rewriter.rewriteExpression(parsedExpr.Expr); err != nil {
 		return "", err
 	}
 

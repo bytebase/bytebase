@@ -37,16 +37,13 @@ import {
   useNotificationStore,
   useSchemaEditorV1Store,
 } from "@/store";
-import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import {
   SchemaEditorTabType,
-  convertColumnMetadataToColumn,
   convertTableMetadataToTable,
 } from "@/types/v1/schemaEditor";
 
@@ -73,20 +70,8 @@ const state = reactive<LocalState>({
   tableName: "",
 });
 
-const parentResouce = computed(() => {
-  return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
-    props.parentName
-  )!;
-});
 const engine = computed(() => {
-  if (schemaEditorV1Store.resourceType === "branch") {
-    return (parentResouce.value as any as SchemaDesign).engine;
-  } else if (schemaEditorV1Store.resourceType === "database") {
-    return (parentResouce.value as any as ComposedDatabase).instanceEntity
-      .engine;
-  } else {
-    return Engine.MYSQL;
-  }
+  return schemaEditorV1Store.getCurrentEngine(props.parentName);
 });
 
 const isCreatingTable = computed(() => {
@@ -130,8 +115,6 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (isCreatingTable.value) {
-    const table = TableMetadata.fromPartial({});
-    table.name = state.tableName;
     const column = ColumnMetadata.fromPartial({});
     column.name = "id";
     if (engine.value === Engine.POSTGRES) {
@@ -140,12 +123,14 @@ const handleConfirmButtonClick = async () => {
       column.type = "INT";
     }
     column.comment = "ID";
-    const columnEdit = convertColumnMetadataToColumn(column);
-    columnEdit.status = "created";
-    const tableEdit = convertTableMetadataToTable(table);
-    tableEdit.status = "created";
-    tableEdit.columnList.push(columnEdit);
-    tableEdit.primaryKey.columnIdList.push(columnEdit.id);
+    const table = TableMetadata.fromPartial({
+      name: state.tableName,
+      columns: [column],
+    });
+    const tableEdit = convertTableMetadataToTable(table, "created");
+    tableEdit.primaryKey.columnIdList.push(
+      ...tableEdit.columnList.map((col) => col.id)
+    );
     schema.tableList.push(tableEdit);
     schemaEditorV1Store.addTab({
       id: generateUniqueTabId(),

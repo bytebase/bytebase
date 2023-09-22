@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
@@ -135,7 +134,7 @@ export interface ListIdentityProvidersResponse {
 
 export interface CreateIdentityProviderRequest {
   /** The identity provider to create. */
-  identityProvider?:
+  identityProvider:
     | IdentityProvider
     | undefined;
   /**
@@ -155,11 +154,11 @@ export interface UpdateIdentityProviderRequest {
    * The identity provider's `name` field is used to identify the identity provider to update.
    * Format: idps/{identity_provider}
    */
-  identityProvider?:
+  identityProvider:
     | IdentityProvider
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface DeleteIdentityProviderRequest {
@@ -180,7 +179,7 @@ export interface UndeleteIdentityProviderRequest {
 
 export interface TestIdentityProviderRequest {
   /** The identity provider to test connection including uncreated. */
-  identityProvider?: IdentityProvider | undefined;
+  identityProvider: IdentityProvider | undefined;
   oauth2Context?: OAuth2IdentityProviderTestRequestContext | undefined;
 }
 
@@ -204,7 +203,7 @@ export interface IdentityProvider {
   title: string;
   domain: string;
   type: IdentityProviderType;
-  config?: IdentityProviderConfig | undefined;
+  config: IdentityProviderConfig | undefined;
 }
 
 export interface IdentityProviderConfig {
@@ -221,7 +220,7 @@ export interface OAuth2IdentityProviderConfig {
   clientId: string;
   clientSecret: string;
   scopes: string[];
-  fieldMapping?: FieldMapping | undefined;
+  fieldMapping: FieldMapping | undefined;
   skipTlsVerify: boolean;
   authStyle: OAuth2AuthStyle;
 }
@@ -232,7 +231,7 @@ export interface OIDCIdentityProviderConfig {
   clientId: string;
   clientSecret: string;
   scopes: string[];
-  fieldMapping?: FieldMapping | undefined;
+  fieldMapping: FieldMapping | undefined;
   skipTlsVerify: boolean;
   authStyle: OAuth2AuthStyle;
 }
@@ -273,7 +272,7 @@ export interface LDAPIdentityProviderConfig {
    * FieldMapping is the mapping of the user attributes returned by the LDAP
    * server.
    */
-  fieldMapping?: FieldMapping | undefined;
+  fieldMapping: FieldMapping | undefined;
 }
 
 /**
@@ -2073,68 +2072,6 @@ export const IdentityProviderServiceDefinition = {
     },
   },
 } as const;
-
-export interface IdentityProviderServiceImplementation<CallContextExt = {}> {
-  getIdentityProvider(
-    request: GetIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IdentityProvider>>;
-  listIdentityProviders(
-    request: ListIdentityProvidersRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListIdentityProvidersResponse>>;
-  createIdentityProvider(
-    request: CreateIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IdentityProvider>>;
-  updateIdentityProvider(
-    request: UpdateIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IdentityProvider>>;
-  deleteIdentityProvider(
-    request: DeleteIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-  undeleteIdentityProvider(
-    request: UndeleteIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<IdentityProvider>>;
-  testIdentityProvider(
-    request: TestIdentityProviderRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<TestIdentityProviderResponse>>;
-}
-
-export interface IdentityProviderServiceClient<CallOptionsExt = {}> {
-  getIdentityProvider(
-    request: DeepPartial<GetIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IdentityProvider>;
-  listIdentityProviders(
-    request: DeepPartial<ListIdentityProvidersRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListIdentityProvidersResponse>;
-  createIdentityProvider(
-    request: DeepPartial<CreateIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IdentityProvider>;
-  updateIdentityProvider(
-    request: DeepPartial<UpdateIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IdentityProvider>;
-  deleteIdentityProvider(
-    request: DeepPartial<DeleteIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-  undeleteIdentityProvider(
-    request: DeepPartial<UndeleteIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<IdentityProvider>;
-  testIdentityProvider(
-    request: DeepPartial<TestIdentityProviderRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<TestIdentityProviderResponse>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

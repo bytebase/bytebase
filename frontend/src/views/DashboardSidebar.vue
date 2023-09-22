@@ -47,14 +47,6 @@
           <heroicons-outline:search class="h-4 w-4 text-control" />
         </button>
       </router-link>
-      <a
-        href="/sql-editor"
-        target="_blank"
-        class="outline-item group flex items-center px-2 py-1.5 capitalize"
-      >
-        <heroicons-solid:terminal class="w-5 h-5 mr-2" />
-        {{ $t("sql-editor.self") }}
-      </a>
       <router-link
         v-if="shouldShowSyncSchemaEntry"
         to="/sync-schema"

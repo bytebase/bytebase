@@ -23,8 +23,8 @@
           :schema="schema"
           :table="table"
           @click="
-            emit('alter-schema', {
-              databaseId: database.uid,
+            editorEvents.emit('alter-schema', {
+              databaseUID: database.uid,
               schema: schema.name,
               table: table.name,
             })
@@ -48,6 +48,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { databaseV1Slug } from "@/utils";
+import { useSQLEditorContext } from "@/views/sql-editor/context";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ColumnList from "./ColumnList.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
@@ -61,12 +62,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (
-    event: "alter-schema",
-    params: { databaseId: string; schema: string; table: string }
-  ): void;
 }>();
 
+const { events: editorEvents } = useSQLEditorContext();
 const sqlEditorStore = useSQLEditorStore();
 
 const tableDetailLink = computed((): string => {

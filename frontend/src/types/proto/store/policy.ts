@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Expr } from "../google/type/expr";
 import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON } from "./common";
 
@@ -30,7 +30,7 @@ export interface Binding {
    * If the condition evaluates to true, then this binding applies to the current request.
    * If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
    */
-  condition?: Expr | undefined;
+  condition: Expr | undefined;
 }
 
 export interface MaskingPolicy {
@@ -66,7 +66,7 @@ export interface MaskingExceptionPolicy_MaskingException {
    */
   member: string;
   /** The condition that is associated with this exception policy instance. */
-  condition?: Expr | undefined;
+  condition: Expr | undefined;
 }
 
 export enum MaskingExceptionPolicy_MaskingException_Action {
@@ -119,7 +119,7 @@ export interface MaskingRulePolicy {
 export interface MaskingRulePolicy_MaskingRule {
   /** A unique identifier for a node in UUID format. */
   id: string;
-  condition?: Expr | undefined;
+  condition: Expr | undefined;
   maskingLevel: MaskingLevel;
 }
 

@@ -1,6 +1,6 @@
 /* eslint-disable */
-import * as Long from "long";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
 
@@ -19,15 +19,15 @@ export interface SlowQueryStatisticsItem {
   /** count is the number of slow queries with the same fingerprint. */
   count: number;
   /** latest_log_time is the time of the latest slow query with the same fingerprint. */
-  latestLogTime?:
+  latestLogTime:
     | Date
     | undefined;
   /** The total query time of the slow query log. */
-  totalQueryTime?:
+  totalQueryTime:
     | Duration
     | undefined;
   /** The maximum query time of the slow query log. */
-  maximumQueryTime?:
+  maximumQueryTime:
     | Duration
     | undefined;
   /** The total rows sent of the slow query log. */
@@ -45,15 +45,15 @@ export interface SlowQueryStatisticsItem {
 /** SlowQueryDetails is the details of a slow query. */
 export interface SlowQueryDetails {
   /** start_time is the start time of the slow query. */
-  startTime?:
+  startTime:
     | Date
     | undefined;
   /** query_time is the query time of the slow query. */
-  queryTime?:
+  queryTime:
     | Duration
     | undefined;
   /** lock_time is the lock time of the slow query. */
-  lockTime?:
+  lockTime:
     | Duration
     | undefined;
   /** rows_sent is the number of rows sent by the slow query. */
@@ -505,8 +505,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

@@ -5,7 +5,6 @@ export * from "./dataSource";
 export * from "./environment";
 export * from "./help";
 export * from "./issue";
-export * from "./issueSubscriber";
 export * from "./instance";
 export * from "./notification";
 export * from "./pipeline";
@@ -23,7 +22,6 @@ export * from "./task";
 export * from "./uistate";
 export * from "./sqlReview";
 export * from "./onboardingState";
-export * from "./onboardingGuide";
 export * from "./idp";
 export * from "./user";
 export * from "./risk";
@@ -31,7 +29,5 @@ export * from "./workspaceApprovalSetting";
 export * from "./slowQuery";
 export * from "./role";
 export * from "./dbGroup";
-
-export * from "./v1";
-
 export * from "./utils";
+export * from "./v1";

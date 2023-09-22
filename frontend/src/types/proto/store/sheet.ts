@@ -1,6 +1,6 @@
 /* eslint-disable */
-import * as Long from "long";
-import * as _m0 from "protobufjs/minimal";
+import Long from "long";
+import _m0 from "protobufjs/minimal";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
 import { PushEvent } from "./vcs";
 
@@ -8,8 +8,8 @@ export const protobufPackage = "bytebase.store";
 
 export interface SheetPayload {
   type: SheetPayload_Type;
-  vcsPayload?: SheetPayload_VCSPayload | undefined;
-  schemaDesign?: SheetPayload_SchemaDesign | undefined;
+  vcsPayload: SheetPayload_VCSPayload | undefined;
+  schemaDesign: SheetPayload_SchemaDesign | undefined;
 }
 
 /** Type of the SheetPayload. */
@@ -53,7 +53,7 @@ export interface SheetPayload_VCSPayload {
   author: string;
   lastCommitId: string;
   lastSyncTs: number;
-  pushEvent?: PushEvent | undefined;
+  pushEvent: PushEvent | undefined;
 }
 
 export interface SheetPayload_SchemaDesign {
@@ -68,7 +68,7 @@ export interface SheetPayload_SchemaDesign {
   /** The id of the baseline change history including the baseline change history.(optional) */
   baselineChangeHistoryId: string;
   /** The protection of the schema design. */
-  protection?: SheetPayload_SchemaDesign_Protection | undefined;
+  protection: SheetPayload_SchemaDesign_Protection | undefined;
 }
 
 export enum SheetPayload_SchemaDesign_Type {
@@ -572,8 +572,6 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();

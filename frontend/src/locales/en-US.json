@@ -626,16 +626,27 @@
       "remove-sensitive-column-tips": "Expose this column?",
       "sensitive-column-list": "Explict masked column list",
       "global-masking-rule": "Global Masking Rule",
-      "semantic-types": "Semantic Types",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
       "global-rules": {
+        "self": "Global Masking Rule",
         "description": "Use global rule to apply masking levels in batch, e.g. all columns named as \"email\" will be masked with \"Partial\" level.",
         "condition-order": "Condition order",
         "add-rule": "Add rule",
         "re-order": "Re-order",
         "delete-rule-tip": "Delete this rule?",
         "check-rules": "Check global rules"
+      },
+      "semantic-types": {
+        "self": "Semantic Types",
+        "add-type": "Add type",
+        "table": {
+          "semantic-type": "Semantic type",
+          "description": "Description",
+          "full-masking-algorithm": "Full-masking algorithm",
+          "partial-masking-algorithm": "Partial-masking algorithm",
+          "delete": "Delete this semantic type?"
+        }
       },
       "column-detail": {
         "masking-setting-for-column": "Masking Setting for \"{column}\"",
@@ -938,7 +949,11 @@
       "task-is-x-status": "The task is {status}",
       "task-is-running-cancel-first": "The task is running, cancel task before changing this value"
     },
-    "you-are-not-allowed-to-change-this-value": "You are not allowed to change this value"
+    "you-are-not-allowed-to-change-this-value": "You are not allowed to change this value",
+    "sql-check": {
+      "sql-checks": "SQL Checks",
+      "not-executed-yet": "Not executed yet"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1673,6 +1688,7 @@
       "schema-path-template-sdl-description": "The schema file describes the database's full schema."
     },
     "members": {
+      "description": "Project members determine the permission to operate database and issues inside the proejct. Project Owner, Workspace Owner and Workspace DBA all have full project permissions.",
       "add-member": "Add member",
       "revoke-member": "Revoke member",
       "revoke-access": "Revoke Access",
@@ -2061,6 +2077,7 @@
       "invalid-column-name": "Invalid column name",
       "duplicated-column-name": "Duplicated column name",
       "invalid-column-type": "Invalid column type",
+      "schema-not-found": "Schema not found",
       "failed-to-fetch-database-schema": "Failed to fetch database schema"
     },
     "confirm-to-close": {
@@ -2093,7 +2110,7 @@
     "setting": {
       "description": "A label is a key-value pair that helps you identify the tenant for a database. {link}."
     },
-    "db-name-template-tips": "If your tenant databases follow a naming template, you can specify it here. For example, the databases are named as db1__SH, db1__BJ, db1__GZ, then the template could be {placeholder}. {link}.",
+    "db-name-template-tips": "Specify a template to enforce database naming. For example, if your database db1 is geo-splitted into US, Asia, Europe and you want to enforce names as db1__US, db1__ASIA, db1__EU, then the template could be {placeholder}. {link}.",
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
     "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."
@@ -2831,6 +2848,7 @@
     "self": "Schema template",
     "field-template": {
       "self": "Field Template",
+      "add": "Add field template",
       "description": "You can pre-define the field template, then apply the template during the schema change."
     },
     "column-type-restriction": {
@@ -2846,7 +2864,11 @@
         "one-allowed-type-per-line": "One allowed data type per line"
       }
     },
-    "add-field": "Add field template",
+    "table-template": {
+      "self": "Table Template",
+      "add": "Add table template",
+      "description": "You can pre-define the table template, then apply the template during the schema change."
+    },
     "search-by-name-or-comment": "Search by name or comment",
     "form": {
       "category": "Category",
@@ -2856,7 +2878,8 @@
       "column-type": "Column type",
       "default-value": "Default value",
       "comment": "Comment",
-      "nullable": "Nullable"
+      "nullable": "Nullable",
+      "table-name": "Table name"
     },
     "classification": {
       "self": "Data classification",
@@ -2938,8 +2961,9 @@
     "baseline-database": "Baseline database",
     "schema-version": "Schema version",
     "personal-draft": "Personal draft",
-    "baseline-version": "Baseline version",
-    "parent-branch": "Parent branch",
+    "baseline-version": "Baseline",
+    "new-branch": "New branch",
+    "parent-branch": "Parent",
     "save-draft": "Save draft",
     "merge-branch": "Merge branch",
     "delete-branch-after-merged": "Delete branch after merged",

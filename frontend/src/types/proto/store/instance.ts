@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
 
@@ -13,7 +13,7 @@ export interface InstanceOptions {
    */
   schemaTenantMode: boolean;
   /** How often the instance is synced. */
-  syncInterval?: Duration | undefined;
+  syncInterval: Duration | undefined;
 }
 
 /** InstanceMetadata is the metadata for instances. */
@@ -23,7 +23,7 @@ export interface InstanceMetadata {
    * It is used to determine whether the table names and database names are case sensitive.
    */
   mysqlLowerCaseTableNames: number;
-  lastSyncTime?: Date | undefined;
+  lastSyncTime: Date | undefined;
 }
 
 function createBaseInstanceOptions(): InstanceOptions {

@@ -55,6 +55,10 @@ export function issueSlug(issueName: string, issueId: IssueId): string {
   return [slug(issueName), issueId].join("-");
 }
 
+export function branchSlug(branchName: string, branchId: string): string {
+  return [slug(branchName), branchId].join("-");
+}
+
 // On the other hand, it's not possible to de-slug due to slug's one-way algorithm
 export function environmentSlug(environment: Environment): string {
   return [slug(environment.name), environment.id].join("-");

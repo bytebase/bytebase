@@ -7,6 +7,7 @@ import type {
 } from "@/types/schemaEditor";
 import { Column } from "@/types/v1/schemaEditor";
 import {
+  getColumnComment,
   transformColumnToAddColumnContext,
   transformColumnToChangeColumnContext,
 } from "./transform";
@@ -50,8 +51,9 @@ export const diffColumnList = (
       if (!isEqual(originColumn.type, column.type)) {
         alterColumnContext.type = column.type;
       }
-      if (!isEqual(originColumn.comment, column.comment)) {
-        alterColumnContext.comment = column.comment;
+
+      if (!isEqual(getColumnComment(originColumn), getColumnComment(column))) {
+        alterColumnContext.comment = getColumnComment(column);
       }
       if (!isEqual(originColumn.nullable, column.nullable)) {
         alterColumnContext.nullable = column.nullable;

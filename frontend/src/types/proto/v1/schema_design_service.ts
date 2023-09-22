@@ -1,6 +1,5 @@
 /* eslint-disable */
-import type { CallContext, CallOptions } from "nice-grpc-common";
-import * as _m0 from "protobufjs/minimal";
+import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -21,13 +20,13 @@ export interface SchemaDesign {
   /** The schema of schema design. AKA sheet's statement. */
   schema: string;
   /** The metadata of the current editing schema. */
-  schemaMetadata?:
+  schemaMetadata:
     | DatabaseMetadata
     | undefined;
   /** The baseline schema. */
   baselineSchema: string;
   /** The metadata of the baseline schema. */
-  baselineSchemaMetadata?:
+  baselineSchemaMetadata:
     | DatabaseMetadata
     | undefined;
   /** The database engine of the schema design. */
@@ -52,7 +51,7 @@ export interface SchemaDesign {
   /** The etag of the schema design. */
   etag: string;
   /** The protection of the schema design branch. */
-  protection?:
+  protection:
     | SchemaDesign_Protection
     | undefined;
   /**
@@ -66,11 +65,11 @@ export interface SchemaDesign {
    */
   updater: string;
   /** The timestamp when the schema design was created. */
-  createTime?:
+  createTime:
     | Date
     | undefined;
   /** The timestamp when the schema design was last updated. */
-  updateTime?: Date | undefined;
+  updateTime: Date | undefined;
 }
 
 export enum SchemaDesign_Type {
@@ -168,7 +167,7 @@ export interface CreateSchemaDesignRequest {
    * Format: project/{project}
    */
   parent: string;
-  schemaDesign?: SchemaDesign | undefined;
+  schemaDesign: SchemaDesign | undefined;
 }
 
 export interface UpdateSchemaDesignRequest {
@@ -178,11 +177,11 @@ export interface UpdateSchemaDesignRequest {
    * The schema design's `name` field is used to identify the schema design to update.
    * Format: projects/{project}/schemaDesigns/{schemaDesign}
    */
-  schemaDesign?:
+  schemaDesign:
     | SchemaDesign
     | undefined;
   /** The list of fields to update. */
-  updateMask?: string[] | undefined;
+  updateMask: string[] | undefined;
 }
 
 export interface MergeSchemaDesignRequest {
@@ -207,7 +206,7 @@ export interface ParseSchemaStringRequest {
 
 export interface ParseSchemaStringResponse {
   /** The metadata of the parsed schema. */
-  schemaMetadata?: DatabaseMetadata | undefined;
+  schemaMetadata: DatabaseMetadata | undefined;
 }
 
 export interface DeleteSchemaDesignRequest {
@@ -216,6 +215,24 @@ export interface DeleteSchemaDesignRequest {
    * Format: projects/{project}/schemaDesigns/{schemaDesign}
    */
   name: string;
+}
+
+export interface DiffMetadataRequest {
+  /** The metadata of the source schema. */
+  sourceMetadata:
+    | DatabaseMetadata
+    | undefined;
+  /** The metadata of the target schema. */
+  targetMetadata:
+    | DatabaseMetadata
+    | undefined;
+  /** The database engine of the schema. */
+  engine: Engine;
+}
+
+export interface DiffMetadataResponse {
+  /** The diff of the metadata. */
+  diff: string;
 }
 
 function createBaseSchemaDesign(): SchemaDesign {
@@ -1210,6 +1227,152 @@ export const DeleteSchemaDesignRequest = {
   },
 };
 
+function createBaseDiffMetadataRequest(): DiffMetadataRequest {
+  return { sourceMetadata: undefined, targetMetadata: undefined, engine: 0 };
+}
+
+export const DiffMetadataRequest = {
+  encode(message: DiffMetadataRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.sourceMetadata !== undefined) {
+      DatabaseMetadata.encode(message.sourceMetadata, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.targetMetadata !== undefined) {
+      DatabaseMetadata.encode(message.targetMetadata, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.engine !== 0) {
+      writer.uint32(24).int32(message.engine);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiffMetadataRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiffMetadataRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sourceMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.targetMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiffMetadataRequest {
+    return {
+      sourceMetadata: isSet(object.sourceMetadata) ? DatabaseMetadata.fromJSON(object.sourceMetadata) : undefined,
+      targetMetadata: isSet(object.targetMetadata) ? DatabaseMetadata.fromJSON(object.targetMetadata) : undefined,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+    };
+  },
+
+  toJSON(message: DiffMetadataRequest): unknown {
+    const obj: any = {};
+    message.sourceMetadata !== undefined &&
+      (obj.sourceMetadata = message.sourceMetadata ? DatabaseMetadata.toJSON(message.sourceMetadata) : undefined);
+    message.targetMetadata !== undefined &&
+      (obj.targetMetadata = message.targetMetadata ? DatabaseMetadata.toJSON(message.targetMetadata) : undefined);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    return obj;
+  },
+
+  create(base?: DeepPartial<DiffMetadataRequest>): DiffMetadataRequest {
+    return DiffMetadataRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DiffMetadataRequest>): DiffMetadataRequest {
+    const message = createBaseDiffMetadataRequest();
+    message.sourceMetadata = (object.sourceMetadata !== undefined && object.sourceMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.sourceMetadata)
+      : undefined;
+    message.targetMetadata = (object.targetMetadata !== undefined && object.targetMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.targetMetadata)
+      : undefined;
+    message.engine = object.engine ?? 0;
+    return message;
+  },
+};
+
+function createBaseDiffMetadataResponse(): DiffMetadataResponse {
+  return { diff: "" };
+}
+
+export const DiffMetadataResponse = {
+  encode(message: DiffMetadataResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.diff !== "") {
+      writer.uint32(10).string(message.diff);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiffMetadataResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiffMetadataResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.diff = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiffMetadataResponse {
+    return { diff: isSet(object.diff) ? String(object.diff) : "" };
+  },
+
+  toJSON(message: DiffMetadataResponse): unknown {
+    const obj: any = {};
+    message.diff !== undefined && (obj.diff = message.diff);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DiffMetadataResponse>): DiffMetadataResponse {
+    return DiffMetadataResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DiffMetadataResponse>): DiffMetadataResponse {
+    const message = createBaseDiffMetadataResponse();
+    message.diff = object.diff ?? "";
+    return message;
+  },
+};
+
 export type SchemaDesignServiceDefinition = typeof SchemaDesignServiceDefinition;
 export const SchemaDesignServiceDefinition = {
   name: "SchemaDesignService",
@@ -1708,70 +1871,58 @@ export const SchemaDesignServiceDefinition = {
         },
       },
     },
+    diffMetadata: {
+      name: "DiffMetadata",
+      requestType: DiffMetadataRequest,
+      requestStream: false,
+      responseType: DiffMetadataResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              34,
+              58,
+              1,
+              42,
+              34,
+              29,
+              47,
+              118,
+              49,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              68,
+              101,
+              115,
+              105,
+              103,
+              110,
+              58,
+              100,
+              105,
+              102,
+              102,
+              77,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
-
-export interface SchemaDesignServiceImplementation<CallContextExt = {}> {
-  getSchemaDesign(
-    request: GetSchemaDesignRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaDesign>>;
-  listSchemaDesigns(
-    request: ListSchemaDesignsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListSchemaDesignsResponse>>;
-  createSchemaDesign(
-    request: CreateSchemaDesignRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaDesign>>;
-  updateSchemaDesign(
-    request: UpdateSchemaDesignRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaDesign>>;
-  mergeSchemaDesign(
-    request: MergeSchemaDesignRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<SchemaDesign>>;
-  parseSchemaString(
-    request: ParseSchemaStringRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ParseSchemaStringResponse>>;
-  deleteSchemaDesign(
-    request: DeleteSchemaDesignRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<Empty>>;
-}
-
-export interface SchemaDesignServiceClient<CallOptionsExt = {}> {
-  getSchemaDesign(
-    request: DeepPartial<GetSchemaDesignRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaDesign>;
-  listSchemaDesigns(
-    request: DeepPartial<ListSchemaDesignsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ListSchemaDesignsResponse>;
-  createSchemaDesign(
-    request: DeepPartial<CreateSchemaDesignRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaDesign>;
-  updateSchemaDesign(
-    request: DeepPartial<UpdateSchemaDesignRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaDesign>;
-  mergeSchemaDesign(
-    request: DeepPartial<MergeSchemaDesignRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<SchemaDesign>;
-  parseSchemaString(
-    request: DeepPartial<ParseSchemaStringRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<ParseSchemaStringResponse>;
-  deleteSchemaDesign(
-    request: DeepPartial<DeleteSchemaDesignRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<Empty>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

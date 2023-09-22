@@ -27,10 +27,7 @@ const props = defineProps<{
   issue: ComposedIssue;
 }>();
 
-const context = extractIssueReviewContext(
-  computed(() => undefined),
-  computed(() => props.issue)
-);
+const context = extractIssueReviewContext(computed(() => props.issue));
 const { ready, done } = context;
 const currentUserName = computed(() => useAuthStore().currentUser.name);
 
