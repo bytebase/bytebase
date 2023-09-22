@@ -130,12 +130,14 @@ import {
   useSchemaEditorV1Store,
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
   SchemaDesign,
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
 import { projectV1Slug } from "@/utils";
+import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
 import {
   generateForkedBranchName,
@@ -226,6 +228,7 @@ const titleInputStyle = computed(() => {
 });
 
 onMounted(async () => {
+  // Prepare the parent branch for personal draft.
   if (
     schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
     state.schemaDesignName !== createdBranchName.value
@@ -240,7 +243,11 @@ const prepareBaselineDatabase = async () => {
   const database = await databaseStore.getOrFetchDatabaseByName(
     schemaDesign.value.baselineDatabase
   );
-  await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(database.name);
+  if (database.uid !== String(UNKNOWN_ID)) {
+    await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
+      database.name
+    );
+  }
 };
 
 watch(
@@ -444,12 +451,10 @@ const handleSaveSchemaDesignDraft = async () => {
   if (!branchSchema) {
     return;
   }
+  const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
   const mergedMetadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
-    cloneDeep(
-      schemaDesign.value.baselineSchemaMetadata ||
-        DatabaseMetadata.fromPartial({})
-    )
+    cloneDeep(baselineMetadata)
   );
   const validationMessages = validateDatabaseMetadata(mergedMetadata);
   if (validationMessages.length > 0) {

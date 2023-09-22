@@ -1,4 +1,5 @@
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
   SchemaDesign,
   SchemaDesign_Type,
@@ -12,20 +13,10 @@ import { rebuildEditableSchemas } from "./metadataV1";
 export const convertBranchToBranchSchema = (
   branch: SchemaDesign
 ): BranchSchema => {
-  let originalSchemas = [];
-  // For personal branches, we use its parent branch's schema as the original schema in editing state.
-  if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT) {
-    const parentBranch = useSchemaDesignStore().getSchemaDesignByName(
-      branch.baselineSheetName
-    );
-    originalSchemas = convertSchemaMetadataList(
-      parentBranch?.baselineSchemaMetadata?.schemas || []
-    );
-  } else {
-    originalSchemas = convertSchemaMetadataList(
-      branch.baselineSchemaMetadata?.schemas || []
-    );
-  }
+  const baselineMetadata = getBaselineMetadataOfBranch(branch);
+  const originalSchemas = convertSchemaMetadataList(
+    baselineMetadata.schemas || []
+  );
   const editableSchemas = rebuildEditableSchemas(
     originalSchemas,
     branch.schemaMetadata?.schemas || []
@@ -36,4 +27,19 @@ export const convertBranchToBranchSchema = (
     schemaList: editableSchemas,
     originSchemaList: originalSchemas,
   };
+};
+
+export const getBaselineMetadataOfBranch = (
+  branch: SchemaDesign
+): DatabaseMetadata => {
+  // For personal branches, we use its parent branch's schema as the original schema in editing state.
+  if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+    const parentBranch = useSchemaDesignStore().getSchemaDesignByName(
+      branch.baselineSheetName
+    );
+    return (
+      parentBranch.baselineSchemaMetadata || DatabaseMetadata.fromPartial({})
+    );
+  }
+  return branch.baselineSchemaMetadata || DatabaseMetadata.fromPartial({});
 };
