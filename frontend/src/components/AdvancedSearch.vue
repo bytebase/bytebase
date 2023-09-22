@@ -79,7 +79,6 @@ import {
   useSearchDatabaseV1List,
   useUserStore,
 } from "@/store";
-import { UserType } from "@/types/proto/v1/auth_service";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
   projectV1Name,
