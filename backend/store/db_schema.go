@@ -180,7 +180,7 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	).Scan(
 		&metadata,
 		&dbSchema.Schema,
-		config,
+		&config,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
