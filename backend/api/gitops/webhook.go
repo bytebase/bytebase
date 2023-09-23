@@ -1600,15 +1600,23 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 			},
 		}
 	} else {
-		var specs []*v1pb.Plan_Spec
+		environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+		if err != nil {
+			return err
+		}
+		sort.Slice(environments, func(i, j int) bool {
+			return environments[i].Order < environments[j].Order
+		})
+		orderIndex := make(map[int32]int)
+		for i, environment := range environments {
+			orderIndex[environment.Order] = i
+		}
+		allSteps := make([]*v1pb.Plan_Step, len(environments))
 		for _, migrationDetail := range migrationDetailList {
 			if migrationDetail.DatabaseID == 0 {
 				// TODO(d): should never reach this.
 				return errors.Errorf("tenant database is not supported yet")
 			}
-
-			changeType := getChangeType(migrationDetail.MigrationType)
-
 			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.DatabaseID})
 			if err != nil {
 				return err
@@ -1616,23 +1624,30 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 			if database == nil {
 				return errors.Errorf("database %d not found", migrationDetail.DatabaseID)
 			}
-			target := fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
+			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+			if err != nil {
+				return err
+			}
+			if environment == nil {
+				return errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
+			}
 
-			specs = append(specs, &v1pb.Plan_Spec{
+			step := allSteps[orderIndex[environment.Order]]
+			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Type:          changeType,
-						Target:        target,
+						Type:          getChangeType(migrationDetail.MigrationType),
+						Target:        fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
 						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
 						SchemaVersion: migrationDetail.SchemaVersion,
 					},
 				},
 			})
 		}
-		steps = []*v1pb.Plan_Step{
-			{
-				Specs: specs,
-			},
+		for _, step := range allSteps {
+			if len(step.Specs) > 0 {
+				steps = append(steps, step)
+			}
 		}
 	}
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
