@@ -46,7 +46,11 @@ func configureGrpcRouters(
 	errorRecordRing *api.ErrorRecordRing,
 	tokenDuration time.Duration) (*v1.RolloutService, *v1.IssueService, error) {
 	// Register services.
-	v1pb.RegisterAuthServiceServer(grpcServer, v1.NewAuthService(stores, secret, tokenDuration, licenseService, metricReporter, profile, postCreateUser))
+	authService, err := v1.NewAuthService(stores, secret, tokenDuration, licenseService, metricReporter, profile, stateCfg, postCreateUser)
+	if err != nil {
+		return nil, nil, err
+	}
+	v1pb.RegisterAuthServiceServer(grpcServer, authService)
 	v1pb.RegisterActuatorServiceServer(grpcServer, v1.NewActuatorService(stores, profile, errorRecordRing))
 	v1pb.RegisterSubscriptionServiceServer(grpcServer, v1.NewSubscriptionService(
 		stores,

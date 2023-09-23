@@ -19,6 +19,7 @@ import (
 	errs "github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -53,16 +54,18 @@ type APIAuthInterceptor struct {
 	secret         string
 	tokenDuration  time.Duration
 	licenseService enterpriseAPI.LicenseService
+	stateCfg       *state.State
 	mode           common.ReleaseMode
 }
 
 // New returns a new API auth interceptor.
-func New(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, mode common.ReleaseMode) *APIAuthInterceptor {
+func New(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, stateCfg *state.State, mode common.ReleaseMode) *APIAuthInterceptor {
 	return &APIAuthInterceptor{
 		store:          store,
 		secret:         secret,
 		tokenDuration:  tokenDuration,
 		licenseService: licenseService,
+		stateCfg:       stateCfg,
 		mode:           mode,
 	}
 }
@@ -73,7 +76,7 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 	if !ok {
 		return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
 	}
-	accessTokenStr, err := getTokenFromMetadata(md)
+	accessTokenStr, err := GetTokenFromMetadata(md)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, err.Error())
 	}
@@ -98,7 +101,7 @@ func (in *APIAuthInterceptor) AuthenticationStreamInterceptor(request any, ss gr
 	if !ok {
 		return status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
 	}
-	accessTokenStr, err := getTokenFromMetadata(md)
+	accessTokenStr, err := GetTokenFromMetadata(md)
 	if err != nil {
 		return status.Errorf(codes.Unauthenticated, err.Error())
 	}
@@ -129,6 +132,9 @@ func (s overrideStream) Context() context.Context {
 func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr string) (int, error) {
 	if accessTokenStr == "" {
 		return 0, status.Errorf(codes.Unauthenticated, "access token not found")
+	}
+	if _, ok := in.stateCfg.ExpireCache.Get(accessTokenStr); ok {
+		return 0, status.Errorf(codes.Unauthenticated, "access token expired")
 	}
 	claims := &claimsMessage{}
 	if _, err := jwt.ParseWithClaims(accessTokenStr, claims, func(t *jwt.Token) (any, error) {
@@ -201,7 +207,7 @@ func GetUserIDFromMFATempToken(token string, mode common.ReleaseMode, secret str
 	return userID, nil
 }
 
-func getTokenFromMetadata(md metadata.MD) (string, error) {
+func GetTokenFromMetadata(md metadata.MD) (string, error) {
 	authorizationHeaders := md.Get("Authorization")
 	if len(md.Get("Authorization")) > 0 {
 		authHeaderParts := strings.Fields(authorizationHeaders[0])
