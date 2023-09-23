@@ -1633,6 +1633,10 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 			}
 
 			step := allSteps[orderIndex[environment.Order]]
+			if step == nil {
+				allSteps[orderIndex[environment.Order]] = &v1pb.Plan_Step{}
+				step = allSteps[orderIndex[environment.Order]]
+			}
 			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
