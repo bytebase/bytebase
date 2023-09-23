@@ -83,7 +83,6 @@ import {
   projectNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { ComposedDatabase } from "@/types";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
   projectV1Name,
