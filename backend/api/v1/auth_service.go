@@ -39,6 +39,10 @@ import (
 
 type CreateUserFunc func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 
+var (
+	invalidUserOrPasswordError = status.Errorf(codes.Unauthenticated, "The email or password is not valid.")
+)
+
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
@@ -562,7 +566,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			return nil, err
 		}
 		if user == nil {
-			return nil, status.Errorf(codes.Unauthenticated, "user not found")
+			return nil, invalidUserOrPasswordError
 		}
 
 		if request.OtpCode != nil {
@@ -580,7 +584,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 
 	if loginUser == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "login user not found")
+		return nil, invalidUserOrPasswordError
 	}
 	if loginUser.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
@@ -666,12 +670,12 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 		return nil, status.Errorf(codes.Internal, "failed to get user by email %q: %v", request.Email, err)
 	}
 	if user == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "user %q not found", request.Email)
+		return nil, invalidUserOrPasswordError
 	}
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
-		return nil, status.Errorf(codes.Unauthenticated, "incorrect password")
+		return nil, invalidUserOrPasswordError
 	}
 	return user, nil
 }
