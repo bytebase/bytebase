@@ -40,7 +40,7 @@ import (
 type CreateUserFunc func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 
 var (
-	invalidUserOrPasswordError = status.Errorf(codes.Unauthenticated, "The username or password is not valid.")
+	invalidUserOrPasswordError = status.Errorf(codes.Unauthenticated, "The email or password is not valid.")
 )
 
 // AuthService implements the auth service.
