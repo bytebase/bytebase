@@ -266,14 +266,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	s.store = storeInstance
 
-	s.stateCfg = &state.State{
-		InstanceDatabaseSyncChan:             make(chan *store.InstanceMessage, 100),
-		InstanceSlowQuerySyncChan:            make(chan *state.InstanceSlowQuerySyncMessage, 100),
-		InstanceOutstandingConnections:       make(map[int]int),
-		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
-		TaskSkippedOrDoneChan:                make(chan int, 1000),
-		PlanCheckTickleChan:                  make(chan int, 1000),
-		TaskRunTickleChan:                    make(chan int, 1000),
+	s.stateCfg, err = state.New()
+	if err != nil {
+		return nil, err
 	}
 
 	if err := s.store.BackfillIssueTsVector(ctx); err != nil {
@@ -357,7 +352,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, profile.Mode)
+	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, profile.Mode)
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
 	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
