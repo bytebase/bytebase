@@ -77,6 +77,7 @@ import {
   useInstanceV1List,
   useSearchDatabaseV1List,
   useUserStore,
+  useDatabaseV1Store,
 } from "@/store";
 import {
   projectNamePrefix,
@@ -136,7 +137,6 @@ interface LocalState {
 interface SearchOption {
   id: string;
   label: VNode;
-  entity?: any;
 }
 
 interface SearchScope {
@@ -163,6 +163,7 @@ const state = reactive<LocalState>({
 });
 const inputRef = ref<InstanceType<typeof NInput>>();
 const userStore = useUserStore();
+const databaseV1Store = useDatabaseV1Store();
 
 watch(
   () => state.showSearchScopes,
@@ -242,7 +243,6 @@ const fullScopes = computed((): SearchScope[] => {
               )})`,
             }),
           ]),
-          entity: db,
         };
       }),
     },
@@ -302,7 +302,8 @@ const filteredScopes = computed((): SearchScope[] => {
       return true;
     }
 
-    const db = option.entity as ComposedDatabase;
+    const uid = option.id.split("-").slice(-1)[0];
+    const db = databaseV1Store.getDatabaseByUID(uid);
     const project = db.project;
     const instance = db.instance;
 
