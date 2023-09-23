@@ -1649,7 +1649,7 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 			})
 		}
 		for _, step := range allSteps {
-			if len(step.Specs) > 0 {
+			if step != nil && len(step.Specs) > 0 {
 				steps = append(steps, step)
 			}
 		}
