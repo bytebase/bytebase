@@ -12,7 +12,7 @@
 
     <slot name="prefix" />
 
-    <NEllipsis :line-clamp="1" :class="textClass">
+    <NEllipsis v-if="tooltip" :line-clamp="1" :class="textClass">
       {{ instanceV1Name(instance) }}
     </NEllipsis>
 
@@ -37,6 +37,7 @@ const props = withDefaults(
     link?: boolean;
     icon?: boolean;
     plain?: boolean;
+    tooltip?: boolean;
     iconPosition?: "prefix" | "suffix";
     textClass?: string;
   }>(),
@@ -45,6 +46,7 @@ const props = withDefaults(
     link: true,
     icon: true,
     plain: false,
+    tooltip: true,
     iconPosition: "prefix",
     textClass: "",
   }
