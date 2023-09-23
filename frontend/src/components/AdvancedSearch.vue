@@ -33,7 +33,7 @@
       </div>
     </div>
     <div
-      v-if="state.currentScope && searchOptions.length > 0"
+      v-if="state.currentScope"
       class="absolute z-50 top-full w-full bg-white shadow-md"
     >
       <div class="px-3 pt-2 pb-1 text-sm text-control font-semibold">
@@ -48,6 +48,12 @@
         >
           <component :is="option.label" class="text-control text-sm" />
           <span class="text-control-light text-sm">{{ option.id }}</span>
+        </div>
+        <div
+          v-if="searchOptions.length === 0"
+          class="px-3 py-1 text-control text-sm"
+        >
+          N/A
         </div>
       </div>
     </div>
@@ -71,7 +77,12 @@ import {
   useInstanceV1List,
   useSearchDatabaseV1List,
   useUserStore,
+  useDatabaseV1Store,
 } from "@/store";
+import {
+  projectNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
   projectV1Name,
@@ -151,6 +162,7 @@ const state = reactive<LocalState>({
 });
 const inputRef = ref<InstanceType<typeof NInput>>();
 const userStore = useUserStore();
+const databaseV1Store = useDatabaseV1Store();
 
 watch(
   () => state.showSearchScopes,
@@ -177,10 +189,10 @@ const principalSearchOptions = computed(() => {
   });
 });
 
+// fullScopes provides full search scopes and options.
+// we need this as the source of truth.
 const fullScopes = computed((): SearchScope[] => {
-  // TODO(ed): The scope options should have relevance.
-  // For example, if users select a specific project, we should only allow them select instances related with this project.
-  const scopes: SearchScope[] = [
+  return [
     {
       id: "project",
       title: t("issue.advanced-search.scope.project.title"),
@@ -206,7 +218,7 @@ const fullScopes = computed((): SearchScope[] => {
         return {
           id: extractInstanceResourceName(ins.name),
           label: h("div", { class: "flex items-center gap-x-1" }, [
-            h(InstanceV1Name, { instance: ins }),
+            h(InstanceV1Name, { instance: ins, link: false, tooltip: false }),
             h("span", {
               innerHTML: `(${environmentV1Name(ins.environmentEntity)})`,
             }),
@@ -267,26 +279,73 @@ const fullScopes = computed((): SearchScope[] => {
       options: principalSearchOptions.value,
     },
   ];
-
-  return scopes;
 });
 
+// filteredScopes will filter search options by chosed scope.
+// For example, if users select a specific project, we should only allow them select instances related with this project.
+const filteredScopes = computed((): SearchScope[] => {
+  const params = getSearchParamsByText(state.searchText);
+  const existedScope = new Map<SearchScopeId, string>(
+    params.scopes.map((scope) => [scope.id, scope.value])
+  );
+
+  const clone = fullScopes.value.map((scope) => ({
+    ...scope,
+    options: scope.options.map((option) => ({
+      ...option,
+    })),
+  }));
+  const index = clone.findIndex((scope) => scope.id === "database");
+  clone[index].options = clone[index].options.filter((option) => {
+    if (!existedScope.has("project") && !existedScope.has("instance")) {
+      return true;
+    }
+
+    const uid = option.id.split("-").slice(-1)[0];
+    const db = databaseV1Store.getDatabaseByUID(uid);
+    const project = db.project;
+    const instance = db.instance;
+
+    if (project === `${projectNamePrefix}${existedScope.get("project")}`) {
+      return true;
+    }
+    if (instance === `${instanceNamePrefix}${existedScope.get("instance")}`) {
+      return true;
+    }
+
+    return false;
+  });
+
+  return clone;
+});
+
+// searchScopes will hide chosed search scope.
+// For example, if uses already select the instance, we should NOT show the instance scope in the dropdown.
 const searchScopes = computed((): SearchScope[] => {
   const params = getSearchParamsByText(state.searchText);
-  const existedScope = new Set(params.scopes.map((scope) => scope.id));
+  const existedScope = new Set<SearchScopeId>(
+    params.scopes.map((scope) => scope.id)
+  );
 
-  return fullScopes.value.filter((scope) => {
-    return !existedScope.has(scope.id);
+  return filteredScopes.value.filter((scope) => {
+    if (existedScope.has(scope.id)) {
+      return false;
+    }
+    return true;
   });
 });
 
 const searchOptions = computed((): SearchOption[] => {
-  const item = fullScopes.value.find((item) => item.id === state.currentScope);
+  const item = filteredScopes.value.find(
+    (item) => item.id === state.currentScope
+  );
   return item?.options ?? [];
 });
 
 const searchKeyword = computed(() => {
-  const scope = fullScopes.value.find((item) => item.id === state.currentScope);
+  const scope = filteredScopes.value.find(
+    (item) => item.id === state.currentScope
+  );
   return scope?.title ?? "";
 });
 
