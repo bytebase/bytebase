@@ -16,7 +16,6 @@ import (
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -212,94 +211,6 @@ func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx
 	}
 
 	return uid, nil
-}
-
-func convertInstanceChangeHistoryToMigrationHistory(change *InstanceChangeHistoryMessage) (*db.MigrationHistory, error) {
-	var issueID string
-	if v := change.IssueUID; v != nil {
-		issueID = strconv.Itoa(*v)
-	}
-
-	useSemanticVersion, version, semanticVersionSuffix, err := util.FromStoredVersion(change.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	payload, err := protojson.Marshal(change.Payload)
-	if err != nil {
-		return nil, err
-	}
-
-	return &db.MigrationHistory{
-		ID:                    change.UID,
-		Creator:               "",
-		CreatedTs:             change.CreatedTs,
-		Updater:               "",
-		UpdatedTs:             change.UpdatedTs,
-		ReleaseVersion:        change.ReleaseVersion,
-		Namespace:             "",
-		Sequence:              int(change.Sequence),
-		Source:                change.Source,
-		Type:                  change.Type,
-		Status:                change.Status,
-		Version:               version,
-		Description:           change.Description,
-		Statement:             change.Statement,
-		Schema:                change.Schema,
-		SheetID:               change.SheetID,
-		SchemaPrev:            change.SchemaPrev,
-		ExecutionDurationNs:   change.ExecutionDurationNs,
-		IssueID:               issueID,
-		Payload:               string(payload),
-		UseSemanticVersion:    useSemanticVersion,
-		SemanticVersionSuffix: semanticVersionSuffix,
-	}, nil
-}
-
-// FindInstanceChangeHistoryList finds a list of instance change history and returns as a list of migration history.
-func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	findMessage := &FindInstanceChangeHistoryMessage{
-		ID:              find.ID,
-		InstanceID:      find.InstanceID,
-		DatabaseID:      find.DatabaseID,
-		Source:          find.Source,
-		Version:         find.Version,
-		ResourcesFilter: find.ResourcesFilter,
-		Limit:           find.Limit,
-		ShowFull:        true,
-	}
-
-	list, err := s.ListInstanceChangeHistory(ctx, findMessage)
-	if err != nil {
-		return nil, err
-	}
-	var migrationHistoryList []*db.MigrationHistory
-	for _, change := range list {
-		migrationHistory, err := convertInstanceChangeHistoryToMigrationHistory(change)
-		if err != nil {
-			return nil, err
-		}
-		if change.DatabaseUID != nil {
-			database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: change.DatabaseUID})
-			if err != nil {
-				return nil, err
-			}
-			migrationHistory.Namespace = database.DatabaseName
-		}
-		creator, err := s.GetPrincipalByID(ctx, change.CreatorID)
-		if err != nil {
-			return nil, err
-		}
-		migrationHistory.Creator = creator.Name
-		updater, err := s.GetPrincipalByID(ctx, change.UpdaterID)
-		if err != nil {
-			return nil, err
-		}
-		migrationHistory.Updater = updater.Name
-		migrationHistoryList = append(migrationHistoryList, migrationHistory)
-	}
-
-	return migrationHistoryList, nil
 }
 
 type resourceDatabase struct {

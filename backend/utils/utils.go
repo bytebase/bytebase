@@ -34,17 +34,14 @@ import (
 )
 
 // GetLatestSchemaVersion gets the latest schema version for a database.
-func GetLatestSchemaVersion(ctx context.Context, store *store.Store, instanceID int, databaseID int, databaseName string) (string, error) {
+func GetLatestSchemaVersion(ctx context.Context, stores *store.Store, instanceID int, databaseID int, databaseName string) (string, error) {
 	// TODO(d): support semantic versioning.
 	limit := 1
-	find := &db.MigrationHistoryFind{
+	history, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 		InstanceID: &instanceID,
-		Database:   &databaseName,
 		DatabaseID: &databaseID,
 		Limit:      &limit,
-	}
-
-	history, err := store.FindInstanceChangeHistoryList(ctx, find)
+	})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
 	}
@@ -472,7 +469,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 }
 
 // BeginMigration checks before executing migration and inserts a migration history record with pending status.
-func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo, prevSchema, statement string, sheetID *int) (string, error) {
+func BeginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInfo, prevSchema, statement string, sheetID *int) (string, error) {
 	// Convert version to stored version.
 	storedVersion, err := util.ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
@@ -480,7 +477,7 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 	}
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
-	if list, err := store.FindInstanceChangeHistoryList(ctx, &db.MigrationHistoryFind{
+	if list, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 		InstanceID: m.InstanceID,
 		DatabaseID: m.DatabaseID,
 		// TODO(d): support semantic versioning.
@@ -491,16 +488,13 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 		migrationHistory := list[0]
 		switch migrationHistory.Status {
 		case db.Done:
-			if migrationHistory.IssueID != m.IssueID {
-				return migrationHistory.ID, common.Errorf(common.MigrationFailed, "database %q has already applied version %s by issue %s", m.Database, m.Version, migrationHistory.IssueID)
-			}
-			return migrationHistory.ID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
+			return migrationHistory.UID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
 		case db.Pending:
 			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
-				return migrationHistory.ID, nil
+				return migrationHistory.UID, nil
 			}
 			return "", common.Wrap(err, common.MigrationPending)
 		case db.Failed:
@@ -508,7 +502,7 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
-				return migrationHistory.ID, nil
+				return migrationHistory.UID, nil
 			}
 			return "", common.Wrap(err, common.MigrationFailed)
 		}
@@ -519,7 +513,7 @@ func BeginMigration(ctx context.Context, store *store.Store, m *db.MigrationInfo
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	insertedID, err := store.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, storedVersion, statementRecord, sheetID)
+	insertedID, err := stores.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, storedVersion, statementRecord, sheetID)
 	if err != nil {
 		return "", err
 	}
