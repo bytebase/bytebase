@@ -28,6 +28,10 @@
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
+- [store/changelist.proto](#store_changelist-proto)
+    - [Changelist](#bytebase-store-Changelist)
+    - [Changelist.Change](#bytebase-store-Changelist-Change)
+  
 - [store/common.proto](#store_common-proto)
     - [PageToken](#bytebase-store-PageToken)
   
@@ -129,6 +133,12 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
   
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
+  
+- [store/project.proto](#store_project-proto)
+    - [Project](#bytebase-store-Project)
+    - [ProtectionRule](#bytebase-store-ProtectionRule)
+  
+    - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
@@ -509,6 +519,54 @@ convert to the expected struct there.
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_FEISHU | 1 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_changelist-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/changelist.proto
+
+
+
+<a name="bytebase-store-Changelist"></a>
+
+### Changelist
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| description | [string](#string) |  |  |
+| changes | [Changelist.Change](#bytebase-store-Changelist-Change) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-Changelist-Change"></a>
+
+### Changelist.Change
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | The name of a sheet. |
+| source | [string](#string) |  | The source of origin. 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}. 2) branch: projects/{project}/schemaDesigns/{schemaDesign}. 3) raw SQL if empty. |
+
+
+
+
+
+ 
 
  
 
@@ -2008,6 +2066,68 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | ACTION_UNSPECIFIED | 0 |  |
 | QUERY | 1 |  |
 | EXPORT | 2 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_project-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/project.proto
+
+
+
+<a name="bytebase-store-Project"></a>
+
+### Project
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| protection_rules | [ProtectionRule](#bytebase-store-ProtectionRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ProtectionRule"></a>
+
+### ProtectionRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. |
+| target | [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target) |  |  |
+| name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
+| create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ProtectionRule-Target"></a>
+
+### ProtectionRule.Target
+The type of target.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROTECTION_TARGET_UNSPECIFIED | 0 |  |
+| BRANCH | 1 |  |
+| CHANGELIST | 2 |  |
 
 
  
