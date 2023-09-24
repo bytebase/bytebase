@@ -53,11 +53,17 @@ export interface Changelist {
    * Format: projects/{project}/changelists/{changelist}
    */
   name: string;
+  description: string;
   /**
    * The creator of the changelist.
    * Format: users/{email}
    */
   creator: string;
+  /**
+   * The updater of the changelist.
+   * Format: users/{email}
+   */
+  updater: string;
   /** The create time of the changelist. */
   createTime:
     | Date
@@ -340,7 +346,15 @@ export const DeleteChangelistRequest = {
 };
 
 function createBaseChangelist(): Changelist {
-  return { name: "", creator: "", createTime: undefined, updateTime: undefined, changes: [] };
+  return {
+    name: "",
+    description: "",
+    creator: "",
+    updater: "",
+    createTime: undefined,
+    updateTime: undefined,
+    changes: [],
+  };
 }
 
 export const Changelist = {
@@ -348,17 +362,23 @@ export const Changelist = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.description !== "") {
+      writer.uint32(18).string(message.description);
+    }
     if (message.creator !== "") {
-      writer.uint32(18).string(message.creator);
+      writer.uint32(26).string(message.creator);
+    }
+    if (message.updater !== "") {
+      writer.uint32(34).string(message.updater);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(42).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(34).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(50).fork()).ldelim();
     }
     for (const v of message.changes) {
-      Changelist_Change.encode(v!, writer.uint32(42).fork()).ldelim();
+      Changelist_Change.encode(v!, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -382,24 +402,38 @@ export const Changelist = {
             break;
           }
 
-          message.creator = reader.string();
+          message.description = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.creator = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updater = reader.string();
           continue;
         case 5:
           if (tag !== 42) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 7:
+          if (tag !== 58) {
             break;
           }
 
@@ -417,7 +451,9 @@ export const Changelist = {
   fromJSON(object: any): Changelist {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      description: isSet(object.description) ? String(object.description) : "",
       creator: isSet(object.creator) ? String(object.creator) : "",
+      updater: isSet(object.updater) ? String(object.updater) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       changes: Array.isArray(object?.changes) ? object.changes.map((e: any) => Changelist_Change.fromJSON(e)) : [],
@@ -427,7 +463,9 @@ export const Changelist = {
   toJSON(message: Changelist): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.description !== undefined && (obj.description = message.description);
     message.creator !== undefined && (obj.creator = message.creator);
+    message.updater !== undefined && (obj.updater = message.updater);
     message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
     message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
     if (message.changes) {
@@ -445,7 +483,9 @@ export const Changelist = {
   fromPartial(object: DeepPartial<Changelist>): Changelist {
     const message = createBaseChangelist();
     message.name = object.name ?? "";
+    message.description = object.description ?? "";
     message.creator = object.creator ?? "";
+    message.updater = object.updater ?? "";
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
     message.changes = object.changes?.map((e) => Changelist_Change.fromPartial(e)) || [];

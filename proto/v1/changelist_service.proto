@@ -80,15 +80,21 @@ message Changelist {
     (google.api.field_behavior) = IMMUTABLE
   ];
 
+  string description = 2;
+
   // The creator of the changelist.
   // Format: users/{email}
-  string creator = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The updater of the changelist.
+  // Format: users/{email}
+  string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The create time of the changelist.
-  google.protobuf.Timestamp create_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The last update time of the changelist.
-  google.protobuf.Timestamp update_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message Change {
     // The name of a sheet.
@@ -99,5 +105,5 @@ message Changelist {
     // 3) raw SQL if empty.
     string source = 2;
   }
-  repeated Change changes = 5;
+  repeated Change changes = 7;
 }
