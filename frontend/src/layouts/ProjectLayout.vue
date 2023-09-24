@@ -1,8 +1,6 @@
 <template>
-  <div class="py-2">
-    <ArchiveBanner v-if="project.state === State.DELETED" />
-  </div>
-  <h1 class="px-6 pb-4 text-xl font-bold leading-6 text-main truncate">
+  <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
+  <h1 class="px-4 py-2 text-xl font-bold leading-6 text-main truncate">
     <template v-if="isDefaultProject">
       {{ $t("database.unassigned-databases") }}
     </template>
@@ -30,7 +28,7 @@
     @select-index="selectTab"
   />
 
-  <div class="py-6 px-6">
+  <div class="py-4 px-6">
     <router-view
       :project-slug="projectSlug"
       :project-webhook-slug="projectWebhookSlug"
