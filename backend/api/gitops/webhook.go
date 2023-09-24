@@ -1604,9 +1604,6 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 		if err != nil {
 			return err
 		}
-		sort.Slice(environments, func(i, j int) bool {
-			return environments[i].Order < environments[j].Order
-		})
 		orderIndex := make(map[int32]int)
 		for i, environment := range environments {
 			orderIndex[environment.Order] = i
