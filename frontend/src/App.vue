@@ -61,7 +61,7 @@ const CRITICAL_NOTIFICATION_DURATION = 10000;
 interface LocalState {
   notificationList: BBNotificationItem[];
   prevLoggedIn: boolean;
-  helpTimer: number | null;
+  helpTimer: number | undefined;
   RouteMapList: RouteMapList | null;
 }
 
@@ -74,7 +74,7 @@ const router = useRouter();
 const state = reactive<LocalState>({
   notificationList: [],
   prevLoggedIn: authStore.isLoggedIn(),
-  helpTimer: null,
+  helpTimer: undefined,
   RouteMapList: null,
 });
 
@@ -135,18 +135,18 @@ watch(
     const uiStateStore = useUIStateStore();
     const helpStore = useHelpStore();
 
+    // Clear timer after every route change.
+    if (state.helpTimer) {
+      clearTimeout(state.helpTimer);
+      state.helpTimer = undefined;
+    }
+
     // Hide opened help drawer if route changed.
     helpStore.exitHelp();
 
     if (!state.RouteMapList) {
       const res = await fetch("/help/routeMapList.json");
       state.RouteMapList = await res.json();
-    }
-
-    // Clear timer after every route change.
-    if (state.helpTimer) {
-      clearTimeout(state.helpTimer);
-      state.helpTimer = null;
     }
 
     const helpId = state.RouteMapList?.find(
