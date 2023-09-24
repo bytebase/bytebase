@@ -46,6 +46,13 @@ message CreateChangelistRequest {
 
   // The changelist to create.
   Changelist changelist = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the changelist, which will become the final component of
+  // the changelist's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string changelist_id = 3;
 }
 
 message GetChangelistRequest {

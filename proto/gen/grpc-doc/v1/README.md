@@ -2164,6 +2164,9 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource where this changelist will be created. Foramt: projects/{project} |
 | changelist | [Changelist](#bytebase-v1-Changelist) |  | The changelist to create. |
+| changelist_id | [string](#string) |  | The ID to use for the changelist, which will become the final component of the changelist&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 

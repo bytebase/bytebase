@@ -13,7 +13,17 @@ export interface CreateChangelistRequest {
    */
   parent: string;
   /** The changelist to create. */
-  changelist: Changelist | undefined;
+  changelist:
+    | Changelist
+    | undefined;
+  /**
+   * The ID to use for the changelist, which will become the final component of
+   * the changelist's resource name.
+   *
+   * This value should be 4-63 characters, and valid characters
+   * are /[a-z][0-9]-/.
+   */
+  changelistId: string;
 }
 
 export interface GetChangelistRequest {
@@ -86,7 +96,7 @@ export interface Changelist_Change {
 }
 
 function createBaseCreateChangelistRequest(): CreateChangelistRequest {
-  return { parent: "", changelist: undefined };
+  return { parent: "", changelist: undefined, changelistId: "" };
 }
 
 export const CreateChangelistRequest = {
@@ -96,6 +106,9 @@ export const CreateChangelistRequest = {
     }
     if (message.changelist !== undefined) {
       Changelist.encode(message.changelist, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.changelistId !== "") {
+      writer.uint32(26).string(message.changelistId);
     }
     return writer;
   },
@@ -121,6 +134,13 @@ export const CreateChangelistRequest = {
 
           message.changelist = Changelist.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.changelistId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -134,6 +154,7 @@ export const CreateChangelistRequest = {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       changelist: isSet(object.changelist) ? Changelist.fromJSON(object.changelist) : undefined,
+      changelistId: isSet(object.changelistId) ? String(object.changelistId) : "",
     };
   },
 
@@ -142,6 +163,7 @@ export const CreateChangelistRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.changelist !== undefined &&
       (obj.changelist = message.changelist ? Changelist.toJSON(message.changelist) : undefined);
+    message.changelistId !== undefined && (obj.changelistId = message.changelistId);
     return obj;
   },
 
@@ -155,6 +177,7 @@ export const CreateChangelistRequest = {
     message.changelist = (object.changelist !== undefined && object.changelist !== null)
       ? Changelist.fromPartial(object.changelist)
       : undefined;
+    message.changelistId = object.changelistId ?? "";
     return message;
   },
 };
