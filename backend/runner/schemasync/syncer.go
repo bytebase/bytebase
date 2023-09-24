@@ -422,10 +422,9 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			return nil
 		}
 		limit := 1
-		list, err := s.store.FindInstanceChangeHistoryList(ctx, &db.MigrationHistoryFind{
+		list, err := s.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 			InstanceID: &instance.UID,
 			DatabaseID: &database.UID,
-			Database:   &database.DatabaseName,
 			Limit:      &limit,
 		})
 		if err != nil {

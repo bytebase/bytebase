@@ -366,52 +366,6 @@ func ParseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (*Migra
 	}, nil
 }
 
-// MigrationHistory is the API message for migration history.
-// TODO(p0ny): migrate to instance change history.
-type MigrationHistory struct {
-	ID string
-
-	Creator   string
-	CreatedTs int64
-	Updater   string
-	UpdatedTs int64
-
-	ReleaseVersion        string
-	Namespace             string
-	Sequence              int
-	Source                MigrationSource
-	Type                  MigrationType
-	Status                MigrationStatus
-	Version               string
-	Description           string
-	Statement             string
-	SheetID               *int
-	Schema                string
-	SchemaPrev            string
-	ExecutionDurationNs   int64
-	IssueID               string
-	Payload               string
-	UseSemanticVersion    bool
-	SemanticVersionSuffix string
-}
-
-// MigrationHistoryFind is the API message for finding migration histories.
-type MigrationHistoryFind struct {
-	ID *string
-
-	Database        *string
-	Source          *MigrationSource
-	Version         *string
-	ResourcesFilter *string
-	// If specified, then it will only fetch "Limit" most recent migration histories
-	Limit  *int
-	Offset *int
-
-	// Fields below should be set if fetching from metaDB instance_change_history table.
-	DatabaseID *int
-	InstanceID *int
-}
-
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
 	Host     string
