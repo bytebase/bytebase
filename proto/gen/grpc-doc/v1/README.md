@@ -379,6 +379,7 @@
     - [ListSchemaGroupsRequest](#bytebase-v1-ListSchemaGroupsRequest)
     - [ListSchemaGroupsResponse](#bytebase-v1-ListSchemaGroupsResponse)
     - [Project](#bytebase-v1-Project)
+    - [ProtectionRule](#bytebase-v1-ProtectionRule)
     - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
     - [Schedule](#bytebase-v1-Schedule)
     - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
@@ -404,6 +405,7 @@
     - [Activity.Type](#bytebase-v1-Activity-Type)
     - [DatabaseGroupView](#bytebase-v1-DatabaseGroupView)
     - [OperatorType](#bytebase-v1-OperatorType)
+    - [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target)
     - [SchemaChange](#bytebase-v1-SchemaChange)
     - [SchemaGroupView](#bytebase-v1-SchemaGroupView)
     - [SchemaVersion](#bytebase-v1-SchemaVersion)
@@ -6198,6 +6200,25 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 | data_classification_config_id | [string](#string) |  |  |
+| protection_rules | [ProtectionRule](#bytebase-v1-ProtectionRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ProtectionRule"></a>
+
+### ProtectionRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. |
+| target | [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target) |  |  |
+| name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
+| create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. |
 
 
 
@@ -6614,6 +6635,19 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | OPERATOR_TYPE_UNSPECIFIED | 0 | The operator is not specified. |
 | OPERATOR_TYPE_IN | 1 | The operator is &#34;In&#34;. |
 | OPERATOR_TYPE_EXISTS | 2 | The operator is &#34;Exists&#34;. |
+
+
+
+<a name="bytebase-v1-ProtectionRule-Target"></a>
+
+### ProtectionRule.Target
+The type of target.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROTECTION_TARGET_UNSPECIFIED | 0 |  |
+| BRANCH | 1 |  |
+| CHANGELIST | 2 |  |
 
 
 
