@@ -15,7 +15,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -174,11 +173,6 @@ const (
 	// Failed is the migration status for FAILED.
 	Failed MigrationStatus = "FAILED"
 )
-
-// MigrationInfoPayload is the API message for migration info payload.
-type MigrationInfoPayload struct {
-	VCSPushEvent *vcs.PushEvent `json:"pushEvent,omitempty"`
-}
 
 // MigrationInfo is the API message for migration info.
 type MigrationInfo struct {
