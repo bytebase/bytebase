@@ -6,31 +6,40 @@
     @close="dismissModal"
   >
     <div
-      class="w-full flex flex-row justify-start items-center border-b pl-1 border-b-gray-300"
+      class="w-full flex flex-row justify-between items-center border-b pl-1 border-b-gray-300"
     >
-      <button
-        class="-mb-px px-3 leading-9 rounded-t-md flex items-center text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
-        :class="
-          state.selectedTab === 'schema-editor' &&
-          'bg-white !border-gray-300 text-gray-800'
-        "
-        @click="handleChangeTab('schema-editor')"
-      >
-        {{ $t("schema-editor.self") }}
-        <div class="ml-1">
-          <BBBetaBadge />
-        </div>
-      </button>
-      <button
-        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
-        :class="
-          state.selectedTab === 'raw-sql' &&
-          'bg-white !border-gray-300 text-gray-800'
-        "
-        @click="handleChangeTab('raw-sql')"
-      >
-        {{ $t("schema-editor.raw-sql") }}
-      </button>
+      <div class="flex items-center flex-start">
+        <button
+          class="-mb-px px-3 leading-9 rounded-t-md flex items-center text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
+          :class="
+            state.selectedTab === 'schema-editor' &&
+            'bg-white !border-gray-300 text-gray-800'
+          "
+          @click="handleChangeTab('schema-editor')"
+        >
+          {{ $t("schema-editor.self") }}
+          <div class="ml-1">
+            <BBBetaBadge />
+          </div>
+        </button>
+        <button
+          class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
+          :class="
+            state.selectedTab === 'raw-sql' &&
+            'bg-white !border-gray-300 text-gray-800'
+          "
+          @click="handleChangeTab('raw-sql')"
+        >
+          {{ $t("schema-editor.raw-sql") }}
+        </button>
+      </div>
+      <div class="flex items-center flex-end">
+        <SchemaEditorSQLCheckButton
+          :selected-tab="state.selectedTab"
+          :database-list="databaseList"
+          :edit-statement="state.editStatement"
+        />
+      </div>
     </div>
     <div class="w-full h-full max-h-full overflow-auto border-b mb-4">
       <div
@@ -130,7 +139,6 @@
 </template>
 
 <script lang="ts" setup>
-import axios from "axios";
 import dayjs from "dayjs";
 import { cloneDeep, head, uniq } from "lodash-es";
 import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
@@ -149,8 +157,6 @@ import {
 } from "@/store";
 import {
   ComposedDatabase,
-  DatabaseEdit,
-  DatabaseEditResult,
   dialectOfEngineV1,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
@@ -158,11 +164,6 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { allowGhostMigrationV1 } from "@/utils";
-import {
-  checkHasSchemaChanges,
-  diffSchema,
-  mergeDiffResults,
-} from "@/utils/schemaEditor/diffSchema";
 import { validateDatabaseEdit } from "@/utils/schemaEditor/validate";
 import MonacoEditor from "../MonacoEditor";
 import {
@@ -170,6 +171,8 @@ import {
   validateDatabaseMetadata,
 } from "../SchemaEditorV1/utils";
 import GhostDialog from "./GhostDialog.vue";
+import SchemaEditorSQLCheckButton from "./SchemaEditorSQLCheckButton/SchemaEditorSQLCheckButton.vue";
+import { getDatabaseEditListWithSchemaEditor, postDatabaseEdit } from "./utils";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
@@ -312,42 +315,6 @@ const handleSyncSQLFromSchemaEditor = async () => {
   }
   state.editStatement = Array.from(databaseEditMap.values()).join("\n");
   statementFromSchemaEditor.value = state.editStatement;
-};
-
-const getDatabaseEditListWithSchemaEditor = () => {
-  const databaseEditList: DatabaseEdit[] = [];
-  for (const databaseSchema of Array.from(
-    schemaEditorV1Store.resourceMap["database"].values()
-  )) {
-    const database = databaseSchema.database;
-    for (const schema of databaseSchema.schemaList) {
-      const originSchema = databaseSchema.originSchemaList.find(
-        (originSchema) => originSchema.id === schema.id
-      );
-      if (!originSchema) {
-        continue;
-      }
-
-      const diffSchemaResult = diffSchema(database.name, originSchema, schema);
-      if (checkHasSchemaChanges(diffSchemaResult)) {
-        const index = databaseEditList.findIndex(
-          (edit) => String(edit.databaseId) === database.uid
-        );
-        if (index !== -1) {
-          databaseEditList[index] = {
-            databaseId: Number(database.uid),
-            ...mergeDiffResults([diffSchemaResult, databaseEditList[index]]),
-          };
-        } else {
-          databaseEditList.push({
-            databaseId: Number(database.uid),
-            ...diffSchemaResult,
-          });
-        }
-      }
-    }
-  }
-  return databaseEditList;
 };
 
 const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
@@ -588,17 +555,6 @@ const generateIssueName = (
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
   return issueNameParts.join(" ");
-};
-
-const postDatabaseEdit = async (databaseEdit: DatabaseEdit) => {
-  const resData = (
-    await axios.post(
-      `/api/database/${databaseEdit.databaseId}/edit`,
-      databaseEdit
-    )
-  ).data;
-  const databaseEditResult = resData.data.attributes as DatabaseEditResult;
-  return databaseEditResult;
 };
 
 watch(
