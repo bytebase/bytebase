@@ -15,7 +15,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -174,11 +173,6 @@ const (
 	// Failed is the migration status for FAILED.
 	Failed MigrationStatus = "FAILED"
 )
-
-// MigrationInfoPayload is the API message for migration info payload.
-type MigrationInfoPayload struct {
-	VCSPushEvent *vcs.PushEvent `json:"pushEvent,omitempty"`
-}
 
 // MigrationInfo is the API message for migration info.
 type MigrationInfo struct {
@@ -364,52 +358,6 @@ func ParseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (*Migra
 		Environment: info["ENV_ID"],
 		Database:    info["DB_NAME"],
 	}, nil
-}
-
-// MigrationHistory is the API message for migration history.
-// TODO(p0ny): migrate to instance change history.
-type MigrationHistory struct {
-	ID string
-
-	Creator   string
-	CreatedTs int64
-	Updater   string
-	UpdatedTs int64
-
-	ReleaseVersion        string
-	Namespace             string
-	Sequence              int
-	Source                MigrationSource
-	Type                  MigrationType
-	Status                MigrationStatus
-	Version               string
-	Description           string
-	Statement             string
-	SheetID               *int
-	Schema                string
-	SchemaPrev            string
-	ExecutionDurationNs   int64
-	IssueID               string
-	Payload               string
-	UseSemanticVersion    bool
-	SemanticVersionSuffix string
-}
-
-// MigrationHistoryFind is the API message for finding migration histories.
-type MigrationHistoryFind struct {
-	ID *string
-
-	Database        *string
-	Source          *MigrationSource
-	Version         *string
-	ResourcesFilter *string
-	// If specified, then it will only fetch "Limit" most recent migration histories
-	Limit  *int
-	Offset *int
-
-	// Fields below should be set if fetching from metaDB instance_change_history table.
-	DatabaseID *int
-	InstanceID *int
 }
 
 // ConnectionConfig is the configuration for connections.
