@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "generated-go/v1";
+
+service ChangelistService {
+  rpc CreateChangelist(CreateChangelistRequest) returns (Changelist) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/changelists"
+      body: "changelist"
+    };
+    option (google.api.method_signature) = "parent,changelist";
+  }
+
+  rpc GetChangelist(GetChangelistRequest) returns (Changelist) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/changelists/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UpdateChangelist(UpdateChangelistRequest) returns (Changelist) {
+    option (google.api.http) = {
+      patch: "/v1/{changelist.name=projects/*/changelists/*}"
+      body: "changelist"
+    };
+    option (google.api.method_signature) = "changelist,update_mask";
+  }
+
+  rpc DeleteChangelist(DeleteChangelistRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=projects/*/changelists/*}"};
+    option (google.api.method_signature) = "name";
+  }
+}
+
+message CreateChangelistRequest {
+  // The parent resource where this changelist will be created.
+  // Foramt: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The changelist to create.
+  Changelist changelist = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetChangelistRequest {
+  // The name of the changelist to retrieve.
+  // Format: projects/{project}/changelists/{changelist}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateChangelistRequest {
+  // The changelist to update.
+  //
+  // The changelist's `name` field is used to identify the changelist to update.
+  // Format: projects/{project}/changelists/{changelist}
+  Changelist changelist = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to be updated.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteChangelistRequest {
+  // The name of the changelist to delete.
+  // Format: projects/{project}/changelists/{changelist}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Changelist {
+  // The name of the changelist resource.
+  // Canonical parent is project.
+  // Format: projects/{project}/changelists/{changelist}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // The creator of the changelist.
+  // Format: users/{email}
+  string creator = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The create time of the changelist.
+  google.protobuf.Timestamp create_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The last update time of the changelist.
+  google.protobuf.Timestamp update_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  message Change {
+    // The name of a sheet.
+    string sheet = 1;
+    // The source of origin.
+    // 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}.
+    // 2) branch: projects/{project}/schemaDesigns/{schemaDesign}.
+    // 3) raw SQL if empty.
+    string source = 2;
+  }
+  repeated Change changes = 5;
+}
