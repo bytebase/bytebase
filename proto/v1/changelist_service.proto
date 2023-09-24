@@ -52,7 +52,7 @@ message CreateChangelistRequest {
   //
   // This value should be 4-63 characters, and valid characters
   // are /[a-z][0-9]-/.
-  string changelist_id = 3;
+  string changelist_id = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetChangelistRequest {
