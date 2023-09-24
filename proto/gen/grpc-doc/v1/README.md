@@ -112,6 +112,16 @@
   
     - [CelService](#bytebase-v1-CelService)
   
+- [v1/changelist_service.proto](#v1_changelist_service-proto)
+    - [Changelist](#bytebase-v1-Changelist)
+    - [Changelist.Change](#bytebase-v1-Changelist-Change)
+    - [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest)
+    - [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest)
+    - [GetChangelistRequest](#bytebase-v1-GetChangelistRequest)
+    - [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest)
+  
+    - [ChangelistService](#bytebase-v1-ChangelistService)
+  
 - [v1/vcs.proto](#v1_vcs-proto)
     - [Commit](#bytebase-v1-Commit)
     - [FileCommit](#bytebase-v1-FileCommit)
@@ -2097,6 +2107,139 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 | ----------- | ------------ | ------------- | ------------|
 | Parse | [ParseRequest](#bytebase-v1-ParseRequest) | [ParseResponse](#bytebase-v1-ParseResponse) |  |
 | Deparse | [DeparseRequest](#bytebase-v1-DeparseRequest) | [DeparseResponse](#bytebase-v1-DeparseResponse) |  |
+
+ 
+
+
+
+<a name="v1_changelist_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/changelist_service.proto
+
+
+
+<a name="bytebase-v1-Changelist"></a>
+
+### Changelist
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the changelist resource. Canonical parent is project. Format: projects/{project}/changelists/{changelist} |
+| description | [string](#string) |  |  |
+| creator | [string](#string) |  | The creator of the changelist. Format: users/{email} |
+| updater | [string](#string) |  | The updater of the changelist. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the changelist. |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the changelist. |
+| changes | [Changelist.Change](#bytebase-v1-Changelist-Change) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Changelist-Change"></a>
+
+### Changelist.Change
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | The name of a sheet. |
+| source | [string](#string) |  | The source of origin. 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}. 2) branch: projects/{project}/schemaDesigns/{schemaDesign}. 3) raw SQL if empty. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateChangelistRequest"></a>
+
+### CreateChangelistRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this changelist will be created. Foramt: projects/{project} |
+| changelist | [Changelist](#bytebase-v1-Changelist) |  | The changelist to create. |
+| changelist_id | [string](#string) |  | The ID to use for the changelist, which will become the final component of the changelist&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteChangelistRequest"></a>
+
+### DeleteChangelistRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the changelist to delete. Format: projects/{project}/changelists/{changelist} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetChangelistRequest"></a>
+
+### GetChangelistRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the changelist to retrieve. Format: projects/{project}/changelists/{changelist} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateChangelistRequest"></a>
+
+### UpdateChangelistRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| changelist | [Changelist](#bytebase-v1-Changelist) |  | The changelist to update.
+
+The changelist&#39;s `name` field is used to identify the changelist to update. Format: projects/{project}/changelists/{changelist} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ChangelistService"></a>
+
+### ChangelistService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateChangelist | [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
+| GetChangelist | [GetChangelistRequest](#bytebase-v1-GetChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
+| UpdateChangelist | [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
+| DeleteChangelist | [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
