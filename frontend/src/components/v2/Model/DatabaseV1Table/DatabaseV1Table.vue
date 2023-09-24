@@ -326,20 +326,12 @@ const columnListMap = computed(() => {
     title: t("common.instance"),
     width: "minmax(auto, 1fr)",
   };
-  const SYNC_STATUS = {
-    title: t("database.sync-status"),
-    width: "auto",
-    class: "items-center",
-  };
   return new Map<Mode, (BBGridColumn | undefined)[]>([
-    [
-      "ALL",
-      [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, INSTANCE, SYNC_STATUS],
-    ],
+    ["ALL", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, INSTANCE]],
     ["ALL_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, INSTANCE]],
     ["ALL_TINY", [NAME, ENVIRONMENT, PROJECT, INSTANCE]],
-    ["INSTANCE", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, SYNC_STATUS]],
-    ["PROJECT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE, SYNC_STATUS]],
+    ["INSTANCE", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT]],
+    ["PROJECT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE]],
     ["PROJECT_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE]],
   ]);
 });
