@@ -17,23 +17,6 @@
         :can-remove="false"
         class="text-xs"
       />
-      <NTooltip
-        v-if="!showMiscColumn && database.syncState !== State.ACTIVE"
-        placement="right"
-      >
-        <template #trigger>
-          <heroicons-outline:exclamation-circle class="w-5 h-5 text-error" />
-        </template>
-
-        <div class="whitespace-nowrap">
-          {{
-            $t("database.last-sync-status-long", [
-              "NOT_FOUND",
-              humanizeDate(database.successfulSyncTime),
-            ])
-          }}
-        </div>
-      </NTooltip>
     </div>
   </div>
   <div v-if="showEnvironmentColumn" class="bb-grid-cell">
@@ -60,48 +43,6 @@
       tag="div"
     />
   </div>
-  <div v-if="showMiscColumn" class="bb-grid-cell">
-    <div class="w-full flex justify-center">
-      <NTooltip placement="left">
-        <template #trigger>
-          <div
-            class="flex items-center justify-center rounded-full select-none w-5 h-5 overflow-hidden text-white font-medium text-base"
-            :class="
-              database.syncState === State.ACTIVE ? 'bg-success' : 'bg-error'
-            "
-          >
-            <template v-if="database.syncState === State.ACTIVE">
-              <heroicons-solid:check class="w-4 h-4" />
-            </template>
-            <template v-else>
-              <span
-                class="h-2 w-2 flex items-center justify-center"
-                aria-hidden="true"
-                >!</span
-              >
-            </template>
-          </div>
-        </template>
-
-        <span>
-          <template v-if="database.syncState === State.ACTIVE">
-            {{
-              $t("database.synced-at", {
-                time: humanizeDate(database.successfulSyncTime),
-              })
-            }}
-          </template>
-          <template v-else>
-            {{
-              $t("database.not-found-last-successful-sync-was", {
-                time: humanizeDate(database.successfulSyncTime),
-              })
-            }}
-          </template>
-        </span>
-      </NTooltip>
-    </div>
-  </div>
 </template>
 
 <script lang="ts" setup>
@@ -109,7 +50,6 @@ import { computed } from "vue";
 import { InstanceV1Name, EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import { isPITRDatabaseV1 } from "@/utils";
 import ProjectCol from "./ProjectCol.vue";
 
