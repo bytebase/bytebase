@@ -25,7 +25,8 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
   actions: {
     async getOrFetchDatabaseMetadata(
       name: string,
-      skipCache = false
+      skipCache = false,
+      silent = false
     ): Promise<DatabaseMetadata> {
       const databaseId = getInstanceAndDatabaseId(name)[1];
       if (
@@ -53,9 +54,14 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
 
       // Send a request and cache it.
       const promise = databaseServiceClient
-        .getDatabaseMetadata({
-          name: `${name}/metadata`,
-        })
+        .getDatabaseMetadata(
+          {
+            name: `${name}/metadata`,
+          },
+          {
+            silent,
+          }
+        )
         .then((res) => {
           this.databaseMetadataByName.set(name, res);
           return res;
