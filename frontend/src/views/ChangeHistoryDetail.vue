@@ -436,7 +436,10 @@ const hasDrift = computed((): boolean => {
   if (!changeHistory.value) {
     return false;
   }
-  if (changeHistory.value.type === ChangeHistory_Type.BASELINE) {
+  if (
+    changeHistory.value.type === ChangeHistory_Type.BASELINE ||
+    changeHistory.value.type === ChangeHistory_Type.DATA
+  ) {
     return false;
   }
 

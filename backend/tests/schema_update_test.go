@@ -149,8 +149,8 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			Source:     v1pb.ChangeHistory_UI,
 			Type:       v1pb.ChangeHistory_DATA,
 			Status:     v1pb.ChangeHistory_DONE,
-			Schema:     dumpedSchema,
-			PrevSchema: dumpedSchema,
+			Schema:     "",
+			PrevSchema: "",
 		},
 		{
 			Source:     v1pb.ChangeHistory_UI,
@@ -593,8 +593,8 @@ func TestVCS(t *testing.T) {
 				{
 					Type:       v1pb.ChangeHistory_DATA,
 					Status:     v1pb.ChangeHistory_DONE,
-					Schema:     dumpedSchema3,
-					PrevSchema: dumpedSchema3,
+					Schema:     "",
+					PrevSchema: "",
 				},
 				{
 					Type:       v1pb.ChangeHistory_MIGRATE,
@@ -946,8 +946,8 @@ ALTER TABLE ONLY public.users
 				{
 					Type:       v1pb.ChangeHistory_DATA,
 					Status:     v1pb.ChangeHistory_DONE,
-					Schema:     updatedSchema,
-					PrevSchema: updatedSchema,
+					Schema:     "",
+					PrevSchema: "",
 				},
 				{
 					Type:       v1pb.ChangeHistory_MIGRATE_SDL,
@@ -2394,8 +2394,8 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 				{
 					Type:       v1pb.ChangeHistory_DATA,
 					Status:     v1pb.ChangeHistory_DONE,
-					Schema:     updatedSchema,
-					PrevSchema: updatedSchema,
+					Schema:     "",
+					PrevSchema: "",
 				},
 				{
 					Type:       v1pb.ChangeHistory_MIGRATE_SDL,
