@@ -1445,7 +1445,7 @@ func (s *Service) processFilesInProject(ctx context.Context, pushEvent vcs.PushE
 		return s.processFilesInBatchProject(ctx, pushEvent, repoInfo, fileInfoList)
 	}
 
-	var migrationDetailList []*api.MigrationDetail
+	var migrationDetailList []*migrationDetail
 	var activityCreateList []*store.ActivityMessage
 	var createdIssueList []string
 	var fileNameList []string
@@ -1492,7 +1492,7 @@ func (s *Service) processFilesInProject(ctx context.Context, pushEvent vcs.PushE
 	// Create one issue per push event for DDL project, or non-schema files for SDL project.
 	migrateType := "Change data"
 	for _, d := range migrationDetailList {
-		if d.MigrationType == db.Migrate {
+		if d.migrationType == db.Migrate {
 			migrateType = "Alter schema"
 			break
 		}
@@ -1542,7 +1542,7 @@ func (s *Service) processFilesInBatchProject(ctx context.Context, pushEvent vcs.
 			migrationDetail := migrationDetailListForFile[0]
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 			migrateType := "Change data"
-			if migrationDetail.MigrationType == db.Migrate {
+			if migrationDetail.migrationType == db.Migrate {
 				migrateType = "Alter schema"
 			}
 			description := strings.ReplaceAll(fileInfoList[0].migrationInfo.Description, "_", " ")
@@ -1578,11 +1578,11 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 	return ret
 }
 
-func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*api.MigrationDetail) error {
+func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*migrationDetail) error {
 	var steps []*v1pb.Plan_Step
-	if len(migrationDetailList) == 1 && migrationDetailList[0].DatabaseID == 0 {
+	if len(migrationDetailList) == 1 && migrationDetailList[0].databaseID == 0 {
 		migrationDetail := migrationDetailList[0]
-		changeType := getChangeType(migrationDetail.MigrationType)
+		changeType := getChangeType(migrationDetail.migrationType)
 		steps = []*v1pb.Plan_Step{
 			{
 				Specs: []*v1pb.Plan_Spec{
@@ -1591,8 +1591,8 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 							ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 								Type:          changeType,
 								Target:        fmt.Sprintf("projects/%s/deploymentConfigs/default", project.ResourceID),
-								Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
-								SchemaVersion: migrationDetail.SchemaVersion,
+								Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.sheetID),
+								SchemaVersion: migrationDetail.schemaVersion,
 							},
 						},
 					},
@@ -1610,16 +1610,16 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 		}
 		allSteps := make([]*v1pb.Plan_Step, len(environments))
 		for _, migrationDetail := range migrationDetailList {
-			if migrationDetail.DatabaseID == 0 {
+			if migrationDetail.databaseID == 0 {
 				// TODO(d): should never reach this.
 				return errors.Errorf("tenant database is not supported yet")
 			}
-			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.DatabaseID})
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.databaseID})
 			if err != nil {
 				return err
 			}
 			if database == nil {
-				return errors.Errorf("database %d not found", migrationDetail.DatabaseID)
+				return errors.Errorf("database %d not found", migrationDetail.databaseID)
 			}
 			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 			if err != nil {
@@ -1637,10 +1637,10 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Type:          getChangeType(migrationDetail.MigrationType),
+						Type:          getChangeType(migrationDetail.migrationType),
 						Target:        fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
-						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.SheetID),
-						SchemaVersion: migrationDetail.SchemaVersion,
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.sheetID),
+						SchemaVersion: migrationDetail.schemaVersion,
 					},
 				},
 			})
@@ -1893,7 +1893,7 @@ func (s *Service) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, 
 
 // prepareIssueFromSDLFile returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Service) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*store.ActivityMessage) {
+func (s *Service) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*migrationDetail, []*store.ActivityMessage) {
 	dbName := schemaInfo.Database
 	if dbName == "" && repoInfo.project.TenantMode == api.TenantModeDisabled {
 		slog.Debug("Ignored schema file without a database name", slog.String("file", file))
@@ -1926,12 +1926,12 @@ func (s *Service) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInf
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
-	var migrationDetailList []*api.MigrationDetail
+	var migrationDetailList []*migrationDetail
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
-		return []*api.MigrationDetail{
+		return []*migrationDetail{
 			{
-				MigrationType: db.MigrateSDL,
-				SheetID:       sheet.UID,
+				migrationType: db.MigrateSDL,
+				sheetID:       sheet.UID,
 			},
 		}, nil
 	}
@@ -1944,10 +1944,10 @@ func (s *Service) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInf
 
 	for _, database := range databases {
 		migrationDetailList = append(migrationDetailList,
-			&api.MigrationDetail{
-				MigrationType: db.MigrateSDL,
-				DatabaseID:    database.UID,
-				SheetID:       sheet.UID,
+			&migrationDetail{
+				migrationType: db.MigrateSDL,
+				databaseID:    database.UID,
+				sheetID:       sheet.UID,
 			},
 		)
 	}
@@ -1962,7 +1962,7 @@ func (s *Service) prepareIssueFromFile(
 	repoInfo *repoInfo,
 	pushEvent vcs.PushEvent,
 	fileInfo fileInfo,
-) ([]*api.MigrationDetail, []*store.ActivityMessage) {
+) ([]*migrationDetail, []*store.ActivityMessage) {
 	content, err := s.readFileContent(ctx, pushEvent, repoInfo, fileInfo.item.FileName)
 	if err != nil {
 		return nil, []*store.ActivityMessage{
@@ -1998,16 +1998,16 @@ func (s *Service) prepareIssueFromFile(
 				return nil, []*store.ActivityMessage{activityCreate}
 			}
 
-			return []*api.MigrationDetail{
+			return []*migrationDetail{
 				{
-					MigrationType: fileInfo.migrationInfo.Type,
-					SheetID:       sheet.UID,
-					SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
+					migrationType: fileInfo.migrationInfo.Type,
+					sheetID:       sheet.UID,
+					schemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 				},
 			}, nil
 		}
 
-		var migrationFile api.MigrationFileYAML
+		var migrationFile MigrationFileYAML
 		err = yaml.Unmarshal([]byte(content), &migrationFile)
 		if err != nil {
 			return nil, []*store.ActivityMessage{
@@ -2035,7 +2035,7 @@ func (s *Service) prepareIssueFromFile(
 			return nil, []*store.ActivityMessage{activityCreate}
 		}
 
-		var migrationDetailList []*api.MigrationDetail
+		var migrationDetailList []*migrationDetail
 		for _, database := range migrationFile.Databases {
 			dbList, err := s.findProjectDatabases(ctx, repoInfo.project.UID, database.Name, "")
 			if err != nil {
@@ -2051,11 +2051,11 @@ func (s *Service) prepareIssueFromFile(
 
 			for _, db := range dbList {
 				migrationDetailList = append(migrationDetailList,
-					&api.MigrationDetail{
-						MigrationType: fileInfo.migrationInfo.Type,
-						DatabaseID:    db.UID,
-						SheetID:       sheet.UID,
-						SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
+					&migrationDetail{
+						migrationType: fileInfo.migrationInfo.Type,
+						databaseID:    db.UID,
+						sheetID:       sheet.UID,
+						schemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 					},
 				)
 			}
@@ -2086,14 +2086,14 @@ func (s *Service) prepareIssueFromFile(
 			return nil, []*store.ActivityMessage{activityCreate}
 		}
 
-		var migrationDetailList []*api.MigrationDetail
+		var migrationDetailList []*migrationDetail
 		for _, database := range databases {
 			migrationDetailList = append(migrationDetailList,
-				&api.MigrationDetail{
-					MigrationType: fileInfo.migrationInfo.Type,
-					DatabaseID:    database.UID,
-					SheetID:       sheet.UID,
-					SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
+				&migrationDetail{
+					migrationType: fileInfo.migrationInfo.Type,
+					databaseID:    database.UID,
+					sheetID:       sheet.UID,
+					schemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 				},
 			)
 		}
