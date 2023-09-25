@@ -118,6 +118,8 @@
     - [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest)
     - [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest)
     - [GetChangelistRequest](#bytebase-v1-GetChangelistRequest)
+    - [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest)
+    - [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse)
     - [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest)
   
     - [ChangelistService](#bytebase-v1-ChangelistService)
@@ -2205,6 +2207,41 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+<a name="bytebase-v1-ListChangelistsRequest"></a>
+
+### ListChangelistsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of changelists. Format: projects/{project} Use &#34;projects/-&#34; to list all changelists. |
+| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangelistsResponse"></a>
+
+### ListChangelistsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| changelists | [Changelist](#bytebase-v1-Changelist) | repeated | The changelists from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateChangelistRequest"></a>
 
 ### UpdateChangelistRequest
@@ -2238,6 +2275,7 @@ The changelist&#39;s `name` field is used to identify the changelist to update. 
 | ----------- | ------------ | ------------- | ------------|
 | CreateChangelist | [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
 | GetChangelist | [GetChangelistRequest](#bytebase-v1-GetChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
+| ListChangelists | [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest) | [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse) |  |
 | UpdateChangelist | [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
 | DeleteChangelist | [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
