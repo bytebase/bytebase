@@ -2082,12 +2082,12 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 }
 
 // GetProjectProtectionRules gets a project protection rules.
-func (*ProjectService) GetProjectProtectionRules(ctx context.Context, request *v1pb.GetProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
+func (*ProjectService) GetProjectProtectionRules(_ context.Context, _ *v1pb.GetProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
 	return nil, nil
 }
 
 // UpdateProjectProtectionRules updates a project protection rules.
-func (*ProjectService) UpdateProjectProtectionRules(ctx context.Context, request *v1pb.UpdateProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
+func (*ProjectService) UpdateProjectProtectionRules(_ context.Context, _ *v1pb.UpdateProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
 	return nil, nil
 }
 
