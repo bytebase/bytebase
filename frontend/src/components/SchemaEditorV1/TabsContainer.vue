@@ -1,7 +1,7 @@
 <template>
   <div
     ref="tabsContainerRef"
-    class="w-full max-w-full overflow-x-auto bg-gray-100 select-none shrink-0 rounded"
+    class="w-full max-w-full overflow-x-auto bg-gray-100 select-none shrink-0 p-1 rounded"
   >
     <div class="w-fit flex flex-nowrap">
       <div
@@ -10,7 +10,7 @@
         class="relative px-1 pl-2 py-1 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer"
         :class="[
           `tab-${tab.id}`,
-          tab.id === currentTab?.id && 'bg-white border-gray-200',
+          tab.id === currentTab?.id && 'bg-white border-gray-200 shadow',
         ]"
         @click="handleSelectTab(tab)"
       >
@@ -33,10 +33,6 @@
             @click.stop.prevent="handleCloseTab(tab)"
           />
         </span>
-        <div
-          v-if="tab.id === currentTab?.id"
-          class="absolute -bottom-px left-0 w-full h-[3px] bg-accent rounded"
-        ></div>
       </div>
     </div>
   </div>
