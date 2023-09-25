@@ -2,8 +2,6 @@ package api
 
 import (
 	"encoding/json"
-
-	"github.com/bytebase/bytebase/backend/common"
 )
 
 // TaskStatus is the status of a task.
@@ -337,23 +335,4 @@ type TaskPatch struct {
 	// When RollbackEnabled is enabled, RollbackSheetID is kept till it's set to the new sheet ID by the runner.
 	RollbackSheetID *int
 	RollbackError   *string
-}
-
-// TaskStatusPatch is the API message for patching a task status.
-type TaskStatusPatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
-	Status  TaskStatus `jsonapi:"attr,status"`
-	Code    *common.Code
-	Comment *string `jsonapi:"attr,comment"`
-	Result  *string
-	// Skipped is set to true if frontend sets the Status to DONE.
-	// And SkippedReason is Comment.
-	Skipped       *bool
-	SkippedReason *string
 }
