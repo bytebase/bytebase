@@ -40,6 +40,7 @@ const props = withDefaults(
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     includeArchived?: boolean;
+    filterByCurrentUser?: boolean;
     filter?: (project: Project, index: number) => boolean;
   }>(),
   {
@@ -52,6 +53,7 @@ const props = withDefaults(
     includeAll: false,
     includeDefaultProject: false,
     includeArchived: false,
+    filterByCurrentUser: true,
     filter: () => true,
   }
 );
@@ -69,10 +71,12 @@ const prepare = () => {
 };
 
 const rawProjectList = computed(() => {
-  let list = projectV1Store.getProjectListByUser(
-    currentUserV1.value,
-    true /* showDeleted */
-  );
+  let list = props.filterByCurrentUser
+    ? projectV1Store.getProjectListByUser(
+        currentUserV1.value,
+        true /* showDeleted */
+      )
+    : projectV1Store.getProjectList(true /* showDeleted */);
   // Filter the default project
   list = list.filter((project) => {
     return project.uid !== String(DEFAULT_PROJECT_ID);
