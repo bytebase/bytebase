@@ -25,7 +25,7 @@ message WorkspaceProfileSetting {
   // Require 2FA for all users.
   bool require_2fa = 3;
 
-  // outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
+  // The outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
   repeated string outbound_ip_list = 4;
 
   // The webhook URL for the GitOps workflow.
@@ -36,6 +36,9 @@ message WorkspaceProfileSetting {
 
   // The setting of custom announcement
   Announcement announcement = 7;
+
+  // The secret_manager_url is the secret manager URL for accessing database connection secrets.
+  string secret_manager_url = 8;
 }
 
 message Announcement {
