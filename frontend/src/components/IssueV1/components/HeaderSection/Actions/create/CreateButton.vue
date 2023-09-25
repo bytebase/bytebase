@@ -39,6 +39,7 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
+import { useSQLCheckContext } from "@/components/SQLCheck";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
@@ -56,6 +57,7 @@ const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const router = useRouter();
 const { issue, formatOnSave } = useIssueContext();
+const { runSQLCheck } = useSQLCheckContext();
 const loading = ref(false);
 
 const issueCreateErrorList = computed(() => {
@@ -73,7 +75,13 @@ const issueCreateErrorList = computed(() => {
 });
 
 const doCreateIssue = async () => {
+  const check = runSQLCheck.value;
+  if (check && !(await check())) {
+    return;
+  }
+
   loading.value = true;
+
   try {
     await createSheets();
     const createdPlan = await createPlan();
