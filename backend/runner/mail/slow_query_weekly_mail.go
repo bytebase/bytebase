@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -347,6 +348,17 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 			sort.Slice(logs, func(i, j int) bool {
 				return logs[i].Statistics.MaximumQueryTime.AsDuration() > logs[j].Statistics.MaximumQueryTime.AsDuration()
 			})
+
+			total := totalValue{
+				totalCount:     0,
+				totalQueryTime: 0,
+			}
+
+			for _, log := range logs {
+				total.totalCount += log.Statistics.Count
+				total.totalQueryTime += log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
+			}
+
 			if len(logs) > 5 {
 				logs = logs[:5]
 			}
@@ -361,6 +373,11 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 					item = strings.ReplaceAll(item, "{{DB_NAME}}", "")
 				}
 				item = strings.ReplaceAll(item, "{{SLOW_QUERY}}", log.Statistics.SqlFingerprint)
+				item = strings.ReplaceAll(item, "{{TOTAL_QUERY_COUNT}}", fmt.Sprintf("%d", log.Statistics.Count))
+				item = strings.ReplaceAll(item, "{{QUERY_COUNT}}", fmt.Sprintf("%.2f%%", (float64(log.Statistics.Count)/float64(total.totalCount))*100))
+				item = strings.ReplaceAll(item, "{{MAX_QUERY_TIME}}", durationText(log.Statistics.MaximumQueryTime))
+				item = strings.ReplaceAll(item, "{{AVG_QUERY_TIME}}", durationText(log.Statistics.AverageQueryTime))
+				item = strings.ReplaceAll(item, "{{QUERY_TIME}}", fmt.Sprintf("%.2f%%", (float64(log.Statistics.AverageQueryTime.AsDuration()*time.Duration(log.Statistics.Count))/float64(total.totalQueryTime))*100))
 				if _, err := buf.WriteString(item); err != nil {
 					return "", err
 				}
@@ -377,6 +394,21 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 	}
 
 	return buf.String(), nil
+}
+
+type totalValue struct {
+	totalQueryTime time.Duration
+	totalCount     int64
+}
+
+func durationText(duration *durationpb.Duration) string {
+	if duration == nil {
+		return "-"
+	}
+	secs := duration.Seconds
+	nanos := duration.Nanos
+	total := float64(secs) + float64(nanos/1e9)
+	return fmt.Sprintf("%.2fs", total)
 }
 
 func engineTypeString(engine db.Type) string {
@@ -606,6 +638,17 @@ func (s *SlowQueryWeeklyMailSender) generateEnvironmentContent(
 			sort.Slice(logs, func(i, j int) bool {
 				return logs[i].Statistics.MaximumQueryTime.AsDuration() > logs[j].Statistics.MaximumQueryTime.AsDuration()
 			})
+
+			total := totalValue{
+				totalCount:     0,
+				totalQueryTime: 0,
+			}
+
+			for _, log := range logs {
+				total.totalCount += log.Statistics.Count
+				total.totalQueryTime += log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
+			}
+
 			if len(logs) > 5 {
 				logs = logs[:5]
 			}
@@ -618,6 +661,11 @@ func (s *SlowQueryWeeklyMailSender) generateEnvironmentContent(
 					item = strings.ReplaceAll(string(databaseTableItem), "{{DB_NAME}}", "")
 				}
 				item = strings.ReplaceAll(item, "{{SLOW_QUERY}}", log.Statistics.SqlFingerprint)
+				item = strings.ReplaceAll(item, "{{TOTAL_QUERY_COUNT}}", fmt.Sprintf("%d", log.Statistics.Count))
+				item = strings.ReplaceAll(item, "{{QUERY_COUNT}}", fmt.Sprintf("%.2f%%", (float64(log.Statistics.Count)/float64(total.totalCount))*100))
+				item = strings.ReplaceAll(item, "{{MAX_QUERY_TIME}}", durationText(log.Statistics.MaximumQueryTime))
+				item = strings.ReplaceAll(item, "{{AVG_QUERY_TIME}}", durationText(log.Statistics.AverageQueryTime))
+				item = strings.ReplaceAll(item, "{{QUERY_TIME}}", fmt.Sprintf("%.2f%%", (float64(log.Statistics.AverageQueryTime.AsDuration()*time.Duration(log.Statistics.Count))/float64(total.totalQueryTime))*100))
 				if _, err := buf.WriteString(item); err != nil {
 					return err
 				}
