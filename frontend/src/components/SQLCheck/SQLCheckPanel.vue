@@ -12,7 +12,7 @@
 
     <div
       v-if="confirm"
-      class="flex flex-row justify-end items-center gap-x-3 mt-2"
+      class="flex flex-row justify-end items-center gap-x-3 mt-4"
     >
       <NButton @click="confirm.resolve(false)">
         {{ $t("issue.sql-check.back-to-edit") }}
