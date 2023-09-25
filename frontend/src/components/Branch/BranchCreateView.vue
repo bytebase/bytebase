@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto px-4">
+  <div class="space-y-3 w-full overflow-x-auto px-4 pb-8">
     <div class="w-full flex flex-row justify-start items-center pt-1">
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.project") }}
@@ -268,7 +268,7 @@ const handleConfirm = async () => {
   const [, sheetId] = getProjectAndSchemaDesignSheetId(
     createdSchemaDesign.name
   );
-  router.push({
+  router.replace({
     name: "workspace.branch.detail",
     params: {
       branchSlug: `${createdSchemaDesign.title}-${sheetId}`,

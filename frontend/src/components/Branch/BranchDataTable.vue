@@ -163,6 +163,7 @@ const rowKey = (row: BranchRowData) => {
 
 const rowProps = (row: BranchRowData) => {
   return {
+    class: "cursor-pointer",
     onClick: (event: MouseEvent) => {
       const targetElement = event.target as HTMLElement;
       const triggerElement = targetElement.closest(
