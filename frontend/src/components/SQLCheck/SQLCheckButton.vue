@@ -43,7 +43,7 @@
             </template>
           </i18n-t>
         </template>
-        <ErrorList v-else :errors="errors ?? []" />
+        <ErrorList v-else :errors="combinedErrors" />
       </template>
     </NPopover>
   </div>
@@ -52,6 +52,7 @@
 <script lang="ts" setup>
 import { ButtonProps, NButton, NPopover } from "naive-ui";
 import { CSSProperties, computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
 import { usePolicyByParentAndType } from "@/store";
 import { ComposedDatabase } from "@/types";
@@ -68,6 +69,8 @@ const props = defineProps<{
   errors?: string[];
 }>();
 
+const { t } = useI18n();
+const SKIP_CHECK_THRESHOLD = 500000;
 const isRunning = ref(false);
 const advices = ref<Advice[]>();
 
@@ -93,13 +96,25 @@ const noReviewPolicyTips = computed(() => {
   return "";
 });
 
+const isStatementTooLarge = computed(() => {
+  return props.statement.length > SKIP_CHECK_THRESHOLD;
+});
+
 const buttonDisabled = computed(() => {
   if (noReviewPolicyTips.value) return true;
   if (!props.statement) return true;
+  if (isStatementTooLarge.value) return true;
   return props.errors && props.errors.length > 0;
 });
 const tooltipDisabled = computed(() => {
   return !buttonDisabled.value;
+});
+
+const combinedErrors = computed(() => {
+  if (isStatementTooLarge.value) {
+    return [t("issue.sql-check.statement-is-too-large")];
+  }
+  return props.errors ?? [];
 });
 
 const runChecks = async () => {

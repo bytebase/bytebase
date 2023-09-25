@@ -977,7 +977,8 @@
       "no-configured-sql-review-policy": {
         "admin": "{environment} environment has not configured SQL Review Policy. {link}",
         "developer": "{environment} environment has not configured SQL Review Policy. Please ask your DBA to configure."
-      }
+      },
+      "statement-is-too-large": "The statement is too large"
     }
   },
   "alter-schema": {
