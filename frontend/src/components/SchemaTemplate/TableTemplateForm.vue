@@ -129,7 +129,7 @@
               :show-foreign-key="false"
               :table="state.table"
               :engine="state.engine"
-              :classification-config-id="classificationConfig.id"
+              :classification-config-id="classificationConfig?.id"
               @on-drop="onColumnDrop"
               @on-primary-key-set="setColumnPrimaryKey"
             />
