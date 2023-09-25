@@ -194,7 +194,7 @@ import {
 } from "@/types/v1/schemaEditor";
 import { engineNameV1, useWorkspacePermissionV1 } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import { engineList } from "./utils";
+import { engineList, caregoryList } from "./utils";
 
 const props = defineProps<{
   create: boolean;
@@ -229,30 +229,16 @@ const allowEdit = computed(() => {
   );
 });
 
-const schemaTemplateList = computed(() => {
-  const setting = settingStore.getSettingByName("bb.workspace.schema-template");
-  return setting?.value?.schemaTemplateSettingValue?.fieldTemplates ?? [];
-});
-
 const classificationConfig = computed(() => {
   // TODO(ed): it's a temporary solution
   return settingStore.classification[0];
 });
 
 const categoryOptions = computed(() => {
-  const options = [];
-  for (const category of new Set(
-    schemaTemplateList.value.map((template) => template.category)
-  ).values()) {
-    if (!category) {
-      continue;
-    }
-    options.push({
-      label: category,
-      key: category,
-    });
-  }
-  return options;
+  return caregoryList.value.map((category) => ({
+    label: category,
+    key: category,
+  }));
 });
 
 const changeEngine = (engine: Engine) => {
