@@ -55,13 +55,9 @@
     </div>
     <div v-else-if="icon == 're-request-review'" class="relative pl-0.5">
       <div
-        class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
+        class="w-7 h-7 bg-success rounded-full ring-4 ring-white flex items-center justify-center icon-re-request-review"
       >
-        <PrincipalAvatar
-          :username="user?.title"
-          override-class="w-7 h-7 font-medium"
-          override-text-size="0.8rem"
-        />
+        <heroicons:play class="w-4 h-4 text-white ml-px" />
       </div>
     </div>
     <div v-else-if="icon == 'cancel'" class="relative pl-0.5">
@@ -262,3 +258,9 @@ const icon = computed((): ActionIconType => {
     : "avatar";
 });
 </script>
+
+<style scoped>
+.icon-re-request-review ::v-deep path {
+  stroke-width: 3 !important;
+}
+</style>
