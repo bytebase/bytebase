@@ -2,12 +2,12 @@
   <div class="space-y-3 w-full overflow-x-auto px-4 pt-1">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
-        <a
+        <router-link
           class="normal-link inline-flex items-center"
-          :href="`/project/${projectV1Slug(project)}`"
-          >{{ project.title }}</a
+          :to="`/project/${projectV1Slug(project)}`"
+          >{{ project.title }}</router-link
         >
-        <span class="ml-1 -mr-2">/</span>
+        <span class="ml-1 -mr-1">/</span>
         <NInput
           v-model:value="state.schemaDesignTitle"
           class="!w-auto"
