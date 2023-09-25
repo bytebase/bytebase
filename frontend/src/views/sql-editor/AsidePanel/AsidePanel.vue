@@ -8,13 +8,13 @@
       class="primary-sidebar h-full"
       pane-style="height: calc(100% - 35px); padding: 0;"
     >
-      <NTabPane name="projects" :tab="$t('common.projects')">
+      <NTabPane name="projects" :tab="$t('common.project')">
         <DatabaseTree
           key="sql-editor-database-tree"
           v-model:search-pattern="searchPattern"
         />
       </NTabPane>
-      <NTabPane name="instances" :tab="$t('common.instances')">
+      <NTabPane name="instances" :tab="$t('common.instance')">
         <DatabaseTree
           key="sql-editor-database-tree"
           v-model:search-pattern="searchPattern"
