@@ -48,7 +48,6 @@ export default defineConfig(() => {
           "explain-visualizer": resolve(__dirname, "explain-visualizer.html"),
         },
       },
-      chunkSizeWarningLimit: 1600,
     },
     server: {
       port: SERVER_PORT,
