@@ -43,6 +43,7 @@ const (
 	InboxNamePrefix              = "inbox/"
 	SchemaDesignPrefix           = "schemaDesigns/"
 	DeploymentConfigPrefix       = "deploymentConfigs/"
+	ChangelistsPrefix            = "changelists/"
 
 	BackupSettingSuffix = "/backupSetting"
 	SchemaSuffix        = "/schema"
@@ -89,6 +90,14 @@ func GetProjectIDWebhookID(name string) (string, string, error) {
 
 func GetProjectIDDeploymentConfigID(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, DeploymentConfigPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+func GetProjectIDChangelistID(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, ChangelistsPrefix)
 	if err != nil {
 		return "", "", err
 	}

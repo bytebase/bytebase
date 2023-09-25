@@ -135,6 +135,60 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 	return changelists, nil
 }
 
+// CreateChangelist creates a changelist.
+func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage) (*ChangelistMessage, error) {
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
+	if err != nil {
+		return nil, err
+	}
+	if create.Payload == nil {
+		create.Payload = &storepb.Changelist{}
+	}
+	create.UpdaterID = create.CreatorID
+	payload, err := protojson.Marshal(create.Payload)
+	if err != nil {
+		return nil, err
+	}
+
+	query := `
+		INSERT INTO changelist (
+			creator_id,
+			updater_id,
+			project_id,
+			name,
+			payload
+		)
+		VALUES ($1, $2, $3, $4, $5);
+	`
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	var createdTs, updatedTs int64
+	if err := tx.QueryRowContext(ctx, query,
+		create.CreatorID,
+		create.CreatorID,
+		project.UID,
+		create.ResourceID,
+		payload,
+	).Scan(
+		&create.UID,
+		&createdTs,
+		&updatedTs,
+	); err != nil {
+		return nil, err
+	}
+	create.CreatedTime = time.Unix(createdTs, 0)
+	create.UpdatedTime = time.Unix(updatedTs, 0)
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return create, nil
+}
+
 // UpdateChangelist updates a changelist.
 func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMessage) error {
 	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &update.ProjectID})
