@@ -2893,7 +2893,7 @@
     "search-by-name-or-comment": "Search by name or comment",
     "form": {
       "category": "Category",
-      "category-desc": "Select an existed category or create a new one",
+      "category-desc": "Select an existing category or create a new one",
       "unclassified": "Unclassified",
       "column-name": "Column name",
       "column-type": "Column type",
