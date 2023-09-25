@@ -21,7 +21,7 @@
 <script lang="ts" setup>
 import { debounce } from "lodash-es";
 import { ref, toRefs, watch } from "vue";
-import { SQLCheckButton } from "@/components/SQLCheck";
+import { SQLCheckButton, SQLCheckSummary } from "@/components/SQLCheck";
 import { ComposedDatabase } from "@/types";
 import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";
 
