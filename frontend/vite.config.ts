@@ -1,4 +1,4 @@
-import VueI18nPlugin from "@intlify/vite-plugin-vue-i18n";
+import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import yaml from "@rollup/plugin-yaml";
 import vue from "@vitejs/plugin-vue";
 import { CodeInspectorPlugin } from "code-inspector-plugin";
@@ -24,6 +24,7 @@ export default defineConfig(() => {
       // https://github.com/intlify/vite-plugin-vue-i18n
       VueI18nPlugin({
         include: [resolve(__dirname, "src/locales/**")],
+        strictMessage: false,
       }),
       Components({
         dirs: [resolve("src/components"), resolve("src/bbkit")],
