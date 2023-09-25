@@ -21,7 +21,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useAuthStore, useCurrentUserV1 } from "@/store";
+import { useAuthStore } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { extractReviewContext, useWrappedReviewStepsV1 } from "../logic";
