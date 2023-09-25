@@ -293,8 +293,12 @@ export interface WorkspaceProfileSetting {
   tokenDuration:
     | Duration
     | undefined;
-  /** The setting of custom announcement */
-  announcement: Announcement | undefined;
+  /** The setting of custom announcement. */
+  announcement:
+    | Announcement
+    | undefined;
+  /** The secret_manager_url is the secret manager URL for accessing database connection secrets. */
+  secretManagerUrl: string;
 }
 
 export interface Announcement {
@@ -1636,6 +1640,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     gitopsWebhookUrl: "",
     tokenDuration: undefined,
     announcement: undefined,
+    secretManagerUrl: "",
   };
 }
 
@@ -1661,6 +1666,9 @@ export const WorkspaceProfileSetting = {
     }
     if (message.announcement !== undefined) {
       Announcement.encode(message.announcement, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.secretManagerUrl !== "") {
+      writer.uint32(66).string(message.secretManagerUrl);
     }
     return writer;
   },
@@ -1721,6 +1729,13 @@ export const WorkspaceProfileSetting = {
 
           message.announcement = Announcement.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.secretManagerUrl = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1739,6 +1754,7 @@ export const WorkspaceProfileSetting = {
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? String(object.gitopsWebhookUrl) : "",
       tokenDuration: isSet(object.tokenDuration) ? Duration.fromJSON(object.tokenDuration) : undefined,
       announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
+      secretManagerUrl: isSet(object.secretManagerUrl) ? String(object.secretManagerUrl) : "",
     };
   },
 
@@ -1757,6 +1773,7 @@ export const WorkspaceProfileSetting = {
       (obj.tokenDuration = message.tokenDuration ? Duration.toJSON(message.tokenDuration) : undefined);
     message.announcement !== undefined &&
       (obj.announcement = message.announcement ? Announcement.toJSON(message.announcement) : undefined);
+    message.secretManagerUrl !== undefined && (obj.secretManagerUrl = message.secretManagerUrl);
     return obj;
   },
 
@@ -1777,6 +1794,7 @@ export const WorkspaceProfileSetting = {
     message.announcement = (object.announcement !== undefined && object.announcement !== null)
       ? Announcement.fromPartial(object.announcement)
       : undefined;
+    message.secretManagerUrl = object.secretManagerUrl ?? "";
     return message;
   },
 };

@@ -9160,7 +9160,8 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | outbound_ip_list | [string](#string) | repeated | outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. |
 | gitops_webhook_url | [string](#string) |  | The webhook URL for the GitOps workflow. |
 | token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
-| announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
+| announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement. |
+| secret_manager_url | [string](#string) |  | The secret_manager_url is the secret manager URL for accessing database connection secrets. |
 
 
 
