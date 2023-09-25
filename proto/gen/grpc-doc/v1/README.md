@@ -380,6 +380,7 @@
     - [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest)
     - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
     - [GetProjectGitOpsInfoRequest](#bytebase-v1-GetProjectGitOpsInfoRequest)
+    - [GetProjectProtectionRulesRequest](#bytebase-v1-GetProjectProtectionRulesRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
     - [GetSchemaGroupRequest](#bytebase-v1-GetSchemaGroupRequest)
     - [LabelSelector](#bytebase-v1-LabelSelector)
@@ -392,6 +393,7 @@
     - [ListSchemaGroupsResponse](#bytebase-v1-ListSchemaGroupsResponse)
     - [Project](#bytebase-v1-Project)
     - [ProtectionRule](#bytebase-v1-ProtectionRule)
+    - [ProtectionRules](#bytebase-v1-ProtectionRules)
     - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
     - [Schedule](#bytebase-v1-Schedule)
     - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
@@ -409,6 +411,7 @@
     - [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest)
     - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
     - [UpdateProjectGitOpsInfoRequest](#bytebase-v1-UpdateProjectGitOpsInfoRequest)
+    - [UpdateProjectProtectionRulesRequest](#bytebase-v1-UpdateProjectProtectionRulesRequest)
     - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
     - [UpdateSchemaGroupRequest](#bytebase-v1-UpdateSchemaGroupRequest)
     - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
@@ -6193,6 +6196,21 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+<a name="bytebase-v1-GetProjectProtectionRulesRequest"></a>
+
+### GetProjectProtectionRulesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the protection rules. Format: projects/{project}/protectionRules |
+
+
+
+
+
+
 <a name="bytebase-v1-GetProjectRequest"></a>
 
 ### GetProjectRequest
@@ -6381,7 +6399,6 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 | data_classification_config_id | [string](#string) |  |  |
-| protection_rules | [ProtectionRule](#bytebase-v1-ProtectionRule) | repeated |  |
 
 
 
@@ -6400,6 +6417,22 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | target | [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target) |  |  |
 | name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
 | create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. |
+
+
+
+
+
+
+<a name="bytebase-v1-ProtectionRules"></a>
+
+### ProtectionRules
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the protection rules. Format: projects/{project}/protectionRules |
+| rules | [ProtectionRule](#bytebase-v1-ProtectionRule) | repeated |  |
 
 
 
@@ -6676,6 +6709,21 @@ The database group&#39;s `name` field is used to identify the database group to 
 | project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  | The binding for the project and external version control. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
 | allow_missing | [bool](#bool) |  | If true, the gitops will be created if it does not exist. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateProjectProtectionRulesRequest"></a>
+
+### UpdateProjectProtectionRulesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| protection_rules | [ProtectionRules](#bytebase-v1-ProtectionRules) |  |  |
 
 
 
@@ -6969,6 +7017,8 @@ The type of target.
 | CreateSchemaGroup | [CreateSchemaGroupRequest](#bytebase-v1-CreateSchemaGroupRequest) | [SchemaGroup](#bytebase-v1-SchemaGroup) |  |
 | UpdateSchemaGroup | [UpdateSchemaGroupRequest](#bytebase-v1-UpdateSchemaGroupRequest) | [SchemaGroup](#bytebase-v1-SchemaGroup) |  |
 | DeleteSchemaGroup | [DeleteSchemaGroupRequest](#bytebase-v1-DeleteSchemaGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| GetProjectProtectionRules | [GetProjectProtectionRulesRequest](#bytebase-v1-GetProjectProtectionRulesRequest) | [ProtectionRules](#bytebase-v1-ProtectionRules) |  |
+| UpdateProjectProtectionRules | [UpdateProjectProtectionRulesRequest](#bytebase-v1-UpdateProjectProtectionRulesRequest) | [ProtectionRules](#bytebase-v1-ProtectionRules) |  |
 
  
 

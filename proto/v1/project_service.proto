@@ -198,6 +198,17 @@ service ProjectService {
     option (google.api.http) = {delete: "/v1/{name=projects/*/databaseGroups/*/schemaGroups/*}"};
     option (google.api.method_signature) = "name";
   }
+
+  rpc GetProjectProtectionRules(GetProjectProtectionRulesRequest) returns (ProtectionRules) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/protectionRules}"};
+  }
+
+  rpc UpdateProjectProtectionRules(UpdateProjectProtectionRulesRequest) returns (ProtectionRules) {
+    option (google.api.http) = {
+      post: "/v1/{protection_rules.name=projects/*/protectionRules}"
+      body: "*"
+    };
+  }
 }
 
 message GetProjectRequest {
@@ -401,8 +412,6 @@ message Project {
   repeated Webhook webhooks = 11;
 
   string data_classification_config_id = 12;
-
-  repeated ProtectionRule protection_rules = 13;
 }
 
 enum Workflow {
@@ -433,26 +442,6 @@ enum SchemaChange {
   SCHEMA_CHANGE_UNSPECIFIED = 0;
   DDL = 1;
   SDL = 2;
-}
-
-message ProtectionRule {
-  // A unique identifier for a node in UUID format.
-  string id = 1;
-
-  // The type of target.
-  enum Target {
-    PROTECTION_TARGET_UNSPECIFIED = 0;
-    BRANCH = 1;
-    CHANGELIST = 2;
-  }
-
-  Target target = 2;
-
-  // The name of the branch/changelist or wildcard.
-  string name_filter = 3;
-
-  // The roles allowed to create branches or changelists.
-  repeated string create_allowed_roles = 4;
 }
 
 message AddWebhookRequest {
@@ -856,4 +845,42 @@ message SchemaGroup {
 
   // The list of databases that match the database group condition.
   repeated Table unmatched_tables = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message GetProjectProtectionRulesRequest {
+  // The name of the protection rules.
+  // Format: projects/{project}/protectionRules
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateProjectProtectionRulesRequest {
+  ProtectionRules protection_rules = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ProtectionRules {
+  // The name of the protection rules.
+  // Format: projects/{project}/protectionRules
+  string name = 1;
+
+  repeated ProtectionRule rules = 2;
+}
+
+message ProtectionRule {
+  // A unique identifier for a node in UUID format.
+  string id = 1;
+
+  // The type of target.
+  enum Target {
+    PROTECTION_TARGET_UNSPECIFIED = 0;
+    BRANCH = 1;
+    CHANGELIST = 2;
+  }
+
+  Target target = 2;
+
+  // The name of the branch/changelist or wildcard.
+  string name_filter = 3;
+
+  // The roles allowed to create branches or changelists.
+  repeated string create_allowed_roles = 4;
 }
