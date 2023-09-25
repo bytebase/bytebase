@@ -166,6 +166,7 @@ import { TenantMode } from "@/types/proto/v1/project_service";
 import { allowGhostMigrationV1 } from "@/utils";
 import { validateDatabaseEdit } from "@/utils/schemaEditor/validate";
 import MonacoEditor from "../MonacoEditor";
+import { provideSQLCheckContext } from "../SQLCheck";
 import {
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
@@ -216,6 +217,7 @@ const dbSchemaV1Store = useDBSchemaV1Store();
 const notificationStore = useNotificationStore();
 const statementFromSchemaEditor = ref<string>();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
+const { runSQLCheck } = provideSQLCheckContext();
 
 const allowPreviewIssue = computed(() => {
   if (state.selectedTab === "schema-editor") {
@@ -425,6 +427,11 @@ const handleUploadFile = (e: Event) => {
 };
 
 const handlePreviewIssue = async () => {
+  const check = runSQLCheck.value;
+  if (check && !(await check())) {
+    return;
+  }
+
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     project: project.value.uid,
