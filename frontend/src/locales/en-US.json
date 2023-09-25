@@ -262,7 +262,8 @@
     "branches": "Branches",
     "merge": "Merge",
     "info": "Info",
-    "minutes": "Minutes"
+    "minutes": "Minutes",
+    "go-to-configure": "Configure"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -972,7 +973,11 @@
     "you-are-not-allowed-to-change-this-value": "You are not allowed to change this value",
     "sql-check": {
       "sql-checks": "SQL Checks",
-      "not-executed-yet": "Not executed yet"
+      "not-executed-yet": "Not executed yet",
+      "no-configured-sql-review-policy": {
+        "admin": "{environment} environment has not configured SQL Review Policy. {link}",
+        "developer": "{environment} environment has not configured SQL Review Policy. Please ask your DBA to configure."
+      }
     }
   },
   "alter-schema": {

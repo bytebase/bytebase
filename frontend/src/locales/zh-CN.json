@@ -260,7 +260,8 @@
     "branches": "分支",
     "merge": "合并",
     "info": "信息",
-    "minutes": "分钟"
+    "minutes": "分钟",
+    "go-to-configure": "去配置"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -969,7 +970,11 @@
     "you-are-not-allowed-to-change-this-value": "您无权更改这项值",
     "sql-check": {
       "sql-checks": "SQL 检查项",
-      "not-executed-yet": "尚未执行"
+      "not-executed-yet": "尚未执行",
+      "no-configured-sql-review-policy": {
+        "admin": "{environment} 环境没有配置 SQL 审核策略。{link}",
+        "developer": "{environment} 环境没有配置 SQL 审核策略，请让您的 DBA 配置。"
+      }
     }
   },
   "alter-schema": {
