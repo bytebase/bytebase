@@ -69,7 +69,6 @@
     <div v-show="state.tab === 'CLOSED'" class="mt-2">
       <!-- show all DONE and CANCELED issues with pageSize=10 -->
       <PagedIssueTableV1
-        v-if="showClosed"
         session-key="dashboard-closed"
         method="SEARCH"
         :issue-filter="{
@@ -105,7 +104,13 @@ import AdvancedSearch, {
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { SearchBox, TabFilterItem } from "@/components/v2";
-import { useProjectV1Store, useDatabaseV1Store, hasFeature } from "@/store";
+import {
+  useCurrentUserV1,
+  useProjectV1Store,
+  useUserStore,
+  useDatabaseV1Store,
+  hasFeature,
+} from "@/store";
 import {
   projectNamePrefix,
   userNamePrefix,
@@ -113,7 +118,11 @@ import {
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID, IssueFilter, ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { projectV1Slug, extractProjectResourceName } from "@/utils";
+import {
+  projectV1Slug,
+  extractProjectResourceName,
+  hasWorkspacePermissionV1,
+} from "@/utils";
 
 const TABS = ["OPEN", "CLOSED"] as const;
 
@@ -131,10 +140,15 @@ const route = useRoute();
 const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
+const userStore = useUserStore();
+const currentUserV1 = useCurrentUserV1();
 
-const statusList = computed((): string[] =>
-  route.query.status ? (route.query.status as string).split(",") : []
-);
+const hasPermission = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-issue",
+    currentUserV1.value.userRole
+  );
+});
 
 const autofocus = computed((): boolean => {
   return !!route.query.autofocus;
@@ -142,23 +156,28 @@ const autofocus = computed((): boolean => {
 
 const initSearchParams = computed((): SearchParams => {
   const projectName = project.value?.name ?? "";
+  const userEmail = selectedPrincipal.value?.email ?? "";
   const query = (route.query.query as string) ?? "";
 
-  if (!projectName) {
-    return {
-      query,
-      scopes: [],
-    };
-  }
-  return {
+  const params: SearchParams = {
     query,
-    scopes: [
-      {
-        id: "project",
-        value: extractProjectResourceName(projectName),
-      },
-    ],
+    scopes: [],
   };
+
+  if (projectName) {
+    params.scopes.push({
+      id: "project",
+      value: extractProjectResourceName(projectName),
+    });
+  }
+  if (userEmail && hasPermission.value) {
+    params.scopes.push({
+      id: "principal",
+      value: userEmail,
+    });
+  }
+
+  return params;
 });
 
 const state = reactive<LocalState>({
@@ -180,13 +199,6 @@ const project = computed(() => {
   return undefined;
 });
 
-const showOpen = computed(
-  () => statusList.value.length === 0 || statusList.value.includes("open")
-);
-const showClosed = computed(
-  () => statusList.value.length === 0 || statusList.value.includes("closed")
-);
-
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   const OPEN: TabFilterItem<TabValue> = {
     value: "OPEN",
@@ -196,14 +208,7 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
     value: "CLOSED",
     label: t("issue.table.closed"),
   };
-  const list: TabFilterItem<TabValue>[] = [];
-  if (showOpen.value) {
-    list.push(OPEN);
-  }
-  if (showClosed.value) {
-    list.push(CLOSED);
-  }
-  return list;
+  return [OPEN, CLOSED];
 });
 
 // timeRangeLimitForFreePlanInTs is the search time limit in ts format.
@@ -242,6 +247,14 @@ const isDateDisabled = (ts: number) => {
 const selectedProjectId = computed((): string | undefined => {
   const { project } = route.query;
   return project ? (project as string) : undefined;
+});
+
+const selectedPrincipal = computed(() => {
+  const { user } = route.query;
+  if (!user) {
+    return;
+  }
+  return userStore.getUserById(user as string);
 });
 
 const filter = (issue: ComposedIssue) => {
@@ -293,6 +306,10 @@ watchEffect(() => {
 });
 
 onMounted(() => {
+  const status = ((route.query.status ?? "") as string).toUpperCase() ?? "OPEN";
+  if (status === "CLOSED") {
+    state.tab = "CLOSED";
+  }
   state.searchParams = initSearchParams.value;
 });
 
@@ -326,12 +343,10 @@ const issueFilter = computed((): IssueFilter => {
       database = db.name;
     }
   }
-  return {
+
+  const filter: IssueFilter = {
     query,
     instance: getValueFromIssueFilter(instanceNamePrefix, "instance"),
-    creator: getValueFromIssueFilter(userNamePrefix, "creator"),
-    assignee: getValueFromIssueFilter(userNamePrefix, "assignee"),
-    subscriber: getValueFromIssueFilter(userNamePrefix, "subscriber"),
     database,
     project: `${projectNamePrefix}${projectScope?.value ?? "-"}`,
     createdTsAfter: selectedTimeRange.value
@@ -342,5 +357,15 @@ const issueFilter = computed((): IssueFilter => {
       : undefined,
     type: typeScope?.value,
   };
+
+  if (!hasPermission.value) {
+    filter.principal = `${userNamePrefix}${currentUserV1.value.email}`;
+  } else {
+    filter.principal = getValueFromIssueFilter(userNamePrefix, "principal");
+    filter.creator = getValueFromIssueFilter(userNamePrefix, "creator");
+    filter.assignee = getValueFromIssueFilter(userNamePrefix, "assignee");
+    filter.subscriber = getValueFromIssueFilter(userNamePrefix, "subscriber");
+  }
+  return filter;
 });
 </script>

@@ -4,7 +4,7 @@
     :session-key="sessionKey"
     :page-size="20"
     :issue-filter="{
-      project: 'projects/-',
+      project,
       query: '',
       statusList: [IssueStatus.OPEN],
     }"
@@ -21,7 +21,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useAuthStore } from "@/store";
+import { useAuthStore, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { extractReviewContext, useWrappedReviewStepsV1 } from "../logic";
@@ -29,6 +29,7 @@ import PagedIssueTableV1 from "./PagedIssueTableV1.vue";
 
 defineProps<{
   sessionKey: string;
+  project: string;
 }>();
 
 const currentUserName = computed(() => useAuthStore().currentUser.name);
