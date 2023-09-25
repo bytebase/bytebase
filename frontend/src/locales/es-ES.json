@@ -262,7 +262,8 @@
     "branches": "Ramas",
     "merge": "Combinar",
     "info": "Información",
-    "minutes": "Minutos"
+    "minutes": "Minutos",
+    "go-to-configure": "Configurar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -971,7 +972,11 @@
     "you-are-not-allowed-to-change-this-value": "No tienes permitido cambiar este valor.",
     "sql-check": {
       "sql-checks": "Comprobaciones SQL",
-      "not-executed-yet": "Aún no ejecutado"
+      "not-executed-yet": "Aún no ejecutado",
+      "no-configured-sql-review-policy": {
+        "admin": "El entorno {environment} no ha configurado la política de revisión de SQL. {link}",
+        "developer": "El entorno {environment} no ha configurado la política de revisión de SQL. \nSolicite a su DBA que configure."
+      }
     }
   },
   "alter-schema": {
