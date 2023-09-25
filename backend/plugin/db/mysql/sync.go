@@ -520,6 +520,16 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (m
 		return nil, util.FormatErrorWithQuery(err, timeZoneQuery)
 	}
 
+	location, err := time.LoadLocation(timeZone)
+	if err != nil {
+		slog.Debug("failed to load time zone", slog.String("timeZone", timeZone), log.BBError(err))
+		location, err = time.LoadLocation("Local")
+		if err != nil {
+			// This should never happen
+			slog.Debug("failed to load time zone", slog.String("timeZone", "Local"), log.BBError(err))
+		}
+	}
+
 	logs := make([]*slowLog, 0, db.SlowQueryMaxSamplePerDay)
 	query := `
 		SELECT
@@ -559,10 +569,6 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (m
 			return nil, err
 		}
 
-		location, err := time.LoadLocation(timeZone)
-		if err != nil {
-			return nil, err
-		}
 		startTimeTs, err := time.ParseInLocation("2006-01-02 15:04:05.999999", startTime, location)
 		if err != nil {
 			return nil, err
