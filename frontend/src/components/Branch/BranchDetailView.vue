@@ -136,7 +136,6 @@ import {
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { UNKNOWN_ID } from "@/types";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
   SchemaDesign,
   SchemaDesign_Type,
@@ -313,15 +312,12 @@ const handleCancelEdit = async () => {
     return;
   }
 
-  const editableSchemas = branchSchema.schemaList;
-  const metadata = mergeSchemaEditToMetadata(
-    editableSchemas,
-    cloneDeep(
-      schemaDesign.value.schemaMetadata || DatabaseMetadata.fromPartial({})
-    )
+  const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
+  const mergedMetadata = mergeSchemaEditToMetadata(
+    branchSchema.schemaList,
+    cloneDeep(baselineMetadata)
   );
-
-  if (!isEqual(metadata, schemaDesign.value.schemaMetadata)) {
+  if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
     // If the metadata is changed, we need to rebuild the editing state.
     schemaEditorKey.value = uniqueId();
   }
