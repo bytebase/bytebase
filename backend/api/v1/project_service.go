@@ -2081,6 +2081,16 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 	return s.convertStoreToAPISchemaGroupFull(ctx, schemaGroup, databaseGroup, projectResourceID)
 }
 
+// GetProjectProtectionRules gets a project protection rules.
+func (*ProjectService) GetProjectProtectionRules(_ context.Context, _ *v1pb.GetProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
+	return nil, nil
+}
+
+// UpdateProjectProtectionRules updates a project protection rules.
+func (*ProjectService) UpdateProjectProtectionRules(_ context.Context, _ *v1pb.UpdateProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
+	return nil, nil
+}
+
 func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.DatabaseGroup, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &projectResourceID,

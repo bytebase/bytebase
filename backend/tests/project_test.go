@@ -3,12 +3,10 @@ package tests
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -16,7 +14,6 @@ import (
 
 func TestArchiveProject(t *testing.T) {
 	a := require.New(t)
-	log.GLogLevel.Set(slog.LevelDebug)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()

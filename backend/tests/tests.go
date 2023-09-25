@@ -7,7 +7,6 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,7 +30,6 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	componentConfig "github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/server"
@@ -238,7 +236,6 @@ func getTestDatabaseString() string {
 
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) (context.Context, error) {
-	log.GLogLevel.Set(slog.LevelDebug)
 	if err := ctl.startMockServers(config.vcsProviderCreator); err != nil {
 		return nil, err
 	}
@@ -308,7 +305,6 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 
 // StartServer starts the main server with embed Postgres.
 func (ctl *controller) StartServer(ctx context.Context, config *config) (context.Context, error) {
-	log.GLogLevel.Set(slog.LevelDebug)
 	if err := ctl.startMockServers(config.vcsProviderCreator); err != nil {
 		return nil, err
 	}
