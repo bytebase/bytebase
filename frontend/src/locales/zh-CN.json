@@ -847,6 +847,10 @@
         "subscriber": {
           "title": "订阅人",
           "description": "根据工单订阅人搜索"
+        },
+        "principal": {
+          "title": "相关用户",
+          "description": "工单的创建人、发布人，或者订阅人"
         }
       }
     },
