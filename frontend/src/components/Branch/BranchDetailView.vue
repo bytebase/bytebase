@@ -82,7 +82,7 @@
         </template>
         <template v-else>
           <NButton @click="handleCancelEdit">{{ $t("common.cancel") }}</NButton>
-          <NButton type="primary" @click="handleSaveSchemaDesignDraft">{{
+          <NButton type="primary" @click="handleSaveBranch">{{
             $t("common.save")
           }}</NButton>
         </template>
@@ -119,7 +119,6 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
 import { cloneDeep, isEqual, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput, NTooltip, useDialog, NTag } from "naive-ui";
 import { Status } from "nice-grpc-common";
@@ -132,7 +131,6 @@ import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
   useChangeHistoryStore,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
@@ -171,7 +169,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const schemaDesignStore = useSchemaDesignStore();
@@ -183,7 +180,6 @@ const state = reactive<LocalState>({
   isEditingTitle: false,
   showDiffEditor: false,
 });
-const createdBranchName = ref<string>("");
 const schemaEditorKey = ref<string>(uniqueId());
 
 const schemaDesign = computed(() => {
@@ -192,10 +188,7 @@ const schemaDesign = computed(() => {
 
 const parentBranch = computed(() => {
   // Show parent branch when the current branch is a personal draft and it's not the new created one.
-  if (
-    schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-    state.schemaDesignName !== createdBranchName.value
-  ) {
+  if (schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT) {
     return schemaDesignStore.getSchemaDesignByName(
       schemaDesign.value.baselineSheetName || ""
     );
@@ -212,10 +205,6 @@ const changeHistory = computed(() => {
     return changeHistoryStore.getChangeHistoryByName(changeHistoryName);
   }
   return undefined;
-});
-
-const isSchemaDesignDraft = computed(() => {
-  return schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT;
 });
 
 const baselineDatabase = computed(() => {
@@ -243,10 +232,7 @@ const titleInputStyle = computed(() => {
 
 onMounted(async () => {
   // Prepare the parent branch for personal draft.
-  if (
-    schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-    state.schemaDesignName !== createdBranchName.value
-  ) {
+  if (schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT) {
     await schemaDesignStore.getOrFetchSchemaDesignByName(
       schemaDesign.value.baselineSheetName || ""
     );
@@ -267,10 +253,7 @@ const prepareBaselineDatabase = async () => {
 watch(
   () => [state.schemaDesignName],
   async () => {
-    // Only change branch title when it's not a new created one.
-    if (state.schemaDesignName !== createdBranchName.value) {
-      state.schemaDesignTitle = schemaDesign.value.title;
-    }
+    state.schemaDesignTitle = schemaDesign.value.title;
     await prepareBaselineDatabase();
   },
   {
@@ -318,64 +301,7 @@ const handleBranchTitleInputBlur = async () => {
 };
 
 const handleEdit = async () => {
-  // Allow editing directly if it's a personal draft.
-  if (schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT) {
-    state.isEditing = true;
-  } else if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
-    const branchName = generateForkedBranchName(schemaDesign.value);
-    const foundBranch = schemaDesignStore.schemaDesignList.find(
-      (schemaDesign) => {
-        return (
-          schemaDesign.creator === `users/${currentUser.value.email}` &&
-          schemaDesign.title === branchName
-        );
-      }
-    );
-    if (foundBranch) {
-      // Show a confirm dialog to let user decide whether to use the existing branch or create a new one.
-      dialog.create({
-        negativeText: t("schema-designer.action.use-the-existing-branch"),
-        positiveText: t("schema-designer.action.create-new-branch"),
-        title: t("schema-designer.diff-editor.action-confirm"),
-        content: t("schema-designer.diff-editor.duplicated-branch-name-found"),
-        autoFocus: true,
-        closable: true,
-        maskClosable: true,
-        closeOnEsc: true,
-        onNegativeClick: () => {
-          // Use the existing branch.
-          state.schemaDesignName = foundBranch.name;
-          handleEdit();
-        },
-        onPositiveClick: async () => {
-          // Create a new personal branch.
-          const newBranch = await schemaDesignStore.createSchemaDesignDraft({
-            ...schemaDesign.value,
-            title: branchName + `-${dayjs().format("YYYYMMDD")}`,
-          });
-          // Select the newly created draft.
-          state.schemaDesignName = newBranch.name;
-          createdBranchName.value = newBranch.name;
-          // Trigger the edit mode.
-          handleEdit();
-        },
-      });
-    } else {
-      const newBranch = await schemaDesignStore.createSchemaDesignDraft({
-        ...schemaDesign.value,
-        title: branchName,
-      });
-      // Select the newly created draft.
-      state.schemaDesignName = newBranch.name;
-      createdBranchName.value = newBranch.name;
-      // Trigger the edit mode.
-      handleEdit();
-    }
-  } else {
-    throw new Error(
-      `Unsupported schema design type: ${schemaDesign.value.type}`
-    );
-  }
+  state.isEditing = true;
 };
 
 const handleCancelEdit = async () => {
@@ -395,40 +321,6 @@ const handleCancelEdit = async () => {
     )
   );
 
-  // Only try to delete the branch if it's a new created personal draft.
-  if (
-    isSchemaDesignDraft.value &&
-    state.schemaDesignName === createdBranchName.value
-  ) {
-    const parentBranchName = schemaDesign.value.baselineSheetName;
-    // If the metadata is changed, we need to confirm with user.
-    if (!isEqual(metadata, schemaDesign.value.schemaMetadata)) {
-      dialog.create({
-        type: "warning",
-        negativeText: t("common.cancel"),
-        positiveText: t("schema-designer.diff-editor.discard-changes"),
-        title: t("schema-designer.diff-editor.action-confirm"),
-        content: t("schema-designer.diff-editor.discard-changes-confirm"),
-        autoFocus: true,
-        closable: true,
-        maskClosable: true,
-        closeOnEsc: true,
-        onNegativeClick: () => {
-          // nothing to do
-        },
-        onPositiveClick: async () => {
-          await schemaDesignStore.deleteSchemaDesign(createdBranchName.value);
-          state.schemaDesignName = parentBranchName;
-          state.isEditing = false;
-        },
-      });
-      return;
-    } else {
-      await schemaDesignStore.deleteSchemaDesign(createdBranchName.value);
-      state.schemaDesignName = parentBranchName;
-    }
-  }
-
   if (!isEqual(metadata, schemaDesign.value.schemaMetadata)) {
     // If the metadata is changed, we need to rebuild the editing state.
     schemaEditorKey.value = uniqueId();
@@ -436,28 +328,12 @@ const handleCancelEdit = async () => {
   state.isEditing = false;
 };
 
-const handleSaveSchemaDesignDraft = async () => {
+const handleSaveBranch = async () => {
   if (!state.isEditing) {
     return;
   }
 
-  if (state.schemaDesignTitle === "") {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: "Schema design name cannot be empty.",
-    });
-    return;
-  }
-
   const updateMask = [];
-  // Don't update branch title for new created branch.
-  if (state.schemaDesignName !== createdBranchName.value) {
-    if (schemaDesign.value.title !== state.schemaDesignTitle) {
-      updateMask.push("title");
-    }
-  }
-
   const schemaEditorV1Store = useSchemaEditorV1Store();
   const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
     schemaDesign.value.name
@@ -465,6 +341,7 @@ const handleSaveSchemaDesignDraft = async () => {
   if (!branchSchema) {
     return;
   }
+
   const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
   const mergedMetadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
@@ -484,96 +361,71 @@ const handleSaveSchemaDesignDraft = async () => {
     updateMask.push("metadata");
   }
   if (updateMask.length !== 0) {
-    await schemaDesignStore.updateSchemaDesign(
-      SchemaDesign.fromPartial({
-        name: schemaDesign.value.name,
-        title: state.schemaDesignTitle,
-        engine: schemaDesign.value.engine,
-        baselineSchema: schemaDesign.value.baselineSchema,
+    if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
+      const branchName = generateForkedBranchName(schemaDesign.value);
+      const newBranch = await schemaDesignStore.createSchemaDesignDraft({
+        ...schemaDesign.value,
         schemaMetadata: mergedMetadata,
-      }),
-      updateMask
-    );
-    // Only show the notification when the branch is not a new created one.
-    if (schemaDesign.value.name !== createdBranchName.value) {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("schema-designer.message.updated-succeed"),
+        title: branchName,
       });
-    }
-  }
-  state.isEditing = false;
+      try {
+        await schemaDesignStore.mergeSchemaDesign({
+          name: newBranch.name,
+          targetName: schemaDesign.value.name,
+        });
+      } catch (error: any) {
+        // If there is conflict, we need to show the conflict and let user resolve it.
+        if (error.code === Status.FAILED_PRECONDITION) {
+          dialog.create({
+            negativeText: t("schema-designer.save-draft"),
+            positiveText: t("schema-designer.diff-editor.resolve"),
+            title: t("schema-designer.diff-editor.auto-merge-failed"),
+            content: t("schema-designer.diff-editor.need-to-resolve-conflicts"),
+            autoFocus: true,
+            closable: true,
+            maskClosable: true,
+            closeOnEsc: true,
+            onNegativeClick: () => {},
+            onPositiveClick: () => {
+              state.showDiffEditor = true;
+            },
+          });
+        } else {
+          pushNotification({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: `Request error occurred`,
+            description: error.details,
+          });
+        }
+        return;
+      }
 
-  // If it's a personal draft, we will try to merge it to the parent branch.
-  if (schemaDesign.value.name === createdBranchName.value) {
-    await handleMergeSchemaDesign(true);
-  }
-};
-
-const handleMergeSchemaDesign = async (ignoreNotify = false) => {
-  // If it's in edit mode, we need to save the draft first.
-  if (state.isEditing) {
-    await handleSaveSchemaDesignDraft();
-  }
-
-  const parentBranchName = schemaDesign.value.baselineSheetName;
-  const branchName = schemaDesign.value.name;
-  try {
-    await schemaDesignStore.mergeSchemaDesign({
-      name: branchName,
-      targetName: parentBranchName,
-    });
-  } catch (error: any) {
-    // If there is conflict, we need to show the conflict and let user resolve it.
-    if (error.code === Status.FAILED_PRECONDITION) {
-      dialog.create({
-        negativeText: t("schema-designer.save-draft"),
-        positiveText: t("schema-designer.diff-editor.resolve"),
-        title: t("schema-designer.diff-editor.auto-merge-failed"),
-        content: t("schema-designer.diff-editor.need-to-resolve-conflicts"),
-        autoFocus: true,
-        closable: true,
-        maskClosable: true,
-        closeOnEsc: true,
-        onNegativeClick: () => {
-          // Clear the created branch state if save draft clicked.
-          if (branchName === createdBranchName.value) {
-            createdBranchName.value = "";
-            state.schemaDesignTitle = schemaDesign.value.title;
-          }
-        },
-        onPositiveClick: () => {
-          state.showDiffEditor = true;
-        },
-      });
+      // Delete the draft after merged.
+      await schemaDesignStore.deleteSchemaDesign(newBranch.name);
     } else {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: `Request error occurred`,
-        description: error.details,
-      });
+      await schemaDesignStore.updateSchemaDesign(
+        SchemaDesign.fromPartial({
+          name: schemaDesign.value.name,
+          title: state.schemaDesignTitle,
+          engine: schemaDesign.value.engine,
+          baselineSchema: schemaDesign.value.baselineSchema,
+          schemaMetadata: mergedMetadata,
+        }),
+        updateMask
+      );
     }
-    return;
-  }
 
-  if (!ignoreNotify) {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: t("schema-designer.message.merge-to-main-successfully"),
+      title: t("schema-designer.message.updated-succeed"),
     });
   }
-  // Auto select the parent branch after merged.
-  state.schemaDesignName = parentBranchName;
-  createdBranchName.value = "";
-  // Delete the draft after merged.
-  await schemaDesignStore.deleteSchemaDesign(branchName);
+  state.isEditing = false;
 };
 
 const handleMergeAfterConflictResolved = (branchName: string) => {
-  createdBranchName.value = "";
   state.schemaDesignName = branchName;
   state.showDiffEditor = false;
 };
