@@ -974,7 +974,11 @@
       "no-configured-sql-review-policy": {
         "admin": "{environment} 环境没有配置 SQL 审核策略。{link}",
         "developer": "{environment} 环境没有配置 SQL 审核策略，请让您的 DBA 配置。"
-      }
+      },
+      "statement-is-too-large": "语句过大",
+      "back-to-edit": "返回编辑",
+      "continue-anyway": "仍然继续",
+      "sql-review-violations": "违反的 SQL 审核规则"
     }
   },
   "alter-schema": {

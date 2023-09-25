@@ -976,7 +976,11 @@
       "no-configured-sql-review-policy": {
         "admin": "El entorno {environment} no ha configurado la política de revisión de SQL. {link}",
         "developer": "El entorno {environment} no ha configurado la política de revisión de SQL. \nSolicite a su DBA que configure."
-      }
+      },
+      "statement-is-too-large": "La declaración es demasiado grande.",
+      "back-to-edit": "Volver a editar",
+      "continue-anyway": "De todas maneras, continúe",
+      "sql-review-violations": "Infracciones de revisión de SQL"
     }
   },
   "alter-schema": {
