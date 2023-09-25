@@ -43,22 +43,36 @@
             </template>
           </i18n-t>
         </template>
-        <ErrorList v-else :errors="errors ?? []" />
+        <ErrorList v-else :errors="combinedErrors" />
       </template>
     </NPopover>
+
+    <SQLCheckPanel
+      v-if="database && advices && confirmDialog"
+      :database="database"
+      :advices="advices"
+      :confirm="confirmDialog"
+      :override-title="$t('issue.sql-check.sql-review-violations')"
+      @close="confirmDialog = undefined"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { debounce } from "lodash-es";
 import { ButtonProps, NButton, NPopover } from "naive-ui";
-import { CSSProperties, computed, ref } from "vue";
+import { CSSProperties, computed, onUnmounted, ref, watch } from "vue";
+import { onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
 import { usePolicyByParentAndType } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { Advice } from "@/types/proto/v1/sql_service";
-import { useWorkspacePermissionV1 } from "@/utils";
+import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
+import { Defer, defer, useWorkspacePermissionV1 } from "@/utils";
 import ErrorList from "../misc/ErrorList.vue";
+import SQLCheckPanel from "./SQLCheckPanel.vue";
+import { useSQLCheckContext } from "./context";
 
 const props = defineProps<{
   statement: string;
@@ -68,8 +82,13 @@ const props = defineProps<{
   errors?: string[];
 }>();
 
+const { t } = useI18n();
+const SKIP_CHECK_THRESHOLD = 500000;
 const isRunning = ref(false);
 const advices = ref<Advice[]>();
+const checkRunCounter = ref(0);
+const context = useSQLCheckContext();
+const confirmDialog = ref<Defer<boolean>>();
 
 const reviewPolicy = usePolicyByParentAndType(
   computed(() => ({
@@ -93,29 +112,96 @@ const noReviewPolicyTips = computed(() => {
   return "";
 });
 
+const isStatementTooLarge = computed(() => {
+  return props.statement.length > SKIP_CHECK_THRESHOLD;
+});
+
 const buttonDisabled = computed(() => {
   if (noReviewPolicyTips.value) return true;
   if (!props.statement) return true;
+  if (isStatementTooLarge.value) return true;
   return props.errors && props.errors.length > 0;
 });
 const tooltipDisabled = computed(() => {
   return !buttonDisabled.value;
 });
 
-const runChecks = async () => {
+const combinedErrors = computed(() => {
+  if (isStatementTooLarge.value) {
+    return [t("issue.sql-check.statement-is-too-large")];
+  }
+  return props.errors ?? [];
+});
+
+const runCheckInternal = async () => {
   const { statement, database } = props;
+  const result = await sqlServiceClient.check({
+    statement,
+    database: database.name,
+  });
+  checkRunCounter.value++;
+  return result;
+};
+
+const runChecks = async () => {
+  if (buttonDisabled.value) {
+    return;
+  }
+
   isRunning.value = true;
   if (!advices.value) {
     advices.value = [];
   }
   try {
-    const result = await sqlServiceClient.check({
-      statement,
-      database: database.name,
-    });
+    const result = await runCheckInternal();
     advices.value = result.advices;
   } finally {
     isRunning.value = false;
   }
 };
+
+watch(
+  [() => props.statement, () => props.database.name, () => props.errors],
+
+  debounce(runChecks, 1000),
+  {
+    immediate: true,
+  }
+);
+
+onMounted(() => {
+  if (!context) return;
+  context.runSQLCheck.value = async () => {
+    if (buttonDisabled.value) {
+      // If SQL Check is disabled, we will do nothing to stop the user.
+      return true;
+    }
+
+    if (checkRunCounter.value === 0) {
+      await runChecks();
+    }
+
+    const hasError = advices.value?.some(
+      (advice) =>
+        advice.status === Advice_Status.ERROR ||
+        advice.status === Advice_Status.WARNING
+    );
+    if (hasError) {
+      const d = defer<boolean>();
+      confirmDialog.value = d;
+      d.promise.finally(() => {
+        confirmDialog.value = undefined;
+      });
+
+      return d.promise;
+    }
+
+    return true;
+  };
+});
+
+onUnmounted(() => {
+  if (!context) return;
+  context.runSQLCheck.value = undefined;
+});
 </script>

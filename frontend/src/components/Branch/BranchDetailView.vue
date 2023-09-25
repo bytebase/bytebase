@@ -141,6 +141,7 @@ import {
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
 import { projectV1Slug } from "@/utils";
+import { provideSQLCheckContext } from "../SQLCheck";
 import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
 import SchemaDesignSQLCheckButton from "./SchemaDesignSQLCheckButton.vue";
@@ -171,6 +172,7 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const schemaDesignStore = useSchemaDesignStore();
+const { runSQLCheck } = provideSQLCheckContext();
 const dialog = useDialog();
 const state = reactive<LocalState>({
   schemaDesignTitle: "",
@@ -326,6 +328,10 @@ const handleCancelEdit = async () => {
 
 const handleSaveBranch = async () => {
   if (!state.isEditing) {
+    return;
+  }
+  const check = runSQLCheck.value;
+  if (check && !(await check())) {
     return;
   }
 

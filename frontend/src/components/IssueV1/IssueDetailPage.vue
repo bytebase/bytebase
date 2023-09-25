@@ -54,6 +54,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { Task } from "@/types/proto/v1/rollout_service";
+import { provideSQLCheckContext } from "../SQLCheck";
 import {
   BannerSection,
   HeaderSection,
@@ -109,4 +110,6 @@ events.on("perform-task-rollout-action", async ({ action, tasks }) => {
     taskList: tasks,
   };
 });
+
+provideSQLCheckContext();
 </script>
