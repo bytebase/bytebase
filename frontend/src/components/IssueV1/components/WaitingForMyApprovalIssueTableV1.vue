@@ -4,7 +4,7 @@
     :session-key="sessionKey"
     :page-size="20"
     :issue-filter="{
-      project: 'projects/-',
+      project,
       query: '',
       statusList: [IssueStatus.OPEN],
     }"
@@ -29,6 +29,7 @@ import PagedIssueTableV1 from "./PagedIssueTableV1.vue";
 
 defineProps<{
   sessionKey: string;
+  project: string;
 }>();
 
 const currentUserName = computed(() => useAuthStore().currentUser.name);

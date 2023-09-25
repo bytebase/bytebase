@@ -850,6 +850,10 @@
         "subscriber": {
           "title": "Subscriber",
           "description": "Search by the issue subscriber"
+        },
+        "principal": {
+          "title": "Related Principal",
+          "description": "Search by the issue creator, assignee or subscriber"
         }
       }
     },
@@ -1611,7 +1615,7 @@
       "view-all": "View all",
       "view-all-closed": "View all closed",
       "recent-activity": "Recent @.lower:{'common.activities'}",
-      "in-progress": "In progress",
+      "in-progress": "In Progress",
       "recently-closed": "Recently Closed",
       "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project.",
       "no-db-prompt": "No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar."

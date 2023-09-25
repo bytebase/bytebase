@@ -849,6 +849,10 @@
         "subscriber": {
           "title": "Abonado",
           "description": "Buscar por suscriptor del problema"
+        },
+        "principal": {
+          "title": "Director relacionado",
+          "description": "Búsqueda por creador del problema, cesionario o suscriptor"
         }
       }
     },
@@ -1610,7 +1614,7 @@
       "view-all": "Ver todo",
       "view-all-closed": "Ver todos los cerrados",
       "recent-activity": "Actividades recientes @.lower:{'common.activities'}",
-      "in-progress": "En progreso",
+      "in-progress": "En curso",
       "recently-closed": "Recientemente cerrado",
       "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado.",
       "no-db-prompt": "No hay bases de datos que pertenezcan a este proyecto. Puedes agregar bases de datos haciendo clic en {newDb} o {transferInDb} desde la barra de acciones superior."

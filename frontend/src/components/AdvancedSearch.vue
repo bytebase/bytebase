@@ -73,6 +73,7 @@ import {
   DatabaseV1Name,
 } from "@/components/v2";
 import {
+  useCurrentUserV1,
   useProjectV1ListByCurrentUser,
   useInstanceV1List,
   useSearchDatabaseV1List,
@@ -89,6 +90,7 @@ import {
   environmentV1Name,
   extractProjectResourceName,
   extractInstanceResourceName,
+  hasWorkspacePermissionV1,
 } from "@/utils";
 
 export type SearchScopeId =
@@ -98,7 +100,8 @@ export type SearchScopeId =
   | "type"
   | "creator"
   | "assignee"
-  | "subscriber";
+  | "subscriber"
+  | "principal";
 
 export interface SearchParams {
   query: string;
@@ -158,11 +161,12 @@ const buildSearchTextByParams = (params: SearchParams | undefined): string => {
 
 const state = reactive<LocalState>({
   searchText: buildSearchTextByParams(props.params),
-  showSearchScopes: false,
+  showSearchScopes: props.autofocus,
 });
 const inputRef = ref<InstanceType<typeof NInput>>();
 const userStore = useUserStore();
 const databaseV1Store = useDatabaseV1Store();
+const currentUserV1 = useCurrentUserV1();
 
 watch(
   () => state.showSearchScopes,
@@ -189,10 +193,17 @@ const principalSearchOptions = computed(() => {
   });
 });
 
+const hasPermission = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-issue",
+    currentUserV1.value.userRole
+  );
+});
+
 // fullScopes provides full search scopes and options.
 // we need this as the source of truth.
 const fullScopes = computed((): SearchScope[] => {
-  return [
+  const scopes: SearchScope[] = [
     {
       id: "project",
       title: t("issue.advanced-search.scope.project.title"),
@@ -260,25 +271,36 @@ const fullScopes = computed((): SearchScope[] => {
         },
       ],
     },
-    {
-      id: "creator",
-      title: t("issue.advanced-search.scope.creator.title"),
-      description: t("issue.advanced-search.scope.creator.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "assignee",
-      title: t("issue.advanced-search.scope.assignee.title"),
-      description: t("issue.advanced-search.scope.assignee.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "subscriber",
-      title: t("issue.advanced-search.scope.subscriber.title"),
-      description: t("issue.advanced-search.scope.subscriber.description"),
-      options: principalSearchOptions.value,
-    },
   ];
+  if (hasPermission.value) {
+    scopes.push(
+      {
+        id: "creator",
+        title: t("issue.advanced-search.scope.creator.title"),
+        description: t("issue.advanced-search.scope.creator.description"),
+        options: principalSearchOptions.value,
+      },
+      {
+        id: "assignee",
+        title: t("issue.advanced-search.scope.assignee.title"),
+        description: t("issue.advanced-search.scope.assignee.description"),
+        options: principalSearchOptions.value,
+      },
+      {
+        id: "subscriber",
+        title: t("issue.advanced-search.scope.subscriber.title"),
+        description: t("issue.advanced-search.scope.subscriber.description"),
+        options: principalSearchOptions.value,
+      },
+      {
+        id: "principal",
+        title: t("issue.advanced-search.scope.principal.title"),
+        description: t("issue.advanced-search.scope.principal.description"),
+        options: principalSearchOptions.value,
+      }
+    );
+  }
+  return scopes;
 });
 
 // filteredScopes will filter search options by chosed scope.
@@ -330,6 +352,21 @@ const searchScopes = computed((): SearchScope[] => {
   return filteredScopes.value.filter((scope) => {
     if (existedScope.has(scope.id)) {
       return false;
+    }
+    // The principal scope cannot used with creator/assignee/subscriber
+    if (scope.id === "principal") {
+      return (
+        !existedScope.has("creator") &&
+        !existedScope.has("assignee") &&
+        !existedScope.has("subscriber")
+      );
+    }
+    if (
+      scope.id === "creator" ||
+      scope.id === "assignee" ||
+      scope.id === "subscriber"
+    ) {
+      return !existedScope.has("principal");
     }
     return true;
   });
