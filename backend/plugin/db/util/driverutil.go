@@ -447,69 +447,6 @@ func getMySQLStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
 }
 
-// FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []any, sqldb *sql.DB) ([]*db.MigrationHistory, error) {
-	// To support `pg` option, the util layer will not know which database where `migration_history` table is,
-	// so we need to connect to the database provided by params.
-	tx, err := sqldb.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, findMigrationHistoryListQuery, queryParams...)
-	if err != nil {
-		return nil, FormatErrorWithQuery(err, findMigrationHistoryListQuery)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into migrationHistoryList.
-	var migrationHistoryList []*db.MigrationHistory
-	for rows.Next() {
-		var history db.MigrationHistory
-		var storedVersion string
-		if err := rows.Scan(
-			&history.ID,
-			&history.Creator,
-			&history.CreatedTs,
-			&history.Updater,
-			&history.UpdatedTs,
-			&history.ReleaseVersion,
-			&history.Namespace,
-			&history.Sequence,
-			&history.Source,
-			&history.Type,
-			&history.Status,
-			&storedVersion,
-			&history.Description,
-			&history.Statement,
-			&history.Schema,
-			&history.SchemaPrev,
-			&history.ExecutionDurationNs,
-			&history.IssueID,
-			&history.Payload,
-		); err != nil {
-			return nil, err
-		}
-
-		useSemanticVersion, version, semanticVersionSuffix, err := FromStoredVersion(storedVersion)
-		if err != nil {
-			return nil, err
-		}
-		history.UseSemanticVersion, history.Version, history.SemanticVersionSuffix = useSemanticVersion, version, semanticVersionSuffix
-		migrationHistoryList = append(migrationHistoryList, &history)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return migrationHistoryList, nil
-}
-
 // NonSemanticPrefix is the prefix for non-semantic version.
 const NonSemanticPrefix = "0000.0000.0000-"
 

@@ -2,7 +2,7 @@
   <!-- column table -->
   <div
     id="table-editor-container"
-    class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto"
+    class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto border"
   >
     <!-- column table header -->
     <div

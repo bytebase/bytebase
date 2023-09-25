@@ -285,7 +285,7 @@ func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.
 		return "", errors.WithMessage(err, "failed to get admin database driver")
 	}
 	defer driver.Close(ctx)
-	list, err := r.store.FindInstanceChangeHistoryList(ctx, &db.MigrationHistoryFind{InstanceID: &instance.UID, ID: &payload.MigrationID})
+	list, err := r.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{InstanceID: &instance.UID, ID: &payload.MigrationID})
 	if err != nil {
 		return "", errors.WithMessagef(err, "failed to find migration history with ID %s", payload.MigrationID)
 	}

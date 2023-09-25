@@ -4,6 +4,9 @@ package state
 import (
 	"sync"
 
+	"github.com/dgraph-io/ristretto"
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -59,7 +62,30 @@ type State struct {
 	// TaskRunTickleChan is the tickler for task run scheduler.
 	TaskRunTickleChan chan int
 
+	ExpireCache *ristretto.Cache
+
 	sync.Mutex
+}
+
+func New() (*State, error) {
+	expireCache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1_000,
+		MaxCost:     1_000, // ~1KB
+		BufferItems: 64,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create auth expire cache")
+	}
+	return &State{
+		InstanceDatabaseSyncChan:             make(chan *store.InstanceMessage, 100),
+		InstanceSlowQuerySyncChan:            make(chan *InstanceSlowQuerySyncMessage, 100),
+		InstanceOutstandingConnections:       make(map[int]int),
+		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
+		TaskSkippedOrDoneChan:                make(chan int, 1000),
+		PlanCheckTickleChan:                  make(chan int, 1000),
+		TaskRunTickleChan:                    make(chan int, 1000),
+		ExpireCache:                          expireCache,
+	}, nil
 }
 
 // InstanceSlowQuerySyncMessage is the message for synchronizing slow query logs for instances.
