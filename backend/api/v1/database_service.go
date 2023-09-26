@@ -511,8 +511,7 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 	}
 
 	for _, path := range request.UpdateMask.Paths {
-		switch path {
-		case "schema_configs":
+		if path == "schema_configs" {
 			databaseConfig := convertV1DatabaseConfig(databaseName, request.DatabaseMetadata.SchemaConfigs)
 			if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, principalID); err != nil {
 				return nil, err
