@@ -39,7 +39,6 @@ func (c *sheetCountCollector) Collect(ctx context.Context) ([]*metric.Metric, er
 				"row_status": string(sheetCountMetric.RowStatus),
 				"visibility": string(sheetCountMetric.Visibility),
 				"source":     string(sheetCountMetric.Source),
-				"type":       string(sheetCountMetric.Type),
 			},
 		})
 	}

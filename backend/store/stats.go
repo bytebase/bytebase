@@ -358,7 +358,6 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 			&sheetCount.RowStatus,
 			&sheetCount.Visibility,
 			&sheetCount.Source,
-			&sheetCount.Type,
 			&sheetCount.Count,
 		); err != nil {
 			return nil, err

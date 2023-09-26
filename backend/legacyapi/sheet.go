@@ -27,22 +27,3 @@ const (
 	// SheetFromBitbucket is the sheet synced from Bitbucket.
 	SheetFromBitbucket SheetSource = "BITBUCKET"
 )
-
-// SheetType is the type of sheet.
-type SheetType string
-
-const (
-	// SheetForSQL is the sheet that used for saving SQL statements.
-	SheetForSQL SheetType = "SQL"
-)
-
-// SheetVCSPayload is the additional data payload of the VCS sheet.
-// The sheet source should be one of SheetFromGitLab and SheetFromGitHub.
-type SheetVCSPayload struct {
-	FileName     string `json:"fileName"`
-	FilePath     string `json:"filePath"`
-	Size         int64  `json:"size"`
-	Author       string `json:"author"`
-	LastCommitID string `json:"lastCommitId"`
-	LastSyncTs   int64  `json:"lastSyncTs"`
-}

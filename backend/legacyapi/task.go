@@ -231,42 +231,6 @@ type TaskDatabaseBackupPayload struct {
 	BackupID int `json:"backupId,omitempty"`
 }
 
-// Task is the API message for a task.
-type Task struct {
-	ID int `jsonapi:"primary,task"`
-
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
-	// Related fields
-	// Just returns PipelineID and StageID otherwise would cause circular dependency.
-	PipelineID int `jsonapi:"attr,pipelineId"`
-	StageID    int `jsonapi:"attr,stageId"`
-	InstanceID int
-	Instance   *Instance `jsonapi:"relation,instance"`
-	// Could be empty for creating database task when the task isn't yet completed successfully.
-	DatabaseID  *int
-	Database    *Database  `jsonapi:"relation,database"`
-	TaskRunList []*TaskRun `jsonapi:"relation,taskRun"`
-
-	// Domain specific fields
-	Name              string     `jsonapi:"attr,name"`
-	Status            TaskStatus `jsonapi:"attr,status"`
-	Type              TaskType   `jsonapi:"attr,type"`
-	Payload           string     `jsonapi:"attr,payload"`
-	EarliestAllowedTs int64      `jsonapi:"attr,earliestAllowedTs"`
-	// BlockedBy is an array of Task ID.
-	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
-	BlockedBy []string `jsonapi:"attr,blockedBy"`
-	// For v1 api compatibility.
-	LatestTaskRunStatus TaskRunStatus
-}
-
 // Progress is a generalized struct which can track the progress of a task.
 type Progress struct {
 	// TotalUnit is the total unit count of the task
