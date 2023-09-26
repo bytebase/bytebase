@@ -51,6 +51,17 @@
           </button>
         </div>
       </BBTableCell>
+      <BBTableCell v-if="showSensitiveColumn" class="bb-grid-cell">
+        <div class="flex items-center">
+          <button
+            v-if="allowAdmin"
+            class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+            @click.prevent=""
+          >
+            <heroicons-outline:pencil class="w-4 h-4" />
+          </button>
+        </div>
+      </BBTableCell>
       <BBTableCell v-if="showClassificationColumn" class="bb-grid-cell">
         <div class="flex items-center">
           <ClassificationLevelBadge
@@ -240,9 +251,16 @@ const NORMAL_COLUMN_LIST = computed(() => {
     },
   ];
   if (showSensitiveColumn.value) {
-    columnList.splice(1, 0, {
-      title: t("settings.sensitive-data.masking-level.self"),
-    });
+    columnList.splice(
+      1,
+      0,
+      {
+        title: t("settings.sensitive-data.masking-level.self"),
+      },
+      {
+        title: t("settings.sensitive-data.semantic-types.self"),
+      }
+    );
   }
   if (showClassificationColumn.value) {
     columnList.splice(showSensitiveColumn.value ? 2 : 1, 0, {
@@ -273,9 +291,16 @@ const POSTGRES_COLUMN_LIST = computed(() => {
     },
   ];
   if (showSensitiveColumn.value) {
-    columnList.splice(1, 0, {
-      title: t("settings.sensitive-data.masking-level.self"),
-    });
+    columnList.splice(
+      1,
+      0,
+      {
+        title: t("settings.sensitive-data.masking-level.self"),
+      },
+      {
+        title: t("settings.sensitive-data.semantic-types.self"),
+      }
+    );
   }
   if (showClassificationColumn.value) {
     columnList.splice(showSensitiveColumn.value ? 2 : 1, 0, {
@@ -333,7 +358,6 @@ const getColumnMasking = (column: ColumnMetadata): MaskData => {
       schema: props.schema,
       table: props.table.name,
       column: column.name,
-      semanticCategoryId: "",
       maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     }
   );

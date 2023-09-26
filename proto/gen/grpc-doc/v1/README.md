@@ -1103,9 +1103,6 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | schema | [string](#string) |  |  |
 | table | [string](#string) |  |  |
 | column | [string](#string) |  |  |
-| semantic_type_id | [string](#string) |  |  |
-| full_masking_algorithm_id | [string](#string) |  | The full masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
-| partial_masking_algorithm_id | [string](#string) |  | The partial masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
 | masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
 
 
