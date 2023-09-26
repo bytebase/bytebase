@@ -2847,6 +2847,10 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 			}
 		}
 		projectRoleMap[binding.Role] = true
+
+		if _, err := common.ValidateProjectMemberCELExpr(binding.Condition); err != nil {
+			return err
+		}
 	}
 	// Must contain one owner binding.
 	if _, ok := projectRoleMap["roles/OWNER"]; !ok {

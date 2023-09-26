@@ -73,6 +73,17 @@ var MaskingExceptionPolicyCELAttributes = []cel.EnvOption{
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
+var ProjectMemberCELAttributes = []cel.EnvOption{
+	cel.Variable("resource.environment_name", cel.StringType),
+	cel.Variable("resource.database", cel.StringType),
+	cel.Variable("resource.schema", cel.StringType),
+	cel.Variable("resource.table", cel.StringType),
+	cel.Variable("request.statement", cel.StringType),
+	cel.Variable("request.row_limit", cel.IntType),
+	cel.Variable("request.time", cel.TimestampType),
+	cel.ParserExpressionSizeLimit(celLimit),
+}
+
 // ConvertParsedRisk converts parsed risk to unparsed format.
 func ConvertParsedRisk(expression *v1alpha1.ParsedExpr) (*expr.Expr, error) {
 	if expression == nil || expression.Expr == nil {
@@ -192,6 +203,27 @@ func ValidateMaskingExceptionCELExpr(expr string) (cel.Program, error) {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	ast, issues := e.Parse(expr)
+	if issues != nil && issues.Err() != nil {
+		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	return prog, nil
+}
+
+func ValidateProjectMemberCELExpr(expression *expr.Expr) (cel.Program, error) {
+	if expression == nil || expression.Expression == "" {
+		return nil, nil
+	}
+	e, err := cel.NewEnv(
+		ProjectMemberCELAttributes...,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(expression.Expression)
 	if issues != nil && issues.Err() != nil {
 		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
 	}
