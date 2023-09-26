@@ -20,17 +20,28 @@
       <div>
         <div class="w-full flex flex-row justify-between items-center">
           <div
-            v-if="!viewMode && !state.isEditing"
+            v-if="!viewMode"
             class="flex flex-row justify-end items-center space-x-2"
           >
-            <NButton
-              v-if="parentBranch"
-              @click="() => (state.showDiffEditor = true)"
-              >{{ $t("schema-designer.merge-branch") }}</NButton
-            >
-            <NButton type="primary" @click="handleApplySchemaDesignClick">{{
-              $t("schema-designer.apply-to-database")
-            }}</NButton>
+            <template v-if="!state.isEditing">
+              <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
+              <NButton
+                v-if="parentBranch"
+                @click="() => (state.showDiffEditor = true)"
+                >{{ $t("schema-designer.merge-branch") }}</NButton
+              >
+              <NButton type="primary" @click="handleApplySchemaDesignClick">{{
+                $t("schema-designer.apply-to-database")
+              }}</NButton>
+            </template>
+            <template v-else>
+              <NButton @click="handleCancelEdit">{{
+                $t("common.cancel")
+              }}</NButton>
+              <NButton type="primary" @click="handleSaveBranch">{{
+                $t("common.save")
+              }}</NButton>
+            </template>
           </div>
         </div>
       </div>
@@ -70,16 +81,6 @@
           class="justify-end"
           :schema-design="schemaDesign"
         />
-
-        <template v-if="!state.isEditing">
-          <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-        </template>
-        <template v-else>
-          <NButton @click="handleCancelEdit">{{ $t("common.cancel") }}</NButton>
-          <NButton type="primary" @click="handleSaveBranch">{{
-            $t("common.save")
-          }}</NButton>
-        </template>
       </div>
     </div>
 
