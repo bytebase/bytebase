@@ -9,6 +9,7 @@ import (
 	"net"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -226,9 +227,10 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		return nil, nil
 	}
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
+	isExplain := strings.HasPrefix(statement, "EXPLAIN")
 
 	stmt := statement
-	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
+	if !isExplain && queryContext.Limit > 0 {
 		var err error
 		stmt, err = driver.getStatementWithResultLimit(stmt, queryContext.Limit)
 		if err != nil {
@@ -249,7 +251,34 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
 	result.Statement = statement
+	if isExplain && driver.dbType == db.TiDB {
+		if err := updateTiDBExplainResult(result); err != nil {
+			return nil, err
+		}
+	}
 	return result, nil
+}
+
+func updateTiDBExplainResult(result *v1pb.QueryResult) error {
+	for _, row := range result.Rows {
+		if len(row.Values) > 0 {
+			str := row.Values[0].GetStringValue()
+			var sb strings.Builder
+			for i, char := range str {
+				if unicode.IsLetter(char) {
+					if _, err := sb.WriteString(str[i:]); err != nil {
+						return err
+					}
+					break
+				}
+				if _, err := sb.WriteString("-"); err != nil {
+					return err
+				}
+			}
+			row.Values[0] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: sb.String()}}
+		}
+	}
+	return nil
 }
 
 // RunStatement runs a SQL statement in a given connection.
