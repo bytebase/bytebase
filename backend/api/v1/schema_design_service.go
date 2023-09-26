@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"path"
 	"strconv"
 
 	"golang.org/x/exp/slices"
@@ -119,6 +120,12 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	}
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	schemaDesign := request.SchemaDesign
+
+	// Branch protection check.
+	if err := s.checkProtectionRules(ctx, project, schemaDesign, currentPrincipalID); err != nil {
+		return nil, err
+	}
+
 	sanitizeSchemaDesignSchemaMetadata(schemaDesign)
 	if err := checkDatabaseMetadata(schemaDesign.Engine, schemaDesign.SchemaMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design: %v", err))
@@ -220,6 +227,58 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		return nil, err
 	}
 	return schemaDesign, nil
+}
+
+func (s *SchemaDesignService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, schemaDesign *v1pb.SchemaDesign, currentPrincipalID int) error {
+	if project.Setting == nil {
+		return nil
+	}
+	user, err := s.store.GetUserByID(ctx, currentPrincipalID)
+	if err != nil {
+		return err
+	}
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return err
+	}
+	for _, rule := range project.Setting.ProtectionRules {
+		if rule.Target != storepb.ProtectionRule_BRANCH {
+			continue
+		}
+		ok, err := path.Match(rule.NameFilter, schemaDesign.Title)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			continue
+		}
+		pass := false
+		for _, binding := range policy.Bindings {
+			matchUser := false
+			for _, member := range binding.Members {
+				if member.Email == user.Email {
+					matchUser = true
+					break
+				}
+			}
+			if matchUser {
+				for _, role := range rule.CreateAllowedRoles {
+					// Convert role format.
+					if role == convertToProjectRole(binding.Role) {
+						pass = true
+					}
+					break
+				}
+			}
+			if pass {
+				break
+			}
+		}
+		if !pass {
+			return status.Errorf(codes.InvalidArgument, "not allowed to create branch by project protection rules")
+		}
+	}
+	return nil
 }
 
 // UpdateSchemaDesign updates an existing schema design.

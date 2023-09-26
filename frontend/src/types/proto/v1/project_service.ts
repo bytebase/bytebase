@@ -1194,7 +1194,10 @@ export interface ProtectionRule {
   target: ProtectionRule_Target;
   /** The name of the branch/changelist or wildcard. */
   nameFilter: string;
-  /** The roles allowed to create branches or changelists. */
+  /**
+   * The roles allowed to create branches or changelists.
+   * Format: roles/OWNER.
+   */
   createAllowedRoles: string[];
 }
 
