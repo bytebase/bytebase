@@ -365,6 +365,7 @@ const handleSaveBranch = async () => {
       const branchName = generateForkedBranchName(schemaDesign.value);
       const newBranch = await schemaDesignStore.createSchemaDesignDraft({
         ...schemaDesign.value,
+        baselineSchema: schemaDesign.value.schema,
         schemaMetadata: mergedMetadata,
         title: branchName,
       });
@@ -406,6 +407,8 @@ const handleSaveBranch = async () => {
 
       // Delete the draft after merged.
       await schemaDesignStore.deleteSchemaDesign(newBranch.name);
+      // Fetch the latest schema design after merged.
+      await schemaDesignStore.fetchSchemaDesignByName(schemaDesign.value.name);
     } else {
       await schemaDesignStore.updateSchemaDesign(
         SchemaDesign.fromPartial({
