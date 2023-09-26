@@ -18,11 +18,11 @@
           v-if="shouldShowDiff"
           class="w-full flex-1 overflow-y-scroll border"
         >
-          <CodeDiff
-            class="sync-schema-code-diff"
-            :old-string="targetDatabaseSchema"
-            :new-string="sourceDatabaseSchema"
-            output-format="side-by-side"
+          <DiffEditor
+            class="h-full"
+            :original="targetDatabaseSchema"
+            :value="sourceDatabaseSchema"
+            :readonly="true"
           />
         </div>
         <div
@@ -67,8 +67,8 @@
 
 <script lang="ts" setup>
 import { NTabs, NTab } from "naive-ui";
-import { CodeDiff } from "v-code-diff";
 import { ref } from "vue";
+import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
