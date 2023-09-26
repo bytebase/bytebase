@@ -205,13 +205,12 @@
             </div>
           </div>
 
-          <code-diff
+          <DiffEditor
             v-if="state.showDiff"
-            class="mt-4 w-full"
-            :old-string="changeHistory.prevSchema"
-            :new-string="changeHistory.schema"
-            output-format="side-by-side"
-            data-label="bb-change-history-code-diff-block"
+            class="h-[64rem] max-h-full border rounded-md overflow-clip"
+            :original="changeHistory.prevSchema"
+            :value="changeHistory.schema"
+            :readonly="true"
           />
           <template v-else>
             <highlight-code-block
@@ -275,9 +274,9 @@
 
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import { CodeDiff } from "v-code-diff";
 import { computed, reactive, watch, ref } from "vue";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
+import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
 import {
   pushNotification,
