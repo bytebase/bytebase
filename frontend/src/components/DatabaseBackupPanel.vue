@@ -54,7 +54,8 @@
               )
             }}
             <a
-              href="https://bytebase.com/docs/backup/#post-backup-webhook?source=console"
+              href="https://www.bytebase.com/docs/disaster-recovery/backup/#post-backup-webhook?source=console"
+              target="_blank"
               class="normal-link inline-flex flex-row items-center"
             >
               {{ $t("common.learn-more") }}
