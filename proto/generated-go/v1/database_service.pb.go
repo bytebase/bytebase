@@ -1823,6 +1823,9 @@ type DatabaseMetadata struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The database metadata name.
+	//
+	// Format: instances/{instance}/databases/{database}/metadata
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The schemas is the list of schemas in a database.
 	Schemas []*SchemaMetadata `protobuf:"bytes,2,rep,name=schemas,proto3" json:"schemas,omitempty"`

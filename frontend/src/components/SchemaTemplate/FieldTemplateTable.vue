@@ -67,7 +67,7 @@ import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto/v1/setting_service";
-import { getDefaultValue } from "./utils";
+import { getDefaultValue, classificationConfig } from "./utils";
 
 const props = defineProps<{
   engine?: Engine;
@@ -82,10 +82,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
-
-const classificationConfig = computed(() => {
-  return settingStore.classification[0];
-});
 
 const columnList = computed((): BBGridColumn[] => {
   const list = [
