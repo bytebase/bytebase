@@ -1953,7 +1953,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 			}
 		}
 
-		// Table Constrain
+		// Table Constraint.
 		for _, constraint := range node.Constraints {
 			switch constraint.Tp {
 			case tidbast.ConstraintPrimaryKey:
