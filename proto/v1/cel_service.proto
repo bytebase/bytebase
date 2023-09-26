@@ -20,6 +20,12 @@ service CelService {
       body: "*"
     };
   }
+  rpc Deparse(DeparseRequest) returns (DeparseResponse) {
+    option (google.api.http) = {
+      post: "/v1/cel/deparse"
+      body: "*"
+    };
+  }
   rpc BatchDeparse(BatchDeparseRequest) returns (BatchDeparseResponse) {
     option (google.api.http) = {
       post: "/v1/cel/batchDeparse"
