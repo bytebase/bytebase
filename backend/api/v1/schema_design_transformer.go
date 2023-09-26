@@ -2074,7 +2074,7 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 			}
 		}
 
-		// primary key definition
+		// Primary key definition.
 		if g.currentTable.indexes["PRIMARY"] != nil {
 			if g.firstElementInTable {
 				g.firstElementInTable = false
