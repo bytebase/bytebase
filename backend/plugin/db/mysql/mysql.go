@@ -221,18 +221,6 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (string, error) {
-	switch driver.dbType {
-	case db.MySQL, db.MariaDB:
-		// MySQL 5.7 doesn't support WITH clause.
-		return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit), nil
-	case db.TiDB:
-		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit), nil
-	default:
-		return "", errors.Errorf("unsupported database type %s", driver.dbType)
-	}
-}
-
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	if singleSQL.Empty {
 		return nil, nil
