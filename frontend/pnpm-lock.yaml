@@ -170,9 +170,6 @@ dependencies:
   uuid:
     specifier: 9.0.1
     version: 9.0.1
-  v-code-diff:
-    specifier: 1.7.1
-    version: 1.7.1(vue@3.2.47)
   vdirs:
     specifier: ^0.1.8
     version: 0.1.8(vue@3.2.47)
@@ -2936,19 +2933,10 @@ packages:
     resolution: {integrity: sha512-gxtyfqMg7GKyhQmb056K7M3xszy/myH8w+B4RT+QXBQsvAOdc3XymqDDPHx1BgPgsdAA5SIifona89YtRATDzw==}
     dev: true
 
-  /diff-match-patch@1.0.5:
-    resolution: {integrity: sha512-IayShXAgj/QMXgB0IWmKx+rOPuGMhqm5w6jvFxmVenXKIzRqTAAsbBPT3kWQeGANj3jGgvcvv4yK6SxqYmikgw==}
-    dev: false
-
   /diff-sequences@29.6.3:
     resolution: {integrity: sha512-EjePK1srD3P08o2j4f0ExnylqRs5B9tJjcp9t1krH2qRi8CCdsYfwe9JgSLurFBWwq4uOlipzfk5fHNvwFKr8Q==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     dev: true
-
-  /diff@5.1.0:
-    resolution: {integrity: sha512-D+mk+qE8VC/PAUrlAU34N+VfXev0ghe5ywmpqrawphmVZc1bEfn56uo9qpyGp1p4xpzOHkSW4ztBd6L7Xx4ACw==}
-    engines: {node: '>=0.3.1'}
-    dev: false
 
   /dijkstrajs@1.0.3:
     resolution: {integrity: sha512-qiSlmBq9+BCdCA/L46dw8Uy93mloxsPSbwnm5yrKn2vMPiy8KyAskTF6zuV/j5BMsmOGZDPs7KjU+mjb670kfA==}
@@ -5447,23 +5435,6 @@ packages:
     hasBin: true
     dev: false
 
-  /v-code-diff@1.7.1(vue@3.2.47):
-    resolution: {integrity: sha512-2O34z6DcVw3LygR9Xl07A28115nsps56dCH6zxFMLoW1jyEnWFPN7Kwh0GAYAeWzDiltbqsMWgvfqJYjBEZPgw==}
-    requiresBuild: true
-    peerDependencies:
-      '@vue/composition-api': ^1.4.9
-      vue: ^2.6.0 || >=3.0.0
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
-    dependencies:
-      diff: 5.1.0
-      diff-match-patch: 1.0.5
-      highlight.js: 11.8.0
-      vue: 3.2.47
-      vue-demi: 0.13.11(vue@3.2.47)
-    dev: false
-
   /vdirs@0.1.8(vue@3.2.47):
     resolution: {integrity: sha512-H9V1zGRLQZg9b+GdMk8MXDN2Lva0zx72MPahDKc30v+DtwKjfyOSXWRIX4t2mhDubM1H09gPhWeth/BJWPHGUw==}
     peerDependencies:
@@ -5675,21 +5646,6 @@ packages:
     resolution: {integrity: sha512-Q9S7dzWGax7LN5iiSPcu/K1GGm2gcBBlYwmMsUc5/16N6w90cbKow3FnPmPs95sungns4yvd9/+JhbAznECS2A==}
     dependencies:
       clipboard: 2.0.11
-    dev: false
-
-  /vue-demi@0.13.11(vue@3.2.47):
-    resolution: {integrity: sha512-IR8HoEEGM65YY3ZJYAjMlKygDQn25D5ajNFNoKh9RSDMQtlzCxtfQjdQgv9jjK+m3377SsJXY8ysq8kLCZL25A==}
-    engines: {node: '>=12'}
-    hasBin: true
-    requiresBuild: true
-    peerDependencies:
-      '@vue/composition-api': ^1.0.0-rc.1
-      vue: ^3.0.0-0 || ^2.6.0
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
-    dependencies:
-      vue: 3.2.47
     dev: false
 
   /vue-demi@0.14.6(vue@3.2.47):
