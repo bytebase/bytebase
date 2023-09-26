@@ -204,11 +204,8 @@ message WorkspaceProfileSetting {
   // The duration for token.
   google.protobuf.Duration token_duration = 6;
 
-  // The setting of custom announcement.
+  // The setting of custom announcement
   Announcement announcement = 7;
-
-  // The secret_manager_url is the secret manager URL for accessing database connection secrets.
-  string secret_manager_url = 8;
 }
 
 message Announcement {
