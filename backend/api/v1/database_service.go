@@ -482,15 +482,24 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 	if request.DatabaseMetadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty database config")
 	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.DatabaseMetadata.Name, common.MetadataSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
@@ -502,6 +511,7 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

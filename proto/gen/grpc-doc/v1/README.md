@@ -2692,7 +2692,9 @@ DatabaseMetadata is the metadata for databases.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
+| name | [string](#string) |  | The database metadata name.
+
+Format: instances/{instance}/databases/{database}/metadata |
 | schemas | [SchemaMetadata](#bytebase-v1-SchemaMetadata) | repeated | The schemas is the list of schemas in a database. |
 | character_set | [string](#string) |  | The character_set is the character set of a database. |
 | collation | [string](#string) |  | The collation is the collation of a database. |

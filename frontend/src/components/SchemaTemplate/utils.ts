@@ -35,3 +35,9 @@ export const caregoryList = computed(() => {
   }
   return resp;
 });
+
+export const classificationConfig = computed(() => {
+  const settingStore = useSettingV1Store();
+  // TODO(ed): it's a temporary solution
+  return settingStore.classification[0];
+});

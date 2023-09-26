@@ -5,6 +5,7 @@
     :show-header="true"
     :left-bordered="true"
     :right-bordered="true"
+    :row-clickable="false"
     v-bind="$attrs"
   >
     <template #body="{ rowData: column }: { rowData: ColumnMetadata }">
@@ -46,6 +47,25 @@
             v-if="allowAdmin"
             class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
             @click.prevent="openSensitiveDrawer(column)"
+          >
+            <heroicons-outline:pencil class="w-4 h-4" />
+          </button>
+        </div>
+      </BBTableCell>
+      <BBTableCell v-if="showSensitiveColumn && isDev()" class="bb-grid-cell">
+        <div class="flex items-center">
+          {{ getColumnSemanticType(column.name)?.title }}
+          <button
+            v-if="allowAdmin && getColumnSemanticType(column.name)"
+            class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+            @click.prevent="onSemanticTypeRemove(column.name)"
+          >
+            <heroicons-outline:x class="w-4 h-4" />
+          </button>
+          <button
+            v-if="allowAdmin"
+            class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+            @click.prevent="state.pendingUpdateColumn = column.name"
           >
             <heroicons-outline:pencil class="w-4 h-4" />
           </button>
@@ -105,13 +125,27 @@
     }"
     @dismiss="state.activeColumn = undefined"
   />
+
+  <SemanticTypesDrawer
+    :show="!!state.pendingUpdateColumn"
+    :semantic-type-list="semanticTypeList"
+    @dismiss="state.pendingUpdateColumn = undefined"
+    @apply="onSemanticTypeApply($event)"
+  />
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep } from "lodash-es";
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTableColumn } from "@/bbkit/types";
-import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
+import {
+  useCurrentUserV1,
+  useDBSchemaV1Store,
+  useSettingV1Store,
+  useSubscriptionV1Store,
+  pushNotification,
+} from "@/store";
 import { ComposedDatabase } from "@/types";
 import {
   Engine,
@@ -121,14 +155,17 @@ import {
 import {
   ColumnMetadata,
   TableMetadata,
+  TableConfig,
+  SchemaConfig,
 } from "@/types/proto/v1/database_service";
 import { MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV1, isDev } from "@/utils";
 
 type LocalState = {
   showFeatureModal: boolean;
   activeColumn?: ColumnMetadata;
+  pendingUpdateColumn?: string;
 };
 
 const props = defineProps({
@@ -169,6 +206,8 @@ const engine = computed(() => {
   return props.database.instanceEntity.engine;
 });
 const subscriptionV1Store = useSubscriptionV1Store();
+const dbSchemaV1Store = useDBSchemaV1Store();
+const settingV1Store = useSettingV1Store();
 
 const instanceMissingLicense = computed(() => {
   return subscriptionV1Store.instanceMissingLicense(
@@ -179,6 +218,129 @@ const instanceMissingLicense = computed(() => {
 const hasSensitiveDataFeature = computed(() => {
   return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
 });
+
+const semanticTypeList = computed(() => {
+  return (
+    settingV1Store.getSettingByName("bb.workspace.semantic-types")?.value
+      ?.semanticTypesSettingValue?.types ?? []
+  );
+});
+
+const databaseMetadata = computed(() => {
+  return dbSchemaV1Store.getDatabaseMetadata(props.database.name);
+});
+
+const schemaConfig = computed(() => {
+  return (
+    databaseMetadata.value.schemaConfigs.find(
+      (config) => config.name === props.schema
+    ) ??
+    SchemaConfig.fromJSON({
+      name: props.schema,
+      tableConfigs: [],
+    })
+  );
+});
+
+const tableConfig = computed(() => {
+  return (
+    schemaConfig.value.tableConfigs.find(
+      (config) => config.name === props.table.name
+    ) ??
+    TableConfig.fromJSON({
+      name: props.table.name,
+      columnConfigs: [],
+    })
+  );
+});
+
+const getColumnConfig = (columnName: string) => {
+  return tableConfig.value.columnConfigs.find(
+    (config) => config.name === columnName
+  );
+};
+
+const getColumnSemanticType = (columnName: string) => {
+  const config = getColumnConfig(columnName);
+  if (!config || !config.semanticTypeId) {
+    return;
+  }
+  return semanticTypeList.value.find(
+    (data) => data.id === config.semanticTypeId
+  );
+};
+
+const onSemanticTypeApply = async (semanticTypeId: string) => {
+  const column = state.pendingUpdateColumn;
+  if (!column) {
+    return;
+  }
+  try {
+    await updateSemanticType(column, semanticTypeId);
+  } finally {
+    state.pendingUpdateColumn = undefined;
+  }
+};
+
+const onSemanticTypeRemove = async (column: string) => {
+  await updateSemanticType(column, "");
+};
+
+const updateSemanticType = async (column: string, semanticTypeId: string) => {
+  const index = tableConfig.value.columnConfigs.findIndex(
+    (config) => config.name === column
+  );
+  if (index < 0 && !semanticTypeId) {
+    return;
+  }
+
+  const pendingUpdateTableConfig = cloneDeep(tableConfig.value);
+  if (index < 0) {
+    if (!semanticTypeId) {
+      return;
+    }
+    pendingUpdateTableConfig.columnConfigs.push({
+      name: column,
+      semanticTypeId,
+    });
+  } else {
+    pendingUpdateTableConfig.columnConfigs[index] = {
+      name: column,
+      semanticTypeId,
+    };
+  }
+
+  const pendingUpdateSchemaConfig = cloneDeep(schemaConfig.value);
+  const tableIndex = pendingUpdateSchemaConfig.tableConfigs.findIndex(
+    (config) => config.name === pendingUpdateTableConfig.name
+  );
+  if (tableIndex < 0) {
+    pendingUpdateSchemaConfig.tableConfigs.push(pendingUpdateTableConfig);
+  } else {
+    pendingUpdateSchemaConfig.tableConfigs[tableIndex] =
+      pendingUpdateTableConfig;
+  }
+
+  const pendingUpdateDatabaseConfig = cloneDeep(databaseMetadata.value);
+  const schemaIndex = pendingUpdateDatabaseConfig.schemaConfigs.findIndex(
+    (config) => config.name === pendingUpdateSchemaConfig.name
+  );
+  if (schemaIndex < 0) {
+    pendingUpdateDatabaseConfig.schemaConfigs.push(pendingUpdateSchemaConfig);
+  } else {
+    pendingUpdateDatabaseConfig.schemaConfigs[schemaIndex] =
+      pendingUpdateSchemaConfig;
+  }
+
+  await dbSchemaV1Store.updateDatabaseSchemaConfigs(
+    pendingUpdateDatabaseConfig
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+};
 
 const showSensitiveColumn = computed(() => {
   return (
@@ -243,6 +405,11 @@ const NORMAL_COLUMN_LIST = computed(() => {
     },
   ];
   if (showSensitiveColumn.value) {
+    if (isDev()) {
+      columnList.splice(1, 0, {
+        title: t("settings.sensitive-data.semantic-types.self"),
+      });
+    }
     columnList.splice(1, 0, {
       title: t("settings.sensitive-data.masking-level.self"),
     });
@@ -276,6 +443,11 @@ const POSTGRES_COLUMN_LIST = computed(() => {
     },
   ];
   if (showSensitiveColumn.value) {
+    if (isDev()) {
+      columnList.splice(1, 0, {
+        title: t("settings.sensitive-data.semantic-types.self"),
+      });
+    }
     columnList.splice(1, 0, {
       title: t("settings.sensitive-data.masking-level.self"),
     });
