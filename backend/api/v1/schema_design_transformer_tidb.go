@@ -869,6 +869,5 @@ func tidbNewFieldType(tp string) *tidbtypes.FieldType {
 	if decimalInt > 0 {
 		ft.SetDecimal(decimalInt)
 	}
-	// column.Tp.SetType(tidbtypes.StrToType(tpStr))
 	return ft
 }
