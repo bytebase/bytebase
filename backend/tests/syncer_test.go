@@ -40,7 +40,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 		`
 	)
 	wantDatabaseMetadata := &v1pb.DatabaseMetadata{
-		Name:         "test_sync_postgresql_schema_db",
+		Name:         "instances/instance-syncer-postgres/databases/test_sync_postgresql_schema_db/metadata",
 		CharacterSet: "UTF8",
 		Collation:    "en_US.UTF-8",
 		Schemas: []*v1pb.SchemaMetadata{
@@ -190,7 +190,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: "instance-syncer-postgres",
 		Instance: &v1pb.Instance{
 			Title:       "pgInstance",
 			Engine:      v1pb.Engine_POSTGRES,
@@ -257,7 +257,7 @@ func TestSyncerForMySQL(t *testing.T) {
 		);
 		`
 		expectedSchema = `{
-			"name":"test_sync_mysql_schema_db",
+			"name":"instances/instance-syncer-mysql/databases/test_sync_mysql_schema_db/metadata",
 			"schemas":[
 			   {
 				  "tables":[
@@ -445,7 +445,7 @@ func TestSyncerForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance", 10),
+		InstanceId: "instance-syncer-mysql",
 		Instance: &v1pb.Instance{
 			Title:       "mysqlInstance",
 			Engine:      v1pb.Engine_MYSQL,
