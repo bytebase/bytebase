@@ -105,9 +105,9 @@
   </div>
 
   <MergeBranchPanel
-    v-if="state.showDiffEditor"
-    :source-branch-name="state.schemaDesignName"
-    :target-branch-name="schemaDesign.baselineSheetName"
+    v-if="state.showDiffEditor && mergeBranchPanelContext"
+    :source-branch-name="mergeBranchPanelContext.sourceBranchName"
+    :target-branch-name="mergeBranchPanelContext.targetBranchName"
     @dismiss="state.showDiffEditor = false"
     @merged="handleMergeAfterConflictResolved"
   />
@@ -175,6 +175,10 @@ const state = reactive<LocalState>({
   isEditingTitle: false,
   showDiffEditor: false,
 });
+const mergeBranchPanelContext = ref<{
+  sourceBranchName: string;
+  targetBranchName: string;
+}>();
 const schemaEditorKey = ref<string>(uniqueId());
 
 const schemaDesign = computed(() => {
@@ -381,9 +385,12 @@ const handleSaveBranch = async () => {
             closable: true,
             maskClosable: true,
             closeOnEsc: true,
-            onNegativeClick: () => {},
             onPositiveClick: () => {
               state.showDiffEditor = true;
+              mergeBranchPanelContext.value = {
+                sourceBranchName: newBranch.name,
+                targetBranchName: schemaDesign.value.name,
+              };
             },
           });
         } else {

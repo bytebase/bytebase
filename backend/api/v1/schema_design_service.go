@@ -176,18 +176,11 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if schemaDesignType == storepb.SheetPayload_SchemaDesign_MAIN_BRANCH {
 		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = fmt.Sprintf("%d", baselineSheetUID)
 	} else if schemaDesignType == storepb.SheetPayload_SchemaDesign_PERSONAL_DRAFT {
-		// Create a new sheet to save the baseline full schema of the personal draft schema design.
-		baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
-			UID: &baselineSheetUID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
-		}
 		baselineSheetCreate := &store.SheetMessage{
 			Name:        schemaDesign.Title,
 			ProjectUID:  project.UID,
 			DatabaseUID: &database.UID,
-			Statement:   baselineSheet.Statement,
+			Statement:   schemaDesign.BaselineSchema,
 			Visibility:  store.ProjectSheet,
 			Source:      store.SheetFromBytebaseArtifact,
 			Type:        store.SheetForSQL,
