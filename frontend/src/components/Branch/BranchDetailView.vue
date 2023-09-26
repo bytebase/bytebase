@@ -105,9 +105,9 @@
   </div>
 
   <MergeBranchPanel
-    v-if="state.showDiffEditor"
-    :source-branch-name="state.schemaDesignName"
-    :target-branch-name="schemaDesign.baselineSheetName"
+    v-if="state.showDiffEditor && mergeBranchPanelContext"
+    :source-branch-name="mergeBranchPanelContext.sourceBranchName"
+    :target-branch-name="mergeBranchPanelContext.targetBranchName"
     @dismiss="state.showDiffEditor = false"
     @merged="handleMergeAfterConflictResolved"
   />
@@ -175,6 +175,10 @@ const state = reactive<LocalState>({
   isEditingTitle: false,
   showDiffEditor: false,
 });
+const mergeBranchPanelContext = ref<{
+  sourceBranchName: string;
+  targetBranchName: string;
+}>();
 const schemaEditorKey = ref<string>(uniqueId());
 
 const schemaDesign = computed(() => {
@@ -361,6 +365,7 @@ const handleSaveBranch = async () => {
       const branchName = generateForkedBranchName(schemaDesign.value);
       const newBranch = await schemaDesignStore.createSchemaDesignDraft({
         ...schemaDesign.value,
+        baselineSchema: schemaDesign.value.schema,
         schemaMetadata: mergedMetadata,
         title: branchName,
       });
@@ -381,9 +386,12 @@ const handleSaveBranch = async () => {
             closable: true,
             maskClosable: true,
             closeOnEsc: true,
-            onNegativeClick: () => {},
             onPositiveClick: () => {
               state.showDiffEditor = true;
+              mergeBranchPanelContext.value = {
+                sourceBranchName: newBranch.name,
+                targetBranchName: schemaDesign.value.name,
+              };
             },
           });
         } else {
@@ -399,6 +407,8 @@ const handleSaveBranch = async () => {
 
       // Delete the draft after merged.
       await schemaDesignStore.deleteSchemaDesign(newBranch.name);
+      // Fetch the latest schema design after merged.
+      await schemaDesignStore.fetchSchemaDesignByName(schemaDesign.value.name);
     } else {
       await schemaDesignStore.updateSchemaDesign(
         SchemaDesign.fromPartial({
