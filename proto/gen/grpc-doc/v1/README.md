@@ -148,7 +148,6 @@
     - [CreateBackupRequest](#bytebase-v1-CreateBackupRequest)
     - [Database](#bytebase-v1-Database)
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
-    - [DatabaseConfig](#bytebase-v1-DatabaseConfig)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
     - [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest)
@@ -160,7 +159,6 @@
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest)
     - [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest)
-    - [GetDatabaseConfigRequest](#bytebase-v1-GetDatabaseConfigRequest)
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
@@ -190,7 +188,7 @@
     - [TableMetadata](#bytebase-v1-TableMetadata)
     - [TaskMetadata](#bytebase-v1-TaskMetadata)
     - [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest)
-    - [UpdateDatabaseConfigRequest](#bytebase-v1-UpdateDatabaseConfigRequest)
+    - [UpdateDatabaseMetadataRequest](#bytebase-v1-UpdateDatabaseMetadataRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
@@ -2686,22 +2684,6 @@ CreateBackupRequest is the request message for CreateBackup.
 
 
 
-<a name="bytebase-v1-DatabaseConfig"></a>
-
-### DatabaseConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| schema_configs | [SchemaConfig](#bytebase-v1-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
-
-
-
-
-
-
 <a name="bytebase-v1-DatabaseMetadata"></a>
 
 ### DatabaseMetadata
@@ -2715,6 +2697,7 @@ DatabaseMetadata is the metadata for databases.
 | character_set | [string](#string) |  | The character_set is the character set of a database. |
 | collation | [string](#string) |  | The collation is the collation of a database. |
 | extensions | [ExtensionMetadata](#bytebase-v1-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
+| schema_configs | [SchemaConfig](#bytebase-v1-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
 
 
 
@@ -2724,7 +2707,7 @@ DatabaseMetadata is the metadata for databases.
 <a name="bytebase-v1-DatabaseSchema"></a>
 
 ### DatabaseSchema
-DatabaseMetadata is the metadata for databases.
+DatabaseSchema is the metadata for databases.
 
 
 | Field | Type | Label | Description |
@@ -2882,21 +2865,6 @@ FunctionMetadata is the metadata for functions.
 | name | [string](#string) |  | The name of the change history to retrieve. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
 | sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetDatabaseConfigRequest"></a>
-
-### GetDatabaseConfigRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/config |
 
 
 
@@ -3434,17 +3402,17 @@ TableMetadata is the metadata for tables.
 
 
 
-<a name="bytebase-v1-UpdateDatabaseConfigRequest"></a>
+<a name="bytebase-v1-UpdateDatabaseMetadataRequest"></a>
 
-### UpdateDatabaseConfigRequest
+### UpdateDatabaseMetadataRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The database config to update.
+| database_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to update.
 
-The database_config&#39;s `name` field is used to identify the database metadata config to update. Format: instances/{instance}/databases/{database}/config |
+The database_metadata&#39;s `name` field is used to identify the database metadata to update. Format: instances/{instance}/databases/{database}/metadata |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
@@ -3650,8 +3618,7 @@ The type of the backup.
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) |  |
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
-| GetDatabaseConfig | [GetDatabaseConfigRequest](#bytebase-v1-GetDatabaseConfigRequest) | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  |
-| UpdateDatabaseConfig | [UpdateDatabaseConfigRequest](#bytebase-v1-UpdateDatabaseConfigRequest) | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  |
+| UpdateDatabaseMetadata | [UpdateDatabaseMetadataRequest](#bytebase-v1-UpdateDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |

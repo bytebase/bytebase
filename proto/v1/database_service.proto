@@ -58,14 +58,10 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
   }
 
-  rpc GetDatabaseConfig(GetDatabaseConfigRequest) returns (DatabaseConfig) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/config}"};
-  }
-
-  rpc UpdateDatabaseConfig(UpdateDatabaseConfigRequest) returns (DatabaseConfig) {
+  rpc UpdateDatabaseMetadata(UpdateDatabaseMetadataRequest) returns (DatabaseMetadata) {
     option (google.api.http) = {
-      patch: "/v1/{database_config.name=instances/*/databases/*/config}"
-      body: "database_config"
+      patch: "/v1/{database_metadata.name=instances/*/databases/*/metadata}"
+      body: "database_metadata"
     };
   }
 
@@ -254,18 +250,12 @@ message GetDatabaseMetadataRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message GetDatabaseConfigRequest {
-  // The name of the database to retrieve metadata.
-  // Format: instances/{instance}/databases/{database}/config
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message UpdateDatabaseConfigRequest {
-  // The database config to update.
+message UpdateDatabaseMetadataRequest {
+  // The database metadata to update.
   //
-  // The database_config's `name` field is used to identify the database metadata config to update.
-  // Format: instances/{instance}/databases/{database}/config
-  DatabaseConfig database_config = 1 [(google.api.field_behavior) = REQUIRED];
+  // The database_metadata's `name` field is used to identify the database metadata to update.
+  // Format: instances/{instance}/databases/{database}/metadata
+  DatabaseMetadata database_metadata = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
@@ -399,6 +389,9 @@ message DatabaseMetadata {
 
   // The extensions is the list of extensions in a database.
   repeated ExtensionMetadata extensions = 5;
+
+  // The schema_configs is the list of configs for schemas in a database.
+  repeated SchemaConfig schema_configs = 6;
 }
 
 // SchemaMetadata is the metadata for schemas.
@@ -688,13 +681,6 @@ message ForeignKeyMetadata {
   string match_type = 8;
 }
 
-message DatabaseConfig {
-  string name = 1;
-
-  // The schema_configs is the list of configs for schemas in a database.
-  repeated SchemaConfig schema_configs = 2;
-}
-
 message SchemaConfig {
   // The name is the schema name.
   // It is an empty string for databases without such concept such as MySQL.
@@ -719,7 +705,7 @@ message ColumnConfig {
   string semantic_type_id = 2;
 }
 
-// DatabaseMetadata is the metadata for databases.
+// DatabaseSchema is the metadata for databases.
 message DatabaseSchema {
   // The schema dump from database.
   string schema = 1;
