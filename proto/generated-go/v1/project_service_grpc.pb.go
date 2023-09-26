@@ -20,36 +20,38 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ProjectService_GetProject_FullMethodName              = "/bytebase.v1.ProjectService/GetProject"
-	ProjectService_ListProjects_FullMethodName            = "/bytebase.v1.ProjectService/ListProjects"
-	ProjectService_SearchProjects_FullMethodName          = "/bytebase.v1.ProjectService/SearchProjects"
-	ProjectService_CreateProject_FullMethodName           = "/bytebase.v1.ProjectService/CreateProject"
-	ProjectService_UpdateProject_FullMethodName           = "/bytebase.v1.ProjectService/UpdateProject"
-	ProjectService_DeleteProject_FullMethodName           = "/bytebase.v1.ProjectService/DeleteProject"
-	ProjectService_UndeleteProject_FullMethodName         = "/bytebase.v1.ProjectService/UndeleteProject"
-	ProjectService_GetIamPolicy_FullMethodName            = "/bytebase.v1.ProjectService/GetIamPolicy"
-	ProjectService_BatchGetIamPolicy_FullMethodName       = "/bytebase.v1.ProjectService/BatchGetIamPolicy"
-	ProjectService_SetIamPolicy_FullMethodName            = "/bytebase.v1.ProjectService/SetIamPolicy"
-	ProjectService_GetDeploymentConfig_FullMethodName     = "/bytebase.v1.ProjectService/GetDeploymentConfig"
-	ProjectService_UpdateDeploymentConfig_FullMethodName  = "/bytebase.v1.ProjectService/UpdateDeploymentConfig"
-	ProjectService_AddWebhook_FullMethodName              = "/bytebase.v1.ProjectService/AddWebhook"
-	ProjectService_UpdateWebhook_FullMethodName           = "/bytebase.v1.ProjectService/UpdateWebhook"
-	ProjectService_RemoveWebhook_FullMethodName           = "/bytebase.v1.ProjectService/RemoveWebhook"
-	ProjectService_TestWebhook_FullMethodName             = "/bytebase.v1.ProjectService/TestWebhook"
-	ProjectService_UpdateProjectGitOpsInfo_FullMethodName = "/bytebase.v1.ProjectService/UpdateProjectGitOpsInfo"
-	ProjectService_UnsetProjectGitOpsInfo_FullMethodName  = "/bytebase.v1.ProjectService/UnsetProjectGitOpsInfo"
-	ProjectService_SetupProjectSQLReviewCI_FullMethodName = "/bytebase.v1.ProjectService/SetupProjectSQLReviewCI"
-	ProjectService_GetProjectGitOpsInfo_FullMethodName    = "/bytebase.v1.ProjectService/GetProjectGitOpsInfo"
-	ProjectService_ListDatabaseGroups_FullMethodName      = "/bytebase.v1.ProjectService/ListDatabaseGroups"
-	ProjectService_GetDatabaseGroup_FullMethodName        = "/bytebase.v1.ProjectService/GetDatabaseGroup"
-	ProjectService_CreateDatabaseGroup_FullMethodName     = "/bytebase.v1.ProjectService/CreateDatabaseGroup"
-	ProjectService_UpdateDatabaseGroup_FullMethodName     = "/bytebase.v1.ProjectService/UpdateDatabaseGroup"
-	ProjectService_DeleteDatabaseGroup_FullMethodName     = "/bytebase.v1.ProjectService/DeleteDatabaseGroup"
-	ProjectService_ListSchemaGroups_FullMethodName        = "/bytebase.v1.ProjectService/ListSchemaGroups"
-	ProjectService_GetSchemaGroup_FullMethodName          = "/bytebase.v1.ProjectService/GetSchemaGroup"
-	ProjectService_CreateSchemaGroup_FullMethodName       = "/bytebase.v1.ProjectService/CreateSchemaGroup"
-	ProjectService_UpdateSchemaGroup_FullMethodName       = "/bytebase.v1.ProjectService/UpdateSchemaGroup"
-	ProjectService_DeleteSchemaGroup_FullMethodName       = "/bytebase.v1.ProjectService/DeleteSchemaGroup"
+	ProjectService_GetProject_FullMethodName                   = "/bytebase.v1.ProjectService/GetProject"
+	ProjectService_ListProjects_FullMethodName                 = "/bytebase.v1.ProjectService/ListProjects"
+	ProjectService_SearchProjects_FullMethodName               = "/bytebase.v1.ProjectService/SearchProjects"
+	ProjectService_CreateProject_FullMethodName                = "/bytebase.v1.ProjectService/CreateProject"
+	ProjectService_UpdateProject_FullMethodName                = "/bytebase.v1.ProjectService/UpdateProject"
+	ProjectService_DeleteProject_FullMethodName                = "/bytebase.v1.ProjectService/DeleteProject"
+	ProjectService_UndeleteProject_FullMethodName              = "/bytebase.v1.ProjectService/UndeleteProject"
+	ProjectService_GetIamPolicy_FullMethodName                 = "/bytebase.v1.ProjectService/GetIamPolicy"
+	ProjectService_BatchGetIamPolicy_FullMethodName            = "/bytebase.v1.ProjectService/BatchGetIamPolicy"
+	ProjectService_SetIamPolicy_FullMethodName                 = "/bytebase.v1.ProjectService/SetIamPolicy"
+	ProjectService_GetDeploymentConfig_FullMethodName          = "/bytebase.v1.ProjectService/GetDeploymentConfig"
+	ProjectService_UpdateDeploymentConfig_FullMethodName       = "/bytebase.v1.ProjectService/UpdateDeploymentConfig"
+	ProjectService_AddWebhook_FullMethodName                   = "/bytebase.v1.ProjectService/AddWebhook"
+	ProjectService_UpdateWebhook_FullMethodName                = "/bytebase.v1.ProjectService/UpdateWebhook"
+	ProjectService_RemoveWebhook_FullMethodName                = "/bytebase.v1.ProjectService/RemoveWebhook"
+	ProjectService_TestWebhook_FullMethodName                  = "/bytebase.v1.ProjectService/TestWebhook"
+	ProjectService_UpdateProjectGitOpsInfo_FullMethodName      = "/bytebase.v1.ProjectService/UpdateProjectGitOpsInfo"
+	ProjectService_UnsetProjectGitOpsInfo_FullMethodName       = "/bytebase.v1.ProjectService/UnsetProjectGitOpsInfo"
+	ProjectService_SetupProjectSQLReviewCI_FullMethodName      = "/bytebase.v1.ProjectService/SetupProjectSQLReviewCI"
+	ProjectService_GetProjectGitOpsInfo_FullMethodName         = "/bytebase.v1.ProjectService/GetProjectGitOpsInfo"
+	ProjectService_ListDatabaseGroups_FullMethodName           = "/bytebase.v1.ProjectService/ListDatabaseGroups"
+	ProjectService_GetDatabaseGroup_FullMethodName             = "/bytebase.v1.ProjectService/GetDatabaseGroup"
+	ProjectService_CreateDatabaseGroup_FullMethodName          = "/bytebase.v1.ProjectService/CreateDatabaseGroup"
+	ProjectService_UpdateDatabaseGroup_FullMethodName          = "/bytebase.v1.ProjectService/UpdateDatabaseGroup"
+	ProjectService_DeleteDatabaseGroup_FullMethodName          = "/bytebase.v1.ProjectService/DeleteDatabaseGroup"
+	ProjectService_ListSchemaGroups_FullMethodName             = "/bytebase.v1.ProjectService/ListSchemaGroups"
+	ProjectService_GetSchemaGroup_FullMethodName               = "/bytebase.v1.ProjectService/GetSchemaGroup"
+	ProjectService_CreateSchemaGroup_FullMethodName            = "/bytebase.v1.ProjectService/CreateSchemaGroup"
+	ProjectService_UpdateSchemaGroup_FullMethodName            = "/bytebase.v1.ProjectService/UpdateSchemaGroup"
+	ProjectService_DeleteSchemaGroup_FullMethodName            = "/bytebase.v1.ProjectService/DeleteSchemaGroup"
+	ProjectService_GetProjectProtectionRules_FullMethodName    = "/bytebase.v1.ProjectService/GetProjectProtectionRules"
+	ProjectService_UpdateProjectProtectionRules_FullMethodName = "/bytebase.v1.ProjectService/UpdateProjectProtectionRules"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -87,6 +89,8 @@ type ProjectServiceClient interface {
 	CreateSchemaGroup(ctx context.Context, in *CreateSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error)
 	UpdateSchemaGroup(ctx context.Context, in *UpdateSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error)
 	DeleteSchemaGroup(ctx context.Context, in *DeleteSchemaGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetProjectProtectionRules(ctx context.Context, in *GetProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error)
+	UpdateProjectProtectionRules(ctx context.Context, in *UpdateProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error)
 }
 
 type projectServiceClient struct {
@@ -367,6 +371,24 @@ func (c *projectServiceClient) DeleteSchemaGroup(ctx context.Context, in *Delete
 	return out, nil
 }
 
+func (c *projectServiceClient) GetProjectProtectionRules(ctx context.Context, in *GetProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error) {
+	out := new(ProtectionRules)
+	err := c.cc.Invoke(ctx, ProjectService_GetProjectProtectionRules_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) UpdateProjectProtectionRules(ctx context.Context, in *UpdateProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error) {
+	out := new(ProtectionRules)
+	err := c.cc.Invoke(ctx, ProjectService_UpdateProjectProtectionRules_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
@@ -402,6 +424,8 @@ type ProjectServiceServer interface {
 	CreateSchemaGroup(context.Context, *CreateSchemaGroupRequest) (*SchemaGroup, error)
 	UpdateSchemaGroup(context.Context, *UpdateSchemaGroupRequest) (*SchemaGroup, error)
 	DeleteSchemaGroup(context.Context, *DeleteSchemaGroupRequest) (*emptypb.Empty, error)
+	GetProjectProtectionRules(context.Context, *GetProjectProtectionRulesRequest) (*ProtectionRules, error)
+	UpdateProjectProtectionRules(context.Context, *UpdateProjectProtectionRulesRequest) (*ProtectionRules, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -498,6 +522,12 @@ func (UnimplementedProjectServiceServer) UpdateSchemaGroup(context.Context, *Upd
 }
 func (UnimplementedProjectServiceServer) DeleteSchemaGroup(context.Context, *DeleteSchemaGroupRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteSchemaGroup not implemented")
+}
+func (UnimplementedProjectServiceServer) GetProjectProtectionRules(context.Context, *GetProjectProtectionRulesRequest) (*ProtectionRules, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectProtectionRules not implemented")
+}
+func (UnimplementedProjectServiceServer) UpdateProjectProtectionRules(context.Context, *UpdateProjectProtectionRulesRequest) (*ProtectionRules, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectProtectionRules not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 
@@ -1052,6 +1082,42 @@ func _ProjectService_DeleteSchemaGroup_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_GetProjectProtectionRules_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectProtectionRulesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).GetProjectProtectionRules(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_GetProjectProtectionRules_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).GetProjectProtectionRules(ctx, req.(*GetProjectProtectionRulesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_UpdateProjectProtectionRules_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProjectProtectionRulesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).UpdateProjectProtectionRules(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_UpdateProjectProtectionRules_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).UpdateProjectProtectionRules(ctx, req.(*UpdateProjectProtectionRulesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1178,6 +1244,14 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteSchemaGroup",
 			Handler:    _ProjectService_DeleteSchemaGroup_Handler,
+		},
+		{
+			MethodName: "GetProjectProtectionRules",
+			Handler:    _ProjectService_GetProjectProtectionRules_Handler,
+		},
+		{
+			MethodName: "UpdateProjectProtectionRules",
+			Handler:    _ProjectService_UpdateProjectProtectionRules_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
