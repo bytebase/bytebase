@@ -18,7 +18,7 @@ export const allowUsingSchemaEditorV1 = (
 };
 
 export const getDataTypeSuggestionList = (engine: Engine = Engine.MYSQL) => {
-  if (engine === Engine.MYSQL) {
+  if (engine === Engine.MYSQL || engine === Engine.TIDB) {
     return [
       "BIT",
       "BOOLEAN",
