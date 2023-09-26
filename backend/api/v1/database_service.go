@@ -435,7 +435,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		dbSchema = newDBSchema
 	}
 
-	v1pbMetadata := convertDatabaseMetadata(dbSchema.Metadata, dbSchema.Config)
+	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config)
 	// backfill the effective masking level.
 	dataClassificationSetting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
@@ -527,7 +527,7 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
 
-	v1pbMetadata := convertDatabaseMetadata(dbSchema.Metadata, dbSchema.Config)
+	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config)
 	return v1pbMetadata, nil
 }
 
@@ -1784,9 +1784,9 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	}
 }
 
-func convertDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) *v1pb.DatabaseMetadata {
+func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) *v1pb.DatabaseMetadata {
 	m := &v1pb.DatabaseMetadata{
-		Name:         metadata.Name,
+		Name:         fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix),
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
 	}
