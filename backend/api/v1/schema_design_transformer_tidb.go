@@ -138,6 +138,9 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 				}
 
 				fkName := constraint.Name
+				if fkName == "" {
+					continue
+				}
 				if table.foreignKeys[fkName] != nil {
 					t.err = errors.New("multiple foreign keys found: " + fkName)
 					return in, true
