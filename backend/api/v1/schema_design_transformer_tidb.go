@@ -82,7 +82,11 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 				t.err = errors.New("multiple column names found: " + columnName + " in table " + t.currentTable)
 				return in, true
 			}
-			defaultValue, _ := columnDefaultValue(column)
+			defaultValue, err := columnDefaultValue(column)
+			if err != nil {
+				t.err = err
+				return in, true
+			}
 			comment, _ := columnComment(column)
 			columnState := &columnState{
 				id:           len(table.columns),
@@ -174,17 +178,18 @@ func tidbColumnCanNull(column *tidbast.ColumnDef) bool {
 	return true
 }
 
-func columnDefaultValue(column *tidbast.ColumnDef) (*string, bool) {
+func columnDefaultValue(column *tidbast.ColumnDef) (*string, error) {
 	for _, option := range column.Options {
 		if option.Tp == tidbast.ColumnOptionDefaultValue {
 			defaultValue, err := tidbRestoreNode(option.Expr, tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreStringWithoutCharset)
 			if err != nil {
-				return nil, false
+				return nil, err
 			}
-			return &defaultValue, true
+			return &defaultValue, nil
 		}
 	}
-	return nil, false
+	// no default value.
+	return nil, nil
 }
 
 func columnComment(column *tidbast.ColumnDef) (string, bool) {
@@ -464,7 +469,11 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 						}
 					}
 				case tidbast.ColumnOptionDefaultValue:
-					defaultValue, _ := columnDefaultValue(column)
+					defaultValue, err := columnDefaultValue(column)
+					if err != nil {
+						g.err = err
+						return in, true
+					}
 					if stateColumn.defaultValue != nil && *stateColumn.defaultValue == *defaultValue {
 						if defaultStr, err := tidbRestoreNodeDefault(option); err == nil {
 							if _, err := g.columnDefine.WriteString(" " + defaultStr); err != nil {
