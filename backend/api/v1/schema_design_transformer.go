@@ -2051,7 +2051,7 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 		return in, true
 	}
 	if node, ok := in.(*tidbast.CreateTableStmt); ok {
-		// column definition
+		// Column definition.
 		var columnList []*columnState
 		for _, column := range g.currentTable.columns {
 			columnList = append(columnList, column)
