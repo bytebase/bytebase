@@ -1917,7 +1917,6 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					}
 				case tidbast.ColumnOptionComment:
 					commentValue, _ := columnComment(column)
-					// if commentValue != `''` && len(commentValue) > 2 && stateColumn.comment == commentValue[1:len(commentValue)-1] {
 					if stateColumn.comment == commentValue {
 						if commentStr, err := tidbRestoreNodeDefault(option); err == nil {
 							if _, err := g.columnDefine.WriteString(" " + commentStr); err != nil {
