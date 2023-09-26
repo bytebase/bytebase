@@ -41,11 +41,6 @@ export interface MaskData {
   schema: string;
   table: string;
   column: string;
-  semanticTypeId: string;
-  /** The full masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. */
-  fullMaskingAlgorithmId: string;
-  /** The partial masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. */
-  partialMaskingAlgorithmId: string;
   maskingLevel: MaskingLevel;
 }
 
@@ -334,15 +329,7 @@ export const MaskingPolicy = {
 };
 
 function createBaseMaskData(): MaskData {
-  return {
-    schema: "",
-    table: "",
-    column: "",
-    semanticTypeId: "",
-    fullMaskingAlgorithmId: "",
-    partialMaskingAlgorithmId: "",
-    maskingLevel: 0,
-  };
+  return { schema: "", table: "", column: "", maskingLevel: 0 };
 }
 
 export const MaskData = {
@@ -356,17 +343,8 @@ export const MaskData = {
     if (message.column !== "") {
       writer.uint32(26).string(message.column);
     }
-    if (message.semanticTypeId !== "") {
-      writer.uint32(34).string(message.semanticTypeId);
-    }
-    if (message.fullMaskingAlgorithmId !== "") {
-      writer.uint32(42).string(message.fullMaskingAlgorithmId);
-    }
-    if (message.partialMaskingAlgorithmId !== "") {
-      writer.uint32(50).string(message.partialMaskingAlgorithmId);
-    }
     if (message.maskingLevel !== 0) {
-      writer.uint32(56).int32(message.maskingLevel);
+      writer.uint32(32).int32(message.maskingLevel);
     }
     return writer;
   },
@@ -400,28 +378,7 @@ export const MaskData = {
           message.column = reader.string();
           continue;
         case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.semanticTypeId = reader.string();
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.fullMaskingAlgorithmId = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.partialMaskingAlgorithmId = reader.string();
-          continue;
-        case 7:
-          if (tag !== 56) {
+          if (tag !== 32) {
             break;
           }
 
@@ -441,11 +398,6 @@ export const MaskData = {
       schema: isSet(object.schema) ? String(object.schema) : "",
       table: isSet(object.table) ? String(object.table) : "",
       column: isSet(object.column) ? String(object.column) : "",
-      semanticTypeId: isSet(object.semanticTypeId) ? String(object.semanticTypeId) : "",
-      fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId) ? String(object.fullMaskingAlgorithmId) : "",
-      partialMaskingAlgorithmId: isSet(object.partialMaskingAlgorithmId)
-        ? String(object.partialMaskingAlgorithmId)
-        : "",
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
     };
   },
@@ -455,10 +407,6 @@ export const MaskData = {
     message.schema !== undefined && (obj.schema = message.schema);
     message.table !== undefined && (obj.table = message.table);
     message.column !== undefined && (obj.column = message.column);
-    message.semanticTypeId !== undefined && (obj.semanticTypeId = message.semanticTypeId);
-    message.fullMaskingAlgorithmId !== undefined && (obj.fullMaskingAlgorithmId = message.fullMaskingAlgorithmId);
-    message.partialMaskingAlgorithmId !== undefined &&
-      (obj.partialMaskingAlgorithmId = message.partialMaskingAlgorithmId);
     message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
     return obj;
   },
@@ -472,9 +420,6 @@ export const MaskData = {
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     message.column = object.column ?? "";
-    message.semanticTypeId = object.semanticTypeId ?? "";
-    message.fullMaskingAlgorithmId = object.fullMaskingAlgorithmId ?? "";
-    message.partialMaskingAlgorithmId = object.partialMaskingAlgorithmId ?? "";
     message.maskingLevel = object.maskingLevel ?? 0;
     return message;
   },

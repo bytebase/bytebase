@@ -336,7 +336,6 @@ const getColumnMasking = (column: ColumnMetadata): MaskData => {
       schema: props.schema,
       table: props.table.name,
       column: column.name,
-      semanticTypeId: "",
       maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     }
   );
