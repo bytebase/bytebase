@@ -2106,7 +2106,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | id | [string](#string) |  | A unique identifier for a node in UUID format. |
 | target | [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target) |  |  |
 | name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
-| create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. |
+| create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. Format: roles/OWNER. |
 
 
 

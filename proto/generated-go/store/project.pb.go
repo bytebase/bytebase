@@ -128,6 +128,7 @@ type ProtectionRule struct {
 	// The name of the branch/changelist or wildcard.
 	NameFilter string `protobuf:"bytes,3,opt,name=name_filter,json=nameFilter,proto3" json:"name_filter,omitempty"`
 	// The roles allowed to create branches or changelists.
+	// Format: roles/OWNER.
 	CreateAllowedRoles []string `protobuf:"bytes,4,rep,name=create_allowed_roles,json=createAllowedRoles,proto3" json:"create_allowed_roles,omitempty"`
 }
 
