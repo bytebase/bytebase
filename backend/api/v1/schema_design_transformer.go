@@ -2124,7 +2124,7 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 			return in, true
 		}
 
-		// table Option
+		// Table option.
 		for _, option := range node.Options {
 			if optionStr, err := tidbRestoreTableOption(option); err == nil {
 				if _, err := g.result.WriteString(" " + optionStr); err != nil {
