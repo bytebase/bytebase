@@ -340,6 +340,11 @@ export interface Database_LabelsEntry {
 
 /** DatabaseMetadata is the metadata for databases. */
 export interface DatabaseMetadata {
+  /**
+   * The database metadata name.
+   *
+   * Format: instances/{instance}/databases/{database}/metadata
+   */
   name: string;
   /** The schemas is the list of schemas in a database. */
   schemas: SchemaMetadata[];
