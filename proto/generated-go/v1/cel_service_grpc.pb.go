@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	CelService_Parse_FullMethodName   = "/bytebase.v1.CelService/Parse"
-	CelService_Deparse_FullMethodName = "/bytebase.v1.CelService/Deparse"
+	CelService_Parse_FullMethodName        = "/bytebase.v1.CelService/Parse"
+	CelService_BatchParse_FullMethodName   = "/bytebase.v1.CelService/BatchParse"
+	CelService_BatchDeparse_FullMethodName = "/bytebase.v1.CelService/BatchDeparse"
 )
 
 // CelServiceClient is the client API for CelService service.
@@ -28,7 +29,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CelServiceClient interface {
 	Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error)
-	Deparse(ctx context.Context, in *DeparseRequest, opts ...grpc.CallOption) (*DeparseResponse, error)
+	BatchParse(ctx context.Context, in *BatchParseRequest, opts ...grpc.CallOption) (*BatchParseResponse, error)
+	BatchDeparse(ctx context.Context, in *BatchDeparseRequest, opts ...grpc.CallOption) (*BatchDeparseResponse, error)
 }
 
 type celServiceClient struct {
@@ -48,9 +50,18 @@ func (c *celServiceClient) Parse(ctx context.Context, in *ParseRequest, opts ...
 	return out, nil
 }
 
-func (c *celServiceClient) Deparse(ctx context.Context, in *DeparseRequest, opts ...grpc.CallOption) (*DeparseResponse, error) {
-	out := new(DeparseResponse)
-	err := c.cc.Invoke(ctx, CelService_Deparse_FullMethodName, in, out, opts...)
+func (c *celServiceClient) BatchParse(ctx context.Context, in *BatchParseRequest, opts ...grpc.CallOption) (*BatchParseResponse, error) {
+	out := new(BatchParseResponse)
+	err := c.cc.Invoke(ctx, CelService_BatchParse_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *celServiceClient) BatchDeparse(ctx context.Context, in *BatchDeparseRequest, opts ...grpc.CallOption) (*BatchDeparseResponse, error) {
+	out := new(BatchDeparseResponse)
+	err := c.cc.Invoke(ctx, CelService_BatchDeparse_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +73,8 @@ func (c *celServiceClient) Deparse(ctx context.Context, in *DeparseRequest, opts
 // for forward compatibility
 type CelServiceServer interface {
 	Parse(context.Context, *ParseRequest) (*ParseResponse, error)
-	Deparse(context.Context, *DeparseRequest) (*DeparseResponse, error)
+	BatchParse(context.Context, *BatchParseRequest) (*BatchParseResponse, error)
+	BatchDeparse(context.Context, *BatchDeparseRequest) (*BatchDeparseResponse, error)
 	mustEmbedUnimplementedCelServiceServer()
 }
 
@@ -73,8 +85,11 @@ type UnimplementedCelServiceServer struct {
 func (UnimplementedCelServiceServer) Parse(context.Context, *ParseRequest) (*ParseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Parse not implemented")
 }
-func (UnimplementedCelServiceServer) Deparse(context.Context, *DeparseRequest) (*DeparseResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Deparse not implemented")
+func (UnimplementedCelServiceServer) BatchParse(context.Context, *BatchParseRequest) (*BatchParseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchParse not implemented")
+}
+func (UnimplementedCelServiceServer) BatchDeparse(context.Context, *BatchDeparseRequest) (*BatchDeparseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchDeparse not implemented")
 }
 func (UnimplementedCelServiceServer) mustEmbedUnimplementedCelServiceServer() {}
 
@@ -107,20 +122,38 @@ func _CelService_Parse_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CelService_Deparse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeparseRequest)
+func _CelService_BatchParse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchParseRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CelServiceServer).Deparse(ctx, in)
+		return srv.(CelServiceServer).BatchParse(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: CelService_Deparse_FullMethodName,
+		FullMethod: CelService_BatchParse_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CelServiceServer).Deparse(ctx, req.(*DeparseRequest))
+		return srv.(CelServiceServer).BatchParse(ctx, req.(*BatchParseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CelService_BatchDeparse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchDeparseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CelServiceServer).BatchDeparse(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CelService_BatchDeparse_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CelServiceServer).BatchDeparse(ctx, req.(*BatchDeparseRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -137,8 +170,12 @@ var CelService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CelService_Parse_Handler,
 		},
 		{
-			MethodName: "Deparse",
-			Handler:    _CelService_Deparse_Handler,
+			MethodName: "BatchParse",
+			Handler:    _CelService_BatchParse_Handler,
+		},
+		{
+			MethodName: "BatchDeparse",
+			Handler:    _CelService_BatchDeparse_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
