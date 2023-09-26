@@ -158,7 +158,8 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 			name,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5);
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, created_ts, updated_ts;
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
