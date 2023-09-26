@@ -258,8 +258,7 @@ func getTiDBDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (stri
 	}
 
 	generator := &tidbDesignSchemaGenerator{
-		lastTokenIndex: 0,
-		to:             toState,
+		to: toState,
 	}
 
 	for _, stmt := range stmts {
@@ -312,8 +311,6 @@ type tidbDesignSchemaGenerator struct {
 	columnDefine        strings.Builder
 	tableConstraints    strings.Builder
 	err                 error
-
-	lastTokenIndex int
 }
 
 func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) {
@@ -340,7 +337,6 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 		tableName := node.Table.Name.String()
 		table, ok := schema.tables[tableName]
 		if !ok {
-			g.lastTokenIndex = node.OriginTextPosition()
 			return in, true
 		}
 		g.currentTable = table
@@ -770,7 +766,6 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 
 		g.currentTable = nil
 		g.firstElementInTable = false
-		g.lastTokenIndex = node.OriginTextPosition()
 	}
 	return in, true
 }
