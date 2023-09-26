@@ -45,10 +45,11 @@ const (
 	DeploymentConfigPrefix       = "deploymentConfigs/"
 	ChangelistsPrefix            = "changelists/"
 
-	BackupSettingSuffix = "/backupSetting"
-	SchemaSuffix        = "/schema"
-	MetadataSuffix      = "/metadata"
-	GitOpsInfoSuffix    = "/gitOpsInfo"
+	BackupSettingSuffix   = "/backupSetting"
+	SchemaSuffix          = "/schema"
+	MetadataSuffix        = "/metadata"
+	GitOpsInfoSuffix      = "/gitOpsInfo"
+	ProtectionRulesSuffix = "/protectionRules"
 )
 
 // GetProjectID returns the project ID from a resource name.
