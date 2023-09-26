@@ -1462,9 +1462,32 @@ router.beforeEach((to, from, next) => {
   }
 
   if (branchSlug) {
-    // We've moved the preparation data fetch jobs into BranchDetail page
-    // so just next() here.
-    next();
+    if (branchSlug === "new") {
+      next();
+      return;
+    }
+
+    // Prepare the data for the branch detail page.
+    useSheetV1Store()
+      .getOrFetchSheetByUID(String(idFromSlug(branchSlug)))
+      .then((sheet) => {
+        if (sheet) {
+          next();
+        } else {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw new Error("not found");
+        }
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
     return;
   }
 
