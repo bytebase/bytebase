@@ -1839,7 +1839,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 				}
 			}
 
-			// column name
+			// Column name.
 			if columnNameStr, err := tidbRestoreNodeDefault(tidbast.Node(column.Name)); err == nil {
 				if _, err := g.columnDefine.WriteString(columnNameStr + " "); err != nil {
 					g.err = err
