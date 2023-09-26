@@ -566,6 +566,9 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 				}
 			case tidbast.ConstraintForeignKey:
 				fkName := constraint.Name
+				if fkName == "" {
+					continue
+				}
 				if g.currentTable.foreignKeys[fkName] != nil {
 					if g.firstElementInTable {
 						g.firstElementInTable = false
