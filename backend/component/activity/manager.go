@@ -568,13 +568,9 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			return nil, err
 		}
 		link += fmt.Sprintf("?stage=%d", payload.StageID)
-		switch payload.StageStatusUpdateType {
-		case api.StageStatusUpdateTypeBegin:
-			title = fmt.Sprintf("Stage begins - %s", payload.StageName)
-		case api.StageStatusUpdateTypeEnd:
+		if payload.StageStatusUpdateType == api.StageStatusUpdateTypeEnd {
 			title = fmt.Sprintf("Stage ends - %s", payload.StageName)
 		}
-
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
