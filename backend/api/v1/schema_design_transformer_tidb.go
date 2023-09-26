@@ -276,6 +276,7 @@ func getTiDBDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (stri
 				continue
 			}
 			if firstTable {
+				firstTable = false
 				if _, err := generator.result.WriteString("\n"); err != nil {
 					return "", err
 				}
