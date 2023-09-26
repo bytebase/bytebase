@@ -87,7 +87,11 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 				t.err = err
 				return in, true
 			}
-			comment, _ := columnComment(column)
+			comment, err := columnComment(column)
+			if err != nil {
+				t.err = err
+				return in, true
+			}
 			columnState := &columnState{
 				id:           len(table.columns),
 				name:         columnName,
@@ -192,18 +196,18 @@ func columnDefaultValue(column *tidbast.ColumnDef) (*string, error) {
 	return nil, nil
 }
 
-func columnComment(column *tidbast.ColumnDef) (string, bool) {
+func columnComment(column *tidbast.ColumnDef) (string, error) {
 	for _, option := range column.Options {
 		if option.Tp == tidbast.ColumnOptionComment {
 			comment, err := tidbRestoreNode(option.Expr, tidbformat.RestoreStringWithoutCharset)
 			if err != nil {
-				comment = ""
+				return "", err
 			}
-			return comment, true
+			return comment, nil
 		}
 	}
 
-	return "", false
+	return "", nil
 }
 
 func tidbRestoreNode(node tidbast.Node, flag tidbformat.RestoreFlags) (string, error) {
@@ -492,7 +496,11 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 						}
 					}
 				case tidbast.ColumnOptionComment:
-					commentValue, _ := columnComment(column)
+					commentValue, err := columnComment(column)
+					if err != nil {
+						g.err = err
+						return in, true
+					}
 					if stateColumn.comment == commentValue {
 						if commentStr, err := tidbRestoreNodeDefault(option); err == nil {
 							if _, err := g.columnDefine.WriteString(" " + commentStr); err != nil {
