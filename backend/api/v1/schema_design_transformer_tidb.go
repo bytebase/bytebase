@@ -137,7 +137,8 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 
 				fkName := constraint.Name
 				if fkName == "" {
-					continue
+					t.err = errors.New("empty foreign key name")
+					return in, true
 				}
 				if table.foreignKeys[fkName] != nil {
 					t.err = errors.New("multiple foreign keys found: " + fkName)
@@ -567,7 +568,8 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 			case tidbast.ConstraintForeignKey:
 				fkName := constraint.Name
 				if fkName == "" {
-					continue
+					g.err = errors.New("empty foreign key name")
+					return in, true
 				}
 				if g.currentTable.foreignKeys[fkName] != nil {
 					if g.firstElementInTable {
