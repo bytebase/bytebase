@@ -31,6 +31,8 @@ func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) 
 		switch engine {
 		case v1pb.Engine_MYSQL:
 			return parseMySQLSchemaStringToDatabaseMetadata(schema)
+		case v1pb.Engine_TIDB:
+			return parseTiDBSchemaStringToDatabaseMetadata(schema)
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
 		}
@@ -684,7 +686,13 @@ func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.Databas
 	case v1pb.Engine_MYSQL:
 		result, err := getMySQLDesignSchema(baselineSchema, to)
 		if err != nil {
-			return "", status.Errorf(codes.Internal, "failed to generate design schema: %v", err)
+			return "", status.Errorf(codes.Internal, "failed to generate mysql design schema: %v", err)
+		}
+		return result, nil
+	case v1pb.Engine_TIDB:
+		result, err := getTiDBDesignSchema(baselineSchema, to)
+		if err != nil {
+			return "", status.Errorf(codes.Internal, "failed to generate tidb design schema: %v", err)
 		}
 		return result, nil
 	default:
@@ -1293,12 +1301,12 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 		referencedColumns   []string
 	}
 	fkMap := make(map[string][]*fkMetadata)
-	if engine != v1pb.Engine_MYSQL {
-		return errors.Errorf("only mysql is supported")
+	if engine != v1pb.Engine_MYSQL && engine != v1pb.Engine_TIDB {
+		return errors.Errorf("only mysql and tidb are supported")
 	}
 	for _, schema := range metadata.Schemas {
 		if schema.Name != "" {
-			return errors.Errorf("schema name should be empty for MySQL")
+			return errors.Errorf("schema name should be empty for MySQL and TiDB")
 		}
 		tableNameMap := make(map[string]bool)
 		for _, table := range schema.Tables {
@@ -1323,7 +1331,7 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 					return errors.Errorf("column %s type should not be empty in table %s", column.Name, table.Name)
 				}
 
-				if !checkMySQLColumnType(column.Type) {
+				if !checkColumnType(engine, column.Type) {
 					return errors.Errorf("column %s type %s is invalid in table %s", column.Name, column.Type, table.Name)
 				}
 			}
@@ -1420,6 +1428,17 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 		}
 	}
 	return nil
+}
+
+func checkColumnType(engine v1pb.Engine, tp string) bool {
+	switch engine {
+	case v1pb.Engine_MYSQL:
+		return checkMySQLColumnType(tp)
+	case v1pb.Engine_TIDB:
+		return checkTiDBColumnType(tp)
+	default:
+		return false
+	}
 }
 
 func checkMySQLColumnType(tp string) bool {
