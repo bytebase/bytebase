@@ -2089,7 +2089,7 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 			}
 		}
 
-		// foreign key definition
+		// Foreign key definition.
 		var fks []*foreignKeyState
 		for _, fk := range g.currentTable.foreignKeys {
 			fks = append(fks, fk)
