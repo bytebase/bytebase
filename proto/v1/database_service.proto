@@ -376,6 +376,9 @@ message Database {
 
 // DatabaseMetadata is the metadata for databases.
 message DatabaseMetadata {
+  // The database metadata name.
+  //
+  // Format: instances/{instance}/databases/{database}/metadata
   string name = 1;
 
   // The schemas is the list of schemas in a database.

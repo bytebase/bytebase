@@ -253,7 +253,12 @@ import {
   engineNameV1,
   useWorkspacePermissionV1,
 } from "@/utils";
-import { engineList, getDefaultValue, caregoryList } from "./utils";
+import {
+  engineList,
+  getDefaultValue,
+  caregoryList,
+  classificationConfig,
+} from "./utils";
 
 const props = defineProps<{
   create: boolean;
@@ -280,11 +285,6 @@ const allowEdit = computed(() => {
     useWorkspacePermissionV1("bb.permission.workspace.manage-general").value &&
     !props.readonly
   );
-});
-
-const classificationConfig = computed(() => {
-  // TODO(ed): it's a temporary solution
-  return settingStore.classification[0];
 });
 
 const dataTypeOptions = computed(() => {

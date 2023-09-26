@@ -273,7 +273,7 @@ func (s *Store) UpdateDBSchema(ctx context.Context, databaseID int, patch *Updat
 			UPDATE db_schema
 			SET `+strings.Join(set, ", ")+`
 			WHERE database_id = $%d
-		`, len(args)),
+		`, len(args)), args...,
 	); err != nil {
 		return err
 	}
