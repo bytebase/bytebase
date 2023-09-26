@@ -58,6 +58,13 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
   }
 
+  rpc UpdateDatabaseMetadata(UpdateDatabaseMetadataRequest) returns (DatabaseMetadata) {
+    option (google.api.http) = {
+      patch: "/v1/{database_metadata.name=instances/*/databases/*/metadata}"
+      body: "database_metadata"
+    };
+  }
+
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
@@ -241,6 +248,17 @@ message GetDatabaseMetadataRequest {
   // The name of the database to retrieve metadata.
   // Format: instances/{instance}/databases/{database}/metadata
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateDatabaseMetadataRequest {
+  // The database metadata to update.
+  //
+  // The database_metadata's `name` field is used to identify the database metadata to update.
+  // Format: instances/{instance}/databases/{database}/metadata
+  DatabaseMetadata database_metadata = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
 }
 
 message GetDatabaseSchemaRequest {

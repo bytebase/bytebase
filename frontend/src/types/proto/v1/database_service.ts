@@ -193,6 +193,20 @@ export interface GetDatabaseMetadataRequest {
   name: string;
 }
 
+export interface UpdateDatabaseMetadataRequest {
+  /**
+   * The database metadata to update.
+   *
+   * The database_metadata's `name` field is used to identify the database metadata to update.
+   * Format: instances/{instance}/databases/{database}/metadata
+   */
+  databaseMetadata:
+    | DatabaseMetadata
+    | undefined;
+  /** The list of fields to update. */
+  updateMask: string[] | undefined;
+}
+
 export interface GetDatabaseSchemaRequest {
   /**
    * The name of the database to retrieve schema.
@@ -2097,6 +2111,80 @@ export const GetDatabaseMetadataRequest = {
   fromPartial(object: DeepPartial<GetDatabaseMetadataRequest>): GetDatabaseMetadataRequest {
     const message = createBaseGetDatabaseMetadataRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateDatabaseMetadataRequest(): UpdateDatabaseMetadataRequest {
+  return { databaseMetadata: undefined, updateMask: undefined };
+}
+
+export const UpdateDatabaseMetadataRequest = {
+  encode(message: UpdateDatabaseMetadataRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.databaseMetadata !== undefined) {
+      DatabaseMetadata.encode(message.databaseMetadata, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDatabaseMetadataRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateDatabaseMetadataRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databaseMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateDatabaseMetadataRequest {
+    return {
+      databaseMetadata: isSet(object.databaseMetadata) ? DatabaseMetadata.fromJSON(object.databaseMetadata) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateDatabaseMetadataRequest): unknown {
+    const obj: any = {};
+    message.databaseMetadata !== undefined &&
+      (obj.databaseMetadata = message.databaseMetadata ? DatabaseMetadata.toJSON(message.databaseMetadata) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateDatabaseMetadataRequest>): UpdateDatabaseMetadataRequest {
+    return UpdateDatabaseMetadataRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<UpdateDatabaseMetadataRequest>): UpdateDatabaseMetadataRequest {
+    const message = createBaseUpdateDatabaseMetadataRequest();
+    message.databaseMetadata = (object.databaseMetadata !== undefined && object.databaseMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.databaseMetadata)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
@@ -7608,6 +7696,104 @@ export const DatabaseServiceDefinition = {
               49,
               47,
               123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              109,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    updateDatabaseMetadata: {
+      name: "UpdateDatabaseMetadata",
+      requestType: UpdateDatabaseMetadataRequest,
+      requestStream: false,
+      responseType: DatabaseMetadata,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              82,
+              58,
+              17,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              95,
+              109,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+              50,
+              61,
+              47,
+              118,
+              49,
+              47,
+              123,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              95,
+              109,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+              46,
               110,
               97,
               109,

@@ -188,6 +188,7 @@
     - [TableMetadata](#bytebase-v1-TableMetadata)
     - [TaskMetadata](#bytebase-v1-TaskMetadata)
     - [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest)
+    - [UpdateDatabaseMetadataRequest](#bytebase-v1-UpdateDatabaseMetadataRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
@@ -3401,6 +3402,24 @@ TableMetadata is the metadata for tables.
 
 
 
+<a name="bytebase-v1-UpdateDatabaseMetadataRequest"></a>
+
+### UpdateDatabaseMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to update.
+
+The database_metadata&#39;s `name` field is used to identify the database metadata to update. Format: instances/{instance}/databases/{database}/metadata |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateDatabaseRequest"></a>
 
 ### UpdateDatabaseRequest
@@ -3599,6 +3618,7 @@ The type of the backup.
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) |  |
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
+| UpdateDatabaseMetadata | [UpdateDatabaseMetadataRequest](#bytebase-v1-UpdateDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
