@@ -71,10 +71,15 @@ import {
   useBookmarkV1Store,
   useProjectV1Store,
   useDatabaseV1Store,
+  useSheetV1Store,
 } from "@/store";
+import {
+  getProjectAndSheetId,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
 import { RouteMapList } from "../types";
-import { databaseV1Slug, idFromSlug } from "../utils";
+import { databaseV1Slug, idFromSlug, projectV1Slug } from "../utils";
 
 interface BreadcrumbItem {
   name: string;
@@ -92,8 +97,8 @@ export default defineComponent({
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
     const bookmarkV1Store = useBookmarkV1Store();
-
     const projectV1Store = useProjectV1Store();
+    const sheetStore = useSheetV1Store();
 
     const documentTitle = useTitle(null, { observe: true });
 
@@ -126,6 +131,7 @@ export default defineComponent({
       const projectWebhookSlug = routeSlug.projectWebhookSlug;
       const instanceSlug = routeSlug.instanceSlug;
       const databaseSlug = routeSlug.databaseSlug;
+      const branchSlug = routeSlug.branchSlug;
       const tableName = routeSlug.tableName;
       const dataSourceSlug = routeSlug.dataSourceSlug;
       const vcsSlug = routeSlug.vcsSlug;
@@ -176,6 +182,21 @@ export default defineComponent({
             name: database.databaseName,
             path: `/db/${databaseSlug}`,
           });
+        }
+      } else if (branchSlug) {
+        const sheetId = idFromSlug(branchSlug);
+        const sheet = sheetStore.getSheetByUID(`${sheetId}`);
+        if (sheet) {
+          const [projectName] = getProjectAndSheetId(sheet.name);
+          const project = projectV1Store.getProjectByName(
+            `${projectNamePrefix}${projectName}`
+          );
+          if (project) {
+            list.push({
+              name: project.title,
+              path: `/project/${projectV1Slug(project)}`,
+            });
+          }
         }
       } else if (vcsSlug) {
         list.push({

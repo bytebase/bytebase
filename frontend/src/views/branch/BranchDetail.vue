@@ -69,7 +69,7 @@ const documentTitle = computed(() => {
       const schemaDesign = schemaDesignStore.getSchemaDesignByName(
         branchName.value
       );
-      return `${schemaDesign.title} - ${t("common.branch")}`;
+      return `${schemaDesign.title}`;
     }
   }
   return t("common.loading");
