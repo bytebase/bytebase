@@ -1771,8 +1771,8 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 
 		delete(schema.tables, tableName)
 
-		// start construct sql
-		// temporary keyword
+		// Start constructing sql.
+		// Temporary keyword.
 		var temporaryKeyword string
 		switch node.TemporaryKeyword {
 		case tidbast.TemporaryNone:
