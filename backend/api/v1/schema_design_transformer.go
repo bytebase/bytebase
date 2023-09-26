@@ -1820,7 +1820,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 			return in, true
 		}
 
-		// column definition
+		// Column definition.
 		for _, column := range node.Cols {
 			columnName := column.Name.Name.String()
 			stateColumn, ok := g.currentTable.columns[columnName]
