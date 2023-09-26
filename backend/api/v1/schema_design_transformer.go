@@ -2144,7 +2144,7 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 			}
 		}
 
-		// table select
+		// Table select.
 		if node.Select != nil {
 			duplicateStr := ""
 			switch node.OnDuplicate {
