@@ -5,8 +5,6 @@ package api
 type StageStatusUpdateType string
 
 const (
-	// StageStatusUpdateTypeBegin means the stage begins. A stage only begins once.
-	StageStatusUpdateTypeBegin StageStatusUpdateType = "BEGIN"
 	// StageStatusUpdateTypeEnd means the stage ends. A stage can end multiple times.
 	// A stage ends if its contained tasks have finished running, i.e. the status of which is one of
 	//   - DONE
