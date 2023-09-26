@@ -25,17 +25,6 @@
           >
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-            </template>
-            <template v-else>
-              <NButton @click="handleCancelEdit">{{
-                $t("common.cancel")
-              }}</NButton>
-              <NButton type="primary" @click="handleSaveBranch">{{
-                $t("common.save")
-              }}</NButton>
-            </template>
-
-            <template v-if="!state.isEditing">
               <NButton
                 v-if="parentBranch"
                 @click="() => (state.showDiffEditor = true)"
@@ -43,6 +32,14 @@
               >
               <NButton type="primary" @click="handleApplySchemaDesignClick">{{
                 $t("schema-designer.apply-to-database")
+              }}</NButton>
+            </template>
+            <template v-else>
+              <NButton @click="handleCancelEdit">{{
+                $t("common.cancel")
+              }}</NButton>
+              <NButton type="primary" @click="handleSaveBranch">{{
+                $t("common.save")
               }}</NButton>
             </template>
           </div>
