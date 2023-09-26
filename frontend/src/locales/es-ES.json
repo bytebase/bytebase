@@ -2903,7 +2903,7 @@
       "unclassified": "Desclasificada",
       "column-name": "Nombre de la columna",
       "column-type": "Tipo de columna",
-      "default-value": "Valor por defecto",
+      "default-value": "Por defecto",
       "comment": "Comentario",
       "nullable": "Anulable",
       "table-name": "Nombre de la tabla"

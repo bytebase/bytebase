@@ -74,29 +74,6 @@ const (
 	ProjectSchemaChangeTypeSDL ProjectSchemaChangeType = "SDL"
 )
 
-// Project is the API message for a project.
-type Project struct {
-	ID         int       `jsonapi:"primary,project"`
-	ResourceID string    `jsonapi:"attr,resourceId"`
-	RowStatus  RowStatus `jsonapi:"attr,rowStatus"`
-
-	// Domain specific fields
-	Name         string              `jsonapi:"attr,name"`
-	Key          string              `jsonapi:"attr,key"`
-	WorkflowType ProjectWorkflowType `jsonapi:"attr,workflowType"`
-	Visibility   ProjectVisibility   `jsonapi:"attr,visibility"`
-	TenantMode   ProjectTenantMode   `jsonapi:"attr,tenantMode"`
-	// DBNameTemplate is only used when a project is in tenant mode and the name of tenant databases follows a format.
-	// {{DB_NAME}} is used for each tenant belonging to an individual database instance and all tenant databases have the same database name.
-	// The template can include label keys such as {{DB_NAME}}_{{TENANT}}. It allows all tenant databases to belong to one or a few database instances.
-	// All database with the same {{DB_NAME}} (base database name) belong to one group.
-	//
-	// Empty value means all tenant databases in the project belonging to the same group.
-	DBNameTemplate string `jsonapi:"attr,dbNameTemplate"`
-	// SchemaChangeType is the type of the schema migration script.
-	SchemaChangeType ProjectSchemaChangeType `jsonapi:"attr,schemaChangeType"`
-}
-
 var (
 	// DBNameToken is the token for database name.
 	DBNameToken = "{{DB_NAME}}"

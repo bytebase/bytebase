@@ -34,6 +34,40 @@ export interface GetChangelistRequest {
   name: string;
 }
 
+export interface ListChangelistsRequest {
+  /**
+   * The parent, which owns this collection of changelists.
+   * Format: projects/{project}
+   * Use "projects/-" to list all changelists.
+   */
+  parent: string;
+  /**
+   * The maximum number of databases to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 databases will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListDatabases` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListDatabases` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListChangelistsResponse {
+  /** The changelists from the specified request. */
+  changelists: Changelist[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
 export interface UpdateChangelistRequest {
   /**
    * The changelist to update.
@@ -234,6 +268,165 @@ export const GetChangelistRequest = {
   fromPartial(object: DeepPartial<GetChangelistRequest>): GetChangelistRequest {
     const message = createBaseGetChangelistRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseListChangelistsRequest(): ListChangelistsRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListChangelistsRequest = {
+  encode(message: ListChangelistsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListChangelistsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListChangelistsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListChangelistsRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListChangelistsRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListChangelistsRequest>): ListChangelistsRequest {
+    return ListChangelistsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListChangelistsRequest>): ListChangelistsRequest {
+    const message = createBaseListChangelistsRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListChangelistsResponse(): ListChangelistsResponse {
+  return { changelists: [], nextPageToken: "" };
+}
+
+export const ListChangelistsResponse = {
+  encode(message: ListChangelistsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.changelists) {
+      Changelist.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListChangelistsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListChangelistsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.changelists.push(Changelist.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListChangelistsResponse {
+    return {
+      changelists: Array.isArray(object?.changelists) ? object.changelists.map((e: any) => Changelist.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListChangelistsResponse): unknown {
+    const obj: any = {};
+    if (message.changelists) {
+      obj.changelists = message.changelists.map((e) => e ? Changelist.toJSON(e) : undefined);
+    } else {
+      obj.changelists = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListChangelistsResponse>): ListChangelistsResponse {
+    return ListChangelistsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListChangelistsResponse>): ListChangelistsResponse {
+    const message = createBaseListChangelistsResponse();
+    message.changelists = object.changelists?.map((e) => Changelist.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };
@@ -707,6 +900,60 @@ export const ChangelistServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    listChangelists: {
+      name: "ListChangelists",
+      requestType: ListChangelistsRequest,
+      requestStream: false,
+      responseType: ListChangelistsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              37,
+              18,
+              35,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              99,
+              104,
+              97,
+              110,
+              103,
+              101,
+              108,
+              105,
+              115,
+              116,
+              115,
             ]),
           ],
         },

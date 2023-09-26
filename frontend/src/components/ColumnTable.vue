@@ -195,7 +195,10 @@ const showSensitiveColumn = computed(() => {
 });
 
 const showClassificationColumn = computed(() => {
-  return engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES;
+  return (
+    engine.value === Engine.MYSQL ||
+    (engine.value === Engine.POSTGRES && props.classificationConfig)
+  );
 });
 
 const currentUserV1 = useCurrentUserV1();

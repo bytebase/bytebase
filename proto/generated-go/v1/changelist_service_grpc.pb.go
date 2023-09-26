@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	ChangelistService_CreateChangelist_FullMethodName = "/bytebase.v1.ChangelistService/CreateChangelist"
 	ChangelistService_GetChangelist_FullMethodName    = "/bytebase.v1.ChangelistService/GetChangelist"
+	ChangelistService_ListChangelists_FullMethodName  = "/bytebase.v1.ChangelistService/ListChangelists"
 	ChangelistService_UpdateChangelist_FullMethodName = "/bytebase.v1.ChangelistService/UpdateChangelist"
 	ChangelistService_DeleteChangelist_FullMethodName = "/bytebase.v1.ChangelistService/DeleteChangelist"
 )
@@ -32,6 +33,7 @@ const (
 type ChangelistServiceClient interface {
 	CreateChangelist(ctx context.Context, in *CreateChangelistRequest, opts ...grpc.CallOption) (*Changelist, error)
 	GetChangelist(ctx context.Context, in *GetChangelistRequest, opts ...grpc.CallOption) (*Changelist, error)
+	ListChangelists(ctx context.Context, in *ListChangelistsRequest, opts ...grpc.CallOption) (*ListChangelistsResponse, error)
 	UpdateChangelist(ctx context.Context, in *UpdateChangelistRequest, opts ...grpc.CallOption) (*Changelist, error)
 	DeleteChangelist(ctx context.Context, in *DeleteChangelistRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -62,6 +64,15 @@ func (c *changelistServiceClient) GetChangelist(ctx context.Context, in *GetChan
 	return out, nil
 }
 
+func (c *changelistServiceClient) ListChangelists(ctx context.Context, in *ListChangelistsRequest, opts ...grpc.CallOption) (*ListChangelistsResponse, error) {
+	out := new(ListChangelistsResponse)
+	err := c.cc.Invoke(ctx, ChangelistService_ListChangelists_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *changelistServiceClient) UpdateChangelist(ctx context.Context, in *UpdateChangelistRequest, opts ...grpc.CallOption) (*Changelist, error) {
 	out := new(Changelist)
 	err := c.cc.Invoke(ctx, ChangelistService_UpdateChangelist_FullMethodName, in, out, opts...)
@@ -86,6 +97,7 @@ func (c *changelistServiceClient) DeleteChangelist(ctx context.Context, in *Dele
 type ChangelistServiceServer interface {
 	CreateChangelist(context.Context, *CreateChangelistRequest) (*Changelist, error)
 	GetChangelist(context.Context, *GetChangelistRequest) (*Changelist, error)
+	ListChangelists(context.Context, *ListChangelistsRequest) (*ListChangelistsResponse, error)
 	UpdateChangelist(context.Context, *UpdateChangelistRequest) (*Changelist, error)
 	DeleteChangelist(context.Context, *DeleteChangelistRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedChangelistServiceServer()
@@ -100,6 +112,9 @@ func (UnimplementedChangelistServiceServer) CreateChangelist(context.Context, *C
 }
 func (UnimplementedChangelistServiceServer) GetChangelist(context.Context, *GetChangelistRequest) (*Changelist, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChangelist not implemented")
+}
+func (UnimplementedChangelistServiceServer) ListChangelists(context.Context, *ListChangelistsRequest) (*ListChangelistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListChangelists not implemented")
 }
 func (UnimplementedChangelistServiceServer) UpdateChangelist(context.Context, *UpdateChangelistRequest) (*Changelist, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateChangelist not implemented")
@@ -156,6 +171,24 @@ func _ChangelistService_GetChangelist_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChangelistService_ListChangelists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListChangelistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChangelistServiceServer).ListChangelists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChangelistService_ListChangelists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChangelistServiceServer).ListChangelists(ctx, req.(*ListChangelistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ChangelistService_UpdateChangelist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateChangelistRequest)
 	if err := dec(in); err != nil {
@@ -206,6 +239,10 @@ var ChangelistService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetChangelist",
 			Handler:    _ChangelistService_GetChangelist_Handler,
+		},
+		{
+			MethodName: "ListChangelists",
+			Handler:    _ChangelistService_ListChangelists_Handler,
 		},
 		{
 			MethodName: "UpdateChangelist",

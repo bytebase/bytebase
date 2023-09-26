@@ -12,44 +12,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// GetEnvironmentByID gets an instance of Environment by ID.
-func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environment, error) {
-	environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{UID: &id})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get environment with ID %d", id)
-	}
-	if environment == nil {
-		return nil, common.Errorf(common.NotFound, "environment %d not found", id)
-	}
-
-	env := composeEnvironment(environment)
-	return env, nil
-}
-
-func composeEnvironment(raw *EnvironmentMessage) *api.Environment {
-	rowStatus := api.Normal
-	if raw.Deleted {
-		rowStatus = api.Archived
-	}
-	tier := api.EnvironmentTierValueUnprotected
-	if raw.Protected {
-		tier = api.EnvironmentTierValueProtected
-	}
-	return &api.Environment{
-		ID:         raw.UID,
-		ResourceID: raw.ResourceID,
-		RowStatus:  rowStatus,
-
-		Name:  raw.Title,
-		Order: int(raw.Order),
-		Tier:  tier,
-	}
-}
-
-//
-// V1 store.
-//
-
 // EnvironmentMessage is the mssage for environment.
 type EnvironmentMessage struct {
 	ResourceID string
