@@ -99,7 +99,6 @@ type SheetCountMetric struct {
 	RowStatus  api.RowStatus
 	Visibility api.SheetVisibility
 	Source     api.SheetSource
-	Type       api.SheetType
 	Count      int
 }
 
