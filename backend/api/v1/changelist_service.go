@@ -52,7 +52,15 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	changelist, err := s.store.CreateChangelist(ctx, &store.ChangelistMessage{
+	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &request.ChangelistId})
+	if err != nil {
+		return nil, err
+	}
+	if changelist != nil {
+		return nil, status.Errorf(codes.AlreadyExists, "changelist %q already exists", request.ChangelistId)
+	}
+
+	changelist, err = s.store.CreateChangelist(ctx, &store.ChangelistMessage{
 		ProjectID:  project.ResourceID,
 		ResourceID: request.ChangelistId,
 		Payload:    convertV1ChangelistPayload(request.Changelist),
