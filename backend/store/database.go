@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -15,97 +14,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
-
-// GetDatabase gets an instance of Database.
-func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
-	v2Find := &FindDatabaseMessage{
-		ShowDeleted: true,
-	}
-	if find.InstanceID != nil {
-		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{UID: find.InstanceID})
-		if err != nil {
-			return nil, err
-		}
-		v2Find.InstanceID = &instance.ResourceID
-	}
-	if find.ProjectID != nil {
-		project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: find.ProjectID})
-		if err != nil {
-			return nil, err
-		}
-		v2Find.ProjectID = &project.ResourceID
-	}
-	if find.Name != nil {
-		v2Find.DatabaseName = find.Name
-	}
-	if find.ID != nil {
-		v2Find.UID = find.ID
-	}
-
-	database, err := s.GetDatabaseV2(ctx, v2Find)
-	if err != nil {
-		return nil, err
-	}
-	if database == nil {
-		return nil, nil
-	}
-	composedDatabase, err := s.composeDatabase(ctx, database)
-	if err != nil {
-		return nil, err
-	}
-	return composedDatabase, nil
-}
-
-// private functions.
-func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) (*api.Database, error) {
-	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
-	if err != nil {
-		return nil, err
-	}
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &database.ProjectID})
-	if err != nil {
-		return nil, err
-	}
-	composedDatabase := &api.Database{
-		ID:                   database.UID,
-		ProjectID:            project.UID,
-		InstanceID:           instance.UID,
-		Name:                 database.DatabaseName,
-		SchemaVersion:        database.SchemaVersion,
-		SyncStatus:           database.SyncState,
-		LastSuccessfulSyncTs: database.SuccessfulSyncTimeTs,
-	}
-	composedProject, err := s.GetProjectByID(ctx, project.UID)
-	if err != nil {
-		return nil, err
-	}
-	composedDatabase.Project = composedProject
-	composedInstance, err := s.GetInstanceByID(ctx, instance.UID)
-	if err != nil {
-		return nil, err
-	}
-	composedDatabase.Instance = composedInstance
-
-	// For now, only wildcard(*) database has data sources and we disallow it to be returned to the client.
-	// So we set this value to an empty array until we need to develop a data source for a non-wildcard database.
-	composedDatabase.DataSourceList = nil
-
-	// Compose labels.
-	var labelList []*api.DatabaseLabel
-	for key, value := range database.Metadata.Labels {
-		labelList = append(labelList, &api.DatabaseLabel{
-			Key:   key,
-			Value: value,
-		})
-	}
-	labels, err := json.Marshal(labelList)
-	if err != nil {
-		return nil, err
-	}
-	composedDatabase.Labels = string(labels)
-
-	return composedDatabase, nil
-}
 
 // DatabaseMessage is the message for database.
 type DatabaseMessage struct {

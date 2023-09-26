@@ -30,18 +30,6 @@ type ProjectWebhookMessage struct {
 	ProjectID int
 }
 
-// ToAPIProjectWebhook converts a ProjectWebhookMessage to an api.ProjectWebhook.
-func (p *ProjectWebhookMessage) ToAPIProjectWebhook() *api.ProjectWebhook {
-	return &api.ProjectWebhook{
-		ID:           p.ID,
-		ProjectID:    p.ProjectID,
-		Type:         p.Type,
-		URL:          p.URL,
-		ActivityList: p.ActivityList,
-		Name:         p.Title,
-	}
-}
-
 // UpdateProjectWebhookMessage is the message for updating project webhooks.
 type UpdateProjectWebhookMessage struct {
 	// Title is the webhook name.
