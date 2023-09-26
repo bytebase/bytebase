@@ -1302,7 +1302,7 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 	}
 	fkMap := make(map[string][]*fkMetadata)
 	if engine != v1pb.Engine_MYSQL && engine != v1pb.Engine_TIDB {
-		return errors.Errorf("only mysql and tidb is supported")
+		return errors.Errorf("only mysql and tidb are supported")
 	}
 	for _, schema := range metadata.Schemas {
 		if schema.Name != "" {
