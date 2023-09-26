@@ -193,23 +193,15 @@ export interface GetDatabaseMetadataRequest {
   name: string;
 }
 
-export interface GetDatabaseConfigRequest {
+export interface UpdateDatabaseMetadataRequest {
   /**
-   * The name of the database to retrieve metadata.
-   * Format: instances/{instance}/databases/{database}/config
-   */
-  name: string;
-}
-
-export interface UpdateDatabaseConfigRequest {
-  /**
-   * The database config to update.
+   * The database metadata to update.
    *
-   * The database_config's `name` field is used to identify the database metadata config to update.
-   * Format: instances/{instance}/databases/{database}/config
+   * The database_metadata's `name` field is used to identify the database metadata to update.
+   * Format: instances/{instance}/databases/{database}/metadata
    */
-  databaseConfig:
-    | DatabaseConfig
+  databaseMetadata:
+    | DatabaseMetadata
     | undefined;
   /** The list of fields to update. */
   updateMask: string[] | undefined;
@@ -357,6 +349,8 @@ export interface DatabaseMetadata {
   collation: string;
   /** The extensions is the list of extensions in a database. */
   extensions: ExtensionMetadata[];
+  /** The schema_configs is the list of configs for schemas in a database. */
+  schemaConfigs: SchemaConfig[];
 }
 
 /**
@@ -702,12 +696,6 @@ export interface ForeignKeyMetadata {
   matchType: string;
 }
 
-export interface DatabaseConfig {
-  name: string;
-  /** The schema_configs is the list of configs for schemas in a database. */
-  schemaConfigs: SchemaConfig[];
-}
-
 export interface SchemaConfig {
   /**
    * The name is the schema name.
@@ -731,7 +719,7 @@ export interface ColumnConfig {
   semanticTypeId: string;
 }
 
-/** DatabaseMetadata is the metadata for databases. */
+/** DatabaseSchema is the metadata for databases. */
 export interface DatabaseSchema {
   /** The schema dump from database. */
   schema: string;
@@ -2127,70 +2115,14 @@ export const GetDatabaseMetadataRequest = {
   },
 };
 
-function createBaseGetDatabaseConfigRequest(): GetDatabaseConfigRequest {
-  return { name: "" };
+function createBaseUpdateDatabaseMetadataRequest(): UpdateDatabaseMetadataRequest {
+  return { databaseMetadata: undefined, updateMask: undefined };
 }
 
-export const GetDatabaseConfigRequest = {
-  encode(message: GetDatabaseConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseConfigRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetDatabaseConfigRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetDatabaseConfigRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
-  },
-
-  toJSON(message: GetDatabaseConfigRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetDatabaseConfigRequest>): GetDatabaseConfigRequest {
-    return GetDatabaseConfigRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<GetDatabaseConfigRequest>): GetDatabaseConfigRequest {
-    const message = createBaseGetDatabaseConfigRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseUpdateDatabaseConfigRequest(): UpdateDatabaseConfigRequest {
-  return { databaseConfig: undefined, updateMask: undefined };
-}
-
-export const UpdateDatabaseConfigRequest = {
-  encode(message: UpdateDatabaseConfigRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.databaseConfig !== undefined) {
-      DatabaseConfig.encode(message.databaseConfig, writer.uint32(10).fork()).ldelim();
+export const UpdateDatabaseMetadataRequest = {
+  encode(message: UpdateDatabaseMetadataRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.databaseMetadata !== undefined) {
+      DatabaseMetadata.encode(message.databaseMetadata, writer.uint32(10).fork()).ldelim();
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
@@ -2198,10 +2130,10 @@ export const UpdateDatabaseConfigRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDatabaseConfigRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDatabaseMetadataRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateDatabaseConfigRequest();
+    const message = createBaseUpdateDatabaseMetadataRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2210,7 +2142,7 @@ export const UpdateDatabaseConfigRequest = {
             break;
           }
 
-          message.databaseConfig = DatabaseConfig.decode(reader, reader.uint32());
+          message.databaseMetadata = DatabaseMetadata.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -2228,29 +2160,29 @@ export const UpdateDatabaseConfigRequest = {
     return message;
   },
 
-  fromJSON(object: any): UpdateDatabaseConfigRequest {
+  fromJSON(object: any): UpdateDatabaseMetadataRequest {
     return {
-      databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
+      databaseMetadata: isSet(object.databaseMetadata) ? DatabaseMetadata.fromJSON(object.databaseMetadata) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
-  toJSON(message: UpdateDatabaseConfigRequest): unknown {
+  toJSON(message: UpdateDatabaseMetadataRequest): unknown {
     const obj: any = {};
-    message.databaseConfig !== undefined &&
-      (obj.databaseConfig = message.databaseConfig ? DatabaseConfig.toJSON(message.databaseConfig) : undefined);
+    message.databaseMetadata !== undefined &&
+      (obj.databaseMetadata = message.databaseMetadata ? DatabaseMetadata.toJSON(message.databaseMetadata) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
     return obj;
   },
 
-  create(base?: DeepPartial<UpdateDatabaseConfigRequest>): UpdateDatabaseConfigRequest {
-    return UpdateDatabaseConfigRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UpdateDatabaseMetadataRequest>): UpdateDatabaseMetadataRequest {
+    return UpdateDatabaseMetadataRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<UpdateDatabaseConfigRequest>): UpdateDatabaseConfigRequest {
-    const message = createBaseUpdateDatabaseConfigRequest();
-    message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
-      ? DatabaseConfig.fromPartial(object.databaseConfig)
+  fromPartial(object: DeepPartial<UpdateDatabaseMetadataRequest>): UpdateDatabaseMetadataRequest {
+    const message = createBaseUpdateDatabaseMetadataRequest();
+    message.databaseMetadata = (object.databaseMetadata !== undefined && object.databaseMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.databaseMetadata)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
     return message;
@@ -3074,7 +3006,7 @@ export const Database_LabelsEntry = {
 };
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [] };
+  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], schemaConfigs: [] };
 }
 
 export const DatabaseMetadata = {
@@ -3093,6 +3025,9 @@ export const DatabaseMetadata = {
     }
     for (const v of message.extensions) {
       ExtensionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    for (const v of message.schemaConfigs) {
+      SchemaConfig.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -3139,6 +3074,13 @@ export const DatabaseMetadata = {
 
           message.extensions.push(ExtensionMetadata.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3156,6 +3098,9 @@ export const DatabaseMetadata = {
       collation: isSet(object.collation) ? String(object.collation) : "",
       extensions: Array.isArray(object?.extensions)
         ? object.extensions.map((e: any) => ExtensionMetadata.fromJSON(e))
+        : [],
+      schemaConfigs: Array.isArray(object?.schemaConfigs)
+        ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
         : [],
     };
   },
@@ -3175,6 +3120,11 @@ export const DatabaseMetadata = {
     } else {
       obj.extensions = [];
     }
+    if (message.schemaConfigs) {
+      obj.schemaConfigs = message.schemaConfigs.map((e) => e ? SchemaConfig.toJSON(e) : undefined);
+    } else {
+      obj.schemaConfigs = [];
+    }
     return obj;
   },
 
@@ -3189,6 +3139,7 @@ export const DatabaseMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
+    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
     return message;
   },
 };
@@ -4793,83 +4744,6 @@ export const ForeignKeyMetadata = {
     message.onDelete = object.onDelete ?? "";
     message.onUpdate = object.onUpdate ?? "";
     message.matchType = object.matchType ?? "";
-    return message;
-  },
-};
-
-function createBaseDatabaseConfig(): DatabaseConfig {
-  return { name: "", schemaConfigs: [] };
-}
-
-export const DatabaseConfig = {
-  encode(message: DatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    for (const v of message.schemaConfigs) {
-      SchemaConfig.encode(v!, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseConfig {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDatabaseConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DatabaseConfig {
-    return {
-      name: isSet(object.name) ? String(object.name) : "",
-      schemaConfigs: Array.isArray(object?.schemaConfigs)
-        ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: DatabaseConfig): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.schemaConfigs) {
-      obj.schemaConfigs = message.schemaConfigs.map((e) => e ? SchemaConfig.toJSON(e) : undefined);
-    } else {
-      obj.schemaConfigs = [];
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DatabaseConfig>): DatabaseConfig {
-    return DatabaseConfig.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<DatabaseConfig>): DatabaseConfig {
-    const message = createBaseDatabaseConfig();
-    message.name = object.name ?? "";
-    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
     return message;
   },
 };
@@ -7865,95 +7739,38 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    getDatabaseConfig: {
-      name: "GetDatabaseConfig",
-      requestType: GetDatabaseConfigRequest,
+    updateDatabaseMetadata: {
+      name: "UpdateDatabaseMetadata",
+      requestType: UpdateDatabaseMetadataRequest,
       requestStream: false,
-      responseType: DatabaseConfig,
+      responseType: DatabaseMetadata,
       responseStream: false,
       options: {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              43,
-              18,
-              41,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
+              82,
+              58,
+              17,
+              100,
               97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              95,
               109,
               101,
-              61,
-              105,
-              110,
-              115,
               116,
               97,
-              110,
-              99,
-              101,
-              115,
-              47,
-              42,
-              47,
               100,
               97,
               116,
               97,
-              98,
-              97,
-              115,
-              101,
-              115,
-              47,
-              42,
-              47,
-              99,
-              111,
-              110,
-              102,
-              105,
-              103,
-              125,
-            ]),
-          ],
-        },
-      },
-    },
-    updateDatabaseConfig: {
-      name: "UpdateDatabaseConfig",
-      requestType: UpdateDatabaseConfigRequest,
-      requestStream: false,
-      responseType: DatabaseConfig,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              76,
-              58,
-              15,
-              100,
-              97,
-              116,
-              97,
-              98,
-              97,
-              115,
-              101,
-              95,
-              99,
-              111,
-              110,
-              102,
-              105,
-              103,
               50,
-              57,
+              61,
               47,
               118,
               49,
@@ -7968,12 +7785,14 @@ export const DatabaseServiceDefinition = {
               115,
               101,
               95,
-              99,
-              111,
-              110,
-              102,
-              105,
-              103,
+              109,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
               46,
               110,
               97,
@@ -8004,12 +7823,14 @@ export const DatabaseServiceDefinition = {
               47,
               42,
               47,
-              99,
-              111,
-              110,
-              102,
-              105,
-              103,
+              109,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
               125,
             ]),
           ],
