@@ -1860,7 +1860,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 				}
 			}
 
-			// column attribution
+			// Column attributes.
 			newAttr := tidbExtractNewAttrs(stateColumn, column.Options)
 			for _, option := range column.Options {
 				attrOrder := tidbGetAttrOrder(option)
