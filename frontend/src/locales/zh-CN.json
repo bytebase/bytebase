@@ -2259,7 +2259,7 @@
       },
       "bb-feature-custom-approval": {
         "title": "自定义审批",
-        "desc": "为不同的任务配置安全风险等级和自定义审批流。"
+        "desc": "为不同的任务配置风险等级和自定义审批流。"
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema 回写",

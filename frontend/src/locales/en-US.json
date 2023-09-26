@@ -2264,7 +2264,7 @@
       },
       "bb-feature-custom-approval": {
         "title": "Custom approval",
-        "desc": "Configure security risk level and approval flow for different tasks."
+        "desc": "Configure risk level and approval flow for different tasks."
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema write-back",
