@@ -2906,7 +2906,7 @@
       "unclassified": "Unclassified",
       "column-name": "Column name",
       "column-type": "Column type",
-      "default-value": "Default value",
+      "default-value": "Default",
       "comment": "Comment",
       "nullable": "Nullable",
       "table-name": "Table name"
