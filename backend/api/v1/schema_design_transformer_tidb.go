@@ -25,9 +25,8 @@ func checkTiDBColumnType(tp string) bool {
 type tidbTransformer struct {
 	tidbast.StmtNode
 
-	state        *databaseState
-	currentTable string
-	err          error
+	state *databaseState
+	err   error
 }
 
 func parseTiDBSchemaStringToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
@@ -70,16 +69,15 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 			return in, true
 		}
 		schema.tables[tableName] = newTableState(len(schema.tables), tableName)
-		t.currentTable = tableName
 
-		table := t.state.schemas[""].tables[t.currentTable]
+		table := t.state.schemas[""].tables[tableName]
 
 		// column definition
 		for _, column := range node.Cols {
 			dataType := columnTypeStr(column.Tp)
 			columnName := column.Name.Name.String()
 			if _, ok := table.columns[columnName]; ok {
-				t.err = errors.New("multiple column names found: " + columnName + " in table " + t.currentTable)
+				t.err = errors.New("multiple column names found: " + columnName + " in table " + tableName)
 				return in, true
 			}
 			defaultValue, err := columnDefaultValue(column)
@@ -246,7 +244,6 @@ func tidbRestoreTableOption(tableOption *tidbast.TableOption) (string, error) {
 }
 
 func (t *tidbTransformer) Leave(in tidbast.Node) (tidbast.Node, bool) {
-	t.currentTable = ""
 	return in, true
 }
 
