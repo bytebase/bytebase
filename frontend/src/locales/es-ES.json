@@ -2260,7 +2260,7 @@
       },
       "bb-feature-custom-approval": {
         "title": "Aprobación personalizada",
-        "desc": "Configure el nivel de riesgo de seguridad y el flujo de aprobación para diferentes tareas."
+        "desc": "Configure el nivel de riesgo y el flujo de aprobación para diferentes tareas."
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Escritura de esquema",
