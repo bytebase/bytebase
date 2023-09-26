@@ -18,42 +18,6 @@ import (
 // SystemBotID is the ID of the system robot.
 const SystemBotID = 1
 
-// GetPrincipalByID gets an instance of Principal by ID.
-func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
-	user, err := s.GetUserByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if user == nil {
-		return nil, nil
-	}
-
-	composedPrincipal, err := composePrincipal(user)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Principal role with user [%+v]", user)
-	}
-
-	return composedPrincipal, nil
-}
-
-// composePrincipal composes an instance of Principal by principalRaw.
-func composePrincipal(user *UserMessage) (*api.Principal, error) {
-	principal := &api.Principal{
-		ID:    user.ID,
-		Type:  user.Type,
-		Name:  user.Name,
-		Email: user.Email,
-		// Do not return to the client.
-		PasswordHash: user.PasswordHash,
-		Role:         user.Role,
-	}
-	// TODO(d): move this user v1 store.
-	if principal.ID == api.SystemBotID {
-		principal.Role = api.Owner
-	}
-	return principal, nil
-}
-
 // FindUserMessage is the message for finding users.
 type FindUserMessage struct {
 	ID          *int

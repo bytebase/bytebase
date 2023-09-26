@@ -13,6 +13,8 @@ import (
 
 	"github.com/gosimple/slug"
 	"github.com/nyaruka/phonenumbers"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -582,7 +584,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			return nil, err
 		}
 
-		task, err := m.store.GetTaskByID(ctx, update.TaskID)
+		task, err := m.store.GetTaskV2ByID(ctx, update.TaskID)
 		if err != nil {
 			slog.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
 				slog.String("issue_name", meta.Issue.Title),
@@ -601,7 +603,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 		webhookTaskResult = &webhook.TaskResult{
 			Name:   task.Name,
-			Status: string(task.Status),
+			Status: string(task.LatestTaskRunStatus),
 		}
 
 		title = "Task changed - " + task.Name
@@ -634,7 +636,16 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			level = webhook.WebhookError
 			title = "Task failed - " + task.Name
 
-			if len(task.TaskRunList) == 0 {
+			taskRuns, err := m.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
+				PipelineUID: &task.PipelineID,
+				StageUID:    &task.StageID,
+				TaskUID:     &task.ID,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
+			}
+
+			if len(taskRuns) == 0 {
 				err := errors.Errorf("expect at least 1 TaskRun, get 0")
 				slog.Warn(err.Error(),
 					slog.Any("task", task),
@@ -643,15 +654,15 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			}
 
 			// sort TaskRunList to get the most recent task run result.
-			sort.Slice(task.TaskRunList, func(i int, j int) bool {
-				return task.TaskRunList[i].ID > task.TaskRunList[j].ID
+			sort.Slice(taskRuns, func(i int, j int) bool {
+				return taskRuns[i].ID > taskRuns[j].ID
 			})
 
 			var result api.TaskRunResultPayload
-			if err := json.Unmarshal([]byte(task.TaskRunList[0].Result), &result); err != nil {
+			if err := json.Unmarshal([]byte(taskRuns[0].Result), &result); err != nil {
 				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
 				slog.Warn(err.Error(),
-					slog.Any("TaskRun", task.TaskRunList[0]),
+					slog.Any("TaskRun", taskRuns[0]),
 					log.BBError(err))
 				return nil, err
 			}
@@ -667,7 +678,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			return nil, err
 		}
 
-		task, err := m.store.GetTaskByID(ctx, payload.TaskID)
+		task, err := m.store.GetTaskV2ByID(ctx, payload.TaskID)
 		if err != nil {
 			slog.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
 				slog.String("issue_name", meta.Issue.Title),
@@ -701,7 +712,15 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			level = webhook.WebhookError
 			title = "Task run failed - " + payload.TaskName
 
-			if len(task.TaskRunList) == 0 {
+			taskRuns, err := m.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
+				PipelineUID: &task.PipelineID,
+				StageUID:    &task.StageID,
+				TaskUID:     &task.ID,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
+			}
+			if len(taskRuns) == 0 {
 				err := errors.Errorf("expect at least 1 TaskRun, get 0")
 				slog.Warn(err.Error(),
 					slog.Any("task", task),
@@ -710,15 +729,15 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			}
 
 			// sort TaskRunList to get the most recent task run result.
-			sort.Slice(task.TaskRunList, func(i int, j int) bool {
-				return task.TaskRunList[i].ID > task.TaskRunList[j].ID
+			sort.Slice(taskRuns, func(i int, j int) bool {
+				return taskRuns[i].ID > taskRuns[j].ID
 			})
 
 			var result api.TaskRunResultPayload
-			if err := json.Unmarshal([]byte(task.TaskRunList[0].Result), &result); err != nil {
+			if err := json.Unmarshal([]byte(taskRuns[0].Result), &result); err != nil {
 				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
 				slog.Warn(err.Error(),
-					slog.Any("TaskRun", task.TaskRunList[0]),
+					slog.Any("TaskRun", taskRuns[0]),
 					log.BBError(err))
 				return nil, err
 			}
@@ -926,7 +945,7 @@ func getUsersFromProjectRole(s *store.Store, role api.Role, projectID string) fu
 }
 
 // getTaskSkippedAndReason gets skipped and skippedReason from a task.
-func getTaskSkippedAndReason(task *api.Task) (bool, string, error) {
+func getTaskSkippedAndReason(task *store.TaskMessage) (bool, string, error) {
 	var payload struct {
 		Skipped       bool   `json:"skipped,omitempty"`
 		SkippedReason string `json:"skippedReason,omitempty"`

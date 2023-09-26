@@ -12,41 +12,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// GetProjectByID gets an instance of Project.
-func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error) {
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: &id})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Project with ID %d", id)
-	}
-	if project == nil {
-		return nil, nil
-	}
-	composedProject, err := s.composeProject(project)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
-	}
-	return composedProject, nil
-}
-
-func (*Store) composeProject(project *ProjectMessage) (*api.Project, error) {
-	composedProject := &api.Project{
-		ID:               project.UID,
-		ResourceID:       project.ResourceID,
-		RowStatus:        api.Normal,
-		Name:             project.Title,
-		Key:              project.Key,
-		WorkflowType:     project.Workflow,
-		Visibility:       project.Visibility,
-		TenantMode:       project.TenantMode,
-		DBNameTemplate:   project.DBNameTemplate,
-		SchemaChangeType: project.SchemaChangeType,
-	}
-	if project.Deleted {
-		composedProject.RowStatus = api.Archived
-	}
-	return composedProject, nil
-}
-
 // ProjectMessage is the message for project.
 type ProjectMessage struct {
 	ResourceID                 string
