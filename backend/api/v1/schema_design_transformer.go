@@ -2134,7 +2134,7 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 			}
 		}
 
-		// table partition
+		// Table partition.
 		if node.Partition != nil {
 			if partitionStr, err := tidbRestoreNodeDefault(node.Partition); err == nil {
 				if _, err := g.result.WriteString(" " + partitionStr); err != nil {
