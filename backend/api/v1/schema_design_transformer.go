@@ -1847,7 +1847,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 				}
 			}
 
-			// compare column type
+			// Compare column types.
 			dataType := columnTypeStr(column.Tp)
 			if !strings.EqualFold(dataType, stateColumn.tp) {
 				// write lower case column type for tidb
