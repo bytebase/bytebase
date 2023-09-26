@@ -6,6 +6,7 @@
     :placeholder="$t('environment.select')"
     :filterable="true"
     :filter="filterByName"
+    class="bb-environment-select"
     @update:value="$emit('update:environment', $event)"
   />
 </template>
@@ -89,3 +90,9 @@ const filterByName = (pattern: string, option: SelectOption) => {
 
 watchEffect(prepare);
 </script>
+
+<style lang="postcss" scoped>
+.bb-environment-select ::v-deep .n-base-selection-input:focus {
+  @apply !ring-0;
+}
+</style>
