@@ -139,7 +139,7 @@ func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.L
 		}
 		resp.Changelists = append(resp.Changelists, v1Changelist)
 	}
-	return nil, nil
+	return resp, nil
 }
 
 // UpdateChangelist updates a changelist.
