@@ -101,20 +101,24 @@ func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.L
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectResourceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
-	}
 
-	changelists, err := s.store.ListChangelists(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID})
+	find := &store.FindChangelistMessage{}
+	if projectResourceID != "-" {
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectResourceID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
+		}
+		if project == nil {
+			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
+		}
+		if project.Deleted {
+			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
+		}
+		find.ProjectID = &projectResourceID
+	}
+	changelists, err := s.store.ListChangelists(ctx, find)
 	if err != nil {
 		return nil, err
 	}
