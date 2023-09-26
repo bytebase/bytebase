@@ -243,7 +243,7 @@ func tidbRestoreTableOption(tableOption *tidbast.TableOption) (string, error) {
 	return buffer.String(), nil
 }
 
-func (t *tidbTransformer) Leave(in tidbast.Node) (tidbast.Node, bool) {
+func (*tidbTransformer) Leave(in tidbast.Node) (tidbast.Node, bool) {
 	return in, true
 }
 
