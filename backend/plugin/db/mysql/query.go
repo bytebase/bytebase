@@ -19,13 +19,13 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (strin
 		// MySQL 5.7 doesn't support WITH clause.
 		return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit), nil
 	case db.TiDB:
-		return getStatementWithResultLimitOfTiDB(stmt, limit)
+		return getStatementWithResultLimitForTiDB(stmt, limit)
 	default:
 		return "", errors.Errorf("unsupported database type %s", driver.dbType)
 	}
 }
 
-func getStatementWithResultLimitOfTiDB(singleStatement string, limitCount int) (string, error) {
+func getStatementWithResultLimitForTiDB(singleStatement string, limitCount int) (string, error) {
 	stmtList, err := parser.ParseTiDB(singleStatement, "", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse tidb statement: %s", singleStatement)

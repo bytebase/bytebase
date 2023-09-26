@@ -31,7 +31,7 @@ func TestGetStatementWithResultLimitOfTiDB(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		got, err := getStatementWithResultLimitOfTiDB(tc.stmt, tc.count)
+		got, err := getStatementWithResultLimitForTiDB(tc.stmt, tc.count)
 		require.NoError(t, err, tc.stmt)
 		require.Equal(t, tc.want, got, tc.stmt)
 	}
