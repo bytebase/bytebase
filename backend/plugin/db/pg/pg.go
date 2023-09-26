@@ -391,7 +391,15 @@ func isNonTransactionStatement(stmt string) bool {
 	// DROP INDEX CONCURRENTLY cannot run inside a transaction block.
 	// DROP INDEX [ CONCURRENTLY ] [ IF EXISTS ] name [, ...] [ CASCADE | RESTRICT ]
 	dropIndexReg := regexp.MustCompile(`(?i)DROP(\s+)INDEX(\s+)CONCURRENTLY`)
-	return len(dropIndexReg.FindString(stmt)) > 0
+	if len(dropIndexReg.FindString(stmt)) > 0 {
+		return true
+	}
+
+	// VACUUM cannot run inside a transaction block.
+	// VACUUM [ ( option [, ...] ) ] [ table_and_columns [, ...] ]
+	// VACUUM [ FULL ] [ FREEZE ] [ VERBOSE ] [ ANALYZE ] [ table_and_columns [, ...] ]
+	vacuumReg := regexp.MustCompile(`(?i)VACUUM`)
+	return len(vacuumReg.FindString(stmt)) > 0
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
