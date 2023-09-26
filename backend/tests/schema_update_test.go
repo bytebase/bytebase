@@ -1773,6 +1773,7 @@ func TestGetLatestSchema(t *testing.T) {
 	tests := []struct {
 		name                 string
 		dbType               db.Type
+		instanceID           string
 		databaseName         string
 		ddl                  string
 		wantRawSchema        string
@@ -1782,6 +1783,7 @@ func TestGetLatestSchema(t *testing.T) {
 		{
 			name:         "MySQL",
 			dbType:       db.MySQL,
+			instanceID:   "latest-schema-mysql",
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
 			wantRawSchema: "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
@@ -1800,7 +1802,7 @@ func TestGetLatestSchema(t *testing.T) {
 				"  `name` TEXT COLLATE utf8mb4_general_ci\n" +
 				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n",
 			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
-				Name:         "latestSchema",
+				Name:         "instances/latest-schema-mysql/databases/latestSchema/metadata",
 				CharacterSet: "utf8mb4",
 				Collation:    "utf8mb4_general_ci",
 				Schemas: []*v1pb.SchemaMetadata{
@@ -1838,6 +1840,7 @@ func TestGetLatestSchema(t *testing.T) {
 		{
 			name:         "PostgreSQL",
 			dbType:       db.Postgres,
+			instanceID:   "latest-schema-postgres",
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
 			wantRawSchema: `
@@ -1864,7 +1867,7 @@ CREATE TABLE public.book (
 `,
 			wantSDL: ``,
 			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
-				Name:         "latestSchema",
+				Name:         "instances/latest-schema-postgres/databases/latestSchema/metadata",
 				CharacterSet: "UTF8",
 				Collation:    "en_US.UTF-8",
 				Schemas: []*v1pb.SchemaMetadata{
@@ -1923,7 +1926,7 @@ CREATE TABLE public.book (
 			switch test.dbType {
 			case db.Postgres:
 				instance, err = ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
-					InstanceId: generateRandomString("instance", 10),
+					InstanceId: test.instanceID,
 					Instance: &v1pb.Instance{
 						Title:       test.name,
 						Engine:      v1pb.Engine_POSTGRES,
@@ -1934,7 +1937,7 @@ CREATE TABLE public.book (
 				})
 			case db.MySQL:
 				instance, err = ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
-					InstanceId: generateRandomString("instance", 10),
+					InstanceId: test.instanceID,
 					Instance: &v1pb.Instance{
 						Title:       "mysqlInstance",
 						Engine:      v1pb.Engine_MYSQL,
