@@ -14,6 +14,7 @@
       :consistent-menu-width="false"
       :disabled="disabled || !allowAdmin"
       :filterable="true"
+      class="bb-rule-select"
       v-bind="selectAttrs"
     />
     <NButton
@@ -96,3 +97,9 @@ const toApprovalFlow = () => {
   };
 };
 </script>
+
+<style lang="postcss" scoped>
+.bb-rule-select ::v-deep .n-base-selection-input:focus {
+  @apply !ring-0;
+}
+</style>

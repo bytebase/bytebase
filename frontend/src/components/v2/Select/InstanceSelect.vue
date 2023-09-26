@@ -152,8 +152,15 @@ watch([() => props.instance, combinedInstanceList], resetInvalidSelection, {
 });
 </script>
 
-<style>
-.bb-instance-select .n-base-selection--active .bb-instance-select--engine-icon {
+<style lang="postcss" scoped>
+.bb-instance-select
+  ::v-deep
+  .n-base-selection--active
+  .bb-instance-select--engine-icon {
   opacity: 0.3;
+}
+
+.bb-instance-select ::v-deep .n-base-selection-input:focus {
+  @apply !ring-0;
 }
 </style>

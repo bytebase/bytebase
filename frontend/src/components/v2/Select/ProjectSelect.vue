@@ -6,6 +6,7 @@
     :placeholder="$t('project.select')"
     :filterable="true"
     :filter="filterByName"
+    class="bb-project-select"
     style="width: 12rem"
     @update:value="$emit('update:project', $event)"
   />
@@ -179,3 +180,9 @@ const filterByName = (pattern: string, option: SelectOption) => {
 
 watchEffect(prepare);
 </script>
+
+<style lang="postcss" scoped>
+.bb-project-select ::v-deep .n-base-selection-input:focus {
+  @apply !ring-0;
+}
+</style>
