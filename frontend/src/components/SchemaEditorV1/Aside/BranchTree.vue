@@ -163,7 +163,7 @@ const tableList = computed(() =>
 );
 const treeData = computed(() => {
   const treeNodeList: TreeNode[] = [];
-  if (engine.value === Engine.MYSQL) {
+  if (engine.value === Engine.MYSQL || engine.value === Engine.TIDB) {
     const schema = schemaList.value[0];
     if (!schema) {
       return;

@@ -57,12 +57,11 @@
     @close="dismissModal"
   >
     <div class="space-y-4">
-      <code-diff
-        class="w-full"
-        :old-string="schemaDriftDetail.payload?.expectedSchema"
-        :new-string="schemaDriftDetail.payload?.actualSchema"
-        :file-name="`${schemaDriftDetail.payload?.recordVersion} (left) vs Actual (right)`"
-        output-format="side-by-side"
+      <DiffEditor
+        class="h-[64rem] max-h-full border rounded-md overflow-clip"
+        :original="schemaDriftDetail.payload?.expectedSchema"
+        :value="schemaDriftDetail.payload?.actualSchema"
+        :readonly="true"
       />
       <div class="flex justify-end px-4">
         <button type="button" class="btn-primary" @click.prevent="dismissModal">
@@ -74,10 +73,10 @@
 </template>
 
 <script lang="ts" setup>
-import { CodeDiff } from "v-code-diff";
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import { useEnvironmentV1Store } from "@/store";
 import {

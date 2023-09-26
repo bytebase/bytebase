@@ -2,12 +2,6 @@
   <div class="space-y-3 w-full overflow-x-auto px-4 pt-1">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
-        <router-link
-          class="normal-link inline-flex items-center"
-          :to="`/project/${projectV1Slug(project)}`"
-          >{{ project.title }}</router-link
-        >
-        <span class="ml-1 -mr-1">/</span>
         <NInput
           v-model:value="state.schemaDesignTitle"
           class="!w-auto"
@@ -26,17 +20,28 @@
       <div>
         <div class="w-full flex flex-row justify-between items-center">
           <div
-            v-if="!viewMode && !state.isEditing"
+            v-if="!viewMode"
             class="flex flex-row justify-end items-center space-x-2"
           >
-            <NButton
-              v-if="parentBranch"
-              @click="() => (state.showDiffEditor = true)"
-              >{{ $t("schema-designer.merge-branch") }}</NButton
-            >
-            <NButton type="primary" @click="handleApplySchemaDesignClick">{{
-              $t("schema-designer.apply-to-database")
-            }}</NButton>
+            <template v-if="!state.isEditing">
+              <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
+              <NButton
+                v-if="parentBranch"
+                @click="() => (state.showDiffEditor = true)"
+                >{{ $t("schema-designer.merge-branch") }}</NButton
+              >
+              <NButton type="primary" @click="handleApplySchemaDesignClick">{{
+                $t("schema-designer.apply-to-database")
+              }}</NButton>
+            </template>
+            <template v-else>
+              <NButton @click="handleCancelEdit">{{
+                $t("common.cancel")
+              }}</NButton>
+              <NButton type="primary" @click="handleSaveBranch">{{
+                $t("common.save")
+              }}</NButton>
+            </template>
           </div>
         </div>
       </div>
@@ -76,16 +81,6 @@
           class="justify-end"
           :schema-design="schemaDesign"
         />
-
-        <template v-if="!state.isEditing">
-          <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-        </template>
-        <template v-else>
-          <NButton @click="handleCancelEdit">{{ $t("common.cancel") }}</NButton>
-          <NButton type="primary" @click="handleSaveBranch">{{
-            $t("common.save")
-          }}</NButton>
-        </template>
       </div>
     </div>
 
@@ -140,7 +135,6 @@ import {
   SchemaDesign,
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
-import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
