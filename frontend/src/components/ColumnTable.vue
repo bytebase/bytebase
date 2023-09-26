@@ -195,7 +195,10 @@ const showSensitiveColumn = computed(() => {
 });
 
 const showClassificationColumn = computed(() => {
-  return engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES;
+  return (
+    engine.value === Engine.MYSQL ||
+    (engine.value === Engine.POSTGRES && props.classificationConfig)
+  );
 });
 
 const currentUserV1 = useCurrentUserV1();
@@ -333,7 +336,7 @@ const getColumnMasking = (column: ColumnMetadata): MaskData => {
       schema: props.schema,
       table: props.table.name,
       column: column.name,
-      semanticCategoryId: "",
+      semanticTypeId: "",
       maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     }
   );
