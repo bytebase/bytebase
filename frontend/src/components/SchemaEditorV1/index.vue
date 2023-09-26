@@ -120,18 +120,26 @@ onMounted(async () => {
 
 watch(
   () => props,
-  (newProps, oldProps) => {
+  () => {
     schemaEditorV1Store.setState({
-      project: newProps.project,
-      resourceType: newProps.resourceType,
-      readonly: newProps.readonly || false,
+      project: props.project,
+      resourceType: props.resourceType,
+      readonly: props.readonly || false,
     });
+  },
+  {
+    deep: true,
+  }
+);
 
+watch(
+  [() => props.databases, () => props.branches],
+  ([newDatabases, newBranches], [oldDatabases, oldBranches]) => {
     // Update editor state if needed.
     // * If we update databases/branches, we need to rebuild the editing state.
     // * If we update databases/branches, we need to clear all tabs.
-    if (newProps.resourceType === "database") {
-      if (isEqual(newProps.databases, oldProps.databases)) {
+    if (props.resourceType === "database") {
+      if (isEqual(newDatabases, oldDatabases)) {
         return;
       }
       schemaEditorV1Store.setState({
@@ -141,7 +149,7 @@ watch(
         resourceMap: {
           // NOTE: we will dynamically fetch schema list for each database in database tree view.
           database: new Map(
-            (props.databases || []).map((database) => [
+            (newDatabases || []).map((database) => [
               database.name,
               {
                 database,
@@ -154,7 +162,7 @@ watch(
         },
       });
     } else {
-      if (isEqual(newProps.branches, oldProps.branches)) {
+      if (isEqual(newBranches, oldBranches)) {
         return;
       }
       schemaEditorV1Store.setState({
@@ -164,7 +172,7 @@ watch(
         resourceMap: {
           database: new Map(),
           branch: new Map(
-            (props.branches || []).map((branch) => [
+            (newBranches || []).map((branch) => [
               branch.name,
               convertBranchToBranchSchema(branch),
             ])
