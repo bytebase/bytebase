@@ -6,6 +6,7 @@
     :virtual-scroll="true"
     :filter="filterByDatabaseName"
     :filterable="true"
+    class="bb-database-select"
     style="width: 12rem"
     v-bind="$attrs"
     :render-label="renderLabel"
@@ -183,3 +184,9 @@ watch(
   }
 );
 </script>
+
+<style lang="postcss" scoped>
+.bb-database-select ::v-deep .n-base-selection-input:focus {
+  @apply !ring-0;
+}
+</style>
