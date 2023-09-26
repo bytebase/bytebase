@@ -39,12 +39,7 @@ message MaskData {
   string schema = 1;
   string table = 2;
   string column = 3;
-  string semantic_type_id = 4;
-  // The full masking algorithm id applied to the column, it will overwrite the algorithm in semantic category.
-  string full_masking_algorithm_id = 5;
-  // The partial masking algorithm id applied to the column, it will overwrite the algorithm in semantic category.
-  string partial_masking_algorithm_id = 6;
-  MaskingLevel masking_level = 7;
+  MaskingLevel masking_level = 4;
 }
 
 // MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
