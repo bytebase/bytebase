@@ -30,14 +30,15 @@
       content: "`t`.`b` cannot drop index column"
       line: 3
       details: ""
-# - statement: |-
-#     CREATE TABLE t(a int, b int, INDEX idx_a(a));
-#     CREATE TABLE y(a int, b int);
-#     ALTER TABLE y DROP COLUMN a
-#   want:
-#     - status: WARN
-#       code: 424
-#       title: "column.disallow-drop-index"
-#       content: "`y`.`b` cannot drop index column"
-#       line: 3
-#       details: ""
+
+- statement: |-
+    CREATE TABLE t(a int, b int, INDEX idx_a(a));
+    CREATE TABLE y(a int, b int);
+    ALTER TABLE y DROP COLUMN a
+  want:
+    - status: SUCCESS
+      code: 0
+      title: "OK"
+      content: ""
+      line: 0
+      details: ""
