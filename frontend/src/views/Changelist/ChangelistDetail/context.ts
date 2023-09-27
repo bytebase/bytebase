@@ -1,5 +1,5 @@
 import Emittery from "emittery";
-import { InjectionKey, Ref, computed, inject, provide } from "vue";
+import { InjectionKey, Ref, computed, inject, provide, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useChangelistStore, useProjectV1Store } from "@/store";
 import { ComposedProject, unknownChangelist } from "@/types";
@@ -13,6 +13,7 @@ export type ChangelistDetailContext = {
   changelist: Ref<Changelist>;
   project: Ref<ComposedProject>;
   allowEdit: Ref<boolean>;
+  reorderMode: Ref<boolean>;
 
   events: ChangelistDetailEvents;
 };
@@ -50,6 +51,7 @@ export const provideChangelistDetailContext = () => {
     changelist,
     project,
     allowEdit,
+    reorderMode: ref(false),
     events: new Emittery(),
   };
 
