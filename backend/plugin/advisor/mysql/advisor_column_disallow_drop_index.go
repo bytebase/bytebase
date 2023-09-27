@@ -71,16 +71,14 @@ type columnDisallowDropIndexChecker struct {
 	level            advisor.Status
 	title            string
 	text             string
-	indexColumnsName []string
+	indexColumnsName []string // 这里用表名+列名，因为列名可能重复
 	tables           tableState
 	line             int
 	catalog          *catalog.Finder
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *columnDisallowDropIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (checker *columnDisallowDropIndexChecker) Drop(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.AlterTableStmt); ok {
-		tableName := "t"
 		for _, spec := range node.Specs {
 			if spec.Tp == ast.AlterTableDropColumn {
 				table := node.Table.Name.O
@@ -96,7 +94,7 @@ func (checker *columnDisallowDropIndexChecker) Enter(in ast.Node) (ast.Node, boo
 				for _, indexColumn := range *index {
 					indexColumnsName = append(indexColumnsName, indexColumn.ExpressionList()...)
 				}
-				checker.indexColumnsName = indexColumnsName
+				checker.indexColumnsName = append(checker.indexColumnsName, indexColumnsName...)
 
 				colName := spec.OldColumnName.Name.String()
 				if !checker.dropColumn(colName) {
@@ -104,13 +102,32 @@ func (checker *columnDisallowDropIndexChecker) Enter(in ast.Node) (ast.Node, boo
 						Status:  checker.level,
 						Code:    advisor.DropIndexColumn,
 						Title:   checker.title,
-						Content: fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, colName),
+						Content: fmt.Sprintf("`%s`.`%s` cannot drop index column", table, colName),
 						Line:    checker.line, // TODO
 					})
 
 				}
 			}
 		}
+	}
+	return in, false
+}
+
+// Enter implements the ast.Visitor interface.
+func (checker *columnDisallowDropIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
+	switch node := in.(type) {
+	case *ast.CreateTableStmt:
+		if cnode, ok := in.(*ast.CreateTableStmt); ok {
+			for _, spec := range cnode.Constraints {
+				if spec.Tp == ast.ConstraintIndex {
+					for _, key := range spec.Keys {
+						checker.indexColumnsName = append(checker.indexColumnsName, key.Column.Name.O)
+					}
+				}
+			}
+		}
+	case *ast.AlterTableStmt:
+		return checker.Drop(node)
 	}
 	return in, false
 }
