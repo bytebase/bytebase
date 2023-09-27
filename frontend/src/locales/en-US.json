@@ -262,7 +262,8 @@
     "branches": "Branches",
     "merge": "Merge",
     "info": "Info",
-    "minutes": "Minutes"
+    "minutes": "Minutes",
+    "go-to-configure": "Configure"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -831,9 +832,29 @@
           "title": "Instance",
           "description": "Include only issues related with the instance"
         },
+        "database": {
+          "title": "Database",
+          "description": "Include only issues related with the database"
+        },
         "type": {
           "title": "Change Type",
           "description": "The database change type for issues"
+        },
+        "creator": {
+          "title": "Creator",
+          "description": "Search by the issue creator"
+        },
+        "assignee": {
+          "title": "Assignee",
+          "description": "Search by the issue assignee"
+        },
+        "subscriber": {
+          "title": "Subscriber",
+          "description": "Search by the issue subscriber"
+        },
+        "principal": {
+          "title": "Related Principal",
+          "description": "Search by the issue creator, assignee or subscriber"
         }
       }
     },
@@ -952,7 +973,15 @@
     "you-are-not-allowed-to-change-this-value": "You are not allowed to change this value",
     "sql-check": {
       "sql-checks": "SQL Checks",
-      "not-executed-yet": "Not executed yet"
+      "not-executed-yet": "Not executed yet",
+      "no-configured-sql-review-policy": {
+        "admin": "{environment} environment has not configured SQL Review Policy. {link}",
+        "developer": "{environment} environment has not configured SQL Review Policy. Please ask your DBA to configure."
+      },
+      "statement-is-too-large": "The statement is too large",
+      "back-to-edit": "Back to edit",
+      "continue-anyway": "Continue anyway",
+      "sql-review-violations": "SQL Review Violations"
     }
   },
   "alter-schema": {
@@ -1595,7 +1624,7 @@
       "view-all": "View all",
       "view-all-closed": "View all closed",
       "recent-activity": "Recent @.lower:{'common.activities'}",
-      "in-progress": "In progress",
+      "in-progress": "In Progress",
       "recently-closed": "Recently Closed",
       "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project.",
       "no-db-prompt": "No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar."
@@ -2078,7 +2107,8 @@
       "duplicated-column-name": "Duplicated column name",
       "invalid-column-type": "Invalid column type",
       "schema-not-found": "Schema not found",
-      "failed-to-fetch-database-schema": "Failed to fetch database schema"
+      "failed-to-fetch-database-schema": "Failed to fetch database schema",
+      "invalid-schema": "Invalid schema"
     },
     "confirm-to-close": {
       "title": "Confirm to close",
@@ -2234,7 +2264,7 @@
       },
       "bb-feature-custom-approval": {
         "title": "Custom approval",
-        "desc": "Configure security risk level and approval flow for different tasks."
+        "desc": "Configure risk level and approval flow for different tasks."
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema write-back",
@@ -2848,6 +2878,7 @@
     "self": "Schema template",
     "field-template": {
       "self": "Field Template",
+      "add": "Add field template",
       "description": "You can pre-define the field template, then apply the template during the schema change."
     },
     "column-type-restriction": {
@@ -2863,17 +2894,22 @@
         "one-allowed-type-per-line": "One allowed data type per line"
       }
     },
-    "add-field": "Add field template",
+    "table-template": {
+      "self": "Table Template",
+      "add": "Add table template",
+      "description": "You can pre-define the table template, then apply the template during the schema change."
+    },
     "search-by-name-or-comment": "Search by name or comment",
     "form": {
       "category": "Category",
-      "category-desc": "Select an existed category or create a new one",
+      "category-desc": "Select an existing category or create a new one",
       "unclassified": "Unclassified",
       "column-name": "Column name",
       "column-type": "Column type",
-      "default-value": "Default value",
+      "default-value": "Default",
       "comment": "Comment",
-      "nullable": "Nullable"
+      "nullable": "Nullable",
+      "table-name": "Table name"
     },
     "classification": {
       "self": "Data classification",

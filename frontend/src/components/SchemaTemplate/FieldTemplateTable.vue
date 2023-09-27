@@ -7,11 +7,14 @@
     @click-row="clickRow"
   >
     <template #item="{ item }: { item: SchemaTemplateSetting_FieldTemplate }">
+      <div class="bb-grid-cell">
+        {{ item.category }}
+      </div>
       <div class="bb-grid-cell flex justify-start items-center">
         <EngineIcon :engine="item.engine" custom-class="ml-0 mr-1" />
         {{ item.column?.name }}
       </div>
-      <div class="bb-grid-cell flex gap-x-1">
+      <div v-if="classificationConfig" class="bb-grid-cell flex gap-x-1">
         <ClassificationLevelBadge
           :classification="item.column?.classification"
           :classification-config="classificationConfig"
@@ -26,22 +29,27 @@
       <div class="bb-grid-cell">
         {{ item.column?.comment }}
       </div>
-      <div class="bb-grid-cell flex items-center justify-start gap-x-5">
+      <div class="bb-grid-cell flex items-center justify-start gap-x-2">
         <button
-          type="button"
-          class="btn-normal flex justify-end !py-1 !px-3"
+          class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
           @click.stop="$emit('view', item)"
         >
-          {{ $t("common.view") }}
+          <heroicons-outline:pencil class="w-4 h-4" />
         </button>
-        <BBButtonConfirm
-          v-if="!readonly"
-          :style="'DELETE'"
-          :ok-text="$t('common.delete')"
-          :confirm-title="$t('common.delete') + ` '${item.column?.name}'?`"
-          :require-confirm="true"
-          @confirm="() => deleteTemplate(item.id)"
-        />
+        <NPopconfirm v-if="!readonly" @positive-click="deleteTemplate(item.id)">
+          <template #trigger>
+            <button
+              class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+              @click.stop=""
+            >
+              <heroicons-outline:trash class="w-4 h-4" />
+            </button>
+          </template>
+
+          <div class="whitespace-nowrap">
+            {{ $t("common.delete") + ` '${item.column?.name}'?` }}
+          </div>
+        </NPopconfirm>
       </div>
     </template>
   </BBGrid>
@@ -49,6 +57,7 @@
 
 <script lang="ts" setup>
 import { pullAt } from "lodash-es";
+import { NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn } from "@/bbkit";
@@ -58,7 +67,7 @@ import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto/v1/setting_service";
-import { getDefaultValue } from "./utils";
+import { getDefaultValue, classificationConfig } from "./utils";
 
 const props = defineProps<{
   engine?: Engine;
@@ -75,14 +84,14 @@ const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
 const columnList = computed((): BBGridColumn[] => {
-  return [
+  const list = [
     {
-      title: t("schema-template.form.column-name"),
-      width: "auto",
+      title: t("schema-template.form.category"),
+      width: "15rem",
       class: "capitalize",
     },
     {
-      title: t("schema-template.classification.self"),
+      title: t("schema-template.form.column-name"),
       width: "auto",
       class: "capitalize",
     },
@@ -103,10 +112,19 @@ const columnList = computed((): BBGridColumn[] => {
     },
     {
       title: t("common.operations"),
-      width: "10rem",
+      width: "5rem",
       class: "capitalize",
     },
   ];
+  if (classificationConfig.value) {
+    list.splice(2, 0, {
+      title: t("schema-template.classification.self"),
+      width: "auto",
+      class: "capitalize",
+    });
+  }
+
+  return list;
 });
 
 const clickRow = (template: SchemaTemplateSetting_FieldTemplate) => {
@@ -139,8 +157,4 @@ const deleteTemplate = async (id: string) => {
     });
   }
 };
-
-const classificationConfig = computed(() => {
-  return settingStore.classification[0];
-});
 </script>

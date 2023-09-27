@@ -260,7 +260,8 @@
     "branches": "分支",
     "merge": "合并",
     "info": "信息",
-    "minutes": "分钟"
+    "minutes": "分钟",
+    "go-to-configure": "去配置"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -828,9 +829,29 @@
           "title": "实例",
           "description": "仅搜索与某个实例关联的工单"
         },
+        "database": {
+          "title": "数据库",
+          "description": "仅搜索与某个数据库关联的工单"
+        },
         "type": {
           "title": "变更类型",
           "description": "根据数据库变更类型搜索"
+        },
+        "creator": {
+          "title": "创建人",
+          "description": "根据工单创建人搜索"
+        },
+        "assignee": {
+          "title": "发布人",
+          "description": "根据工单发布人搜索"
+        },
+        "subscriber": {
+          "title": "订阅人",
+          "description": "根据工单订阅人搜索"
+        },
+        "principal": {
+          "title": "相关用户",
+          "description": "工单的创建人、发布人，或者订阅人"
         }
       }
     },
@@ -949,7 +970,15 @@
     "you-are-not-allowed-to-change-this-value": "您无权更改这项值",
     "sql-check": {
       "sql-checks": "SQL 检查项",
-      "not-executed-yet": "尚未执行"
+      "not-executed-yet": "尚未执行",
+      "no-configured-sql-review-policy": {
+        "admin": "{environment} 环境没有配置 SQL 审核策略。{link}",
+        "developer": "{environment} 环境没有配置 SQL 审核策略，请让您的 DBA 配置。"
+      },
+      "statement-is-too-large": "语句过大",
+      "back-to-edit": "返回编辑",
+      "continue-anyway": "仍然继续",
+      "sql-review-violations": "违反的 SQL 审核规则"
     }
   },
   "alter-schema": {
@@ -2074,7 +2103,8 @@
       "duplicated-column-name": "重复的列名",
       "invalid-column-type": "无效的列类型",
       "schema-not-found": "找不到 Schema",
-      "failed-to-fetch-database-schema": "请求数据库 Schema 失败"
+      "failed-to-fetch-database-schema": "请求数据库 Schema 失败",
+      "invalid-schema": "无效的 Schema"
     },
     "confirm-to-close": {
       "title": "确定关闭？",
@@ -2229,7 +2259,7 @@
       },
       "bb-feature-custom-approval": {
         "title": "自定义审批",
-        "desc": "为不同的任务配置安全风险等级和自定义审批流。"
+        "desc": "为不同的任务配置风险等级和自定义审批流。"
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Schema 回写",
@@ -2841,7 +2871,8 @@
     "self": "Schema 模板",
     "field-template": {
       "self": "字段模板",
-      "description": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。"
+      "add": "新增字段模板",
+      "description": "预定义字段模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "column-type-restriction": {
       "self": "列类型约束",
@@ -2856,7 +2887,11 @@
         "one-allowed-type-per-line": "每行放一个允许的数据类型"
       }
     },
-    "add-field": "新增字段模板",
+    "table-template": {
+      "self": "表模板",
+      "add": "新增表模板",
+      "description": "预定义表模板，之后可以在变更或设计 Schema 时应用这些模板。"
+    },
     "search-by-name-or-comment": "根据名称或备注搜索",
     "form": {
       "category": "分类",
@@ -2866,7 +2901,8 @@
       "column-type": "字段类型",
       "default-value": "默认值",
       "comment": "备注",
-      "nullable": "可为空"
+      "nullable": "可为空",
+      "table-name": "表名"
     },
     "classification": {
       "self": "数据分类分级",

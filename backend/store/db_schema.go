@@ -17,6 +17,12 @@ import (
 type DBSchema struct {
 	Metadata *storepb.DatabaseSchemaMetadata
 	Schema   []byte
+	Config   *storepb.DatabaseConfig
+}
+
+// UpdateDBSchemaMessage is the message for updating db schema.
+type UpdateDBSchemaMessage struct {
+	Config *storepb.DatabaseConfig
 }
 
 // TableExists checks if the table exists.
@@ -162,17 +168,19 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	defer tx.Rollback()
 
 	dbSchema := &DBSchema{}
-	var metadata []byte
+	var metadata, config []byte
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
 			metadata,
-			raw_dump
+			raw_dump,
+			config
 		FROM db_schema
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	).Scan(
 		&metadata,
 		&dbSchema.Schema,
+		&config,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -184,11 +192,16 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	}
 
 	var databaseSchema storepb.DatabaseSchemaMetadata
+	var databaseConfig storepb.DatabaseConfig
 	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err := decoder.Unmarshal(metadata, &databaseSchema); err != nil {
 		return nil, err
 	}
+	if err := decoder.Unmarshal(config, &databaseConfig); err != nil {
+		return nil, err
+	}
 	dbSchema.Metadata = &databaseSchema
+	dbSchema.Config = &databaseConfig
 
 	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
 	return dbSchema, nil
@@ -236,5 +249,38 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 	}
 
 	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
+	return nil
+}
+
+// UpdateDBSchema updates a database schema.
+func (s *Store) UpdateDBSchema(ctx context.Context, databaseID int, patch *UpdateDBSchemaMessage, updaterID int) error {
+	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
+	if v := patch.Config; v != nil {
+		bytes, err := protojson.Marshal(v)
+		if err != nil {
+			return err
+		}
+		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, bytes)
+	}
+	args = append(args, databaseID)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
+			UPDATE db_schema
+			SET `+strings.Join(set, ", ")+`
+			WHERE database_id = $%d
+		`, len(args)), args...,
+	); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	// Invalid the cache and read the value again.
+	s.dbSchemaCache.Del(databaseID)
 	return nil
 }

@@ -1167,6 +1167,80 @@ export interface SchemaGroup_Table {
   table: string;
 }
 
+export interface GetProjectProtectionRulesRequest {
+  /**
+   * The name of the protection rules.
+   * Format: projects/{project}/protectionRules
+   */
+  name: string;
+}
+
+export interface UpdateProjectProtectionRulesRequest {
+  protectionRules: ProtectionRules | undefined;
+}
+
+export interface ProtectionRules {
+  /**
+   * The name of the protection rules.
+   * Format: projects/{project}/protectionRules
+   */
+  name: string;
+  rules: ProtectionRule[];
+}
+
+export interface ProtectionRule {
+  /** A unique identifier for a node in UUID format. */
+  id: string;
+  target: ProtectionRule_Target;
+  /** The name of the branch/changelist or wildcard. */
+  nameFilter: string;
+  /**
+   * The roles allowed to create branches or changelists.
+   * Format: roles/OWNER.
+   */
+  createAllowedRoles: string[];
+}
+
+/** The type of target. */
+export enum ProtectionRule_Target {
+  PROTECTION_TARGET_UNSPECIFIED = 0,
+  BRANCH = 1,
+  CHANGELIST = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function protectionRule_TargetFromJSON(object: any): ProtectionRule_Target {
+  switch (object) {
+    case 0:
+    case "PROTECTION_TARGET_UNSPECIFIED":
+      return ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED;
+    case 1:
+    case "BRANCH":
+      return ProtectionRule_Target.BRANCH;
+    case 2:
+    case "CHANGELIST":
+      return ProtectionRule_Target.CHANGELIST;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ProtectionRule_Target.UNRECOGNIZED;
+  }
+}
+
+export function protectionRule_TargetToJSON(object: ProtectionRule_Target): string {
+  switch (object) {
+    case ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED:
+      return "PROTECTION_TARGET_UNSPECIFIED";
+    case ProtectionRule_Target.BRANCH:
+      return "BRANCH";
+    case ProtectionRule_Target.CHANGELIST:
+      return "CHANGELIST";
+    case ProtectionRule_Target.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 function createBaseGetProjectRequest(): GetProjectRequest {
   return { name: "" };
 }
@@ -5059,6 +5133,301 @@ export const SchemaGroup_Table = {
   },
 };
 
+function createBaseGetProjectProtectionRulesRequest(): GetProjectProtectionRulesRequest {
+  return { name: "" };
+}
+
+export const GetProjectProtectionRulesRequest = {
+  encode(message: GetProjectProtectionRulesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetProjectProtectionRulesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetProjectProtectionRulesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetProjectProtectionRulesRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetProjectProtectionRulesRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetProjectProtectionRulesRequest>): GetProjectProtectionRulesRequest {
+    return GetProjectProtectionRulesRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<GetProjectProtectionRulesRequest>): GetProjectProtectionRulesRequest {
+    const message = createBaseGetProjectProtectionRulesRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateProjectProtectionRulesRequest(): UpdateProjectProtectionRulesRequest {
+  return { protectionRules: undefined };
+}
+
+export const UpdateProjectProtectionRulesRequest = {
+  encode(message: UpdateProjectProtectionRulesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.protectionRules !== undefined) {
+      ProtectionRules.encode(message.protectionRules, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateProjectProtectionRulesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateProjectProtectionRulesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.protectionRules = ProtectionRules.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateProjectProtectionRulesRequest {
+    return {
+      protectionRules: isSet(object.protectionRules) ? ProtectionRules.fromJSON(object.protectionRules) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateProjectProtectionRulesRequest): unknown {
+    const obj: any = {};
+    message.protectionRules !== undefined &&
+      (obj.protectionRules = message.protectionRules ? ProtectionRules.toJSON(message.protectionRules) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateProjectProtectionRulesRequest>): UpdateProjectProtectionRulesRequest {
+    return UpdateProjectProtectionRulesRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<UpdateProjectProtectionRulesRequest>): UpdateProjectProtectionRulesRequest {
+    const message = createBaseUpdateProjectProtectionRulesRequest();
+    message.protectionRules = (object.protectionRules !== undefined && object.protectionRules !== null)
+      ? ProtectionRules.fromPartial(object.protectionRules)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseProtectionRules(): ProtectionRules {
+  return { name: "", rules: [] };
+}
+
+export const ProtectionRules = {
+  encode(message: ProtectionRules, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.rules) {
+      ProtectionRule.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProtectionRules {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProtectionRules();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.rules.push(ProtectionRule.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProtectionRules {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      rules: Array.isArray(object?.rules) ? object.rules.map((e: any) => ProtectionRule.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ProtectionRules): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.rules) {
+      obj.rules = message.rules.map((e) => e ? ProtectionRule.toJSON(e) : undefined);
+    } else {
+      obj.rules = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProtectionRules>): ProtectionRules {
+    return ProtectionRules.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ProtectionRules>): ProtectionRules {
+    const message = createBaseProtectionRules();
+    message.name = object.name ?? "";
+    message.rules = object.rules?.map((e) => ProtectionRule.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseProtectionRule(): ProtectionRule {
+  return { id: "", target: 0, nameFilter: "", createAllowedRoles: [] };
+}
+
+export const ProtectionRule = {
+  encode(message: ProtectionRule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.target !== 0) {
+      writer.uint32(16).int32(message.target);
+    }
+    if (message.nameFilter !== "") {
+      writer.uint32(26).string(message.nameFilter);
+    }
+    for (const v of message.createAllowedRoles) {
+      writer.uint32(34).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProtectionRule {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProtectionRule();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.target = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.nameFilter = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createAllowedRoles.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProtectionRule {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      target: isSet(object.target) ? protectionRule_TargetFromJSON(object.target) : 0,
+      nameFilter: isSet(object.nameFilter) ? String(object.nameFilter) : "",
+      createAllowedRoles: Array.isArray(object?.createAllowedRoles)
+        ? object.createAllowedRoles.map((e: any) => String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ProtectionRule): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.target !== undefined && (obj.target = protectionRule_TargetToJSON(message.target));
+    message.nameFilter !== undefined && (obj.nameFilter = message.nameFilter);
+    if (message.createAllowedRoles) {
+      obj.createAllowedRoles = message.createAllowedRoles.map((e) => e);
+    } else {
+      obj.createAllowedRoles = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProtectionRule>): ProtectionRule {
+    return ProtectionRule.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ProtectionRule>): ProtectionRule {
+    const message = createBaseProtectionRule();
+    message.id = object.id ?? "";
+    message.target = object.target ?? 0;
+    message.nameFilter = object.nameFilter ?? "";
+    message.createAllowedRoles = object.createAllowedRoles?.map((e) => e) || [];
+    return message;
+  },
+};
+
 export type ProjectServiceDefinition = typeof ProjectServiceDefinition;
 export const ProjectServiceDefinition = {
   name: "ProjectService",
@@ -7031,6 +7400,136 @@ export const ProjectServiceDefinition = {
               115,
               47,
               42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    getProjectProtectionRules: {
+      name: "GetProjectProtectionRules",
+      requestType: GetProjectProtectionRulesRequest,
+      requestStream: false,
+      responseType: ProtectionRules,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              39,
+              18,
+              37,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              112,
+              114,
+              111,
+              116,
+              101,
+              99,
+              116,
+              105,
+              111,
+              110,
+              82,
+              117,
+              108,
+              101,
+              115,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    updateProjectProtectionRules: {
+      name: "UpdateProjectProtectionRules",
+      requestType: UpdateProjectProtectionRulesRequest,
+      requestStream: false,
+      responseType: ProtectionRules,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              59,
+              58,
+              1,
+              42,
+              34,
+              54,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              114,
+              111,
+              116,
+              101,
+              99,
+              116,
+              105,
+              111,
+              110,
+              95,
+              114,
+              117,
+              108,
+              101,
+              115,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              112,
+              114,
+              111,
+              116,
+              101,
+              99,
+              116,
+              105,
+              111,
+              110,
+              82,
+              117,
+              108,
+              101,
+              115,
               125,
             ]),
           ],

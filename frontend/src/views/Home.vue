@@ -17,6 +17,7 @@
       <WaitingForMyApprovalIssueTableV1
         v-if="hasCustomApprovalFeature"
         session-key="home-waiting-approval"
+        :project="commonIssueFilter.project"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1
@@ -38,7 +39,7 @@
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
-          assignee: `users/${currentUserV1.email}`,
+          assignee: `${userNamePrefix}${currentUserV1.email}`,
         }"
         :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
       >
@@ -62,7 +63,7 @@
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
-          creator: `users/${currentUserV1.email}`,
+          creator: `${userNamePrefix}${currentUserV1.email}`,
         }"
         :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
       >
@@ -86,7 +87,7 @@
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
-          subscriber: `users/${currentUserV1.email}`,
+          subscriber: `${userNamePrefix}${currentUserV1.email}`,
         }"
         :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
       >
@@ -111,7 +112,7 @@
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
-          principal: `users/${currentUserV1.email}`,
+          principal: `${userNamePrefix}${currentUserV1.email}`,
         }"
         :page-size="MAX_CLOSED_ISSUE"
         :hide-load-more="true"
@@ -214,6 +215,7 @@ import {
   featureToRef,
   useCurrentUserV1,
 } from "@/store";
+import { userNamePrefix } from "@/store/modules/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { ComposedIssue, IssueFilter, planTypeToString } from "../types";
 import { extractUserUID } from "../utils";

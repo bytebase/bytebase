@@ -11,7 +11,7 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
@@ -44,7 +44,7 @@ const branchName = computed(() => {
   return `projects/${project}/schemaDesigns/${sheetId}`;
 });
 
-onMounted(async () => {
+watchEffect(async () => {
   if (!isCreating.value) {
     const sheetId = idFromSlug(props.branchSlug);
     const sheet = await sheetStore.getOrFetchSheetByUID(`${sheetId}`);
@@ -69,7 +69,7 @@ const documentTitle = computed(() => {
       const schemaDesign = schemaDesignStore.getSchemaDesignByName(
         branchName.value
       );
-      return `${schemaDesign.title} - ${t("common.branch")}`;
+      return `${schemaDesign.title}`;
     }
   }
   return t("common.loading");

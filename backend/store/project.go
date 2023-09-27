@@ -7,45 +7,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
-
-// GetProjectByID gets an instance of Project.
-func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error) {
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: &id})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Project with ID %d", id)
-	}
-	if project == nil {
-		return nil, nil
-	}
-	composedProject, err := s.composeProject(project)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
-	}
-	return composedProject, nil
-}
-
-func (*Store) composeProject(project *ProjectMessage) (*api.Project, error) {
-	composedProject := &api.Project{
-		ID:               project.UID,
-		ResourceID:       project.ResourceID,
-		RowStatus:        api.Normal,
-		Name:             project.Title,
-		Key:              project.Key,
-		WorkflowType:     project.Workflow,
-		Visibility:       project.Visibility,
-		TenantMode:       project.TenantMode,
-		DBNameTemplate:   project.DBNameTemplate,
-		SchemaChangeType: project.SchemaChangeType,
-	}
-	if project.Deleted {
-		composedProject.RowStatus = api.Archived
-	}
-	return composedProject, nil
-}
 
 // ProjectMessage is the message for project.
 type ProjectMessage struct {
@@ -59,6 +26,7 @@ type ProjectMessage struct {
 	SchemaChangeType           api.ProjectSchemaChangeType
 	Webhooks                   []*ProjectWebhookMessage
 	DataClassificationConfigID string
+	Setting                    *storepb.Project
 	// The following fields are output only and not used for create().
 	UID     int
 	Deleted bool
@@ -85,6 +53,7 @@ type UpdateProjectMessage struct {
 	Workflow                   *api.ProjectWorkflowType
 	SchemaChangeType           *api.ProjectSchemaChangeType
 	DataClassificationConfigID *string
+	Setting                    *storepb.Project
 	Delete                     *bool
 }
 
@@ -169,6 +138,13 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	if err != nil {
 		return nil, err
 	}
+	if create.Setting == nil {
+		create.Setting = &storepb.Project{}
+	}
+	payload, err := protojson.Marshal(create.Setting)
+	if err != nil {
+		return nil, err
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -186,6 +162,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		DBNameTemplate:             create.DBNameTemplate,
 		SchemaChangeType:           create.SchemaChangeType,
 		DataClassificationConfigID: create.DataClassificationConfigID,
+		Setting:                    create.Setting,
 	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO project (
@@ -199,9 +176,10 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 				tenant_mode,
 				db_name_template,
 				schema_change_type,
-				data_classification_config_id
+				data_classification_config_id,
+				setting
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 			RETURNING id
 		`,
 		creatorID,
@@ -215,6 +193,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.DBNameTemplate,
 		create.SchemaChangeType,
 		create.DataClassificationConfigID,
+		payload,
 	).Scan(
 		&project.UID,
 	); err != nil {
@@ -298,10 +277,19 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 	if v := patch.DataClassificationConfigID; v != nil {
 		set, args = append(set, fmt.Sprintf("data_classification_config_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Setting; v != nil {
+		payload, err := protojson.Marshal(patch.Setting)
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, fmt.Sprintf("setting = $%d", len(args)+1)), append(args, payload)
+	}
+
 	args = append(args, patch.ResourceID)
 
 	project := &ProjectMessage{}
 	var rowStatus string
+	var payload []byte
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
@@ -317,6 +305,7 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 			db_name_template,
 			schema_change_type,
 			data_classification_config_id,
+			setting,
 			row_status
 	`, len(args)),
 		args...,
@@ -331,6 +320,7 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 		&project.DBNameTemplate,
 		&project.SchemaChangeType,
 		&project.DataClassificationConfigID,
+		&payload,
 		&rowStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -338,6 +328,12 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 		}
 		return nil, err
 	}
+	setting := &storepb.Project{}
+	if err := protojsonUnmarshaler.Unmarshal(payload, setting); err != nil {
+		return nil, err
+	}
+	project.Setting = setting
+
 	projectWebhooks, err := s.findProjectWebhookImplV2(ctx, tx, &FindProjectWebhookMessage{ProjectID: &project.UID})
 	if err != nil {
 		return nil, err
@@ -372,6 +368,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			db_name_template,
 			schema_change_type,
 			data_classification_config_id,
+			setting,
 			row_status
 		FROM project
 		WHERE `+strings.Join(where, " AND "),
@@ -384,6 +381,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 
 	for rows.Next() {
 		var projectMessage ProjectMessage
+		var payload []byte
 		var rowStatus string
 		if err := rows.Scan(
 			&projectMessage.UID,
@@ -396,10 +394,16 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			&projectMessage.DBNameTemplate,
 			&projectMessage.SchemaChangeType,
 			&projectMessage.DataClassificationConfigID,
+			&payload,
 			&rowStatus,
 		); err != nil {
 			return nil, err
 		}
+		setting := &storepb.Project{}
+		if err := protojsonUnmarshaler.Unmarshal(payload, setting); err != nil {
+			return nil, err
+		}
+		projectMessage.Setting = setting
 		projectMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		projectMessages = append(projectMessages, &projectMessage)
 	}

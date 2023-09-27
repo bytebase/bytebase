@@ -82,11 +82,7 @@
         <WaitingForMyApprovalIssueTableV1
           v-if="hasCustomApprovalFeature"
           session-key="project-waiting-approval"
-          method="LIST"
-          :issue-filter="{
-            ...commonIssueFilter,
-            statusList: [IssueStatus.OPEN],
-          }"
+          :project="commonIssueFilter.project"
         >
           <template #table="{ issueList, loading }">
             <IssueTableV1
@@ -163,9 +159,11 @@
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUserV1 } from "@/store";
+import { userNamePrefix } from "@/store/modules/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Project } from "@/types/proto/v1/project_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import { ComposedIssue, IssueFilter } from "../types";
 import IssueTableV1 from "./IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "./IssueV1/components/PagedIssueTableV1.vue";
@@ -196,8 +194,15 @@ const state = reactive<LocalState>({
 });
 const { t } = useI18n();
 const router = useRouter();
+const currentUserV1 = useCurrentUserV1();
 
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
+const hasPermission = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-issue",
+    currentUserV1.value.userRole
+  );
+});
 
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   const WAITING_APPROVAL: TabFilterItem<TabValue> = {
@@ -213,9 +218,14 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
 });
 
 const commonIssueFilter = computed((): IssueFilter => {
+  let principal = "";
+  if (!hasPermission.value) {
+    principal = `${userNamePrefix}${currentUserV1.value.email}`;
+  }
   return {
     project: props.project.name,
     query: "",
+    principal,
   };
 });
 

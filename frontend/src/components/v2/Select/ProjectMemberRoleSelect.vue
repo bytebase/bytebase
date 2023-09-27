@@ -8,6 +8,7 @@
     :filter="filterByName"
     :placeholder="$t('role.select')"
     :render-label="renderLabel"
+    class="bb-project-member-role-select"
     @update:value="changeRole"
   />
   <FeatureModal
@@ -104,3 +105,9 @@ const filterByName = (pattern: string, option: SelectOption) => {
   return role.name.toLowerCase().includes(pattern);
 };
 </script>
+
+<style lang="postcss" scoped>
+.bb-project-member-role-select ::v-deep .n-base-selection-input:focus {
+  @apply !ring-0;
+}
+</style>

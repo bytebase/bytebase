@@ -258,8 +258,10 @@ const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
 };
 
 const handleAddColumn = () => {
-  const column = convertColumnMetadataToColumn(ColumnMetadata.fromPartial({}));
-  column.status = "created";
+  const column = convertColumnMetadataToColumn(
+    ColumnMetadata.fromPartial({}),
+    "created"
+  );
   table.value.columnList.push(column);
   nextTick(() => {
     const container = document.querySelector("#table-editor-container");
@@ -274,6 +276,7 @@ const handleAddColumn = () => {
 const handleApplyColumnTemplate = (
   template: SchemaTemplateSetting_FieldTemplate
 ) => {
+  state.showSchemaTemplateDrawer = false;
   if (!hasFeature("bb.feature.schema-template")) {
     state.showFeatureModal = true;
     return;
@@ -281,10 +284,8 @@ const handleApplyColumnTemplate = (
   if (template.engine !== engine.value || !template.column) {
     return;
   }
-  const column = convertColumnMetadataToColumn(template.column);
-  column.status = "created";
+  const column = convertColumnMetadataToColumn(template.column, "created");
   table.value.columnList.push(column);
-  state.showSchemaTemplateDrawer = false;
 };
 
 const gotoForeignKeyReferencedTable = (column: Column) => {

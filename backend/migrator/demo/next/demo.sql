@@ -24,7 +24,7 @@ SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE public.principal DISABLE TRIGGER ALL;
 
-INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695196354, 1, 1695196354, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (1, 'NORMAL', 1, 1695361205, 1, 1695361205, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (101, 'NORMAL', 1, 1694684977, 101, 1695112774, 'END_USER', 'Demo Owner', 'demo@example.com', '$2a$10$JbwDbh1u86G9UUCMKXehV.uKPQhZYEJIUiLpVXRkVM4pNAUnU1THG', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (102, 'NORMAL', 1, 1695112807, 101, 1695112895, 'END_USER', 'Jerry DBA', 'jerry@example.com', '$2a$10$GH4GKACLebRGpY3B/oAgNuuIg/FA/j0a5x7h9.AQxex1TfD8cb6ZG', '', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash, phone, mfa_config) VALUES (103, 'NORMAL', 1, 1695112807, 101, 1695112903, 'END_USER', 'Tom Dev', 'tom@example.com', '$2a$10$5d6.P.g/jb8AmSdsdkqZE.fopcsRDPLdlSRSg.Homdbbl7GpEZPVq', '', '{}') ON CONFLICT DO NOTHING;
@@ -145,6 +145,20 @@ INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (202, 'NORMAL', 1, 1695199122, 1, 1695199122, 109, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 113, "taskName": "DDL(schema) for database \"blog_prod\"", "issueName": "[blog_prod] Alter schema: Create table blog", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (203, 'NORMAL', 1, 1695199122, 1, 1695199122, 109, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 113, "issueName": "[blog_prod] Alter schema: Create table blog", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (204, 'NORMAL', 1, 1695199122, 1, 1695199122, 109, 'bb.issue.status.update', 'INFO', '', '{"issueName": "[blog_prod] Alter schema: Create table blog", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (205, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 'bb.issue.create', 'INFO', '', '{"issueName": "[3 databases] Import data but secretly drops tables @09-21 15:47 UTC+0800"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (206, 'NORMAL', 1, 1695282638, 1, 1695282638, 110, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (207, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 'bb.issue.create', 'INFO', '', '{"issueName": "👉👉👉 [START HERE] Add email column to Employee table"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (208, 'NORMAL', 1, 1695287998, 1, 1695287998, 111, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (209, 'NORMAL', 101, 1695288454, 101, 1695288454, 112, 'bb.issue.create', 'INFO', '', '{"issueName": "Establish \"employee\" baseline"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (210, 'NORMAL', 101, 1695288459, 101, 1695288459, 112, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 119, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (211, 'NORMAL', 1, 1695288459, 1, 1695288459, 112, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 119, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (212, 'NORMAL', 1, 1695288459, 1, 1695288459, 112, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 119, "issueName": "Establish \"employee\" baseline", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (213, 'NORMAL', 1, 1695288459, 1, 1695288459, 112, 'bb.issue.status.update', 'INFO', '', '{"issueName": "Establish \"employee\" baseline", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (214, 'NORMAL', 101, 1695288476, 101, 1695288476, 113, 'bb.issue.create', 'INFO', '', '{"issueName": "Establish \"employee\" baseline"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (215, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 120, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (216, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 120, "taskName": "Establish baseline for database \"employee\"", "issueName": "Establish \"employee\" baseline", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (217, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 120, "issueName": "Establish \"employee\" baseline", "stageName": "Test Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (218, 'NORMAL', 1, 1695288476, 1, 1695288476, 113, 'bb.issue.status.update', 'INFO', '', '{"issueName": "Establish \"employee\" baseline", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.activity ENABLE TRIGGER ALL;
@@ -182,6 +196,8 @@ INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (114, 'NORMAL', 101, 1695026377, 101, 1695026377, 102, 'risingwave', 'RISINGWAVE', '', '', 'risingwave', true, '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (102, 'NORMAL', 101, 1695025945, 1, 1695177903, 102, 'postgres', 'POSTGRES', '14.3', '', 'pg-prod', true, '{}', '{"lastSyncTime": "2023-09-20T02:45:02.695639Z"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (101, 'NORMAL', 101, 1695025927, 1, 1695177909, 102, 'mysql', 'MYSQL', '8.0.33', '', 'mysql-prod', true, '{}', '{"lastSyncTime": "2023-09-20T02:45:08.853376Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (115, 'NORMAL', 101, 1695287997, 1, 1695288194, 101, 'Test Sample Instance', 'POSTGRES', '14.2', '', 'test-sample-instance', true, '{}', '{"lastSyncTime": "2023-09-21T09:23:13.527088Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (116, 'NORMAL', 101, 1695287997, 1, 1695288197, 102, 'Prod Sample Instance', 'POSTGRES', '14.2', '', 'prod-sample-instance', true, '{}', '{"lastSyncTime": "2023-09-21T09:23:17.093125Z"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance ENABLE TRIGGER ALL;
@@ -192,9 +208,10 @@ ALTER TABLE public.instance ENABLE TRIGGER ALL;
 
 ALTER TABLE public.project DISABLE TRIGGER ALL;
 
-INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695196354, 1, 1695196354, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (1, 'NORMAL', 1, 1695361205, 1, 1695361205, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'default', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (101, 'NORMAL', 101, 1694685057, 101, 1695180633, 'sakila', 'SKL', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'test', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
-INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (102, 'NORMAL', 101, 1695197199, 101, 1695197660, 'blog', 'BLG', 'VCS', 'PUBLIC', 'DISABLED', '', 'DDL', 'blog', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (103, 'NORMAL', 101, 1695287997, 101, 1695287997, 'Sample Project', 'SAM', 'UI', 'PUBLIC', 'DISABLED', '', 'DDL', 'project-sample', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, schema_change_type, resource_id, data_classification_config_id, schema_version_type) VALUES (102, 'NORMAL', 101, 1695197199, 101, 1695355271, 'blog', 'BLG', 'VCS', 'PUBLIC', 'DISABLED', '', 'DDL', 'blog', '', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.project ENABLE TRIGGER ALL;
@@ -210,6 +227,8 @@ INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updat
 INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695192793, 101, 101, 102, NULL, 'OK', 1695192792, '20230920144133', 'sakila_prod', '{}', false, '', '{"labels": {"bb.environment": "prod"}, "lastSyncTime": "2023-09-20T06:53:12Z"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (104, 'NORMAL', 1, 1695197715, 1, 1695198629, 101, 102, 101, NULL, 'OK', 1695198629, '202309201624-ddl', 'blog_test', '{}', false, '', '{"labels": {"bb.environment": "test"}, "lastSyncTime": "2023-09-20T08:30:29Z"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (105, 'NORMAL', 1, 1695197772, 1, 1695199122, 101, 102, 102, NULL, 'OK', 1695199122, '202309201624-ddl', 'blog_prod', '{}', false, '', '{"labels": {"bb.environment": "prod"}, "lastSyncTime": "2023-09-20T08:38:42Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (107, 'NORMAL', 1, 1695287997, 1, 1695288459, 116, 103, NULL, NULL, 'OK', 1695288459, '20230921172734', 'employee', '{}', false, '', '{"lastSyncTime": "2023-09-21T09:27:39Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (106, 'NORMAL', 1, 1695287997, 1, 1695288476, 115, 103, NULL, NULL, 'OK', 1695288475, '20230921172755', 'employee', '{}', false, '', '{"lastSyncTime": "2023-09-21T09:27:55Z"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.db ENABLE TRIGGER ALL;
@@ -251,6 +270,7 @@ ALTER TABLE public.backup_setting ENABLE TRIGGER ALL;
 
 ALTER TABLE public.bookmark DISABLE TRIGGER ALL;
 
+INSERT INTO public.bookmark (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, link) VALUES (101, 'NORMAL', 101, 1695287997, 101, 1695287997, 'Sample Issue', '/issue/start-here-add-email-column-to-employee-table-111') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.bookmark ENABLE TRIGGER ALL;
@@ -275,6 +295,8 @@ INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_
 INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (112, 'NORMAL', 101, 1695026350, 101, 1695026350, 112, 'c69ae443-0684-4683-b0a9-cade8f446ba9', 'ADMIN', '', '', '', '', '', '127.0.0.1', '1433', '{}', '') ON CONFLICT DO NOTHING;
 INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (113, 'NORMAL', 101, 1695026361, 101, 1695026361, 113, '9b9bb649-7a63-4d3e-a16b-8725dc32a15e', 'ADMIN', '', '', '', '', '', '127.0.0.1', '5439', '{}', '') ON CONFLICT DO NOTHING;
 INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (114, 'NORMAL', 101, 1695026377, 101, 1695026377, 114, 'b449371a-3305-4418-8297-86682012f719', 'ADMIN', '', '', '', '', '', '127.0.0.1', '3306', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (115, 'NORMAL', 101, 1695287997, 101, 1695287997, 115, 'admin', 'ADMIN', 'bbsample', '', '', '', '', '/tmp', '446', '{}', 'employee') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (116, 'NORMAL', 101, 1695287997, 101, 1695287997, 116, 'admin', 'ADMIN', 'bbsample', '', '', '', '', '/tmp', '447', '{}', 'employee') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.data_source ENABLE TRIGGER ALL;
@@ -305,7 +327,7 @@ ALTER TABLE public.db_label ENABLE TRIGGER ALL;
 
 ALTER TABLE public.db_schema DISABLE TRIGGER ALL;
 
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (102, 'NORMAL', 1, 1695179054, 1, 1695192773, 102, '{"name": "sakila_test", "schemas": [{"views": [{"name": "actor_info", "comment": "VIEW", "definition": "select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`sakila_test`.`film` `f` join `sakila_test`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_test`.`film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`sakila_test`.`actor` `a` left join `sakila_test`.`film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `sakila_test`.`film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `sakila_test`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`"}, {"name": "customer_list", "comment": "VIEW", "definition": "select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_test`.`city`.`city` AS `city`,`sakila_test`.`country`.`country` AS `country`,if(`cu`.`active`,''active'','''') AS `notes`,`cu`.`store_id` AS `SID` from (((`sakila_test`.`customer` `cu` join `sakila_test`.`address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `sakila_test`.`city` on((`a`.`city_id` = `sakila_test`.`city`.`city_id`))) join `sakila_test`.`country` on((`sakila_test`.`city`.`country_id` = `sakila_test`.`country`.`country_id`)))"}, {"name": "film_list", "comment": "VIEW", "definition": "select `sakila_test`.`film`.`film_id` AS `FID`,`sakila_test`.`film`.`title` AS `title`,`sakila_test`.`film`.`description` AS `description`,`sakila_test`.`category`.`name` AS `category`,`sakila_test`.`film`.`rental_rate` AS `price`,`sakila_test`.`film`.`length` AS `length`,`sakila_test`.`film`.`rating` AS `rating`,group_concat(concat(`sakila_test`.`actor`.`first_name`,'' '',`sakila_test`.`actor`.`last_name`) separator '', '') AS `actors` from ((((`sakila_test`.`category` left join `sakila_test`.`film_category` on((`sakila_test`.`category`.`category_id` = `sakila_test`.`film_category`.`category_id`))) left join `sakila_test`.`film` on((`sakila_test`.`film_category`.`film_id` = `sakila_test`.`film`.`film_id`))) join `sakila_test`.`film_actor` on((`sakila_test`.`film`.`film_id` = `sakila_test`.`film_actor`.`film_id`))) join `sakila_test`.`actor` on((`sakila_test`.`film_actor`.`actor_id` = `sakila_test`.`actor`.`actor_id`))) group by `sakila_test`.`film`.`film_id`,`sakila_test`.`category`.`name`"}, {"name": "nicer_but_slower_film_list", "comment": "VIEW", "definition": "select `sakila_test`.`film`.`film_id` AS `FID`,`sakila_test`.`film`.`title` AS `title`,`sakila_test`.`film`.`description` AS `description`,`sakila_test`.`category`.`name` AS `category`,`sakila_test`.`film`.`rental_rate` AS `price`,`sakila_test`.`film`.`length` AS `length`,`sakila_test`.`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`sakila_test`.`actor`.`first_name`,1,1)),lower(substr(`sakila_test`.`actor`.`first_name`,2,length(`sakila_test`.`actor`.`first_name`))),'' '',concat(upper(substr(`sakila_test`.`actor`.`last_name`,1,1)),lower(substr(`sakila_test`.`actor`.`last_name`,2,length(`sakila_test`.`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`sakila_test`.`category` left join `sakila_test`.`film_category` on((`sakila_test`.`category`.`category_id` = `sakila_test`.`film_category`.`category_id`))) left join `sakila_test`.`film` on((`sakila_test`.`film_category`.`film_id` = `sakila_test`.`film`.`film_id`))) join `sakila_test`.`film_actor` on((`sakila_test`.`film`.`film_id` = `sakila_test`.`film_actor`.`film_id`))) join `sakila_test`.`actor` on((`sakila_test`.`film_actor`.`actor_id` = `sakila_test`.`actor`.`actor_id`))) group by `sakila_test`.`film`.`film_id`,`sakila_test`.`category`.`name`"}, {"name": "sales_by_film_category", "comment": "VIEW", "definition": "select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`sakila_test`.`payment` `p` join `sakila_test`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_test`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_test`.`film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `sakila_test`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_test`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc"}, {"name": "sales_by_store", "comment": "VIEW", "definition": "select concat(`c`.`city`,'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`sakila_test`.`payment` `p` join `sakila_test`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_test`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_test`.`store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `sakila_test`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_test`.`city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `sakila_test`.`country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `sakila_test`.`staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`"}, {"name": "staff_list", "comment": "VIEW", "definition": "select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_test`.`city`.`city` AS `city`,`sakila_test`.`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`sakila_test`.`staff` `s` join `sakila_test`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_test`.`city` on((`a`.`city_id` = `sakila_test`.`city`.`city_id`))) join `sakila_test`.`country` on((`sakila_test`.`city`.`country_id` = `sakila_test`.`country`.`country_id`)))"}], "tables": [{"name": "actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id"]}, {"name": "idx_actor_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384"}, {"name": "address", "engine": "InnoDB", "columns": [{"name": "address_id", "type": "smallint unsigned", "position": 1}, {"name": "address", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address2", "type": "varchar(50)", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "district", "type": "varchar(20)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "city_id", "type": "smallint unsigned", "position": 5}, {"name": "postal_code", "type": "varchar(10)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "phone", "type": "varchar(20)", "position": 7, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "location", "type": "geometry", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_city_id", "type": "BTREE", "visible": true, "expressions": ["city_id"]}, {"name": "idx_location", "type": "SPATIAL", "visible": true, "expressions": ["location"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_address_city", "columns": ["city_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "city", "referencedColumns": ["city_id"]}]}, {"name": "category", "engine": "InnoDB", "columns": [{"name": "category_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "varchar(25)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "city", "engine": "InnoDB", "columns": [{"name": "city_id", "type": "smallint unsigned", "position": 1}, {"name": "city", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "country_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["city_id"]}, {"name": "idx_fk_country_id", "type": "BTREE", "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_city_country", "columns": ["country_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "country", "referencedColumns": ["country_id"]}]}, {"name": "country", "engine": "InnoDB", "columns": [{"name": "country_id", "type": "smallint unsigned", "position": 1}, {"name": "country", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "customer", "engine": "InnoDB", "columns": [{"name": "customer_id", "type": "smallint unsigned", "position": 1}, {"name": "store_id", "type": "tinyint unsigned", "position": 2}, {"name": "first_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 5, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 6}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 7}, {"name": "create_date", "type": "datetime", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}, {"name": "idx_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_customer_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_customer_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "film", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "release_year", "type": "year", "nullable": true, "position": 4}, {"name": "language_id", "type": "tinyint unsigned", "position": 5}, {"name": "original_language_id", "type": "tinyint unsigned", "nullable": true, "position": 6}, {"name": "rental_duration", "type": "tinyint unsigned", "default": "3", "position": 7}, {"name": "rental_rate", "type": "decimal(4,2)", "default": "4.99", "position": 8}, {"name": "length", "type": "smallint unsigned", "nullable": true, "position": 9}, {"name": "replacement_cost", "type": "decimal(5,2)", "default": "19.99", "position": 10}, {"name": "rating", "type": "enum(''G'',''PG'',''PG-13'',''R'',''NC-17'')", "default": "G", "nullable": true, "position": 11, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "special_features", "type": "set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'')", "nullable": true, "position": 12, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 13}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_fk_language_id", "type": "BTREE", "visible": true, "expressions": ["language_id"]}, {"name": "idx_fk_original_language_id", "type": "BTREE", "visible": true, "expressions": ["original_language_id"]}, {"name": "idx_title", "type": "BTREE", "visible": true, "expressions": ["title"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_film_language", "columns": ["language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}, {"name": "fk_film_language_original", "columns": ["original_language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}]}, {"name": "film_actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id", "film_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_actor_actor", "columns": ["actor_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "actor", "referencedColumns": ["actor_id"]}, {"name": "fk_film_actor_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_category", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "category_id", "type": "tinyint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id", "category_id"]}, {"name": "fk_film_category_category", "type": "BTREE", "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_category_category", "columns": ["category_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "category", "referencedColumns": ["category_id"]}, {"name": "fk_film_category_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_text", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_title_description", "type": "FULLTEXT", "visible": true, "expressions": ["title", "description"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768"}, {"name": "inventory", "engine": "InnoDB", "columns": [{"name": "inventory_id", "type": "mediumint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "store_id", "type": "tinyint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}, {"name": "idx_store_id_film_id", "type": "BTREE", "visible": true, "expressions": ["store_id", "film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_inventory_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}, {"name": "fk_inventory_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "language", "engine": "InnoDB", "columns": [{"name": "language_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "char(20)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["language_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "payment", "engine": "InnoDB", "columns": [{"name": "payment_id", "type": "smallint unsigned", "position": 1}, {"name": "customer_id", "type": "smallint unsigned", "position": 2}, {"name": "staff_id", "type": "tinyint unsigned", "position": 3}, {"name": "rental_id", "type": "int", "nullable": true, "position": 4}, {"name": "amount", "type": "decimal(5,2)", "position": 5}, {"name": "payment_date", "type": "datetime", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["payment_id"]}, {"name": "fk_payment_rental", "type": "BTREE", "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_payment_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_payment_rental", "columns": ["rental_id"], "onDelete": "SET NULL", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "rental", "referencedColumns": ["rental_id"]}, {"name": "fk_payment_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "rental", "engine": "InnoDB", "columns": [{"name": "rental_id", "type": "int", "position": 1}, {"name": "rental_date", "type": "datetime", "position": 2}, {"name": "inventory_id", "type": "mediumint unsigned", "position": 3}, {"name": "customer_id", "type": "smallint unsigned", "position": 4}, {"name": "return_date", "type": "datetime", "nullable": true, "position": 5}, {"name": "staff_id", "type": "tinyint unsigned", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_inventory_id", "type": "BTREE", "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}, {"name": "rental_date", "type": "BTREE", "unique": true, "visible": true, "expressions": ["rental_date", "inventory_id", "customer_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "65536", "foreignKeys": [{"name": "fk_rental_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_rental_inventory", "columns": ["inventory_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "inventory", "referencedColumns": ["inventory_id"]}, {"name": "fk_rental_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "staff", "engine": "InnoDB", "columns": [{"name": "staff_id", "type": "tinyint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 4}, {"name": "picture", "type": "blob", "nullable": true, "position": 5}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "store_id", "type": "tinyint unsigned", "position": 7}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 8}, {"name": "username", "type": "varchar(16)", "position": 9, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "password", "type": "varchar(40)", "nullable": true, "position": 10, "collation": "utf8mb3_bin", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 11}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["staff_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_staff_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_staff_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "store", "engine": "InnoDB", "columns": [{"name": "store_id", "type": "tinyint unsigned", "position": 1}, {"name": "manager_staff_id", "type": "tinyint unsigned", "position": 2}, {"name": "address_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["store_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_unique_manager", "type": "BTREE", "unique": true, "visible": true, "expressions": ["manager_staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_store_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_store_staff", "columns": ["manager_staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (102, 'NORMAL', 1, 1695179054, 1, 1695192773, 102, '{"name": "sakila_test", "schemas": [{"views": [{"name": "actor_info", "comment": "VIEW", "definition": "select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`sakila_test`.`film` `f` join `sakila_test`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_test`.`film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`sakila_test`.`actor` `a` left join `sakila_test`.`film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `sakila_test`.`film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `sakila_test`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`"}, {"name": "customer_list", "comment": "VIEW", "definition": "select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_test`.`city`.`city` AS `city`,`sakila_test`.`country`.`country` AS `country`,if(`cu`.`active`,''active'','''') AS `notes`,`cu`.`store_id` AS `SID` from (((`sakila_test`.`customer` `cu` join `sakila_test`.`address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `sakila_test`.`city` on((`a`.`city_id` = `sakila_test`.`city`.`city_id`))) join `sakila_test`.`country` on((`sakila_test`.`city`.`country_id` = `sakila_test`.`country`.`country_id`)))"}, {"name": "film_list", "comment": "VIEW", "definition": "select `sakila_test`.`film`.`film_id` AS `FID`,`sakila_test`.`film`.`title` AS `title`,`sakila_test`.`film`.`description` AS `description`,`sakila_test`.`category`.`name` AS `category`,`sakila_test`.`film`.`rental_rate` AS `price`,`sakila_test`.`film`.`length` AS `length`,`sakila_test`.`film`.`rating` AS `rating`,group_concat(concat(`sakila_test`.`actor`.`first_name`,'' '',`sakila_test`.`actor`.`last_name`) separator '', '') AS `actors` from ((((`sakila_test`.`category` left join `sakila_test`.`film_category` on((`sakila_test`.`category`.`category_id` = `sakila_test`.`film_category`.`category_id`))) left join `sakila_test`.`film` on((`sakila_test`.`film_category`.`film_id` = `sakila_test`.`film`.`film_id`))) join `sakila_test`.`film_actor` on((`sakila_test`.`film`.`film_id` = `sakila_test`.`film_actor`.`film_id`))) join `sakila_test`.`actor` on((`sakila_test`.`film_actor`.`actor_id` = `sakila_test`.`actor`.`actor_id`))) group by `sakila_test`.`film`.`film_id`,`sakila_test`.`category`.`name`"}, {"name": "nicer_but_slower_film_list", "comment": "VIEW", "definition": "select `sakila_test`.`film`.`film_id` AS `FID`,`sakila_test`.`film`.`title` AS `title`,`sakila_test`.`film`.`description` AS `description`,`sakila_test`.`category`.`name` AS `category`,`sakila_test`.`film`.`rental_rate` AS `price`,`sakila_test`.`film`.`length` AS `length`,`sakila_test`.`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`sakila_test`.`actor`.`first_name`,1,1)),lower(substr(`sakila_test`.`actor`.`first_name`,2,length(`sakila_test`.`actor`.`first_name`))),'' '',concat(upper(substr(`sakila_test`.`actor`.`last_name`,1,1)),lower(substr(`sakila_test`.`actor`.`last_name`,2,length(`sakila_test`.`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`sakila_test`.`category` left join `sakila_test`.`film_category` on((`sakila_test`.`category`.`category_id` = `sakila_test`.`film_category`.`category_id`))) left join `sakila_test`.`film` on((`sakila_test`.`film_category`.`film_id` = `sakila_test`.`film`.`film_id`))) join `sakila_test`.`film_actor` on((`sakila_test`.`film`.`film_id` = `sakila_test`.`film_actor`.`film_id`))) join `sakila_test`.`actor` on((`sakila_test`.`film_actor`.`actor_id` = `sakila_test`.`actor`.`actor_id`))) group by `sakila_test`.`film`.`film_id`,`sakila_test`.`category`.`name`"}, {"name": "sales_by_film_category", "comment": "VIEW", "definition": "select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`sakila_test`.`payment` `p` join `sakila_test`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_test`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_test`.`film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `sakila_test`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_test`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc"}, {"name": "sales_by_store", "comment": "VIEW", "definition": "select concat(`c`.`city`,'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`sakila_test`.`payment` `p` join `sakila_test`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_test`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_test`.`store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `sakila_test`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_test`.`city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `sakila_test`.`country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `sakila_test`.`staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`"}, {"name": "staff_list", "comment": "VIEW", "definition": "select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_test`.`city`.`city` AS `city`,`sakila_test`.`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`sakila_test`.`staff` `s` join `sakila_test`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_test`.`city` on((`a`.`city_id` = `sakila_test`.`city`.`city_id`))) join `sakila_test`.`country` on((`sakila_test`.`city`.`country_id` = `sakila_test`.`country`.`country_id`)))"}], "tables": [{"name": "actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id"]}, {"name": "idx_actor_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384"}, {"name": "address", "engine": "InnoDB", "columns": [{"name": "address_id", "type": "smallint unsigned", "position": 1}, {"name": "address", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address2", "type": "varchar(50)", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "district", "type": "varchar(20)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "city_id", "type": "smallint unsigned", "position": 5}, {"name": "postal_code", "type": "varchar(10)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "phone", "type": "varchar(20)", "position": 7, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "location", "type": "geometry", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_city_id", "type": "BTREE", "visible": true, "expressions": ["city_id"]}, {"name": "idx_location", "type": "SPATIAL", "visible": true, "expressions": ["location"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_address_city", "columns": ["city_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "city", "referencedColumns": ["city_id"]}]}, {"name": "category", "engine": "InnoDB", "columns": [{"name": "category_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "varchar(25)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "city", "engine": "InnoDB", "columns": [{"name": "city_id", "type": "smallint unsigned", "position": 1}, {"name": "city", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "country_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["city_id"]}, {"name": "idx_fk_country_id", "type": "BTREE", "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_city_country", "columns": ["country_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "country", "referencedColumns": ["country_id"]}]}, {"name": "country", "engine": "InnoDB", "columns": [{"name": "country_id", "type": "smallint unsigned", "position": 1}, {"name": "country", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "customer", "engine": "InnoDB", "columns": [{"name": "customer_id", "type": "smallint unsigned", "position": 1}, {"name": "store_id", "type": "tinyint unsigned", "position": 2}, {"name": "first_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 5, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 6}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 7}, {"name": "create_date", "type": "datetime", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}, {"name": "idx_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_customer_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_customer_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "film", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "release_year", "type": "year", "nullable": true, "position": 4}, {"name": "language_id", "type": "tinyint unsigned", "position": 5}, {"name": "original_language_id", "type": "tinyint unsigned", "nullable": true, "position": 6}, {"name": "rental_duration", "type": "tinyint unsigned", "default": "3", "position": 7}, {"name": "rental_rate", "type": "decimal(4,2)", "default": "4.99", "position": 8}, {"name": "length", "type": "smallint unsigned", "nullable": true, "position": 9}, {"name": "replacement_cost", "type": "decimal(5,2)", "default": "19.99", "position": 10}, {"name": "rating", "type": "enum(''G'',''PG'',''PG-13'',''R'',''NC-17'')", "default": "G", "nullable": true, "position": 11, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "special_features", "type": "set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'')", "nullable": true, "position": 12, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 13}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_fk_language_id", "type": "BTREE", "visible": true, "expressions": ["language_id"]}, {"name": "idx_fk_original_language_id", "type": "BTREE", "visible": true, "expressions": ["original_language_id"]}, {"name": "idx_title", "type": "BTREE", "visible": true, "expressions": ["title"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_film_language", "columns": ["language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}, {"name": "fk_film_language_original", "columns": ["original_language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}]}, {"name": "film_actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id", "film_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_actor_actor", "columns": ["actor_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "actor", "referencedColumns": ["actor_id"]}, {"name": "fk_film_actor_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_category", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "category_id", "type": "tinyint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id", "category_id"]}, {"name": "fk_film_category_category", "type": "BTREE", "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_category_category", "columns": ["category_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "category", "referencedColumns": ["category_id"]}, {"name": "fk_film_category_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_text", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_title_description", "type": "FULLTEXT", "visible": true, "expressions": ["title", "description"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768"}, {"name": "inventory", "engine": "InnoDB", "columns": [{"name": "inventory_id", "type": "mediumint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "store_id", "type": "tinyint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}, {"name": "idx_store_id_film_id", "type": "BTREE", "visible": true, "expressions": ["store_id", "film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_inventory_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}, {"name": "fk_inventory_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "language", "engine": "InnoDB", "columns": [{"name": "language_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "char(20)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["language_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "payment", "engine": "InnoDB", "columns": [{"name": "payment_id", "type": "smallint unsigned", "position": 1}, {"name": "customer_id", "type": "smallint unsigned", "position": 2}, {"name": "staff_id", "type": "tinyint unsigned", "position": 3}, {"name": "rental_id", "type": "int", "nullable": true, "position": 4}, {"name": "amount", "type": "decimal(5,2)", "position": 5}, {"name": "payment_date", "type": "datetime", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["payment_id"]}, {"name": "fk_payment_rental", "type": "BTREE", "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_payment_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_payment_rental", "columns": ["rental_id"], "onDelete": "SET NULL", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "rental", "referencedColumns": ["rental_id"]}, {"name": "fk_payment_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "rental", "engine": "InnoDB", "columns": [{"name": "rental_id", "type": "int", "position": 1}, {"name": "rental_date", "type": "datetime", "position": 2}, {"name": "inventory_id", "type": "mediumint unsigned", "position": 3}, {"name": "customer_id", "type": "smallint unsigned", "position": 4}, {"name": "return_date", "type": "datetime", "nullable": true, "position": 5}, {"name": "staff_id", "type": "tinyint unsigned", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_inventory_id", "type": "BTREE", "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}, {"name": "rental_date", "type": "BTREE", "unique": true, "visible": true, "expressions": ["rental_date", "inventory_id", "customer_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "65536", "foreignKeys": [{"name": "fk_rental_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_rental_inventory", "columns": ["inventory_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "inventory", "referencedColumns": ["inventory_id"]}, {"name": "fk_rental_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "staff", "engine": "InnoDB", "columns": [{"name": "staff_id", "type": "tinyint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 4}, {"name": "picture", "type": "blob", "nullable": true, "position": 5}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "store_id", "type": "tinyint unsigned", "position": 7}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 8}, {"name": "username", "type": "varchar(16)", "position": 9, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "password", "type": "varchar(40)", "nullable": true, "position": 10, "collation": "utf8mb3_bin", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 11}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["staff_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_staff_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_staff_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "store", "engine": "InnoDB", "columns": [{"name": "store_id", "type": "tinyint unsigned", "position": 1}, {"name": "manager_staff_id", "type": "tinyint unsigned", "position": 2}, {"name": "address_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["store_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_unique_manager", "type": "BTREE", "unique": true, "visible": true, "expressions": ["manager_staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_store_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_store_staff", "columns": ["manager_staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 --
 -- Temporary view structure for `actor_info`
@@ -954,8 +976,8 @@ DELIMITER ;
 
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (103, 'NORMAL', 1, 1695179141, 1, 1695192788, 103, '{"name": "sakila_staging", "schemas": [{"views": [{"name": "actor_info", "comment": "VIEW", "definition": "select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`sakila_staging`.`film` `f` join `sakila_staging`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_staging`.`film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`sakila_staging`.`actor` `a` left join `sakila_staging`.`film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `sakila_staging`.`film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `sakila_staging`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`"}, {"name": "customer_list", "comment": "VIEW", "definition": "select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_staging`.`city`.`city` AS `city`,`sakila_staging`.`country`.`country` AS `country`,if(`cu`.`active`,''active'','''') AS `notes`,`cu`.`store_id` AS `SID` from (((`sakila_staging`.`customer` `cu` join `sakila_staging`.`address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `sakila_staging`.`city` on((`a`.`city_id` = `sakila_staging`.`city`.`city_id`))) join `sakila_staging`.`country` on((`sakila_staging`.`city`.`country_id` = `sakila_staging`.`country`.`country_id`)))"}, {"name": "film_list", "comment": "VIEW", "definition": "select `sakila_staging`.`film`.`film_id` AS `FID`,`sakila_staging`.`film`.`title` AS `title`,`sakila_staging`.`film`.`description` AS `description`,`sakila_staging`.`category`.`name` AS `category`,`sakila_staging`.`film`.`rental_rate` AS `price`,`sakila_staging`.`film`.`length` AS `length`,`sakila_staging`.`film`.`rating` AS `rating`,group_concat(concat(`sakila_staging`.`actor`.`first_name`,'' '',`sakila_staging`.`actor`.`last_name`) separator '', '') AS `actors` from ((((`sakila_staging`.`category` left join `sakila_staging`.`film_category` on((`sakila_staging`.`category`.`category_id` = `sakila_staging`.`film_category`.`category_id`))) left join `sakila_staging`.`film` on((`sakila_staging`.`film_category`.`film_id` = `sakila_staging`.`film`.`film_id`))) join `sakila_staging`.`film_actor` on((`sakila_staging`.`film`.`film_id` = `sakila_staging`.`film_actor`.`film_id`))) join `sakila_staging`.`actor` on((`sakila_staging`.`film_actor`.`actor_id` = `sakila_staging`.`actor`.`actor_id`))) group by `sakila_staging`.`film`.`film_id`,`sakila_staging`.`category`.`name`"}, {"name": "nicer_but_slower_film_list", "comment": "VIEW", "definition": "select `sakila_staging`.`film`.`film_id` AS `FID`,`sakila_staging`.`film`.`title` AS `title`,`sakila_staging`.`film`.`description` AS `description`,`sakila_staging`.`category`.`name` AS `category`,`sakila_staging`.`film`.`rental_rate` AS `price`,`sakila_staging`.`film`.`length` AS `length`,`sakila_staging`.`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`sakila_staging`.`actor`.`first_name`,1,1)),lower(substr(`sakila_staging`.`actor`.`first_name`,2,length(`sakila_staging`.`actor`.`first_name`))),'' '',concat(upper(substr(`sakila_staging`.`actor`.`last_name`,1,1)),lower(substr(`sakila_staging`.`actor`.`last_name`,2,length(`sakila_staging`.`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`sakila_staging`.`category` left join `sakila_staging`.`film_category` on((`sakila_staging`.`category`.`category_id` = `sakila_staging`.`film_category`.`category_id`))) left join `sakila_staging`.`film` on((`sakila_staging`.`film_category`.`film_id` = `sakila_staging`.`film`.`film_id`))) join `sakila_staging`.`film_actor` on((`sakila_staging`.`film`.`film_id` = `sakila_staging`.`film_actor`.`film_id`))) join `sakila_staging`.`actor` on((`sakila_staging`.`film_actor`.`actor_id` = `sakila_staging`.`actor`.`actor_id`))) group by `sakila_staging`.`film`.`film_id`,`sakila_staging`.`category`.`name`"}, {"name": "sales_by_film_category", "comment": "VIEW", "definition": "select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`sakila_staging`.`payment` `p` join `sakila_staging`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_staging`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_staging`.`film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `sakila_staging`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_staging`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc"}, {"name": "sales_by_store", "comment": "VIEW", "definition": "select concat(`c`.`city`,'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`sakila_staging`.`payment` `p` join `sakila_staging`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_staging`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_staging`.`store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `sakila_staging`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_staging`.`city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `sakila_staging`.`country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `sakila_staging`.`staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`"}, {"name": "staff_list", "comment": "VIEW", "definition": "select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_staging`.`city`.`city` AS `city`,`sakila_staging`.`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`sakila_staging`.`staff` `s` join `sakila_staging`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_staging`.`city` on((`a`.`city_id` = `sakila_staging`.`city`.`city_id`))) join `sakila_staging`.`country` on((`sakila_staging`.`city`.`country_id` = `sakila_staging`.`country`.`country_id`)))"}], "tables": [{"name": "actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id"]}, {"name": "idx_actor_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384"}, {"name": "address", "engine": "InnoDB", "columns": [{"name": "address_id", "type": "smallint unsigned", "position": 1}, {"name": "address", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address2", "type": "varchar(50)", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "district", "type": "varchar(20)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "city_id", "type": "smallint unsigned", "position": 5}, {"name": "postal_code", "type": "varchar(10)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "phone", "type": "varchar(20)", "position": 7, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "location", "type": "geometry", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_city_id", "type": "BTREE", "visible": true, "expressions": ["city_id"]}, {"name": "idx_location", "type": "SPATIAL", "visible": true, "expressions": ["location"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_address_city", "columns": ["city_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "city", "referencedColumns": ["city_id"]}]}, {"name": "category", "engine": "InnoDB", "columns": [{"name": "category_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "varchar(25)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "city", "engine": "InnoDB", "columns": [{"name": "city_id", "type": "smallint unsigned", "position": 1}, {"name": "city", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "country_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["city_id"]}, {"name": "idx_fk_country_id", "type": "BTREE", "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_city_country", "columns": ["country_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "country", "referencedColumns": ["country_id"]}]}, {"name": "country", "engine": "InnoDB", "columns": [{"name": "country_id", "type": "smallint unsigned", "position": 1}, {"name": "country", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "customer", "engine": "InnoDB", "columns": [{"name": "customer_id", "type": "smallint unsigned", "position": 1}, {"name": "store_id", "type": "tinyint unsigned", "position": 2}, {"name": "first_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 5, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 6}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 7}, {"name": "create_date", "type": "datetime", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}, {"name": "idx_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_customer_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_customer_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "film", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "release_year", "type": "year", "nullable": true, "position": 4}, {"name": "language_id", "type": "tinyint unsigned", "position": 5}, {"name": "original_language_id", "type": "tinyint unsigned", "nullable": true, "position": 6}, {"name": "rental_duration", "type": "tinyint unsigned", "default": "3", "position": 7}, {"name": "rental_rate", "type": "decimal(4,2)", "default": "4.99", "position": 8}, {"name": "length", "type": "smallint unsigned", "nullable": true, "position": 9}, {"name": "replacement_cost", "type": "decimal(5,2)", "default": "19.99", "position": 10}, {"name": "rating", "type": "enum(''G'',''PG'',''PG-13'',''R'',''NC-17'')", "default": "G", "nullable": true, "position": 11, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "special_features", "type": "set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'')", "nullable": true, "position": 12, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 13}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_fk_language_id", "type": "BTREE", "visible": true, "expressions": ["language_id"]}, {"name": "idx_fk_original_language_id", "type": "BTREE", "visible": true, "expressions": ["original_language_id"]}, {"name": "idx_title", "type": "BTREE", "visible": true, "expressions": ["title"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_film_language", "columns": ["language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}, {"name": "fk_film_language_original", "columns": ["original_language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}]}, {"name": "film_actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id", "film_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_actor_actor", "columns": ["actor_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "actor", "referencedColumns": ["actor_id"]}, {"name": "fk_film_actor_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_category", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "category_id", "type": "tinyint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id", "category_id"]}, {"name": "fk_film_category_category", "type": "BTREE", "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_category_category", "columns": ["category_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "category", "referencedColumns": ["category_id"]}, {"name": "fk_film_category_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_text", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_title_description", "type": "FULLTEXT", "visible": true, "expressions": ["title", "description"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768"}, {"name": "inventory", "engine": "InnoDB", "columns": [{"name": "inventory_id", "type": "mediumint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "store_id", "type": "tinyint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}, {"name": "idx_store_id_film_id", "type": "BTREE", "visible": true, "expressions": ["store_id", "film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_inventory_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}, {"name": "fk_inventory_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "language", "engine": "InnoDB", "columns": [{"name": "language_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "char(20)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["language_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "payment", "engine": "InnoDB", "columns": [{"name": "payment_id", "type": "smallint unsigned", "position": 1}, {"name": "customer_id", "type": "smallint unsigned", "position": 2}, {"name": "staff_id", "type": "tinyint unsigned", "position": 3}, {"name": "rental_id", "type": "int", "nullable": true, "position": 4}, {"name": "amount", "type": "decimal(5,2)", "position": 5}, {"name": "payment_date", "type": "datetime", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["payment_id"]}, {"name": "fk_payment_rental", "type": "BTREE", "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_payment_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_payment_rental", "columns": ["rental_id"], "onDelete": "SET NULL", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "rental", "referencedColumns": ["rental_id"]}, {"name": "fk_payment_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "rental", "engine": "InnoDB", "columns": [{"name": "rental_id", "type": "int", "position": 1}, {"name": "rental_date", "type": "datetime", "position": 2}, {"name": "inventory_id", "type": "mediumint unsigned", "position": 3}, {"name": "customer_id", "type": "smallint unsigned", "position": 4}, {"name": "return_date", "type": "datetime", "nullable": true, "position": 5}, {"name": "staff_id", "type": "tinyint unsigned", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_inventory_id", "type": "BTREE", "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}, {"name": "rental_date", "type": "BTREE", "unique": true, "visible": true, "expressions": ["rental_date", "inventory_id", "customer_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "65536", "foreignKeys": [{"name": "fk_rental_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_rental_inventory", "columns": ["inventory_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "inventory", "referencedColumns": ["inventory_id"]}, {"name": "fk_rental_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "staff", "engine": "InnoDB", "columns": [{"name": "staff_id", "type": "tinyint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 4}, {"name": "picture", "type": "blob", "nullable": true, "position": 5}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "store_id", "type": "tinyint unsigned", "position": 7}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 8}, {"name": "username", "type": "varchar(16)", "position": 9, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "password", "type": "varchar(40)", "nullable": true, "position": 10, "collation": "utf8mb3_bin", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 11}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["staff_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_staff_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_staff_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "store", "engine": "InnoDB", "columns": [{"name": "store_id", "type": "tinyint unsigned", "position": 1}, {"name": "manager_staff_id", "type": "tinyint unsigned", "position": 2}, {"name": "address_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["store_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_unique_manager", "type": "BTREE", "unique": true, "visible": true, "expressions": ["manager_staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_store_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_store_staff", "columns": ["manager_staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (103, 'NORMAL', 1, 1695179141, 1, 1695192788, 103, '{"name": "sakila_staging", "schemas": [{"views": [{"name": "actor_info", "comment": "VIEW", "definition": "select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`sakila_staging`.`film` `f` join `sakila_staging`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_staging`.`film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`sakila_staging`.`actor` `a` left join `sakila_staging`.`film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `sakila_staging`.`film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `sakila_staging`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`"}, {"name": "customer_list", "comment": "VIEW", "definition": "select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_staging`.`city`.`city` AS `city`,`sakila_staging`.`country`.`country` AS `country`,if(`cu`.`active`,''active'','''') AS `notes`,`cu`.`store_id` AS `SID` from (((`sakila_staging`.`customer` `cu` join `sakila_staging`.`address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `sakila_staging`.`city` on((`a`.`city_id` = `sakila_staging`.`city`.`city_id`))) join `sakila_staging`.`country` on((`sakila_staging`.`city`.`country_id` = `sakila_staging`.`country`.`country_id`)))"}, {"name": "film_list", "comment": "VIEW", "definition": "select `sakila_staging`.`film`.`film_id` AS `FID`,`sakila_staging`.`film`.`title` AS `title`,`sakila_staging`.`film`.`description` AS `description`,`sakila_staging`.`category`.`name` AS `category`,`sakila_staging`.`film`.`rental_rate` AS `price`,`sakila_staging`.`film`.`length` AS `length`,`sakila_staging`.`film`.`rating` AS `rating`,group_concat(concat(`sakila_staging`.`actor`.`first_name`,'' '',`sakila_staging`.`actor`.`last_name`) separator '', '') AS `actors` from ((((`sakila_staging`.`category` left join `sakila_staging`.`film_category` on((`sakila_staging`.`category`.`category_id` = `sakila_staging`.`film_category`.`category_id`))) left join `sakila_staging`.`film` on((`sakila_staging`.`film_category`.`film_id` = `sakila_staging`.`film`.`film_id`))) join `sakila_staging`.`film_actor` on((`sakila_staging`.`film`.`film_id` = `sakila_staging`.`film_actor`.`film_id`))) join `sakila_staging`.`actor` on((`sakila_staging`.`film_actor`.`actor_id` = `sakila_staging`.`actor`.`actor_id`))) group by `sakila_staging`.`film`.`film_id`,`sakila_staging`.`category`.`name`"}, {"name": "nicer_but_slower_film_list", "comment": "VIEW", "definition": "select `sakila_staging`.`film`.`film_id` AS `FID`,`sakila_staging`.`film`.`title` AS `title`,`sakila_staging`.`film`.`description` AS `description`,`sakila_staging`.`category`.`name` AS `category`,`sakila_staging`.`film`.`rental_rate` AS `price`,`sakila_staging`.`film`.`length` AS `length`,`sakila_staging`.`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`sakila_staging`.`actor`.`first_name`,1,1)),lower(substr(`sakila_staging`.`actor`.`first_name`,2,length(`sakila_staging`.`actor`.`first_name`))),'' '',concat(upper(substr(`sakila_staging`.`actor`.`last_name`,1,1)),lower(substr(`sakila_staging`.`actor`.`last_name`,2,length(`sakila_staging`.`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`sakila_staging`.`category` left join `sakila_staging`.`film_category` on((`sakila_staging`.`category`.`category_id` = `sakila_staging`.`film_category`.`category_id`))) left join `sakila_staging`.`film` on((`sakila_staging`.`film_category`.`film_id` = `sakila_staging`.`film`.`film_id`))) join `sakila_staging`.`film_actor` on((`sakila_staging`.`film`.`film_id` = `sakila_staging`.`film_actor`.`film_id`))) join `sakila_staging`.`actor` on((`sakila_staging`.`film_actor`.`actor_id` = `sakila_staging`.`actor`.`actor_id`))) group by `sakila_staging`.`film`.`film_id`,`sakila_staging`.`category`.`name`"}, {"name": "sales_by_film_category", "comment": "VIEW", "definition": "select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`sakila_staging`.`payment` `p` join `sakila_staging`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_staging`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_staging`.`film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `sakila_staging`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_staging`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc"}, {"name": "sales_by_store", "comment": "VIEW", "definition": "select concat(`c`.`city`,'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`sakila_staging`.`payment` `p` join `sakila_staging`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_staging`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_staging`.`store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `sakila_staging`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_staging`.`city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `sakila_staging`.`country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `sakila_staging`.`staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`"}, {"name": "staff_list", "comment": "VIEW", "definition": "select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_staging`.`city`.`city` AS `city`,`sakila_staging`.`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`sakila_staging`.`staff` `s` join `sakila_staging`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_staging`.`city` on((`a`.`city_id` = `sakila_staging`.`city`.`city_id`))) join `sakila_staging`.`country` on((`sakila_staging`.`city`.`country_id` = `sakila_staging`.`country`.`country_id`)))"}], "tables": [{"name": "actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id"]}, {"name": "idx_actor_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384"}, {"name": "address", "engine": "InnoDB", "columns": [{"name": "address_id", "type": "smallint unsigned", "position": 1}, {"name": "address", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address2", "type": "varchar(50)", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "district", "type": "varchar(20)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "city_id", "type": "smallint unsigned", "position": 5}, {"name": "postal_code", "type": "varchar(10)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "phone", "type": "varchar(20)", "position": 7, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "location", "type": "geometry", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_city_id", "type": "BTREE", "visible": true, "expressions": ["city_id"]}, {"name": "idx_location", "type": "SPATIAL", "visible": true, "expressions": ["location"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_address_city", "columns": ["city_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "city", "referencedColumns": ["city_id"]}]}, {"name": "category", "engine": "InnoDB", "columns": [{"name": "category_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "varchar(25)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "city", "engine": "InnoDB", "columns": [{"name": "city_id", "type": "smallint unsigned", "position": 1}, {"name": "city", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "country_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["city_id"]}, {"name": "idx_fk_country_id", "type": "BTREE", "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_city_country", "columns": ["country_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "country", "referencedColumns": ["country_id"]}]}, {"name": "country", "engine": "InnoDB", "columns": [{"name": "country_id", "type": "smallint unsigned", "position": 1}, {"name": "country", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "customer", "engine": "InnoDB", "columns": [{"name": "customer_id", "type": "smallint unsigned", "position": 1}, {"name": "store_id", "type": "tinyint unsigned", "position": 2}, {"name": "first_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 5, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 6}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 7}, {"name": "create_date", "type": "datetime", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}, {"name": "idx_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_customer_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_customer_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "film", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "release_year", "type": "year", "nullable": true, "position": 4}, {"name": "language_id", "type": "tinyint unsigned", "position": 5}, {"name": "original_language_id", "type": "tinyint unsigned", "nullable": true, "position": 6}, {"name": "rental_duration", "type": "tinyint unsigned", "default": "3", "position": 7}, {"name": "rental_rate", "type": "decimal(4,2)", "default": "4.99", "position": 8}, {"name": "length", "type": "smallint unsigned", "nullable": true, "position": 9}, {"name": "replacement_cost", "type": "decimal(5,2)", "default": "19.99", "position": 10}, {"name": "rating", "type": "enum(''G'',''PG'',''PG-13'',''R'',''NC-17'')", "default": "G", "nullable": true, "position": 11, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "special_features", "type": "set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'')", "nullable": true, "position": 12, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 13}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_fk_language_id", "type": "BTREE", "visible": true, "expressions": ["language_id"]}, {"name": "idx_fk_original_language_id", "type": "BTREE", "visible": true, "expressions": ["original_language_id"]}, {"name": "idx_title", "type": "BTREE", "visible": true, "expressions": ["title"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_film_language", "columns": ["language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}, {"name": "fk_film_language_original", "columns": ["original_language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}]}, {"name": "film_actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id", "film_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_actor_actor", "columns": ["actor_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "actor", "referencedColumns": ["actor_id"]}, {"name": "fk_film_actor_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_category", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "category_id", "type": "tinyint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id", "category_id"]}, {"name": "fk_film_category_category", "type": "BTREE", "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_category_category", "columns": ["category_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "category", "referencedColumns": ["category_id"]}, {"name": "fk_film_category_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_text", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_title_description", "type": "FULLTEXT", "visible": true, "expressions": ["title", "description"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768"}, {"name": "inventory", "engine": "InnoDB", "columns": [{"name": "inventory_id", "type": "mediumint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "store_id", "type": "tinyint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}, {"name": "idx_store_id_film_id", "type": "BTREE", "visible": true, "expressions": ["store_id", "film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_inventory_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}, {"name": "fk_inventory_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "language", "engine": "InnoDB", "columns": [{"name": "language_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "char(20)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["language_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "payment", "engine": "InnoDB", "columns": [{"name": "payment_id", "type": "smallint unsigned", "position": 1}, {"name": "customer_id", "type": "smallint unsigned", "position": 2}, {"name": "staff_id", "type": "tinyint unsigned", "position": 3}, {"name": "rental_id", "type": "int", "nullable": true, "position": 4}, {"name": "amount", "type": "decimal(5,2)", "position": 5}, {"name": "payment_date", "type": "datetime", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["payment_id"]}, {"name": "fk_payment_rental", "type": "BTREE", "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_payment_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_payment_rental", "columns": ["rental_id"], "onDelete": "SET NULL", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "rental", "referencedColumns": ["rental_id"]}, {"name": "fk_payment_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "rental", "engine": "InnoDB", "columns": [{"name": "rental_id", "type": "int", "position": 1}, {"name": "rental_date", "type": "datetime", "position": 2}, {"name": "inventory_id", "type": "mediumint unsigned", "position": 3}, {"name": "customer_id", "type": "smallint unsigned", "position": 4}, {"name": "return_date", "type": "datetime", "nullable": true, "position": 5}, {"name": "staff_id", "type": "tinyint unsigned", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_inventory_id", "type": "BTREE", "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}, {"name": "rental_date", "type": "BTREE", "unique": true, "visible": true, "expressions": ["rental_date", "inventory_id", "customer_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "65536", "foreignKeys": [{"name": "fk_rental_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_rental_inventory", "columns": ["inventory_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "inventory", "referencedColumns": ["inventory_id"]}, {"name": "fk_rental_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "staff", "engine": "InnoDB", "columns": [{"name": "staff_id", "type": "tinyint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 4}, {"name": "picture", "type": "blob", "nullable": true, "position": 5}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "store_id", "type": "tinyint unsigned", "position": 7}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 8}, {"name": "username", "type": "varchar(16)", "position": 9, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "password", "type": "varchar(40)", "nullable": true, "position": 10, "collation": "utf8mb3_bin", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 11}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["staff_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_staff_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_staff_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "store", "engine": "InnoDB", "columns": [{"name": "store_id", "type": "tinyint unsigned", "position": 1}, {"name": "manager_staff_id", "type": "tinyint unsigned", "position": 2}, {"name": "address_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["store_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_unique_manager", "type": "BTREE", "unique": true, "visible": true, "expressions": ["manager_staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_store_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_store_staff", "columns": ["manager_staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 --
 -- Temporary view structure for `actor_info`
@@ -1604,8 +1626,8 @@ DELIMITER ;
 
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695192793, 101, '{"name": "sakila_prod", "schemas": [{"views": [{"name": "actor_info", "comment": "VIEW", "definition": "select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`sakila_prod`.`film` `f` join `sakila_prod`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_prod`.`film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`sakila_prod`.`actor` `a` left join `sakila_prod`.`film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `sakila_prod`.`film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `sakila_prod`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`"}, {"name": "customer_list", "comment": "VIEW", "definition": "select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_prod`.`city`.`city` AS `city`,`sakila_prod`.`country`.`country` AS `country`,if(`cu`.`active`,''active'','''') AS `notes`,`cu`.`store_id` AS `SID` from (((`sakila_prod`.`customer` `cu` join `sakila_prod`.`address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `sakila_prod`.`city` on((`a`.`city_id` = `sakila_prod`.`city`.`city_id`))) join `sakila_prod`.`country` on((`sakila_prod`.`city`.`country_id` = `sakila_prod`.`country`.`country_id`)))"}, {"name": "film_list", "comment": "VIEW", "definition": "select `sakila_prod`.`film`.`film_id` AS `FID`,`sakila_prod`.`film`.`title` AS `title`,`sakila_prod`.`film`.`description` AS `description`,`sakila_prod`.`category`.`name` AS `category`,`sakila_prod`.`film`.`rental_rate` AS `price`,`sakila_prod`.`film`.`length` AS `length`,`sakila_prod`.`film`.`rating` AS `rating`,group_concat(concat(`sakila_prod`.`actor`.`first_name`,'' '',`sakila_prod`.`actor`.`last_name`) separator '', '') AS `actors` from ((((`sakila_prod`.`category` left join `sakila_prod`.`film_category` on((`sakila_prod`.`category`.`category_id` = `sakila_prod`.`film_category`.`category_id`))) left join `sakila_prod`.`film` on((`sakila_prod`.`film_category`.`film_id` = `sakila_prod`.`film`.`film_id`))) join `sakila_prod`.`film_actor` on((`sakila_prod`.`film`.`film_id` = `sakila_prod`.`film_actor`.`film_id`))) join `sakila_prod`.`actor` on((`sakila_prod`.`film_actor`.`actor_id` = `sakila_prod`.`actor`.`actor_id`))) group by `sakila_prod`.`film`.`film_id`,`sakila_prod`.`category`.`name`"}, {"name": "nicer_but_slower_film_list", "comment": "VIEW", "definition": "select `sakila_prod`.`film`.`film_id` AS `FID`,`sakila_prod`.`film`.`title` AS `title`,`sakila_prod`.`film`.`description` AS `description`,`sakila_prod`.`category`.`name` AS `category`,`sakila_prod`.`film`.`rental_rate` AS `price`,`sakila_prod`.`film`.`length` AS `length`,`sakila_prod`.`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`sakila_prod`.`actor`.`first_name`,1,1)),lower(substr(`sakila_prod`.`actor`.`first_name`,2,length(`sakila_prod`.`actor`.`first_name`))),'' '',concat(upper(substr(`sakila_prod`.`actor`.`last_name`,1,1)),lower(substr(`sakila_prod`.`actor`.`last_name`,2,length(`sakila_prod`.`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`sakila_prod`.`category` left join `sakila_prod`.`film_category` on((`sakila_prod`.`category`.`category_id` = `sakila_prod`.`film_category`.`category_id`))) left join `sakila_prod`.`film` on((`sakila_prod`.`film_category`.`film_id` = `sakila_prod`.`film`.`film_id`))) join `sakila_prod`.`film_actor` on((`sakila_prod`.`film`.`film_id` = `sakila_prod`.`film_actor`.`film_id`))) join `sakila_prod`.`actor` on((`sakila_prod`.`film_actor`.`actor_id` = `sakila_prod`.`actor`.`actor_id`))) group by `sakila_prod`.`film`.`film_id`,`sakila_prod`.`category`.`name`"}, {"name": "sales_by_film_category", "comment": "VIEW", "definition": "select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`sakila_prod`.`payment` `p` join `sakila_prod`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_prod`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_prod`.`film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `sakila_prod`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_prod`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc"}, {"name": "sales_by_store", "comment": "VIEW", "definition": "select concat(`c`.`city`,'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`sakila_prod`.`payment` `p` join `sakila_prod`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_prod`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_prod`.`store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `sakila_prod`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_prod`.`city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `sakila_prod`.`country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `sakila_prod`.`staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`"}, {"name": "staff_list", "comment": "VIEW", "definition": "select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_prod`.`city`.`city` AS `city`,`sakila_prod`.`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`sakila_prod`.`staff` `s` join `sakila_prod`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_prod`.`city` on((`a`.`city_id` = `sakila_prod`.`city`.`city_id`))) join `sakila_prod`.`country` on((`sakila_prod`.`city`.`country_id` = `sakila_prod`.`country`.`country_id`)))"}], "tables": [{"name": "actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id"]}, {"name": "idx_actor_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384"}, {"name": "address", "engine": "InnoDB", "columns": [{"name": "address_id", "type": "smallint unsigned", "position": 1}, {"name": "address", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address2", "type": "varchar(50)", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "district", "type": "varchar(20)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "city_id", "type": "smallint unsigned", "position": 5}, {"name": "postal_code", "type": "varchar(10)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "phone", "type": "varchar(20)", "position": 7, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "location", "type": "geometry", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_city_id", "type": "BTREE", "visible": true, "expressions": ["city_id"]}, {"name": "idx_location", "type": "SPATIAL", "visible": true, "expressions": ["location"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_address_city", "columns": ["city_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "city", "referencedColumns": ["city_id"]}]}, {"name": "category", "engine": "InnoDB", "columns": [{"name": "category_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "varchar(25)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "city", "engine": "InnoDB", "columns": [{"name": "city_id", "type": "smallint unsigned", "position": 1}, {"name": "city", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "country_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["city_id"]}, {"name": "idx_fk_country_id", "type": "BTREE", "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_city_country", "columns": ["country_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "country", "referencedColumns": ["country_id"]}]}, {"name": "country", "engine": "InnoDB", "columns": [{"name": "country_id", "type": "smallint unsigned", "position": 1}, {"name": "country", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "customer", "engine": "InnoDB", "columns": [{"name": "customer_id", "type": "smallint unsigned", "position": 1}, {"name": "store_id", "type": "tinyint unsigned", "position": 2}, {"name": "first_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 5, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 6}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 7}, {"name": "create_date", "type": "datetime", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}, {"name": "idx_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_customer_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_customer_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "film", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "release_year", "type": "year", "nullable": true, "position": 4}, {"name": "language_id", "type": "tinyint unsigned", "position": 5}, {"name": "original_language_id", "type": "tinyint unsigned", "nullable": true, "position": 6}, {"name": "rental_duration", "type": "tinyint unsigned", "default": "3", "position": 7}, {"name": "rental_rate", "type": "decimal(4,2)", "default": "4.99", "position": 8}, {"name": "length", "type": "smallint unsigned", "nullable": true, "position": 9}, {"name": "replacement_cost", "type": "decimal(5,2)", "default": "19.99", "position": 10}, {"name": "rating", "type": "enum(''G'',''PG'',''PG-13'',''R'',''NC-17'')", "default": "G", "nullable": true, "position": 11, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "special_features", "type": "set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'')", "nullable": true, "position": 12, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 13}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_fk_language_id", "type": "BTREE", "visible": true, "expressions": ["language_id"]}, {"name": "idx_fk_original_language_id", "type": "BTREE", "visible": true, "expressions": ["original_language_id"]}, {"name": "idx_title", "type": "BTREE", "visible": true, "expressions": ["title"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_film_language", "columns": ["language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}, {"name": "fk_film_language_original", "columns": ["original_language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}]}, {"name": "film_actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id", "film_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_actor_actor", "columns": ["actor_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "actor", "referencedColumns": ["actor_id"]}, {"name": "fk_film_actor_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_category", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "category_id", "type": "tinyint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id", "category_id"]}, {"name": "fk_film_category_category", "type": "BTREE", "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_category_category", "columns": ["category_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "category", "referencedColumns": ["category_id"]}, {"name": "fk_film_category_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_text", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_title_description", "type": "FULLTEXT", "visible": true, "expressions": ["title", "description"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768"}, {"name": "inventory", "engine": "InnoDB", "columns": [{"name": "inventory_id", "type": "mediumint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "store_id", "type": "tinyint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}, {"name": "idx_store_id_film_id", "type": "BTREE", "visible": true, "expressions": ["store_id", "film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_inventory_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}, {"name": "fk_inventory_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "language", "engine": "InnoDB", "columns": [{"name": "language_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "char(20)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["language_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "payment", "engine": "InnoDB", "columns": [{"name": "payment_id", "type": "smallint unsigned", "position": 1}, {"name": "customer_id", "type": "smallint unsigned", "position": 2}, {"name": "staff_id", "type": "tinyint unsigned", "position": 3}, {"name": "rental_id", "type": "int", "nullable": true, "position": 4}, {"name": "amount", "type": "decimal(5,2)", "position": 5}, {"name": "payment_date", "type": "datetime", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["payment_id"]}, {"name": "fk_payment_rental", "type": "BTREE", "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_payment_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_payment_rental", "columns": ["rental_id"], "onDelete": "SET NULL", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "rental", "referencedColumns": ["rental_id"]}, {"name": "fk_payment_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "rental", "engine": "InnoDB", "columns": [{"name": "rental_id", "type": "int", "position": 1}, {"name": "rental_date", "type": "datetime", "position": 2}, {"name": "inventory_id", "type": "mediumint unsigned", "position": 3}, {"name": "customer_id", "type": "smallint unsigned", "position": 4}, {"name": "return_date", "type": "datetime", "nullable": true, "position": 5}, {"name": "staff_id", "type": "tinyint unsigned", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_inventory_id", "type": "BTREE", "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}, {"name": "rental_date", "type": "BTREE", "unique": true, "visible": true, "expressions": ["rental_date", "inventory_id", "customer_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "65536", "foreignKeys": [{"name": "fk_rental_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_rental_inventory", "columns": ["inventory_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "inventory", "referencedColumns": ["inventory_id"]}, {"name": "fk_rental_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "staff", "engine": "InnoDB", "columns": [{"name": "staff_id", "type": "tinyint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 4}, {"name": "picture", "type": "blob", "nullable": true, "position": 5}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "store_id", "type": "tinyint unsigned", "position": 7}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 8}, {"name": "username", "type": "varchar(16)", "position": 9, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "password", "type": "varchar(40)", "nullable": true, "position": 10, "collation": "utf8mb3_bin", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 11}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["staff_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_staff_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_staff_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "store", "engine": "InnoDB", "columns": [{"name": "store_id", "type": "tinyint unsigned", "position": 1}, {"name": "manager_staff_id", "type": "tinyint unsigned", "position": 2}, {"name": "address_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["store_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_unique_manager", "type": "BTREE", "unique": true, "visible": true, "expressions": ["manager_staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_store_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_store_staff", "columns": ["manager_staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (101, 'NORMAL', 1, 1695178988, 1, 1695192793, 101, '{"name": "sakila_prod", "schemas": [{"views": [{"name": "actor_info", "comment": "VIEW", "definition": "select `a`.`actor_id` AS `actor_id`,`a`.`first_name` AS `first_name`,`a`.`last_name` AS `last_name`,group_concat(distinct concat(`c`.`name`,'': '',(select group_concat(`f`.`title` order by `f`.`title` ASC separator '', '') from ((`sakila_prod`.`film` `f` join `sakila_prod`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_prod`.`film_actor` `fa` on((`f`.`film_id` = `fa`.`film_id`))) where ((`fc`.`category_id` = `c`.`category_id`) and (`fa`.`actor_id` = `a`.`actor_id`)))) order by `c`.`name` ASC separator ''; '') AS `film_info` from (((`sakila_prod`.`actor` `a` left join `sakila_prod`.`film_actor` `fa` on((`a`.`actor_id` = `fa`.`actor_id`))) left join `sakila_prod`.`film_category` `fc` on((`fa`.`film_id` = `fc`.`film_id`))) left join `sakila_prod`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `a`.`actor_id`,`a`.`first_name`,`a`.`last_name`"}, {"name": "customer_list", "comment": "VIEW", "definition": "select `cu`.`customer_id` AS `ID`,concat(`cu`.`first_name`,'' '',`cu`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_prod`.`city`.`city` AS `city`,`sakila_prod`.`country`.`country` AS `country`,if(`cu`.`active`,''active'','''') AS `notes`,`cu`.`store_id` AS `SID` from (((`sakila_prod`.`customer` `cu` join `sakila_prod`.`address` `a` on((`cu`.`address_id` = `a`.`address_id`))) join `sakila_prod`.`city` on((`a`.`city_id` = `sakila_prod`.`city`.`city_id`))) join `sakila_prod`.`country` on((`sakila_prod`.`city`.`country_id` = `sakila_prod`.`country`.`country_id`)))"}, {"name": "film_list", "comment": "VIEW", "definition": "select `sakila_prod`.`film`.`film_id` AS `FID`,`sakila_prod`.`film`.`title` AS `title`,`sakila_prod`.`film`.`description` AS `description`,`sakila_prod`.`category`.`name` AS `category`,`sakila_prod`.`film`.`rental_rate` AS `price`,`sakila_prod`.`film`.`length` AS `length`,`sakila_prod`.`film`.`rating` AS `rating`,group_concat(concat(`sakila_prod`.`actor`.`first_name`,'' '',`sakila_prod`.`actor`.`last_name`) separator '', '') AS `actors` from ((((`sakila_prod`.`category` left join `sakila_prod`.`film_category` on((`sakila_prod`.`category`.`category_id` = `sakila_prod`.`film_category`.`category_id`))) left join `sakila_prod`.`film` on((`sakila_prod`.`film_category`.`film_id` = `sakila_prod`.`film`.`film_id`))) join `sakila_prod`.`film_actor` on((`sakila_prod`.`film`.`film_id` = `sakila_prod`.`film_actor`.`film_id`))) join `sakila_prod`.`actor` on((`sakila_prod`.`film_actor`.`actor_id` = `sakila_prod`.`actor`.`actor_id`))) group by `sakila_prod`.`film`.`film_id`,`sakila_prod`.`category`.`name`"}, {"name": "nicer_but_slower_film_list", "comment": "VIEW", "definition": "select `sakila_prod`.`film`.`film_id` AS `FID`,`sakila_prod`.`film`.`title` AS `title`,`sakila_prod`.`film`.`description` AS `description`,`sakila_prod`.`category`.`name` AS `category`,`sakila_prod`.`film`.`rental_rate` AS `price`,`sakila_prod`.`film`.`length` AS `length`,`sakila_prod`.`film`.`rating` AS `rating`,group_concat(concat(concat(upper(substr(`sakila_prod`.`actor`.`first_name`,1,1)),lower(substr(`sakila_prod`.`actor`.`first_name`,2,length(`sakila_prod`.`actor`.`first_name`))),'' '',concat(upper(substr(`sakila_prod`.`actor`.`last_name`,1,1)),lower(substr(`sakila_prod`.`actor`.`last_name`,2,length(`sakila_prod`.`actor`.`last_name`)))))) separator '', '') AS `actors` from ((((`sakila_prod`.`category` left join `sakila_prod`.`film_category` on((`sakila_prod`.`category`.`category_id` = `sakila_prod`.`film_category`.`category_id`))) left join `sakila_prod`.`film` on((`sakila_prod`.`film_category`.`film_id` = `sakila_prod`.`film`.`film_id`))) join `sakila_prod`.`film_actor` on((`sakila_prod`.`film`.`film_id` = `sakila_prod`.`film_actor`.`film_id`))) join `sakila_prod`.`actor` on((`sakila_prod`.`film_actor`.`actor_id` = `sakila_prod`.`actor`.`actor_id`))) group by `sakila_prod`.`film`.`film_id`,`sakila_prod`.`category`.`name`"}, {"name": "sales_by_film_category", "comment": "VIEW", "definition": "select `c`.`name` AS `category`,sum(`p`.`amount`) AS `total_sales` from (((((`sakila_prod`.`payment` `p` join `sakila_prod`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_prod`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_prod`.`film` `f` on((`i`.`film_id` = `f`.`film_id`))) join `sakila_prod`.`film_category` `fc` on((`f`.`film_id` = `fc`.`film_id`))) join `sakila_prod`.`category` `c` on((`fc`.`category_id` = `c`.`category_id`))) group by `c`.`name` order by `total_sales` desc"}, {"name": "sales_by_store", "comment": "VIEW", "definition": "select concat(`c`.`city`,'','',`cy`.`country`) AS `store`,concat(`m`.`first_name`,'' '',`m`.`last_name`) AS `manager`,sum(`p`.`amount`) AS `total_sales` from (((((((`sakila_prod`.`payment` `p` join `sakila_prod`.`rental` `r` on((`p`.`rental_id` = `r`.`rental_id`))) join `sakila_prod`.`inventory` `i` on((`r`.`inventory_id` = `i`.`inventory_id`))) join `sakila_prod`.`store` `s` on((`i`.`store_id` = `s`.`store_id`))) join `sakila_prod`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_prod`.`city` `c` on((`a`.`city_id` = `c`.`city_id`))) join `sakila_prod`.`country` `cy` on((`c`.`country_id` = `cy`.`country_id`))) join `sakila_prod`.`staff` `m` on((`s`.`manager_staff_id` = `m`.`staff_id`))) group by `s`.`store_id` order by `cy`.`country`,`c`.`city`"}, {"name": "staff_list", "comment": "VIEW", "definition": "select `s`.`staff_id` AS `ID`,concat(`s`.`first_name`,'' '',`s`.`last_name`) AS `name`,`a`.`address` AS `address`,`a`.`postal_code` AS `zip code`,`a`.`phone` AS `phone`,`sakila_prod`.`city`.`city` AS `city`,`sakila_prod`.`country`.`country` AS `country`,`s`.`store_id` AS `SID` from (((`sakila_prod`.`staff` `s` join `sakila_prod`.`address` `a` on((`s`.`address_id` = `a`.`address_id`))) join `sakila_prod`.`city` on((`a`.`city_id` = `sakila_prod`.`city`.`city_id`))) join `sakila_prod`.`country` on((`sakila_prod`.`city`.`country_id` = `sakila_prod`.`country`.`country_id`)))"}], "tables": [{"name": "actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id"]}, {"name": "idx_actor_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384"}, {"name": "address", "engine": "InnoDB", "columns": [{"name": "address_id", "type": "smallint unsigned", "position": 1}, {"name": "address", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address2", "type": "varchar(50)", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "district", "type": "varchar(20)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "city_id", "type": "smallint unsigned", "position": 5}, {"name": "postal_code", "type": "varchar(10)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "phone", "type": "varchar(20)", "position": 7, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "location", "type": "geometry", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_city_id", "type": "BTREE", "visible": true, "expressions": ["city_id"]}, {"name": "idx_location", "type": "SPATIAL", "visible": true, "expressions": ["location"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_address_city", "columns": ["city_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "city", "referencedColumns": ["city_id"]}]}, {"name": "category", "engine": "InnoDB", "columns": [{"name": "category_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "varchar(25)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "city", "engine": "InnoDB", "columns": [{"name": "city_id", "type": "smallint unsigned", "position": 1}, {"name": "city", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "country_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["city_id"]}, {"name": "idx_fk_country_id", "type": "BTREE", "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_city_country", "columns": ["country_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "country", "referencedColumns": ["country_id"]}]}, {"name": "country", "engine": "InnoDB", "columns": [{"name": "country_id", "type": "smallint unsigned", "position": 1}, {"name": "country", "type": "varchar(50)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["country_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "customer", "engine": "InnoDB", "columns": [{"name": "customer_id", "type": "smallint unsigned", "position": 1}, {"name": "store_id", "type": "tinyint unsigned", "position": 2}, {"name": "first_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 4, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 5, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 6}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 7}, {"name": "create_date", "type": "datetime", "position": 8}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 9}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}, {"name": "idx_last_name", "type": "BTREE", "visible": true, "expressions": ["last_name"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_customer_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_customer_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "film", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "release_year", "type": "year", "nullable": true, "position": 4}, {"name": "language_id", "type": "tinyint unsigned", "position": 5}, {"name": "original_language_id", "type": "tinyint unsigned", "nullable": true, "position": 6}, {"name": "rental_duration", "type": "tinyint unsigned", "default": "3", "position": 7}, {"name": "rental_rate", "type": "decimal(4,2)", "default": "4.99", "position": 8}, {"name": "length", "type": "smallint unsigned", "nullable": true, "position": 9}, {"name": "replacement_cost", "type": "decimal(5,2)", "default": "19.99", "position": 10}, {"name": "rating", "type": "enum(''G'',''PG'',''PG-13'',''R'',''NC-17'')", "default": "G", "nullable": true, "position": 11, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "special_features", "type": "set(''Trailers'',''Commentaries'',''Deleted Scenes'',''Behind the Scenes'')", "nullable": true, "position": 12, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 13}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_fk_language_id", "type": "BTREE", "visible": true, "expressions": ["language_id"]}, {"name": "idx_fk_original_language_id", "type": "BTREE", "visible": true, "expressions": ["original_language_id"]}, {"name": "idx_title", "type": "BTREE", "visible": true, "expressions": ["title"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_film_language", "columns": ["language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}, {"name": "fk_film_language_original", "columns": ["original_language_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "language", "referencedColumns": ["language_id"]}]}, {"name": "film_actor", "engine": "InnoDB", "columns": [{"name": "actor_id", "type": "smallint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["actor_id", "film_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_actor_actor", "columns": ["actor_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "actor", "referencedColumns": ["actor_id"]}, {"name": "fk_film_actor_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_category", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint unsigned", "position": 1}, {"name": "category_id", "type": "tinyint unsigned", "position": 2}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id", "category_id"]}, {"name": "fk_film_category_category", "type": "BTREE", "visible": true, "expressions": ["category_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "16384", "foreignKeys": [{"name": "fk_film_category_category", "columns": ["category_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "category", "referencedColumns": ["category_id"]}, {"name": "fk_film_category_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}]}, {"name": "film_text", "engine": "InnoDB", "columns": [{"name": "film_id", "type": "smallint", "position": 1}, {"name": "title", "type": "varchar(255)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "description", "type": "text", "nullable": true, "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["film_id"]}, {"name": "idx_title_description", "type": "FULLTEXT", "visible": true, "expressions": ["title", "description"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768"}, {"name": "inventory", "engine": "InnoDB", "columns": [{"name": "inventory_id", "type": "mediumint unsigned", "position": 1}, {"name": "film_id", "type": "smallint unsigned", "position": 2}, {"name": "store_id", "type": "tinyint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_film_id", "type": "BTREE", "visible": true, "expressions": ["film_id"]}, {"name": "idx_store_id_film_id", "type": "BTREE", "visible": true, "expressions": ["store_id", "film_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_inventory_film", "columns": ["film_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "film", "referencedColumns": ["film_id"]}, {"name": "fk_inventory_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "language", "engine": "InnoDB", "columns": [{"name": "language_id", "type": "tinyint unsigned", "position": 1}, {"name": "name", "type": "char(20)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 3}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["language_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci"}, {"name": "payment", "engine": "InnoDB", "columns": [{"name": "payment_id", "type": "smallint unsigned", "position": 1}, {"name": "customer_id", "type": "smallint unsigned", "position": 2}, {"name": "staff_id", "type": "tinyint unsigned", "position": 3}, {"name": "rental_id", "type": "int", "nullable": true, "position": 4}, {"name": "amount", "type": "decimal(5,2)", "position": 5}, {"name": "payment_date", "type": "datetime", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "nullable": true, "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["payment_id"]}, {"name": "fk_payment_rental", "type": "BTREE", "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "49152", "foreignKeys": [{"name": "fk_payment_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_payment_rental", "columns": ["rental_id"], "onDelete": "SET NULL", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "rental", "referencedColumns": ["rental_id"]}, {"name": "fk_payment_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "rental", "engine": "InnoDB", "columns": [{"name": "rental_id", "type": "int", "position": 1}, {"name": "rental_date", "type": "datetime", "position": 2}, {"name": "inventory_id", "type": "mediumint unsigned", "position": 3}, {"name": "customer_id", "type": "smallint unsigned", "position": 4}, {"name": "return_date", "type": "datetime", "nullable": true, "position": 5}, {"name": "staff_id", "type": "tinyint unsigned", "position": 6}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 7}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["rental_id"]}, {"name": "idx_fk_customer_id", "type": "BTREE", "visible": true, "expressions": ["customer_id"]}, {"name": "idx_fk_inventory_id", "type": "BTREE", "visible": true, "expressions": ["inventory_id"]}, {"name": "idx_fk_staff_id", "type": "BTREE", "visible": true, "expressions": ["staff_id"]}, {"name": "rental_date", "type": "BTREE", "unique": true, "visible": true, "expressions": ["rental_date", "inventory_id", "customer_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "65536", "foreignKeys": [{"name": "fk_rental_customer", "columns": ["customer_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "customer", "referencedColumns": ["customer_id"]}, {"name": "fk_rental_inventory", "columns": ["inventory_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "inventory", "referencedColumns": ["inventory_id"]}, {"name": "fk_rental_staff", "columns": ["staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}, {"name": "staff", "engine": "InnoDB", "columns": [{"name": "staff_id", "type": "tinyint unsigned", "position": 1}, {"name": "first_name", "type": "varchar(45)", "position": 2, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "last_name", "type": "varchar(45)", "position": 3, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "address_id", "type": "smallint unsigned", "position": 4}, {"name": "picture", "type": "blob", "nullable": true, "position": 5}, {"name": "email", "type": "varchar(50)", "nullable": true, "position": 6, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "store_id", "type": "tinyint unsigned", "position": 7}, {"name": "active", "type": "tinyint(1)", "default": "1", "position": 8}, {"name": "username", "type": "varchar(16)", "position": 9, "collation": "utf8mb3_general_ci", "characterSet": "utf8mb3"}, {"name": "password", "type": "varchar(40)", "nullable": true, "position": 10, "collation": "utf8mb3_bin", "characterSet": "utf8mb3"}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 11}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["staff_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_fk_store_id", "type": "BTREE", "visible": true, "expressions": ["store_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_staff_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_staff_store", "columns": ["store_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "store", "referencedColumns": ["store_id"]}]}, {"name": "store", "engine": "InnoDB", "columns": [{"name": "store_id", "type": "tinyint unsigned", "position": 1}, {"name": "manager_staff_id", "type": "tinyint unsigned", "position": 2}, {"name": "address_id", "type": "smallint unsigned", "position": 3}, {"name": "last_update", "type": "timestamp", "default": "CURRENT_TIMESTAMP", "position": 4}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["store_id"]}, {"name": "idx_fk_address_id", "type": "BTREE", "visible": true, "expressions": ["address_id"]}, {"name": "idx_unique_manager", "type": "BTREE", "unique": true, "visible": true, "expressions": ["manager_staff_id"]}], "dataSize": "16384", "collation": "utf8mb3_general_ci", "indexSize": "32768", "foreignKeys": [{"name": "fk_store_address", "columns": ["address_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "address", "referencedColumns": ["address_id"]}, {"name": "fk_store_staff", "columns": ["manager_staff_id"], "onDelete": "RESTRICT", "onUpdate": "CASCADE", "matchType": "NONE", "referencedTable": "staff", "referencedColumns": ["staff_id"]}]}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 --
 -- Temporary view structure for `actor_info`
@@ -2254,8 +2276,8 @@ DELIMITER ;
 
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (108, 'NORMAL', 1, 1695197715, 1, 1695198629, 104, '{"name": "blog_test", "schemas": [{"tables": [{"name": "blog", "engine": "InnoDB", "columns": [{"name": "id", "type": "bigint", "position": 1}, {"name": "title", "type": "text", "position": 2, "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}, {"name": "content", "type": "text", "position": 3, "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["id"]}], "dataSize": "16384", "collation": "utf8mb4_general_ci"}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (108, 'NORMAL', 1, 1695197715, 1, 1695198629, 104, '{"name": "blog_test", "schemas": [{"tables": [{"name": "blog", "engine": "InnoDB", "columns": [{"name": "id", "type": "bigint", "position": 1}, {"name": "title", "type": "text", "position": 2, "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}, {"name": "content", "type": "text", "position": 3, "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["id"]}], "dataSize": "16384", "collation": "utf8mb4_general_ci"}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 --
 -- Table structure for `blog`
@@ -2269,8 +2291,8 @@ CREATE TABLE `blog` (
 
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump) VALUES (109, 'NORMAL', 1, 1695197772, 1, 1695199122, 105, '{"name": "blog_prod", "schemas": [{"tables": [{"name": "blog", "engine": "InnoDB", "columns": [{"name": "id", "type": "bigint", "position": 1}, {"name": "title", "type": "text", "position": 2, "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}, {"name": "content", "type": "text", "position": 3, "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["id"]}], "dataSize": "16384", "collation": "utf8mb4_general_ci"}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (109, 'NORMAL', 1, 1695197772, 1, 1695199122, 105, '{"name": "blog_prod", "schemas": [{"tables": [{"name": "blog", "engine": "InnoDB", "columns": [{"name": "id", "type": "bigint", "position": 1}, {"name": "title", "type": "text", "position": 2, "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}, {"name": "content", "type": "text", "position": 3, "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}], "indexes": [{"name": "PRIMARY", "type": "BTREE", "unique": true, "primary": true, "visible": true, "expressions": ["id"]}], "dataSize": "16384", "collation": "utf8mb4_general_ci"}]}], "collation": "utf8mb4_general_ci", "characterSet": "utf8mb4"}', 'SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 --
 -- Table structure for `blog`
@@ -2284,7 +2306,267 @@ CREATE TABLE `blog` (
 
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-') ON CONFLICT DO NOTHING;
+', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (112, 'NORMAL', 1, 1695287997, 1, 1695287997, 106, '{"name": "employee", "schemas": [{"name": "public", "views": [{"name": "dept_emp_latest_date", "definition": " SELECT dept_emp.emp_no,\n    max(dept_emp.from_date) AS from_date,\n    max(dept_emp.to_date) AS to_date\n   FROM dept_emp\n  GROUP BY dept_emp.emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}, {"name": "pg_stat_statements_info", "definition": " SELECT pg_stat_statements_info.dealloc,\n    pg_stat_statements_info.stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT pg_stat_statements.userid,\n    pg_stat_statements.dbid,\n    pg_stat_statements.toplevel,\n    pg_stat_statements.queryid,\n    pg_stat_statements.query,\n    pg_stat_statements.plans,\n    pg_stat_statements.total_plan_time,\n    pg_stat_statements.min_plan_time,\n    pg_stat_statements.max_plan_time,\n    pg_stat_statements.mean_plan_time,\n    pg_stat_statements.stddev_plan_time,\n    pg_stat_statements.calls,\n    pg_stat_statements.total_exec_time,\n    pg_stat_statements.min_exec_time,\n    pg_stat_statements.max_exec_time,\n    pg_stat_statements.mean_exec_time,\n    pg_stat_statements.stddev_exec_time,\n    pg_stat_statements.rows,\n    pg_stat_statements.shared_blks_hit,\n    pg_stat_statements.shared_blks_read,\n    pg_stat_statements.shared_blks_dirtied,\n    pg_stat_statements.shared_blks_written,\n    pg_stat_statements.local_blks_hit,\n    pg_stat_statements.local_blks_read,\n    pg_stat_statements.local_blks_dirtied,\n    pg_stat_statements.local_blks_written,\n    pg_stat_statements.temp_blks_read,\n    pg_stat_statements.temp_blks_written,\n    pg_stat_statements.blk_read_time,\n    pg_stat_statements.blk_write_time,\n    pg_stat_statements.wal_records,\n    pg_stat_statements.wal_fpi,\n    pg_stat_statements.wal_bytes\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, wal_records, wal_fpi, wal_bytes);"}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "default": "nextval(''employee_emp_no_seq''::regclass)", "position": 1}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_9$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.9", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (113, 'NORMAL', 1, 1695287997, 1, 1695287997, 107, '{"name": "employee", "schemas": [{"name": "public", "views": [{"name": "dept_emp_latest_date", "definition": " SELECT dept_emp.emp_no,\n    max(dept_emp.from_date) AS from_date,\n    max(dept_emp.to_date) AS to_date\n   FROM dept_emp\n  GROUP BY dept_emp.emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}, {"name": "pg_stat_statements_info", "definition": " SELECT pg_stat_statements_info.dealloc,\n    pg_stat_statements_info.stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT pg_stat_statements.userid,\n    pg_stat_statements.dbid,\n    pg_stat_statements.toplevel,\n    pg_stat_statements.queryid,\n    pg_stat_statements.query,\n    pg_stat_statements.plans,\n    pg_stat_statements.total_plan_time,\n    pg_stat_statements.min_plan_time,\n    pg_stat_statements.max_plan_time,\n    pg_stat_statements.mean_plan_time,\n    pg_stat_statements.stddev_plan_time,\n    pg_stat_statements.calls,\n    pg_stat_statements.total_exec_time,\n    pg_stat_statements.min_exec_time,\n    pg_stat_statements.max_exec_time,\n    pg_stat_statements.mean_exec_time,\n    pg_stat_statements.stddev_exec_time,\n    pg_stat_statements.rows,\n    pg_stat_statements.shared_blks_hit,\n    pg_stat_statements.shared_blks_read,\n    pg_stat_statements.shared_blks_dirtied,\n    pg_stat_statements.shared_blks_written,\n    pg_stat_statements.local_blks_hit,\n    pg_stat_statements.local_blks_read,\n    pg_stat_statements.local_blks_dirtied,\n    pg_stat_statements.local_blks_written,\n    pg_stat_statements.temp_blks_read,\n    pg_stat_statements.temp_blks_written,\n    pg_stat_statements.blk_read_time,\n    pg_stat_statements.blk_write_time,\n    pg_stat_statements.wal_records,\n    pg_stat_statements.wal_fpi,\n    pg_stat_statements.wal_bytes\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, wal_records, wal_fpi, wal_bytes);"}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "default": "nextval(''employee_emp_no_seq''::regclass)", "position": 1}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_9$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.9", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.db_schema ENABLE TRIGGER ALL;
@@ -2314,6 +2596,10 @@ INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (107, 'NORMAL', 101, 1695197737, 101, 1695197737, 102, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (108, 'NORMAL', 1, 1695198626, 1, 1695198626, 102, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (109, 'NORMAL', 1, 1695198626, 1, 1695198626, 102, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (110, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (111, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (112, 'NORMAL', 101, 1695288454, 101, 1695288454, 103, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
+INSERT INTO public.pipeline (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name) VALUES (113, 'NORMAL', 101, 1695288476, 101, 1695288476, 103, 'Rollout Pipeline') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.pipeline ENABLE TRIGGER ALL;
@@ -2333,6 +2619,10 @@ INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, upd
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (107, 'NORMAL', 101, 1695197736, 101, 1695197737, 102, 107, '', '', '{"steps": [{"specs": [{"id": "726bfba4-d0cd-4059-978b-3e85729a2eab", "createDatabaseConfig": {"labels": {"bb.environment": "prod"}, "target": "instances/mysql-prod", "database": "blog_prod", "collation": "utf8mb4_general_ci", "environment": "environments/prod", "characterSet": "utf8mb4"}}]}]}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (108, 'NORMAL', 1, 1695198626, 1, 1695198626, 102, 108, '[blog_test] Alter schema: Create table blog', '', '{"steps": [{"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/blog/sheets/119", "target": "instances/mysql-prod/databases/blog_test", "schemaVersion": "202309201624-ddl"}}]}]}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (109, 'NORMAL', 1, 1695198626, 1, 1695198626, 102, 109, '[blog_prod] Alter schema: Create table blog', '', '{"steps": [{"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/blog/sheets/120", "target": "instances/mysql-prod/databases/blog_prod", "schemaVersion": "202309201624-ddl"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (110, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 110, '', '', '{"steps": [{"specs": [{"id": "eb4143ae-1950-4267-81a6-4fc3ba1a29e0", "changeDatabaseConfig": {"type": "DATA", "sheet": "projects/test/sheets/121", "target": "instances/mysql-prod/databases/sakila_test"}}]}, {"specs": [{"id": "ed0acc88-7161-42fc-a77e-b5c140590ee9", "changeDatabaseConfig": {"type": "DATA", "sheet": "projects/test/sheets/122", "target": "instances/mysql-prod/databases/sakila_staging"}}]}, {"specs": [{"id": "395ce918-ab68-4546-9ed5-c3f7ccd36cc0", "changeDatabaseConfig": {"type": "DATA", "sheet": "projects/test/sheets/123", "target": "instances/mysql-prod/databases/sakila_prod"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (111, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 111, 'Onboarding sample plan for adding email column to Employee table', '', '{"steps": [{"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/project-sample/sheets/125", "target": "instances/test-sample-instance/databases/employee"}}]}, {"specs": [{"changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/project-sample/sheets/126", "target": "instances/prod-sample-instance/databases/employee"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (112, 'NORMAL', 101, 1695288454, 101, 1695288454, 103, 112, '', '', '{"steps": [{"specs": [{"id": "877416ee-9737-44b0-a766-7120779b719d", "changeDatabaseConfig": {"type": "BASELINE", "sheet": "projects/project-sample/sheets/127", "target": "instances/prod-sample-instance/databases/employee"}}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, description, config) VALUES (113, 'NORMAL', 101, 1695288476, 101, 1695288476, 103, 113, '', '', '{"steps": [{"specs": [{"id": "aa543d00-91e8-442c-bedb-b9bd78335132", "changeDatabaseConfig": {"type": "BASELINE", "sheet": "projects/project-sample/sheets/128", "target": "instances/test-sample-instance/databases/employee"}}]}]}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.plan ENABLE TRIGGER ALL;
@@ -2350,11 +2640,17 @@ INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, up
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (105, 'NORMAL', 103, 1695194451, 1, 1695195454, 101, 105, 105, '[3 databases] Import data for sakila databases @09-20 15:19 UTC+0800', 'DONE', 'bb.issue.database.general', 'Insert two rows for demonstration.', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 104}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}]}, "title": "项目所有者", "creatorId": 1, "description": "系统定义的流程。只需要项目所有者审批。"}], "approvalFindingDone": true}}', '''0800'':13 ''09'':8 ''15'':10 ''19'':11 ''20'':9 ''3'':1 ''data'':4 ''databases'':2,7 ''demonstration'':18 ''for'':5,17 ''import'':3 ''insert'':14 ''rows'':16 ''sakila'':6 ''two'':15 ''utc'':12') ON CONFLICT DO NOTHING;
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (107, 'NORMAL', 101, 1695197737, 1, 1695197772, 102, 107, 107, 'Create database ''blog_prod''', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "DBA", "creatorId": 1, "description": "系统定义的流程。只需要 DBA 审批"}], "approvalFindingDone": true}}', '''blog'':3 ''create'':1 ''database'':2 ''prod'':4') ON CONFLICT DO NOTHING;
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (106, 'NORMAL', 101, 1695197694, 1, 1695197715, 102, 106, 106, 'Create database ''blog_test''', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "DBA", "creatorId": 1, "description": "系统定义的流程。只需要 DBA 审批"}], "approvalFindingDone": true}}', '''blog'':3 ''create'':1 ''database'':2 ''test'':4') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (108, 'NORMAL', 1, 1695198626, 1, 1695198629, 102, 108, 108, '[blog_test] Alter schema: Create table blog', 'DONE', 'bb.issue.database.general', 'By VCS files:
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (110, 'NORMAL', 103, 1695282636, 101, 1695361485, 101, 110, 110, '[3 databases] Import data but secretly drops tables @09-21 15:47 UTC+0800', 'OPEN', 'bb.issue.database.general', 'Oops... I forgot to delete the `DROP TABLE` lines used for testing.', 101, false, '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}]}, "title": "项目所有者", "creatorId": 1, "description": "系统定义的流程。只需要项目所有者审批。"}], "approvalFindingDone": true}}', '''0800'':14 ''09'':9 ''15'':11 ''21'':10 ''3'':1 ''47'':12 ''but'':5 ''data'':4 ''databases'':2 ''delete'':19 ''drop'':21 ''drops'':7 ''for'':25 ''forgot'':17 ''i'':16 ''import'':3 ''lines'':23 ''oops'':15 ''secretly'':6 ''table'':22 ''tables'':8 ''testing'':26 ''the'':20 ''to'':18 ''used'':24 ''utc'':13') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (111, 'NORMAL', 101, 1695287997, 1, 1695287998, 103, 111, 111, '👉👉👉 [START HERE] Add email column to Employee table', 'OPEN', 'bb.issue.database.general', 'A sample issue to showcase how to review database schema change.
+
+				Click "Approve" button to apply the schema update.', 101, false, '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "项目所有者 -> DBA", "creatorId": 1, "description": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。"}], "approvalFindingDone": true}}', '''a'':9 ''add'':3 ''apply'':24 ''approve'':21 ''button'':22 ''change'':19 ''click'':20 ''column'':5 ''database'':17 ''email'':4 ''employee'':7 ''here'':2 ''how'':14 ''issue'':11 ''review'':16 ''sample'':10 ''schema'':18,26 ''showcase'':13 ''start'':1 ''table'':8 ''the'':25 ''to'':6,12,15,23 ''update'':27') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (112, 'NORMAL', 101, 1695288454, 1, 1695288459, 103, 112, 112, 'Establish "employee" baseline', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvalFindingDone": true}}', '''baseline'':3 ''employee'':2 ''establish'':1') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (113, 'NORMAL', 101, 1695288476, 1, 1695288476, 103, 113, 113, 'Establish "employee" baseline', 'DONE', 'bb.issue.database.general', '', 101, false, '{"approval": {"approvalFindingDone": true}}', '''baseline'':3 ''employee'':2 ''establish'':1') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (108, 'NORMAL', 1, 1695198626, 1, 1695361436, 102, 108, 108, '[blog_test] Alter schema: Create table blog', 'DONE', 'bb.issue.database.general', 'By VCS files:
 
 test/blog_test##202309201624##ddl##create_table_blog.sql
-', 1, false, '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "项目所有者 -> DBA", "creatorId": 1, "description": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。"}], "approvalFindingDone": true}}', '''202309201624'':14 ''alter'':3 ''blog'':1,7,12,18 ''by'':8 ''create'':5,16 ''ddl'':15 ''files'':10 ''schema'':4 ''sql'':19 ''table'':6,17 ''test'':2,11,13 ''vcs'':9') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (109, 'NORMAL', 1, 1695198626, 1, 1695199122, 102, 109, 109, '[blog_prod] Alter schema: Create table blog', 'DONE', 'bb.issue.database.general', 'By VCS files:
+', 1, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 101}, {"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "项目所有者 -> DBA", "creatorId": 1, "description": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。"}], "approvalFindingDone": true}}', '''202309201624'':14 ''alter'':3 ''blog'':1,7,12,18 ''by'':8 ''create'':5,16 ''ddl'':15 ''files'':10 ''schema'':4 ''sql'':19 ''table'':6,17 ''test'':2,11,13 ''vcs'':9') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (109, 'NORMAL', 1, 1695198626, 101, 1695361478, 102, 109, 109, '[blog_prod] Alter schema: Create table blog', 'DONE', 'bb.issue.database.general', 'By VCS files:
 
 prod/blog_prod##202309201624##ddl##create_table_blog.sql
 ', 101, false, '{"approval": {"approvers": [{"status": "APPROVED", "principalId": 101}, {"status": "APPROVED", "principalId": 102}], "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "项目所有者 -> DBA", "creatorId": 1, "description": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。"}], "approvalFindingDone": true}}', '''202309201624'':14 ''alter'':3 ''blog'':1,7,12,18 ''by'':8 ''create'':5,16 ''ddl'':15 ''files'':10 ''prod'':2,11,13 ''schema'':4 ''sql'':19 ''table'':6,17 ''vcs'':9') ON CONFLICT DO NOTHING;
@@ -2407,6 +2703,13 @@ INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (116, 101
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (117, 101, 180, 'UNREAD') ON CONFLICT DO NOTHING;
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (118, 101, 186, 'UNREAD') ON CONFLICT DO NOTHING;
 INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (119, 101, 204, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (120, 103, 205, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (121, 101, 205, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (122, 101, 207, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (123, 101, 209, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (124, 101, 213, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (125, 101, 214, 'UNREAD') ON CONFLICT DO NOTHING;
+INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (126, 101, 218, 'UNREAD') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.inbox ENABLE TRIGGER ALL;
@@ -2417,7 +2720,7 @@ ALTER TABLE public.inbox ENABLE TRIGGER ALL;
 
 ALTER TABLE public.instance_change_history DISABLE TRIGGER ALL;
 
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695196354, 1, 1695196354, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230920155233', 'Initial migration version 2.8.4 server version development with file migration/prod/LATEST.sql.', '-- Type
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (101, 'NORMAL', 1, 1695361205, 1, 1695361205, NULL, NULL, NULL, 'development', 1, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0009.0001-20230922134005', 'Initial migration version 2.9.1 server version development with file migration/prod/LATEST.sql.', '-- Type
 CREATE TYPE row_status AS ENUM (''NORMAL'', ''ARCHIVED'');
 
 -- updated_ts trigger.
@@ -2838,7 +3141,8 @@ CREATE TABLE db_schema (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id) ON DELETE CASCADE,
     metadata JSONB NOT NULL DEFAULT ''{}'',
-    raw_dump TEXT NOT NULL DEFAULT ''''
+    raw_dump TEXT NOT NULL DEFAULT '''',
+    config JSONB NOT NULL DEFAULT ''{}''
 );
 
 CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON db_schema(database_id);
@@ -4204,7 +4508,8 @@ CREATE TABLE db_schema (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id) ON DELETE CASCADE,
     metadata JSONB NOT NULL DEFAULT ''{}'',
-    raw_dump TEXT NOT NULL DEFAULT ''''
+    raw_dump TEXT NOT NULL DEFAULT '''',
+    config JSONB NOT NULL DEFAULT ''{}''
 );
 
 CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON db_schema(database_id);
@@ -5150,7 +5455,7 @@ VALUES
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 103;
 ', '', 0, '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695196354, 1, 1695196354, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (102, 'NORMAL', 1, 1695361206, 1, 1695361206, NULL, NULL, NULL, 'development', 2, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0009.0001-dev20220408000000', 'Migrate version 20220408000000 server version development with files migration/dev/20220408000000##schema_version_type.sql.', 'ALTER TABLE project ADD schema_version_type TEXT NOT NULL CHECK (schema_version_type IN (''TIMESTAMP'', ''SEMANTIC'')) DEFAULT ''TIMESTAMP'';
 ', NULL, '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -5437,7 +5742,8 @@ CREATE TABLE public.db_schema (
     updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
     database_id integer NOT NULL,
     metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    raw_dump text DEFAULT ''''::text NOT NULL
+    raw_dump text DEFAULT ''''::text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
 );
 
 CREATE SEQUENCE public.db_schema_id_seq
@@ -7393,7 +7699,8 @@ CREATE TABLE public.db_schema (
     updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
     database_id integer NOT NULL,
     metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
-    raw_dump text DEFAULT ''''::text NOT NULL
+    raw_dump text DEFAULT ''''::text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
 );
 
 CREATE SEQUENCE public.db_schema_id_seq
@@ -9061,8 +9368,8 @@ ALTER TABLE ONLY public.vcs
 ALTER TABLE ONLY public.vcs
     ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
 
-', 201180000, '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (103, 'NORMAL', 1, 1695110681, 1, 1695110681, NULL, NULL, NULL, 'development', 3, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919160440', 'Migrate version 2.8.4 server version development with files migration/prod/2.8/0004##issue_type.sql.', 'ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts;
+', 82091000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (103, 'NORMAL', 1, 1695110681, 1, 1695110681, NULL, NULL, NULL, 'development', 3, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0008.0004-20230919160440', 'Migrate version 2.9.1 server version development with files migration/prod/2.8/0004##issue_type.sql.', 'ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts;
 
 UPDATE issue
 SET type = ''bb.issue.database.general''
@@ -20127,6 +20434,4439 @@ SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 ', 22577000, '{"changedResources": {"databases": [{"name": "blog_prod", "schemas": [{"tables": [{"name": "blog"}]}]}]}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (119, 'NORMAL', 101, 1695288459, 101, 1695288459, 116, 107, 112, 'development', 1, 'UI', 'BASELINE', 'DONE', '0000.0000.0000-20230921172734', 'Establish "employee" baseline - Establish baseline for database "employee"', '', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', 33233000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (120, 'NORMAL', 101, 1695288476, 101, 1695288476, 115, 106, 113, 'development', 1, 'UI', 'BASELINE', 'DONE', '0000.0000.0000-20230921172755', 'Establish "employee" baseline - Establish baseline for database "employee"', '', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT dept_emp.emp_no,
+    max(dept_emp.from_date) AS from_date,
+    max(dept_emp.to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY dept_emp.emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', 34359000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (121, 'NORMAL', 1, 1695356165, 1, 1695356165, NULL, NULL, NULL, 'development', 4, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0009.0001-20230922121604', 'Migrate version 2.9.1 server version development with files migration/prod/2.9/0001##db_config.sql.', 'ALTER TABLE db_schema ADD COLUMN IF NOT EXISTS config JSONB NOT NULL DEFAULT ''{}'';', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE TYPE public.resource_type AS ENUM (
+    ''WORKSPACE'',
+    ''ENVIRONMENT'',
+    ''PROJECT'',
+    ''INSTANCE'',
+    ''DATABASE''
+);
+
+CREATE TYPE public.row_status AS ENUM (
+    ''NORMAL'',
+    ''ARCHIVED''
+);
+
+CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_ts = extract(epoch from now());
+  RETURN NEW;
+END;
+$$;
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.activity (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    container_id integer NOT NULL,
+    type text NOT NULL,
+    level text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT activity_container_id_check CHECK ((container_id > 0)),
+    CONSTRAINT activity_level_check CHECK ((level = ANY (ARRAY[''INFO''::text, ''WARN''::text, ''ERROR''::text]))),
+    CONSTRAINT activity_type_check CHECK ((type ~~ ''bb.%''::text))
+);
+
+CREATE SEQUENCE public.activity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.activity_id_seq OWNED BY public.activity.id;
+
+CREATE TABLE public.anomaly (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT anomaly_type_check CHECK ((type ~~ ''bb.anomaly.%''::text))
+);
+
+CREATE SEQUENCE public.anomaly_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.anomaly_id_seq OWNED BY public.anomaly.id;
+
+CREATE TABLE public.backup (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    storage_backend text NOT NULL,
+    migration_history_version text NOT NULL,
+    path text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT backup_status_check CHECK ((status = ANY (ARRAY[''PENDING_CREATE''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT backup_storage_backend_check CHECK ((storage_backend = ANY (ARRAY[''LOCAL''::text, ''S3''::text, ''GCS''::text, ''OSS''::text]))),
+    CONSTRAINT backup_type_check CHECK ((type = ANY (ARRAY[''MANUAL''::text, ''AUTOMATIC''::text, ''PITR''::text])))
+);
+
+CREATE SEQUENCE public.backup_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_id_seq OWNED BY public.backup.id;
+
+CREATE TABLE public.backup_setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    enabled boolean NOT NULL,
+    hour integer NOT NULL,
+    day_of_week integer NOT NULL,
+    retention_period_ts integer DEFAULT 0 NOT NULL,
+    hook_url text NOT NULL,
+    CONSTRAINT backup_setting_day_of_week_check CHECK (((day_of_week >= ''-1''::integer) AND (day_of_week <= 6))),
+    CONSTRAINT backup_setting_hour_check CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT backup_setting_retention_period_ts_check CHECK ((retention_period_ts >= 0))
+);
+
+CREATE SEQUENCE public.backup_setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_setting_id_seq OWNED BY public.backup_setting.id;
+
+CREATE TABLE public.bookmark (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    link text NOT NULL
+);
+
+CREATE SEQUENCE public.bookmark_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bookmark_id_seq OWNED BY public.bookmark.id;
+
+CREATE TABLE public.data_source (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    username text NOT NULL,
+    password text NOT NULL,
+    ssl_key text DEFAULT ''''::text NOT NULL,
+    ssl_cert text DEFAULT ''''::text NOT NULL,
+    ssl_ca text DEFAULT ''''::text NOT NULL,
+    host text DEFAULT ''''::text NOT NULL,
+    port text DEFAULT ''''::text NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    database text DEFAULT ''''::text NOT NULL,
+    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY[''ADMIN''::text, ''RW''::text, ''RO''::text])))
+);
+
+CREATE SEQUENCE public.data_source_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
+
+CREATE TABLE public.db (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    project_id integer NOT NULL,
+    environment_id integer,
+    source_backup_id integer,
+    sync_status text NOT NULL,
+    last_successful_sync_ts bigint NOT NULL,
+    schema_version text NOT NULL,
+    name text NOT NULL,
+    secrets jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    datashare boolean DEFAULT false NOT NULL,
+    service_name text DEFAULT ''''::text NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY[''OK''::text, ''NOT_FOUND''::text])))
+);
+
+CREATE TABLE public.db_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_group_id_seq OWNED BY public.db_group.id;
+
+CREATE SEQUENCE public.db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_id_seq OWNED BY public.db.id;
+
+CREATE TABLE public.db_label (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    key text NOT NULL,
+    value text NOT NULL
+);
+
+CREATE SEQUENCE public.db_label_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_label_id_seq OWNED BY public.db_label.id;
+
+CREATE TABLE public.db_schema (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    raw_dump text DEFAULT ''''::text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_schema_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
+
+CREATE TABLE public.deployment_config (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.deployment_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
+
+CREATE TABLE public.environment (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    resource_id text NOT NULL,
+    CONSTRAINT environment_order_check CHECK (("order" >= 0))
+);
+
+CREATE SEQUENCE public.environment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.environment_id_seq OWNED BY public.environment.id;
+
+CREATE TABLE public.external_approval (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    issue_id integer NOT NULL,
+    requester_id integer NOT NULL,
+    approver_id integer NOT NULL,
+    type text NOT NULL,
+    payload jsonb NOT NULL,
+    CONSTRAINT external_approval_type_check CHECK ((type ~~ ''bb.plugin.app.%''::text))
+);
+
+CREATE SEQUENCE public.external_approval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.external_approval_id_seq OWNED BY public.external_approval.id;
+
+CREATE TABLE public.idp (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT idp_type_check CHECK ((type = ANY (ARRAY[''OAUTH2''::text, ''OIDC''::text, ''LDAP''::text])))
+);
+
+CREATE SEQUENCE public.idp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
+
+CREATE TABLE public.inbox (
+    id integer NOT NULL,
+    receiver_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    status text NOT NULL,
+    CONSTRAINT inbox_status_check CHECK ((status = ANY (ARRAY[''UNREAD''::text, ''READ''::text])))
+);
+
+CREATE SEQUENCE public.inbox_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.inbox_id_seq OWNED BY public.inbox.id;
+
+CREATE TABLE public.instance (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    environment_id integer,
+    name text NOT NULL,
+    engine text NOT NULL,
+    engine_version text DEFAULT ''''::text NOT NULL,
+    external_link text DEFAULT ''''::text NOT NULL,
+    resource_id text NOT NULL,
+    activation boolean DEFAULT false NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.instance_change_history (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer,
+    database_id integer,
+    issue_id integer,
+    release_version text NOT NULL,
+    sequence bigint NOT NULL,
+    source text NOT NULL,
+    type text NOT NULL,
+    status text NOT NULL,
+    version text NOT NULL,
+    description text NOT NULL,
+    statement text NOT NULL,
+    sheet_id bigint,
+    schema text NOT NULL,
+    schema_prev text NOT NULL,
+    execution_duration_ns bigint NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT instance_change_history_sequence_check CHECK ((sequence >= 0)),
+    CONSTRAINT instance_change_history_source_check CHECK ((source = ANY (ARRAY[''UI''::text, ''VCS''::text, ''LIBRARY''::text]))),
+    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT instance_change_history_type_check CHECK ((type = ANY (ARRAY[''BASELINE''::text, ''MIGRATE''::text, ''MIGRATE_SDL''::text, ''BRANCH''::text, ''DATA''::text])))
+);
+
+CREATE SEQUENCE public.instance_change_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_change_history_id_seq OWNED BY public.instance_change_history.id;
+
+CREATE SEQUENCE public.instance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_id_seq OWNED BY public.instance.id;
+
+CREATE TABLE public.instance_user (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    "grant" text NOT NULL
+);
+
+CREATE SEQUENCE public.instance_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_user_id_seq OWNED BY public.instance_user.id;
+
+CREATE TABLE public.issue (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    plan_id bigint,
+    pipeline_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL,
+    assignee_id integer NOT NULL,
+    assignee_need_attention boolean DEFAULT false NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    ts_vector tsvector,
+    CONSTRAINT issue_status_check CHECK ((status = ANY (ARRAY[''OPEN''::text, ''DONE''::text, ''CANCELED''::text]))),
+    CONSTRAINT issue_type_check CHECK ((type ~~ ''bb.issue.%''::text))
+);
+
+CREATE SEQUENCE public.issue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.issue_id_seq OWNED BY public.issue.id;
+
+CREATE TABLE public.issue_subscriber (
+    issue_id integer NOT NULL,
+    subscriber_id integer NOT NULL
+);
+
+CREATE TABLE public.label_key (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    key text NOT NULL
+);
+
+CREATE SEQUENCE public.label_key_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.label_key_id_seq OWNED BY public.label_key.id;
+
+CREATE TABLE public.label_value (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    key text NOT NULL,
+    value text NOT NULL
+);
+
+CREATE SEQUENCE public.label_value_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.label_value_id_seq OWNED BY public.label_value.id;
+
+CREATE TABLE public.member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    status text NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    CONSTRAINT member_role_check CHECK ((role = ANY (ARRAY[''OWNER''::text, ''DBA''::text, ''DEVELOPER''::text]))),
+    CONSTRAINT member_status_check CHECK ((status = ANY (ARRAY[''INVITED''::text, ''ACTIVE''::text])))
+);
+
+CREATE SEQUENCE public.member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.member_id_seq OWNED BY public.member.id;
+
+CREATE TABLE public.pipeline (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.pipeline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.pipeline_id_seq OWNED BY public.pipeline.id;
+
+CREATE TABLE public.plan (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    pipeline_id integer,
+    name text NOT NULL,
+    description text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.plan_check_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    plan_id bigint NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT plan_check_run_status_check CHECK ((status = ANY (ARRAY[''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT plan_check_run_type_check CHECK ((type ~~ ''bb.plan-check.%''::text))
+);
+
+CREATE SEQUENCE public.plan_check_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_check_run_id_seq OWNED BY public.plan_check_run.id;
+
+CREATE SEQUENCE public.plan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_id_seq OWNED BY public.plan.id;
+
+CREATE TABLE public.policy (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    resource_type public.resource_type NOT NULL,
+    resource_id integer NOT NULL,
+    inherit_from_parent boolean DEFAULT true NOT NULL,
+    CONSTRAINT policy_type_check CHECK ((type ~~ ''bb.policy.%''::text))
+);
+
+CREATE SEQUENCE public.policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.policy_id_seq OWNED BY public.policy.id;
+
+CREATE TABLE public.principal (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    phone text DEFAULT ''''::text NOT NULL,
+    mfa_config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT principal_type_check CHECK ((type = ANY (ARRAY[''END_USER''::text, ''SYSTEM_BOT''::text, ''SERVICE_ACCOUNT''::text])))
+);
+
+CREATE SEQUENCE public.principal_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.principal_id_seq OWNED BY public.principal.id;
+
+CREATE TABLE public.project (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    workflow_type text NOT NULL,
+    visibility text NOT NULL,
+    tenant_mode text DEFAULT ''DISABLED''::text NOT NULL,
+    db_name_template text NOT NULL,
+    schema_change_type text DEFAULT ''DDL''::text NOT NULL,
+    resource_id text NOT NULL,
+    data_classification_config_id text DEFAULT ''''::text NOT NULL,
+    schema_version_type text DEFAULT ''TIMESTAMP''::text NOT NULL,
+    CONSTRAINT project_schema_change_type_check CHECK ((schema_change_type = ANY (ARRAY[''DDL''::text, ''SDL''::text]))),
+    CONSTRAINT project_schema_version_type_check CHECK ((schema_version_type = ANY (ARRAY[''TIMESTAMP''::text, ''SEMANTIC''::text]))),
+    CONSTRAINT project_tenant_mode_check CHECK ((tenant_mode = ANY (ARRAY[''DISABLED''::text, ''TENANT''::text]))),
+    CONSTRAINT project_visibility_check CHECK ((visibility = ANY (ARRAY[''PUBLIC''::text, ''PRIVATE''::text]))),
+    CONSTRAINT project_workflow_type_check CHECK ((workflow_type = ANY (ARRAY[''UI''::text, ''VCS''::text])))
+);
+
+CREATE SEQUENCE public.project_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_id_seq OWNED BY public.project.id;
+
+CREATE TABLE public.project_member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    condition jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.project_member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_member_id_seq OWNED BY public.project_member.id;
+
+CREATE TABLE public.project_webhook (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    url text NOT NULL,
+    activity_list text[] NOT NULL,
+    CONSTRAINT project_webhook_type_check CHECK ((type ~~ ''bb.plugin.webhook.%''::text))
+);
+
+CREATE SEQUENCE public.project_webhook_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_webhook_id_seq OWNED BY public.project_webhook.id;
+
+CREATE TABLE public.repository (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    vcs_id integer NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    full_path text NOT NULL,
+    web_url text NOT NULL,
+    branch_filter text DEFAULT ''''::text NOT NULL,
+    base_directory text DEFAULT ''''::text NOT NULL,
+    file_path_template text DEFAULT ''''::text NOT NULL,
+    enable_sql_review_ci boolean DEFAULT false NOT NULL,
+    schema_path_template text DEFAULT ''''::text NOT NULL,
+    sheet_path_template text DEFAULT ''''::text NOT NULL,
+    external_id text NOT NULL,
+    external_webhook_id text NOT NULL,
+    webhook_url_host text NOT NULL,
+    webhook_endpoint_id text NOT NULL,
+    webhook_secret_token text NOT NULL,
+    access_token text NOT NULL,
+    expires_ts bigint NOT NULL,
+    refresh_token text NOT NULL
+);
+
+CREATE SEQUENCE public.repository_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.repository_id_seq OWNED BY public.repository.id;
+
+CREATE TABLE public.risk (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    source text NOT NULL,
+    level bigint NOT NULL,
+    name text NOT NULL,
+    active boolean NOT NULL,
+    expression jsonb NOT NULL,
+    CONSTRAINT risk_source_check CHECK ((source ~~ ''bb.risk.%''::text))
+);
+
+CREATE SEQUENCE public.risk_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.risk_id_seq OWNED BY public.risk.id;
+
+CREATE TABLE public.role (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    permissions jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
+
+CREATE TABLE public.schema_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    db_group_id bigint NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.schema_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.schema_group_id_seq OWNED BY public.schema_group.id;
+
+CREATE TABLE public.setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    value text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.setting_id_seq OWNED BY public.setting.id;
+
+CREATE TABLE public.sheet (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    statement text NOT NULL,
+    visibility text DEFAULT ''PRIVATE''::text NOT NULL,
+    source text DEFAULT ''BYTEBASE''::text NOT NULL,
+    type text DEFAULT ''SQL''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT sheet_source_check CHECK ((source = ANY (ARRAY[''BYTEBASE''::text, ''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text, ''BYTEBASE_ARTIFACT''::text]))),
+    CONSTRAINT sheet_type_check CHECK ((type = ''SQL''::text)),
+    CONSTRAINT sheet_visibility_check CHECK ((visibility = ANY (ARRAY[''PRIVATE''::text, ''PROJECT''::text, ''PUBLIC''::text])))
+);
+
+CREATE SEQUENCE public.sheet_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
+
+CREATE TABLE public.sheet_organizer (
+    id integer NOT NULL,
+    sheet_id integer NOT NULL,
+    principal_id integer NOT NULL,
+    starred boolean DEFAULT false NOT NULL,
+    pinned boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.sheet_organizer_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_organizer_id_seq OWNED BY public.sheet_organizer.id;
+
+CREATE TABLE public.slow_query (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    log_date_ts integer NOT NULL,
+    slow_query_statistics jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.slow_query_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
+
+CREATE TABLE public.stage (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    environment_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.stage_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.stage_id_seq OWNED BY public.stage.id;
+
+CREATE TABLE public.task (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    stage_id integer NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    earliest_allowed_ts bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''PENDING_APPROVAL''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT task_type_check CHECK ((type ~~ ''bb.task.%''::text))
+);
+
+CREATE TABLE public.task_dag (
+    id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    from_task_id integer NOT NULL,
+    to_task_id integer NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.task_dag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+CREATE TABLE public.task_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    task_id integer NOT NULL,
+    attempt integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    code integer DEFAULT 0 NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT task_run_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text])))
+);
+
+CREATE SEQUENCE public.task_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_run_id_seq OWNED BY public.task_run.id;
+
+CREATE TABLE public.vcs (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    instance_url text NOT NULL,
+    api_url text NOT NULL,
+    application_id text NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT vcs_api_url_check CHECK ((((api_url ~~ ''http://%''::text) OR (api_url ~~ ''https://%''::text)) AND (api_url = rtrim(api_url, ''/''::text)))),
+    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ ''http://%''::text) OR (instance_url ~~ ''https://%''::text)) AND (instance_url = rtrim(instance_url, ''/''::text)))),
+    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY[''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text])))
+);
+
+CREATE SEQUENCE public.vcs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
+
+ALTER TABLE ONLY public.activity ALTER COLUMN id SET DEFAULT nextval(''public.activity_id_seq''::regclass);
+
+ALTER TABLE ONLY public.anomaly ALTER COLUMN id SET DEFAULT nextval(''public.anomaly_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup ALTER COLUMN id SET DEFAULT nextval(''public.backup_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup_setting ALTER COLUMN id SET DEFAULT nextval(''public.backup_setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.bookmark ALTER COLUMN id SET DEFAULT nextval(''public.bookmark_id_seq''::regclass);
+
+ALTER TABLE ONLY public.data_source ALTER COLUMN id SET DEFAULT nextval(''public.data_source_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db ALTER COLUMN id SET DEFAULT nextval(''public.db_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval(''public.db_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_label ALTER COLUMN id SET DEFAULT nextval(''public.db_label_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval(''public.db_schema_id_seq''::regclass);
+
+ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval(''public.deployment_config_id_seq''::regclass);
+
+ALTER TABLE ONLY public.environment ALTER COLUMN id SET DEFAULT nextval(''public.environment_id_seq''::regclass);
+
+ALTER TABLE ONLY public.external_approval ALTER COLUMN id SET DEFAULT nextval(''public.external_approval_id_seq''::regclass);
+
+ALTER TABLE ONLY public.idp ALTER COLUMN id SET DEFAULT nextval(''public.idp_id_seq''::regclass);
+
+ALTER TABLE ONLY public.inbox ALTER COLUMN id SET DEFAULT nextval(''public.inbox_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance ALTER COLUMN id SET DEFAULT nextval(''public.instance_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_change_history ALTER COLUMN id SET DEFAULT nextval(''public.instance_change_history_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_user ALTER COLUMN id SET DEFAULT nextval(''public.instance_user_id_seq''::regclass);
+
+ALTER TABLE ONLY public.issue ALTER COLUMN id SET DEFAULT nextval(''public.issue_id_seq''::regclass);
+
+ALTER TABLE ONLY public.label_key ALTER COLUMN id SET DEFAULT nextval(''public.label_key_id_seq''::regclass);
+
+ALTER TABLE ONLY public.label_value ALTER COLUMN id SET DEFAULT nextval(''public.label_value_id_seq''::regclass);
+
+ALTER TABLE ONLY public.member ALTER COLUMN id SET DEFAULT nextval(''public.member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.pipeline ALTER COLUMN id SET DEFAULT nextval(''public.pipeline_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan ALTER COLUMN id SET DEFAULT nextval(''public.plan_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan_check_run ALTER COLUMN id SET DEFAULT nextval(''public.plan_check_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.policy ALTER COLUMN id SET DEFAULT nextval(''public.policy_id_seq''::regclass);
+
+ALTER TABLE ONLY public.principal ALTER COLUMN id SET DEFAULT nextval(''public.principal_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project ALTER COLUMN id SET DEFAULT nextval(''public.project_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_member ALTER COLUMN id SET DEFAULT nextval(''public.project_member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_webhook ALTER COLUMN id SET DEFAULT nextval(''public.project_webhook_id_seq''::regclass);
+
+ALTER TABLE ONLY public.repository ALTER COLUMN id SET DEFAULT nextval(''public.repository_id_seq''::regclass);
+
+ALTER TABLE ONLY public.risk ALTER COLUMN id SET DEFAULT nextval(''public.risk_id_seq''::regclass);
+
+ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval(''public.role_id_seq''::regclass);
+
+ALTER TABLE ONLY public.schema_group ALTER COLUMN id SET DEFAULT nextval(''public.schema_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.setting ALTER COLUMN id SET DEFAULT nextval(''public.setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval(''public.sheet_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet_organizer ALTER COLUMN id SET DEFAULT nextval(''public.sheet_organizer_id_seq''::regclass);
+
+ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval(''public.slow_query_id_seq''::regclass);
+
+ALTER TABLE ONLY public.stage ALTER COLUMN id SET DEFAULT nextval(''public.stage_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval(''public.task_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval(''public.task_dag_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval(''public.task_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval(''public.vcs_id_seq''::regclass);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.idp
+    ADD CONSTRAINT idp_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_pkey PRIMARY KEY (issue_id, subscriber_id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);
+
+CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);
+
+CREATE INDEX idx_anomaly_database_id_row_status_type ON public.anomaly USING btree (database_id, row_status, type);
+
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON public.anomaly USING btree (instance_id, row_status, type);
+
+CREATE INDEX idx_backup_database_id ON public.backup USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON public.backup_setting USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING btree (database_id, name);
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);
+
+CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);
+
+CREATE UNIQUE INDEX idx_db_label_unique_database_id_key ON public.db_label USING btree (database_id, key);
+
+CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_environment_unique_name ON public.environment USING btree (name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);
+
+CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);
+
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id ON public.inbox USING btree (receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON public.inbox USING btree (receiver_id, status);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);
+
+CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
+
+CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);
+
+CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);
+
+CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);
+
+CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);
+
+CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);
+
+CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);
+
+CREATE UNIQUE INDEX idx_label_key_unique_key ON public.label_key USING btree (key);
+
+CREATE UNIQUE INDEX idx_label_value_unique_key_value ON public.label_value USING btree (key, value);
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON public.member USING btree (principal_id);
+
+CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);
+
+CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);
+
+CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);
+
+CREATE INDEX idx_project_member_project_id ON public.project_member USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);
+
+CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);
+
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON public.repository USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON public.schema_group USING btree (db_group_id, placeholder);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON public.schema_group USING btree (db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);
+
+CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);
+
+CREATE INDEX idx_sheet_database_id_row_status ON public.sheet USING btree (database_id, row_status);
+
+CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON public.sheet_organizer USING btree (principal_id);
+
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON public.sheet_organizer USING btree (sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);
+
+CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);
+
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);
+
+CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
+
+CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
+
+CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);
+
+CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);
+
+CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
+
+CREATE INDEX idx_task_status ON public.task USING btree (status);
+
+CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
+
+CREATE TRIGGER update_activity_updated_ts BEFORE UPDATE ON public.activity FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_anomaly_updated_ts BEFORE UPDATE ON public.anomaly FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_setting_updated_ts BEFORE UPDATE ON public.backup_setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_updated_ts BEFORE UPDATE ON public.backup FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_bookmark_updated_ts BEFORE UPDATE ON public.bookmark FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_data_source_updated_ts BEFORE UPDATE ON public.data_source FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_group_updated_ts BEFORE UPDATE ON public.db_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_label_updated_ts BEFORE UPDATE ON public.db_label FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_schema_updated_ts BEFORE UPDATE ON public.db_schema FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_updated_ts BEFORE UPDATE ON public.db FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_deployment_config_updated_ts BEFORE UPDATE ON public.deployment_config FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_environment_updated_ts BEFORE UPDATE ON public.environment FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_external_approval_updated_ts BEFORE UPDATE ON public.external_approval FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_idp_updated_ts BEFORE UPDATE ON public.idp FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_change_history_updated_ts BEFORE UPDATE ON public.instance_change_history FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_updated_ts BEFORE UPDATE ON public.instance FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_user_updated_ts BEFORE UPDATE ON public.instance_user FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_issue_updated_ts BEFORE UPDATE ON public.issue FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_label_key_updated_ts BEFORE UPDATE ON public.label_key FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_label_value_updated_ts BEFORE UPDATE ON public.label_value FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_member_updated_ts BEFORE UPDATE ON public.member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_pipeline_updated_ts BEFORE UPDATE ON public.pipeline FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_check_run_updated_ts BEFORE UPDATE ON public.plan_check_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_updated_ts BEFORE UPDATE ON public.plan FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_policy_updated_ts BEFORE UPDATE ON public.policy FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_member_updated_ts BEFORE UPDATE ON public.project_member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_updated_ts BEFORE UPDATE ON public.project FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_webhook_updated_ts BEFORE UPDATE ON public.project_webhook FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_repository_updated_ts BEFORE UPDATE ON public.repository FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_risk_updated_ts BEFORE UPDATE ON public.risk FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_role_updated_ts BEFORE UPDATE ON public.role FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_schema_group_updated_ts BEFORE UPDATE ON public.schema_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_setting_updated_ts BEFORE UPDATE ON public.setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_sheet_updated_ts BEFORE UPDATE ON public.sheet FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_slow_query_updated_ts BEFORE UPDATE ON public.slow_query FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_stage_updated_ts BEFORE UPDATE ON public.stage FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_dag_updated_ts BEFORE UPDATE ON public.task_dag FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_run_updated_ts BEFORE UPDATE ON public.task_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_updated_ts BEFORE UPDATE ON public.task FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_vcs_updated_ts BEFORE UPDATE ON public.vcs FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activity(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_key_fkey FOREIGN KEY (key) REFERENCES public.label_key(key);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_vcs_id_fkey FOREIGN KEY (vcs_id) REFERENCES public.vcs(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_db_group_id_fkey FOREIGN KEY (db_group_id) REFERENCES public.db_group(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheet(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE TYPE public.resource_type AS ENUM (
+    ''WORKSPACE'',
+    ''ENVIRONMENT'',
+    ''PROJECT'',
+    ''INSTANCE'',
+    ''DATABASE''
+);
+
+CREATE TYPE public.row_status AS ENUM (
+    ''NORMAL'',
+    ''ARCHIVED''
+);
+
+CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_ts = extract(epoch from now());
+  RETURN NEW;
+END;
+$$;
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.activity (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    container_id integer NOT NULL,
+    type text NOT NULL,
+    level text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT activity_container_id_check CHECK ((container_id > 0)),
+    CONSTRAINT activity_level_check CHECK ((level = ANY (ARRAY[''INFO''::text, ''WARN''::text, ''ERROR''::text]))),
+    CONSTRAINT activity_type_check CHECK ((type ~~ ''bb.%''::text))
+);
+
+CREATE SEQUENCE public.activity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.activity_id_seq OWNED BY public.activity.id;
+
+CREATE TABLE public.anomaly (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT anomaly_type_check CHECK ((type ~~ ''bb.anomaly.%''::text))
+);
+
+CREATE SEQUENCE public.anomaly_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.anomaly_id_seq OWNED BY public.anomaly.id;
+
+CREATE TABLE public.backup (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    storage_backend text NOT NULL,
+    migration_history_version text NOT NULL,
+    path text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT backup_status_check CHECK ((status = ANY (ARRAY[''PENDING_CREATE''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT backup_storage_backend_check CHECK ((storage_backend = ANY (ARRAY[''LOCAL''::text, ''S3''::text, ''GCS''::text, ''OSS''::text]))),
+    CONSTRAINT backup_type_check CHECK ((type = ANY (ARRAY[''MANUAL''::text, ''AUTOMATIC''::text, ''PITR''::text])))
+);
+
+CREATE SEQUENCE public.backup_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_id_seq OWNED BY public.backup.id;
+
+CREATE TABLE public.backup_setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    enabled boolean NOT NULL,
+    hour integer NOT NULL,
+    day_of_week integer NOT NULL,
+    retention_period_ts integer DEFAULT 0 NOT NULL,
+    hook_url text NOT NULL,
+    CONSTRAINT backup_setting_day_of_week_check CHECK (((day_of_week >= ''-1''::integer) AND (day_of_week <= 6))),
+    CONSTRAINT backup_setting_hour_check CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT backup_setting_retention_period_ts_check CHECK ((retention_period_ts >= 0))
+);
+
+CREATE SEQUENCE public.backup_setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_setting_id_seq OWNED BY public.backup_setting.id;
+
+CREATE TABLE public.bookmark (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    link text NOT NULL
+);
+
+CREATE SEQUENCE public.bookmark_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bookmark_id_seq OWNED BY public.bookmark.id;
+
+CREATE TABLE public.data_source (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    username text NOT NULL,
+    password text NOT NULL,
+    ssl_key text DEFAULT ''''::text NOT NULL,
+    ssl_cert text DEFAULT ''''::text NOT NULL,
+    ssl_ca text DEFAULT ''''::text NOT NULL,
+    host text DEFAULT ''''::text NOT NULL,
+    port text DEFAULT ''''::text NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    database text DEFAULT ''''::text NOT NULL,
+    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY[''ADMIN''::text, ''RW''::text, ''RO''::text])))
+);
+
+CREATE SEQUENCE public.data_source_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
+
+CREATE TABLE public.db (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    project_id integer NOT NULL,
+    environment_id integer,
+    source_backup_id integer,
+    sync_status text NOT NULL,
+    last_successful_sync_ts bigint NOT NULL,
+    schema_version text NOT NULL,
+    name text NOT NULL,
+    secrets jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    datashare boolean DEFAULT false NOT NULL,
+    service_name text DEFAULT ''''::text NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY[''OK''::text, ''NOT_FOUND''::text])))
+);
+
+CREATE TABLE public.db_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_group_id_seq OWNED BY public.db_group.id;
+
+CREATE SEQUENCE public.db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_id_seq OWNED BY public.db.id;
+
+CREATE TABLE public.db_label (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    key text NOT NULL,
+    value text NOT NULL
+);
+
+CREATE SEQUENCE public.db_label_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_label_id_seq OWNED BY public.db_label.id;
+
+CREATE TABLE public.db_schema (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    raw_dump text DEFAULT ''''::text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_schema_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
+
+CREATE TABLE public.deployment_config (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.deployment_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
+
+CREATE TABLE public.environment (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    resource_id text NOT NULL,
+    CONSTRAINT environment_order_check CHECK (("order" >= 0))
+);
+
+CREATE SEQUENCE public.environment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.environment_id_seq OWNED BY public.environment.id;
+
+CREATE TABLE public.external_approval (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    issue_id integer NOT NULL,
+    requester_id integer NOT NULL,
+    approver_id integer NOT NULL,
+    type text NOT NULL,
+    payload jsonb NOT NULL,
+    CONSTRAINT external_approval_type_check CHECK ((type ~~ ''bb.plugin.app.%''::text))
+);
+
+CREATE SEQUENCE public.external_approval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.external_approval_id_seq OWNED BY public.external_approval.id;
+
+CREATE TABLE public.idp (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT idp_type_check CHECK ((type = ANY (ARRAY[''OAUTH2''::text, ''OIDC''::text, ''LDAP''::text])))
+);
+
+CREATE SEQUENCE public.idp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
+
+CREATE TABLE public.inbox (
+    id integer NOT NULL,
+    receiver_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    status text NOT NULL,
+    CONSTRAINT inbox_status_check CHECK ((status = ANY (ARRAY[''UNREAD''::text, ''READ''::text])))
+);
+
+CREATE SEQUENCE public.inbox_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.inbox_id_seq OWNED BY public.inbox.id;
+
+CREATE TABLE public.instance (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    environment_id integer,
+    name text NOT NULL,
+    engine text NOT NULL,
+    engine_version text DEFAULT ''''::text NOT NULL,
+    external_link text DEFAULT ''''::text NOT NULL,
+    resource_id text NOT NULL,
+    activation boolean DEFAULT false NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.instance_change_history (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer,
+    database_id integer,
+    issue_id integer,
+    release_version text NOT NULL,
+    sequence bigint NOT NULL,
+    source text NOT NULL,
+    type text NOT NULL,
+    status text NOT NULL,
+    version text NOT NULL,
+    description text NOT NULL,
+    statement text NOT NULL,
+    sheet_id bigint,
+    schema text NOT NULL,
+    schema_prev text NOT NULL,
+    execution_duration_ns bigint NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT instance_change_history_sequence_check CHECK ((sequence >= 0)),
+    CONSTRAINT instance_change_history_source_check CHECK ((source = ANY (ARRAY[''UI''::text, ''VCS''::text, ''LIBRARY''::text]))),
+    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT instance_change_history_type_check CHECK ((type = ANY (ARRAY[''BASELINE''::text, ''MIGRATE''::text, ''MIGRATE_SDL''::text, ''BRANCH''::text, ''DATA''::text])))
+);
+
+CREATE SEQUENCE public.instance_change_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_change_history_id_seq OWNED BY public.instance_change_history.id;
+
+CREATE SEQUENCE public.instance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_id_seq OWNED BY public.instance.id;
+
+CREATE TABLE public.instance_user (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    "grant" text NOT NULL
+);
+
+CREATE SEQUENCE public.instance_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_user_id_seq OWNED BY public.instance_user.id;
+
+CREATE TABLE public.issue (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    plan_id bigint,
+    pipeline_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL,
+    assignee_id integer NOT NULL,
+    assignee_need_attention boolean DEFAULT false NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    ts_vector tsvector,
+    CONSTRAINT issue_status_check CHECK ((status = ANY (ARRAY[''OPEN''::text, ''DONE''::text, ''CANCELED''::text]))),
+    CONSTRAINT issue_type_check CHECK ((type ~~ ''bb.issue.%''::text))
+);
+
+CREATE SEQUENCE public.issue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.issue_id_seq OWNED BY public.issue.id;
+
+CREATE TABLE public.issue_subscriber (
+    issue_id integer NOT NULL,
+    subscriber_id integer NOT NULL
+);
+
+CREATE TABLE public.label_key (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    key text NOT NULL
+);
+
+CREATE SEQUENCE public.label_key_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.label_key_id_seq OWNED BY public.label_key.id;
+
+CREATE TABLE public.label_value (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    key text NOT NULL,
+    value text NOT NULL
+);
+
+CREATE SEQUENCE public.label_value_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.label_value_id_seq OWNED BY public.label_value.id;
+
+CREATE TABLE public.member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    status text NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    CONSTRAINT member_role_check CHECK ((role = ANY (ARRAY[''OWNER''::text, ''DBA''::text, ''DEVELOPER''::text]))),
+    CONSTRAINT member_status_check CHECK ((status = ANY (ARRAY[''INVITED''::text, ''ACTIVE''::text])))
+);
+
+CREATE SEQUENCE public.member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.member_id_seq OWNED BY public.member.id;
+
+CREATE TABLE public.pipeline (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.pipeline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.pipeline_id_seq OWNED BY public.pipeline.id;
+
+CREATE TABLE public.plan (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    pipeline_id integer,
+    name text NOT NULL,
+    description text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.plan_check_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    plan_id bigint NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT plan_check_run_status_check CHECK ((status = ANY (ARRAY[''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT plan_check_run_type_check CHECK ((type ~~ ''bb.plan-check.%''::text))
+);
+
+CREATE SEQUENCE public.plan_check_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_check_run_id_seq OWNED BY public.plan_check_run.id;
+
+CREATE SEQUENCE public.plan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_id_seq OWNED BY public.plan.id;
+
+CREATE TABLE public.policy (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    resource_type public.resource_type NOT NULL,
+    resource_id integer NOT NULL,
+    inherit_from_parent boolean DEFAULT true NOT NULL,
+    CONSTRAINT policy_type_check CHECK ((type ~~ ''bb.policy.%''::text))
+);
+
+CREATE SEQUENCE public.policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.policy_id_seq OWNED BY public.policy.id;
+
+CREATE TABLE public.principal (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    phone text DEFAULT ''''::text NOT NULL,
+    mfa_config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT principal_type_check CHECK ((type = ANY (ARRAY[''END_USER''::text, ''SYSTEM_BOT''::text, ''SERVICE_ACCOUNT''::text])))
+);
+
+CREATE SEQUENCE public.principal_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.principal_id_seq OWNED BY public.principal.id;
+
+CREATE TABLE public.project (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    workflow_type text NOT NULL,
+    visibility text NOT NULL,
+    tenant_mode text DEFAULT ''DISABLED''::text NOT NULL,
+    db_name_template text NOT NULL,
+    schema_change_type text DEFAULT ''DDL''::text NOT NULL,
+    resource_id text NOT NULL,
+    data_classification_config_id text DEFAULT ''''::text NOT NULL,
+    schema_version_type text DEFAULT ''TIMESTAMP''::text NOT NULL,
+    CONSTRAINT project_schema_change_type_check CHECK ((schema_change_type = ANY (ARRAY[''DDL''::text, ''SDL''::text]))),
+    CONSTRAINT project_schema_version_type_check CHECK ((schema_version_type = ANY (ARRAY[''TIMESTAMP''::text, ''SEMANTIC''::text]))),
+    CONSTRAINT project_tenant_mode_check CHECK ((tenant_mode = ANY (ARRAY[''DISABLED''::text, ''TENANT''::text]))),
+    CONSTRAINT project_visibility_check CHECK ((visibility = ANY (ARRAY[''PUBLIC''::text, ''PRIVATE''::text]))),
+    CONSTRAINT project_workflow_type_check CHECK ((workflow_type = ANY (ARRAY[''UI''::text, ''VCS''::text])))
+);
+
+CREATE SEQUENCE public.project_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_id_seq OWNED BY public.project.id;
+
+CREATE TABLE public.project_member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    condition jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.project_member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_member_id_seq OWNED BY public.project_member.id;
+
+CREATE TABLE public.project_webhook (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    url text NOT NULL,
+    activity_list text[] NOT NULL,
+    CONSTRAINT project_webhook_type_check CHECK ((type ~~ ''bb.plugin.webhook.%''::text))
+);
+
+CREATE SEQUENCE public.project_webhook_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_webhook_id_seq OWNED BY public.project_webhook.id;
+
+CREATE TABLE public.repository (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    vcs_id integer NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    full_path text NOT NULL,
+    web_url text NOT NULL,
+    branch_filter text DEFAULT ''''::text NOT NULL,
+    base_directory text DEFAULT ''''::text NOT NULL,
+    file_path_template text DEFAULT ''''::text NOT NULL,
+    enable_sql_review_ci boolean DEFAULT false NOT NULL,
+    schema_path_template text DEFAULT ''''::text NOT NULL,
+    sheet_path_template text DEFAULT ''''::text NOT NULL,
+    external_id text NOT NULL,
+    external_webhook_id text NOT NULL,
+    webhook_url_host text NOT NULL,
+    webhook_endpoint_id text NOT NULL,
+    webhook_secret_token text NOT NULL,
+    access_token text NOT NULL,
+    expires_ts bigint NOT NULL,
+    refresh_token text NOT NULL
+);
+
+CREATE SEQUENCE public.repository_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.repository_id_seq OWNED BY public.repository.id;
+
+CREATE TABLE public.risk (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    source text NOT NULL,
+    level bigint NOT NULL,
+    name text NOT NULL,
+    active boolean NOT NULL,
+    expression jsonb NOT NULL,
+    CONSTRAINT risk_source_check CHECK ((source ~~ ''bb.risk.%''::text))
+);
+
+CREATE SEQUENCE public.risk_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.risk_id_seq OWNED BY public.risk.id;
+
+CREATE TABLE public.role (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    permissions jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
+
+CREATE TABLE public.schema_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    db_group_id bigint NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.schema_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.schema_group_id_seq OWNED BY public.schema_group.id;
+
+CREATE TABLE public.setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    value text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.setting_id_seq OWNED BY public.setting.id;
+
+CREATE TABLE public.sheet (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    statement text NOT NULL,
+    visibility text DEFAULT ''PRIVATE''::text NOT NULL,
+    source text DEFAULT ''BYTEBASE''::text NOT NULL,
+    type text DEFAULT ''SQL''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT sheet_source_check CHECK ((source = ANY (ARRAY[''BYTEBASE''::text, ''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text, ''BYTEBASE_ARTIFACT''::text]))),
+    CONSTRAINT sheet_type_check CHECK ((type = ''SQL''::text)),
+    CONSTRAINT sheet_visibility_check CHECK ((visibility = ANY (ARRAY[''PRIVATE''::text, ''PROJECT''::text, ''PUBLIC''::text])))
+);
+
+CREATE SEQUENCE public.sheet_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
+
+CREATE TABLE public.sheet_organizer (
+    id integer NOT NULL,
+    sheet_id integer NOT NULL,
+    principal_id integer NOT NULL,
+    starred boolean DEFAULT false NOT NULL,
+    pinned boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.sheet_organizer_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_organizer_id_seq OWNED BY public.sheet_organizer.id;
+
+CREATE TABLE public.slow_query (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    log_date_ts integer NOT NULL,
+    slow_query_statistics jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.slow_query_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
+
+CREATE TABLE public.stage (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    environment_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.stage_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.stage_id_seq OWNED BY public.stage.id;
+
+CREATE TABLE public.task (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    stage_id integer NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    earliest_allowed_ts bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''PENDING_APPROVAL''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT task_type_check CHECK ((type ~~ ''bb.task.%''::text))
+);
+
+CREATE TABLE public.task_dag (
+    id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    from_task_id integer NOT NULL,
+    to_task_id integer NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.task_dag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+CREATE TABLE public.task_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    task_id integer NOT NULL,
+    attempt integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    code integer DEFAULT 0 NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT task_run_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text])))
+);
+
+CREATE SEQUENCE public.task_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_run_id_seq OWNED BY public.task_run.id;
+
+CREATE TABLE public.vcs (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    instance_url text NOT NULL,
+    api_url text NOT NULL,
+    application_id text NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT vcs_api_url_check CHECK ((((api_url ~~ ''http://%''::text) OR (api_url ~~ ''https://%''::text)) AND (api_url = rtrim(api_url, ''/''::text)))),
+    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ ''http://%''::text) OR (instance_url ~~ ''https://%''::text)) AND (instance_url = rtrim(instance_url, ''/''::text)))),
+    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY[''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text])))
+);
+
+CREATE SEQUENCE public.vcs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
+
+ALTER TABLE ONLY public.activity ALTER COLUMN id SET DEFAULT nextval(''public.activity_id_seq''::regclass);
+
+ALTER TABLE ONLY public.anomaly ALTER COLUMN id SET DEFAULT nextval(''public.anomaly_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup ALTER COLUMN id SET DEFAULT nextval(''public.backup_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup_setting ALTER COLUMN id SET DEFAULT nextval(''public.backup_setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.bookmark ALTER COLUMN id SET DEFAULT nextval(''public.bookmark_id_seq''::regclass);
+
+ALTER TABLE ONLY public.data_source ALTER COLUMN id SET DEFAULT nextval(''public.data_source_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db ALTER COLUMN id SET DEFAULT nextval(''public.db_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval(''public.db_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_label ALTER COLUMN id SET DEFAULT nextval(''public.db_label_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval(''public.db_schema_id_seq''::regclass);
+
+ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval(''public.deployment_config_id_seq''::regclass);
+
+ALTER TABLE ONLY public.environment ALTER COLUMN id SET DEFAULT nextval(''public.environment_id_seq''::regclass);
+
+ALTER TABLE ONLY public.external_approval ALTER COLUMN id SET DEFAULT nextval(''public.external_approval_id_seq''::regclass);
+
+ALTER TABLE ONLY public.idp ALTER COLUMN id SET DEFAULT nextval(''public.idp_id_seq''::regclass);
+
+ALTER TABLE ONLY public.inbox ALTER COLUMN id SET DEFAULT nextval(''public.inbox_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance ALTER COLUMN id SET DEFAULT nextval(''public.instance_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_change_history ALTER COLUMN id SET DEFAULT nextval(''public.instance_change_history_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_user ALTER COLUMN id SET DEFAULT nextval(''public.instance_user_id_seq''::regclass);
+
+ALTER TABLE ONLY public.issue ALTER COLUMN id SET DEFAULT nextval(''public.issue_id_seq''::regclass);
+
+ALTER TABLE ONLY public.label_key ALTER COLUMN id SET DEFAULT nextval(''public.label_key_id_seq''::regclass);
+
+ALTER TABLE ONLY public.label_value ALTER COLUMN id SET DEFAULT nextval(''public.label_value_id_seq''::regclass);
+
+ALTER TABLE ONLY public.member ALTER COLUMN id SET DEFAULT nextval(''public.member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.pipeline ALTER COLUMN id SET DEFAULT nextval(''public.pipeline_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan ALTER COLUMN id SET DEFAULT nextval(''public.plan_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan_check_run ALTER COLUMN id SET DEFAULT nextval(''public.plan_check_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.policy ALTER COLUMN id SET DEFAULT nextval(''public.policy_id_seq''::regclass);
+
+ALTER TABLE ONLY public.principal ALTER COLUMN id SET DEFAULT nextval(''public.principal_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project ALTER COLUMN id SET DEFAULT nextval(''public.project_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_member ALTER COLUMN id SET DEFAULT nextval(''public.project_member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_webhook ALTER COLUMN id SET DEFAULT nextval(''public.project_webhook_id_seq''::regclass);
+
+ALTER TABLE ONLY public.repository ALTER COLUMN id SET DEFAULT nextval(''public.repository_id_seq''::regclass);
+
+ALTER TABLE ONLY public.risk ALTER COLUMN id SET DEFAULT nextval(''public.risk_id_seq''::regclass);
+
+ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval(''public.role_id_seq''::regclass);
+
+ALTER TABLE ONLY public.schema_group ALTER COLUMN id SET DEFAULT nextval(''public.schema_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.setting ALTER COLUMN id SET DEFAULT nextval(''public.setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval(''public.sheet_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet_organizer ALTER COLUMN id SET DEFAULT nextval(''public.sheet_organizer_id_seq''::regclass);
+
+ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval(''public.slow_query_id_seq''::regclass);
+
+ALTER TABLE ONLY public.stage ALTER COLUMN id SET DEFAULT nextval(''public.stage_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval(''public.task_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval(''public.task_dag_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval(''public.task_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval(''public.vcs_id_seq''::regclass);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.idp
+    ADD CONSTRAINT idp_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_pkey PRIMARY KEY (issue_id, subscriber_id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);
+
+CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);
+
+CREATE INDEX idx_anomaly_database_id_row_status_type ON public.anomaly USING btree (database_id, row_status, type);
+
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON public.anomaly USING btree (instance_id, row_status, type);
+
+CREATE INDEX idx_backup_database_id ON public.backup USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON public.backup_setting USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING btree (database_id, name);
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);
+
+CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);
+
+CREATE UNIQUE INDEX idx_db_label_unique_database_id_key ON public.db_label USING btree (database_id, key);
+
+CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_environment_unique_name ON public.environment USING btree (name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);
+
+CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);
+
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id ON public.inbox USING btree (receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON public.inbox USING btree (receiver_id, status);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);
+
+CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
+
+CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);
+
+CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);
+
+CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);
+
+CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);
+
+CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);
+
+CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);
+
+CREATE UNIQUE INDEX idx_label_key_unique_key ON public.label_key USING btree (key);
+
+CREATE UNIQUE INDEX idx_label_value_unique_key_value ON public.label_value USING btree (key, value);
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON public.member USING btree (principal_id);
+
+CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);
+
+CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);
+
+CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);
+
+CREATE INDEX idx_project_member_project_id ON public.project_member USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);
+
+CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);
+
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON public.repository USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON public.schema_group USING btree (db_group_id, placeholder);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON public.schema_group USING btree (db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);
+
+CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);
+
+CREATE INDEX idx_sheet_database_id_row_status ON public.sheet USING btree (database_id, row_status);
+
+CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON public.sheet_organizer USING btree (principal_id);
+
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON public.sheet_organizer USING btree (sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);
+
+CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);
+
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);
+
+CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
+
+CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
+
+CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);
+
+CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);
+
+CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
+
+CREATE INDEX idx_task_status ON public.task USING btree (status);
+
+CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
+
+CREATE TRIGGER update_activity_updated_ts BEFORE UPDATE ON public.activity FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_anomaly_updated_ts BEFORE UPDATE ON public.anomaly FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_setting_updated_ts BEFORE UPDATE ON public.backup_setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_updated_ts BEFORE UPDATE ON public.backup FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_bookmark_updated_ts BEFORE UPDATE ON public.bookmark FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_data_source_updated_ts BEFORE UPDATE ON public.data_source FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_group_updated_ts BEFORE UPDATE ON public.db_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_label_updated_ts BEFORE UPDATE ON public.db_label FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_schema_updated_ts BEFORE UPDATE ON public.db_schema FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_updated_ts BEFORE UPDATE ON public.db FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_deployment_config_updated_ts BEFORE UPDATE ON public.deployment_config FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_environment_updated_ts BEFORE UPDATE ON public.environment FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_external_approval_updated_ts BEFORE UPDATE ON public.external_approval FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_idp_updated_ts BEFORE UPDATE ON public.idp FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_change_history_updated_ts BEFORE UPDATE ON public.instance_change_history FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_updated_ts BEFORE UPDATE ON public.instance FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_user_updated_ts BEFORE UPDATE ON public.instance_user FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_issue_updated_ts BEFORE UPDATE ON public.issue FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_label_key_updated_ts BEFORE UPDATE ON public.label_key FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_label_value_updated_ts BEFORE UPDATE ON public.label_value FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_member_updated_ts BEFORE UPDATE ON public.member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_pipeline_updated_ts BEFORE UPDATE ON public.pipeline FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_check_run_updated_ts BEFORE UPDATE ON public.plan_check_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_updated_ts BEFORE UPDATE ON public.plan FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_policy_updated_ts BEFORE UPDATE ON public.policy FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_member_updated_ts BEFORE UPDATE ON public.project_member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_updated_ts BEFORE UPDATE ON public.project FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_webhook_updated_ts BEFORE UPDATE ON public.project_webhook FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_repository_updated_ts BEFORE UPDATE ON public.repository FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_risk_updated_ts BEFORE UPDATE ON public.risk FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_role_updated_ts BEFORE UPDATE ON public.role FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_schema_group_updated_ts BEFORE UPDATE ON public.schema_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_setting_updated_ts BEFORE UPDATE ON public.setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_sheet_updated_ts BEFORE UPDATE ON public.sheet FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_slow_query_updated_ts BEFORE UPDATE ON public.slow_query FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_stage_updated_ts BEFORE UPDATE ON public.stage FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_dag_updated_ts BEFORE UPDATE ON public.task_dag FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_run_updated_ts BEFORE UPDATE ON public.task_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_updated_ts BEFORE UPDATE ON public.task FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_vcs_updated_ts BEFORE UPDATE ON public.vcs FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.db_label
+    ADD CONSTRAINT db_label_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activity(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_key
+    ADD CONSTRAINT label_key_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_key_fkey FOREIGN KEY (key) REFERENCES public.label_key(key);
+
+ALTER TABLE ONLY public.label_value
+    ADD CONSTRAINT label_value_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_vcs_id_fkey FOREIGN KEY (vcs_id) REFERENCES public.vcs(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_db_group_id_fkey FOREIGN KEY (db_group_id) REFERENCES public.db_group(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheet(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+', 63184000, '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance_change_history ENABLE TRIGGER ALL;
@@ -20142,6 +24882,8 @@ GRANT APPLICATION_PASSWORD_ADMIN,AUDIT_ADMIN,AUTHENTICATION_POLICY_ADMIN,BACKUP_
 GRANT PROXY ON ``@`` TO `root`@`localhost` WITH GRANT OPTION') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (102, 'NORMAL', 1, 1695025945, 1, 1695025945, 102, 'postgres', 'Superuser, Create role, Create DB, Replication, Bypass RLS+') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (103, 'NORMAL', 1, 1695025945, 1, 1695025945, 102, 'david', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (104, 'NORMAL', 1, 1695287997, 1, 1695287997, 115, 'bbsample', 'Superuser, Create role, Create DB, Replication, Bypass RLS+') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, "grant") VALUES (105, 'NORMAL', 1, 1695287997, 1, 1695287997, 116, 'bbsample', 'Superuser, Create role, Create DB, Replication, Bypass RLS+') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.instance_user ENABLE TRIGGER ALL;
@@ -20152,6 +24894,8 @@ ALTER TABLE public.instance_user ENABLE TRIGGER ALL;
 
 ALTER TABLE public.issue_subscriber DISABLE TRIGGER ALL;
 
+INSERT INTO public.issue_subscriber (issue_id, subscriber_id) VALUES (109, 101) ON CONFLICT DO NOTHING;
+INSERT INTO public.issue_subscriber (issue_id, subscriber_id) VALUES (110, 101) ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.issue_subscriber ENABLE TRIGGER ALL;
@@ -20252,6 +24996,28 @@ INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updat
 INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (153, 1, 1695198626, 1, 1695198626, 109, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "blog_prod"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"blog_prod\""}]}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (155, 1, 1695198626, 1, 1695198626, 109, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 120, "instanceUid": 101, "databaseName": "blog_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (154, 1, 1695198626, 1, 1695198626, 109, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 120, "instanceUid": 101, "databaseName": "blog_prod", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (161, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_staging"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_staging\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (157, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_test"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_test\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (168, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 123, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DML"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"affectedRows": "9", "statementTypes": ["INSERT", "DROP_TABLE"], "changedResources": {"databases": [{"name": "sakila_prod", "schemas": [{"tables": [{"name": "city"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (166, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 123, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DML"}', '{"results": [{"code": "401", "title": "Data change can only run DML", "status": "WARNING", "content": "\"\nDROP TABLE city;\" is not DML"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (165, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 101, "databaseName": "sakila_prod"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"sakila_prod\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (164, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 122, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DML"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"affectedRows": "9", "statementTypes": ["INSERT", "DROP_TABLE"], "changedResources": {"databases": [{"name": "sakila_staging", "schemas": [{"tables": [{"name": "city"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (162, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 122, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DML"}', '{"results": [{"code": "401", "title": "Data change can only run DML", "status": "WARNING", "content": "\"\nDROP TABLE city;\" is not DML"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (167, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 123, "instanceUid": 101, "databaseName": "sakila_prod", "changeDatabaseType": "DML"}', '{"results": [{"title": "table.drop-naming-convention", "status": "ERROR", "content": "`city` mismatches drop table naming convention, naming format should be \"_del$\"", "sqlReviewReport": {"code": "603", "line": "4"}}, {"title": "statement.insert.must-specify-column", "status": "ERROR", "content": "The INSERT statement must specify columns but \"INSERT INTO film_actor VALUES (1,1,''2006-02-15 05:05:03''),\n(1,23,''2006-02-15 05:05:03''),\n(1,25,''2006-02-15 05:05:03'');\" does not", "sqlReviewReport": {"code": "1107", "line": "3"}}, {"title": "statement.insert.must-specify-column", "status": "ERROR", "content": "The INSERT statement must specify columns but \"\nINSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),\n(2,''Italian'',''2006-02-15 05:02:19''),\n(3,''Japanese'',''2006-02-15 05:02:19''),\n(4,''Mandarin'',''2006-02-15 05:02:19''),\n(5,''French'',''2006-02-15 05:02:19''),\n(6,''German'',''2006-02-15 05:02:19'')\n;\" does not", "sqlReviewReport": {"code": "1107", "line": "11"}}, {"title": "schema.backward-compatibility", "status": "WARNING", "content": "\"\nDROP TABLE city;\" may cause incompatibility with the existing data and code", "sqlReviewReport": {"code": "103", "line": "4"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (163, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 122, "instanceUid": 101, "databaseName": "sakila_staging", "changeDatabaseType": "DML"}', '{"results": [{"title": "table.drop-naming-convention", "status": "ERROR", "content": "`city` mismatches drop table naming convention, naming format should be \"_del$\"", "sqlReviewReport": {"code": "603", "line": "4"}}, {"title": "schema.backward-compatibility", "status": "WARNING", "content": "\"\nDROP TABLE city;\" may cause incompatibility with the existing data and code", "sqlReviewReport": {"code": "103", "line": "4"}}, {"title": "statement.insert.must-specify-column", "status": "WARNING", "content": "The INSERT statement must specify columns but \"INSERT INTO film_actor VALUES (1,1,''2006-02-15 05:05:03''),\n(1,23,''2006-02-15 05:05:03''),\n(1,25,''2006-02-15 05:05:03'');\" does not", "sqlReviewReport": {"code": "1107", "line": "3"}}, {"title": "statement.insert.must-specify-column", "status": "WARNING", "content": "The INSERT statement must specify columns but \"\nINSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),\n(2,''Italian'',''2006-02-15 05:02:19''),\n(3,''Japanese'',''2006-02-15 05:02:19''),\n(4,''Mandarin'',''2006-02-15 05:02:19''),\n(5,''French'',''2006-02-15 05:02:19''),\n(6,''German'',''2006-02-15 05:02:19'')\n;\" does not", "sqlReviewReport": {"code": "1107", "line": "11"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (160, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 121, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DML"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"affectedRows": "9", "statementTypes": ["DROP_TABLE", "INSERT"], "changedResources": {"databases": [{"name": "sakila_test", "schemas": [{"tables": [{"name": "city"}, {"name": "rental"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (159, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 121, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DML"}', '{"results": [{"title": "table.drop-naming-convention", "status": "ERROR", "content": "`city` mismatches drop table naming convention, naming format should be \"_del$\"", "sqlReviewReport": {"code": "603", "line": "4"}}, {"title": "table.drop-naming-convention", "status": "ERROR", "content": "`rental` mismatches drop table naming convention, naming format should be \"_del$\"", "sqlReviewReport": {"code": "603", "line": "5"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (158, 1, 1695282710, 1, 1695283157, 110, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 121, "instanceUid": 101, "databaseName": "sakila_test", "changeDatabaseType": "DML"}', '{"results": [{"code": "401", "title": "Data change can only run DML", "status": "WARNING", "content": "\"\nDROP TABLE city;\" is not DML"}, {"code": "401", "title": "Data change can only run DML", "status": "WARNING", "content": "\"\nDROP TABLE  rental;\" is not DML"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (177, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 126, "instanceUid": 116, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"affectedRows": "1000", "statementTypes": ["ALTER_TABLE"], "changedResources": {"databases": [{"name": "employee", "schemas": [{"name": "public", "tables": [{"name": "employee"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (171, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 125, "instanceUid": 115, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (173, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.summary.report', '{"sheetUid": 125, "instanceUid": 115, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS", "sqlSummaryReport": {"affectedRows": "1000", "statementTypes": ["ALTER_TABLE"], "changedResources": {"databases": [{"name": "employee", "schemas": [{"name": "public", "tables": [{"name": "employee"}]}]}]}}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (175, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.type', '{"sheetUid": 126, "instanceUid": 116, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (172, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 125, "instanceUid": 115, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "OK", "status": "SUCCESS"}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (170, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 115, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (174, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 116, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (176, 1, 1695287997, 1, 1695287997, 111, 'DONE', 'bb.plan-check.database.statement.advise', '{"sheetUid": 126, "instanceUid": 116, "databaseName": "employee", "changeDatabaseType": "DDL"}', '{"results": [{"title": "column.no-null", "status": "WARNING", "content": "Column \"email\" in \"public\".\"employee\" cannot have NULL value", "sqlReviewReport": {"code": "402", "line": "1"}}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (178, 1, 1695288454, 1, 1695288454, 112, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 116, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.plan_check_run (id, creator_id, created_ts, updater_id, updated_ts, plan_id, status, type, config, result, payload) VALUES (179, 1, 1695288476, 1, 1695288476, 113, 'DONE', 'bb.plan-check.database.connect', '{"instanceUid": 115, "databaseName": "employee"}', '{"results": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.plan_check_run ENABLE TRIGGER ALL;
@@ -20267,6 +25033,10 @@ INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, u
 INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (104, 'NORMAL', 101, 1695110903, 101, 1695110903, 'bb.policy.backup-plan', '{"schedule": "UNSET", "retentionPeriodTs": 0}', 'ENVIRONMENT', 103, false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (105, 'NORMAL', 101, 1695110903, 101, 1695110903, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_ALWAYS", "assigneeGroupList": [{"value": "PROJECT_OWNER", "issueType": "bb.issue.database.schema.update"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.data.update"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.schema.update.ghost"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.general"}]}', 'ENVIRONMENT', 103, false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (102, 'NORMAL', 1, 1694683927, 101, 1695177922, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_ALWAYS", "assigneeGroupList": [{"value": "PROJECT_OWNER", "issueType": "bb.issue.database.schema.update"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.data.update"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.schema.update.ghost"}, {"value": "PROJECT_OWNER", "issueType": "bb.issue.database.general"}]}', 'ENVIRONMENT', 102, true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (107, 'NORMAL', 101, 1695282690, 101, 1695282690, 'bb.policy.sql-review', '{"name": "SQL review policy", "ruleList": [{"type": "database.drop-empty-database", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "system.charset.allowlist", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.collation.allowlist", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.comment.length", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":64}"}, {"type": "column.required", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"list\":[\"ID\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"list\":[\"ID\"]}"}, {"type": "column.required", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.type-disallow-list", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.no-null", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "ERROR", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.comment", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.comment", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.comment", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.maximum-character-length", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-varchar-length", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.maximum-varchar-length", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.maximum-varchar-length", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.auto-increment-initial-value", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.auto-increment-initial-value", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.auto-increment-initial-value", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.current-time-count-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.current-time-count-limit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.current-time-count-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "ERROR", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MSSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.disallow-partition", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.comment", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "table.comment", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "table.comment", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.row-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.insert.row-limit", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.insert.row-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.dml-dry-run", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.dml-dry-run", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.dml-dry-run", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-add-column-with-default", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.add-check-not-valid", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.disallow-add-not-null", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "naming.table", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table.no-keyword", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "naming.table.no-keyword", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "naming.table.no-keyword", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "naming.column", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.pk", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^pk_{{table}}_{{column_list}}$\"}"}, {"type": "naming.index.idx", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.identifier.no-keyword", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "naming.identifier.no-keyword", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "naming.identifier.no-keyword", "level": "WARNING", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "naming.identifier.case", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"upper\":true}"}, {"type": "naming.identifier.case", "level": "WARNING", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"upper\":true}"}, {"type": "index.no-duplicate-column", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.key-number-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "WARNING", "engine": "ORACLE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "WARNING", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.primary-key-type-allowlist", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.create-concurrently", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "engine.mysql.use-innodb", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}]}', 'ENVIRONMENT', 103, true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (106, 'NORMAL', 101, 1695282683, 101, 1695287880, 'bb.policy.sql-review', '{"name": "SQL review policy", "ruleList": [{"type": "database.drop-empty-database", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MSSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "database.drop-empty-database", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "engine.mysql.use-innodb", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "table.require-pk", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "table.no-foreign-key", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.disallow-partition", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "table.comment", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "table.comment", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "table.comment", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "statement.select.no-select-all", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "statement.where.require", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.where.no-leading-wildcard-like", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.disallow-commit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.disallow-order-by", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.merge-alter-table", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "statement.insert.must-specify-column", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.insert.disallow-order-by-rand", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.insert.row-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.insert.row-limit", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.insert.row-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.affected-row-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1000}"}, {"type": "statement.dml-dry-run", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "statement.dml-dry-run", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.dml-dry-run", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "statement.disallow-add-column-with-default", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.add-check-not-valid", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "statement.disallow-add-not-null", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "naming.table", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.table.no-keyword", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "naming.table.no-keyword", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "naming.table.no-keyword", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "naming.column", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.column", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^[a-z]+(_[a-z]+)*$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.uk", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^uk_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.pk", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^pk_{{table}}_{{column_list}}$\"}"}, {"type": "naming.index.idx", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.idx", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^idx_{{table}}_{{column_list}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.index.fk", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.column.auto-increment", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"format\":\"^id$\",\"maxLength\":63}"}, {"type": "naming.identifier.no-keyword", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "naming.identifier.no-keyword", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "naming.identifier.no-keyword", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "naming.identifier.case", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"upper\":true}"}, {"type": "naming.identifier.case", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"upper\":true}"}, {"type": "column.required", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"list\":[\"ID\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"list\":[\"ID\"]}"}, {"type": "column.required", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{\"list\":[\"id\",\"created_ts\",\"updated_ts\",\"creator_id\",\"updater_id\"]}"}, {"type": "column.type-disallow-list", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.type-disallow-list", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"JSON\"]}"}, {"type": "column.disallow-change-type", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.disallow-change-type", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.set-default-for-not-null", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-change", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-changing-order", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-integer", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.disallow-set-charset", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.auto-increment-must-unsigned", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.comment", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.comment", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.comment", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"required\":true,\"maxLength\":64}"}, {"type": "column.maximum-character-length", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-character-length", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":20}"}, {"type": "column.maximum-varchar-length", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.maximum-varchar-length", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.maximum-varchar-length", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{\"number\":2560}"}, {"type": "column.auto-increment-initial-value", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.auto-increment-initial-value", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.auto-increment-initial-value", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":1}"}, {"type": "column.current-time-count-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.current-time-count-limit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.current-time-count-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{}"}, {"type": "column.require-default", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "SNOWFLAKE", "comment": "", "payload": "{}"}, {"type": "schema.backward-compatibility", "level": "DISABLED", "engine": "MSSQL", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "index.no-duplicate-column", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.type-no-blob", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "index.pk-type-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{}"}, {"type": "index.key-number-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "DISABLED", "engine": "ORACLE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.key-number-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.total-number-limit", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"number\":5}"}, {"type": "index.primary-key-type-allowlist", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.primary-key-type-allowlist", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"SERIAL\",\"BIGSERIAL\",\"INT\",\"BIGINT\"]}"}, {"type": "index.create-concurrently", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "system.charset.allowlist", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.charset.allowlist", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"utf8mb4\"]}"}, {"type": "system.collation.allowlist", "level": "DISABLED", "engine": "MYSQL", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "DISABLED", "engine": "TIDB", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.collation.allowlist", "level": "DISABLED", "engine": "OCEANBASE", "comment": "", "payload": "{\"list\":[\"utf8mb4_0900_ai_ci\"]}"}, {"type": "system.comment.length", "level": "DISABLED", "engine": "POSTGRES", "comment": "", "payload": "{\"number\":64}"}]}', 'ENVIRONMENT', 101, true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (108, 'NORMAL', 101, 1695282698, 101, 1695287997, 'bb.policy.sql-review', '{"name": "SQL Review Sample Policy", "ruleList": [{"type": "database.drop-empty-database", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "database.drop-empty-database", "level": "ERROR", "engine": "MARIADB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "MYSQL", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "TIDB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "MARIADB", "comment": "", "payload": "{}"}, {"type": "column.no-null", "level": "WARNING", "engine": "POSTGRES", "comment": "", "payload": "{}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MYSQL", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "TIDB", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "MARIADB", "comment": "", "payload": "{\"format\":\"_del$\"}"}, {"type": "table.drop-naming-convention", "level": "ERROR", "engine": "POSTGRES", "comment": "", "payload": "{\"format\":\"_del$\"}"}]}', 'ENVIRONMENT', 102, true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, row_status, creator_id, created_ts, updater_id, updated_ts, type, payload, resource_type, resource_id, inherit_from_parent) VALUES (110, 'NORMAL', 101, 1695287997, 101, 1695287997, 'bb.policy.masking', '{"mask_data": [{"table": "salary", "column": "amount", "schema": "public", "masking_level": 3}]}', 'DATABASE', 107, true) ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.policy ENABLE TRIGGER ALL;
@@ -20282,6 +25052,7 @@ INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updat
 INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (104, 'NORMAL', 101, 1695113006, 101, 1695113006, 101, 'DEVELOPER', 101, '{"title": "Developer"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (106, 'NORMAL', 101, 1695191980, 101, 1695191980, 101, 'OWNER', 104, '{"title": "Owner"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (107, 'NORMAL', 101, 1695197199, 101, 1695197199, 102, 'OWNER', 101, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, condition) VALUES (108, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 'OWNER', 101, '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.project_member ENABLE TRIGGER ALL;
@@ -20313,7 +25084,7 @@ ALTER TABLE public.vcs ENABLE TRIGGER ALL;
 
 ALTER TABLE public.repository DISABLE TRIGGER ALL;
 
-INSERT INTO public.repository (id, row_status, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, enable_sql_review_ci, schema_path_template, sheet_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token) VALUES (101, 'NORMAL', 101, 1695197660, 101, 1695197660, 101, 102, 'hello-world', 's-bytebase/hello-world', 'https://github.com/s-bytebase/hello-world', 'main', '', '{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql', false, '{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql', 'script/{{ENV_ID}}##{{DB_NAME}}##{{NAME}}.sql', 's-bytebase/hello-world', '434393048', 'https://c06d-203-198-87-154.ngrok-free.app', 'be28420e-5db3-4dc6-80ba-b822be20d36a-1695197658', 'IUygkh3uzDwty9ol', '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', 0, '') ON CONFLICT DO NOTHING;
+INSERT INTO public.repository (id, row_status, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, enable_sql_review_ci, schema_path_template, sheet_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token) VALUES (102, 'NORMAL', 101, 1695355271, 101, 1695356109, 101, 102, 'hello-world', 's-bytebase/hello-world', 'https://github.com/s-bytebase/hello-world', 'main', '', '{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql', true, '{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql', 'script/{{ENV_ID}}##{{DB_NAME}}##{{NAME}}.sql', 's-bytebase/hello-world', '434685306', 'https://c06d-203-198-87-154.ngrok-free.app', 'be28420e-5db3-4dc6-80ba-b822be20d36a-1695355270', 'cuXhuxxxxxxvkh94', 'gho_00cvlIxxxxxxxxwh5xVTfqbpmkmqxxx3eI7F', 0, '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.repository ENABLE TRIGGER ALL;
@@ -20366,7 +25137,7 @@ INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, 
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (110, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.schema-template', '{}', 'The schema template setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (111, 'NORMAL', 1, 1694683928, 1, 1694683928, 'bb.workspace.data-classification', '{}', 'The data classification setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (112, 'NORMAL', 1, 1694683928, 101, 1695177966, 'bb.workspace.approval', '{"rules":[{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"项目所有者 -> DBA","description":"系统定义的流程。先由项目所有者审批，再由 DBA 审批。","creatorId":1},"condition":{"expression":"source == 1 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]}]},"title":"项目所有者","description":"系统定义的流程。只需要项目所有者审批。","creatorId":1},"condition":{"expression":"source == 2 && level == 0 || source == 4 && level == 0 || source == 5 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"DBA","description":"系统定义的流程。只需要 DBA 审批","creatorId":1},"condition":{"expression":"source == 3 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"工作空间所有者","description":"系统定义的流程。只需要管理员审批","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"项目所有者 -> DBA -> 工作空间所有者","description":"系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。","creatorId":1},"condition":{}}]}', 'The workspace approval setting') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 101, 1695199279, 'bb.workspace.profile', '{"externalUrl":"https://demo.bytebase.com"}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1694683928, 1, 1695361206, 'bb.workspace.profile', '{"externalUrl":"https://demo.bytebase.com"}', '') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.setting ENABLE TRIGGER ALL;
@@ -23602,6 +28373,42 @@ INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, up
   PRIMARY KEY (id)
 );
 ', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{"vcsPayload": {"pushEvent": {"ref": "refs/heads/main", "after": "6ca80541b4253ee6193393cf15b074cabb585764", "before": "ab1d6e3ee4a5d5f1f75072618a0a19e175f7f1a6", "commits": [{"id": "6ca80541b4253ee6193393cf15b074cabb585764", "url": "https://github.com/s-bytebase/hello-world/commit/6ca80541b4253ee6193393cf15b074cabb585764", "title": "create blog table", "message": "create blog table", "addedList": ["prod/blog_prod##202309201624##ddl##create_table_blog.sql", "test/blog_test##202309201624##ddl##create_table_blog.sql"], "createdTs": "1695198616", "authorName": "p0ny", "authorEmail": "p0uy@outlook.com"}], "vcsType": "GITHUB", "authorName": "RainbowDashy", "fileCommit": {}, "repositoryId": "s-bytebase/hello-world", "repositoryUrl": "https://github.com/s-bytebase/hello-world", "repositoryFullPath": "s-bytebase/hello-world"}}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (121, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 102, '[3 databases] Import data but secretly drops tables @09-21 15:47 UTC+0800', 'INSERT INTO film_actor VALUES (1,1,''2006-02-15 05:05:03''),
+(1,23,''2006-02-15 05:05:03''),
+(1,25,''2006-02-15 05:05:03'');
+DROP TABLE city;
+DROP TABLE  rental;
+INSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),
+(2,''Italian'',''2006-02-15 05:02:19''),
+(3,''Japanese'',''2006-02-15 05:02:19''),
+(4,''Mandarin'',''2006-02-15 05:02:19''),
+(5,''French'',''2006-02-15 05:02:19''),
+(6,''German'',''2006-02-15 05:02:19'');', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (122, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 103, '[3 databases] Import data but secretly drops tables @09-21 15:47 UTC+0800', 'INSERT INTO film_actor VALUES (1,1,''2006-02-15 05:05:03''),
+(1,23,''2006-02-15 05:05:03''),
+(1,25,''2006-02-15 05:05:03'');
+DROP TABLE city;
+INSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),
+(2,''Italian'',''2006-02-15 05:02:19''),
+(3,''Japanese'',''2006-02-15 05:02:19''),
+(4,''Mandarin'',''2006-02-15 05:02:19''),
+(5,''French'',''2006-02-15 05:02:19''),
+(6,''German'',''2006-02-15 05:02:19'');', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (123, 'NORMAL', 103, 1695282636, 103, 1695282636, 101, 101, '[3 databases] Import data but secretly drops tables @09-21 15:47 UTC+0800', 'INSERT INTO film_actor VALUES (1,1,''2006-02-15 05:05:03''),
+(1,23,''2006-02-15 05:05:03''),
+(1,25,''2006-02-15 05:05:03'');
+DROP TABLE city;
+INSERT INTO language VALUES (1,''English'',''2006-02-15 05:02:19''),
+(2,''Italian'',''2006-02-15 05:02:19''),
+(3,''Japanese'',''2006-02-15 05:02:19''),
+(4,''Mandarin'',''2006-02-15 05:02:19''),
+(5,''French'',''2006-02-15 05:02:19''),
+(6,''German'',''2006-02-15 05:02:19'');', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (124, 'NORMAL', 101, 1695287997, 101, 1695287997, 103, 107, 'Sample Sheet', 'SELECT * FROM salary;', 'PROJECT', 'BYTEBASE', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (125, 'NORMAL', 1, 1695287997, 1, 1695287997, 103, 106, 'Alter table to test sample instance for sample issue', 'ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '''';', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (126, 'NORMAL', 1, 1695287997, 1, 1695287997, 103, 107, 'Alter table to prod sample instance for sample issue', 'ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '''';', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (127, 'NORMAL', 101, 1695288454, 101, 1695288454, 103, 107, 'Establish "employee" baseline', '', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.sheet (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload) VALUES (128, 'NORMAL', 101, 1695288476, 101, 1695288476, 103, 106, 'Establish "employee" baseline', '', 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.sheet ENABLE TRIGGER ALL;
@@ -23645,6 +28452,13 @@ INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, up
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (111, 'NORMAL', 101, 1695197737, 101, 1695197737, 107, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (112, 'NORMAL', 1, 1695198626, 1, 1695198626, 108, 101, 'Test Stage') ON CONFLICT DO NOTHING;
 INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (113, 'NORMAL', 1, 1695198626, 1, 1695198626, 109, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (114, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 101, 'Test Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (115, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 103, 'Staging Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (116, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (117, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 101, 'Test Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (118, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (119, 'NORMAL', 101, 1695288454, 101, 1695288454, 112, 102, 'Prod Stage') ON CONFLICT DO NOTHING;
+INSERT INTO public.stage (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name) VALUES (120, 'NORMAL', 101, 1695288476, 101, 1695288476, 113, 101, 'Test Stage') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.stage ENABLE TRIGGER ALL;
@@ -23668,6 +28482,13 @@ INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, upd
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (111, 'NORMAL', 101, 1695197737, 1, 1695197772, 107, 111, 101, 105, 'Create database blog_prod', 'PENDING_APPROVAL', 'bb.task.database.create', '{"labels": "[{\"key\":\"bb.environment\",\"value\":\"prod\"}]", "specId": "726bfba4-d0cd-4059-978b-3e85729a2eab", "sheetId": 117, "character": "utf8mb4", "collation": "utf8mb4_general_ci", "projectId": 102, "databaseName": "blog_prod", "environmentId": "prod"}', 0) ON CONFLICT DO NOTHING;
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (112, 'NORMAL', 1, 1695198626, 1, 1695198626, 108, 112, 101, 104, 'DDL(schema) for database "blog_test"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 119, "schemaVersion": "202309201624-ddl"}', 0) ON CONFLICT DO NOTHING;
 INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (113, 'NORMAL', 1, 1695198626, 1, 1695198626, 109, 113, 101, 105, 'DDL(schema) for database "blog_prod"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 120, "schemaVersion": "202309201624-ddl"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (114, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 114, 101, 102, 'DML(data) for database "sakila_test"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "eb4143ae-1950-4267-81a6-4fc3ba1a29e0", "sheetId": 121, "schemaVersion": "20230921155035", "rollbackSqlStatus": "PENDING"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (115, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 115, 101, 103, 'DML(data) for database "sakila_staging"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "ed0acc88-7161-42fc-a77e-b5c140590ee9", "sheetId": 122, "schemaVersion": "20230921155035", "rollbackSqlStatus": "PENDING"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (116, 'NORMAL', 103, 1695282636, 103, 1695282636, 110, 116, 101, 101, 'DML(data) for database "sakila_prod"', 'PENDING_APPROVAL', 'bb.task.database.data.update', '{"specId": "395ce918-ab68-4546-9ed5-c3f7ccd36cc0", "sheetId": 123, "schemaVersion": "20230921155035", "rollbackSqlStatus": "PENDING"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (117, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 117, 115, 106, 'DDL(schema) for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 125, "schemaVersion": "20230921171957"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (118, 'NORMAL', 101, 1695287997, 101, 1695287997, 111, 118, 116, 107, 'DDL(schema) for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.update', '{"sheetId": 126, "schemaVersion": "20230921171957"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (119, 'NORMAL', 101, 1695288454, 101, 1695288454, 112, 119, 116, 107, 'Establish baseline for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.baseline', '{"specId": "877416ee-9737-44b0-a766-7120779b719d", "schemaVersion": "20230921172734"}', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts) VALUES (120, 'NORMAL', 101, 1695288476, 101, 1695288476, 113, 120, 115, 106, 'Establish baseline for database "employee"', 'PENDING_APPROVAL', 'bb.task.database.schema.baseline', '{"specId": "aa543d00-91e8-442c-bedb-b9bd78335132", "schemaVersion": "20230921172755"}', 0) ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.task ENABLE TRIGGER ALL;
@@ -23704,6 +28525,8 @@ INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts,
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (114, 101, 1695197772, 1, 1695197772, 111, 0, 'Create database blog_prod 1695197771', 'DONE', 0, '{"detail": "Created database \"blog_prod\""}') ON CONFLICT DO NOTHING;
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (115, 1, 1695198626, 1, 1695198629, 112, 0, 'DDL(schema) for database "blog_test" 1695198625', 'DONE', 0, '{"detail": "Applied migration version 202309201624-ddl to database \"blog_test\".", "version": "202309201624-ddl", "changeHistory": "instances/mysql-prod/databases/blog_test/changeHistories/117"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (116, 101, 1695199119, 1, 1695199122, 113, 0, 'DDL(schema) for database "blog_prod" 1695199118', 'DONE', 0, '{"detail": "Applied migration version 202309201624-ddl to database \"blog_prod\".", "version": "202309201624-ddl", "changeHistory": "instances/mysql-prod/databases/blog_prod/changeHistories/118"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (117, 101, 1695288459, 1, 1695288459, 119, 0, 'Establish baseline for database "employee" 1695288459', 'DONE', 0, '{"detail": "Established baseline version 20230921172734 for database \"employee\".", "version": "20230921172734", "changeHistory": "instances/prod-sample-instance/databases/employee/changeHistories/119"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, code, result) VALUES (118, 1, 1695288476, 1, 1695288476, 120, 0, 'Establish baseline for database "employee" 1695288475', 'DONE', 0, '{"detail": "Established baseline version 20230921172755 for database \"employee\".", "version": "20230921172755", "changeHistory": "instances/test-sample-instance/databases/employee/changeHistories/120"}') ON CONFLICT DO NOTHING;
 
 
 ALTER TABLE public.task_run ENABLE TRIGGER ALL;
@@ -23712,7 +28535,7 @@ ALTER TABLE public.task_run ENABLE TRIGGER ALL;
 -- Name: activity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.activity_id_seq', 204, true);
+SELECT pg_catalog.setval('public.activity_id_seq', 218, true);
 
 
 --
@@ -23740,14 +28563,14 @@ SELECT pg_catalog.setval('public.backup_setting_id_seq', 101, false);
 -- Name: bookmark_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.bookmark_id_seq', 101, false);
+SELECT pg_catalog.setval('public.bookmark_id_seq', 101, true);
 
 
 --
 -- Name: data_source_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.data_source_id_seq', 114, true);
+SELECT pg_catalog.setval('public.data_source_id_seq', 116, true);
 
 
 --
@@ -23761,7 +28584,7 @@ SELECT pg_catalog.setval('public.db_group_id_seq', 101, false);
 -- Name: db_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.db_id_seq', 105, true);
+SELECT pg_catalog.setval('public.db_id_seq', 107, true);
 
 
 --
@@ -23775,7 +28598,7 @@ SELECT pg_catalog.setval('public.db_label_id_seq', 101, false);
 -- Name: db_schema_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.db_schema_id_seq', 111, true);
+SELECT pg_catalog.setval('public.db_schema_id_seq', 113, true);
 
 
 --
@@ -23810,35 +28633,35 @@ SELECT pg_catalog.setval('public.idp_id_seq', 101, false);
 -- Name: inbox_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.inbox_id_seq', 119, true);
+SELECT pg_catalog.setval('public.inbox_id_seq', 126, true);
 
 
 --
 -- Name: instance_change_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_change_history_id_seq', 118, true);
+SELECT pg_catalog.setval('public.instance_change_history_id_seq', 121, true);
 
 
 --
 -- Name: instance_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_id_seq', 114, true);
+SELECT pg_catalog.setval('public.instance_id_seq', 116, true);
 
 
 --
 -- Name: instance_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_user_id_seq', 103, true);
+SELECT pg_catalog.setval('public.instance_user_id_seq', 105, true);
 
 
 --
 -- Name: issue_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.issue_id_seq', 109, true);
+SELECT pg_catalog.setval('public.issue_id_seq', 113, true);
 
 
 --
@@ -23866,28 +28689,28 @@ SELECT pg_catalog.setval('public.member_id_seq', 104, true);
 -- Name: pipeline_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.pipeline_id_seq', 109, true);
+SELECT pg_catalog.setval('public.pipeline_id_seq', 113, true);
 
 
 --
 -- Name: plan_check_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.plan_check_run_id_seq', 156, true);
+SELECT pg_catalog.setval('public.plan_check_run_id_seq', 179, true);
 
 
 --
 -- Name: plan_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.plan_id_seq', 109, true);
+SELECT pg_catalog.setval('public.plan_id_seq', 113, true);
 
 
 --
 -- Name: policy_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.policy_id_seq', 105, true);
+SELECT pg_catalog.setval('public.policy_id_seq', 110, true);
 
 
 --
@@ -23901,14 +28724,14 @@ SELECT pg_catalog.setval('public.principal_id_seq', 104, true);
 -- Name: project_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.project_id_seq', 102, true);
+SELECT pg_catalog.setval('public.project_id_seq', 103, true);
 
 
 --
 -- Name: project_member_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.project_member_id_seq', 107, true);
+SELECT pg_catalog.setval('public.project_member_id_seq', 108, true);
 
 
 --
@@ -23922,7 +28745,7 @@ SELECT pg_catalog.setval('public.project_webhook_id_seq', 101, false);
 -- Name: repository_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.repository_id_seq', 101, true);
+SELECT pg_catalog.setval('public.repository_id_seq', 102, true);
 
 
 --
@@ -23950,14 +28773,14 @@ SELECT pg_catalog.setval('public.schema_group_id_seq', 101, false);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 121, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 130, true);
 
 
 --
 -- Name: sheet_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.sheet_id_seq', 120, true);
+SELECT pg_catalog.setval('public.sheet_id_seq', 128, true);
 
 
 --
@@ -23978,7 +28801,7 @@ SELECT pg_catalog.setval('public.slow_query_id_seq', 101, false);
 -- Name: stage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.stage_id_seq', 113, true);
+SELECT pg_catalog.setval('public.stage_id_seq', 120, true);
 
 
 --
@@ -23992,14 +28815,14 @@ SELECT pg_catalog.setval('public.task_dag_id_seq', 101, false);
 -- Name: task_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_id_seq', 113, true);
+SELECT pg_catalog.setval('public.task_id_seq', 120, true);
 
 
 --
 -- Name: task_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_run_id_seq', 116, true);
+SELECT pg_catalog.setval('public.task_run_id_seq', 118, true);
 
 
 --

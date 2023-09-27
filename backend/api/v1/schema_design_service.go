@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"path"
 	"strconv"
 
 	"golang.org/x/exp/slices"
@@ -119,6 +120,12 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	}
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	schemaDesign := request.SchemaDesign
+
+	// Branch protection check.
+	if err := s.checkProtectionRules(ctx, project, schemaDesign, currentPrincipalID); err != nil {
+		return nil, err
+	}
+
 	sanitizeSchemaDesignSchemaMetadata(schemaDesign)
 	if err := checkDatabaseMetadata(schemaDesign.Engine, schemaDesign.SchemaMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design: %v", err))
@@ -176,18 +183,11 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if schemaDesignType == storepb.SheetPayload_SchemaDesign_MAIN_BRANCH {
 		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = fmt.Sprintf("%d", baselineSheetUID)
 	} else if schemaDesignType == storepb.SheetPayload_SchemaDesign_PERSONAL_DRAFT {
-		// Create a new sheet to save the baseline full schema of the personal draft schema design.
-		baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
-			UID: &baselineSheetUID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
-		}
 		baselineSheetCreate := &store.SheetMessage{
 			Name:        schemaDesign.Title,
 			ProjectUID:  project.UID,
 			DatabaseUID: &database.UID,
-			Statement:   baselineSheet.Statement,
+			Statement:   schemaDesign.BaselineSchema,
 			Visibility:  store.ProjectSheet,
 			Source:      store.SheetFromBytebaseArtifact,
 			Type:        store.SheetForSQL,
@@ -227,6 +227,58 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		return nil, err
 	}
 	return schemaDesign, nil
+}
+
+func (s *SchemaDesignService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, schemaDesign *v1pb.SchemaDesign, currentPrincipalID int) error {
+	if project.Setting == nil {
+		return nil
+	}
+	user, err := s.store.GetUserByID(ctx, currentPrincipalID)
+	if err != nil {
+		return err
+	}
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return err
+	}
+	for _, rule := range project.Setting.ProtectionRules {
+		if rule.Target != storepb.ProtectionRule_BRANCH {
+			continue
+		}
+		ok, err := path.Match(rule.NameFilter, schemaDesign.Title)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			continue
+		}
+		pass := false
+		for _, binding := range policy.Bindings {
+			matchUser := false
+			for _, member := range binding.Members {
+				if member.Email == user.Email {
+					matchUser = true
+					break
+				}
+			}
+			if matchUser {
+				for _, role := range rule.CreateAllowedRoles {
+					// Convert role format.
+					if role == convertToProjectRole(binding.Role) {
+						pass = true
+					}
+					break
+				}
+			}
+			if pass {
+				break
+			}
+		}
+		if !pass {
+			return status.Errorf(codes.InvalidArgument, "not allowed to create branch by project protection rules")
+		}
+	}
+	return nil
 }
 
 // UpdateSchemaDesign updates an existing schema design.
@@ -447,6 +499,13 @@ func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMe
 		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
 	}
 
+	if err := checkDatabaseMetadata(request.Engine, request.SourceMetadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source metadata: %v", err))
+	}
+	if err := checkDatabaseMetadata(request.Engine, request.TargetMetadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
+	}
+
 	sourceSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.SourceMetadata)
 	if err != nil {
 		return nil, err
@@ -518,13 +577,14 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		UID: sheet.DatabaseUID,
+		UID:         sheet.DatabaseUID,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get database: %v", err))
 	}
 	if database == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the database: %d", sheet.DatabaseUID))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the database: %d", *sheet.DatabaseUID))
 	}
 
 	creator, err := s.store.GetUserByID(ctx, sheet.CreatorID)

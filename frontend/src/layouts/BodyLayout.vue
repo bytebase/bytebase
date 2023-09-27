@@ -177,7 +177,7 @@
               >
                 <span class="sr-only">Open sidebar</span>
                 <!-- Heroicon name: menu -->
-                <heroicons-outline:menu class="h-6 w-6" />
+                <heroicons-outline:menu class="h-4 w-4" />
               </button>
             </div>
             <div v-if="showBreadcrumb" class="ml-4">
@@ -192,7 +192,7 @@
               <Breadcrumb />
             </div>
             <div
-              class="w-full flex flex-row justify-between items-center flex-wrap px-4 gap-x-4"
+              class="w-full flex flex-row justify-between items-center flex-wrap px-2 gap-x-4"
             >
               <div v-if="quickActionList.length > 0" class="flex-1 pt-3 pb-2">
                 <QuickActionPanel :quick-action-list="quickActionList" />

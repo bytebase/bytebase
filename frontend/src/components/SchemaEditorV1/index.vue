@@ -18,6 +18,7 @@
 </template>
 
 <script lang="ts" setup>
+import { isEqual } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
 import { onMounted, watch, reactive } from "vue";
 import { useSchemaEditorV1Store, useSettingV1Store } from "@/store";
@@ -65,7 +66,7 @@ const prepareBranchContext = async () => {
   }
 };
 
-const updateSchemaEditorState = () => {
+const initialSchemaEditorState = () => {
   schemaEditorV1Store.setState({
     project: props.project,
     resourceType: props.resourceType,
@@ -113,14 +114,72 @@ onMounted(async () => {
   await settingStore.getOrFetchSettingByName("bb.workspace.schema-template");
   await prepareBranchContext();
 
-  updateSchemaEditorState();
+  initialSchemaEditorState();
   state.initialized = true;
 });
 
 watch(
   () => props,
   () => {
-    updateSchemaEditorState();
+    schemaEditorV1Store.setState({
+      project: props.project,
+      resourceType: props.resourceType,
+      readonly: props.readonly || false,
+    });
+  },
+  {
+    deep: true,
+  }
+);
+
+watch(
+  [() => props.databases, () => props.branches],
+  ([newDatabases, newBranches], [oldDatabases, oldBranches]) => {
+    // Update editor state if needed.
+    // * If we update databases/branches, we need to rebuild the editing state.
+    // * If we update databases/branches, we need to clear all tabs.
+    if (props.resourceType === "database") {
+      if (isEqual(newDatabases, oldDatabases)) {
+        return;
+      }
+      schemaEditorV1Store.setState({
+        tabState: {
+          tabMap: new Map(),
+        },
+        resourceMap: {
+          // NOTE: we will dynamically fetch schema list for each database in database tree view.
+          database: new Map(
+            (newDatabases || []).map((database) => [
+              database.name,
+              {
+                database,
+                schemaList: [],
+                originSchemaList: [],
+              },
+            ])
+          ),
+          branch: new Map(),
+        },
+      });
+    } else {
+      if (isEqual(newBranches, oldBranches)) {
+        return;
+      }
+      schemaEditorV1Store.setState({
+        tabState: {
+          tabMap: new Map(),
+        },
+        resourceMap: {
+          database: new Map(),
+          branch: new Map(
+            (newBranches || []).map((branch) => [
+              branch.name,
+              convertBranchToBranchSchema(branch),
+            ])
+          ),
+        },
+      });
+    }
   },
   {
     deep: true,

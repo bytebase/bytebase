@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message Changelist {
+  string description = 1;
+
+  message Change {
+    // The name of a sheet.
+    string sheet = 1;
+    // The source of origin.
+    // 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}.
+    // 2) branch: projects/{project}/schemaDesigns/{schemaDesign}.
+    // 3) raw SQL if empty.
+    string source = 2;
+  }
+  repeated Change changes = 2;
+}

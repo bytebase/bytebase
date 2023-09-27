@@ -705,6 +705,9 @@ type SearchIssuesRequest struct {
 	// - instance, example:
 	//   - instance = "instancs/{resource id}"
 	//
+	// - database, example:
+	//   - database = "instancs/{instance resource id}/databases/{database name}"
+	//
 	// - type, only support "DDL" or "DML", example:
 	//   - type = "DDL"
 	Filter string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`

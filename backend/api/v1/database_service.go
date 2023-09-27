@@ -434,7 +434,8 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		dbSchema = newDBSchema
 	}
-	v1pbMetadata := convertDatabaseMetadata(dbSchema.Metadata)
+
+	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config)
 	// backfill the effective masking level.
 	dataClassificationSetting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
@@ -473,6 +474,70 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 			}
 		}
 	}
+	return v1pbMetadata, nil
+}
+
+// UpdateDatabaseMetadata updates the metadata config of a database.
+func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v1pb.UpdateDatabaseMetadataRequest) (*v1pb.DatabaseMetadata, error) {
+	if request.DatabaseMetadata == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty database config")
+	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.DatabaseMetadata.Name, common.MetadataSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if dbSchema == nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "database schema metadata not found")
+	}
+
+	for _, path := range request.UpdateMask.Paths {
+		if path == "schema_configs" {
+			databaseConfig := convertV1DatabaseConfig(databaseName, request.DatabaseMetadata.SchemaConfigs)
+			if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, principalID); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if dbSchema == nil {
+		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
+	}
+
+	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config)
 	return v1pbMetadata, nil
 }
 
@@ -1729,9 +1794,9 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	}
 }
 
-func convertDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *v1pb.DatabaseMetadata {
+func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) *v1pb.DatabaseMetadata {
 	m := &v1pb.DatabaseMetadata{
-		Name:         metadata.Name,
+		Name:         fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix),
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
 	}
@@ -1850,6 +1915,59 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *v1pb.Dat
 			Version:     extension.Version,
 			Description: extension.Description,
 		})
+	}
+
+	m.SchemaConfigs = convertDatabaseConfig(config)
+	return m
+}
+
+func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig {
+	var schemaConfigs []*v1pb.SchemaConfig
+	if config == nil {
+		return nil
+	}
+	for _, schema := range config.SchemaConfigs {
+		s := &v1pb.SchemaConfig{
+			Name: schema.Name,
+		}
+		for _, table := range schema.TableConfigs {
+			t := &v1pb.TableConfig{
+				Name: table.Name,
+			}
+			for _, column := range table.ColumnConfigs {
+				t.ColumnConfigs = append(t.ColumnConfigs, &v1pb.ColumnConfig{
+					Name:           column.Name,
+					SemanticTypeId: column.SemanticTypeId,
+				})
+			}
+			s.TableConfigs = append(s.TableConfigs, t)
+		}
+		schemaConfigs = append(schemaConfigs, s)
+	}
+	return schemaConfigs
+}
+
+func convertV1DatabaseConfig(databaseName string, schemaConfig []*v1pb.SchemaConfig) *storepb.DatabaseConfig {
+	m := &storepb.DatabaseConfig{
+		Name: databaseName,
+	}
+	for _, schema := range schemaConfig {
+		s := &storepb.SchemaConfig{
+			Name: schema.Name,
+		}
+		for _, table := range schema.TableConfigs {
+			t := &storepb.TableConfig{
+				Name: table.Name,
+			}
+			for _, column := range table.ColumnConfigs {
+				t.ColumnConfigs = append(t.ColumnConfigs, &storepb.ColumnConfig{
+					Name:           column.Name,
+					SemanticTypeId: column.SemanticTypeId,
+				})
+			}
+			s.TableConfigs = append(s.TableConfigs, t)
+		}
+		m.SchemaConfigs = append(m.SchemaConfigs, s)
 	}
 	return m
 }

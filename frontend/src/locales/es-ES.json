@@ -262,7 +262,8 @@
     "branches": "Ramas",
     "merge": "Combinar",
     "info": "Información",
-    "minutes": "Minutos"
+    "minutes": "Minutos",
+    "go-to-configure": "Configurar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -830,9 +831,29 @@
           "title": "Instancia",
           "description": "Incluir solo problemas relacionados con la instancia"
         },
+        "database": {
+          "title": "Base de datos",
+          "description": "Incluir sólo cuestiones relacionadas con la base de datos"
+        },
         "type": {
           "title": "Tipo de cambio",
           "description": "El tipo de cambio de base de datos para problemas"
+        },
+        "creator": {
+          "title": "Creador",
+          "description": "Búsqueda por tema creador"
+        },
+        "assignee": {
+          "title": "Cesionario",
+          "description": "Buscar por el responsable del problema"
+        },
+        "subscriber": {
+          "title": "Abonado",
+          "description": "Buscar por suscriptor del problema"
+        },
+        "principal": {
+          "title": "Director relacionado",
+          "description": "Búsqueda por creador del problema, cesionario o suscriptor"
         }
       }
     },
@@ -951,7 +972,15 @@
     "you-are-not-allowed-to-change-this-value": "No tienes permitido cambiar este valor.",
     "sql-check": {
       "sql-checks": "Comprobaciones SQL",
-      "not-executed-yet": "Aún no ejecutado"
+      "not-executed-yet": "Aún no ejecutado",
+      "no-configured-sql-review-policy": {
+        "admin": "El entorno {environment} no ha configurado la política de revisión de SQL. {link}",
+        "developer": "El entorno {environment} no ha configurado la política de revisión de SQL. \nSolicite a su DBA que configure."
+      },
+      "statement-is-too-large": "La declaración es demasiado grande.",
+      "back-to-edit": "Volver a editar",
+      "continue-anyway": "De todas maneras, continúe",
+      "sql-review-violations": "Infracciones de revisión de SQL"
     }
   },
   "alter-schema": {
@@ -1594,7 +1623,7 @@
       "view-all": "Ver todo",
       "view-all-closed": "Ver todos los cerrados",
       "recent-activity": "Actividades recientes @.lower:{'common.activities'}",
-      "in-progress": "En progreso",
+      "in-progress": "En curso",
       "recently-closed": "Recientemente cerrado",
       "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado.",
       "no-db-prompt": "No hay bases de datos que pertenezcan a este proyecto. Puedes agregar bases de datos haciendo clic en {newDb} o {transferInDb} desde la barra de acciones superior."
@@ -2074,7 +2103,8 @@
       "duplicated-column-name": "Nombre de columna duplicado",
       "invalid-column-type": "Tipo de columna inválido",
       "schema-not-found": "Esquema no encontrado",
-      "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos"
+      "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos",
+      "invalid-schema": "Esquema no válido"
     },
     "confirm-to-close": {
       "title": "Confirmar para cerrar",
@@ -2230,7 +2260,7 @@
       },
       "bb-feature-custom-approval": {
         "title": "Aprobación personalizada",
-        "desc": "Configure el nivel de riesgo de seguridad y el flujo de aprobación para diferentes tareas."
+        "desc": "Configure el nivel de riesgo y el flujo de aprobación para diferentes tareas."
       },
       "bb-feature-vcs-schema-write-back": {
         "title": "Escritura de esquema",
@@ -2845,6 +2875,7 @@
     "self": "Plantilla de esquema",
     "field-template": {
       "self": "Plantilla de campo",
+      "add": "Agregar plantilla de campo",
       "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
     },
     "column-type-restriction": {
@@ -2860,7 +2891,11 @@
         "one-allowed-type-per-line": "Un tipo permitido por línea"
       }
     },
-    "add-field": "Agregar plantilla de campo",
+    "table-template": {
+      "self": "Plantilla de tabla",
+      "add": "Agregar plantilla de tabla",
+      "description": "Puede predefinir la plantilla de tabla y luego aplicar la plantilla durante el cambio de esquema."
+    },
     "search-by-name-or-comment": "Buscar por nombre o comentario",
     "form": {
       "category": "Categoría",
@@ -2868,9 +2903,10 @@
       "unclassified": "Desclasificada",
       "column-name": "Nombre de la columna",
       "column-type": "Tipo de columna",
-      "default-value": "Valor por defecto",
+      "default-value": "Por defecto",
       "comment": "Comentario",
-      "nullable": "Anulable"
+      "nullable": "Anulable",
+      "table-name": "Nombre de la tabla"
     },
     "classification": {
       "self": "Clasificación de datos",

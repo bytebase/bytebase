@@ -6,6 +6,7 @@
     :placeholder="$t('project.select')"
     :filterable="true"
     :filter="filterByName"
+    class="bb-project-select"
     style="width: 12rem"
     @update:value="$emit('update:project', $event)"
   />
@@ -40,6 +41,7 @@ const props = withDefaults(
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     includeArchived?: boolean;
+    filterByCurrentUser?: boolean;
     filter?: (project: Project, index: number) => boolean;
   }>(),
   {
@@ -52,6 +54,7 @@ const props = withDefaults(
     includeAll: false,
     includeDefaultProject: false,
     includeArchived: false,
+    filterByCurrentUser: true,
     filter: () => true,
   }
 );
@@ -69,10 +72,12 @@ const prepare = () => {
 };
 
 const rawProjectList = computed(() => {
-  let list = projectV1Store.getProjectListByUser(
-    currentUserV1.value,
-    true /* showDeleted */
-  );
+  let list = props.filterByCurrentUser
+    ? projectV1Store.getProjectListByUser(
+        currentUserV1.value,
+        true /* showDeleted */
+      )
+    : projectV1Store.getProjectList(true /* showDeleted */);
   // Filter the default project
   list = list.filter((project) => {
     return project.uid !== String(DEFAULT_PROJECT_ID);
@@ -175,3 +180,9 @@ const filterByName = (pattern: string, option: SelectOption) => {
 
 watchEffect(prepare);
 </script>
+
+<style lang="postcss" scoped>
+.bb-project-select ::v-deep .n-base-selection-input:focus {
+  @apply !ring-0;
+}
+</style>

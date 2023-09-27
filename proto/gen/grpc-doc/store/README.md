@@ -28,6 +28,10 @@
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
+- [store/changelist.proto](#store_changelist-proto)
+    - [Changelist](#bytebase-store-Changelist)
+    - [Changelist.Change](#bytebase-store-Changelist-Change)
+  
 - [store/common.proto](#store_common-proto)
     - [PageToken](#bytebase-store-PageToken)
   
@@ -39,7 +43,9 @@
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
 - [store/database.proto](#store_database-proto)
+    - [ColumnConfig](#bytebase-store-ColumnConfig)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
+    - [DatabaseConfig](#bytebase-store-DatabaseConfig)
     - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
     - [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry)
     - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
@@ -49,10 +55,12 @@
     - [FunctionMetadata](#bytebase-store-FunctionMetadata)
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
+    - [SchemaConfig](#bytebase-store-SchemaConfig)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SecretItem](#bytebase-store-SecretItem)
     - [Secrets](#bytebase-store-Secrets)
     - [StreamMetadata](#bytebase-store-StreamMetadata)
+    - [TableConfig](#bytebase-store-TableConfig)
     - [TableMetadata](#bytebase-store-TableMetadata)
     - [TaskMetadata](#bytebase-store-TaskMetadata)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
@@ -126,6 +134,12 @@
   
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
   
+- [store/project.proto](#store_project-proto)
+    - [Project](#bytebase-store-Project)
+    - [ProtectionRule](#bytebase-store-ProtectionRule)
+  
+    - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
+  
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [Announcement](#bytebase-store-Announcement)
@@ -140,6 +154,7 @@
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
+    - [SchemaTemplateSetting.TableTemplate](#bytebase-store-SchemaTemplateSetting-TableTemplate)
     - [SemanticTypesSetting](#bytebase-store-SemanticTypesSetting)
     - [SemanticTypesSetting.SemanticType](#bytebase-store-SemanticTypesSetting-SemanticType)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
@@ -513,6 +528,54 @@ convert to the expected struct there.
 
 
 
+<a name="store_changelist-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/changelist.proto
+
+
+
+<a name="bytebase-store-Changelist"></a>
+
+### Changelist
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| description | [string](#string) |  |  |
+| changes | [Changelist.Change](#bytebase-store-Changelist-Change) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-Changelist-Change"></a>
+
+### Changelist.Change
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | The name of a sheet. |
+| source | [string](#string) |  | The source of origin. 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}. 2) branch: projects/{project}/schemaDesigns/{schemaDesign}. 3) raw SQL if empty. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_common-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -645,6 +708,22 @@ Used internally for obfuscating the page token.
 
 
 
+<a name="bytebase-store-ColumnConfig"></a>
+
+### ColumnConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a column. |
+| semantic_type_id | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-ColumnMetadata"></a>
 
 ### ColumnMetadata
@@ -663,6 +742,22 @@ ColumnMetadata is the metadata for columns.
 | comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
 | classification | [string](#string) |  | The classification is the classification of a table parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
+
+
+
+
+
+
+<a name="bytebase-store-DatabaseConfig"></a>
+
+### DatabaseConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schema_configs | [SchemaConfig](#bytebase-store-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
 
 
 
@@ -832,6 +927,22 @@ InstanceRoleMetadata is the message for instance role.
 
 
 
+<a name="bytebase-store-SchemaConfig"></a>
+
+### SchemaConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
+| table_configs | [TableConfig](#bytebase-store-TableConfig) | repeated | The table_configs is the list of configs for tables in a schema. |
+
+
+
+
+
+
 <a name="bytebase-store-SchemaMetadata"></a>
 
 ### SchemaMetadata
@@ -901,6 +1012,22 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | stale | [bool](#bool) |  | Indicates whether the stream was last read before the `stale_after` time. |
 | mode | [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode) |  | The mode of the stream. |
 | definition | [string](#string) |  | The definition of the stream. |
+
+
+
+
+
+
+<a name="bytebase-store-TableConfig"></a>
+
+### TableConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table. |
+| column_configs | [ColumnConfig](#bytebase-store-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 
 
 
@@ -1835,9 +1962,6 @@ Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#bind
 | schema | [string](#string) |  |  |
 | table | [string](#string) |  |  |
 | column | [string](#string) |  |  |
-| semantic_type_id | [string](#string) |  |  |
-| full_masking_algorithm_id | [string](#string) |  | The full masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
-| partial_masking_algorithm_id | [string](#string) |  | The partial masking algorithm id applied to the column, it will overwrite the algorithm in semantic category. |
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
 
 
@@ -1939,6 +2063,68 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | ACTION_UNSPECIFIED | 0 |  |
 | QUERY | 1 |  |
 | EXPORT | 2 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_project-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/project.proto
+
+
+
+<a name="bytebase-store-Project"></a>
+
+### Project
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| protection_rules | [ProtectionRule](#bytebase-store-ProtectionRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ProtectionRule"></a>
+
+### ProtectionRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. |
+| target | [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target) |  |  |
+| name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
+| create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. Format: roles/OWNER. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ProtectionRule-Target"></a>
+
+### ProtectionRule.Target
+The type of target.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROTECTION_TARGET_UNSPECIFIED | 0 |  |
+| BRANCH | 1 |  |
+| CHANGELIST | 2 |  |
 
 
  
@@ -2139,6 +2325,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | ----- | ---- | ----- | ----------- |
 | field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate) | repeated |  |
 | column_types | [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType) | repeated |  |
+| table_templates | [SchemaTemplateSetting.TableTemplate](#bytebase-store-SchemaTemplateSetting-TableTemplate) | repeated |  |
 
 
 
@@ -2174,6 +2361,24 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | category | [string](#string) |  |  |
 | column | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SchemaTemplateSetting-TableTemplate"></a>
+
+### SchemaTemplateSetting.TableTemplate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| engine | [Engine](#bytebase-store-Engine) |  |  |
+| category | [string](#string) |  |  |
+| table | [TableMetadata](#bytebase-store-TableMetadata) |  |  |
 
 
 

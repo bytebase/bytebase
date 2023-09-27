@@ -58,6 +58,13 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
   }
 
+  rpc UpdateDatabaseMetadata(UpdateDatabaseMetadataRequest) returns (DatabaseMetadata) {
+    option (google.api.http) = {
+      patch: "/v1/{database_metadata.name=instances/*/databases/*/metadata}"
+      body: "database_metadata"
+    };
+  }
+
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
@@ -243,6 +250,17 @@ message GetDatabaseMetadataRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message UpdateDatabaseMetadataRequest {
+  // The database metadata to update.
+  //
+  // The database_metadata's `name` field is used to identify the database metadata to update.
+  // Format: instances/{instance}/databases/{database}/metadata
+  DatabaseMetadata database_metadata = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
 message GetDatabaseSchemaRequest {
   // The name of the database to retrieve schema.
   // Format: instances/{instance}/databases/{database}/schema
@@ -358,6 +376,9 @@ message Database {
 
 // DatabaseMetadata is the metadata for databases.
 message DatabaseMetadata {
+  // The database metadata name.
+  //
+  // Format: instances/{instance}/databases/{database}/metadata
   string name = 1;
 
   // The schemas is the list of schemas in a database.
@@ -371,6 +392,9 @@ message DatabaseMetadata {
 
   // The extensions is the list of extensions in a database.
   repeated ExtensionMetadata extensions = 5;
+
+  // The schema_configs is the list of configs for schemas in a database.
+  repeated SchemaConfig schema_configs = 6;
 }
 
 // SchemaMetadata is the metadata for schemas.
@@ -660,7 +684,31 @@ message ForeignKeyMetadata {
   string match_type = 8;
 }
 
-// DatabaseMetadata is the metadata for databases.
+message SchemaConfig {
+  // The name is the schema name.
+  // It is an empty string for databases without such concept such as MySQL.
+  string name = 1;
+
+  // The table_configs is the list of configs for tables in a schema.
+  repeated TableConfig table_configs = 2;
+}
+
+message TableConfig {
+  // The name is the name of a table.
+  string name = 1;
+
+  // The column_configs is the ordered list of configs for columns in a table.
+  repeated ColumnConfig column_configs = 2;
+}
+
+message ColumnConfig {
+  // The name is the name of a column.
+  string name = 1;
+
+  string semantic_type_id = 2;
+}
+
+// DatabaseSchema is the metadata for databases.
 message DatabaseSchema {
   // The schema dump from database.
   string schema = 1;

@@ -89,9 +89,10 @@ export const useRouterStore = defineStore("router", {
       {
         // /branch/:branchSlug
         // Total 2 elements, 2nd element is the branch slug
-        const branchComponents = currentRoute.path.match(
-          "/branch/([0-9a-zA-Z_-]+)"
-        ) || ["/", undefined];
+        const branchComponents = currentRoute.path.match("/branch/(.+)") || [
+          "/",
+          undefined,
+        ];
         if (branchComponents[1]) {
           return {
             branchSlug: branchComponents[1],

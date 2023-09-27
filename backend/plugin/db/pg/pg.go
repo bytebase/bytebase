@@ -380,18 +380,27 @@ func isIgnoredStatement(stmt string) bool {
 	return strings.HasPrefix(upperCaseStmt, "COMMENT ON EXTENSION")
 }
 
-func isNonTransactionStatement(stmt string) bool {
+var (
 	// CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
 	// CREATE [ UNIQUE ] INDEX [ CONCURRENTLY ] [ [ IF NOT EXISTS ] name ] ON [ ONLY ] table_name [ USING method ] ...
-	createIndexReg := regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?)INDEX(\s+)CONCURRENTLY`)
+	createIndexReg = regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?)INDEX(\s+)CONCURRENTLY`)
+	// DROP INDEX CONCURRENTLY cannot run inside a transaction block.
+	// DROP INDEX [ CONCURRENTLY ] [ IF EXISTS ] name [, ...] [ CASCADE | RESTRICT ].
+	dropIndexReg = regexp.MustCompile(`(?i)DROP(\s+)INDEX(\s+)CONCURRENTLY`)
+	// VACUUM cannot run inside a transaction block.
+	// VACUUM [ ( option [, ...] ) ] [ table_and_columns [, ...] ]
+	// VACUUM [ FULL ] [ FREEZE ] [ VERBOSE ] [ ANALYZE ] [ table_and_columns [, ...] ].
+	vacuumReg = regexp.MustCompile(`(?i)VACUUM`)
+)
+
+func isNonTransactionStatement(stmt string) bool {
 	if len(createIndexReg.FindString(stmt)) > 0 {
 		return true
 	}
-
-	// DROP INDEX CONCURRENTLY cannot run inside a transaction block.
-	// DROP INDEX [ CONCURRENTLY ] [ IF EXISTS ] name [, ...] [ CASCADE | RESTRICT ]
-	dropIndexReg := regexp.MustCompile(`(?i)DROP(\s+)INDEX(\s+)CONCURRENTLY`)
-	return len(dropIndexReg.FindString(stmt)) > 0
+	if len(dropIndexReg.FindString(stmt)) > 0 {
+		return true
+	}
+	return len(vacuumReg.FindString(stmt)) > 0
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {

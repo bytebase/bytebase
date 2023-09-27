@@ -23,19 +23,13 @@
         </NButton>
 
         <NInputGroup style="width: auto">
-          <UserSelect
-            v-if="allowFilterUsers"
-            :user="selectedUserUID"
-            :include-system-bot="true"
-            :include-all="allowSelectAllUsers"
-            @update:user="changeUserUID"
-          />
           <NDatePicker
             v-model:value="selectedTimeRange"
-            type="datetimerange"
+            type="daterange"
             size="medium"
             :on-confirm="confirmDatePicker"
             :on-clear="clearDatePicker"
+            :is-date-disabled="isDateDisabled"
             clearable
           >
           </NDatePicker>
@@ -75,7 +69,6 @@
     <div v-show="state.tab === 'CLOSED'" class="mt-2">
       <!-- show all DONE and CANCELED issues with pageSize=10 -->
       <PagedIssueTableV1
-        v-if="showClosed"
         session-key="dashboard-closed"
         method="SEARCH"
         :issue-filter="{
@@ -104,11 +97,20 @@ import { NInputGroup, NButton, NDatePicker } from "naive-ui";
 import { reactive, computed, watchEffect, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import AdvancedSearch, { SearchParams } from "@/components/AdvancedSearch.vue";
+import AdvancedSearch, {
+  SearchParams,
+  SearchScopeId,
+} from "@/components/AdvancedSearch.vue";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
-import { UserSelect, SearchBox, TabFilterItem } from "@/components/v2";
-import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
+import { SearchBox, TabFilterItem } from "@/components/v2";
+import {
+  useCurrentUserV1,
+  useProjectV1Store,
+  useUserStore,
+  useDatabaseV1Store,
+  hasFeature,
+} from "@/store";
 import {
   projectNamePrefix,
   userNamePrefix,
@@ -117,10 +119,9 @@ import {
 import { UNKNOWN_ID, IssueFilter, ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
-  extractUserUID,
-  hasWorkspacePermissionV1,
   projectV1Slug,
   extractProjectResourceName,
+  hasWorkspacePermissionV1,
 } from "@/utils";
 
 const TABS = ["OPEN", "CLOSED"] as const;
@@ -137,12 +138,17 @@ const router = useRouter();
 const route = useRoute();
 
 const { t } = useI18n();
-const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
+const databaseV1Store = useDatabaseV1Store();
+const userStore = useUserStore();
+const currentUserV1 = useCurrentUserV1();
 
-const statusList = computed((): string[] =>
-  route.query.status ? (route.query.status as string).split(",") : []
-);
+const hasPermission = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-issue",
+    currentUserV1.value.userRole
+  );
+});
 
 const autofocus = computed((): boolean => {
   return !!route.query.autofocus;
@@ -150,23 +156,28 @@ const autofocus = computed((): boolean => {
 
 const initSearchParams = computed((): SearchParams => {
   const projectName = project.value?.name ?? "";
+  const userEmail = selectedPrincipal.value?.email ?? "";
   const query = (route.query.query as string) ?? "";
 
-  if (!projectName) {
-    return {
-      query,
-      scopes: [],
-    };
-  }
-  return {
+  const params: SearchParams = {
     query,
-    scopes: [
-      {
-        id: "project",
-        value: extractProjectResourceName(projectName),
-      },
-    ],
+    scopes: [],
   };
+
+  if (projectName) {
+    params.scopes.push({
+      id: "project",
+      value: extractProjectResourceName(projectName),
+    });
+  }
+  if (userEmail && hasPermission.value) {
+    params.scopes.push({
+      id: "principal",
+      value: userEmail,
+    });
+  }
+
+  return params;
 });
 
 const state = reactive<LocalState>({
@@ -177,6 +188,9 @@ const state = reactive<LocalState>({
     scopes: [],
   },
 });
+const hasAdvancedSearchFeature = computed(() => {
+  return hasFeature("bb.feature.issue-advanced-search");
+});
 
 const project = computed(() => {
   if (selectedProjectId.value) {
@@ -184,13 +198,6 @@ const project = computed(() => {
   }
   return undefined;
 });
-
-const showOpen = computed(
-  () => statusList.value.length === 0 || statusList.value.includes("open")
-);
-const showClosed = computed(
-  () => statusList.value.length === 0 || statusList.value.includes("closed")
-);
 
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   const OPEN: TabFilterItem<TabValue> = {
@@ -201,55 +208,19 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
     value: "CLOSED",
     label: t("issue.table.closed"),
   };
-  const list: TabFilterItem<TabValue>[] = [];
-  if (showOpen.value) {
-    list.push(OPEN);
-  }
-  if (showClosed.value) {
-    list.push(CLOSED);
-  }
-  return list;
+  return [OPEN, CLOSED];
 });
 
-const allowFilterUsers = computed(() => {
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      currentUserV1.value.userRole
-    )
-  ) {
-    return true;
-  }
-  return false;
-});
-
-const allowSelectAllUsers = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-issue",
-    currentUserV1.value.userRole
-  );
-});
-
-const selectedUserUID = computed((): string => {
-  if (!allowFilterUsers.value) {
-    // If current user is low-privileged. Don't filter by user id.
-    return String(UNKNOWN_ID);
-  }
-
-  const id = route.query.user as string;
-  if (id) {
-    return id;
-  }
-  return allowSelectAllUsers.value
-    ? String(UNKNOWN_ID) // default to 'All' if current user is owner or DBA
-    : extractUserUID(currentUserV1.value.name); // default to current user otherwise
-});
+// timeRangeLimitForFreePlanInTs is the search time limit in ts format.
+// should be 60 days.
+const timeRangeLimitForFreePlanInTs = 60 * 24 * 60 * 60 * 1000;
 
 const selectedTimeRange = computed((): [number, number] => {
-  const defaultTimeRange = [
-    dayjs().add(-60, "days").toDate().getTime(),
-    Date.now(),
-  ] as [number, number];
+  const today = dayjs().add(1, "day").endOf("day").valueOf();
+  const defaultTimeRange = [today - timeRangeLimitForFreePlanInTs, today] as [
+    number,
+    number
+  ];
   const createdTsAfter = route.query.createdTsAfter as string;
   if (createdTsAfter) {
     defaultTimeRange[0] = parseInt(createdTsAfter, 10);
@@ -261,17 +232,29 @@ const selectedTimeRange = computed((): [number, number] => {
   return defaultTimeRange;
 });
 
-const selectedUser = computed(() => {
-  const uid = selectedUserUID.value;
-  if (uid === String(UNKNOWN_ID)) {
-    return;
+const isDateDisabled = (ts: number) => {
+  const today = dayjs().add(1, "day").endOf("day").valueOf();
+  if (ts > today) {
+    return true;
   }
-  return useUserStore().getUserById(uid);
-});
+  if (hasAdvancedSearchFeature.value) {
+    return false;
+  }
+
+  return ts < today - timeRangeLimitForFreePlanInTs;
+};
 
 const selectedProjectId = computed((): string | undefined => {
   const { project } = route.query;
   return project ? (project as string) : undefined;
+});
+
+const selectedPrincipal = computed(() => {
+  const { user } = route.query;
+  if (!user) {
+    return;
+  }
+  return userStore.getUserById(user as string);
 });
 
 const filter = (issue: ComposedIssue) => {
@@ -282,19 +265,6 @@ const filter = (issue: ComposedIssue) => {
     }
   }
   return true;
-};
-
-const changeUserUID = (user: string | undefined) => {
-  if (user === String(UNKNOWN_ID)) {
-    user = undefined;
-  }
-  router.replace({
-    name: "workspace.issue",
-    query: {
-      ...route.query,
-      user,
-    },
-  });
 };
 
 const confirmDatePicker = (value: [number, number]) => {
@@ -336,6 +306,10 @@ watchEffect(() => {
 });
 
 onMounted(() => {
+  const status = ((route.query.status ?? "") as string).toUpperCase() ?? "OPEN";
+  if (status === "CLOSED") {
+    state.tab = "CLOSED";
+  }
   state.searchParams = initSearchParams.value;
 });
 
@@ -343,24 +317,37 @@ const onSearchParamsUpdate = (params: SearchParams) => {
   state.searchParams = params;
 };
 
+const getValueFromIssueFilter = (
+  prefix: string,
+  scopeId: SearchScopeId
+): string => {
+  const { scopes } = state.searchParams;
+  const scope = scopes.find((s) => s.id === scopeId);
+  if (!scope) {
+    return "";
+  }
+  return `${prefix}${scope.value}`;
+};
+
 const issueFilter = computed((): IssueFilter => {
   const { query, scopes } = state.searchParams;
   const projectScope = scopes.find((s) => s.id === "project");
-  const instanceScope = scopes.find((s) => s.id === "instance");
   const typeScope = scopes.find((s) => s.id === "type");
+  const databaseScope = scopes.find((s) => s.id === "database");
 
-  let instance = "";
-  if (instanceScope) {
-    instance = `${instanceNamePrefix}${instanceScope.value}`;
+  let database = "";
+  if (databaseScope) {
+    const uid = databaseScope.value.split("-").slice(-1)[0];
+    const db = databaseV1Store.getDatabaseByUID(uid);
+    if (db.uid !== `${UNKNOWN_ID}`) {
+      database = db.name;
+    }
   }
-  let principal = "";
-  if (selectedUser.value) {
-    principal = `${userNamePrefix}${selectedUser.value.email}`;
-  }
-  return {
+
+  const filter: IssueFilter = {
     query,
-    principal,
-    instance,
+    instance: getValueFromIssueFilter(instanceNamePrefix, "instance"),
+    database,
     project: `${projectNamePrefix}${projectScope?.value ?? "-"}`,
     createdTsAfter: selectedTimeRange.value
       ? selectedTimeRange.value[0]
@@ -370,5 +357,15 @@ const issueFilter = computed((): IssueFilter => {
       : undefined,
     type: typeScope?.value,
   };
+
+  if (!hasPermission.value) {
+    filter.principal = `${userNamePrefix}${currentUserV1.value.email}`;
+  } else {
+    filter.principal = getValueFromIssueFilter(userNamePrefix, "principal");
+    filter.creator = getValueFromIssueFilter(userNamePrefix, "creator");
+    filter.assignee = getValueFromIssueFilter(userNamePrefix, "assignee");
+    filter.subscriber = getValueFromIssueFilter(userNamePrefix, "subscriber");
+  }
+  return filter;
 });
 </script>

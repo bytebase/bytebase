@@ -31,319 +31,6 @@ func init() {
 	}
 }
 
-// GetIssueByID gets an instance of Issue.
-func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
-	issue, err := s.GetIssueV2(ctx, &FindIssueMessage{UID: &id})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Issue with ID %d", id)
-	}
-	if issue == nil {
-		return nil, nil
-	}
-	composedIssue, err := s.composeIssue(ctx, issue)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose issue %d", id)
-	}
-	return composedIssue, nil
-}
-
-// FindIssueStripped finds a list of issues in stripped format.
-// We do not load the pipeline in order to reduce the size of the response payload and the complexity of composing the issue list.
-func (s *Store) FindIssueStripped(ctx context.Context, find *FindIssueMessage) ([]*api.Issue, error) {
-	issues, err := s.ListIssueV2(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Issue list with IssueFind[%+v]", find)
-	}
-	var composedIssues []*api.Issue
-	for _, issue := range issues {
-		composedIssue, err := s.composeIssueStripped(ctx, issue)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose issue %d", issue.UID)
-		}
-		// If no specified project, filter out issues belonging to archived project
-		if composedIssue == nil || composedIssue.Project == nil || composedIssue.Project.RowStatus == api.Archived {
-			continue
-		}
-		composedIssues = append(composedIssues, composedIssue)
-	}
-
-	return composedIssues, nil
-}
-
-//
-// private functions
-//
-
-// Note: MUST keep in sync with composeIssueValidateOnly.
-func (s *Store) composeIssue(ctx context.Context, issue *IssueMessage) (*api.Issue, error) {
-	composedIssue := &api.Issue{
-		ID:          issue.UID,
-		CreatorID:   issue.Creator.ID,
-		CreatedTs:   issue.CreatedTime.Unix(),
-		UpdaterID:   issue.Updater.ID,
-		UpdatedTs:   issue.UpdatedTime.Unix(),
-		ProjectID:   issue.Project.UID,
-		PipelineID:  issue.PipelineUID,
-		Name:        issue.Title,
-		Status:      issue.Status,
-		Type:        issue.Type,
-		Description: issue.Description,
-		AssigneeID:  issue.Assignee.ID,
-		Payload:     issue.Payload,
-	}
-
-	creator, err := s.GetPrincipalByID(ctx, issue.Creator.ID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Creator = creator
-	updater, err := s.GetPrincipalByID(ctx, issue.Updater.ID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Updater = updater
-	assignee, err := s.GetPrincipalByID(ctx, issue.Assignee.ID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Assignee = assignee
-
-	for _, subscriber := range issue.Subscribers {
-		composedSubscriber, err := s.GetPrincipalByID(ctx, subscriber.ID)
-		if err != nil {
-			return nil, err
-		}
-		composedIssue.SubscriberList = append(composedIssue.SubscriberList, composedSubscriber)
-	}
-
-	composedProject, err := s.GetProjectByID(ctx, issue.Project.UID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Project = composedProject
-
-	if issue.PipelineUID != nil {
-		pipeline, err := s.GetPipelineV2ByID(ctx, *issue.PipelineUID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get pipeline with ID %d", *issue.PipelineUID)
-		}
-		if pipeline == nil {
-			return nil, nil
-		}
-		composedPipeline, err := s.composePipeline(ctx, pipeline)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose pipeline")
-		}
-		composedIssue.Pipeline = composedPipeline
-	}
-
-	return composedIssue, nil
-}
-
-// composeIssueStripped is a stripped version of compose issue only used in listing issues
-// for reducing the cost and payload of composing a full issue.
-func (s *Store) composeIssueStripped(ctx context.Context, issue *IssueMessage) (*api.Issue, error) {
-	composedIssue := &api.Issue{
-		ID:          issue.UID,
-		CreatorID:   issue.Creator.ID,
-		CreatedTs:   issue.CreatedTime.Unix(),
-		UpdaterID:   issue.Updater.ID,
-		UpdatedTs:   issue.UpdatedTime.Unix(),
-		ProjectID:   issue.Project.UID,
-		PipelineID:  issue.PipelineUID,
-		Name:        issue.Title,
-		Status:      issue.Status,
-		Type:        issue.Type,
-		Description: issue.Description,
-		AssigneeID:  issue.Assignee.ID,
-		Payload:     issue.Payload,
-	}
-
-	creator, err := s.GetPrincipalByID(ctx, issue.Creator.ID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Creator = creator
-	updater, err := s.GetPrincipalByID(ctx, issue.Updater.ID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Updater = updater
-	assignee, err := s.GetPrincipalByID(ctx, issue.Assignee.ID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Assignee = assignee
-
-	for _, subscriber := range issue.Subscribers {
-		composedSubscriber, err := s.GetPrincipalByID(ctx, subscriber.ID)
-		if err != nil {
-			return nil, err
-		}
-		composedIssue.SubscriberList = append(composedIssue.SubscriberList, composedSubscriber)
-	}
-
-	composedProject, err := s.GetProjectByID(ctx, issue.Project.UID)
-	if err != nil {
-		return nil, err
-	}
-	composedIssue.Project = composedProject
-
-	// Creating a stripped pipeline.
-	if issue.PipelineUID != nil {
-		pipeline, err := s.GetPipelineV2ByID(ctx, *issue.PipelineUID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get Pipeline with ID %d", issue.PipelineUID)
-		}
-		if pipeline == nil {
-			return nil, nil
-		}
-		composedPipeline, err := s.composeSimplePipeline(ctx, pipeline)
-		if err != nil {
-			return nil, err
-		}
-		composedIssue.Pipeline = composedPipeline
-	}
-
-	return composedIssue, nil
-}
-
-func (s *Store) composePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
-	composedPipeline := &api.Pipeline{
-		ID:   pipeline.ID,
-		Name: pipeline.Name,
-	}
-
-	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &pipeline.ID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Task list for pipeline %v", pipeline.ID)
-	}
-	taskRuns, err := s.ListTaskRun(ctx, &TaskRunFind{PipelineID: &pipeline.ID})
-	if err != nil {
-		return nil, err
-	}
-	var composedTasks []*api.Task
-	for _, task := range tasks {
-		composedTask := task.toTask()
-		creator, err := s.GetPrincipalByID(ctx, task.CreatorID)
-		if err != nil {
-			return nil, err
-		}
-		composedTask.Creator = creator
-		updater, err := s.GetPrincipalByID(ctx, task.UpdaterID)
-		if err != nil {
-			return nil, err
-		}
-		composedTask.Updater = updater
-
-		for _, taskRun := range taskRuns {
-			if taskRun.TaskUID == task.ID {
-				composedTaskRun := taskRun.toTaskRun()
-				creator, err := s.GetPrincipalByID(ctx, composedTaskRun.CreatorID)
-				if err != nil {
-					return nil, err
-				}
-				composedTaskRun.Creator = creator
-				updater, err := s.GetPrincipalByID(ctx, composedTaskRun.UpdaterID)
-				if err != nil {
-					return nil, err
-				}
-				composedTaskRun.Updater = updater
-				composedTask.TaskRunList = append(composedTask.TaskRunList, composedTaskRun)
-			}
-		}
-
-		instance, err := s.GetInstanceByID(ctx, task.InstanceID)
-		if err != nil {
-			return nil, err
-		}
-		if instance == nil {
-			return nil, errors.Errorf("instance not found with ID %v", task.InstanceID)
-		}
-		composedTask.Instance = instance
-		if task.DatabaseID != nil {
-			database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
-			if err != nil {
-				return nil, err
-			}
-			if database == nil {
-				return nil, errors.Errorf("database not found with ID %v", task.DatabaseID)
-			}
-			composedTask.Database = database
-		}
-
-		composedTasks = append(composedTasks, composedTask)
-	}
-
-	stages, err := s.ListStageV2(ctx, pipeline.ID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find stages for pipeline %d", pipeline.ID)
-	}
-	var composedStages []*api.Stage
-	for _, stage := range stages {
-		environment, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
-		if err != nil {
-			return nil, err
-		}
-		composedStage := &api.Stage{
-			ID:            stage.ID,
-			PipelineID:    stage.PipelineID,
-			EnvironmentID: stage.EnvironmentID,
-			Environment:   environment,
-			Name:          stage.Name,
-		}
-		for _, composedTask := range composedTasks {
-			if composedTask.StageID == stage.ID {
-				composedStage.TaskList = append(composedStage.TaskList, composedTask)
-			}
-		}
-
-		composedStages = append(composedStages, composedStage)
-	}
-	composedPipeline.StageList = composedStages
-
-	return composedPipeline, nil
-}
-
-func (s *Store) composeSimplePipeline(ctx context.Context, pipeline *PipelineMessage) (*api.Pipeline, error) {
-	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &pipeline.ID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", pipeline.ID)
-	}
-
-	stages, err := s.ListStageV2(ctx, pipeline.ID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find stage list")
-	}
-	var composedStages []*api.Stage
-	for _, stage := range stages {
-		environment, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
-		if err != nil {
-			return nil, err
-		}
-		composedStage := &api.Stage{
-			ID:            stage.ID,
-			Name:          stage.Name,
-			EnvironmentID: stage.EnvironmentID,
-			Environment:   environment,
-			PipelineID:    stage.PipelineID,
-		}
-
-		for _, task := range tasks {
-			if task.StageID == stage.ID {
-				composedStage.TaskList = append(composedStage.TaskList, task.toTask())
-			}
-		}
-		composedStages = append(composedStages, composedStage)
-	}
-
-	return &api.Pipeline{
-		ID:        pipeline.ID,
-		Name:      pipeline.Name,
-		StageList: composedStages,
-	}, nil
-}
-
 // IssueMessage is the mssage for issues.
 type IssueMessage struct {
 	Project     *ProjectMessage
@@ -389,11 +76,10 @@ type UpdateIssueMessage struct {
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
-	UID                *int
-	ProjectResourceID  *string
-	InstanceResourceID *string
-	PlanUID            *int64
-	PipelineID         *int
+	UID               *int
+	ProjectResourceID *string
+	PlanUID           *int64
+	PipelineID        *int
 	// Find issues where principalID is either creator, assignee or subscriber.
 	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
@@ -406,6 +92,10 @@ type FindIssueMessage struct {
 
 	StatusList []api.IssueStatus
 	TaskTypes  *[]api.TaskType
+	// Any of the task in the issue changes the instance with InstanceResourceID.
+	InstanceResourceID *string
+	// Any of the task in the issue changes the database with DatabaseUID.
+	DatabaseUID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit  *int
 	Offset *int
@@ -687,6 +377,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.InstanceResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task LEFT JOIN instance ON instance.id = task.instance_id WHERE task.pipeline_id = issue.pipeline_id AND instance.resource_id = $%d)", len(args)+1)), append(args, *v)
+	}
+	if v := find.DatabaseUID; v != nil {
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.database_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.PrincipalID; v != nil {
 		if find.CreatorID != nil || find.AssigneeID != nil || find.SubscriberID != nil {

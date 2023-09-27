@@ -3,12 +3,13 @@ package v1
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/mail"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
@@ -22,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
@@ -37,6 +39,10 @@ import (
 
 type CreateUserFunc func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 
+var (
+	invalidUserOrPasswordError = status.Errorf(codes.Unauthenticated, "The email or password is not valid.")
+)
+
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
@@ -46,11 +52,12 @@ type AuthService struct {
 	licenseService enterpriseAPI.LicenseService
 	metricReporter *metricreport.Reporter
 	profile        *config.Profile
+	stateCfg       *state.State
 	postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) *AuthService {
+func NewAuthService(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, stateCfg *state.State, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) (*AuthService, error) {
 	return &AuthService{
 		store:          store,
 		secret:         secret,
@@ -58,8 +65,9 @@ func NewAuthService(store *store.Store, secret string, tokenDuration time.Durati
 		licenseService: licenseService,
 		metricReporter: metricReporter,
 		profile:        profile,
+		stateCfg:       stateCfg,
 		postCreateUser: postCreateUser,
-	}
+	}, nil
 }
 
 // GetUser gets a user.
@@ -558,7 +566,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			return nil, err
 		}
 		if user == nil {
-			return nil, status.Errorf(codes.Unauthenticated, "user not found")
+			return nil, invalidUserOrPasswordError
 		}
 
 		if request.OtpCode != nil {
@@ -576,7 +584,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 
 	if loginUser == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "login user not found")
+		return nil, invalidUserOrPasswordError
 	}
 	if loginUser.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
@@ -633,7 +641,17 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 }
 
 // Logout is the auth logout method.
-func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb.Empty, error) {
+func (s *AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb.Empty, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
+	}
+	accessTokenStr, err := auth.GetTokenFromMetadata(md)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, err.Error())
+	}
+	s.stateCfg.ExpireCache.Set(accessTokenStr, true, 1)
+
 	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
 		auth.GatewayMetadataAccessTokenKey: "",
 		auth.GatewayMetadataUserIDKey:      "",
@@ -652,12 +670,12 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 		return nil, status.Errorf(codes.Internal, "failed to get user by email %q: %v", request.Email, err)
 	}
 	if user == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "user %q not found", request.Email)
+		return nil, invalidUserOrPasswordError
 	}
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
-		return nil, status.Errorf(codes.Unauthenticated, "incorrect password")
+		return nil, invalidUserOrPasswordError
 	}
 	return user, nil
 }

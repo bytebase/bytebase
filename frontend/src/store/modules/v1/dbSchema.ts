@@ -14,18 +14,36 @@ import { getInstanceAndDatabaseId } from "./common";
 
 interface DBSchemaState {
   requestCache: Map<string, Promise<DatabaseMetadata>>;
-  databaseMetadataByName: Map<string, DatabaseMetadata>;
+  _databaseMetadataByName: Map<string, DatabaseMetadata>;
 }
 
 export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
   state: (): DBSchemaState => ({
     requestCache: new Map(),
-    databaseMetadataByName: new Map(),
+    _databaseMetadataByName: new Map(),
   }),
   actions: {
+    getFromCache(databaseName: string) {
+      return this._databaseMetadataByName.get(this.getMedataName(databaseName));
+    },
+    setCache(metadata: DatabaseMetadata) {
+      this._databaseMetadataByName.set(metadata.name, metadata);
+    },
+    getMedataName(databaseName: string) {
+      return `${databaseName}/metadata`;
+    },
+    async updateDatabaseSchemaConfigs(metadata: DatabaseMetadata) {
+      const updated = await databaseServiceClient.updateDatabaseMetadata({
+        databaseMetadata: metadata,
+        updateMask: ["schema_configs"],
+      });
+      this.setCache(updated);
+      return updated;
+    },
     async getOrFetchDatabaseMetadata(
       name: string,
-      skipCache = false
+      skipCache = false,
+      silent = false
     ): Promise<DatabaseMetadata> {
       const databaseId = getInstanceAndDatabaseId(name)[1];
       if (
@@ -37,13 +55,16 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
         });
       }
 
+      const metadataName = this.getMedataName(name);
+
       if (!skipCache) {
-        if (this.databaseMetadataByName.has(name)) {
+        const existed = this.getFromCache(name);
+        if (existed) {
           // The metadata entity is stored in local dictionary.
-          return this.databaseMetadataByName.get(name) as DatabaseMetadata;
+          return existed;
         }
 
-        const cachedRequest = this.requestCache.get(name);
+        const cachedRequest = this.requestCache.get(metadataName);
         if (cachedRequest) {
           // The request was sent but still not returned.
           // We won't create a duplicated request.
@@ -53,14 +74,21 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
 
       // Send a request and cache it.
       const promise = databaseServiceClient
-        .getDatabaseMetadata({
-          name: `${name}/metadata`,
-        })
+        .getDatabaseMetadata(
+          {
+            name: metadataName,
+          },
+          {
+            silent,
+          }
+        )
         .then((res) => {
-          this.databaseMetadataByName.set(name, res);
+          console.log("metadata");
+          console.log(res);
+          this.setCache(res);
           return res;
         });
-      this.requestCache.set(name, promise);
+      this.requestCache.set(metadataName, promise);
 
       return promise;
     },
@@ -68,33 +96,30 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       name: string,
       skipCache = false
     ): Promise<SchemaMetadata[]> {
-      if (skipCache || !this.databaseMetadataByName.has(name)) {
+      if (skipCache || !this.getFromCache(name)) {
         await this.getOrFetchDatabaseMetadata(name, skipCache);
       }
       return this.getSchemaList(name);
     },
     getDatabaseMetadata(name: string): DatabaseMetadata {
       return (
-        this.databaseMetadataByName.get(name) ??
-        DatabaseMetadata.fromPartial({})
+        this.getFromCache(name) ??
+        DatabaseMetadata.fromPartial({
+          name: this.getMedataName(name),
+        })
       );
     },
     getSchemaList(name: string): SchemaMetadata[] {
-      const databaseMetadata = this.databaseMetadataByName.get(name);
-      if (!databaseMetadata) {
-        return [];
-      }
-
-      return databaseMetadata.schemas;
+      return this.getFromCache(name)?.schemas ?? [];
     },
     async getOrFetchTableList(name: string): Promise<TableMetadata[]> {
-      if (!this.databaseMetadataByName.has(name)) {
+      if (!this.getFromCache(name)) {
         await this.getOrFetchDatabaseMetadata(name);
       }
       return this.getTableList(name);
     },
     getTableList(name: string): TableMetadata[] {
-      const databaseMetadata = this.databaseMetadataByName.get(name);
+      const databaseMetadata = this.getFromCache(name);
       if (!databaseMetadata) {
         return [];
       }
@@ -107,7 +132,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       return tableList;
     },
     getTableByName(name: string, tableName: string): TableMetadata | undefined {
-      const databaseMetadata = this.databaseMetadataByName.get(name);
+      const databaseMetadata = this.getFromCache(name);
       if (!databaseMetadata) {
         return undefined;
       }
@@ -116,13 +141,13 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       return tableList.find((table) => table.name === tableName);
     },
     async getOrFetchViewList(name: string): Promise<ViewMetadata[]> {
-      if (!this.databaseMetadataByName.has(name)) {
+      if (!this.getFromCache(name)) {
         await this.getOrFetchDatabaseMetadata(name);
       }
       return this.getViewList(name);
     },
     getViewList(name: string): ViewMetadata[] {
-      const databaseMetadata = this.databaseMetadataByName.get(name);
+      const databaseMetadata = this.getFromCache(name);
       if (!databaseMetadata) {
         return [];
       }
@@ -135,13 +160,13 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       return viewList;
     },
     async getOrFetchExtensionList(name: string): Promise<ExtensionMetadata[]> {
-      if (!this.databaseMetadataByName.has(name)) {
+      if (!this.getFromCache(name)) {
         await this.getOrFetchDatabaseMetadata(name);
       }
       return this.getExtensionList(name);
     },
     getExtensionList(name: string): ExtensionMetadata[] {
-      const databaseMetadata = this.databaseMetadataByName.get(name);
+      const databaseMetadata = this.getFromCache(name);
       if (!databaseMetadata) {
         return [];
       }
@@ -149,13 +174,13 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       return databaseMetadata.extensions;
     },
     async getOrFetchFunctionList(name: string): Promise<FunctionMetadata[]> {
-      if (!this.databaseMetadataByName.has(name)) {
+      if (!this.getFromCache(name)) {
         await this.getOrFetchDatabaseMetadata(name);
       }
       return this.getFunctionList(name);
     },
     getFunctionList(name: string): FunctionMetadata[] {
-      const databaseMetadata = this.databaseMetadataByName.get(name);
+      const databaseMetadata = this.getFromCache(name);
       if (!databaseMetadata) {
         return [];
       }
@@ -167,8 +192,8 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       return functionList;
     },
     removeCache(name: string) {
-      this.requestCache.delete(name);
-      this.databaseMetadataByName.delete(name);
+      this.requestCache.delete(this.getMedataName(name));
+      this._databaseMetadataByName.delete(this.getMedataName(name));
     },
   },
 });
@@ -185,5 +210,5 @@ export const useMetadata = (
       store.getOrFetchDatabaseMetadata(id, unref(skipCache));
     }
   });
-  return computed(() => store.databaseMetadataByName.get(unref(name)));
+  return computed(() => store.getFromCache(unref(name)));
 };

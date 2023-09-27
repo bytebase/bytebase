@@ -46,7 +46,11 @@ func configureGrpcRouters(
 	errorRecordRing *api.ErrorRecordRing,
 	tokenDuration time.Duration) (*v1.RolloutService, *v1.IssueService, error) {
 	// Register services.
-	v1pb.RegisterAuthServiceServer(grpcServer, v1.NewAuthService(stores, secret, tokenDuration, licenseService, metricReporter, profile, postCreateUser))
+	authService, err := v1.NewAuthService(stores, secret, tokenDuration, licenseService, metricReporter, profile, stateCfg, postCreateUser)
+	if err != nil {
+		return nil, nil, err
+	}
+	v1pb.RegisterAuthServiceServer(grpcServer, authService)
 	v1pb.RegisterActuatorServiceServer(grpcServer, v1.NewActuatorService(stores, profile, errorRecordRing))
 	v1pb.RegisterSubscriptionServiceServer(grpcServer, v1.NewSubscriptionService(
 		stores,
@@ -83,6 +87,7 @@ func configureGrpcRouters(
 	v1pb.RegisterLoggingServiceServer(grpcServer, v1.NewLoggingService(stores))
 	v1pb.RegisterBookmarkServiceServer(grpcServer, v1.NewBookmarkService(stores))
 	v1pb.RegisterInboxServiceServer(grpcServer, v1.NewInboxService(stores))
+	v1pb.RegisterChangelistServiceServer(grpcServer, v1.NewChangelistService(stores))
 
 	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
@@ -152,6 +157,9 @@ func configureGrpcRouters(
 		return nil, nil, err
 	}
 	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, err
+	}
+	if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, err
 	}
 	return rolloutService, issueService, nil

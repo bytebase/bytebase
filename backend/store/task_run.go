@@ -71,24 +71,6 @@ type TaskRunStatusPatch struct {
 	Result *string
 }
 
-func (taskRun *TaskRunMessage) toTaskRun() *api.TaskRun {
-	return &api.TaskRun{
-		ID:        taskRun.ID,
-		CreatorID: taskRun.CreatorID,
-		CreatedTs: taskRun.CreatedTs,
-		UpdaterID: taskRun.UpdaterID,
-		UpdatedTs: taskRun.UpdatedTs,
-		TaskID:    taskRun.TaskUID,
-		Name:      taskRun.Name,
-		Status:    taskRun.Status,
-		Type:      api.TaskGeneral,
-		Code:      taskRun.Code,
-		Comment:   "",
-		Result:    taskRun.Result,
-		Payload:   "",
-	}
-}
-
 // ListTaskRunsV2 lists task runs.
 func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([]*TaskRunMessage, error) {
 	where, args := []string{"TRUE"}, []any{}

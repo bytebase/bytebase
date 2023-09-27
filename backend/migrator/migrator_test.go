@@ -3,7 +3,6 @@ package migrator
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"path"
 	"testing"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -146,7 +144,6 @@ var (
 )
 
 func TestMigrationCompatibility(t *testing.T) {
-	log.GLogLevel.Set(slog.LevelDebug)
 	pgDir := t.TempDir()
 	pgBinDir, err := postgres.Install(path.Join(pgDir, "resource"))
 	pgDataDir := path.Join(pgDir, "data")
@@ -241,5 +238,5 @@ func TestMigrationCompatibility(t *testing.T) {
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("2.8.4"), releaseVersion)
+	require.Equal(t, semver.MustParse("2.9.3"), releaseVersion)
 }

@@ -21,6 +21,7 @@ import {
   useUserStore,
 } from "@/store";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
+import { UNKNOWN_ID } from "@/types";
 import {
   SchemaDesign,
   SchemaDesign_Type,
@@ -60,7 +61,11 @@ watch(
       const database = await databaseStore.getOrFetchDatabaseByName(
         branch.baselineDatabase
       );
-      if (database && branch.baselineChangeHistoryId) {
+      if (
+        database &&
+        branch.baselineChangeHistoryId &&
+        branch.baselineChangeHistoryId !== String(UNKNOWN_ID)
+      ) {
         const changeHistoryName = `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`;
         await changeHistoryStore.getOrFetchChangeHistoryByName(
           changeHistoryName
@@ -87,11 +92,13 @@ const dataTableRows = computed(() => {
     const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
     const project = projectV1Store.getProjectByName(`projects/${projectName}`);
     const database = databaseStore.getDatabaseByName(branch.baselineDatabase);
-    const changeHistory = branch.baselineChangeHistoryId
-      ? changeHistoryStore.getChangeHistoryByName(
-          `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`
-        )
-      : undefined;
+    const changeHistory =
+      branch.baselineChangeHistoryId &&
+      branch.baselineChangeHistoryId !== String(UNKNOWN_ID)
+        ? changeHistoryStore.getChangeHistoryByName(
+            `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`
+          )
+        : undefined;
     const baselineVersion = `(${database.effectiveEnvironmentEntity.title}) ${
       database.databaseName
     } @${changeHistory ? changeHistory.version : "Previously latest schema"}`;
@@ -156,6 +163,7 @@ const rowKey = (row: BranchRowData) => {
 
 const rowProps = (row: BranchRowData) => {
   return {
+    class: "cursor-pointer",
     onClick: (event: MouseEvent) => {
       const targetElement = event.target as HTMLElement;
       const triggerElement = targetElement.closest(
@@ -180,3 +188,12 @@ const getUpdatedTimeStr = (branch: SchemaDesign) => {
   return updatedTimeStr;
 };
 </script>
+
+<style lang="postcss">
+.n-data-table-expand-trigger {
+  @apply !w-5 !h-5 inline-flex justify-center items-center translate-y-0.5 rounded hover:bg-gray-100 hover:shadow;
+}
+.n-data-table-expand-trigger > .n-base-icon {
+  @apply !w-5 !h-5 flex flex-row justify-center items-center;
+}
+</style>

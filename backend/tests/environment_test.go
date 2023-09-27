@@ -3,20 +3,17 @@ package tests
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestDatabaseEnvironment(t *testing.T) {
 	a := require.New(t)
-	log.GLogLevel.Set(slog.LevelDebug)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()

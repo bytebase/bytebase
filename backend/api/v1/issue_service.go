@@ -284,7 +284,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		switch spec.key {
 		case "principal":
 			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "principal" filter`)
 			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
@@ -293,7 +293,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			issueFind.PrincipalID = &user.ID
 		case "creator":
 			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "creator" filter`)
 			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
@@ -302,7 +302,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			issueFind.CreatorID = &user.ID
 		case "assignee":
 			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "assignee" filter`)
 			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
@@ -311,7 +311,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			issueFind.AssigneeID = &user.ID
 		case "subscriber":
 			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "subscriber" filter`)
 			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
@@ -320,7 +320,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			issueFind.SubscriberID = &user.ID
 		case "status":
 			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "status" filter`)
 			}
 			for _, raw := range strings.Split(spec.value, " | ") {
 				newStatus, err := convertToAPIIssueStatus(v1pb.IssueStatus(v1pb.IssueStatus_value[raw]))
@@ -335,7 +335,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			}
 			t, err := time.Parse(time.RFC3339, spec.value)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_before %s, err: %v", spec.value, err)
+				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time %s, err: %v", spec.value, err)
 			}
 			ts := t.Unix()
 			if spec.operator == comparatorTypeGreaterEqual {
@@ -345,7 +345,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			}
 		case "type":
 			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "type" filter`)
 			}
 			switch spec.value {
 			case "DDL":
@@ -364,13 +364,32 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			}
 		case "instance":
 			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "level" filter`)
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "instance" filter`)
 			}
 			instanceResourceID, err := common.GetInstanceID(spec.value)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, `invalid instance resource id "%s": %v`, spec.value, err.Error())
 			}
 			issueFind.InstanceResourceID = &instanceResourceID
+		case "database":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "database" filter`)
+			}
+			instanceID, databaseName, err := common.GetInstanceDatabaseID(spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if database == nil {
+				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, spec.value)
+			}
+			issueFind.DatabaseUID = &database.UID
 		}
 	}
 

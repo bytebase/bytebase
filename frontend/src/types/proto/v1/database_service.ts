@@ -193,6 +193,20 @@ export interface GetDatabaseMetadataRequest {
   name: string;
 }
 
+export interface UpdateDatabaseMetadataRequest {
+  /**
+   * The database metadata to update.
+   *
+   * The database_metadata's `name` field is used to identify the database metadata to update.
+   * Format: instances/{instance}/databases/{database}/metadata
+   */
+  databaseMetadata:
+    | DatabaseMetadata
+    | undefined;
+  /** The list of fields to update. */
+  updateMask: string[] | undefined;
+}
+
 export interface GetDatabaseSchemaRequest {
   /**
    * The name of the database to retrieve schema.
@@ -326,6 +340,11 @@ export interface Database_LabelsEntry {
 
 /** DatabaseMetadata is the metadata for databases. */
 export interface DatabaseMetadata {
+  /**
+   * The database metadata name.
+   *
+   * Format: instances/{instance}/databases/{database}/metadata
+   */
   name: string;
   /** The schemas is the list of schemas in a database. */
   schemas: SchemaMetadata[];
@@ -335,6 +354,8 @@ export interface DatabaseMetadata {
   collation: string;
   /** The extensions is the list of extensions in a database. */
   extensions: ExtensionMetadata[];
+  /** The schema_configs is the list of configs for schemas in a database. */
+  schemaConfigs: SchemaConfig[];
 }
 
 /**
@@ -680,7 +701,30 @@ export interface ForeignKeyMetadata {
   matchType: string;
 }
 
-/** DatabaseMetadata is the metadata for databases. */
+export interface SchemaConfig {
+  /**
+   * The name is the schema name.
+   * It is an empty string for databases without such concept such as MySQL.
+   */
+  name: string;
+  /** The table_configs is the list of configs for tables in a schema. */
+  tableConfigs: TableConfig[];
+}
+
+export interface TableConfig {
+  /** The name is the name of a table. */
+  name: string;
+  /** The column_configs is the ordered list of configs for columns in a table. */
+  columnConfigs: ColumnConfig[];
+}
+
+export interface ColumnConfig {
+  /** The name is the name of a column. */
+  name: string;
+  semanticTypeId: string;
+}
+
+/** DatabaseSchema is the metadata for databases. */
 export interface DatabaseSchema {
   /** The schema dump from database. */
   schema: string;
@@ -2076,6 +2120,80 @@ export const GetDatabaseMetadataRequest = {
   },
 };
 
+function createBaseUpdateDatabaseMetadataRequest(): UpdateDatabaseMetadataRequest {
+  return { databaseMetadata: undefined, updateMask: undefined };
+}
+
+export const UpdateDatabaseMetadataRequest = {
+  encode(message: UpdateDatabaseMetadataRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.databaseMetadata !== undefined) {
+      DatabaseMetadata.encode(message.databaseMetadata, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDatabaseMetadataRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateDatabaseMetadataRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databaseMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateDatabaseMetadataRequest {
+    return {
+      databaseMetadata: isSet(object.databaseMetadata) ? DatabaseMetadata.fromJSON(object.databaseMetadata) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateDatabaseMetadataRequest): unknown {
+    const obj: any = {};
+    message.databaseMetadata !== undefined &&
+      (obj.databaseMetadata = message.databaseMetadata ? DatabaseMetadata.toJSON(message.databaseMetadata) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateDatabaseMetadataRequest>): UpdateDatabaseMetadataRequest {
+    return UpdateDatabaseMetadataRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<UpdateDatabaseMetadataRequest>): UpdateDatabaseMetadataRequest {
+    const message = createBaseUpdateDatabaseMetadataRequest();
+    message.databaseMetadata = (object.databaseMetadata !== undefined && object.databaseMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.databaseMetadata)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
 function createBaseGetDatabaseSchemaRequest(): GetDatabaseSchemaRequest {
   return { name: "", sdlFormat: false };
 }
@@ -2893,7 +3011,7 @@ export const Database_LabelsEntry = {
 };
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [] };
+  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], schemaConfigs: [] };
 }
 
 export const DatabaseMetadata = {
@@ -2912,6 +3030,9 @@ export const DatabaseMetadata = {
     }
     for (const v of message.extensions) {
       ExtensionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    for (const v of message.schemaConfigs) {
+      SchemaConfig.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -2958,6 +3079,13 @@ export const DatabaseMetadata = {
 
           message.extensions.push(ExtensionMetadata.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2975,6 +3103,9 @@ export const DatabaseMetadata = {
       collation: isSet(object.collation) ? String(object.collation) : "",
       extensions: Array.isArray(object?.extensions)
         ? object.extensions.map((e: any) => ExtensionMetadata.fromJSON(e))
+        : [],
+      schemaConfigs: Array.isArray(object?.schemaConfigs)
+        ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
         : [],
     };
   },
@@ -2994,6 +3125,11 @@ export const DatabaseMetadata = {
     } else {
       obj.extensions = [];
     }
+    if (message.schemaConfigs) {
+      obj.schemaConfigs = message.schemaConfigs.map((e) => e ? SchemaConfig.toJSON(e) : undefined);
+    } else {
+      obj.schemaConfigs = [];
+    }
     return obj;
   },
 
@@ -3008,6 +3144,7 @@ export const DatabaseMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
+    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
     return message;
   },
 };
@@ -4612,6 +4749,231 @@ export const ForeignKeyMetadata = {
     message.onDelete = object.onDelete ?? "";
     message.onUpdate = object.onUpdate ?? "";
     message.matchType = object.matchType ?? "";
+    return message;
+  },
+};
+
+function createBaseSchemaConfig(): SchemaConfig {
+  return { name: "", tableConfigs: [] };
+}
+
+export const SchemaConfig = {
+  encode(message: SchemaConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.tableConfigs) {
+      TableConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tableConfigs.push(TableConfig.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      tableConfigs: Array.isArray(object?.tableConfigs)
+        ? object.tableConfigs.map((e: any) => TableConfig.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SchemaConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.tableConfigs) {
+      obj.tableConfigs = message.tableConfigs.map((e) => e ? TableConfig.toJSON(e) : undefined);
+    } else {
+      obj.tableConfigs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaConfig>): SchemaConfig {
+    return SchemaConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaConfig>): SchemaConfig {
+    const message = createBaseSchemaConfig();
+    message.name = object.name ?? "";
+    message.tableConfigs = object.tableConfigs?.map((e) => TableConfig.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseTableConfig(): TableConfig {
+  return { name: "", columnConfigs: [] };
+}
+
+export const TableConfig = {
+  encode(message: TableConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.columnConfigs) {
+      ColumnConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TableConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTableConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.columnConfigs.push(ColumnConfig.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TableConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      columnConfigs: Array.isArray(object?.columnConfigs)
+        ? object.columnConfigs.map((e: any) => ColumnConfig.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: TableConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.columnConfigs) {
+      obj.columnConfigs = message.columnConfigs.map((e) => e ? ColumnConfig.toJSON(e) : undefined);
+    } else {
+      obj.columnConfigs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TableConfig>): TableConfig {
+    return TableConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<TableConfig>): TableConfig {
+    const message = createBaseTableConfig();
+    message.name = object.name ?? "";
+    message.columnConfigs = object.columnConfigs?.map((e) => ColumnConfig.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseColumnConfig(): ColumnConfig {
+  return { name: "", semanticTypeId: "" };
+}
+
+export const ColumnConfig = {
+  encode(message: ColumnConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.semanticTypeId !== "") {
+      writer.uint32(18).string(message.semanticTypeId);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ColumnConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseColumnConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.semanticTypeId = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ColumnConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      semanticTypeId: isSet(object.semanticTypeId) ? String(object.semanticTypeId) : "",
+    };
+  },
+
+  toJSON(message: ColumnConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.semanticTypeId !== undefined && (obj.semanticTypeId = message.semanticTypeId);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ColumnConfig>): ColumnConfig {
+    return ColumnConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ColumnConfig>): ColumnConfig {
+    const message = createBaseColumnConfig();
+    message.name = object.name ?? "";
+    message.semanticTypeId = object.semanticTypeId ?? "";
     return message;
   },
 };
@@ -7339,6 +7701,104 @@ export const DatabaseServiceDefinition = {
               49,
               47,
               123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              109,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    updateDatabaseMetadata: {
+      name: "UpdateDatabaseMetadata",
+      requestType: UpdateDatabaseMetadataRequest,
+      requestStream: false,
+      responseType: DatabaseMetadata,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              82,
+              58,
+              17,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              95,
+              109,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+              50,
+              61,
+              47,
+              118,
+              49,
+              47,
+              123,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              95,
+              109,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+              46,
               110,
               97,
               109,

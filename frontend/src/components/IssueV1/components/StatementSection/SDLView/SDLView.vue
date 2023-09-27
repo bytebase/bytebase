@@ -52,12 +52,12 @@
           </NTab>
         </NTabs>
 
-        <CodeDiff
+        <DiffEditor
           v-if="state.tab === 'DIFF'"
-          :old-string="sdlState.detail.previousSDL"
-          :new-string="sdlState.detail.prettyExpectedSDL"
-          output-format="side-by-side"
-          data-label="bb-change-detail-code-diff-block"
+          class="h-[64rem] max-h-full border rounded-md overflow-clip"
+          :original="sdlState.detail.previousSDL"
+          :value="sdlState.detail.prettyExpectedSDL"
+          :readonly="true"
         />
         <MonacoEditor
           v-if="state.tab === 'STATEMENT'"
@@ -94,10 +94,10 @@
 
 <script lang="ts" setup>
 import { NTabs, NTab, NTooltip } from "naive-ui";
-import { CodeDiff } from "v-code-diff";
 import { reactive, ref } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import MonacoEditor from "@/components/MonacoEditor";
+import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { hasFeature, pushNotification } from "@/store";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSDLState } from "./useSDLState";

@@ -7,12 +7,12 @@ import {
 import { Column, Table } from "@/types/v1/schemaEditor";
 
 export const getColumnComment = (column: Column): string => {
-  const userComment = defaultTo(column.userComment, "");
-  const classification = defaultTo(column.classification, "");
-  if (!classification) {
-    return userComment;
-  }
-  return `${classification}-${userComment}`;
+  return [
+    defaultTo(column.classification, ""),
+    defaultTo(column.userComment, ""),
+  ]
+    .filter((val) => val)
+    .join("-");
 };
 
 export const transformColumnToAddColumnContext = (

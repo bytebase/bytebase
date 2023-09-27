@@ -32,6 +32,7 @@ import (
 	webhookPlugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -2081,6 +2082,94 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 	return s.convertStoreToAPISchemaGroupFull(ctx, schemaGroup, databaseGroup, projectResourceID)
 }
 
+// GetProjectProtectionRules gets a project protection rules.
+func (s *ProjectService) GetProjectProtectionRules(ctx context.Context, request *v1pb.GetProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
+	projectResourceID, err := common.TrimSuffix(request.Name, common.ProtectionRulesSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
+	}
+
+	resp := convertProtectionRules(project)
+	return resp, nil
+}
+
+// UpdateProjectProtectionRules updates a project protection rules.
+func (s *ProjectService) UpdateProjectProtectionRules(ctx context.Context, request *v1pb.UpdateProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
+	if request.ProtectionRules == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "protection rules must be set")
+	}
+	projectResourceID, err := common.TrimSuffix(request.ProtectionRules.Name, common.ProtectionRulesSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
+	}
+
+	var rules []*storepb.ProtectionRule
+	for _, rule := range request.ProtectionRules.Rules {
+		rules = append(rules, &storepb.ProtectionRule{
+			Id:                 rule.Id,
+			Target:             storepb.ProtectionRule_Target(rule.Target),
+			NameFilter:         rule.NameFilter,
+			CreateAllowedRoles: rule.CreateAllowedRoles,
+		})
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	setting := project.Setting
+	setting.ProtectionRules = rules
+	project, err = s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
+		UpdaterID:  principalID,
+		ResourceID: project.ResourceID,
+		Setting:    setting,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	resp := convertProtectionRules(project)
+	return resp, nil
+}
+
+func convertProtectionRules(project *store.ProjectMessage) *v1pb.ProtectionRules {
+	resp := &v1pb.ProtectionRules{
+		Name: fmt.Sprintf("%s%s%s", common.ProjectNamePrefix, project.ResourceID, common.ProtectionRulesSuffix),
+	}
+	if project.Setting != nil {
+		for _, rule := range project.Setting.ProtectionRules {
+			resp.Rules = append(resp.Rules, &v1pb.ProtectionRule{
+				Id:                 rule.Id,
+				Target:             v1pb.ProtectionRule_Target(rule.Target),
+				NameFilter:         rule.NameFilter,
+				CreateAllowedRoles: rule.CreateAllowedRoles,
+			})
+		}
+	}
+	return resp
+}
+
 func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.DatabaseGroup, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &projectResourceID,
@@ -2837,6 +2926,10 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 			}
 		}
 		projectRoleMap[binding.Role] = true
+
+		if _, err := common.ValidateProjectMemberCELExpr(binding.Condition); err != nil {
+			return err
+		}
 	}
 	// Must contain one owner binding.
 	if _, ok := projectRoleMap["roles/OWNER"]; !ok {

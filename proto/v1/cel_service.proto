@@ -14,9 +14,21 @@ service CelService {
       body: "*"
     };
   }
+  rpc BatchParse(BatchParseRequest) returns (BatchParseResponse) {
+    option (google.api.http) = {
+      post: "/v1/cel/batchParse"
+      body: "*"
+    };
+  }
   rpc Deparse(DeparseRequest) returns (DeparseResponse) {
     option (google.api.http) = {
       post: "/v1/cel/deparse"
+      body: "*"
+    };
+  }
+  rpc BatchDeparse(BatchDeparseRequest) returns (BatchDeparseResponse) {
+    option (google.api.http) = {
+      post: "/v1/cel/batchDeparse"
       body: "*"
     };
   }
@@ -26,14 +38,30 @@ message ParseRequest {
   string expression = 1;
 }
 
+message BatchParseRequest {
+  repeated string expressions = 1;
+}
+
 message ParseResponse {
   google.api.expr.v1alpha1.ParsedExpr expression = 1;
+}
+
+message BatchParseResponse {
+  repeated google.api.expr.v1alpha1.ParsedExpr expressions = 1;
 }
 
 message DeparseRequest {
   google.api.expr.v1alpha1.ParsedExpr expression = 1;
 }
 
+message BatchDeparseRequest {
+  repeated google.api.expr.v1alpha1.ParsedExpr expressions = 1;
+}
+
 message DeparseResponse {
   string expression = 1;
+}
+
+message BatchDeparseResponse {
+  repeated string expressions = 1;
 }

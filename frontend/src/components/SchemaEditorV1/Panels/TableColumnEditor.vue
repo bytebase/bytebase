@@ -2,7 +2,7 @@
   <!-- column table -->
   <div
     id="table-editor-container"
-    class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto"
+    class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto border"
   >
     <!-- column table header -->
     <div
@@ -39,17 +39,15 @@
           />
         </div>
         <div
+          v-if="classificationConfig"
           class="table-body-item-container flex items-center gap-x-2 ml-3 text-sm"
         >
           <ClassificationLevelBadge
-            v-if="column.classification && classificationConfig"
+            v-if="column.classification"
             :classification="column.classification"
             :classification-config="classificationConfig"
           />
-          <div
-            v-if="classificationConfig && !readonly && !disableChangeTable"
-            class="flex"
-          >
+          <div v-if="!readonly && !disableChangeTable" class="flex">
             <button
               v-if="column.classification"
               class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
@@ -203,7 +201,7 @@
     v-if="classificationConfig"
     :show="state.pendingUpdateColumn !== undefined"
     :classification-config="classificationConfig"
-    @dismiss="state.pendingUpdateColumn == undefined"
+    @dismiss="state.pendingUpdateColumn = undefined"
     @select="onClassificationSelect"
   />
 </template>
@@ -274,15 +272,18 @@ const dataDefaultOptions = [
   },
 ];
 
+const classificationConfig = computed(() => {
+  if (!props.classificationConfigId) {
+    return;
+  }
+  return settingStore.getProjectClassification(props.classificationConfigId);
+});
+
 const columnHeaderList = computed(() => {
   const list = [
     {
       key: "name",
       label: t("schema-editor.column.name"),
-    },
-    {
-      key: "classification",
-      label: t("schema-editor.column.classification"),
     },
     {
       key: "type",
@@ -305,6 +306,12 @@ const columnHeaderList = computed(() => {
       label: t("schema-editor.column.primary"),
     },
   ];
+  if (classificationConfig.value) {
+    list.splice(1, 0, {
+      key: "classification",
+      label: t("schema-editor.column.classification"),
+    });
+  }
   if (props.showForeignKey) {
     list.push({
       key: "foreign_key",
@@ -324,13 +331,6 @@ const gridColumnClass = computed(() => {
 
 const shownColumnList = computed(() => {
   return props.table.columnList.filter(props.filterColumn);
-});
-
-const classificationConfig = computed(() => {
-  if (!props.classificationConfigId) {
-    return;
-  }
-  return settingStore.getProjectClassification(props.classificationConfigId);
 });
 
 const isColumnPrimaryKey = (column: Column): boolean => {

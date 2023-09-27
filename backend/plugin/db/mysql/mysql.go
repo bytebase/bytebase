@@ -9,6 +9,7 @@ import (
 	"net"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -221,26 +222,15 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (string, error) {
-	switch driver.dbType {
-	case db.MySQL, db.MariaDB:
-		// MySQL 5.7 doesn't support WITH clause.
-		return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit), nil
-	case db.TiDB:
-		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit), nil
-	default:
-		return "", errors.Errorf("unsupported database type %s", driver.dbType)
-	}
-}
-
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	if singleSQL.Empty {
 		return nil, nil
 	}
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
+	isExplain := strings.HasPrefix(statement, "EXPLAIN")
 
 	stmt := statement
-	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
+	if !isExplain && queryContext.Limit > 0 {
 		var err error
 		stmt, err = driver.getStatementWithResultLimit(stmt, queryContext.Limit)
 		if err != nil {
@@ -261,7 +251,34 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
 	result.Statement = statement
+	if isExplain && driver.dbType == db.TiDB {
+		if err := updateTiDBExplainResult(result); err != nil {
+			return nil, err
+		}
+	}
 	return result, nil
+}
+
+func updateTiDBExplainResult(result *v1pb.QueryResult) error {
+	for _, row := range result.Rows {
+		if len(row.Values) > 0 {
+			str := row.Values[0].GetStringValue()
+			var sb strings.Builder
+			for i, char := range str {
+				if unicode.IsLetter(char) {
+					if _, err := sb.WriteString(str[i:]); err != nil {
+						return err
+					}
+					break
+				}
+				if _, err := sb.WriteString("-"); err != nil {
+					return err
+				}
+			}
+			row.Values[0] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: sb.String()}}
+		}
+	}
+	return nil
 }
 
 // RunStatement runs a SQL statement in a given connection.
