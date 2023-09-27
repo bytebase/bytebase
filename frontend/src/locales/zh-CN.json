@@ -261,7 +261,9 @@
     "merge": "合并",
     "info": "信息",
     "minutes": "分钟",
-    "go-to-configure": "去配置"
+    "go-to-configure": "去配置",
+    "updated-at-by": "由 {user} 更新于 {time}",
+    "created-at-by": "由 {user} 创建于 {time}"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2555,7 +2557,8 @@
     "idp": "身份提供商",
     "role": "角色",
     "database-group": "数据库分组",
-    "schema-group": "表分组"
+    "schema-group": "表分组",
+    "changelist": "变更列表"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -3034,6 +3037,19 @@
       "table_name": "表名称",
       "column_name": "字段名称",
       "classification_level": "数据分级"
+    }
+  },
+  "changelist": {
+    "self": "变更列表",
+    "changelists": "变更列表",
+    "change-center": "变更中心",
+    "new": "新建变更列表",
+    "name": "变更列表名称",
+    "name-placeholder": "我的变更列表",
+    "error": {
+      "project-is-required": "项目不能为空",
+      "name-is-required": "变更列表名称不能为空",
+      "invalid-resource-id": "无效的资源 ID"
     }
   }
 }

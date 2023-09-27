@@ -263,7 +263,9 @@
     "merge": "Merge",
     "info": "Info",
     "minutes": "Minutes",
-    "go-to-configure": "Configure"
+    "go-to-configure": "Configure",
+    "updated-at-by": "Updated {time} by {user}",
+    "created-at-by": "Created {time} by {user}"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2559,7 +2561,8 @@
     "idp": "Identity Provider",
     "role": "Role",
     "database-group": "Database Group",
-    "schema-group": "Table Group"
+    "schema-group": "Table Group",
+    "changelist": "Changelist"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -3041,6 +3044,19 @@
       "table_name": "Table name",
       "column_name": "Column name",
       "classification_level": "Classification level"
+    }
+  },
+  "changelist": {
+    "self": "Changelist",
+    "changelists": "Changelists",
+    "change-center": "Change Center",
+    "new": "New Changelist",
+    "name": "Changelist name",
+    "name-placeholder": "My changelist",
+    "error": {
+      "project-is-required": "Project is required",
+      "name-is-required": "Changelist name is required",
+      "invalid-resource-id": "Invalid resource Id"
     }
   }
 }

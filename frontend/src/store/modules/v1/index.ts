@@ -25,3 +25,4 @@ export * from "./bookmark";
 export * from "./inbox";
 export * from "./anomaly";
 export * from "./schemaEditor";
+export * from "./changelist";

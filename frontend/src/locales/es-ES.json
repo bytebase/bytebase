@@ -263,7 +263,9 @@
     "merge": "Combinar",
     "info": "Información",
     "minutes": "Minutos",
-    "go-to-configure": "Configurar"
+    "go-to-configure": "Configurar",
+    "updated-at-by": "Actualizado {time} por {user}",
+    "created-at-by": "Creado {time} por {user}"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2555,7 +2557,8 @@
     "idp": "Proveedor de Identidad",
     "role": "Rol",
     "database-group": "grupo de bases de datos",
-    "schema-group": "grupo de mesas"
+    "schema-group": "grupo de mesas",
+    "changelist": "Lista de cambios"
   },
   "resource-id": {
     "self": "ID de {resource}",
@@ -3039,6 +3042,19 @@
       "table_name": "Nombre de la tabla",
       "column_name": "Nombre de columna",
       "classification_level": "Nivel de clasificación"
+    }
+  },
+  "changelist": {
+    "self": "Lista de cambios",
+    "changelists": "Listas de cambios",
+    "change-center": "Centro de cambios",
+    "new": "Nueva lista de cambios",
+    "name": "Nombre de la lista de cambios",
+    "name-placeholder": "Mi lista de cambios",
+    "error": {
+      "project-is-required": "Se requiere proyecto",
+      "name-is-required": "El nombre de la lista de cambios es obligatorio",
+      "invalid-resource-id": "ID de recurso no válido"
     }
   }
 }

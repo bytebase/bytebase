@@ -242,6 +242,19 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
+            path: "changelists",
+            name: "workspace.changelists",
+            meta: { title: () => t("changelist.changelists") },
+            components: {
+              content: () => import("../views/Changelist/ChangelistDashboard/"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
             path: "sync-schema",
             name: "workspace.sync-schema",
             meta: { title: () => startCase(t("database.sync-schema.title")) },
@@ -1316,6 +1329,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
     to.name === "workspace.slow-query" ||
+    to.name === "workspace.changelists" ||
     to.name === "workspace.sync-schema" ||
     to.name === "workspace.export-center" ||
     to.name === "workspace.anomaly-center" ||

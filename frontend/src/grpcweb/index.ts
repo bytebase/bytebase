@@ -9,6 +9,7 @@ import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { BookmarkServiceDefinition } from "@/types/proto/v1/bookmark_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
+import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
 import { ExternalVersionControlServiceDefinition } from "@/types/proto/v1/externalvs_service";
@@ -185,6 +186,11 @@ export const anomalyServiceClient = clientFactory.create(
 
 export const schemaDesignServiceClient = clientFactory.create(
   SchemaDesignServiceDefinition,
+  channel
+);
+
+export const changelistServiceClient = clientFactory.create(
+  ChangelistServiceDefinition,
   channel
 );
 

@@ -63,6 +63,16 @@
         {{ $t("slow-query.slow-queries") }}
       </router-link>
       <router-link
+        v-if="isDev"
+        to="/changelists"
+        class="outline-item group flex items-center px-2 py-1.5 capitalize"
+      >
+        <div class="flex items-center justify-center w-5 h-5 mr-2">
+          <PencilRuler :size="16" />
+        </div>
+        {{ $t("changelist.change-center") }}
+      </router-link>
+      <router-link
         to="/export-center"
         class="outline-item group flex items-center px-2 py-1.5 capitalize"
       >
@@ -91,6 +101,7 @@
 
 <script lang="ts" setup>
 import { useKBarHandler } from "@bytebase/vue-kbar";
+import { PencilRuler } from "lucide-vue-next";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BookmarkListSidePanel from "@/components/BookmarkListSidePanel.vue";
