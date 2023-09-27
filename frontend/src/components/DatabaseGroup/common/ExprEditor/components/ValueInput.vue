@@ -77,6 +77,6 @@ watch(
       setStringValue("");
     }
   },
-  { immediate: true }
+  { immediate: false }
 );
 </script>
