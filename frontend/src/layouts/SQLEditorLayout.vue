@@ -1,6 +1,6 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
-    <BannersWrapper />
+    <BannersWrapper v-if="showBanners" />
     <!-- Suspense is experimental, be aware of the potential change -->
     <Suspense>
       <template #default>
@@ -25,7 +25,7 @@
 
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
@@ -39,6 +39,10 @@ import { SQLEditorMode } from "@/types";
 const actuatorStore = useActuatorV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const route = useRoute();
+
+const showBanners = computed(() => {
+  return sqlEditorStore.mode !== "BUNDLED";
+});
 
 onMounted(() => {
   let mode = route.query.mode as SQLEditorMode;
