@@ -153,13 +153,6 @@
             {{ $t("settings.sidebar.sso") }}
           </router-link>
           <router-link
-            v-if="showIMIntegrationItem"
-            to="/setting/im-integration"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-1.5"
-          >
-            {{ $t("settings.sidebar.im-integration") }}
-          </router-link>
-          <router-link
             v-if="showMailDeliveryItem"
             to="/setting/mail-delivery"
             class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-1.5"
@@ -205,13 +198,6 @@ const showAccessControlItem = computed((): boolean => {
   );
 });
 
-const showIMIntegrationItem = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-im-integration",
-    currentUserV1.value.userRole
-  );
-});
-
 const showSSOItem = computed((): boolean => {
   return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-sso",
@@ -227,7 +213,7 @@ const showVCSItem = computed((): boolean => {
 });
 
 const showIntegrationSection = computed(() => {
-  return showVCSItem.value || showIMIntegrationItem.value || showSSOItem.value;
+  return showVCSItem.value || showSSOItem.value;
 });
 
 const showDebugLogItem = computed((): boolean => {
