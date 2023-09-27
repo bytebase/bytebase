@@ -1,6 +1,6 @@
 module github.com/bytebase/bytebase
 
-go 1.21
+go 1.21.1
 
 require (
 	cloud.google.com/go/spanner v1.49.0
@@ -16,6 +16,7 @@ require (
 	github.com/bytebase/mongo-parser v0.0.0-20230911083938-8f47f81da367
 	github.com/bytebase/mysql-parser v0.0.0-20230612050356-4592d9ba30da
 	github.com/bytebase/plsql-parser v0.0.0-20230706061841-c93470b91bee
+	github.com/bytebase/postgresql-parser v0.0.0-20230926094140-aa337757cdd0
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
