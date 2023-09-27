@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/secret"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
@@ -146,6 +147,11 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dat
 	if err != nil {
 		return nil, err
 	}
+	updatedPassword, err := secret.ReplaceExternalSecret(password)
+	if err != nil {
+		return nil, err
+	}
+	password = updatedPassword
 	sshConfig := db.SSHConfig{
 		Host:       dataSource.SSHHost,
 		Port:       dataSource.SSHPort,
