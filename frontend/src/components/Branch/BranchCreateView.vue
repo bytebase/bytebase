@@ -62,9 +62,9 @@
 <script lang="ts" setup>
 import { cloneDeep, uniqueId } from "lodash-es";
 import { NButton, NDivider } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
@@ -117,6 +117,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const router = useRouter();
+const route = useRoute();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
@@ -130,6 +131,12 @@ const state = reactive<LocalState>({
   }),
 });
 const refreshId = ref<string>("");
+
+onMounted(() => {
+  if (route.query.projectId) {
+    state.projectId = route.query.projectId as string;
+  }
+});
 
 watch(
   () => [
