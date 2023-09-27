@@ -57,6 +57,8 @@ const (
 	FeatureDisallowSignup FeatureType = "bb.feature.disallow-signup"
 	// FeatureSecureToken allows user to manage authentication token security.
 	FeatureSecureToken FeatureType = "bb.feature.secure-token"
+	// FeatureExternalSecretManager uses secrets from external secret manager.
+	FeatureExternalSecretManager FeatureType = "bb.feature.external-secret-manager"
 
 	// FeatureRBAC enables RBAC.
 	//
@@ -197,6 +199,8 @@ func (e FeatureType) Name() string {
 		return "Disallow singup"
 	case FeatureSecureToken:
 		return "Secure token"
+	case FeatureExternalSecretManager:
+		return "External Secret Manager"
 	case FeatureRBAC:
 		return "RBAC"
 	case FeatureWatermark:
@@ -299,16 +303,17 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 // plan in [FREE, TEAM, Enterprise].
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
-	FeatureSSO:                 {false, false, true},
-	Feature2FA:                 {false, false, true},
-	FeatureDisallowSignup:      {false, false, true},
-	FeatureSecureToken:         {false, false, true},
-	FeatureRBAC:                {true, true, true},
-	FeatureWatermark:           {false, false, true},
-	FeatureAuditLog:            {false, false, true},
-	FeatureCustomRole:          {false, false, true},
-	FeatureIssueAdvancedSearch: {false, true, true},
-	FeatureAnnouncement:        {false, false, true},
+	FeatureSSO:                   {false, false, true},
+	Feature2FA:                   {false, false, true},
+	FeatureDisallowSignup:        {false, false, true},
+	FeatureSecureToken:           {false, false, true},
+	FeatureExternalSecretManager: {false, false, true},
+	FeatureRBAC:                  {true, true, true},
+	FeatureWatermark:             {false, false, true},
+	FeatureAuditLog:              {false, false, true},
+	FeatureCustomRole:            {false, false, true},
+	FeatureIssueAdvancedSearch:   {false, true, true},
+	FeatureAnnouncement:          {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
@@ -349,6 +354,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 
 // InstanceLimitFeature is the map for instance feature. Only allowed to access these feature for activate instance.
 var InstanceLimitFeature = map[FeatureType]bool{
+	// Security
+	FeatureExternalSecretManager: true,
 	// Change Workflow
 	FeatureIMApproval:       true,
 	FeatureSchemaDrift:      true,
