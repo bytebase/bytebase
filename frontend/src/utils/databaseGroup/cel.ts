@@ -1,4 +1,3 @@
-import { celServiceClient } from "@/grpcweb";
 import {
   ConditionGroupExpr,
   SimpleExpr,
@@ -6,6 +5,7 @@ import {
   resolveCELExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
+import { convertCELStringToParsedExpr } from "@/utils";
 
 interface DatabaseGroupExpr {
   environmentId: string;
@@ -37,60 +37,16 @@ export const buildDatabaseGroupExpr = (
 };
 
 export const convertCELStringToExpr = async (cel: string) => {
-  if (cel === "") {
-    return emptySimpleExpr();
-  }
-
-  try {
-    const { expression: celExpr } = await celServiceClient.parse(
-      {
-        expression: cel,
-      },
-      {
-        silent: true,
-      }
-    );
-    if (!celExpr || !celExpr.expr) {
-      return emptySimpleExpr();
-    }
-
-    return wrapAsGroup(resolveCELExpr(celExpr.expr));
-  } catch (error) {
-    console.error(error);
-    return emptySimpleExpr();
-  }
-};
-
-export const convertDatabaseGroupExprFromCEL = async (
-  cel: string
-): Promise<DatabaseGroupExpr> => {
-  const { expression: celExpr } = await celServiceClient.parse(
-    {
-      expression: cel,
-    },
-    {
-      silent: true,
-    }
-  );
+  const celExpr = await convertCELStringToParsedExpr(cel);
 
   if (!celExpr || !celExpr.expr) {
-    throw new Error("Invalid CEL expression");
+    return emptySimpleExpr();
   }
 
-  const simpleExpr = resolveCELExpr(celExpr.expr);
-  const [environmentId, ...conditionGroupExpr] =
-    getEnvironmentIdAndConditionExpr(simpleExpr);
-  if (!environmentId) {
-    throw new Error("Invalid CEL expression");
-  }
-
-  return {
-    environmentId,
-    conditionGroupExpr: wrapAsGroup(...conditionGroupExpr),
-  };
+  return wrapAsGroup(resolveCELExpr(celExpr.expr));
 };
 
-const getEnvironmentIdAndConditionExpr = (
+export const getEnvironmentIdAndConditionExpr = (
   expr: SimpleExpr
 ): [string, ConditionGroupExpr] => {
   if (expr.operator === "_==_") {
