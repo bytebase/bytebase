@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
-import { SchemaConfig } from "./database";
+import { DatabaseConfig } from "./database";
 import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.store";
@@ -13,8 +13,8 @@ export interface SheetPayload {
   schemaDesign:
     | SheetPayload_SchemaDesign
     | undefined;
-  /** schema_config will be apply to the given database after executing statement, only be used in schema design for now. */
-  schemaConfig: SchemaConfig | undefined;
+  /** database_config will be apply to the given database after executing statement, only be used in schema design for now. */
+  databaseConfig?: DatabaseConfig | undefined;
 }
 
 /** Type of the SheetPayload. */
@@ -123,7 +123,7 @@ export interface SheetPayload_SchemaDesign_Protection {
 }
 
 function createBaseSheetPayload(): SheetPayload {
-  return { type: 0, vcsPayload: undefined, schemaDesign: undefined, schemaConfig: undefined };
+  return { type: 0, vcsPayload: undefined, schemaDesign: undefined, databaseConfig: undefined };
 }
 
 export const SheetPayload = {
@@ -137,8 +137,8 @@ export const SheetPayload = {
     if (message.schemaDesign !== undefined) {
       SheetPayload_SchemaDesign.encode(message.schemaDesign, writer.uint32(26).fork()).ldelim();
     }
-    if (message.schemaConfig !== undefined) {
-      SchemaConfig.encode(message.schemaConfig, writer.uint32(34).fork()).ldelim();
+    if (message.databaseConfig !== undefined) {
+      DatabaseConfig.encode(message.databaseConfig, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -176,7 +176,7 @@ export const SheetPayload = {
             break;
           }
 
-          message.schemaConfig = SchemaConfig.decode(reader, reader.uint32());
+          message.databaseConfig = DatabaseConfig.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -192,7 +192,7 @@ export const SheetPayload = {
       type: isSet(object.type) ? sheetPayload_TypeFromJSON(object.type) : 0,
       vcsPayload: isSet(object.vcsPayload) ? SheetPayload_VCSPayload.fromJSON(object.vcsPayload) : undefined,
       schemaDesign: isSet(object.schemaDesign) ? SheetPayload_SchemaDesign.fromJSON(object.schemaDesign) : undefined,
-      schemaConfig: isSet(object.schemaConfig) ? SchemaConfig.fromJSON(object.schemaConfig) : undefined,
+      databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
     };
   },
 
@@ -203,8 +203,8 @@ export const SheetPayload = {
       (obj.vcsPayload = message.vcsPayload ? SheetPayload_VCSPayload.toJSON(message.vcsPayload) : undefined);
     message.schemaDesign !== undefined &&
       (obj.schemaDesign = message.schemaDesign ? SheetPayload_SchemaDesign.toJSON(message.schemaDesign) : undefined);
-    message.schemaConfig !== undefined &&
-      (obj.schemaConfig = message.schemaConfig ? SchemaConfig.toJSON(message.schemaConfig) : undefined);
+    message.databaseConfig !== undefined &&
+      (obj.databaseConfig = message.databaseConfig ? DatabaseConfig.toJSON(message.databaseConfig) : undefined);
     return obj;
   },
 
@@ -221,8 +221,8 @@ export const SheetPayload = {
     message.schemaDesign = (object.schemaDesign !== undefined && object.schemaDesign !== null)
       ? SheetPayload_SchemaDesign.fromPartial(object.schemaDesign)
       : undefined;
-    message.schemaConfig = (object.schemaConfig !== undefined && object.schemaConfig !== null)
-      ? SchemaConfig.fromPartial(object.schemaConfig)
+    message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
+      ? DatabaseConfig.fromPartial(object.databaseConfig)
       : undefined;
     return message;
   },

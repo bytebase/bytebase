@@ -389,7 +389,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, conn *sql.Conn, t
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, task *store.TaskMessage, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, task *store.TaskMessage, mi *db.MigrationInfo, migrationID string, schema string, sheetID *int) (bool, *api.TaskRunResultPayload, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -518,6 +518,23 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		}
 	}
 
+	// Set schema config.
+	if sheetID != nil && task.DatabaseID != nil {
+		sheet, err := stores.GetSheet(ctx, &store.FindSheetMessage{
+			UID: sheetID,
+		}, api.SystemBotID)
+		if err != nil {
+			slog.Error("Failed to get sheet from store", slog.Int("sheetID", *sheetID), log.BBError(err))
+		} else if sheet.Payload.DatabaseConfig != nil {
+			err = stores.UpdateDBSchema(ctx, *task.DatabaseID, &store.UpdateDBSchemaMessage{
+				Config: sheet.Payload.DatabaseConfig,
+			}, api.SystemBotID)
+			if err != nil {
+				slog.Error("Failed to update database config", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *task.DatabaseID), log.BBError(err))
+			}
+		}
+	}
+
 	// Remove schema drift anomalies.
 	if err := stores.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
 		DatabaseUID: task.DatabaseID,
@@ -616,7 +633,7 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 	if err != nil {
 		return true, nil, err
 	}
-	return postMigration(ctx, store, activityManager, license, task, mi, migrationID, schema)
+	return postMigration(ctx, store, activityManager, license, task, mi, migrationID, schema, sheetID)
 }
 
 // Writes back the latest schema to the repository after migration.
