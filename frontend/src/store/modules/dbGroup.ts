@@ -21,7 +21,7 @@ import { Expr } from "@/types/proto/google/type/expr";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import {
-  convertParsedExprToCELString,
+  batchConvertParsedExprToCELString,
   batchConvertCELStringToParsedExpr,
 } from "@/utils";
 import { getEnvironmentIdAndConditionExpr } from "@/utils/databaseGroup/cel";
@@ -232,7 +232,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
     const environment =
       useEnvironmentV1Store().getEnvironmentByUID(environmentId);
 
-    const celString = await convertParsedExprToCELString(
+    const celStrings = await batchConvertParsedExprToCELString([
       ParsedExpr.fromJSON({
         expr: buildCELExpr(
           buildDatabaseGroupExpr({
@@ -240,8 +240,8 @@ export const useDBGroupStore = defineStore("db-group", () => {
             conditionGroupExpr: expr,
           })
         ),
-      })
-    );
+      }),
+    ]);
 
     const validateOnlyResourceId = `creating-database-group-${Date.now()}`;
 
@@ -251,7 +251,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
         name: `${projectName}/${databaseGroupNamePrefix}${validateOnlyResourceId}`,
         databasePlaceholder: validateOnlyResourceId,
         databaseExpr: Expr.fromJSON({
-          expression: celString,
+          expression: celStrings[0],
         }),
       },
       databaseGroupId: validateOnlyResourceId,
@@ -408,11 +408,11 @@ export const useDBGroupStore = defineStore("db-group", () => {
     databaseGroupName: string;
     expr: ConditionGroupExpr;
   }) => {
-    const celString = await convertParsedExprToCELString(
+    const celStrings = await batchConvertParsedExprToCELString([
       ParsedExpr.fromJSON({
         expr: buildCELExpr(expr),
-      })
-    );
+      }),
+    ]);
     const validateOnlyResourceId = `creating-schema-group-${Date.now()}`;
     const parent = `${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
 
@@ -423,7 +423,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
           name: `${databaseGroupName}/${schemaGroupNamePrefix}${validateOnlyResourceId}`,
           tablePlaceholder: validateOnlyResourceId,
           tableExpr: Expr.fromJSON({
-            expression: celString || "true",
+            expression: celStrings[0] || "true",
           }),
         },
         schemaGroupId: validateOnlyResourceId,
