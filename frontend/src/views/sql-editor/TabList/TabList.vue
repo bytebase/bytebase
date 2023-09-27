@@ -42,10 +42,6 @@
       </button>
     </div>
 
-    <div class="hidden lg:block -mt-0.5">
-      <ProfileDropdown v-if="showProfileDropdown" />
-    </div>
-
     <ContextMenu ref="contextMenuRef" />
   </div>
 </template>
@@ -58,7 +54,7 @@ import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useSQLEditorStore, useTabStore } from "@/store";
+import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import {
@@ -66,7 +62,6 @@ import {
   getSuggestedTabNameFromConnection,
   sheetTypeForTab,
 } from "@/utils";
-import ProfileDropdown from "../ProfileDropdown";
 import { useSheetContext } from "../Sheet";
 import ContextMenu from "./ContextMenu.vue";
 import TabItem from "./TabItem";
@@ -94,10 +89,6 @@ const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 const scrollState = reactive({
   moreLeft: false,
   moreRight: false,
-});
-
-const showProfileDropdown = computed(() => {
-  return useSQLEditorStore().mode === "BUNDLED";
 });
 
 const handleSelectTab = async (tab: TabInfo) => {
