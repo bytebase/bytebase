@@ -15,15 +15,14 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { changelistServiceClient } from "@/grpcweb";
 import { useChangelistStore } from "@/store";
 import { Changelist } from "@/types/proto/v1/changelist_service";
 import ChangelistTable from "./ChangelistTable.vue";
 import CreateChangelistPanel from "./CreateChangelistPanel.vue";
 import NavBar from "./NavBar.vue";
-import { provideChangelistsContext } from "./context";
+import { provideChangelistDashboardContext } from "./context";
 
-const { filter, events } = provideChangelistsContext();
+const { filter, events } = provideChangelistDashboardContext();
 
 const isFetching = ref(false);
 const changelists = ref<Changelist[]>([]);

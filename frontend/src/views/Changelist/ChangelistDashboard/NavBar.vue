@@ -18,9 +18,9 @@ import { computed, watch } from "vue";
 import { ProjectSelect } from "@/components/v2";
 import { useProjectV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { useChangelistsContext } from "./context";
+import { useChangelistDashboardContext } from "./context";
 
-const { filter, showCreatePanel, events } = useChangelistsContext();
+const { filter, showCreatePanel, events } = useChangelistDashboardContext();
 
 const projectUID = computed({
   get() {

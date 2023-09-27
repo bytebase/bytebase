@@ -1,7 +1,7 @@
 import Emittery from "emittery";
 import { InjectionKey, Ref, inject, provide, ref } from "vue";
 
-export type ChangelistsFilter = {
+export type ChangelistDashboardFilter = {
   project: string;
   keyword: string;
 };
@@ -10,22 +10,22 @@ export type ChangelistsEvents = Emittery<{
   refresh: undefined;
 }>;
 
-export type ChangelistsContext = {
-  filter: Ref<ChangelistsFilter>;
+export type ChangelistDashboardContext = {
+  filter: Ref<ChangelistDashboardFilter>;
   showCreatePanel: Ref<boolean>;
   events: ChangelistsEvents;
 };
 
 export const KEY = Symbol(
-  "bb.changelists.context"
-) as InjectionKey<ChangelistsContext>;
+  "bb.changelist.dashboard"
+) as InjectionKey<ChangelistDashboardContext>;
 
-export const useChangelistsContext = () => {
+export const useChangelistDashboardContext = () => {
   return inject(KEY)!;
 };
 
-export const provideChangelistsContext = () => {
-  const context: ChangelistsContext = {
+export const provideChangelistDashboardContext = () => {
+  const context: ChangelistDashboardContext = {
     filter: ref({
       project: "projects/-",
       keyword: "",

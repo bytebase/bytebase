@@ -100,10 +100,10 @@ import {
 import { ResourceId, UNKNOWN_ID, ValidatedMessage } from "@/types";
 import { Changelist } from "@/types/proto/v1/changelist_service";
 import { getErrorCode } from "@/utils/grpcweb";
-import { useChangelistsContext } from "./context";
+import { useChangelistDashboardContext } from "./context";
 
 const { t } = useI18n();
-const { showCreatePanel, events } = useChangelistsContext();
+const { showCreatePanel, events } = useChangelistDashboardContext();
 
 const title = ref("");
 const projectUID = ref<string>();
