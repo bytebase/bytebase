@@ -72,11 +72,25 @@ type columnDisallowDropIndexChecker struct {
 	title                 string
 	text                  string
 	tableIndexColumnsName map[string][]string // 这里用表名+列名，因为列名可能重复
-	line                  int
 	catalog               *catalog.Finder
+	line                  int
 }
 
-func (checker *columnDisallowDropIndexChecker) Drop(in ast.Node) (ast.Node, bool) {
+func (checker *columnDisallowDropIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
+	switch node := in.(type) {
+	case *ast.CreateTableStmt:
+		checker.addIndexColumn(node)
+	case *ast.AlterTableStmt:
+		return checker.dropColumn(node)
+	}
+	return in, false
+}
+
+func (*columnDisallowDropIndexChecker) Leave(in ast.Node) (ast.Node, bool) {
+	return in, true
+}
+
+func (checker *columnDisallowDropIndexChecker) dropColumn(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.AlterTableStmt); ok {
 		for _, spec := range node.Specs {
 			if spec.Tp == ast.AlterTableDropColumn {
@@ -96,7 +110,7 @@ func (checker *columnDisallowDropIndexChecker) Drop(in ast.Node) (ast.Node, bool
 				checker.tableIndexColumnsName[table] = append(checker.tableIndexColumnsName[table], indexColumnsName...)
 
 				colName := spec.OldColumnName.Name.String()
-				if !checker.dropColumn(table, colName) {
+				if !checker.canDrop(table, colName) {
 					checker.adviceList = append(checker.adviceList, advisor.Advice{
 						Status:  checker.level,
 						Code:    advisor.DropIndexColumn,
@@ -112,36 +126,24 @@ func (checker *columnDisallowDropIndexChecker) Drop(in ast.Node) (ast.Node, bool
 	return in, false
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *columnDisallowDropIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		if cnode, ok := in.(*ast.CreateTableStmt); ok {
-			for _, spec := range cnode.Constraints {
-				if spec.Tp == ast.ConstraintIndex {
-					for _, key := range spec.Keys {
-						table := cnode.Table.Name.O
-						checker.tableIndexColumnsName[table] = append(checker.tableIndexColumnsName[table], key.Column.Name.O)
-					}
+func (checker *columnDisallowDropIndexChecker) addIndexColumn(in ast.Node) {
+	if node, ok := in.(*ast.CreateTableStmt); ok {
+		for _, spec := range node.Constraints {
+			if spec.Tp == ast.ConstraintIndex {
+				for _, key := range spec.Keys {
+					table := node.Table.Name.O
+					checker.tableIndexColumnsName[table] = append(checker.tableIndexColumnsName[table], key.Column.Name.O)
 				}
 			}
 		}
-	case *ast.AlterTableStmt:
-		return checker.Drop(node)
 	}
-	return in, false
 }
 
-func (checker *columnDisallowDropIndexChecker) dropColumn(table string, column string) bool {
+func (checker *columnDisallowDropIndexChecker) canDrop(table string, column string) bool {
 	for _, indexColumn := range checker.tableIndexColumnsName[table] {
 		if indexColumn == column {
 			return false
 		}
 	}
 	return true
-}
-
-// Leave implements the ast.Visitor interface.
-func (*columnDisallowDropIndexChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
 }
