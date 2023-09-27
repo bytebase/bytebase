@@ -77,8 +77,8 @@ import {
   getProjectAndSheetId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
+import { RouteMapList } from "@/types";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
-import { RouteMapList } from "../types";
 import { databaseV1Slug, idFromSlug, projectV1Slug } from "../utils";
 
 interface BreadcrumbItem {
@@ -241,6 +241,12 @@ export default defineComponent({
         list.push({
           name: t("common.change"),
           path: `/db/${databaseV1Slug(database)}#change-history`,
+        });
+      }
+      if (route.name === "workspace.changelist.detail") {
+        list.push({
+          name: t("changelist.self"),
+          path: `/changelists`,
         });
       }
 
