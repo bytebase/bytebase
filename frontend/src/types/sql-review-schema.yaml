@@ -424,6 +424,13 @@ ruleList:
       - TIDB
       - OCEANBASE
     componentList: []
+  - type: column.disallow-drop-index
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+      - OCEANBASE
+    componentList: []
   - type: column.comment
     category: COLUMN
     engineList:

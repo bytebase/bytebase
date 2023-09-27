@@ -149,6 +149,19 @@ type DatabaseState struct {
 	usable       bool
 }
 
+type TableIndexFind struct {
+	SchemaName string
+	TableName  string
+}
+
+func (d *DatabaseState) Index(tableIndexFind *TableIndexFind) *indexStateMap {
+	schema, exists := d.schemaSet[tableIndexFind.SchemaName]
+	if !exists {
+		return nil
+	}
+	return schema.Index(tableIndexFind)
+}
+
 // Usable returns the usable of the database state.
 func (d *DatabaseState) Usable() bool {
 	return d.usable
@@ -325,6 +338,15 @@ type SchemaState struct {
 	// All relation names in PostgreSQL must be distinct in schema level.
 	identifierMap identifierMap
 }
+
+func (d *SchemaState) Index(tableIndexFind *TableIndexFind) *indexStateMap {
+	table, exists := d.tableSet[tableIndexFind.TableName]
+	if !exists {
+		return nil
+	}
+	return table.Index(tableIndexFind)
+}
+
 type schemaStateMap map[string]*SchemaState
 
 // TableState is the state for walk-through.
@@ -348,6 +370,11 @@ type TableState struct {
 // CountIndex return the index total number.
 func (table *TableState) CountIndex() int {
 	return len(table.indexSet)
+}
+
+// GetIndex return the index map.
+func (table *TableState) Index(tableIndexFind *TableIndexFind) *indexStateMap {
+	return &table.indexSet
 }
 
 func (table *TableState) copy() *TableState {

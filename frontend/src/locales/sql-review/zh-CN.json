@@ -224,6 +224,10 @@
       "title": "禁止修改表中的列顺序",
       "description": "修改列顺序可能导致某些依赖原表默认顺序的应用或视图出现不符合预期的结果，例如 \"SELECT * \"。建议错误等级：警告"
     },
+    "column-disallow-drop-index": {
+      "title": "禁止删除索引列",
+      "description": "删除一个已经被索引的列。建议错误等级：错误"
+    },
     "column-set-default-for-not-null": {
       "title": "强制 \"NOT NULL\" 列设置默认值",
       "description": "对于 \"NOT NULL\" 列，在插入新行时如果不给该列赋值且该列没有默认值，数据库将会拒绝该行插入。对于新增列设置默认值也可以更好的兼容旧应用代码。建议错误等级：错误"

@@ -1,0 +1,21 @@
+- statement: |-
+    CREATE TABLE t(a int, b int, INDEX idx_a(a));
+    ALTER TABLE t DROP COLUMN b
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+
+- statement: |-
+    CREATE TABLE t(a int, b int, INDEX idx_b(b));
+    ALTER TABLE t DROP COLUMN b
+  want:
+    - status: ERROR
+      code: 424
+      title: OK
+      content: "t.b cannot drop index column"
+      line: 0
+      details: ""

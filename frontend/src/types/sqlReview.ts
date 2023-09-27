@@ -119,6 +119,7 @@ export type RuleType =
   | "column.comment"
   | "column.type-disallow-list"
   | "column.disallow-change-type"
+  | "column.disallow-drop-index"
   | "column.set-default-for-not-null"
   | "column.disallow-change"
   | "column.disallow-changing-order"
@@ -590,6 +591,7 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     }
     case "column.type-disallow-list":
+    case "column.disallow-drop-index":
     case "index.primary-key-type-allowlist":
     case "system.charset.allowlist":
     case "system.collation.allowlist": {
@@ -746,6 +748,7 @@ const mergeIndividualConfigAsRule = (
       };
     case "column.required":
     case "column.type-disallow-list":
+    case "column.disallow-drop-index":
     case "index.primary-key-type-allowlist":
     case "system.charset.allowlist":
     case "system.collation.allowlist": {
