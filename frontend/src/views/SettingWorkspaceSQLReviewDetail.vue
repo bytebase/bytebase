@@ -252,6 +252,7 @@ const ruleListOfPolicy = computed((): RuleTemplate[] => {
     const data = convertPolicyRuleToRuleTemplate(ruleList, rule);
     if (data) {
       ruleTemplateList.push(data);
+      ruleTemplateMap.delete(type as RuleType);
     }
   }
 
