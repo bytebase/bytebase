@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/secret"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -127,6 +128,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 	}
+	for _, ds := range instanceMessage.DataSources {
+		if err := s.checkDataSource(instanceMessage, ds); err != nil {
+			return nil, err
+		}
+	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	instance, err := s.store.CreateInstanceV2(ctx,
@@ -161,6 +167,20 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	return convertToInstance(instance), nil
 }
 
+func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataSource *store.DataSourceMessage) error {
+	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, s.secret)
+	if err != nil {
+		return err
+	}
+	if ok, _ := secret.GetExternalSecretURL(password); !ok {
+		return nil
+	}
+	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureExternalSecretManager, instance); err != nil {
+		return status.Errorf(codes.PermissionDenied, err.Error())
+	}
+	return nil
+}
+
 // UpdateInstance updates an instance.
 func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.UpdateInstanceRequest) (*v1pb.Instance, error) {
 	if request.Instance == nil {
@@ -190,11 +210,16 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		case "external_link":
 			patch.ExternalLink = &request.Instance.ExternalLink
 		case "data_sources":
-			datasourceList, err := s.convertToDataSourceMessages(request.Instance.DataSources)
+			datasources, err := s.convertToDataSourceMessages(request.Instance.DataSources)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
-			patch.DataSources = &datasourceList
+			for _, ds := range datasources {
+				if err := s.checkDataSource(instance, ds); err != nil {
+					return nil, err
+				}
+			}
+			patch.DataSources = &datasources
 		case "activation":
 			patch.Activation = &request.Instance.Activation
 		case "options.schema_tenant_mode":
@@ -516,11 +541,13 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	if instance.Deleted {
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance)
 	}
-
 	for _, ds := range instance.DataSources {
 		if ds.ID == request.DataSource.Id {
 			return nil, status.Errorf(codes.NotFound, "data source already exists with the same name")
 		}
+	}
+	if err := s.checkDataSource(instance, dataSource); err != nil {
+		return nil, err
 	}
 
 	// Test connection.
@@ -595,6 +622,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
 			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
+	}
+	if err := s.checkDataSource(instance, &dataSource); err != nil {
+		return nil, err
 	}
 
 	patch := &store.UpdateDataSourceMessage{
