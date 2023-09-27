@@ -6,14 +6,14 @@ export type ChangelistDashboardFilter = {
   keyword: string;
 };
 
-export type ChangelistsEvents = Emittery<{
+export type ChangelistDashboardEvents = Emittery<{
   refresh: undefined;
 }>;
 
 export type ChangelistDashboardContext = {
   filter: Ref<ChangelistDashboardFilter>;
   showCreatePanel: Ref<boolean>;
-  events: ChangelistsEvents;
+  events: ChangelistDashboardEvents;
 };
 
 export const KEY = Symbol(
