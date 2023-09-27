@@ -11,13 +11,23 @@ import (
 	"github.com/pkg/errors"
 )
 
+var secretCache = make(map[string]string)
+
 // ReplaceExternalSecret replaces the secret with external secret.
 func ReplaceExternalSecret(secret string) (string, error) {
 	ok, secretURL := GetExternalSecretURL(secret)
 	if !ok {
 		return secret, nil
 	}
-	return getSecretFromURL(secretURL)
+	if v, ok := secretCache[secretURL]; ok {
+		return v, nil
+	}
+	secret, err := getSecretFromURL(secretURL)
+	if err != nil {
+		return "", err
+	}
+	secretCache[secretURL] = secret
+	return secret, err
 }
 
 // GetExternalSecretURL gets external secret URL from secret.
