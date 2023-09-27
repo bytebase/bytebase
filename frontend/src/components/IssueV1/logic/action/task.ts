@@ -4,7 +4,7 @@ import { ComposedIssue } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
-import { extractUserResourceName } from "@/utils";
+import { extractUserResourceName, hasWorkspacePermissionV1 } from "@/utils";
 import {
   allowUserToBeAssignee,
   getCurrentRolloutPolicyForTask,
@@ -139,6 +139,18 @@ export const allowUserToApplyTaskRolloutAction = async (
 
   const project = issue.projectEntity;
   const rolloutPolicy = await getCurrentRolloutPolicyForTask(issue, task);
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      user.userRole
+    )
+  ) {
+    // Super users are always allowed to rollout issues.
+    return true;
+  }
+
+  // Otherwise anyone might to be assignee can rollout the issue.
+  // if the rollout policy is "auto rollout", anyone in the project is allowed.
   if (
     allowUserToBeAssignee(
       user,
