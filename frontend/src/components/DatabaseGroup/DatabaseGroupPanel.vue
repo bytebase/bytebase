@@ -61,7 +61,7 @@ import {
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
-import { convertParsedExprToCELString, projectV1Slug } from "@/utils";
+import { batchConvertParsedExprToCELString, projectV1Slug } from "@/utils";
 import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
 import { ResourceType } from "./common/ExprEditor/context";
@@ -206,7 +206,7 @@ const doConfirm = async () => {
         const environment = environmentStore.getEnvironmentByUID(
           formState.environmentId || ""
         );
-        const celString = await convertParsedExprToCELString(
+        const celStrings = await batchConvertParsedExprToCELString([
           ParsedExpr.fromJSON({
             expr: buildCELExpr(
               buildDatabaseGroupExpr({
@@ -214,8 +214,8 @@ const doConfirm = async () => {
                 conditionGroupExpr: formState.expr,
               })
             ),
-          })
-        );
+          }),
+        ]);
         const resourceId = formState.resourceId;
         await dbGroupStore.createDatabaseGroup({
           projectName: props.project.name,
@@ -223,7 +223,7 @@ const doConfirm = async () => {
             name: `${props.project.name}/databaseGroups/${resourceId}`,
             databasePlaceholder: formState.placeholder,
             databaseExpr: Expr.fromJSON({
-              expression: celString || "true",
+              expression: celStrings[0] || "true",
             }),
           },
           databaseGroupId: resourceId,
@@ -232,7 +232,7 @@ const doConfirm = async () => {
         const environment = environmentStore.getEnvironmentByUID(
           formState.environmentId || ""
         );
-        const celString = await convertParsedExprToCELString(
+        const celStrings = await batchConvertParsedExprToCELString([
           ParsedExpr.fromJSON({
             expr: buildCELExpr(
               buildDatabaseGroupExpr({
@@ -240,13 +240,13 @@ const doConfirm = async () => {
                 conditionGroupExpr: formState.expr,
               })
             ),
-          })
-        );
+          }),
+        ]);
         await dbGroupStore.updateDatabaseGroup({
           ...props.databaseGroup!,
           databasePlaceholder: formState.placeholder,
           databaseExpr: Expr.fromJSON({
-            expression: celString,
+            expression: celStrings[0],
           }),
         });
       }
@@ -256,11 +256,11 @@ const doConfirm = async () => {
           return;
         }
 
-        const celString = await convertParsedExprToCELString(
+        const celStrings = await batchConvertParsedExprToCELString([
           ParsedExpr.fromJSON({
             expr: buildCELExpr(formState.expr),
-          })
-        );
+          }),
+        ]);
         const resourceId = formState.resourceId;
         await dbGroupStore.createSchemaGroup({
           dbGroupName: formState.selectedDatabaseGroupId,
@@ -268,22 +268,22 @@ const doConfirm = async () => {
             name: `${formState.selectedDatabaseGroupId}/schemaGroups/${resourceId}`,
             tablePlaceholder: formState.placeholder,
             tableExpr: Expr.fromJSON({
-              expression: celString || "true",
+              expression: celStrings[0] || "true",
             }),
           },
           schemaGroupId: resourceId,
         });
       } else {
-        const celString = await convertParsedExprToCELString(
+        const celStrings = await batchConvertParsedExprToCELString([
           ParsedExpr.fromJSON({
             expr: buildCELExpr(formState.expr),
-          })
-        );
+          }),
+        ]);
         await dbGroupStore.updateSchemaGroup({
           ...props.databaseGroup!,
           tablePlaceholder: formState.placeholder,
           tableExpr: Expr.fromJSON({
-            expression: celString,
+            expression: celStrings[0],
           }),
         });
       }

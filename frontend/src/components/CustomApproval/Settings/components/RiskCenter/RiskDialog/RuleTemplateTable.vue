@@ -50,7 +50,7 @@ import { buildCELExpr, ConditionGroupExpr } from "@/plugins/cel";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
-import { convertParsedExprToCELString, defer } from "@/utils";
+import { batchConvertParsedExprToCELString, defer } from "@/utils";
 import { useRiskCenterContext } from "../context";
 import ViewTemplate from "./ViewTemplate.vue";
 import {
@@ -133,13 +133,13 @@ const applyTemplate = async (template: RuleTemplate) => {
   const { expr, source, level } = template;
   const title = titleOfTemplate(template);
   const { mode } = dialog.value!;
-  const expression = await convertParsedExprToCELString(
+  const expressions = await batchConvertParsedExprToCELString([
     ParsedExpr.fromJSON({
       expr: buildCELExpr(expr),
-    })
-  );
+    }),
+  ]);
   const overrides: Partial<Risk> = {
-    condition: Expr.fromJSON({ expression }),
+    condition: Expr.fromJSON({ expression: expressions[0] }),
     level,
     title,
   };
