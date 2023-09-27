@@ -18,4 +18,4 @@ export * from "./sheet";
 export * from "./vcs";
 export * from "./issue";
 export * from "./changeHistory";
-export * from "./risk";
+export * from "./cel";
