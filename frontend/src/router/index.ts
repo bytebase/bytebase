@@ -1656,7 +1656,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.name === "workspace.changelist.detail") {
-    const name = `projects/${to.params["projectName"]}/changelists/${to.params["changelistName"]}`;
+    const name = `projects/${to.params.projectName}/changelists/${to.params.changelistName}`;
     useChangelistStore()
       .fetchChangelistByName(name)
       .then((changelist) => {

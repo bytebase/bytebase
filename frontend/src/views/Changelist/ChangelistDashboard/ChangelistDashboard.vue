@@ -35,7 +35,7 @@ const filteredChangelists = computed(() => {
   });
 });
 
-const fetchChangeLists = async () => {
+const fetchChangelists = async () => {
   isFetching.value = true;
   try {
     const response = await useChangelistStore().fetchChangelists({
@@ -48,6 +48,6 @@ const fetchChangeLists = async () => {
   }
 };
 
-useEmitteryEventListener(events, "refresh", fetchChangeLists);
-onMounted(fetchChangeLists);
+useEmitteryEventListener(events, "refresh", fetchChangelists);
+onMounted(fetchChangelists);
 </script>

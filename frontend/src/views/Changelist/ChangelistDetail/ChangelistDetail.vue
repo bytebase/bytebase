@@ -1,23 +1,17 @@
 <template>
-  <h1>detail</h1>
+  <div class="flex flex-col gap-y-2 px-4">
+    <NavBar />
+    <h1>detail</h1>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
 import { computed } from "vue";
-import { useRoute } from "vue-router";
-import { useChangelistStore } from "@/store";
-import { unknownChangelist } from "@/types";
+import NavBar from "./NavBar";
+import { provideChangelistDetailContext } from "./context";
 
-const route = useRoute();
-const name = computed(() => {
-  return `projects/${route.params["projectName"]}/changelists/${route.params["changelistName"]}`;
-});
-const changelist = computed(() => {
-  return (
-    useChangelistStore().getChangelistByName(name.value) ?? unknownChangelist()
-  );
-});
+const { changelist } = provideChangelistDetailContext();
 
 const documentTitle = computed(() => {
   return changelist.value.description;

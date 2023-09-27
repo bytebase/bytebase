@@ -54,11 +54,24 @@ export const useChangelistStore = defineStore("changelist", () => {
     return response;
   };
 
+  const patchChangelist = async (
+    changelist: DeepPartial<Changelist>,
+    updateMask: string[]
+  ) => {
+    const updated = await changelistServiceClient.updateChangelist({
+      changelist,
+      updateMask,
+    });
+    await upsertChangelistMap([updated]);
+    return updated;
+  };
+
   return {
     getChangelistByName,
     fetchChangelistByName,
     getOrFetchChangelistByName,
     createChangelist,
     fetchChangelists,
+    patchChangelist,
   };
 });
