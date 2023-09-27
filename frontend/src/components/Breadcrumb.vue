@@ -194,7 +194,7 @@ export default defineComponent({
           if (project) {
             list.push({
               name: project.title,
-              path: `/project/${projectV1Slug(project)}`,
+              path: `/project/${projectV1Slug(project)}#branches`,
             });
           }
         }
