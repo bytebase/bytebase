@@ -5,11 +5,24 @@
       <span class="ml-3 mr-0.5">/</span>
       <TitleEditor />
     </div>
-    <div class="flex items-center justify-end gap-x-2">
-      <NButton icon>
+    <div class="flex items-center justify-end gap-x-3">
+      <NButton icon style="--n-padding: 0 10px">
         <template #icon>
           <heroicons:arrows-up-down />
         </template>
+      </NButton>
+      <NButton icon style="--n-padding: 0 10px">
+        <template #icon>
+          <heroicons:arrow-down-tray />
+        </template>
+      </NButton>
+      <NButton icon style="--n-padding: 0 10px">
+        <template #icon>
+          <heroicons:plus />
+        </template>
+      </NButton>
+      <NButton type="primary">
+        {{ $t("changelist.apply-to-database") }}
       </NButton>
     </div>
   </div>

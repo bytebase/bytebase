@@ -3055,6 +3055,7 @@
       "project-is-required": "Se requiere proyecto",
       "name-is-required": "El nombre de la lista de cambios es obligatorio",
       "invalid-resource-id": "ID de recurso no válido"
-    }
+    },
+    "apply-to-database": "Aplicar a la base de datos"
   }
 }

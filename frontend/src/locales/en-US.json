@@ -3057,6 +3057,7 @@
       "project-is-required": "Project is required",
       "name-is-required": "Changelist name is required",
       "invalid-resource-id": "Invalid resource Id"
-    }
+    },
+    "apply-to-database": "Apply to database"
   }
 }
