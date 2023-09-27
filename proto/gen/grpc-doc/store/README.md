@@ -2544,6 +2544,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | type | [SheetPayload.Type](#bytebase-store-SheetPayload-Type) |  |  |
 | vcs_payload | [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload) |  |  |
 | schema_design | [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign) |  |  |
+| database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) | optional | database_config will be apply to the given database after executing statement, only be used in schema design for now. |
 
 
 
