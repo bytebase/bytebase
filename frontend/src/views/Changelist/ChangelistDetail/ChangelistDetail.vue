@@ -1,10 +1,8 @@
 <template>
-  <div class="flex flex-col gap-y-2 px-4">
+  <div class="flex flex-col gap-y-4 px-4">
     <NavBar />
-    <h1>detail</h1>
-    <pre class="text-xs"
-      >{{ Changelist.toJSON(changelist) }}
-    </pre>
+
+    <ChangeTable :changes="state.changes" :reorder-mode="reorderMode" />
 
     <AddChangePanel />
   </div>
@@ -12,17 +10,31 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import { computed } from "vue";
-import { Changelist } from "@/types/proto/v1/changelist_service";
+import { computed, reactive, watch } from "vue";
+import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import AddChangePanel from "./AddChangePanel";
+import ChangeTable from "./ChangeTable";
 import NavBar from "./NavBar";
 import { provideChangelistDetailContext } from "./context";
 
-const { changelist } = provideChangelistDetailContext();
+const { changelist, reorderMode } = provideChangelistDetailContext();
+
+const state = reactive<{
+  changes: Change[];
+}>({
+  changes: [],
+});
 
 const documentTitle = computed(() => {
   return changelist.value.description;
 });
-
 useTitle(documentTitle);
+
+watch(
+  () => changelist.value.changes,
+  (changes) => {
+    state.changes = [...changes];
+  },
+  { immediate: true }
+);
 </script>

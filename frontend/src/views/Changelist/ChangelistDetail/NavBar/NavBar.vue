@@ -17,11 +17,7 @@
             <heroicons:arrows-up-down />
           </template>
         </NButton>
-        <NButton icon style="--n-padding: 0 10px" :disabled="!allowEdit">
-          <template #icon>
-            <heroicons:arrow-down-tray />
-          </template>
-        </NButton>
+        <ExportButton />
         <NButton
           icon
           style="--n-padding: 0 10px"
@@ -57,6 +53,7 @@
 import { NButton } from "naive-ui";
 import { ProjectV1Name } from "@/components/v2";
 import { useChangelistDetailContext } from "../context";
+import ExportButton from "./ExportButton.vue";
 import TitleEditor from "./TitleEditor.vue";
 import { useReorderChangelist } from "./reorder";
 

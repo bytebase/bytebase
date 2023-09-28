@@ -47,29 +47,22 @@
           <NButton @click="showAddChangePanel = false">
             {{ $t("common.cancel") }}
           </NButton>
-          <NTooltip :disabled="errors.length === 0">
-            <template #trigger>
-              <NButton
-                type="primary"
-                tag="div"
-                :disabled="errors.length > 0"
-                @click="doAddChange"
-              >
-                <span>{{ $t("common.add") }}</span>
-                <span
-                  v-if="
-                    changeSource !== 'RAW_SQL' && pendingAddChanges.length > 0
-                  "
-                  class="ml-1"
-                >
-                  ({{ pendingAddChanges.length }})
-                </span>
-              </NButton>
-            </template>
-            <template #default>
-              <ErrorList :errors="errors" />
-            </template>
-          </NTooltip>
+
+          <ErrorTipsButton
+            :errors="errors"
+            :button-props="{
+              type: 'primary',
+            }"
+            @click="doAddChange"
+          >
+            <span>{{ $t("common.add") }}</span>
+            <span
+              v-if="changeSource !== 'RAW_SQL' && pendingAddChanges.length > 0"
+              class="ml-1"
+            >
+              ({{ pendingAddChanges.length }})
+            </span>
+          </ErrorTipsButton>
         </div>
       </template>
     </DrawerContent>
@@ -78,12 +71,11 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
-import { NRadio, NRadioGroup, NTooltip } from "naive-ui";
+import { NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import ErrorList from "@/components/misc/ErrorList.vue";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import {
   pushNotification,
   useChangelistStore,

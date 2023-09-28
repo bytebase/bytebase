@@ -3050,7 +3050,8 @@
     "error": {
       "project-is-required": "项目不能为空",
       "name-is-required": "变更列表名称不能为空",
-      "invalid-resource-id": "无效的资源 ID"
+      "invalid-resource-id": "无效的资源 ID",
+      "select-changes-to-export": "选择要导出的更改"
     },
     "apply-to-database": "应用到数据库",
     "add-change": {
