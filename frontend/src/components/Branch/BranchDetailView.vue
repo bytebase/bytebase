@@ -116,7 +116,6 @@ import { cloneDeep, isEqual, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput, NTooltip, useDialog, NTag } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { CSSProperties, computed, reactive, ref, watch } from "vue";
-import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
@@ -147,8 +146,6 @@ import {
 
 interface LocalState {
   schemaDesignTitle: string;
-  // Pre edit or editing schema design name.
-  schemaDesignName: string;
   isEditing: boolean;
   isEditingTitle: boolean;
   showDiffEditor: boolean;
@@ -169,7 +166,6 @@ const { runSQLCheck } = provideSQLCheckContext();
 const dialog = useDialog();
 const state = reactive<LocalState>({
   schemaDesignTitle: "",
-  schemaDesignName: props.schemaDesignName,
   isEditing: false,
   isEditingTitle: false,
   showDiffEditor: false,
@@ -181,7 +177,7 @@ const mergeBranchPanelContext = ref<{
 const schemaEditorKey = ref<string>(uniqueId());
 
 const schemaDesign = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(state.schemaDesignName || "");
+  return schemaDesignStore.getSchemaDesignByName(props.schemaDesignName || "");
 });
 
 const parentBranch = computed(() => {
@@ -231,18 +227,6 @@ const titleInputStyle = computed(() => {
   return style;
 });
 
-onMounted(async () => {
-  // Prepare the parent branch for personal draft.
-  if (
-    schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-    schemaDesign.value.baselineSheetName
-  ) {
-    await schemaDesignStore.getOrFetchSchemaDesignByName(
-      schemaDesign.value.baselineSheetName
-    );
-  }
-});
-
 const prepareBaselineDatabase = async () => {
   const database = await databaseStore.getOrFetchDatabaseByName(
     schemaDesign.value.baselineDatabase
@@ -255,10 +239,19 @@ const prepareBaselineDatabase = async () => {
 };
 
 watch(
-  () => [state.schemaDesignName],
+  () => [props.schemaDesignName],
   async () => {
     state.schemaDesignTitle = schemaDesign.value.title;
     await prepareBaselineDatabase();
+    // Prepare the parent branch for personal draft.
+    if (
+      schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
+      schemaDesign.value.baselineSheetName
+    ) {
+      await schemaDesignStore.getOrFetchSchemaDesignByName(
+        schemaDesign.value.baselineSheetName
+      );
+    }
   },
   {
     immediate: true,
@@ -462,8 +455,16 @@ const handleSaveBranch = async () => {
 };
 
 const handleMergeAfterConflictResolved = (branchName: string) => {
-  state.schemaDesignName = branchName;
   state.showDiffEditor = false;
+  state.isEditing = false;
+  const branch = schemaDesignStore.getSchemaDesignByName(branchName);
+  const [, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
+  router.replace({
+    name: "workspace.branch.detail",
+    params: {
+      branchSlug: `${branch.title}-${sheetId}`,
+    },
+  });
 };
 
 const handleApplySchemaDesignClick = () => {
