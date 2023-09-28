@@ -18,9 +18,6 @@
           @click="handleChangeTab('schema-editor')"
         >
           {{ $t("schema-editor.self") }}
-          <div class="ml-1">
-            <BBBetaBadge />
-          </div>
         </button>
         <button
           class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
@@ -144,7 +141,6 @@ import { cloneDeep, head, uniq } from "lodash-es";
 import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import { schemaDesignServiceClient } from "@/grpcweb";
