@@ -11,3 +11,12 @@ export const unknownChangelist = () => {
     updater: SYSTEM_BOT_USER_NAME,
   });
 };
+
+export const Changelist_Change_Source_List = [
+  "CHANGE_HISTORY",
+  "BRANCH",
+  "RAW_SQL",
+] as const;
+
+export type Changelist_Change_Source =
+  typeof Changelist_Change_Source_List[number];

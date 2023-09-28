@@ -265,7 +265,8 @@
     "minutes": "Minutos",
     "go-to-configure": "Configurar",
     "updated-at-by": "Actualizado {time} por {user}",
-    "created-at-by": "Creado {time} por {user}"
+    "created-at-by": "Creado {time} por {user}",
+    "filter-by-name": "Filtrar por nombre"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -3056,6 +3057,20 @@
       "name-is-required": "El nombre de la lista de cambios es obligatorio",
       "invalid-resource-id": "ID de recurso no válido"
     },
-    "apply-to-database": "Aplicar a la base de datos"
+    "apply-to-database": "Aplicar a la base de datos",
+    "add-change": {
+      "self": "Agregar cambio",
+      "change-history": {
+        "select-at-least-one-history-below": "Seleccione al menos un historial a continuación"
+      },
+      "select-at-least-one-change": "Seleccione al menos un cambio"
+    },
+    "change-source": {
+      "self": "Cambiar fuente",
+      "raw-sql": "SQL sin formato",
+      "change-history": {
+        "tables": "Mesas"
+      }
+    }
   }
 }

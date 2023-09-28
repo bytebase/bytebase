@@ -263,7 +263,8 @@
     "minutes": "分钟",
     "go-to-configure": "去配置",
     "updated-at-by": "由 {user} 更新于 {time}",
-    "created-at-by": "由 {user} 创建于 {time}"
+    "created-at-by": "由 {user} 创建于 {time}",
+    "filter-by-name": "按名称过滤"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -3051,6 +3052,20 @@
       "name-is-required": "变更列表名称不能为空",
       "invalid-resource-id": "无效的资源 ID"
     },
-    "apply-to-database": "应用到数据库"
+    "apply-to-database": "应用到数据库",
+    "add-change": {
+      "self": "添加变更",
+      "change-history": {
+        "select-at-least-one-history-below": "请在下方选择至少一条记录"
+      },
+      "select-at-least-one-change": "选择至少一条变更"
+    },
+    "change-source": {
+      "self": "变更来源",
+      "raw-sql": "SQL 语句",
+      "change-history": {
+        "tables": "表"
+      }
+    }
   }
 }

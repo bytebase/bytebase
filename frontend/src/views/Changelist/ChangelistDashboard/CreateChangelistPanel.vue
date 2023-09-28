@@ -169,14 +169,13 @@ const doCreate = async () => {
   try {
     const project = useProjectV1Store().getProjectByUID(projectUID.value!);
 
-    const created = await useChangelistStore().createChangelist({
+    await useChangelistStore().createChangelist({
       parent: project.name,
       changelist: Changelist.fromPartial({
         description: title.value,
       }),
       changelistId: resourceId.value,
     });
-    console.log("created", created);
     showCreatePanel.value = false;
     pushNotification({
       module: "bytebase",

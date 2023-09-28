@@ -83,8 +83,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
           }
         )
         .then((res) => {
-          console.log("metadata");
-          console.log(res);
           this.setCache(res);
           return res;
         });

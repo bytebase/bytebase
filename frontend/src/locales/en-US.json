@@ -265,7 +265,8 @@
     "minutes": "Minutes",
     "go-to-configure": "Configure",
     "updated-at-by": "Updated {time} by {user}",
-    "created-at-by": "Created {time} by {user}"
+    "created-at-by": "Created {time} by {user}",
+    "filter-by-name": "Filter by name"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -3058,6 +3059,20 @@
       "name-is-required": "Changelist name is required",
       "invalid-resource-id": "Invalid resource Id"
     },
-    "apply-to-database": "Apply to database"
+    "apply-to-database": "Apply to database",
+    "add-change": {
+      "self": "Add Change",
+      "change-history": {
+        "select-at-least-one-history-below": "Select at least one history below"
+      },
+      "select-at-least-one-change": "Select at least one change"
+    },
+    "change-source": {
+      "self": "Change source",
+      "raw-sql": "Raw SQL",
+      "change-history": {
+        "tables": "Tables"
+      }
+    }
   }
 }

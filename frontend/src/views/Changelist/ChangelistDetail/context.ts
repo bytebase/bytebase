@@ -14,6 +14,7 @@ export type ChangelistDetailContext = {
   project: Ref<ComposedProject>;
   allowEdit: Ref<boolean>;
   reorderMode: Ref<boolean>;
+  showAddChangePanel: Ref<boolean>;
 
   events: ChangelistDetailEvents;
 };
@@ -52,6 +53,8 @@ export const provideChangelistDetailContext = () => {
     project,
     allowEdit,
     reorderMode: ref(false),
+    showAddChangePanel: ref(false),
+
     events: new Emittery(),
   };
 

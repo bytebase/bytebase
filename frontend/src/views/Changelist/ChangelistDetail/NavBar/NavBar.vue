@@ -22,7 +22,12 @@
             <heroicons:arrow-down-tray />
           </template>
         </NButton>
-        <NButton icon style="--n-padding: 0 10px" :disabled="!allowEdit">
+        <NButton
+          icon
+          style="--n-padding: 0 10px"
+          :disabled="!allowEdit"
+          @click="showAddChangePanel = true"
+        >
           <template #icon>
             <heroicons:plus />
           </template>
@@ -55,7 +60,8 @@ import { useChangelistDetailContext } from "../context";
 import TitleEditor from "./TitleEditor.vue";
 import { useReorderChangelist } from "./reorder";
 
-const { allowEdit, project, reorderMode } = useChangelistDetailContext();
+const { allowEdit, project, reorderMode, showAddChangePanel } =
+  useChangelistDetailContext();
 
 const {
   updating: isReorderUpdating,
