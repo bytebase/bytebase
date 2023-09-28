@@ -1781,6 +1781,17 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	if database.EffectiveEnvironmentID != "" {
 		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
 	}
+	schemaVersion := database.SchemaVersion
+	_, version, _, err := util.FromStoredVersion(database.SchemaVersion)
+	if err != nil {
+		slog.Error("failed to convert stored version",
+			slog.String("instance", database.InstanceID),
+			slog.String("database", database.DatabaseName),
+			slog.String("version", database.SchemaVersion),
+			log.BBError(err))
+	} else {
+		schemaVersion = version
+	}
 	return &v1pb.Database{
 		Name:                 fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
 		Uid:                  fmt.Sprintf("%d", database.UID),
@@ -1789,7 +1800,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		Project:              fmt.Sprintf("%s%s", common.ProjectNamePrefix, database.ProjectID),
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
-		SchemaVersion:        database.SchemaVersion,
+		SchemaVersion:        schemaVersion,
 		Labels:               database.GetEffectiveLabels(),
 	}
 }
