@@ -42,10 +42,10 @@ func (*ColumnDisallowDropIndexAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	}
 
 	checker := &columnDisallowDropIndexChecker{
-		level:                 level,
-		title:                 string(ctx.Rule.Type),
-		tableIndexColumnsName: map[string][]string{},
-		catalog:               ctx.Catalog,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		tables:  make(tableState),
+		catalog: ctx.Catalog,
 	}
 
 	for _, stmt := range stmtList {
@@ -67,13 +67,13 @@ func (*ColumnDisallowDropIndexAdvisor) Check(ctx advisor.Context, _ string) ([]a
 }
 
 type columnDisallowDropIndexChecker struct {
-	adviceList            []advisor.Advice
-	level                 advisor.Status
-	title                 string
-	text                  string
-	tableIndexColumnsName map[string][]string // 这里用表名+列名，因为列名可能重复
-	catalog               *catalog.Finder
-	line                  int
+	adviceList []advisor.Advice
+	level      advisor.Status
+	title      string
+	text       string
+	tables     tableState // the bool mean whether the table is indexed
+	catalog    *catalog.Finder
+	line       int
 }
 
 func (checker *columnDisallowDropIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
@@ -103,11 +103,14 @@ func (checker *columnDisallowDropIndexChecker) dropColumn(in ast.Node) (ast.Node
 				if index == nil {
 					continue
 				}
-				indexColumnsName := []string{}
-				for _, indexColumn := range *index {
-					indexColumnsName = append(indexColumnsName, indexColumn.ExpressionList()...)
+				if checker.tables[table] == nil {
+					checker.tables[table] = make(columnSet)
 				}
-				checker.tableIndexColumnsName[table] = append(checker.tableIndexColumnsName[table], indexColumnsName...)
+				for _, indexColumn := range *index {
+					for _, column := range indexColumn.ExpressionList() {
+						checker.tables[table][column] = true
+					}
+				}
 
 				colName := spec.OldColumnName.Name.String()
 				if !checker.canDrop(table, colName) {
@@ -118,7 +121,6 @@ func (checker *columnDisallowDropIndexChecker) dropColumn(in ast.Node) (ast.Node
 						Content: fmt.Sprintf("`%s`.`%s` cannot drop index column", table, colName),
 						Line:    checker.line,
 					})
-
 				}
 			}
 		}
@@ -132,7 +134,10 @@ func (checker *columnDisallowDropIndexChecker) addIndexColumn(in ast.Node) {
 			if spec.Tp == ast.ConstraintIndex {
 				for _, key := range spec.Keys {
 					table := node.Table.Name.O
-					checker.tableIndexColumnsName[table] = append(checker.tableIndexColumnsName[table], key.Column.Name.O)
+					if checker.tables[table] == nil {
+						checker.tables[table] = make(columnSet)
+					}
+					checker.tables[table][key.Column.Name.O] = true
 				}
 			}
 		}
@@ -140,10 +145,8 @@ func (checker *columnDisallowDropIndexChecker) addIndexColumn(in ast.Node) {
 }
 
 func (checker *columnDisallowDropIndexChecker) canDrop(table string, column string) bool {
-	for _, indexColumn := range checker.tableIndexColumnsName[table] {
-		if indexColumn == column {
-			return false
-		}
+	if _, ok := checker.tables[table][column]; ok {
+		return false
 	}
 	return true
 }

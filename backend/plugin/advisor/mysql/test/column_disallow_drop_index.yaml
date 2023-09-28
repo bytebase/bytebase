@@ -21,13 +21,13 @@
       details: ""
 
 - statement: |-
-    CREATE TABLE t(a int, b int, INDEX idx_ab(a,b));
-    ALTER TABLE t DROP COLUMN b
+    CREATE TABLE t(a int, c int, INDEX idx_ac(a,c));
+    ALTER TABLE t DROP COLUMN c
   want:
     - status: WARN
       code: 424
       title: "column.disallow-drop-index"
-      content: "`t`.`b` cannot drop index column"
+      content: "`t`.`c` cannot drop index column"
       line: 3
       details: ""
 
@@ -41,4 +41,22 @@
       title: "OK"
       content: ""
       line: 0
+      details: ""
+
+- statement: |-
+    CREATE TABLE t(a int,b int, c int, INDEX idx_ac(a,c));
+    ALTER TABLE t DROP COLUMN a;
+    ALTER TABLE t DROP COLUMN c
+  want:
+    - status: WARN
+      code: 424
+      title: "column.disallow-drop-index"
+      content: "`t`.`a` cannot drop index column"
+      line: 2
+      details: ""
+    - status: WARN
+      code: 424
+      title: "column.disallow-drop-index"
+      content: "`t`.`c` cannot drop index column"
+      line: 4
       details: ""

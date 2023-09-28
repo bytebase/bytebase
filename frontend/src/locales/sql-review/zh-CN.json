@@ -226,7 +226,7 @@
     },
     "column-disallow-drop-index": {
       "title": "禁止删除索引列",
-      "description": "删除一个已经被索引的列。建议错误等级：错误"
+      "description": "禁止删除一个已经被索引的列。建议错误等级：错误"
     },
     "column-set-default-for-not-null": {
       "title": "强制 \"NOT NULL\" 列设置默认值",
