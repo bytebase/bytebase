@@ -2672,9 +2672,9 @@
   },
   "custom-approval": {
     "self": "Custom Approval",
-    "security-rule": {
-      "self": "Security rule",
-      "security-rules": "Security rules",
+    "risk-rule": {
+      "self": "Risk rule",
+      "risk-rules": "Risk rules",
       "x-risk-rules": {
         "low": "Low Risk Rules",
         "moderate": "Moderate Risk Rules",
@@ -2683,7 +2683,7 @@
       "active": "Active",
       "add-rule": "Add rule",
       "edit-rule": "Edit rule",
-      "delete": "Delete security rule",
+      "delete": "Delete Risk rule",
       "default-rules": {
         "self": "Default rules",
         "description": "The default rules will be executed when an issue fails to comply with the custom rules."

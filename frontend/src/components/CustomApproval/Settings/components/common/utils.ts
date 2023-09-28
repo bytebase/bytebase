@@ -26,7 +26,7 @@ export const sourceText = (source: Risk_Source) => {
   }
 
   const name = risk_SourceToJSON(source);
-  const keypath = `custom-approval.security-rule.risk.namespace.${name.toLowerCase()}`;
+  const keypath = `custom-approval.risk-rule.risk.namespace.${name.toLowerCase()}`;
   if (te(keypath)) {
     return t(keypath);
   }
@@ -34,7 +34,7 @@ export const sourceText = (source: Risk_Source) => {
 };
 
 export const levelText = (level: number) => {
-  const keypath = `custom-approval.security-rule.risk.risk-level.${level}`;
+  const keypath = `custom-approval.risk-rule.risk.risk-level.${level}`;
   if (te(keypath)) {
     return t(keypath);
   }
