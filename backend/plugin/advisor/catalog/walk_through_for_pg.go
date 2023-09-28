@@ -624,7 +624,7 @@ func (d *DatabaseState) pgCreateTable(node *ast.CreateTableStmt) *WalkThroughErr
 	table := &TableState{
 		name:      node.Name.Name,
 		columnSet: make(columnStateMap),
-		indexSet:  make(indexStateMap),
+		indexSet:  make(IndexStateMap),
 	}
 	schema.tableSet[table.name] = table
 
