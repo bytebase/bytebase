@@ -41,7 +41,7 @@
         </div>
 
         <label
-          class="flex items-center py-2 gap-x-2 tooltip-wrapper"
+          class="flex items-center mt-2 gap-x-2 tooltip-wrapper"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
           <span class="font-medium"
@@ -61,6 +61,9 @@
             }}
           </span>
         </label>
+        <div class="mb-3 text-sm text-gray-400">
+          {{ $t("settings.general.workspace.announcement-text.description") }}
+        </div>
         <BBTextField
           class="mb-3 w-full"
           :placeholder="
