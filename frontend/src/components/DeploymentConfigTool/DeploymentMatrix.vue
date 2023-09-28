@@ -19,7 +19,7 @@
         <BBTableSearch
           v-if="showSearchBox"
           class="w-60"
-          :placeholder="$t('database.search-database')"
+          :placeholder="$t('database.filter-database')"
           @change-text="(text: string) => (state.keyword = text)"
         />
       </div>

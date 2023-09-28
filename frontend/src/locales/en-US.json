@@ -1148,7 +1148,7 @@
     "successfully-connected-instance": "Successfully connected instance.",
     "failed-to-connect-instance": "Failed to connect instance.",
     "failed-to-connect-instance-localhost": "Failed to connect instance.\nIf you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
-    "search-instance-name": "Search instance name",
+    "filter-instance-name": "Filter instance name",
     "grants": "Grants",
     "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
     "create-gcp-credentials": "To create Credentials, see",
@@ -1313,8 +1313,8 @@
     "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
-    "search-database-name": "Search database name",
-    "search-database": "Search database",
+    "filter-database-name": "Filter database name",
+    "filter-database": "Filter database",
     "database-backup": "database backup",
     "transfer-project": "Transfer Project",
     "edit-schema": "Edit Schema",
@@ -1606,7 +1606,7 @@
         "cancel": "Dismiss",
         "confirm": "Do not show again"
       },
-      "search-bar-placeholder": "Search project name"
+      "filter-project-name": "Filter project name"
     },
     "table": {
       "key": "@:common.key",

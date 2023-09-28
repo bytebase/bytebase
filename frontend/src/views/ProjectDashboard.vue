@@ -3,7 +3,7 @@
     <div class="px-2 py-2 flex justify-between items-center">
       <SearchBox
         :value="state.searchText"
-        :placeholder="$t('project.dashboard.search-bar-placeholder')"
+        :placeholder="$t('project.dashboard.filter-project-name')"
         :autofocus="true"
         style="width: 12rem"
         @update:value="changeSearchText($event)"
