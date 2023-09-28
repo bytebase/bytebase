@@ -2669,9 +2669,9 @@
   },
   "custom-approval": {
     "self": "Aprobación personalizada",
-    "security-rule": {
+    "risk-rule": {
       "self": "Regla de seguridad",
-      "security-rules": "Reglas de seguridad",
+      "risk-rules": "Reglas de seguridad",
       "x-risk-rules": {
         "low": "Reglas de riesgo bajo",
         "moderate": "Reglas de riesgo moderado",

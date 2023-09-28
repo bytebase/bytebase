@@ -10,7 +10,7 @@
           v-if="!hideSearch"
           v-model:value="search"
           :clearable="true"
-          :placeholder="$t('custom-approval.security-rule.search')"
+          :placeholder="$t('custom-approval.risk-rule.search')"
         >
           <template #prefix>
             <heroicons:magnifying-glass class="w-4 h-4" />
