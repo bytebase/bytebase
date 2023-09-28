@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
 	// register pg parser.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -508,7 +509,7 @@ func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []A
 }
 
 func mssqlSyntaxCheck(statement string) (any, []Advice) {
-	tree, err := parser.ParseTSQL(statement)
+	tree, err := tsqlparser.ParseTSQL(statement)
 	if err != nil {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{

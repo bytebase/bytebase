@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -91,8 +91,8 @@ func (l *namingIdentifierNoKeywordChecker) EnterId_(ctx *parser.Id_Context) {
 		return
 	}
 
-	normalizedID := bbparser.NormalizeTSQLIdentifier(ctx)
-	if bbparser.IsTSQLKeyword(normalizedID, false) {
+	normalizedID := tsqlparser.NormalizeTSQLIdentifier(ctx)
+	if tsqlparser.IsTSQLKeyword(normalizedID, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,

@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -90,16 +91,16 @@ func (l *migrationCompatibilityChecker) EnterCreate_table(ctx *parser.Create_tab
 	if tableName == nil || tableName.GetTable() == nil {
 		return
 	}
-	normalizedTableName := bbparser.NormalizeTSQLTableName(tableName, l.currentDatabase, "dbo", false)
+	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, l.currentDatabase, "dbo", false)
 	l.normalizedNewCreateTableNameMap[normalizedTableName] = any(nil)
 }
 
 func (l *migrationCompatibilityChecker) EnterCreate_schema(ctx *parser.Create_schemaContext) {
 	var schemaName string
 	if v := ctx.GetSchema_name(); v != nil {
-		schemaName = bbparser.NormalizeTSQLIdentifier(v)
+		schemaName = tsqlparser.NormalizeTSQLIdentifier(v)
 	} else {
-		schemaName = bbparser.NormalizeTSQLIdentifier(ctx.GetOwner_name())
+		schemaName = tsqlparser.NormalizeTSQLIdentifier(ctx.GetOwner_name())
 	}
 
 	normalizedDatabaseSchemaName := fmt.Sprintf("%s.%s", l.currentDatabase, schemaName)
@@ -107,7 +108,7 @@ func (l *migrationCompatibilityChecker) EnterCreate_schema(ctx *parser.Create_sc
 }
 
 func (l *migrationCompatibilityChecker) EnterCreate_database(ctx *parser.Create_databaseContext) {
-	databaseName := bbparser.NormalizeTSQLIdentifier(ctx.GetDatabase())
+	databaseName := tsqlparser.NormalizeTSQLIdentifier(ctx.GetDatabase())
 	l.normalizedNewCreateDatabaseNameMap[databaseName] = any(nil)
 }
 
@@ -117,7 +118,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_table(ctx *parser.Drop_tableCo
 		if tableName == nil || tableName.GetTable() == nil {
 			continue
 		}
-		normalizedTableName := bbparser.NormalizeTSQLTableName(tableName, l.currentDatabase, "dbo", false)
+		normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, l.currentDatabase, "dbo", false)
 		if _, ok := l.normalizedNewCreateTableNameMap[normalizedTableName]; !ok {
 			l.adviceList = append(l.adviceList, advisor.Advice{
 				Status:  l.level,
@@ -133,7 +134,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_table(ctx *parser.Drop_tableCo
 
 func (l *migrationCompatibilityChecker) EnterDrop_schema(ctx *parser.Drop_schemaContext) {
 	schemaName := ctx.GetSchema_name()
-	normalizedSchemaName := fmt.Sprintf("%s.%s", l.currentDatabase, bbparser.NormalizeTSQLIdentifier(schemaName))
+	normalizedSchemaName := fmt.Sprintf("%s.%s", l.currentDatabase, tsqlparser.NormalizeTSQLIdentifier(schemaName))
 	if _, ok := l.normalizedNewCreateSchemaNameMap[normalizedSchemaName]; !ok {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
@@ -148,7 +149,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_schema(ctx *parser.Drop_schema
 
 func (l *migrationCompatibilityChecker) EnterDrop_database(ctx *parser.Drop_databaseContext) {
 	databaseName := ctx.GetDatabase_name_or_database_snapshot_name()
-	normalizedDatabaseName := bbparser.NormalizeTSQLIdentifier(databaseName)
+	normalizedDatabaseName := tsqlparser.NormalizeTSQLIdentifier(databaseName)
 	if _, ok := l.normalizedNewCreateDatabaseNameMap[normalizedDatabaseName]; !ok {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
@@ -163,7 +164,7 @@ func (l *migrationCompatibilityChecker) EnterDrop_database(ctx *parser.Drop_data
 
 func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_tableContext) {
 	handleTableName := ctx.Table_name(0)
-	normalizedHandleTableName := bbparser.NormalizeTSQLTableName(handleTableName, l.currentDatabase, "dbo", false)
+	normalizedHandleTableName := tsqlparser.NormalizeTSQLTableName(handleTableName, l.currentDatabase, "dbo", false)
 	if _, ok := l.normalizedNewCreateTableNameMap[normalizedHandleTableName]; ok {
 		return
 	}
@@ -172,7 +173,7 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 		allDropColumns := ctx.AllId_()
 		var allNormalizedDropColumnNames []string
 		for _, dropColumn := range allDropColumns {
-			normalizedDropColumnName := bbparser.NormalizeTSQLIdentifier(dropColumn)
+			normalizedDropColumnName := tsqlparser.NormalizeTSQLIdentifier(dropColumn)
 			allNormalizedDropColumnNames = append(allNormalizedDropColumnNames, normalizedDropColumnName)
 		}
 		placeholder := strings.Join(allNormalizedDropColumnNames, ", ")
@@ -188,9 +189,9 @@ func (l *migrationCompatibilityChecker) EnterAlter_table(ctx *parser.Alter_table
 	if len(ctx.AllALTER()) == 2 && ctx.COLUMN() != nil {
 		normalizedColumnName := ""
 		if ctx.Column_definition() != nil {
-			normalizedColumnName = bbparser.NormalizeTSQLIdentifier(ctx.Column_definition().Id_())
+			normalizedColumnName = tsqlparser.NormalizeTSQLIdentifier(ctx.Column_definition().Id_())
 		} else if ctx.Column_modifier() != nil {
-			normalizedColumnName = bbparser.NormalizeTSQLIdentifier(ctx.Column_modifier().Id_())
+			normalizedColumnName = tsqlparser.NormalizeTSQLIdentifier(ctx.Column_modifier().Id_())
 		}
 
 		l.adviceList = append(l.adviceList, advisor.Advice{
@@ -273,7 +274,7 @@ func (l *migrationCompatibilityChecker) EnterExecute_body(ctx *parser.Execute_bo
 	}
 
 	v := ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema().GetProcedure()
-	normalizedProcedureName := bbparser.NormalizeTSQLIdentifier(v)
+	normalizedProcedureName := tsqlparser.NormalizeTSQLIdentifier(v)
 	if normalizedProcedureName != "sp_rename" {
 		return
 	}

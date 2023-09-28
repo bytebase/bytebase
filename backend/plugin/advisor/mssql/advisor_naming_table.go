@@ -13,7 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -122,7 +122,7 @@ func (l *namingTableListener) EnterExecute_body(ctx *parser.Execute_bodyContext)
 	}
 
 	v := ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema().GetProcedure()
-	normalizedProcedureName := bbparser.NormalizeTSQLIdentifier(v)
+	normalizedProcedureName := tsqlparser.NormalizeTSQLIdentifier(v)
 	if normalizedProcedureName != "sp_rename" {
 		return
 	}
