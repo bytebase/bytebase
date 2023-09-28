@@ -3,6 +3,7 @@
     <RawSQLEditor
       v-if="sheet"
       v-model:statement="statement"
+      :readonly="false"
       class="flex-1 overflow-hidden relative"
       @upload="handleUploadEvent"
     />

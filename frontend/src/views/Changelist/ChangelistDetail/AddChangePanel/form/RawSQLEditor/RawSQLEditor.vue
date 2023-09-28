@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-2">
-    <div class="flex justify-end">
+    <div v-if="!readonly" class="flex justify-end">
       <UploadProgressButton size="tiny" :upload="handleUploadFile">
         {{ $t("issue.upload-sql") }}
       </UploadProgressButton>
@@ -14,6 +14,7 @@
       <MonacoEditor
         ref="editorRef"
         :value="statement"
+        :readonly="readonly"
         class="border w-full h-full"
         @change="$emit('update:statement', $event)"
         @ready="adjustEditorHeight"
@@ -30,6 +31,7 @@ import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 
 defineProps<{
   statement: string;
+  readonly: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -43,18 +45,6 @@ const { height: editorWrapperHeight } = useElementSize(editorWrapperRef);
 
 const handleUploadFile = async (event: Event) => {
   emit("upload", event);
-  // try {
-  //   state.isUploadingFile = true;
-  //   const { filename, content: statement } = await readFileAsync(event, 100);
-  //   handleStatementChange(statement);
-  //   if (sheet.value) {
-  //     sheet.value.title = filename;
-  //   }
-  //   resetTempEditState();
-  //   updateEditorHeight();
-  // } finally {
-  //   state.isUploadingFile = false;
-  // }
 };
 
 const adjustEditorHeight = () => {
