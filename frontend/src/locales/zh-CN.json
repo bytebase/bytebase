@@ -3070,7 +3070,9 @@
       "raw-sql": "SQL 语句",
       "change-history": {
         "tables": "表"
-      }
-    }
+      },
+      "source": "来源"
+    },
+    "confirm-remove-change": "移除这项变更？"
   }
 }

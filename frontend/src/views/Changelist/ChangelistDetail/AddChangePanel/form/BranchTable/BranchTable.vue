@@ -59,7 +59,7 @@ import { escape } from "lodash-es";
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGridColumn, BBGridRow } from "@/bbkit";
+import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useDatabaseV1Store, useUserStore } from "@/store";

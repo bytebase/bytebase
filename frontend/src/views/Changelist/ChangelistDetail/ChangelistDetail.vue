@@ -2,7 +2,13 @@
   <div class="flex flex-col gap-y-4 px-4">
     <NavBar />
 
-    <ChangeTable :changes="state.changes" :reorder-mode="reorderMode" />
+    <ChangeTable
+      v-model:selected="selectedChanges"
+      :changes="state.changes"
+      :reorder-mode="reorderMode"
+      @remove-change="handleRemoveChange($event)"
+      @select-change="handleSelectChange($event)"
+    />
 
     <AddChangePanel />
   </div>
@@ -17,13 +23,17 @@ import ChangeTable from "./ChangeTable";
 import NavBar from "./NavBar";
 import { provideChangelistDetailContext } from "./context";
 
-const { changelist, reorderMode } = provideChangelistDetailContext();
+const { changelist, reorderMode, selectedChanges } =
+  provideChangelistDetailContext();
 
 const state = reactive<{
   changes: Change[];
 }>({
   changes: [],
 });
+
+const handleRemoveChange = async (change: Change) => {};
+const handleSelectChange = async (change: Change) => {};
 
 const documentTitle = computed(() => {
   return changelist.value.description;

@@ -47,7 +47,6 @@ export const provideChangelistDetailContext = () => {
       `projects/${route.params.projectName}`
     );
   });
-
   const allowEdit = computed(() => {
     return true; // TODO
   });

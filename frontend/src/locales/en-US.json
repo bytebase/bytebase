@@ -3077,7 +3077,9 @@
       "raw-sql": "Raw SQL",
       "change-history": {
         "tables": "Tables"
-      }
-    }
+      },
+      "source": "Source"
+    },
+    "confirm-remove-change": "Remove this change?"
   }
 }

@@ -3075,7 +3075,9 @@
       "raw-sql": "SQL sin formato",
       "change-history": {
         "tables": "Mesas"
-      }
-    }
+      },
+      "source": "Fuente"
+    },
+    "confirm-remove-change": "¿Eliminar este cambio?"
   }
 }

@@ -3,10 +3,19 @@ import { reactive } from "vue";
 import { changelistServiceClient } from "@/grpcweb";
 import {
   Changelist,
+  Changelist_Change as Change,
   CreateChangelistRequest,
   DeepPartial,
   ListChangelistsRequest,
 } from "@/types/proto/v1/changelist_service";
+import {
+  ResourceComposer,
+  isBranchChangeSource,
+  isChangeHistoryChangeSource,
+} from "@/utils";
+import { useSchemaDesignStore } from "../schemaDesign";
+import { useChangeHistoryStore } from "./changeHistory";
+import { useSheetV1Store } from "./sheet";
 
 export const useChangelistStore = defineStore("changelist", () => {
   const changelistMapByName = reactive(new Map<string, Changelist>());
@@ -14,6 +23,7 @@ export const useChangelistStore = defineStore("changelist", () => {
   const upsertChangelistMap = async (changelists: Changelist[]) => {
     for (let i = 0; i < changelists.length; i++) {
       const changelist = changelists[i];
+      await composeChangelist(changelist);
       changelistMapByName.set(changelist.name, changelist);
     }
   };
@@ -64,6 +74,33 @@ export const useChangelistStore = defineStore("changelist", () => {
     });
     await upsertChangelistMap([updated]);
     return updated;
+  };
+
+  const composeChangelist = async (changelist: Changelist) => {
+    const composer = new ResourceComposer();
+    const { changes } = changelist;
+    for (let i = 0; i < changes.length; i++) {
+      composeChange(changes[i], composer);
+    }
+
+    await composer.compose();
+  };
+  const composeChange = (change: Change, composer: ResourceComposer) => {
+    const { sheet, source } = change;
+    if (isChangeHistoryChangeSource(change)) {
+      composer.collect(source, () =>
+        useChangeHistoryStore().getOrFetchChangeHistoryByName(source)
+      );
+    } else if (isBranchChangeSource(change)) {
+      composer.collect(source, () =>
+        useSchemaDesignStore().getOrFetchSchemaDesignByName(source)
+      );
+    } else {
+      // Raw SQL, no need to compose
+    }
+    composer.collect(sheet, () =>
+      useSheetV1Store().getOrFetchSheetByName(sheet)
+    );
   };
 
   return {
