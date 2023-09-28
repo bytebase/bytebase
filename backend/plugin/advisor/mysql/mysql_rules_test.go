@@ -75,7 +75,7 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleColumnDisallowChangingOrder disallow changing column order.
 		advisor.SchemaRuleColumnDisallowChangingOrder,
 		// advisor.SchemaRuleColumnDisallowDropIndex disallow drop index column.
-		advisor.SchemaRuleColumnDisallowDropIndex,
+		advisor.SchemaRuleColumnDisallowDropInIndex,
 		// advisor.SchemaRuleColumnCommentConvention enforce the column comment convention.
 		advisor.SchemaRuleColumnCommentConvention,
 		// advisor.SchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.

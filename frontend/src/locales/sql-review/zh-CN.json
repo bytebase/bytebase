@@ -224,7 +224,7 @@
       "title": "禁止修改表中的列顺序",
       "description": "修改列顺序可能导致某些依赖原表默认顺序的应用或视图出现不符合预期的结果，例如 \"SELECT * \"。建议错误等级：警告"
     },
-    "column-disallow-drop-index": {
+    "column-disallow-drop-in-index": {
       "title": "禁止删除索引列",
       "description": "禁止删除一个已经被索引的列。建议错误等级：错误"
     },

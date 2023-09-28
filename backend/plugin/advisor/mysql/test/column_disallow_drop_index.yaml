@@ -26,7 +26,7 @@
   want:
     - status: WARN
       code: 424
-      title: "column.disallow-drop-index"
+      title: "column.disallow-drop-in-index"
       content: "`t`.`c` cannot drop index column"
       line: 3
       details: ""
@@ -50,13 +50,13 @@
   want:
     - status: WARN
       code: 424
-      title: "column.disallow-drop-index"
+      title: "column.disallow-drop-in-index"
       content: "`t`.`a` cannot drop index column"
       line: 2
       details: ""
     - status: WARN
       code: 424
-      title: "column.disallow-drop-index"
+      title: "column.disallow-drop-in-index"
       content: "`t`.`c` cannot drop index column"
       line: 4
       details: ""

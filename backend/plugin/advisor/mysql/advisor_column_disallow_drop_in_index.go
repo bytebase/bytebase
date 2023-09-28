@@ -14,23 +14,23 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*ColumnDisallowDropIndexAdvisor)(nil)
-	_ ast.Visitor     = (*columnDisallowDropIndexChecker)(nil)
+	_ advisor.Advisor = (*ColumnDisallowDropInIndexAdvisor)(nil)
+	_ ast.Visitor     = (*columnDisallowDropInIndexChecker)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnDisallowDropIndex, &ColumnDisallowDropIndexAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnDisallowDropIndex, &ColumnDisallowDropIndexAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLColumnDisallowDropIndex, &ColumnDisallowDropIndexAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLColumnDisallowDropIndex, &ColumnDisallowDropIndexAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
+	advisor.Register(db.MariaDB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
 }
 
-// ColumnDisallowDropIndexAdvisor is the advisor checking for disallow CHANGE COLUMN statement.
-type ColumnDisallowDropIndexAdvisor struct {
+// ColumnDisallowDropInIndexAdvisor is the advisor checking for disallow DROP COLUMN in index.
+type ColumnDisallowDropInIndexAdvisor struct {
 }
 
 // Check checks for disallow CHANGE COLUMN statement.
-func (*ColumnDisallowDropIndexAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -41,7 +41,7 @@ func (*ColumnDisallowDropIndexAdvisor) Check(ctx advisor.Context, _ string) ([]a
 		return nil, err
 	}
 
-	checker := &columnDisallowDropIndexChecker{
+	checker := &columnDisallowDropInIndexChecker{
 		level:   level,
 		title:   string(ctx.Rule.Type),
 		tables:  make(tableState),
@@ -66,7 +66,7 @@ func (*ColumnDisallowDropIndexAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	return checker.adviceList, nil
 }
 
-type columnDisallowDropIndexChecker struct {
+type columnDisallowDropInIndexChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -76,7 +76,7 @@ type columnDisallowDropIndexChecker struct {
 	line       int
 }
 
-func (checker *columnDisallowDropIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (checker *columnDisallowDropInIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		checker.addIndexColumn(node)
@@ -86,11 +86,11 @@ func (checker *columnDisallowDropIndexChecker) Enter(in ast.Node) (ast.Node, boo
 	return in, false
 }
 
-func (*columnDisallowDropIndexChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*columnDisallowDropInIndexChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (checker *columnDisallowDropIndexChecker) dropColumn(in ast.Node) (ast.Node, bool) {
+func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.AlterTableStmt); ok {
 		for _, spec := range node.Specs {
 			if spec.Tp == ast.AlterTableDropColumn {
@@ -128,7 +128,7 @@ func (checker *columnDisallowDropIndexChecker) dropColumn(in ast.Node) (ast.Node
 	return in, false
 }
 
-func (checker *columnDisallowDropIndexChecker) addIndexColumn(in ast.Node) {
+func (checker *columnDisallowDropInIndexChecker) addIndexColumn(in ast.Node) {
 	if node, ok := in.(*ast.CreateTableStmt); ok {
 		for _, spec := range node.Constraints {
 			if spec.Tp == ast.ConstraintIndex {
@@ -144,7 +144,7 @@ func (checker *columnDisallowDropIndexChecker) addIndexColumn(in ast.Node) {
 	}
 }
 
-func (checker *columnDisallowDropIndexChecker) canDrop(table string, column string) bool {
+func (checker *columnDisallowDropInIndexChecker) canDrop(table string, column string) bool {
 	if _, ok := checker.tables[table][column]; ok {
 		return false
 	}

@@ -124,8 +124,8 @@ const (
 	SchemaRuleColumnDisallowChange SQLReviewRuleType = "column.disallow-change"
 	// SchemaRuleColumnDisallowChangingOrder disallow changing column order.
 	SchemaRuleColumnDisallowChangingOrder SQLReviewRuleType = "column.disallow-changing-order"
-	// SchemaRuleColumnDisallowDropIndex disallow index column.
-	SchemaRuleColumnDisallowDropIndex SQLReviewRuleType = "column.disallow-drop-index"
+	// SchemaRuleColumnDisallowDropInIndex disallow index column.
+	SchemaRuleColumnDisallowDropInIndex SQLReviewRuleType = "column.disallow-drop-in-index"
 	// SchemaRuleColumnCommentConvention enforce the column comment convention.
 	SchemaRuleColumnCommentConvention SQLReviewRuleType = "column.comment"
 	// SchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.
@@ -1228,10 +1228,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLColumnDisallowChangingOrder, nil
 		}
-	case SchemaRuleColumnDisallowDropIndex:
+	case SchemaRuleColumnDisallowDropInIndex:
 		switch engine {
 		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
-			return MySQLColumnDisallowDropIndex, nil
+			return MySQLColumnDisallowDropInIndex, nil
 		}
 	case SchemaRuleColumnCommentConvention:
 		switch engine {
