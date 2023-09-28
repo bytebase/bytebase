@@ -57,5 +57,5 @@ message SheetPayload {
   SchemaDesign schema_design = 3;
 
   // database_config will be apply to the given database after executing statement, only be used in schema design for now.
-  optional DatabaseConfig database_config = 4;
+  DatabaseConfig database_config = 4;
 }
