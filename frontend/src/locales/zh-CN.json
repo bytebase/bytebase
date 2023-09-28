@@ -612,6 +612,7 @@
         },
         "announcement-text": {
           "self": "标题",
+          "description": "如果要隐藏公告，则置为空。",
           "placeholder": "输入公告标题"
         },
         "extra-link": {

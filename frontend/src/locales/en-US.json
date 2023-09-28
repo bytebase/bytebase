@@ -614,6 +614,7 @@
         },
         "announcement-text": {
           "self": "Title",
+          "description": "To hide the announcement, leave it empty.",
           "placeholder": "Input announcement title"
         },
         "extra-link": {

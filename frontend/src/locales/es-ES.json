@@ -602,6 +602,7 @@
         },
         "announcement-text": {
           "self": "Título",
+          "description": "Para ocultar el anuncio, déjelo vacío.",
           "placeholder": "Título del anuncio de entrada"
         },
         "extra-link": {
