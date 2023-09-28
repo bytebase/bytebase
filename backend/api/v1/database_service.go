@@ -1048,16 +1048,18 @@ func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.
 
 func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
 	schemaVersion := h.Version
-	_, version, _, err := util.FromStoredVersion(h.Version)
-	if err != nil {
-		slog.Error("failed to convert stored version for change history",
-			slog.String("instance", h.InstanceID),
-			slog.String("database", h.DatabaseName),
-			slog.String("history", h.UID),
-			slog.String("version", h.Version),
-			log.BBError(err))
-	} else {
-		schemaVersion = version
+	if h.Version != "" {
+		_, version, _, err := util.FromStoredVersion(h.Version)
+		if err != nil {
+			slog.Error("failed to convert stored version for change history",
+				slog.String("instance", h.InstanceID),
+				slog.String("database", h.DatabaseName),
+				slog.String("history", h.UID),
+				slog.String("version", h.Version),
+				log.BBError(err))
+		} else {
+			schemaVersion = version
+		}
 	}
 
 	v1pbHistory := &v1pb.ChangeHistory{
@@ -1791,15 +1793,17 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
 	}
 	schemaVersion := database.SchemaVersion
-	_, version, _, err := util.FromStoredVersion(database.SchemaVersion)
-	if err != nil {
-		slog.Error("failed to convert stored version",
-			slog.String("instance", database.InstanceID),
-			slog.String("database", database.DatabaseName),
-			slog.String("version", database.SchemaVersion),
-			log.BBError(err))
-	} else {
-		schemaVersion = version
+	if database.SchemaVersion != "" {
+		_, version, _, err := util.FromStoredVersion(database.SchemaVersion)
+		if err != nil {
+			slog.Error("failed to convert stored version",
+				slog.String("instance", database.InstanceID),
+				slog.String("database", database.DatabaseName),
+				slog.String("version", database.SchemaVersion),
+				log.BBError(err))
+		} else {
+			schemaVersion = version
+		}
 	}
 	return &v1pb.Database{
 		Name:                 fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
