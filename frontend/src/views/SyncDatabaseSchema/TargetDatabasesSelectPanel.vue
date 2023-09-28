@@ -13,7 +13,7 @@
       <div class="flex items-center justify-end mx-2 mb-2">
         <BBTableSearch
           class="m-px"
-          :placeholder="$t('database.search-database')"
+          :placeholder="$t('database.filter-database')"
           @change-text="(text: string) => (state.searchText = text)"
         />
       </div>
