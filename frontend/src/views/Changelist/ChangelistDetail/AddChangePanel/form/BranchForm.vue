@@ -59,10 +59,10 @@ import { UNKNOWN_ID } from "@/types";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { keyBy, setSheetStatement } from "@/utils";
+import BranchDetailPanel from "../../BranchDetailPanel";
 import { useChangelistDetailContext } from "../../context";
 import { useAddChangeContext } from "../context";
 import BranchChangeItem from "./BranchChangeItem.vue";
-import BranchDetailPanel from "./BranchDetailPanel";
 import BranchTable from "./BranchTable";
 
 type LocalState = {

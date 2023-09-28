@@ -82,10 +82,10 @@ import {
   keyBy,
   setSheetStatement,
 } from "@/utils";
+import ChangeHistoryDetailPanel from "../../ChangeHistoryDetailPanel";
 import { useChangelistDetailContext } from "../../context";
 import { useAddChangeContext } from "../context";
 import ChangeHistoryChangeItem from "./ChangeHistoryChangeItem.vue";
-import ChangeHistoryDetailPanel from "./ChangeHistoryDetailPanel";
 import ChangeHistoryTable from "./ChangeHistoryTable";
 import {
   getAffectedTableDisplayName,
