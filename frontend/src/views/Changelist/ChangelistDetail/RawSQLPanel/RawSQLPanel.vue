@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
