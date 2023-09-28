@@ -7,6 +7,8 @@ import {
   Sheet_Visibility,
   DeepPartial,
 } from "@/types/proto/v1/sheet_service";
+import { extractProjectResourceName } from "@/utils";
+import { useSheetV1Store } from "./sheet";
 
 const state = reactive({
   uid: -101,
@@ -48,9 +50,19 @@ export const useLocalSheetStore = defineStore("local_sheet", () => {
     return sheet;
   };
 
+  const saveLocalSheetToRemote = async (localSheet: Sheet) => {
+    const project = extractProjectResourceName(localSheet.name);
+    const remoteSheet = await useSheetV1Store().createSheet(
+      `projects/${project}`,
+      localSheet
+    );
+    return remoteSheet;
+  };
+
   return {
     nextUID,
     createLocalSheet,
     getOrCreateSheetByName,
+    saveLocalSheetToRemote,
   };
 });

@@ -84,15 +84,24 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useLocalSheetStore } from "@/store";
-import { getSheetStatement } from "@/utils";
+import {
+  pushNotification,
+  useChangelistStore,
+  useLocalSheetStore,
+} from "@/store";
+import {
+  Changelist_Change as Change,
+  Changelist,
+} from "@/types/proto/v1/changelist_service";
+import { getSheetStatement, isLocalSheet } from "@/utils";
 import { useChangelistDetailContext } from "../context";
 import { provideAddChangeContext } from "./context";
 import { BranchForm, ChangeHistoryForm, RawSQLForm } from "./form";
 import { emptyRawSQLChange } from "./utils";
 
 const { t } = useI18n();
-const { project, showAddChangePanel } = useChangelistDetailContext();
+const { project, changelist, showAddChangePanel } =
+  useChangelistDetailContext();
 const {
   changeSource,
   changesFromChangeHistory,
@@ -132,7 +141,43 @@ const errors = asyncComputed(() => {
   return errors;
 }, []);
 
-const doAddChange = async () => {};
+const doAddChange = async () => {
+  if (errors.value.length > 0) return;
+
+  isLoading.value = true;
+  const createSheetForPendingAddChange = async (pendingAddChange: Change) => {
+    const change = { ...pendingAddChange };
+    if (isLocalSheet(change.sheet)) {
+      const localSheetStore = useLocalSheetStore();
+      const sheet = localSheetStore.getOrCreateSheetByName(change.sheet);
+      const created = await localSheetStore.saveLocalSheetToRemote(sheet);
+      change.sheet = created.name;
+    }
+
+    return change;
+  };
+  try {
+    const newChanges: Change[] = [];
+    for (let i = 0; i < pendingAddChanges.value.length; i++) {
+      newChanges.push(
+        await createSheetForPendingAddChange(pendingAddChanges.value[i])
+      );
+    }
+    const changelistPatch = {
+      ...Changelist.fromPartial(changelist.value),
+      changes: [...changelist.value.changes, ...newChanges],
+    };
+    await useChangelistStore().patchChangelist(changelistPatch, ["changes"]);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.added"),
+    });
+    showAddChangePanel.value = false;
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 const reset = () => {
   changesFromChangeHistory.value = [];
