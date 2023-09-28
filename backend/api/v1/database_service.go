@@ -1047,10 +1047,19 @@ func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.
 }
 
 func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
+	schemaVersion := h.Version
 	_, version, _, err := util.FromStoredVersion(h.Version)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert stored version %q", h.Version)
+		slog.Error("failed to convert stored version for change history",
+			slog.String("instance", h.InstanceID),
+			slog.String("database", h.DatabaseName),
+			slog.String("history", h.UID),
+			slog.String("version", h.Version),
+			log.BBError(err))
+	} else {
+		schemaVersion = version
 	}
+
 	v1pbHistory := &v1pb.ChangeHistory{
 		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", common.InstanceNamePrefix, h.InstanceID, common.DatabaseIDPrefix, h.DatabaseName, common.ChangeHistoryPrefix, h.UID),
 		Uid:               h.UID,
@@ -1062,7 +1071,7 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		Source:            convertToChangeHistorySource(h.Source),
 		Type:              convertToChangeHistoryType(h.Type),
 		Status:            convertToChangeHistoryStatus(h.Status),
-		Version:           version,
+		Version:           schemaVersion,
 		Description:       h.Description,
 		Statement:         h.Statement,
 		Schema:            h.Schema,
