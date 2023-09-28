@@ -1,5 +1,5 @@
 <template>
-  <Drawer :show="show" :close-on-esc="false" @close="$emit('close')">
+  <Drawer :show="show" :close-on-esc="true" @close="$emit('close')">
     <DrawerContent
       :title="title"
       style="width: 60vw; max-width: calc(100vw - 8rem)"
