@@ -41,7 +41,7 @@ const sqlEditorStore = useSQLEditorStore();
 const route = useRoute();
 
 const showBanners = computed(() => {
-  return sqlEditorStore.mode !== "BUNDLED";
+  return sqlEditorStore.mode === "BUNDLED";
 });
 
 onMounted(() => {

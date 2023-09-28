@@ -203,7 +203,7 @@ const { events: editorEvents } = provideSQLEditorContext();
 const { showPanel: showSheetPanel } = provideSheetContext();
 const { show: showSecondarySidebar } = provideSecondarySidebarContext();
 
-const showQuickstart = computed(() => sqlEditorStore.mode !== "BUNDLED");
+const showQuickstart = computed(() => sqlEditorStore.mode === "BUNDLED");
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
