@@ -17,16 +17,15 @@
     </NInput>
     <div
       v-if="state.showSearchScopes"
-      class="absolute z-50 top-full w-full divide-y divide-block-border bg-white shadow-md"
+      class="absolute z-50 pt-1 top-full w-full divide-y divide-block-border bg-white shadow-md"
     >
       <div
         v-for="item in searchScopes"
         :key="item.id"
-        class="flex gap-x-3 p-2 items-center cursor-pointer hover:bg-gray-100"
+        class="flex gap-x-1 px-3 py-1 items-center cursor-pointer hover:bg-gray-100"
         @mousedown.prevent.stop="onScopeSelect(item.id)"
       >
-        <heroicons-outline:filter class="h-4 w-4 text-control" />
-        <div class="space-x-1">
+        <div class="space-x-1 text-sm">
           <span class="text-accent">{{ item.id }}:</span>
           <span class="text-control-light">{{ item.description }}</span>
         </div>
