@@ -169,7 +169,7 @@
             <heroicons:pencil-square class="w-4 h-auto text-gray-400" />
           </button>
         </div>
-        <div class="w-full flex justify-start items-center">
+        <div class="table-body-item-container flex justify-end items-center">
           <template v-if="!readonly">
             <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
               <template #trigger>
@@ -288,38 +288,46 @@ const columnHeaderList = computed(() => {
     {
       key: "name",
       label: t("schema-editor.column.name"),
+      class: "6rem",
     },
     {
       key: "type",
       label: t("schema-editor.column.type"),
+      class: "minmax(0,_0.8fr)",
     },
     {
       key: "default",
       label: t("schema-editor.column.default"),
+      class: "minmax(0,_0.8fr)",
     },
     {
       key: "comment",
       label: t("schema-editor.column.comment"),
+      class: "minmax(0,_0.8fr)",
     },
     {
       key: "nullable",
       label: t("schema-editor.column.not-null"),
+      class: "80px",
     },
     {
       key: "primary",
       label: t("schema-editor.column.primary"),
+      class: "80px",
     },
   ];
   if (classificationConfig.value) {
     list.splice(1, 0, {
       key: "classification",
       label: t("schema-editor.column.classification"),
+      class: "minmax(0,_1.5fr)",
     });
   }
   if (props.showForeignKey) {
     list.push({
       key: "foreign_key",
       label: t("schema-editor.column.foreign-key"),
+      class: "minmax(0,_7rem)",
     });
   }
 
@@ -327,10 +335,9 @@ const columnHeaderList = computed(() => {
 });
 
 const gridColumnClass = computed(() => {
-  if (props.showForeignKey) {
-    return "grid-cols-[6rem_minmax(0,_1.5fr)_repeat(3,_minmax(0,_0.8fr))_repeat(2,_80px)_minmax(0,_7rem)_20px]";
-  }
-  return "grid-cols-[6rem_minmax(0,_1.5fr)_repeat(3,_minmax(0,_0.8fr))_repeat(2,_80px)_20px]";
+  return `grid-cols-[${columnHeaderList.value
+    .map((col) => col.class)
+    .join("_")}_20px]`;
 });
 
 const shownColumnList = computed(() => {
