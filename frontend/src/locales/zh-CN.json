@@ -3051,10 +3051,10 @@
       "project-is-required": "项目不能为空",
       "name-is-required": "变更列表名称不能为空",
       "invalid-resource-id": "无效的资源 ID",
-      "select-changes-to-export": "选择要导出的更改",
       "nothing-changed": "无任何改变",
       "sql-cannot-be-empty": "SQL 不能为空",
-      "select-at-least-one-change": "选择至少一条变更"
+      "select-at-least-one-change": "选择至少一条变更",
+      "select-at-least-one-change-to-export": "至少选择一项要导出的变更"
     },
     "apply-to-database": "应用到数据库",
     "add-change": {

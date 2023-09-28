@@ -23,7 +23,7 @@ const { allowEdit, selectedChanges } = useChangelistDetailContext();
 const errors = computed(() => {
   const errors: string[] = [];
   if (selectedChanges.value.length === 0) {
-    errors.push(t("changelist.error.select-changes-to-export"));
+    errors.push(t("changelist.error.select-at-least-one-change-to-export"));
   }
   return errors;
 });

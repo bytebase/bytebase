@@ -3058,10 +3058,10 @@
       "project-is-required": "Project is required",
       "name-is-required": "Changelist name is required",
       "invalid-resource-id": "Invalid resource Id",
-      "select-changes-to-export": "Select changes to export",
       "nothing-changed": "Nothing changed",
       "sql-cannot-be-empty": "SQL is required",
-      "select-at-least-one-change": "Select at least one change"
+      "select-at-least-one-change": "Select at least one change",
+      "select-at-least-one-change-to-export": "Select at least one change to export"
     },
     "apply-to-database": "Apply to database",
     "add-change": {
