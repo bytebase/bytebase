@@ -4,8 +4,17 @@
       <div class="flex-1 overflow-hidden">
         <TabFilter v-model:value="tab" :items="tabItemList" />
       </div>
-      <div class="p-0.5">
-        <SearchBox
+      <div class="flex items-center space-x-2 p-0.5">
+        <router-link
+          :to="`/issue?user=${currentUserUID}`"
+          class="flex space-x-1 items-center normal-link !whitespace-nowrap"
+        >
+          <heroicons-outline:search class="h-4 w-4" />
+          <span class="hidden md:block">{{
+            $t("issue.advanced-search.self")
+          }}</span>
+        </router-link>
+        <NInput
           :value="state.searchText"
           :placeholder="$t('issue.filter-issue-by-name')"
           :autofocus="true"
@@ -208,7 +217,7 @@ import { useI18n } from "vue-i18n";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import WaitingForMyApprovalIssueTableV1 from "@/components/IssueV1/components/WaitingForMyApprovalIssueTableV1.vue";
-import { SearchBox, TabFilter, TabFilterItem } from "@/components/v2";
+import { TabFilter, TabFilterItem } from "@/components/v2";
 import {
   useSubscriptionV1Store,
   useOnboardingStateStore,
