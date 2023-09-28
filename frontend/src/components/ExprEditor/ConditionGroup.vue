@@ -7,15 +7,11 @@
       <div class="flex-1">
         <template v-if="args.length > 0">
           <template v-if="operator === '_||_'">
-            {{
-              $t("custom-approval.risk-rule.condition.group.or.description")
-            }}
+            {{ $t("custom-approval.risk-rule.condition.group.or.description") }}
           </template>
           <template v-if="operator === '_&&_'">
             {{
-              $t(
-                "custom-approval.risk-rule.condition.group.and.description"
-              )
+              $t("custom-approval.risk-rule.condition.group.and.description")
             }}
           </template>
         </template>
@@ -55,9 +51,7 @@
 
     <div v-if="root && args.length === 0" class="px-1.5 text-gray-500">
       {{
-        $t(
-          "custom-approval.risk-rule.condition.add-root-condition-placeholder"
-        )
+        $t("custom-approval.risk-rule.condition.add-root-condition-placeholder")
       }}
     </div>
     <div
@@ -102,9 +96,7 @@
       </NButton>
       <NButton size="small" quaternary @click="addConditionGroup">
         <template #icon><heroicons:plus class="w-4 h-4" /></template>
-        <span>{{
-          $t("custom-approval.risk-rule.condition.add-group")
-        }}</span>
+        <span>{{ $t("custom-approval.risk-rule.condition.add-group") }}</span>
         <NTooltip>
           <template #trigger>
             <heroicons:question-mark-circle class="ml-1 w-3 h-3" />
