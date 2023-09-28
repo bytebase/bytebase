@@ -1,6 +1,9 @@
 <template>
   <Drawer :show="show" :close-on-esc="false" @close="$emit('close')">
-    <DrawerContent :title="$t('common.change-history')">
+    <DrawerContent
+      style="width: 60vw; max-width: calc(100vw - 8rem)"
+      :title="$t('common.change-history')"
+    >
       <ChangeHistoryDetail v-if="detailBindings" v-bind="detailBindings" />
     </DrawerContent>
   </Drawer>
