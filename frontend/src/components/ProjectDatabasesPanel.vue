@@ -23,7 +23,7 @@
         />
         <SearchBox
           :value="state.keyword"
-          :placeholder="$t('database.search-database')"
+          :placeholder="$t('database.filter-database')"
           @update:value="state.keyword = $event"
         />
       </NInputGroup>

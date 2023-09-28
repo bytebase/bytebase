@@ -32,7 +32,7 @@
         :render-source-list="renderSourceList"
         :render-target-list="renderTargetList"
         :source-filterable="true"
-        :source-filter-placeholder="$t('database.search-database-name')"
+        :source-filter-placeholder="$t('database.filter-database-name')"
         class="bb-transfer-out-database-transfer"
         style="height: 100%"
       />
