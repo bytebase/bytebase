@@ -591,7 +591,6 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     }
     case "column.type-disallow-list":
-    case "column.disallow-drop-in-index":
     case "index.primary-key-type-allowlist":
     case "system.charset.allowlist":
     case "system.collation.allowlist": {
@@ -748,7 +747,6 @@ const mergeIndividualConfigAsRule = (
       };
     case "column.required":
     case "column.type-disallow-list":
-    case "column.disallow-drop-in-index":
     case "index.primary-key-type-allowlist":
     case "system.charset.allowlist":
     case "system.collation.allowlist": {
