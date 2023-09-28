@@ -1,8 +1,8 @@
 import { cloneDeep, last } from "lodash-es";
-import { celServiceClient } from "@/grpcweb";
 import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
 import { DatabaseResource } from "@/types";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { batchConvertCELStringToParsedExpr } from "@/utils";
 
 interface DatabaseLevelCondition {
   database: string[];
@@ -168,20 +168,17 @@ const convertToCELString = (
 export const convertFromCELString = async (
   cel: string
 ): Promise<ConditionExpression> => {
-  const { expression: celExpr } = await celServiceClient.parse(
-    {
-      expression: cel,
-    },
-    {
-      silent: true,
-    }
-  );
+  let expr: Expr | undefined;
+  if (cel) {
+    const celExpr = await batchConvertCELStringToParsedExpr([cel]);
+    expr = celExpr[0].expr;
+  }
 
-  if (!celExpr || !celExpr.expr) {
+  if (!expr) {
     return {};
   }
 
-  const simpleExpr = resolveCELExpr(celExpr.expr);
+  const simpleExpr = resolveCELExpr(expr);
   const conditionExpression: ConditionExpression = {
     databaseResources: [],
   };

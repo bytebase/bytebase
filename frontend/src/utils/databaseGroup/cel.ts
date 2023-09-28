@@ -5,7 +5,8 @@ import {
   resolveCELExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
-import { convertCELStringToParsedExpr } from "@/utils";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { batchConvertCELStringToParsedExpr } from "@/utils";
 
 interface DatabaseGroupExpr {
   environmentId: string;
@@ -37,13 +38,17 @@ export const buildDatabaseGroupExpr = (
 };
 
 export const convertCELStringToExpr = async (cel: string) => {
-  const celExpr = await convertCELStringToParsedExpr(cel);
+  let expr: Expr | undefined;
+  if (cel) {
+    const celExpr = await batchConvertCELStringToParsedExpr([cel]);
+    expr = celExpr[0].expr;
+  }
 
-  if (!celExpr || !celExpr.expr) {
+  if (!expr) {
     return emptySimpleExpr();
   }
 
-  return wrapAsGroup(resolveCELExpr(celExpr.expr));
+  return wrapAsGroup(resolveCELExpr(expr));
 };
 
 export const getEnvironmentIdAndConditionExpr = (

@@ -125,7 +125,7 @@
       </Pane>
     </Splitpanes>
 
-    <Quickstart />
+    <Quickstart v-if="showQuickstart" />
 
     <Drawer v-model:show="showSheetPanel">
       <DrawerContent :title="$t('sql-editor.sheet.self')">
@@ -202,6 +202,8 @@ const { events: editorEvents } = provideSQLEditorContext();
 // provide context for sheets
 const { showPanel: showSheetPanel } = provideSheetContext();
 const { show: showSecondarySidebar } = provideSecondarySidebarContext();
+
+const showQuickstart = computed(() => sqlEditorStore.mode !== "BUNDLED");
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);

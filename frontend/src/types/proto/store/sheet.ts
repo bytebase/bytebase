@@ -14,7 +14,11 @@ export interface SheetPayload {
     | SheetPayload_SchemaDesign
     | undefined;
   /** database_config will be apply to the given database after executing statement, only be used in schema design for now. */
+<<<<<<< HEAD
   databaseConfig: DatabaseConfig | undefined;
+=======
+  databaseConfig?: DatabaseConfig | undefined;
+>>>>>>> fe235d851b9a5afd05daf63408d32cbeb96b1d08
 }
 
 /** Type of the SheetPayload. */
