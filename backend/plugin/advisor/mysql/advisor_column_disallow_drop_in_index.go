@@ -29,7 +29,7 @@ func init() {
 type ColumnDisallowDropInIndexAdvisor struct {
 }
 
-// Check checks for disallow CHANGE COLUMN statement.
+// Check checks for disallow Drop COLUMN in index statement.
 func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
