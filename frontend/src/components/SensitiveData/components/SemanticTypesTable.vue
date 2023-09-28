@@ -60,9 +60,7 @@
           :value="rowData.item.fullMaskAlgorithmId"
           :options="algorithmList"
           :consistent-menu-width="false"
-          :placeholder="
-            $t('custom-approval.security-rule.condition.select-value')
-          "
+          :placeholder="$t('custom-approval.risk-rule.condition.select-value')"
           size="small"
           style="min-width: 7rem; width: auto; overflow-x: hidden"
           @update:value="(val: string) => onInput(row, (data) => data.item.fullMaskAlgorithmId = val)"
@@ -77,9 +75,7 @@
           :value="rowData.item.partialMaskAlgorithmId"
           :options="algorithmList"
           :consistent-menu-width="false"
-          :placeholder="
-            $t('custom-approval.security-rule.condition.select-value')
-          "
+          :placeholder="$t('custom-approval.risk-rule.condition.select-value')"
           size="small"
           style="min-width: 7rem; width: auto; overflow-x: hidden"
           @update:value="(val: string) => onInput(row, (data) => data.item.partialMaskAlgorithmId = val)"
