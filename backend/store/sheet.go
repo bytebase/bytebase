@@ -117,6 +117,8 @@ type FindSheetMessage struct {
 	// Used to find a sheet list from projects containing PrincipalID as an active member.
 	// When finding a shared PROJECT/PUBLIC sheets, this value should be present.
 	PrincipalID *int
+	// Used to filter the sheet list by schema design fields.
+	SchemaDesignFilter *string
 }
 
 // PatchSheetMessage is the message to patch a sheet.
@@ -225,6 +227,9 @@ func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentP
 	}
 	if v := find.PayloadType; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.payload->>'type' = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.SchemaDesignFilter; v != nil {
+		where = append(where, *v)
 	}
 	statementField := fmt.Sprintf("LEFT(sheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
