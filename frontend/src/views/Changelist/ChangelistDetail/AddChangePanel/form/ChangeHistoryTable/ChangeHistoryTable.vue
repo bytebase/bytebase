@@ -40,8 +40,10 @@
       <div class="bb-grid-cell">
         {{ displaySemanticType(changeHistory.type) }}
       </div>
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <div class="bb-grid-cell" v-html="renderVersion(changeHistory)"></div>
+      <div class="bb-grid-cell">
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <span class="whitespace-nowrap" v-html="renderVersion(changeHistory)" />
+      </div>
       <div class="bb-grid-cell">
         <IssueUID :change-history="changeHistory" />
       </div>

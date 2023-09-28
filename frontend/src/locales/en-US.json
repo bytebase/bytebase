@@ -3068,7 +3068,8 @@
       "select-at-least-one-change": "Select at least one change",
       "branch": {
         "select-at-least-one-branch-below": "Select at least one branch below"
-      }
+      },
+      "sql-cannot-be-empty": "SQL is required"
     },
     "change-source": {
       "self": "Change source",

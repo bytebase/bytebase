@@ -10,7 +10,7 @@
       style="max-width: calc(100vw - 8rem)"
     >
       <template #default>
-        <div class="flex flex-col gap-y-4">
+        <div class="flex flex-col gap-y-4 min-h-full">
           <div class="flex items-center gap-x-8">
             <div class="textlabel">
               {{ $t("changelist.change-source.self") }}
@@ -56,7 +56,12 @@
                 @click="doAddChange"
               >
                 <span>{{ $t("common.add") }}</span>
-                <span v-if="pendingAddChanges.length > 0" class="ml-1">
+                <span
+                  v-if="
+                    changeSource !== 'RAW_SQL' && pendingAddChanges.length > 0
+                  "
+                  class="ml-1"
+                >
                   ({{ pendingAddChanges.length }})
                 </span>
               </NButton>
@@ -79,17 +84,20 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { useLocalSheetStore } from "@/store";
+import { getSheetStatement } from "@/utils";
 import { useChangelistDetailContext } from "../context";
 import { provideAddChangeContext } from "./context";
 import { BranchForm, ChangeHistoryForm, RawSQLForm } from "./form";
+import { emptyRawSQLChange } from "./utils";
 
 const { t } = useI18n();
-const { showAddChangePanel } = useChangelistDetailContext();
+const { project, showAddChangePanel } = useChangelistDetailContext();
 const {
   changeSource,
   changesFromChangeHistory,
   changesFromBranch,
-  changesFromRawSQL,
+  changeFromRawSQL,
 } = provideAddChangeContext();
 const isLoading = ref(false);
 
@@ -100,7 +108,7 @@ const pendingAddChanges = computed(() => {
     case "BRANCH":
       return changesFromBranch.value;
     case "RAW_SQL":
-      return changesFromRawSQL.value;
+      return [changeFromRawSQL.value];
   }
   console.warn("should never reach this line");
   return [];
@@ -112,6 +120,14 @@ const errors = asyncComputed(() => {
   if (pendingAddChanges.value.length === 0) {
     errors.push(t("changelist.add-change.select-at-least-one-change"));
   }
+  if (changeSource.value === "RAW_SQL") {
+    const name = changeFromRawSQL.value.sheet;
+    const sheet = useLocalSheetStore().getOrCreateSheetByName(name);
+    const statement = getSheetStatement(sheet);
+    if (statement.trim().length === 0) {
+      errors.push(t("changelist.add-change.sql-cannot-be-empty"));
+    }
+  }
 
   return errors;
 }, []);
@@ -121,7 +137,7 @@ const doAddChange = async () => {};
 const reset = () => {
   changesFromChangeHistory.value = [];
   changesFromBranch.value = [];
-  changesFromRawSQL.value = [];
+  changeFromRawSQL.value = emptyRawSQLChange(project.value.name);
 };
 
 watch(showAddChangePanel, (show) => {

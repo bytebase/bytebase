@@ -3061,7 +3061,8 @@
       "select-at-least-one-change": "选择至少一条变更",
       "branch": {
         "select-at-least-one-branch-below": "请在下方选择至少一条记录"
-      }
+      },
+      "sql-cannot-be-empty": "SQL 不能为空"
     },
     "change-source": {
       "self": "变更来源",

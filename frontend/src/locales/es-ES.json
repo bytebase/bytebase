@@ -3066,7 +3066,8 @@
       "select-at-least-one-change": "Seleccione al menos un cambio",
       "branch": {
         "select-at-least-one-branch-below": "Seleccione al menos una sucursal a continuación"
-      }
+      },
+      "sql-cannot-be-empty": "Se requiere SQL"
     },
     "change-source": {
       "self": "Cambiar fuente",

@@ -9,7 +9,7 @@ import {
 } from "@/types/proto/v1/sheet_service";
 
 const state = reactive({
-  uid: -1,
+  uid: -101,
 });
 
 /**
