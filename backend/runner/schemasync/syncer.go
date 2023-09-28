@@ -23,6 +23,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -438,8 +439,18 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		latestSchema := string(rawDump)
 		if len(list) > 0 {
 			if list[0].Schema != latestSchema {
+				_, version, _, err := util.FromStoredVersion(list[0].Version)
+				if err != nil {
+					slog.Error("failed to convert stored version",
+						slog.String("instance", instance.ResourceID),
+						slog.String("database", database.DatabaseName),
+						slog.String("version", list[0].Version),
+						log.BBError(err))
+
+					return nil
+				}
 				anomalyPayload := api.AnomalyDatabaseSchemaDriftPayload{
-					Version: list[0].Version,
+					Version: version,
 					Expect:  list[0].Schema,
 					Actual:  latestSchema,
 				}

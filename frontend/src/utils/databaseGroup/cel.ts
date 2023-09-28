@@ -1,4 +1,3 @@
-import { celServiceClient } from "@/grpcweb";
 import {
   ConditionGroupExpr,
   SimpleExpr,
@@ -6,6 +5,8 @@ import {
   resolveCELExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { batchConvertCELStringToParsedExpr } from "@/utils";
 
 interface DatabaseGroupExpr {
   environmentId: string;
@@ -37,60 +38,20 @@ export const buildDatabaseGroupExpr = (
 };
 
 export const convertCELStringToExpr = async (cel: string) => {
-  if (cel === "") {
+  let expr: Expr | undefined;
+  if (cel) {
+    const celExpr = await batchConvertCELStringToParsedExpr([cel]);
+    expr = celExpr[0].expr;
+  }
+
+  if (!expr) {
     return emptySimpleExpr();
   }
 
-  try {
-    const { expression: celExpr } = await celServiceClient.parse(
-      {
-        expression: cel,
-      },
-      {
-        silent: true,
-      }
-    );
-    if (!celExpr || !celExpr.expr) {
-      return emptySimpleExpr();
-    }
-
-    return wrapAsGroup(resolveCELExpr(celExpr.expr));
-  } catch (error) {
-    console.error(error);
-    return emptySimpleExpr();
-  }
+  return wrapAsGroup(resolveCELExpr(expr));
 };
 
-export const convertDatabaseGroupExprFromCEL = async (
-  cel: string
-): Promise<DatabaseGroupExpr> => {
-  const { expression: celExpr } = await celServiceClient.parse(
-    {
-      expression: cel,
-    },
-    {
-      silent: true,
-    }
-  );
-
-  if (!celExpr || !celExpr.expr) {
-    throw new Error("Invalid CEL expression");
-  }
-
-  const simpleExpr = resolveCELExpr(celExpr.expr);
-  const [environmentId, ...conditionGroupExpr] =
-    getEnvironmentIdAndConditionExpr(simpleExpr);
-  if (!environmentId) {
-    throw new Error("Invalid CEL expression");
-  }
-
-  return {
-    environmentId,
-    conditionGroupExpr: wrapAsGroup(...conditionGroupExpr),
-  };
-};
-
-const getEnvironmentIdAndConditionExpr = (
+export const getEnvironmentIdAndConditionExpr = (
   expr: SimpleExpr
 ): [string, ConditionGroupExpr] => {
   if (expr.operator === "_==_") {

@@ -414,14 +414,6 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "im-integration",
-                name: "setting.workspace.im-integration",
-                meta: { title: () => t("settings.sidebar.im-integration") },
-                component: () =>
-                  import("../views/SettingWorkspaceIMIntegration.vue"),
-                props: true,
-              },
-              {
                 path: "sso",
                 name: "setting.workspace.sso",
                 meta: { title: () => t("settings.sidebar.sso") },
@@ -1229,21 +1221,6 @@ router.beforeEach((to, from, next) => {
       next({
         path: `/sql-editor/sheet/project-sample-101`,
         replace: true,
-      });
-      return;
-    }
-  }
-
-  if (to.name?.toString().startsWith("setting.workspace.im-integration")) {
-    if (
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-im-integration",
-        currentUserV1.value.userRole
-      )
-    ) {
-      next({
-        name: "error.403",
-        replace: false,
       });
       return;
     }

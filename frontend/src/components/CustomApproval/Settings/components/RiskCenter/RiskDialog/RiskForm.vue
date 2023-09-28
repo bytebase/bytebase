@@ -110,8 +110,8 @@ import {
 import { Expr } from "@/types/proto/google/type/expr";
 import { Risk } from "@/types/proto/v1/risk_service";
 import {
-  convertCELStringToParsedExpr,
-  convertParsedExprToCELString,
+  batchConvertCELStringToParsedExpr,
+  batchConvertParsedExprToCELString,
 } from "@/utils";
 import {
   getFactorList,
@@ -149,12 +149,18 @@ const mode = computed(() => context.dialog.value?.mode ?? "CREATE");
 
 const resolveLocalState = async () => {
   const risk = cloneDeep(context.dialog.value!.risk);
-  const parsedExpr = await convertCELStringToParsedExpr(
-    risk.condition?.expression ?? ""
-  );
+
+  let expr = CELExpr.fromJSON({});
+  if (risk.condition?.expression) {
+    const parsedExprs = await batchConvertCELStringToParsedExpr([
+      risk.condition.expression,
+    ]);
+    expr = parsedExprs[0].expr ?? CELExpr.fromJSON({});
+  }
+
   state.value = {
     risk,
-    expr: wrapAsGroup(resolveCELExpr(parsedExpr.expr ?? CELExpr.fromJSON({}))),
+    expr: wrapAsGroup(resolveCELExpr(expr)),
   };
 };
 
@@ -183,13 +189,13 @@ const handleUpsert = async () => {
 
   const risk = cloneDeep(state.value.risk);
 
-  const expression = await convertParsedExprToCELString(
+  const expressions = await batchConvertParsedExprToCELString([
     ParsedExpr.fromJSON({
       expr: buildCELExpr(state.value.expr),
-    })
-  );
+    }),
+  ]);
   risk.condition = Expr.fromJSON({
-    expression,
+    expression: expressions[0],
   });
   emit("save", risk);
 };

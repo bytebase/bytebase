@@ -92,8 +92,8 @@ import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
 import {
-  convertCELStringToParsedExpr,
-  convertParsedExprToCELString,
+  batchConvertCELStringToParsedExpr,
+  batchConvertParsedExprToCELString,
 } from "@/utils";
 import { factorSupportDropdown, factorOperatorOverrideMap } from "./utils";
 
@@ -129,15 +129,17 @@ const state = reactive<LocalState>({
 });
 
 const resetLocalState = async (rule: MaskingRulePolicy_MaskingRule) => {
-  const parsedExpr = await convertCELStringToParsedExpr(
-    rule.condition?.expression ?? ""
-  );
+  let expr = CELExpr.fromJSON({});
+  if (rule.condition?.expression) {
+    const parsedExprs = await batchConvertCELStringToParsedExpr([
+      rule.condition.expression,
+    ]);
+    expr = parsedExprs[0].expr ?? CELExpr.fromJSON({});
+  }
 
   state.dirty = false;
   state.title = rule.condition?.title ?? "";
-  state.expr = wrapAsGroup(
-    resolveCELExpr(parsedExpr.expr ?? CELExpr.fromJSON({}))
-  );
+  state.expr = wrapAsGroup(resolveCELExpr(expr));
   state.maskingLevel = rule.maskingLevel;
 };
 
@@ -179,16 +181,16 @@ const isValid = computed(() => {
 });
 
 const onConfirm = async () => {
-  const expression = await convertParsedExprToCELString(
+  const expressions = await batchConvertParsedExprToCELString([
     ParsedExpr.fromJSON({
       expr: buildCELExpr(state.expr),
-    })
-  );
+    }),
+  ]);
   emit("confirm", {
     ...props.maskingRule,
     maskingLevel: state.maskingLevel,
     condition: Expr.fromJSON({
-      expression,
+      expression: expressions[0],
       title: state.title,
     }),
   });

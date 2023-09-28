@@ -109,10 +109,6 @@
     - [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse)
     - [BatchParseRequest](#bytebase-v1-BatchParseRequest)
     - [BatchParseResponse](#bytebase-v1-BatchParseResponse)
-    - [DeparseRequest](#bytebase-v1-DeparseRequest)
-    - [DeparseResponse](#bytebase-v1-DeparseResponse)
-    - [ParseRequest](#bytebase-v1-ParseRequest)
-    - [ParseResponse](#bytebase-v1-ParseResponse)
   
     - [CelService](#bytebase-v1-CelService)
   
@@ -2095,66 +2091,6 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 
 
 
-
-<a name="bytebase-v1-DeparseRequest"></a>
-
-### DeparseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeparseResponse"></a>
-
-### DeparseResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expression | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ParseRequest"></a>
-
-### ParseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expression | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ParseResponse"></a>
-
-### ParseResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
-
-
-
-
-
  
 
  
@@ -2169,9 +2105,7 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| Parse | [ParseRequest](#bytebase-v1-ParseRequest) | [ParseResponse](#bytebase-v1-ParseResponse) |  |
 | BatchParse | [BatchParseRequest](#bytebase-v1-BatchParseRequest) | [BatchParseResponse](#bytebase-v1-BatchParseResponse) |  |
-| Deparse | [DeparseRequest](#bytebase-v1-DeparseRequest) | [DeparseResponse](#bytebase-v1-DeparseResponse) |  |
 | BatchDeparse | [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest) | [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse) |  |
 
  

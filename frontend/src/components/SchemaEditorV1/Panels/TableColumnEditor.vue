@@ -96,7 +96,11 @@
           <input
             v-model="column.default"
             :disabled="readonly || disableAlterColumn(column)"
-            :placeholder="column.default === undefined ? 'EMPTY' : 'NULL'"
+            :placeholder="
+              column.default === undefined || !column.nullable
+                ? 'EMPTY'
+                : 'NULL'
+            "
             class="column-field-input !pr-8"
             type="text"
           />
@@ -209,7 +213,7 @@
 <script lang="ts" setup>
 import { flatten } from "lodash-es";
 import { NDropdown } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBCheckbox } from "@/bbkit";
 import { useSettingV1Store } from "@/store/modules";
@@ -384,7 +388,7 @@ const handleColumnDefaultFieldChange = (
   column: Column,
   defaultString: string
 ) => {
-  if (defaultString === "NULL") {
+  if (defaultString === "NULL" && column.nullable) {
     column.default = "NULL";
   } else if (defaultString === "EMPTY") {
     column.default = undefined;
@@ -398,6 +402,16 @@ const onClassificationSelect = (classificationId: string) => {
   state.pendingUpdateColumn.classification = classificationId;
   state.pendingUpdateColumn = undefined;
 };
+
+watchEffect(() => {
+  shownColumnList.value.forEach((column) => {
+    if (column.default === "NULL") {
+      column.default = column.nullable ? "NULL" : undefined;
+    } else if (column.default === "") {
+      column.default = undefined;
+    }
+  });
+});
 </script>
 
 <style scoped>
