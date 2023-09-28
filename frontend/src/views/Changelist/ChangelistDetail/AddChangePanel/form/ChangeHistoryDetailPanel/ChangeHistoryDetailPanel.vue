@@ -14,8 +14,9 @@ import { changeHistorySlug, extractDatabaseResourceName } from "@/utils";
 import ChangeHistoryDetail from "@/views/ChangeHistoryDetail.vue";
 
 const props = defineProps<{
-  changeHistoryName: string | undefined;
+  changeHistoryName?: string;
 }>();
+
 defineEmits<{
   (event: "close"): void;
 }>();

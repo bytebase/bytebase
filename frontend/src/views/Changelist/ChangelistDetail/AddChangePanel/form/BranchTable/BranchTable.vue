@@ -2,7 +2,7 @@
   <BBGrid
     :column-list="columns"
     :ready="!isFetching"
-    :data-source="changeHistoryList"
+    :data-source="branchList"
     :show-placeholder="true"
     :custom-header="true"
     class="border-y"
@@ -28,56 +28,53 @@
         </div>
       </div>
     </template>
-    <template #item="{ item: changeHistory }: BBGridRow<ChangeHistory>">
+    <template #item="{ item: branch }: BBGridRow<SchemaDesign>">
       <div class="bb-grid-cell">
         <NCheckbox
-          :checked="isSelected(changeHistory)"
-          @update:checked="toggleSelect(changeHistory, $event)"
-          @click.stop
+          :checked="isSelected(branch)"
+          @update:checked="toggleSelect(branch, $event)"
         />
       </div>
 
-      <div class="bb-grid-cell">
-        {{ displaySemanticType(changeHistory.type) }}
-      </div>
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div class="bb-grid-cell" v-html="renderVersion(changeHistory)"></div>
+      <div class="bb-grid-cell" v-html="renderTitle(branch)"></div>
       <div class="bb-grid-cell">
-        <IssueUID :change-history="changeHistory" />
+        <DatabaseInfo :database="databaseForBranch(branch)" />
       </div>
       <div class="bb-grid-cell">
-        <Tables :change-history="changeHistory" />
-      </div>
-      <div class="bb-grid-cell whitespace-nowrap">
-        <SQL :change-history="changeHistory" />
+        <i18n-t keypath="common.updated-at-by">
+          <template #time>
+            <HumanizeDate :date="branch.updateTime" />
+          </template>
+          <template #user>{{ getUser(branch.updater)?.title }}</template>
+        </i18n-t>
       </div>
     </template>
   </BBGrid>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import { escape } from "lodash-es";
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, BBGridRow, BBGridColumn } from "@/bbkit";
-import { ChangeHistory } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
-import { displaySemanticType } from "../utils";
-import IssueUID from "./IssueUID.vue";
-import SQL from "./SQL.vue";
-import Tables from "./Tables.vue";
+import { BBGridColumn, BBGridRow } from "@/bbkit";
+import DatabaseInfo from "@/components/DatabaseInfo.vue";
+import HumanizeDate from "@/components/misc/HumanizeDate.vue";
+import { useDatabaseV1Store, useUserStore } from "@/store";
+import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { extractUserResourceName, getHighlightHTMLByRegExp } from "@/utils";
 
 const props = defineProps<{
   selected: string[];
-  changeHistoryList: ChangeHistory[];
+  branchList: SchemaDesign[];
   isFetching: boolean;
   keyword: string;
 }>();
 
 const emit = defineEmits<{
   (event: "update:selected", selected: string[]): void;
-  (event: "click-item", change: ChangeHistory): void;
+  (event: "click-item", branch: SchemaDesign): void;
 }>();
 
 const { t } = useI18n();
@@ -85,27 +82,21 @@ const { t } = useI18n();
 const columns = computed((): BBGridColumn[] => {
   return [
     { title: "", width: "auto" },
-    { title: t("common.type"), width: "auto" },
-    { title: t("common.version"), width: "1fr" },
-    { title: t("common.issue"), width: "auto" },
+    { title: t("common.branch"), width: "1fr" },
+    { title: t("schema-designer.baseline-version"), width: "2fr" },
     {
-      title: t("changelist.change-source.change-history.tables"),
-      width: "minmax(auto, 1fr)",
-    },
-    {
-      title: t("common.sql"),
-      width: "3fr",
+      title: t("common.updated-at"),
+      width: "auto",
     },
   ];
 });
 
 const allSelectionState = computed(() => {
-  const { changeHistoryList: list, selected } = props;
+  const { branchList: list, selected } = props;
   const set = new Set(selected);
 
   const checked =
-    selected.length > 0 &&
-    list.every((changeHistory) => set.has(changeHistory.name));
+    selected.length > 0 && list.every((branch) => set.has(branch.name));
   const indeterminate = !checked && selected.some((name) => set.has(name));
 
   return {
@@ -118,20 +109,20 @@ const toggleSelectAll = (on: boolean) => {
   if (on) {
     emit(
       "update:selected",
-      props.changeHistoryList.map((changeHistory) => changeHistory.name)
+      props.branchList.map((branch) => branch.name)
     );
   } else {
     emit("update:selected", []);
   }
 };
 
-const isSelected = (changeHistory: ChangeHistory) => {
-  return props.selected.includes(changeHistory.name);
+const isSelected = (branch: SchemaDesign) => {
+  return props.selected.includes(branch.name);
 };
 
-const toggleSelect = (changeHistory: ChangeHistory, on: boolean) => {
+const toggleSelect = (branch: SchemaDesign, on: boolean) => {
   const set = new Set(props.selected);
-  const key = changeHistory.name;
+  const key = branch.name;
   if (on) {
     if (!set.has(key)) {
       set.add(key);
@@ -145,23 +136,32 @@ const toggleSelect = (changeHistory: ChangeHistory, on: boolean) => {
   }
 };
 
-const renderVersion = (item: ChangeHistory) => {
+const renderTitle = (item: SchemaDesign) => {
   const keyword = props.keyword.trim().toLowerCase();
 
-  const { version } = item;
+  const { title } = item;
 
   if (!keyword) {
-    return escape(version);
+    return escape(title);
   }
 
   return getHighlightHTMLByRegExp(
-    escape(version),
+    escape(title),
     escape(keyword),
     false /* !caseSensitive */
   );
 };
 
-const handleClickRow = (item: ChangeHistory) => {
+const databaseForBranch = (branch: SchemaDesign) => {
+  return useDatabaseV1Store().getDatabaseByName(branch.baselineDatabase);
+};
+
+const getUser = (name: string) => {
+  const email = extractUserResourceName(name);
+  return useUserStore().getUserByEmail(email);
+};
+
+const handleClickRow = (item: SchemaDesign) => {
   emit("click-item", item);
 };
 </script>

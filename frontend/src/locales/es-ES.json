@@ -3063,7 +3063,10 @@
       "change-history": {
         "select-at-least-one-history-below": "Seleccione al menos un historial a continuación"
       },
-      "select-at-least-one-change": "Seleccione al menos un cambio"
+      "select-at-least-one-change": "Seleccione al menos un cambio",
+      "branch": {
+        "select-at-least-one-branch-below": "Seleccione al menos una sucursal a continuación"
+      }
     },
     "change-source": {
       "self": "Cambiar fuente",

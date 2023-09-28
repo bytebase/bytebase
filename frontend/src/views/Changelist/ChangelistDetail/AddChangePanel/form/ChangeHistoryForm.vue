@@ -3,7 +3,7 @@
     <div class="flex flex-col gap-y-2 max-w-max">
       <div
         v-if="changes.length === 0"
-        class="text-control-placeholder py-2 text-sm"
+        class="text-control-placeholder text-sm leading-[28px]"
       >
         {{
           $t(
@@ -11,7 +11,7 @@
           )
         }}
       </div>
-      <ChangeItem
+      <ChangeHistoryChangeItem
         v-for="change in changes"
         :key="change.source"
         :change="change"
@@ -84,9 +84,9 @@ import {
 } from "@/utils";
 import { useChangelistDetailContext } from "../../context";
 import { useAddChangeContext } from "../context";
+import ChangeHistoryChangeItem from "./ChangeHistoryChangeItem.vue";
 import ChangeHistoryDetailPanel from "./ChangeHistoryDetailPanel";
 import ChangeHistoryTable from "./ChangeHistoryTable";
-import ChangeItem from "./ChangeItem.vue";
 import {
   getAffectedTableDisplayName,
   getAffectedTableKey,
@@ -257,6 +257,7 @@ const handleClickChange = (change: Change) => {
   state.detailChangeHistoryName = changeHistoryName;
 };
 
+// Select the first database automatically
 watch(
   () => project.value.name,
   (project) => {
