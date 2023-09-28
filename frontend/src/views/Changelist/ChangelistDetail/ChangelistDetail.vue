@@ -117,10 +117,12 @@ useTitle(documentTitle);
 
 useEmitteryEventListener(events, "reorder-cancel", () => {
   state.changes = [...changelist.value.changes];
+  reorderMode.value = false;
 });
 useEmitteryEventListener(events, "reorder-confirm", async () => {
   const changes = [...state.changes];
   await patchChanges(changes);
+  reorderMode.value = false;
 });
 
 watch(
