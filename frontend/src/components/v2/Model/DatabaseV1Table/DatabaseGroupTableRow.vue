@@ -33,10 +33,6 @@
     <!-- instance -->
     <span>-</span>
   </div>
-  <div class="bb-grid-cell justify-center">
-    <!-- sync status -->
-    <span>-</span>
-  </div>
 </template>
 
 <script lang="ts" setup>
