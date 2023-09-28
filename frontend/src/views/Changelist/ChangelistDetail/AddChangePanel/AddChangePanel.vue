@@ -78,14 +78,21 @@ import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import {
   pushNotification,
+  useChangeHistoryStore,
   useChangelistStore,
   useLocalSheetStore,
 } from "@/store";
+import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import {
   Changelist_Change as Change,
   Changelist,
 } from "@/types/proto/v1/changelist_service";
-import { getSheetStatement, isLocalSheet } from "@/utils";
+import {
+  getChangelistChangeSourceType,
+  getSheetStatement,
+  isLocalSheet,
+  setSheetStatement,
+} from "@/utils";
 import { useChangelistDetailContext } from "../context";
 import { provideAddChangeContext } from "./context";
 import { BranchForm, ChangeHistoryForm, RawSQLForm } from "./form";
@@ -142,6 +149,19 @@ const doAddChange = async () => {
     if (isLocalSheet(change.sheet)) {
       const localSheetStore = useLocalSheetStore();
       const sheet = localSheetStore.getOrCreateSheetByName(change.sheet);
+      const sourceType = getChangelistChangeSourceType(change);
+      if (sourceType === "CHANGE_HISTORY") {
+        const changeHistory = useChangeHistoryStore().getChangeHistoryByName(
+          change.source
+        );
+        setSheetStatement(sheet, changeHistory?.statement ?? "");
+      }
+      if (sourceType === "BRANCH") {
+        const branch = useSchemaDesignStore().getSchemaDesignByName(
+          change.source
+        );
+        setSheetStatement(sheet, branch.schema);
+      }
       const created = await localSheetStore.saveLocalSheetToRemote(sheet);
       change.sheet = created.name;
     }
@@ -172,6 +192,7 @@ const doAddChange = async () => {
 };
 
 const reset = () => {
+  changeSource.value = "CHANGE_HISTORY";
   changesFromChangeHistory.value = [];
   changesFromBranch.value = [];
   changeFromRawSQL.value = emptyRawSQLChange(project.value.name);
