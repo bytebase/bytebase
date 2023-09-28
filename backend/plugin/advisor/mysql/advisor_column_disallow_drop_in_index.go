@@ -71,7 +71,7 @@ type columnDisallowDropInIndexChecker struct {
 	level      advisor.Status
 	title      string
 	text       string
-	tables     tableState // the bool mean whether the table is indexed
+	tables     tableState // the variable mean whether the column in index.
 	catalog    *catalog.Finder
 	line       int
 }
@@ -97,6 +97,7 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 				table := node.Table.Name.O
 
 				index := checker.catalog.Origin.Index(&catalog.TableIndexFind{
+					// In MySQL, the SchemaName is "".
 					SchemaName: "",
 					TableName:  table,
 				})

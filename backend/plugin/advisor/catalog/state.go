@@ -154,6 +154,7 @@ type TableIndexFind struct {
 	TableName  string
 }
 
+// Index returns the index map of the table.
 func (d *DatabaseState) Index(tableIndexFind *TableIndexFind) *indexStateMap {
 	schema, exists := d.schemaSet[tableIndexFind.SchemaName]
 	if !exists {
@@ -372,8 +373,8 @@ func (table *TableState) CountIndex() int {
 	return len(table.indexSet)
 }
 
-// GetIndex return the index map.
-func (table *TableState) Index(tableIndexFind *TableIndexFind) *indexStateMap {
+// Index return the index map of table.
+func (table *TableState) Index(_ *TableIndexFind) *indexStateMap {
 	return &table.indexSet
 }
 
