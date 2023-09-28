@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col">
     <AdvancedSearch
-      custom-class="m-4"
+      custom-class="mx-4 my-2"
       :params="initSearchParams"
       :autofocus="autofocus"
       @update="onSearchParamsUpdate($event)"
@@ -9,7 +9,7 @@
 
     <FeatureAttention
       v-if="!!state.searchParams.query || state.searchParams.scopes.length > 0"
-      custom-class="m-4"
+      custom-class="mx-4 my-2"
       feature="bb.feature.issue-advanced-search"
     />
 
