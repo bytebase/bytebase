@@ -9,6 +9,8 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/plsql-parser"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // https://docs.oracle.com/en/database/oracle/oracle-database/21/lnpls/plsql-reserved-words-keywords.html#GUID-9BAA3A99-41B1-45CB-A91E-1E482BC1F927
@@ -355,65 +357,9 @@ var oracleKeywords = map[string]bool{
 	"ZONE":            true,
 }
 
-// SyntaxError is a syntax error.
-type SyntaxError struct {
-	Line    int
-	Column  int
-	Message string
-}
-
-// Error returns the error message.
-func (e *SyntaxError) Error() string {
-	return e.Message
-}
-
-// ParseErrorListener is a custom error listener for PLSQL parser.
-type ParseErrorListener struct {
-	err *SyntaxError
-}
-
 // NewPLSQLErrorListener creates a new PLSQLErrorListener.
-func NewPLSQLErrorListener() *ParseErrorListener {
-	return &ParseErrorListener{}
-}
-
-// SyntaxError returns the errors.
-func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, column int, _ string, _ antlr.RecognitionException) {
-	if l.err == nil {
-		errMessage := ""
-		if token, ok := token.(*antlr.CommonToken); ok {
-			stream := token.GetInputStream()
-			start := token.GetStart() - 40
-			if start < 0 {
-				start = 0
-			}
-			stop := token.GetStop()
-			if stop >= stream.Size() {
-				stop = stream.Size() - 1
-			}
-			errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
-		}
-		l.err = &SyntaxError{
-			Line:    line,
-			Column:  column,
-			Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", line, column, errMessage),
-		}
-	}
-}
-
-// ReportAmbiguity reports an ambiguity.
-func (*ParseErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, exact bool, ambigAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
-	antlr.ConsoleErrorListenerINSTANCE.ReportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
-}
-
-// ReportAttemptingFullContext reports an attempting full context.
-func (*ParseErrorListener) ReportAttemptingFullContext(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, conflictingAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
-	antlr.ConsoleErrorListenerINSTANCE.ReportAttemptingFullContext(recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs)
-}
-
-// ReportContextSensitivity reports a context sensitivity.
-func (*ParseErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex, prediction int, configs *antlr.ATNConfigSet) {
-	antlr.ConsoleErrorListenerINSTANCE.ReportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs)
+func NewPLSQLErrorListener() *base.ParseErrorListener {
+	return &base.ParseErrorListener{}
 }
 
 func addSemicolonIfNeeded(sql string) string {
@@ -444,23 +390,23 @@ func ParsePLSQL(sql string) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	p := parser.NewPlSqlParser(stream)
 	p.SetVersion12(true)
 
-	lexerErrorListener := &ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 
 	p.BuildParseTrees = true
 	tree := p.Sql_script()
 
-	if lexerErrorListener.err != nil {
-		return nil, nil, lexerErrorListener.err
+	if lexerErrorListener.Err != nil {
+		return nil, nil, lexerErrorListener.Err
 	}
 
-	if parserErrorListener.err != nil {
-		return nil, nil, parserErrorListener.err
+	if parserErrorListener.Err != nil {
+		return nil, nil, parserErrorListener.Err
 	}
 
 	return tree, stream, nil

@@ -9,6 +9,8 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	tsqlparser "github.com/bytebase/tsql-parser"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // tsqlKeywordsMap is the map of all TSQL keywords.
@@ -518,23 +520,23 @@ func ParseTSQL(statement string) (antlr.Tree, error) {
 
 	// Remove default error listener and add our own error listener.
 	lexer.RemoveErrorListeners()
-	lexerErrorListener := &ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{}
 	lexer.AddErrorListener(lexerErrorListener)
 
 	p.RemoveErrorListeners()
-	parserErrorListener := &ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{}
 	p.AddErrorListener(parserErrorListener)
 
 	p.BuildParseTrees = true
 
 	tree := p.Tsql_file()
 
-	if lexerErrorListener.err != nil {
-		return nil, lexerErrorListener.err
+	if lexerErrorListener.Err != nil {
+		return nil, lexerErrorListener.Err
 	}
 
-	if parserErrorListener.err != nil {
-		return nil, parserErrorListener.err
+	if parserErrorListener.Err != nil {
+		return nil, parserErrorListener.Err
 	}
 
 	return tree, nil

@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 
@@ -509,7 +510,7 @@ func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []A
 func mssqlSyntaxCheck(statement string) (any, []Advice) {
 	tree, err := parser.ParseTSQL(statement)
 	if err != nil {
-		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{
 				{
 					Status:  Warn,
@@ -538,7 +539,7 @@ func mssqlSyntaxCheck(statement string) (any, []Advice) {
 func snowflakeSyntaxCheck(statement string) (any, []Advice) {
 	tree, err := parser.ParseSnowSQL(statement + ";")
 	if err != nil {
-		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{
 				{
 					Status:  Warn,
@@ -567,7 +568,7 @@ func snowflakeSyntaxCheck(statement string) (any, []Advice) {
 func oracleSyntaxCheck(statement string) (any, []Advice) {
 	tree, _, err := parser.ParsePLSQL(statement + ";")
 	if err != nil {
-		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{
 				{
 					Status:  Warn,
@@ -675,7 +676,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 			// TiDB parser doesn't fully support MySQL syntax, so we need to use MySQL parser to parse the statement.
 			// But MySQL parser has some performance issue, so we only use it to parse the statement after TiDB parser failed.
 			if _, err := parser.ParseMySQL(item.Text); err != nil {
-				if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+				if syntaxErr, ok := err.(*base.SyntaxError); ok {
 					return nil, []Advice{
 						{
 							Status:  Error,

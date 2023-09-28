@@ -10,6 +10,8 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // MySQLParseResult is the result of parsing a MySQL statement.
@@ -317,11 +319,11 @@ func parseSingleStatement(statement string) (antlr.Tree, *antlr.CommonTokenStrea
 
 	p := parser.NewMySQLParser(stream)
 
-	lexerErrorListener := &ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 
@@ -329,12 +331,12 @@ func parseSingleStatement(statement string) (antlr.Tree, *antlr.CommonTokenStrea
 
 	tree := p.Script()
 
-	if lexerErrorListener.err != nil {
-		return nil, nil, lexerErrorListener.err
+	if lexerErrorListener.Err != nil {
+		return nil, nil, lexerErrorListener.Err
 	}
 
-	if parserErrorListener.err != nil {
-		return nil, nil, parserErrorListener.err
+	if parserErrorListener.Err != nil {
+		return nil, nil, parserErrorListener.Err
 	}
 
 	return tree, stream, nil
