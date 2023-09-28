@@ -57,7 +57,10 @@ const prepareBranchContext = async () => {
     return;
   }
   for (const branch of props.branches) {
-    if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+    if (
+      branch.type === SchemaDesign_Type.PERSONAL_DRAFT &&
+      branch.baselineSheetName
+    ) {
       // Prepare parent branch for personal draft.
       await schemaDesignStore.getOrFetchSchemaDesignByName(
         branch.baselineSheetName
