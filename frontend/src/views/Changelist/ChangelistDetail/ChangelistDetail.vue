@@ -28,6 +28,10 @@
       :branch-name="state.detailBranchName"
       @close="state.detailBranchName = undefined"
     />
+    <RawSQLPanel
+      :sheet-name="state.detailRawSQLSheetName"
+      @close="state.detailRawSQLSheetName = undefined"
+    />
   </div>
 </template>
 
@@ -47,6 +51,7 @@ import BranchDetailPanel from "./BranchDetailPanel";
 import ChangeHistoryDetailPanel from "./ChangeHistoryDetailPanel";
 import ChangeTable from "./ChangeTable";
 import NavBar from "./NavBar";
+import RawSQLPanel from "./RawSQLPanel";
 import { provideChangelistDetailContext } from "./context";
 
 const { t } = useI18n();
@@ -96,7 +101,7 @@ const handleSelectChange = async (change: Change) => {
     state.detailBranchName = change.source;
   }
   if (sourceType === "RAW_SQL") {
-    alert("tbd:" + change.sheet);
+    state.detailRawSQLSheetName = change.sheet;
   }
 };
 const handleReorderMove = (row: number, delta: -1 | 1) => {

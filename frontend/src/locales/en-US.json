@@ -3058,7 +3058,8 @@
       "project-is-required": "Project is required",
       "name-is-required": "Changelist name is required",
       "invalid-resource-id": "Invalid resource Id",
-      "select-changes-to-export": "Select changes to export"
+      "select-changes-to-export": "Select changes to export",
+      "nothing-changed": "Nothing changed"
     },
     "apply-to-database": "Apply to database",
     "add-change": {

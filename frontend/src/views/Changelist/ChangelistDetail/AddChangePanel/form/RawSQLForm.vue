@@ -14,8 +14,8 @@
 import { computed } from "vue";
 import { useLocalSheetStore } from "@/store";
 import { getSheetStatement, readFileAsync, setSheetStatement } from "@/utils";
+import RawSQLEditor from "../../RawSQLEditor";
 import { useAddChangeContext } from "../context";
-import RawSQLEditor from "./RawSQLEditor";
 
 const { changeFromRawSQL: change } = useAddChangeContext();
 
