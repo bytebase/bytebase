@@ -25,11 +25,9 @@
           >
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-              <NButton
-                v-if="parentBranch"
-                @click="() => (state.showDiffEditor = true)"
-                >{{ $t("schema-designer.merge-branch") }}</NButton
-              >
+              <NButton v-if="parentBranch" @click="handleMergeBranch">{{
+                $t("schema-designer.merge-branch")
+              }}</NButton>
               <NButton type="primary" @click="handleApplySchemaDesignClick">{{
                 $t("schema-designer.apply-to-database")
               }}</NButton>
@@ -130,6 +128,7 @@ import {
   useSchemaEditorV1Store,
 } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import {
   SchemaDesign,
@@ -187,9 +186,12 @@ const schemaDesign = computed(() => {
 
 const parentBranch = computed(() => {
   // Show parent branch when the current branch is a personal draft and it's not the new created one.
-  if (schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+  if (
+    schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
+    schemaDesign.value.baselineSheetName
+  ) {
     return schemaDesignStore.getSchemaDesignByName(
-      schemaDesign.value.baselineSheetName || ""
+      schemaDesign.value.baselineSheetName
     );
   }
   return undefined;
@@ -231,9 +233,12 @@ const titleInputStyle = computed(() => {
 
 onMounted(async () => {
   // Prepare the parent branch for personal draft.
-  if (schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+  if (
+    schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
+    schemaDesign.value.baselineSheetName
+  ) {
     await schemaDesignStore.getOrFetchSchemaDesignByName(
-      schemaDesign.value.baselineSheetName || ""
+      schemaDesign.value.baselineSheetName
     );
   }
 });
@@ -297,6 +302,18 @@ const handleBranchTitleInputBlur = async () => {
     });
   }
   state.isEditingTitle = false;
+};
+
+const handleMergeBranch = () => {
+  if (!parentBranch.value) {
+    return;
+  }
+
+  mergeBranchPanelContext.value = {
+    sourceBranchName: schemaDesign.value.name,
+    targetBranchName: parentBranch.value.name,
+  };
+  state.showDiffEditor = true;
 };
 
 const handleEdit = async () => {
@@ -386,6 +403,19 @@ const handleSaveBranch = async () => {
             closable: true,
             maskClosable: true,
             closeOnEsc: true,
+            onNegativeClick: () => {
+              // Go to draft branch detail page after merge failed.
+              const [, sheetId] = getProjectAndSchemaDesignSheetId(
+                newBranch.name
+              );
+              state.isEditing = false;
+              router.replace({
+                name: "workspace.branch.detail",
+                params: {
+                  branchSlug: `${newBranch.title}-${sheetId}`,
+                },
+              });
+            },
             onPositiveClick: () => {
               state.showDiffEditor = true;
               mergeBranchPanelContext.value = {
