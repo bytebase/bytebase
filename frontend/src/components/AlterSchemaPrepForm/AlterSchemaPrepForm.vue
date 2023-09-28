@@ -132,7 +132,7 @@
                 <BBTableSearch
                   v-if="state.alterType === 'MULTI_DB'"
                   class="m-px"
-                  :placeholder="$t('database.search-database')"
+                  :placeholder="$t('database.filter-database')"
                   @change-text="(text: string) => (state.searchText = text)"
                 />
                 <YAxisRadioGroup
@@ -157,7 +157,7 @@
                   <div class="flex items-center justify-end mx-2">
                     <BBTableSearch
                       class="m-px"
-                      :placeholder="$t('database.search-database')"
+                      :placeholder="$t('database.filter-database')"
                       @change-text="(text: string) => (state.searchText = text)"
                     />
                   </div>
@@ -198,7 +198,7 @@
             <aside class="flex justify-end">
               <BBTableSearch
                 class="m-px"
-                :placeholder="$t('database.search-database')"
+                :placeholder="$t('database.filter-database')"
                 @change-text="(text: string) => (state.searchText = text)"
               />
             </aside>

@@ -1145,7 +1145,7 @@
     "successfully-connected-instance": "成功连接到实例。",
     "failed-to-connect-instance": "连接到实例失败。",
     "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
-    "search-instance-name": "搜索实例名称",
+    "filter-instance-name": "过滤实例名称",
     "grants": "权限",
     "authentication-database": "认证数据库",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
@@ -1311,8 +1311,8 @@
     "last-successful-sync": "最后一次成功的同步",
     "no-anomalies-detected": "没有检测到异常",
     "sync-status": "同步状态",
-    "search-database-name": "搜索数据库名称",
-    "search-database": "搜索数据库",
+    "filter-database-name": "过滤数据库名称",
+    "filter-database": "过滤数据库",
     "transfer-project": "转移项目",
     "edit-schema": "变更 Schema",
     "edit-schema-in-vcs": "变更 Schema (VCS)",
@@ -1602,7 +1602,7 @@
         "cancel": "关闭",
         "confirm": "不再出现"
       },
-      "search-bar-placeholder": "搜索项目名称"
+      "filter-project-name": "过滤项目名称"
     },
     "table": {
       "key": "@:common.key",

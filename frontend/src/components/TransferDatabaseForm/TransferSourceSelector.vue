@@ -53,7 +53,7 @@
         />
         <SearchBox
           :value="searchText"
-          :placeholder="$t('database.search-database')"
+          :placeholder="$t('database.filter-database')"
           @update:value="$emit('search-text-change', $event)"
         />
       </NInputGroup>

@@ -1148,7 +1148,7 @@
     "successfully-connected-instance": "Instancia conectada correctamente.",
     "failed-to-connect-instance": "Error al conectar la instancia.",
     "failed-to-connect-instance-localhost": "Error al conectar la instancia.\nSi ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
-    "search-instance-name": "Buscar nombre de instancia",
+    "filter-instance-name": "Filtrar nombre de instancia",
     "grants": "Concesiones",
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
     "create-gcp-credentials": "Para crear credenciales, consulte",
@@ -1313,8 +1313,8 @@
     "no-anomalies-detected": "No se detectaron anomalías",
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",
-    "search-database-name": "Buscar nombre de la base de datos",
-    "search-database": "Buscar base de datos",
+    "filter-database-name": "Filtrar nombre de base de datos",
+    "filter-database": "Filtrar base de datos",
     "database-backup": "copia de seguridad de la base de datos",
     "transfer-project": "Transferir proyecto",
     "edit-schema": "Modificar esquema",
@@ -1606,7 +1606,7 @@
         "cancel": "Descartar",
         "confirm": "No volver a mostrar"
       },
-      "search-bar-placeholder": "Buscar nombre del proyecto"
+      "filter-project-name": "Filtrar nombre del proyecto"
     },
     "table": {
       "key": "@:common.key",

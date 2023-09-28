@@ -15,7 +15,7 @@
       <SearchBox
         v-model:value="state.searchText"
         :autofocus="true"
-        :placeholder="$t('instance.search-instance-name')"
+        :placeholder="$t('instance.filter-instance-name')"
       />
     </div>
     <InstanceV1Table
