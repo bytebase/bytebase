@@ -118,7 +118,11 @@ const errors = asyncComputed(() => {
 
 const doAddChange = async () => {};
 
-const reset = () => {};
+const reset = () => {
+  changesFromChangeHistory.value = [];
+  changesFromBranch.value = [];
+  changesFromRawSQL.value = [];
+};
 
 watch(showAddChangePanel, (show) => {
   if (show) {
