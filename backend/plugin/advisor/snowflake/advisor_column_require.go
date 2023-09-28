@@ -11,7 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
 var (
