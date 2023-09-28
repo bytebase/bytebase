@@ -9,7 +9,8 @@ import {
 } from "@/types/proto/v1/changelist_service";
 
 export type ChangelistDetailEvents = Emittery<{
-  // not used yet
+  "reorder-cancel": undefined;
+  "reorder-confirm": undefined;
 }>;
 
 export type ChangelistDetailContext = {
@@ -19,6 +20,7 @@ export type ChangelistDetailContext = {
   reorderMode: Ref<boolean>;
   selectedChanges: Ref<Change[]>;
   showAddChangePanel: Ref<boolean>;
+  isUpdating: Ref<boolean>;
 
   events: ChangelistDetailEvents;
 };
@@ -58,6 +60,7 @@ export const provideChangelistDetailContext = () => {
     reorderMode: ref(false),
     selectedChanges: ref([]),
     showAddChangePanel: ref(false),
+    isUpdating: ref(false),
 
     events: new Emittery(),
   };

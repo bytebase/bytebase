@@ -19,6 +19,7 @@
         >
           <template v-if="index === 0">
             <NCheckbox
+              :class="[reorderMode && 'invisible']"
               :checked="allSelectionState.checked"
               :indeterminate="allSelectionState.indeterminate"
               @update:checked="toggleSelectAll"
@@ -29,12 +30,19 @@
       </div>
     </template>
 
-    <template #item="{ item: change }: BBGridRow<Change>">
-      <div class="bb-grid-cell">
+    <template #item="{ item: change, row }: BBGridRow<Change>">
+      <div class="bb-grid-cell justify-center gap-x-1">
         <NCheckbox
+          v-if="!reorderMode"
           :checked="isSelected(change)"
           @update:checked="toggleSelect(change, $event)"
           @click.stop
+        />
+        <ReorderButtons
+          v-else
+          :row="row"
+          :changes="changes"
+          @move="$emit('reorder-move', row, $event)"
         />
       </div>
       <div class="bb-grid-cell">
@@ -75,6 +83,7 @@ import {
   isChangeHistoryChangeSource,
 } from "@/utils";
 import RemoveChangeButton from "./RemoveChangeButton.vue";
+import ReorderButtons from "./ReorderButtons.vue";
 import SQL from "./SQL.vue";
 import Source from "./Source.vue";
 
@@ -88,13 +97,14 @@ const emit = defineEmits<{
   (event: "update:selected", selected: Change[]): void;
   (event: "select-change", change: Change): void;
   (event: "remove-change", change: Change): void;
+  (event: "reorder-move", row: number, delta: -1 | 1): void;
 }>();
 
 const { t } = useI18n();
 
 const columns = computed((): BBGridColumn[] => {
   return [
-    { title: "", width: "auto" },
+    { title: "", width: "4rem", class: "justify-center" },
     { title: t("changelist.change-source.source"), width: "auto" },
     { title: t("common.database"), width: "1fr" },
     { title: t("common.sql"), width: "3fr" },

@@ -1,25 +1,18 @@
-import { ref } from "vue";
 import { useChangelistDetailContext } from "../context";
 
 export const useReorderChangelist = () => {
-  const { reorderMode } = useChangelistDetailContext();
-
-  const updating = ref(false);
+  const { reorderMode, events } = useChangelistDetailContext();
 
   const begin = () => {
     reorderMode.value = true;
   };
   const cancel = () => {
-    reorderMode.value = false;
+    events.emit("reorder-cancel");
   };
-  const confirm = async () => {
-    updating.value = true;
-    await new Promise((r) => setTimeout(r, 1000));
-    reorderMode.value = false;
-    updating.value = false;
+  const confirm = () => {
+    events.emit("reorder-confirm");
   };
   return {
-    updating,
     begin,
     cancel,
     confirm,

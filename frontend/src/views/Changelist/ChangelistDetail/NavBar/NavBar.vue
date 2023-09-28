@@ -34,14 +34,10 @@
       </template>
 
       <template v-if="reorderMode">
-        <NButton :disabled="isReorderUpdating" @click="cancelReorder">
+        <NButton @click="cancelReorder">
           {{ $t("common.cancel") }}
         </NButton>
-        <NButton
-          type="primary"
-          :loading="isReorderUpdating"
-          @click="confirmReorder"
-        >
+        <NButton type="primary" @click="confirmReorder">
           {{ $t("common.confirm") }}
         </NButton>
       </template>
@@ -61,7 +57,6 @@ const { allowEdit, project, reorderMode, showAddChangePanel } =
   useChangelistDetailContext();
 
 const {
-  updating: isReorderUpdating,
   begin: beginReorder,
   cancel: cancelReorder,
   confirm: confirmReorder,

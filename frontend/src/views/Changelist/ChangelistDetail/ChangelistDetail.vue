@@ -8,12 +8,13 @@
       :reorder-mode="reorderMode"
       @remove-change="handleRemoveChange($event)"
       @select-change="handleSelectChange($event)"
+      @reorder-move="(row, delta) => handleReorderMove(row, delta)"
     />
 
     <AddChangePanel />
 
     <div
-      v-if="state.isUpdating"
+      v-if="isUpdating"
       class="absolute inset-0 bg-white/50 flex flex-col items-center justify-center"
     >
       <BBSpin />
@@ -34,6 +35,7 @@
 import { useTitle } from "@vueuse/core";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { pushNotification, useChangelistStore } from "@/store";
 import {
   Changelist_Change as Change,
@@ -48,16 +50,33 @@ import NavBar from "./NavBar";
 import { provideChangelistDetailContext } from "./context";
 
 const { t } = useI18n();
-const { changelist, reorderMode, selectedChanges } =
+const { changelist, reorderMode, selectedChanges, isUpdating, events } =
   provideChangelistDetailContext();
 
 const state = reactive({
   changes: [] as Change[],
-  isUpdating: false,
   detailChangeHistoryName: undefined as string | undefined,
   detailBranchName: undefined as string | undefined,
   detailRawSQLSheetName: undefined as string | undefined,
 });
+
+const patchChanges = async (changes: Change[]) => {
+  const patch = {
+    ...Changelist.fromPartial(changelist.value),
+    changes,
+  };
+  try {
+    isUpdating.value = true;
+    await useChangelistStore().patchChangelist(patch, ["changes"]);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  } finally {
+    isUpdating.value = false;
+  }
+};
 
 const handleRemoveChange = async (change: Change) => {
   const changes = [...changelist.value.changes];
@@ -66,21 +85,7 @@ const handleRemoveChange = async (change: Change) => {
     return;
   }
   changes.splice(index, 1);
-  const patch = {
-    ...Changelist.fromPartial(changelist.value),
-    changes,
-  };
-  try {
-    state.isUpdating = true;
-    await useChangelistStore().patchChangelist(patch, ["changes"]);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
-  } finally {
-    state.isUpdating = false;
-  }
+  await patchChanges(changes);
 };
 const handleSelectChange = async (change: Change) => {
   const sourceType = getChangelistChangeSourceType(change);
@@ -94,11 +99,29 @@ const handleSelectChange = async (change: Change) => {
     alert("tbd:" + change.sheet);
   }
 };
+const handleReorderMove = (row: number, delta: -1 | 1) => {
+  const target = row + delta;
+  const { changes } = state;
+  if (target < 0 || target >= changes.length) {
+    return;
+  }
+  const temp = changes[row];
+  changes[row] = changes[target];
+  changes[target] = temp;
+};
 
 const documentTitle = computed(() => {
   return changelist.value.description;
 });
 useTitle(documentTitle);
+
+useEmitteryEventListener(events, "reorder-cancel", () => {
+  state.changes = [...changelist.value.changes];
+});
+useEmitteryEventListener(events, "reorder-confirm", async () => {
+  const changes = [...state.changes];
+  await patchChanges(changes);
+});
 
 watch(
   () => changelist.value.changes,
