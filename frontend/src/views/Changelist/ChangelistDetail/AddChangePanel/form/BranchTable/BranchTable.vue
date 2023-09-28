@@ -33,13 +33,14 @@
         <NCheckbox
           :checked="isSelected(branch)"
           @update:checked="toggleSelect(branch, $event)"
+          @click.stop
         />
       </div>
 
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="bb-grid-cell" v-html="renderTitle(branch)"></div>
       <div class="bb-grid-cell">
-        <DatabaseInfo :database="databaseForBranch(branch)" />
+        <DatabaseInfo :database="databaseForBranch(branch)" :link="false" />
       </div>
       <div class="bb-grid-cell">
         <i18n-t keypath="common.updated-at-by">
