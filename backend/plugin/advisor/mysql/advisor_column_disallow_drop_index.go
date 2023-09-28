@@ -96,7 +96,7 @@ func (checker *columnDisallowDropIndexChecker) dropColumn(in ast.Node) (ast.Node
 			if spec.Tp == ast.AlterTableDropColumn {
 				table := node.Table.Name.O
 
-				index := checker.catalog.Final.Index(&catalog.TableIndexFind{
+				index := checker.catalog.Origin.Index(&catalog.TableIndexFind{
 					SchemaName: "",
 					TableName:  table,
 				})
