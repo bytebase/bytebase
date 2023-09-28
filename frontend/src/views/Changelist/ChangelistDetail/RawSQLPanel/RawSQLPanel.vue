@@ -106,7 +106,7 @@ const dirty = computed(() => {
 const errors = computed(() => {
   const errors: string[] = [];
   if (statement.value.trim().length === 0) {
-    errors.push(t("changelist.add-change.sql-cannot-be-empty"));
+    errors.push(t("changelist.error.sql-cannot-be-empty"));
   }
   if (!dirty.value) {
     errors.push(t("changelist.error.nothing-changed"));

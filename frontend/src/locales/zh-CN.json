@@ -3052,7 +3052,9 @@
       "name-is-required": "变更列表名称不能为空",
       "invalid-resource-id": "无效的资源 ID",
       "select-changes-to-export": "选择要导出的更改",
-      "nothing-changed": "无任何改变"
+      "nothing-changed": "无任何改变",
+      "sql-cannot-be-empty": "SQL 不能为空",
+      "select-at-least-one-change": "选择至少一条变更"
     },
     "apply-to-database": "应用到数据库",
     "add-change": {
@@ -3060,11 +3062,9 @@
       "change-history": {
         "select-at-least-one-history-below": "请在下方选择至少一条记录"
       },
-      "select-at-least-one-change": "选择至少一条变更",
       "branch": {
         "select-at-least-one-branch-below": "请在下方选择至少一条记录"
-      },
-      "sql-cannot-be-empty": "SQL 不能为空"
+      }
     },
     "change-source": {
       "self": "变更来源",

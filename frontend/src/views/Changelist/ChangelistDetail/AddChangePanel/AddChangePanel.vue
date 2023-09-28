@@ -126,14 +126,14 @@ const errors = asyncComputed(() => {
   const errors: string[] = [];
 
   if (pendingAddChanges.value.length === 0) {
-    errors.push(t("changelist.add-change.select-at-least-one-change"));
+    errors.push(t("changelist.error.select-at-least-one-change"));
   }
   if (changeSource.value === "RAW_SQL") {
     const name = changeFromRawSQL.value.sheet;
     const sheet = useLocalSheetStore().getOrCreateSheetByName(name);
     const statement = getSheetStatement(sheet);
     if (statement.trim().length === 0) {
-      errors.push(t("changelist.add-change.sql-cannot-be-empty"));
+      errors.push(t("changelist.error.sql-cannot-be-empty"));
     }
   }
 

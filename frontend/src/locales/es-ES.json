@@ -3057,7 +3057,9 @@
       "name-is-required": "El nombre de la lista de cambios es obligatorio",
       "invalid-resource-id": "ID de recurso no válido",
       "select-changes-to-export": "Seleccionar cambios para exportar",
-      "nothing-changed": "nada ha cambiado"
+      "nothing-changed": "nada ha cambiado",
+      "sql-cannot-be-empty": "Se requiere SQL",
+      "select-at-least-one-change": "Seleccione al menos un cambio"
     },
     "apply-to-database": "Aplicar a la base de datos",
     "add-change": {
@@ -3065,11 +3067,9 @@
       "change-history": {
         "select-at-least-one-history-below": "Seleccione al menos un historial a continuación"
       },
-      "select-at-least-one-change": "Seleccione al menos un cambio",
       "branch": {
         "select-at-least-one-branch-below": "Seleccione al menos una sucursal a continuación"
-      },
-      "sql-cannot-be-empty": "Se requiere SQL"
+      }
     },
     "change-source": {
       "self": "Cambiar fuente",
