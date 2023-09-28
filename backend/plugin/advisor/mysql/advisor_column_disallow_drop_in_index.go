@@ -100,15 +100,15 @@ func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.No
 					SchemaName: "",
 					TableName:  table,
 				})
-				if index == nil {
-					continue
-				}
-				if checker.tables[table] == nil {
-					checker.tables[table] = make(columnSet)
-				}
-				for _, indexColumn := range *index {
-					for _, column := range indexColumn.ExpressionList() {
-						checker.tables[table][column] = true
+
+				if index != nil {
+					if checker.tables[table] == nil {
+						checker.tables[table] = make(columnSet)
+					}
+					for _, indexColumn := range *index {
+						for _, column := range indexColumn.ExpressionList() {
+							checker.tables[table][column] = true
+						}
 					}
 				}
 

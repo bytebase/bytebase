@@ -15,11 +15,10 @@
   want:
     - status: WARN
       code: 424
-      title: "column.disallow-drop-index"
+      title: "column.disallow-drop-in-index"
       content: "`t`.`b` cannot drop index column"
       line: 3
       details: ""
-
 - statement: |-
     CREATE TABLE t(a int, c int, INDEX idx_ac(a,c));
     ALTER TABLE t DROP COLUMN c
