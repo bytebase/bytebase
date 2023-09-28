@@ -2,11 +2,16 @@ package tests
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
+	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -124,5 +129,60 @@ func TestDataSource(t *testing.T) {
 		Instance:   instance.Name,
 		DataSource: &v1pb.DataSource{Id: "readonly"},
 	})
+	a.NoError(err)
+}
+
+func TestExternalSecretManager(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	dataDir := t.TempDir()
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	// Create a PostgreSQL instance.
+	pgPort := getTestPort()
+	stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
+	defer stopInstance()
+
+	smPort := getTestPort()
+	sm := fake.NewSecretManager(smPort)
+	go func() {
+		if err := sm.Run(); err != http.ErrServerClosed {
+			a.NoError(err)
+		}
+	}()
+	defer sm.Close()
+
+	pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
+	a.NoError(err)
+	defer pgDB.Close()
+	err = pgDB.Ping()
+	a.NoError(err)
+
+	_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
+	a.NoError(err)
+	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
+	a.NoError(err)
+
+	secretURL := fmt.Sprintf("{{http://localhost:%d/secrets/hello-secret-id:access}}", smPort)
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       "pgInstance",
+			Engine:      v1pb.Engine_POSTGRES,
+			Environment: "environments/prod",
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: secretURL}},
+		},
+	})
+	a.NoError(err)
+
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase", nil)
 	a.NoError(err)
 }
