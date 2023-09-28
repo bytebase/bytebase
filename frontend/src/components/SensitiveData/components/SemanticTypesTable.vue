@@ -61,7 +61,7 @@
           :options="algorithmList"
           :consistent-menu-width="false"
           :placeholder="
-            $t('custom-approval.security-rule.condition.select-value')
+            $t('custom-approval.risk-rule.condition.select-value')
           "
           size="small"
           style="min-width: 7rem; width: auto; overflow-x: hidden"
@@ -78,7 +78,7 @@
           :options="algorithmList"
           :consistent-menu-width="false"
           :placeholder="
-            $t('custom-approval.security-rule.condition.select-value')
+            $t('custom-approval.risk-rule.condition.select-value')
           "
           size="small"
           style="min-width: 7rem; width: auto; overflow-x: hidden"

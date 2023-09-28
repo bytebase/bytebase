@@ -51,12 +51,12 @@ const title = computed(() => {
   if (dialog.value) {
     const { mode } = dialog.value;
     if (!allowAdmin.value) {
-      return t("custom-approval.security-rule.view-rule");
+      return t("custom-approval.risk-rule.view-rule");
     } else {
       if (mode === "CREATE") {
-        return t("custom-approval.security-rule.add-rule");
+        return t("custom-approval.risk-rule.add-rule");
       } else if (mode === "EDIT") {
-        return t("custom-approval.security-rule.edit-rule");
+        return t("custom-approval.risk-rule.edit-rule");
       }
     }
   }

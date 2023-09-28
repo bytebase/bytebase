@@ -2672,9 +2672,9 @@
   },
   "custom-approval": {
     "self": "Custom Approval",
-    "security-rule": {
+    "risk-rule": {
       "self": "Risk rule",
-      "security-rules": "Risk rules",
+      "risk-rules": "Risk rules",
       "x-risk-rules": {
         "low": "Low Risk Rules",
         "moderate": "Moderate Risk Rules",

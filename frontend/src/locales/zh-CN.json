@@ -2666,9 +2666,9 @@
   },
   "custom-approval": {
     "self": "自定义审批",
-    "security-rule": {
+    "risk-rule": {
       "self": "安全规则",
-      "security-rules": "安全规则",
+      "risk-rules": "安全规则",
       "x-risk-rules": {
         "low": "低风险规则",
         "moderate": "中风险规则",

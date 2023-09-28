@@ -11,13 +11,13 @@
           <NInput
             v-model:value="state.risk.title"
             :disabled="!allowAdmin"
-            :placeholder="$t('custom-approval.security-rule.input-rule-name')"
+            :placeholder="$t('custom-approval.risk-rule.input-rule-name')"
             @input="$emit('update')"
           />
         </div>
         <div class="space-y-2">
           <label class="block font-medium text-sm text-control">
-            {{ $t("custom-approval.security-rule.risk.self") }}
+            {{ $t("custom-approval.risk-rule.risk.self") }}
           </label>
           <RiskLevelSelect
             v-model:value="state.risk.level"
@@ -27,7 +27,7 @@
         </div>
         <div class="space-y-2">
           <label class="block font-medium text-sm text-control">
-            {{ $t("custom-approval.security-rule.source.self") }}
+            {{ $t("custom-approval.risk-rule.source.self") }}
           </label>
           <RiskSourceSelect
             v-model:value="state.risk.source"
@@ -40,10 +40,10 @@
       <div class="flex-1 flex items-stretch gap-x-4 overflow-hidden">
         <div class="flex-1 space-y-2 py-4 overflow-x-hidden overflow-y-auto">
           <h3 class="font-medium text-sm text-control">
-            {{ $t("custom-approval.security-rule.condition.self") }}
+            {{ $t("custom-approval.risk-rule.condition.self") }}
           </h3>
           <div class="text-sm text-control-light">
-            {{ $t("custom-approval.security-rule.condition.description-tips") }}
+            {{ $t("custom-approval.risk-rule.condition.description-tips") }}
             <LearnMoreLink
               v-if="false"
               url="https://www.bytebase.com/404"
@@ -65,7 +65,7 @@
           class="w-[45%] max-w-[40rem] overflow-y-auto py-4 shrink-0"
         >
           <h3 class="font-medium text-sm text-control mb-2">
-            {{ $t("custom-approval.security-rule.template.templates") }}
+            {{ $t("custom-approval.risk-rule.template.templates") }}
           </h3>
           <RuleTemplateTable
             :dirty="dirty"

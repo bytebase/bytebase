@@ -3,7 +3,7 @@
     style="width: 8rem"
     :value="value"
     :options="options"
-    :placeholder="$t('custom-approval.security-rule.risk.select')"
+    :placeholder="$t('custom-approval.risk-rule.risk.select')"
     :consistent-menu-width="false"
     :disabled="disabled || !allowAdmin"
     @update:value="$emit('update:value', $event)"
