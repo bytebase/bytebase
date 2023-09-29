@@ -3,6 +3,7 @@ package pg
 import (
 	"cmp"
 	"fmt"
+	"regexp"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 
@@ -19,15 +20,7 @@ const (
 	pgUnknownFieldName = "?column?"
 )
 
-func IsPostgreSQLSystemSchema(schema string) bool {
-	switch schema {
-	case "information_schema", "pg_catalog":
-		return true
-	}
-	return false
-}
-
-func IsRisingWaveSystemSchema(schema string) bool {
+func isSystemSchema(schema string) bool {
 	switch schema {
 	case "information_schema", "pg_catalog", "rw_catalog":
 		return true
@@ -66,6 +59,12 @@ func (extractor *SensitiveFieldExtractor) ExtractPostgreSQLSensitiveField(statem
 
 	fieldList, err := extractor.pgExtractNode(node.Stmt)
 	if err != nil {
+		tableNotFound := regexp.MustCompile("^Table \"(.*)\\.(.*)\" not found$")
+		content := tableNotFound.FindStringSubmatch(err.Error())
+		if len(content) == 3 && isSystemSchema(content[1]) {
+			// skip for system schema
+			return nil, nil
+		}
 		return nil, err
 	}
 
