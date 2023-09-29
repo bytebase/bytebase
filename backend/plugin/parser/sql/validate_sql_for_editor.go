@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/common/log"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
@@ -35,7 +33,7 @@ func ValidateSQLForEditor(engine EngineType, statement string) bool {
 // 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
 // 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
 func standardValidateSQLForEditor(statement string) bool {
-	textWithoutQuotedAndComment, err := removeQuotedTextAndComment(Standard, statement)
+	textWithoutQuotedAndComment, err := tokenizer.StandardRemoveQuotedTextAndComment(statement)
 	if err != nil {
 		slog.Debug("Failed to remove quoted text and comment", slog.String("statement", statement), log.BBError(err))
 		return false
@@ -50,7 +48,7 @@ func standardValidateSQLForEditor(statement string) bool {
 // 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
 // 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
 func mysqlValidateSQLForEditor(statement string) bool {
-	textWithoutQuotedAndComment, err := removeQuotedTextAndComment(MySQL, statement)
+	textWithoutQuotedAndComment, err := tokenizer.MysqlRemoveQuotedTextAndComment(statement)
 	if err != nil {
 		slog.Debug("Failed to remove quoted text and comment", slog.String("statement", statement), log.BBError(err))
 		return false
@@ -88,16 +86,4 @@ func checkStatementWithoutQuotedTextAndComment(statement string) bool {
 	}
 
 	return false
-}
-
-func removeQuotedTextAndComment(engine EngineType, statement string) (string, error) {
-	switch engine {
-	case Postgres, RisingWave:
-		return "", errors.Errorf("unsupported engine type: %s", engine)
-	case MySQL, TiDB, MariaDB, OceanBase:
-		return tokenizer.MysqlRemoveQuotedTextAndComment(statement)
-	case Standard, Oracle, MSSQL:
-		return tokenizer.StandardRemoveQuotedTextAndComment(statement)
-	}
-	return "", errors.Errorf("unsupported engine type: %s", engine)
 }
