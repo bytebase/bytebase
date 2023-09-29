@@ -8,7 +8,7 @@ import (
 	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -17,7 +17,7 @@ import (
 func TestGetSQLStatementPrefix(t *testing.T) {
 	tests := []struct {
 		engine       db.Type
-		resourceList []parser.SchemaResource
+		resourceList []base.SchemaResource
 		columnNames  []string
 		want         string
 	}{
@@ -29,7 +29,7 @@ func TestGetSQLStatementPrefix(t *testing.T) {
 		},
 		{
 			engine:       db.MySQL,
-			resourceList: []parser.SchemaResource{{Database: "db1", Schema: "", Table: "table1"}},
+			resourceList: []base.SchemaResource{{Database: "db1", Schema: "", Table: "table1"}},
 			columnNames:  []string{"a", "b"},
 			want:         "INSERT INTO `table1` (`a`,`b`) VALUES (",
 		},
@@ -41,13 +41,13 @@ func TestGetSQLStatementPrefix(t *testing.T) {
 		},
 		{
 			engine:       db.Postgres,
-			resourceList: []parser.SchemaResource{{Database: "db1", Schema: "", Table: "table1"}},
+			resourceList: []base.SchemaResource{{Database: "db1", Schema: "", Table: "table1"}},
 			columnNames:  []string{"a"},
 			want:         "INSERT INTO \"table1\" (\"a\") VALUES (",
 		},
 		{
 			engine:       db.Postgres,
-			resourceList: []parser.SchemaResource{{Database: "db1", Schema: "schema1", Table: "table1"}},
+			resourceList: []base.SchemaResource{{Database: "db1", Schema: "schema1", Table: "table1"}},
 			columnNames:  []string{"a"},
 			want:         "INSERT INTO \"schema1\".\"table1\" (\"a\") VALUES (",
 		},

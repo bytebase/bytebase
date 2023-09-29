@@ -8,6 +8,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/tsql-parser"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -29,7 +30,7 @@ func FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx parser.IExecute_st
 }
 
 // extractMSSQLNormalizedResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
-func extractMSSQLNormalizedResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]SchemaResource, error) {
+func extractMSSQLNormalizedResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]base.SchemaResource, error) {
 	tree, err := tsqlparser.ParseTSQL(selectStatement)
 	if err != nil {
 		return nil, err
@@ -38,10 +39,10 @@ func extractMSSQLNormalizedResourceListFromSelectStatement(currentNormalizedData
 	l := &tsqlReasourceExtractListener{
 		currentDatabase: currentNormalizedDatabase,
 		currentSchema:   currentNormalizedSchema,
-		resourceMap:     make(map[string]SchemaResource),
+		resourceMap:     make(map[string]base.SchemaResource),
 	}
 
-	var result []SchemaResource
+	var result []base.SchemaResource
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
 	for _, resource := range l.resourceMap {
 		result = append(result, resource)
@@ -59,7 +60,7 @@ type tsqlReasourceExtractListener struct {
 
 	currentDatabase string
 	currentSchema   string
-	resourceMap     map[string]SchemaResource
+	resourceMap     map[string]base.SchemaResource
 }
 
 // EnterTable_source_item is called when the parser enters the table_source_item production.
@@ -99,7 +100,7 @@ func (l *tsqlReasourceExtractListener) EnterTable_source_item(ctx *parser.Table_
 		}
 		parts = append(parts, table)
 		normalizedObjectName := strings.Join(parts, ".")
-		l.resourceMap[normalizedObjectName] = SchemaResource{
+		l.resourceMap[normalizedObjectName] = base.SchemaResource{
 			LinkedServer: linkedServer,
 			Database:     database,
 			Schema:       schema,

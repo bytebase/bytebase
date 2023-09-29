@@ -27,43 +27,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
-// SchemaResource is the resource of the schema.
-type SchemaResource struct {
-	Database string
-	Schema   string
-	Table    string
-
-	// LinkedServer is the special resource for MSSQL, which can be used to specify the linked server.
-	LinkedServer string
-}
-
-// String implements fmt.Stringer interface.
-func (r SchemaResource) String() string {
-	return fmt.Sprintf("%s.%s.%s", r.Database, r.Schema, r.Table)
-}
-
-// Pretty returns the pretty string of the resource.
-func (r SchemaResource) Pretty() string {
-	list := make([]string, 0, 3)
-	if r.Database != "" {
-		list = append(list, r.Database)
-	}
-	if r.Schema != "" {
-		list = append(list, r.Schema)
-	}
-	if r.Table != "" {
-		list = append(list, r.Table)
-	}
-	return strings.Join(list, ".")
-}
-
 // ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+func ExtractChangedResources(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
 	switch engineType {
 	case MySQL, MariaDB, OceanBase:
 		return extractMySQLChangedResources(currentDatabase, sql)
 	case Oracle:
-		return extractOracleChangedResources(currentDatabase, currentSchema, sql)
+		return plsqlparser.ExtractOracleChangedResources(currentDatabase, currentSchema, sql)
 	default:
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
@@ -73,7 +43,7 @@ func ExtractChangedResources(engineType EngineType, currentDatabase string, curr
 }
 
 // ExtractResourceList extracts the resource list from the SQL.
-func ExtractResourceList(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+func ExtractResourceList(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
 	switch engineType {
 	case TiDB:
 		return extractTiDBResourceList(currentDatabase, sql)
@@ -82,7 +52,7 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 		return extractMySQLResourceList(currentDatabase, sql)
 	case Oracle:
 		// The resource list for Oracle may contains table, view and temporary table.
-		return extractOracleResourceList(currentDatabase, currentSchema, sql)
+		return plsqlparser.ExtractOracleResourceList(currentDatabase, currentSchema, sql)
 	case Postgres, RisingWave:
 		// The resource list for Postgres may contains table, view and temporary table.
 		return extractPostgresResourceList(currentDatabase, currentSchema, sql)
@@ -94,11 +64,11 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
 		}
-		return []SchemaResource{{Database: currentDatabase}}, nil
+		return []base.SchemaResource{{Database: currentDatabase}}, nil
 	}
 }
 
-func extractPostgresResourceList(currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+func extractPostgresResourceList(currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
 	jsonText, err := pgquery.ParseToJSON(sql)
 	if err != nil {
 		return nil, err
@@ -110,12 +80,12 @@ func extractPostgresResourceList(currentDatabase string, currentSchema string, s
 		return nil, err
 	}
 
-	resourceMap := make(map[string]SchemaResource)
+	resourceMap := make(map[string]base.SchemaResource)
 	list := extractRangeVarFromJSON(currentDatabase, currentSchema, jsonData)
 	for _, resource := range list {
 		resourceMap[resource.String()] = resource
 	}
-	list = []SchemaResource{}
+	list = []base.SchemaResource{}
 	for _, resource := range resourceMap {
 		list = append(list, resource)
 	}
@@ -125,10 +95,10 @@ func extractPostgresResourceList(currentDatabase string, currentSchema string, s
 	return list, nil
 }
 
-func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonData map[string]any) []SchemaResource {
-	var result []SchemaResource
+func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonData map[string]any) []base.SchemaResource {
+	var result []base.SchemaResource
 	if jsonData["RangeVar"] != nil {
-		resource := SchemaResource{
+		resource := base.SchemaResource{
 			Database: currentDatabase,
 			Schema:   currentSchema,
 		}
@@ -158,18 +128,18 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 	return result
 }
 
-func extractTiDBResourceList(currentDatabase string, sql string) ([]SchemaResource, error) {
+func extractTiDBResourceList(currentDatabase string, sql string) ([]base.SchemaResource, error) {
 	nodes, err := tidbparser.ParseTiDB(sql, "", "")
 	if err != nil {
 		return nil, err
 	}
 
-	resourceMap := make(map[string]SchemaResource)
+	resourceMap := make(map[string]base.SchemaResource)
 
 	for _, node := range nodes {
 		tableList := ExtractMySQLTableList(node, false /* asName */)
 		for _, table := range tableList {
-			resource := SchemaResource{
+			resource := base.SchemaResource{
 				Database: table.Schema.O,
 				Schema:   "",
 				Table:    table.Name.O,
@@ -183,7 +153,7 @@ func extractTiDBResourceList(currentDatabase string, sql string) ([]SchemaResour
 		}
 	}
 
-	resourceList := make([]SchemaResource, 0, len(resourceMap))
+	resourceList := make([]base.SchemaResource, 0, len(resourceMap))
 	for _, resource := range resourceMap {
 		resourceList = append(resourceList, resource)
 	}

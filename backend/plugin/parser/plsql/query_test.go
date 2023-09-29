@@ -1,19 +1,21 @@
-package parser
+package plsql
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestExtractOracleResourceList(t *testing.T) {
 	tests := []struct {
 		statement string
-		expected  []SchemaResource
+		expected  []base.SchemaResource
 	}{
 		{
 			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
-			expected: []SchemaResource{
+			expected: []base.SchemaResource{
 				{
 					Database: "DB",
 					Schema:   "ROOT",
@@ -28,7 +30,7 @@ func TestExtractOracleResourceList(t *testing.T) {
 		},
 		{
 			statement: "SELECT * FROM schema1.t1 JOIN schema2.t2 ON t1.c1 = t2.c1;",
-			expected: []SchemaResource{
+			expected: []base.SchemaResource{
 				{
 					Database: "DB",
 					Schema:   "SCHEMA1",
@@ -43,7 +45,7 @@ func TestExtractOracleResourceList(t *testing.T) {
 		},
 		{
 			statement: "SELECT a > (select max(a) from t1) FROM t2;",
-			expected: []SchemaResource{
+			expected: []base.SchemaResource{
 				{
 					Database: "DB",
 					Schema:   "ROOT",
@@ -59,7 +61,7 @@ func TestExtractOracleResourceList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resources, err := extractOracleResourceList("DB", "ROOT", test.statement)
+		resources, err := ExtractOracleResourceList("DB", "ROOT", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
 	}

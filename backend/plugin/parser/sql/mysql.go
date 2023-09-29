@@ -8,6 +8,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -58,7 +59,7 @@ func (l *mysqlValidateForEditorListener) EnterExplainableStatement(ctx *parser.E
 	}
 }
 
-func extractMySQLChangedResources(currentDatabase string, statement string) ([]SchemaResource, error) {
+func extractMySQLChangedResources(currentDatabase string, statement string) ([]base.SchemaResource, error) {
 	treeList, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		return nil, err
@@ -66,10 +67,10 @@ func extractMySQLChangedResources(currentDatabase string, statement string) ([]S
 
 	l := &mysqlChangedResourceExtractListener{
 		currentDatabase: currentDatabase,
-		resourceMap:     make(map[string]SchemaResource),
+		resourceMap:     make(map[string]base.SchemaResource),
 	}
 
-	var result []SchemaResource
+	var result []base.SchemaResource
 	for _, tree := range treeList {
 		if tree.Tree == nil {
 			continue
@@ -91,12 +92,12 @@ type mysqlChangedResourceExtractListener struct {
 	*parser.BaseMySQLParserListener
 
 	currentDatabase string
-	resourceMap     map[string]SchemaResource
+	resourceMap     map[string]base.SchemaResource
 }
 
 // EnterCreateTable is called when production createTable is entered.
 func (l *mysqlChangedResourceExtractListener) EnterCreateTable(ctx *parser.CreateTableContext) {
-	resource := SchemaResource{
+	resource := base.SchemaResource{
 		Database: l.currentDatabase,
 	}
 	db, table := NormalizeMySQLTableName(ctx.TableName())
@@ -110,7 +111,7 @@ func (l *mysqlChangedResourceExtractListener) EnterCreateTable(ctx *parser.Creat
 // EnterDropTable is called when production dropTable is entered.
 func (l *mysqlChangedResourceExtractListener) EnterDropTable(ctx *parser.DropTableContext) {
 	for _, table := range ctx.TableRefList().AllTableRef() {
-		resource := SchemaResource{
+		resource := base.SchemaResource{
 			Database: l.currentDatabase,
 		}
 		db, table := NormalizeMySQLTableRef(table)
@@ -124,7 +125,7 @@ func (l *mysqlChangedResourceExtractListener) EnterDropTable(ctx *parser.DropTab
 
 // EnterAlterTable is called when production alterTable is entered.
 func (l *mysqlChangedResourceExtractListener) EnterAlterTable(ctx *parser.AlterTableContext) {
-	resource := SchemaResource{
+	resource := base.SchemaResource{
 		Database: l.currentDatabase,
 	}
 	db, table := NormalizeMySQLTableRef(ctx.TableRef())
@@ -139,7 +140,7 @@ func (l *mysqlChangedResourceExtractListener) EnterAlterTable(ctx *parser.AlterT
 func (l *mysqlChangedResourceExtractListener) EnterRenameTableStatement(ctx *parser.RenameTableStatementContext) {
 	for _, pair := range ctx.AllRenamePair() {
 		{
-			resource := SchemaResource{
+			resource := base.SchemaResource{
 				Database: l.currentDatabase,
 			}
 			db, table := NormalizeMySQLTableRef(pair.TableRef())
@@ -150,7 +151,7 @@ func (l *mysqlChangedResourceExtractListener) EnterRenameTableStatement(ctx *par
 			l.resourceMap[resource.String()] = resource
 		}
 		{
-			resource := SchemaResource{
+			resource := base.SchemaResource{
 				Database: l.currentDatabase,
 			}
 			db, table := NormalizeMySQLTableName(pair.TableName())
@@ -163,7 +164,7 @@ func (l *mysqlChangedResourceExtractListener) EnterRenameTableStatement(ctx *par
 	}
 }
 
-func extractMySQLResourceList(currentDatabase string, statement string) ([]SchemaResource, error) {
+func extractMySQLResourceList(currentDatabase string, statement string) ([]base.SchemaResource, error) {
 	treeList, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		return nil, err
@@ -171,10 +172,10 @@ func extractMySQLResourceList(currentDatabase string, statement string) ([]Schem
 
 	l := &mysqlResourceExtractListener{
 		currentDatabase: currentDatabase,
-		resourceMap:     make(map[string]SchemaResource),
+		resourceMap:     make(map[string]base.SchemaResource),
 	}
 
-	var result []SchemaResource
+	var result []base.SchemaResource
 	for _, tree := range treeList {
 		if tree == nil {
 			continue
@@ -196,12 +197,12 @@ type mysqlResourceExtractListener struct {
 	*parser.BaseMySQLParserListener
 
 	currentDatabase string
-	resourceMap     map[string]SchemaResource
+	resourceMap     map[string]base.SchemaResource
 }
 
 // EnterTableRef is called when production tableRef is entered.
 func (l *mysqlResourceExtractListener) EnterTableRef(ctx *parser.TableRefContext) {
-	resource := SchemaResource{Database: l.currentDatabase}
+	resource := base.SchemaResource{Database: l.currentDatabase}
 	if ctx.DotIdentifier() != nil {
 		resource.Table = NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
 	}

@@ -38,6 +38,7 @@ import (
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -476,7 +477,7 @@ func escapeCSVString(str string) string {
 	return escapedStr
 }
 
-func getSQLStatementPrefix(engine db.Type, resourceList []parser.SchemaResource, columnNames []string) (string, error) {
+func getSQLStatementPrefix(engine db.Type, resourceList []base.SchemaResource, columnNames []string) (string, error) {
 	var escapeQuote string
 	switch engine {
 	case db.MySQL, db.MariaDB, db.TiDB, db.OceanBase, db.Spanner:
@@ -2063,7 +2064,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 	return nil
 }
 
-func (s *SQLService) extractResourceList(ctx context.Context, engine parser.EngineType, databaseName string, statement string, instance *store.InstanceMessage) ([]parser.SchemaResource, error) {
+func (s *SQLService) extractResourceList(ctx context.Context, engine parser.EngineType, databaseName string, statement string, instance *store.InstanceMessage) ([]base.SchemaResource, error) {
 	switch engine {
 	case parser.MySQL, parser.MariaDB, parser.OceanBase:
 		list, err := parser.ExtractResourceList(engine, databaseName, "", statement)
@@ -2094,7 +2095,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
 
-		var result []parser.SchemaResource
+		var result []base.SchemaResource
 		for _, resource := range list {
 			if resource.Database != dbSchema.Metadata.Name {
 				// MySQL allows cross-database query, we should check the corresponding database.
@@ -2152,7 +2153,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
 
-		var result []parser.SchemaResource
+		var result []base.SchemaResource
 		for _, resource := range list {
 			if resource.Database != dbSchema.Metadata.Name {
 				// Should not happen.
@@ -2205,7 +2206,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
 
-		var result []parser.SchemaResource
+		var result []base.SchemaResource
 		for _, resource := range list {
 			if resource.Database != dbSchema.Metadata.Name {
 				if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -2281,7 +2282,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
 
-		var result []parser.SchemaResource
+		var result []base.SchemaResource
 		for _, resource := range list {
 			if resource.Database != dbSchema.Metadata.Name {
 				// Snowflake allows cross-database query, we should check the corresponding database.
@@ -2351,7 +2352,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
 
-		var result []parser.SchemaResource
+		var result []base.SchemaResource
 		for _, resource := range list {
 			if resource.LinkedServer != "" {
 				continue
