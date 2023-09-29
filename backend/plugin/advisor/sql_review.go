@@ -25,11 +25,9 @@ import (
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
-
-	// register pg parser.
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
 
 // How to add a SQL review rule:
@@ -600,9 +598,9 @@ func oracleSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func postgresSyntaxCheck(statement string) (any, []Advice) {
-	nodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+	nodes, err := pgrawparser.Parse(parser.ParseContext{}, statement)
 	if err != nil {
-		if _, ok := err.(*pg.ConvertError); ok {
+		if _, ok := err.(*pgrawparser.ConvertError); ok {
 			return nil, []Advice{
 				{
 					Status:  Error,
@@ -640,7 +638,7 @@ func calculatePostgresErrorLine(statement string) int {
 	}
 
 	for _, stmt := range statementList {
-		if _, err := parser.Parse(parser.Postgres, parser.ParseContext{}, stmt.Text); err != nil {
+		if _, err := pgrawparser.Parse(parser.ParseContext{}, stmt.Text); err != nil {
 			return stmt.LastLine
 		}
 	}
