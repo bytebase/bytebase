@@ -23,7 +23,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -366,9 +365,6 @@ func (driver *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement s
 }
 
 func isMongoStatement(statement string) bool {
-	if _, err := parser.ParseMongo(statement); err == nil {
-		return true
-	}
 	statement = strings.TrimLeft(statement, " \n\t")
 	statement = strings.ToLower(statement)
 	return strings.HasPrefix(statement, "db.")

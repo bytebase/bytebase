@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type testData struct {
@@ -16,7 +18,7 @@ type testData struct {
 }
 
 type resData struct {
-	res []SingleSQL
+	res []base.SingleSQL
 	err string
 }
 
@@ -43,7 +45,7 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 				create table table$1 (id int)
 			`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     `select * from t`,
 						LastLine: 2,
@@ -86,7 +88,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			statement: `select * from t;
 			/* sdfasdf */`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     `select * from t;`,
 						LastLine: 1,
@@ -99,7 +101,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			/* sdfasdf */;
 			select * from t;`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     `select * from t;`,
 						LastLine: 1,
@@ -114,7 +116,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		{
 			statement: bigSQL,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     bigSQL,
 						LastLine: 1,
@@ -125,7 +127,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		{
 			statement: "    CREATE TABLE t(a int); CREATE TABLE t1(a int)",
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     "CREATE TABLE t(a int);",
 						LastLine: 1,
@@ -141,7 +143,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			statement: `CREATE TABLE "tech_Book"(id int, name varchar(255));
 						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     `CREATE TABLE "tech_Book"(id int, name varchar(255));`,
 						LastLine: 1,
@@ -160,7 +162,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						-- this is the comment.
 						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text: `/* this is the comment. */
 						CREATE /* inline comment */TABLE "tech_Book"(id int, name varchar(255));`,
@@ -185,7 +187,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						$$;
 						CREATE TABLE t(a int);`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text: `CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))
 						LANGUAGE SQL
@@ -215,7 +217,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						$tag_name$;
 						CREATE TABLE t(a int);`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text: `CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))
 						LANGUAGE SQL
@@ -238,7 +240,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			// test for Windows
 			statement: `CREATE TABLE t` + "\r\n" + `(a int);` + "\r\n" + `CREATE TABLE t1(b int);`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     "CREATE TABLE t\r\n(a int);",
 						LastLine: 2,
@@ -257,7 +259,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			(133,'knuandfan public table id\';create table t(a int, b int);set @text=\'\\\\kdaminxkljasdfiebkla.unkonwn\'+\'abcdef.xyz\\\'; local xxxyy.abcddd.mysql @text;------- '),
 			(1444,'table t xyz abc a\'a\\\\\\\\\'b"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\');`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text: `INSERT INTO "public"."table"("id","content")
 			VALUES
@@ -320,7 +322,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			-- klsjdflkjaskldfj
 			`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n;",
 						LastLine: 3,
@@ -332,7 +334,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			statement: `select * from t;
 			/* sdfasdf */`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     `select * from t;`,
 						LastLine: 1,
@@ -349,7 +351,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			/* sdfasdf */;
 			select * from t;`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     `select * from t;`,
 						LastLine: 1,
@@ -382,7 +384,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 
 		END ;`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text: "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\n" +
 							`BEGIN
@@ -407,7 +409,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		{
 			statement: bigSQL,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     bigSQL + "\n;",
 						LastLine: 2,
@@ -418,7 +420,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		{
 			statement: "    CREATE TABLE t(a int); CREATE TABLE t1(a int)",
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     "    CREATE TABLE t(a int);",
 						LastLine: 1,
@@ -434,7 +436,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			statement: "CREATE TABLE `tech_Book`(id int, name varchar(255));\n" +
 				"INSERT INTO `tech_Book` VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');",
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     "CREATE TABLE `tech_Book`(id int, name varchar(255));",
 						LastLine: 1,
@@ -455,7 +457,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						# this is the comment.
 						INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));",
 						LastLine: 3,
@@ -485,7 +487,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						SELECT @x;
 						`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;",
 						LastLine: 7,
@@ -516,7 +518,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						SELECT @x;
 						`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\t/* This is a comment */\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;",
 						LastLine: 8,
@@ -538,7 +540,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			// test for Windows
 			statement: `CREATE TABLE t` + "\r\n" + `(a int);` + "\r\n" + `CREATE TABLE t1(b int);`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     "CREATE TABLE t\r\n(a int);",
 						LastLine: 2,
@@ -588,7 +590,7 @@ func TestMySQLSplitMultiSQLAndNormalize(t *testing.T) {
 			statement: `select * from t;
 			/* sdfasdf */`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     `select * from t;`,
 						LastLine: 1,
@@ -617,7 +619,7 @@ func TestMySQLSplitMultiSQLAndNormalize(t *testing.T) {
 			END;
 			`,
 			want: resData{
-				res: []SingleSQL{
+				res: []base.SingleSQL{
 					{
 						Text:     "\n\t\t\tDROP PROCEDURE IF EXISTS p1;",
 						LastLine: 2,

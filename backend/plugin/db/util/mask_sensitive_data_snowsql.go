@@ -8,15 +8,15 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	snowparser "github.com/bytebase/snowsql-parser"
+	parser "github.com/bytebase/snowsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFields(sql string) ([]db.SensitiveField, error) {
-	tree, err := parser.ParseSnowSQL(sql)
+	tree, err := snowparser.ParseSnowSQL(sql)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse snowsql")
 	}
@@ -33,14 +33,14 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFields(sql stri
 }
 
 type snowsqlSensitiveFieldExtractorListener struct {
-	*snowparser.BaseSnowflakeParserListener
+	*parser.BaseSnowflakeParserListener
 
 	extractor *sensitiveFieldExtractor
 	result    []db.SensitiveField
 	err       error
 }
 
-func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *snowparser.Dml_commandContext) {
+func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *parser.Dml_commandContext) {
 	if l.err != nil {
 		return
 	}
@@ -58,14 +58,14 @@ func (l *snowsqlSensitiveFieldExtractorListener) EnterDml_command(ctx *snowparse
 	}
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx snowparser.IQuery_statementContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx parser.IQuery_statementContext) ([]fieldInfo, error) {
 	if ctx.With_expression() != nil {
 		allCommandTableExpression := ctx.With_expression().AllCommon_table_expression()
 
 		for _, commandTableExpression := range allCommandTableExpression {
 			var result []fieldInfo
 			var err error
-			normalizedCTEName := parser.NormalizeSnowSQLObjectNamePart(commandTableExpression.Id_())
+			normalizedCTEName := snowparser.NormalizeSnowSQLObjectNamePart(commandTableExpression.Id_())
 
 			if commandTableExpression.RECURSIVE() != nil || commandTableExpression.UNION() != nil {
 				// TODO(zp): refactor code
@@ -122,7 +122,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 					return nil, errors.Wrapf(err, "the length of the column list in cte is %d, but body returns %d fields", len(commandTableExpression.Column_list().AllColumn_name()), len(result))
 				}
 				for i, columnName := range commandTableExpression.Column_list().AllColumn_name() {
-					normalizedColumnName := parser.NormalizeSnowSQLObjectNamePart(columnName.Id_())
+					normalizedColumnName := snowparser.NormalizeSnowSQLObjectNamePart(columnName.Id_())
 					result[i].name = normalizedColumnName
 				}
 			}
@@ -169,11 +169,11 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldSetOperator(ctx snowparser.ISet_operatorsContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldSetOperator(ctx parser.ISet_operatorsContext) ([]fieldInfo, error) {
 	return extractor.extractSnowsqlSensitiveFieldsSelectStatement(ctx.Select_statement())
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectStatement(ctx snowparser.ISelect_statementContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectStatement(ctx parser.ISelect_statementContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -192,7 +192,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 
 	var result []fieldInfo
 
-	var selectList snowparser.ISelect_listContext
+	var selectList parser.ISelect_listContext
 	if ctx.Select_clause() != nil {
 		selectList = ctx.Select_clause().Select_list_no_top().Select_list()
 	} else if ctx.Select_top_clause() != nil {
@@ -202,7 +202,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 		if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
 			var normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string
 			if v := columnElem.Alias(); v != nil {
-				normalizedTableName = parser.NormalizeSnowSQLObjectNamePart(v.Id_())
+				normalizedTableName = snowparser.NormalizeSnowSQLObjectNamePart(v.Id_())
 			} else if v := columnElem.Object_name(); v != nil {
 				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(v, "", "")
 			}
@@ -213,7 +213,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 				}
 				result = append(result, left...)
 			} else if columnElem.Column_name() != nil {
-				normalizedColumnName = parser.NormalizeSnowSQLObjectNamePart(columnElem.Column_name().Id_())
+				normalizedColumnName = snowparser.NormalizeSnowSQLObjectNamePart(columnElem.Column_name().Id_())
 				left, err := extractor.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, columnElem.Column_name().GetStart().GetLine())
@@ -237,7 +237,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 				result = append(result, left[columnPosition-1])
 			}
 			if asAlias := columnElem.As_alias(); asAlias != nil {
-				result[len(result)-1].name = parser.NormalizeSnowSQLObjectNamePart(asAlias.Alias().Id_())
+				result[len(result)-1].name = snowparser.NormalizeSnowSQLObjectNamePart(asAlias.Alias().Id_())
 			}
 		} else if expressionElem := iSelectListElem.Expression_elem(); expressionElem != nil {
 			if v := expressionElem.Expr(); v != nil {
@@ -261,7 +261,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 			}
 
 			if asAlias := expressionElem.As_alias(); asAlias != nil {
-				result[len(result)-1].name = parser.NormalizeSnowSQLObjectNamePart(asAlias.Alias().Id_())
+				result[len(result)-1].name = snowparser.NormalizeSnowSQLObjectNamePart(asAlias.Alias().Id_())
 			}
 		}
 	}
@@ -272,7 +272,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 // The closure of the IExprContext.
 func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.RuleContext) (string, storepb.MaskingLevel, error) {
 	switch ctx := ctx.(type) {
-	case *snowparser.ExprContext:
+	case *parser.ExprContext:
 		if v := ctx.Primitive_expression(); v != nil {
 			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
@@ -347,21 +347,21 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
-	case *snowparser.Full_column_nameContext:
+	case *parser.Full_column_nameContext:
 		normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName := normalizedFullColumnName(ctx)
 		fieldInfo, err := extractor.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
 		return fieldInfo.name, fieldInfo.maskingLevel, nil
-	case *snowparser.Object_nameContext:
+	case *parser.Object_nameContext:
 		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, extractor.currentDatabase, "PUBLIC")
 		fieldInfo, err := extractor.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
 		}
 		return fieldInfo.name, fieldInfo.maskingLevel, nil
-	case *snowparser.Trim_expressionContext:
+	case *parser.Trim_expressionContext:
 		if v := ctx.Expr(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
@@ -370,7 +370,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), maskingLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Try_cast_exprContext:
+	case *parser.Try_cast_exprContext:
 		if v := ctx.Expr(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
@@ -379,7 +379,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), maskingLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Json_literalContext:
+	case *parser.Json_literalContext:
 		finalLevel := defaultMaskingLevel
 		if v := ctx.AllKv_pair(); len(v) > 0 {
 			for _, kvPair := range v {
@@ -396,7 +396,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
-	case *snowparser.Kv_pairContext:
+	case *parser.Kv_pairContext:
 		if v := ctx.Value(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
@@ -405,7 +405,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), maskingLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Arr_literalContext:
+	case *parser.Arr_literalContext:
 		finalLevel := defaultMaskingLevel
 		if v := ctx.AllValue(); len(v) > 0 {
 			for _, value := range v {
@@ -422,9 +422,9 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
-	case *snowparser.ValueContext:
+	case *parser.ValueContext:
 		return extractor.evalSnowSQLExprMaskingLevel(ctx.Expr())
-	case *snowparser.Bracket_expressionContext:
+	case *parser.Bracket_expressionContext:
 		finalLevel := defaultMaskingLevel
 		if v := ctx.Expr(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
@@ -449,7 +449,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Iff_exprContext:
+	case *parser.Iff_exprContext:
 		finalLevel := defaultMaskingLevel
 		if v := ctx.Search_condition(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Search_condition())
@@ -477,7 +477,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Case_expressionContext:
+	case *parser.Case_expressionContext:
 		finalLevel := defaultMaskingLevel
 		for _, expr := range ctx.AllExpr() {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
@@ -522,7 +522,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Switch_sectionContext:
+	case *parser.Switch_sectionContext:
 		finalLevel := defaultMaskingLevel
 		if v := ctx.AllExpr(); len(v) > 0 {
 			for _, expr := range v {
@@ -540,7 +540,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Switch_search_condition_sectionContext:
+	case *parser.Switch_search_condition_sectionContext:
 		finalLevel := defaultMaskingLevel
 		if v := ctx.Search_condition(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
@@ -563,7 +563,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Search_conditionContext:
+	case *parser.Search_conditionContext:
 		finalLevel := defaultMaskingLevel
 		if v := ctx.Predicate(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
@@ -590,7 +590,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.PredicateContext:
+	case *parser.PredicateContext:
 		finalLevel := defaultMaskingLevel
 		if v := ctx.AllExpr(); len(v) > 0 {
 			for _, expr := range v {
@@ -628,7 +628,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
-	case *snowparser.SubqueryContext:
+	case *parser.SubqueryContext:
 		fields, err := extractor.extractSnowsqlSensitiveFieldsQueryStatement(ctx.Query_statement())
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.GetText(), ctx.GetStart().GetLine())
@@ -643,12 +643,12 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
-	case *snowparser.Primitive_expressionContext:
+	case *parser.Primitive_expressionContext:
 		if v := ctx.Id_(); v != nil {
 			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		return ctx.GetText(), defaultMaskingLevel, nil
-	case *snowparser.Function_callContext:
+	case *parser.Function_callContext:
 		if v := ctx.Ranking_windowed_function(); v != nil {
 			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
@@ -673,7 +673,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), maskingLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Aggregate_functionContext:
+	case *parser.Aggregate_functionContext:
 		if v := ctx.Expr_list(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
@@ -706,7 +706,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Ranking_windowed_functionContext:
+	case *parser.Ranking_windowed_functionContext:
 		finalLevel := defaultMaskingLevel
 		if v := ctx.Expr(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
@@ -731,7 +731,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Over_clauseContext:
+	case *parser.Over_clauseContext:
 		finalLevel := defaultMaskingLevel
 		if v := ctx.Partition_by(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
@@ -756,19 +756,19 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			return ctx.GetText(), finalLevel, nil
 		}
 		panic("never reach here")
-	case *snowparser.Partition_byContext:
+	case *parser.Partition_byContext:
 		_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Expr_list())
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list().GetText(), ctx.Expr_list().GetStart().GetLine())
 		}
 		return ctx.GetText(), maskingLevel, nil
-	case *snowparser.Order_by_exprContext:
+	case *parser.Order_by_exprContext:
 		_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Expr_list_sorted())
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list_sorted().GetText(), ctx.Expr_list_sorted().GetStart().GetLine())
 		}
 		return ctx.GetText(), maskingLevel, nil
-	case *snowparser.Expr_listContext:
+	case *parser.Expr_listContext:
 		finalLevel := defaultMaskingLevel
 		allExpr := ctx.AllExpr()
 		for _, expr := range allExpr {
@@ -784,7 +784,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
-	case *snowparser.Expr_list_sortedContext:
+	case *parser.Expr_list_sortedContext:
 		finalLevel := defaultMaskingLevel
 		allExpr := ctx.AllExpr()
 		for _, expr := range allExpr {
@@ -800,8 +800,8 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
-	case *snowparser.Id_Context:
-		normalizedColumnName := parser.NormalizeSnowSQLObjectNamePart(ctx)
+	case *parser.Id_Context:
+		normalizedColumnName := snowparser.NormalizeSnowSQLObjectNamePart(ctx)
 		fieldInfo, err := extractor.snowflakeGetField("", "", "", normalizedColumnName)
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
@@ -811,7 +811,7 @@ func (extractor *sensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 	panic("never reach here")
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFromClause(ctx snowparser.IFrom_clauseContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFromClause(ctx parser.IFrom_clauseContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -819,7 +819,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFromClaus
 	return extractor.extractSnowsqlSensitiveFieldsTableSources(ctx.Table_sources())
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSources(ctx snowparser.ITable_sourcesContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSources(ctx parser.ITable_sourcesContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -836,14 +836,14 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSour
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSource(ctx snowparser.ITable_sourceContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSource(ctx parser.ITable_sourceContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 	return extractor.extractSnowsqlSensitiveFieldsTableSourceItemJoined(ctx.Table_source_item_joined())
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSourceItemJoined(ctx snowparser.ITable_source_item_joinedContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSourceItemJoined(ctx parser.ITable_source_item_joinedContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -874,7 +874,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSour
 	return left, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoinClause(ctx snowparser.IJoin_clauseContext, left []fieldInfo) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoinClause(ctx parser.IJoin_clauseContext, left []fieldInfo) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -916,7 +916,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoinClaus
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx snowparser.IObject_refContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx parser.IObject_refContext) ([]fieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -966,7 +966,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 	if ctx.Pivot_unpivot() != nil {
 		if v := ctx.Pivot_unpivot(); v.PIVOT() != nil {
 			pivotColumnName := v.AllId_()[1]
-			normalizedPivotColumnName := parser.NormalizeSnowSQLObjectNamePart(pivotColumnName)
+			normalizedPivotColumnName := snowparser.NormalizeSnowSQLObjectNamePart(pivotColumnName)
 			pivotColumnIndex := -1
 			for i, field := range result {
 				if field.name == normalizedPivotColumnName {
@@ -981,7 +981,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 			result = append(result[:pivotColumnIndex], result[pivotColumnIndex+1:]...)
 
 			valueColumnName := v.AllId_()[2]
-			normalizedValueColumnName := parser.NormalizeSnowSQLObjectNamePart(valueColumnName)
+			normalizedValueColumnName := snowparser.NormalizeSnowSQLObjectNamePart(valueColumnName)
 			valueColumnIndex := -1
 			for i, field := range result {
 				if field.name == normalizedValueColumnName {
@@ -1004,7 +1004,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 			var strippedColumnIndices []int
 			var strippedColumnInOriginalResult []fieldInfo
 			for idx, columnName := range v.Column_list().AllColumn_name() {
-				normalizedColumnName := parser.NormalizeSnowSQLObjectNamePart(columnName.Id_())
+				normalizedColumnName := snowparser.NormalizeSnowSQLObjectNamePart(columnName.Id_())
 				for i, field := range result {
 					if field.name == normalizedColumnName {
 						strippedColumnIndices = append(strippedColumnIndices, i)
@@ -1029,10 +1029,10 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 			}
 
 			valueColumnName := v.Id_(0)
-			normalizedValueColumnName := parser.NormalizeSnowSQLObjectNamePart(valueColumnName)
+			normalizedValueColumnName := snowparser.NormalizeSnowSQLObjectNamePart(valueColumnName)
 
 			nameColumnName := v.Column_name().Id_()
-			normalizedNameColumnName := parser.NormalizeSnowSQLObjectNamePart(nameColumnName)
+			normalizedNameColumnName := snowparser.NormalizeSnowSQLObjectNamePart(nameColumnName)
 
 			result = append(result, fieldInfo{
 				name:         normalizedNameColumnName,
@@ -1047,7 +1047,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 	// If the as alias is not nil, we should use the alias name to replace the original table name.
 	if ctx.As_alias() != nil {
 		id := ctx.As_alias().Alias().Id_()
-		aliasName := parser.NormalizeSnowSQLObjectNamePart(id)
+		aliasName := snowparser.NormalizeSnowSQLObjectNamePart(id)
 		for i := 0; i < len(result); i++ {
 			result[i].table = aliasName
 			// We can safely set the database and schema to empty string because the
@@ -1062,7 +1062,7 @@ func (extractor *sensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(objectName snowparser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, db.TableSchema, error) {
+func (extractor *sensitiveFieldExtractor) snowsqlFindTableSchema(objectName parser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, db.TableSchema, error) {
 	normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(objectName, "", "")
 	// For snowflake, we should find the table schema in cteOuterSchemaInfo by ascending order.
 	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
@@ -1202,23 +1202,23 @@ func (extractor *sensitiveFieldExtractor) snowflakeGetField(normalizedDatabaseNa
 	return fieldInfo{}, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
 
-func normalizedFullColumnName(ctx snowparser.IFull_column_nameContext) (normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) {
+func normalizedFullColumnName(ctx parser.IFull_column_nameContext) (normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) {
 	if ctx.GetDb_name() != nil {
-		normalizedDatabaseName = parser.NormalizeSnowSQLObjectNamePart(ctx.GetDb_name())
+		normalizedDatabaseName = snowparser.NormalizeSnowSQLObjectNamePart(ctx.GetDb_name())
 	}
 	if ctx.GetSchema() != nil {
-		normalizedSchemaName = parser.NormalizeSnowSQLObjectNamePart(ctx.GetSchema())
+		normalizedSchemaName = snowparser.NormalizeSnowSQLObjectNamePart(ctx.GetSchema())
 	}
 	if ctx.GetTab_name() != nil {
-		normalizedTableName = parser.NormalizeSnowSQLObjectNamePart(ctx.GetTab_name())
+		normalizedTableName = snowparser.NormalizeSnowSQLObjectNamePart(ctx.GetTab_name())
 	}
 	if ctx.GetCol_name() != nil {
-		normalizedColumnName = parser.NormalizeSnowSQLObjectNamePart(ctx.GetCol_name())
+		normalizedColumnName = snowparser.NormalizeSnowSQLObjectNamePart(ctx.GetCol_name())
 	}
 	return normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName
 }
 
-func normalizedObjectName(objectName snowparser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string) {
+func normalizedObjectName(objectName parser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string) {
 	// TODO(zp): unify here with NormalizeObjectName in backend/plugin/parser/sql/snowsql.go
 	var parts []string
 	if objectName == nil {
@@ -1226,7 +1226,7 @@ func normalizedObjectName(objectName snowparser.IObject_nameContext, normalizedF
 	}
 	database := normalizedFallbackDatabaseName
 	if d := objectName.GetD(); d != nil {
-		normalizedD := parser.NormalizeSnowSQLObjectNamePart(d)
+		normalizedD := snowparser.NormalizeSnowSQLObjectNamePart(d)
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -1235,14 +1235,14 @@ func normalizedObjectName(objectName snowparser.IObject_nameContext, normalizedF
 
 	schema := normalizedFallbackSchemaName
 	if s := objectName.GetS(); s != nil {
-		normalizedS := parser.NormalizeSnowSQLObjectNamePart(s)
+		normalizedS := snowparser.NormalizeSnowSQLObjectNamePart(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
 	}
 	parts = append(parts, schema)
 
-	normalizedO := parser.NormalizeSnowSQLObjectNamePart(objectName.GetO())
+	normalizedO := snowparser.NormalizeSnowSQLObjectNamePart(objectName.GetO())
 	parts = append(parts, normalizedO)
 
 	return parts[0], parts[1], parts[2]
