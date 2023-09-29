@@ -2,10 +2,14 @@ package pg
 
 import (
 	"encoding/json"
+	"regexp"
 	"sort"
+	"strings"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
+	"golang.org/x/exp/slog"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -67,4 +71,75 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 	}
 
 	return result
+}
+
+// ValidateSQLForEditor validates the SQL statement for SQL editor.
+// Consider that the tokenizer cannot handle the dollar-sign($), so that we use pg_query_go to parse the statement.
+// For EXPLAIN and normal SELECT statements, we can directly use regexp to check.
+// For CTE, we need to parse the statement to JSON and check the JSON keys.
+func ValidateSQLForEditor(statement string) bool {
+	jsonText, err := pgquery.ParseToJSON(statement)
+	if err != nil {
+		slog.Debug("Failed to parse statement to JSON", slog.String("statement", statement), log.BBError(err))
+		return false
+	}
+
+	formattedStr := strings.ToUpper(strings.TrimSpace(statement))
+	if isSelect, _ := regexp.MatchString(`^SELECT\s+?`, formattedStr); isSelect {
+		return true
+	}
+
+	if isSelect, _ := regexp.MatchString(`^SELECT\*\s+?`, formattedStr); isSelect {
+		return true
+	}
+
+	if isExplain, _ := regexp.MatchString(`^EXPLAIN\s+?`, formattedStr); isExplain {
+		if isExplainAnalyze, _ := regexp.MatchString(`^EXPLAIN\s+ANALYZE\s+?`, formattedStr); isExplainAnalyze {
+			return false
+		}
+		return true
+	}
+
+	cteRegex := regexp.MustCompile(`^WITH\s+?`)
+	if matchResult := cteRegex.MatchString(formattedStr); matchResult {
+		var jsonData map[string]any
+
+		if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
+			slog.Debug("Failed to unmarshal JSON", slog.String("jsonText", jsonText), log.BBError(err))
+			return false
+		}
+
+		dmlKeyList := []string{"InsertStmt", "UpdateStmt", "DeleteStmt"}
+
+		return !keyExistsInJSONData(jsonData, dmlKeyList)
+	}
+
+	return false
+}
+
+func keyExistsInJSONData(jsonData map[string]any, keyList []string) bool {
+	for _, key := range keyList {
+		if _, ok := jsonData[key]; ok {
+			return true
+		}
+	}
+
+	for _, value := range jsonData {
+		switch v := value.(type) {
+		case map[string]any:
+			if keyExistsInJSONData(v, keyList) {
+				return true
+			}
+		case []any:
+			for _, item := range v {
+				if m, ok := item.(map[string]any); ok {
+					if keyExistsInJSONData(m, keyList) {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
 }
