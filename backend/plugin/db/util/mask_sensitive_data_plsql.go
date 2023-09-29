@@ -14,7 +14,18 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (extractor *sensitiveFieldExtractor) extractOracleSensitiveField(statement string) ([]db.SensitiveField, error) {
+type PLSQLSensitiveFieldExtractor struct {
+	// For Oracle, we need to know the current database to determine if the table is in the current schema.
+	currentDatabase    string
+	schemaInfo         *db.SensitiveSchemaInfo
+	outerSchemaInfo    []base.FieldInfo
+	cteOuterSchemaInfo []db.TableSchema
+
+	// SELECT statement specific field.
+	fromFieldList []base.FieldInfo
+}
+
+func (extractor *PLSQLSensitiveFieldExtractor) extractOracleSensitiveField(statement string) ([]db.SensitiveField, error) {
 	tree, _, err := plsqlparser.ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
@@ -33,7 +44,7 @@ func (extractor *sensitiveFieldExtractor) extractOracleSensitiveField(statement 
 type selectStatementListener struct {
 	*plsql.BasePlSqlParserListener
 
-	extractor *sensitiveFieldExtractor
+	extractor *PLSQLSensitiveFieldExtractor
 	result    []db.SensitiveField
 	err       error
 }
@@ -63,7 +74,7 @@ func (l *selectStatementListener) EnterSelect_statement(ctx *plsql.Select_statem
 	}
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractContext(ctx antlr.ParserRuleContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractContext(ctx antlr.ParserRuleContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -76,7 +87,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractContext(ctx antlr.ParserRu
 	}
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
 	// Deal with recursive CTE first.
 	tableName := plsqlparser.NormalizeIdentifierContext(ctx.Query_name().Identifier())
 
@@ -157,7 +168,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractFactoringElement(ctx plsql
 	return extractor.plsqlExtractNonRecursiveCTE(ctx)
 }
 
-func (*sensitiveFieldExtractor) plsqlIsRecursiveCTE(ctx plsql.IFactoring_elementContext) (bool, plsql.ISubquery_operation_partContext) {
+func (*PLSQLSensitiveFieldExtractor) plsqlIsRecursiveCTE(ctx plsql.IFactoring_elementContext) (bool, plsql.ISubquery_operation_partContext) {
 	subquery := ctx.Subquery()
 	allParts := subquery.AllSubquery_operation_part()
 	if len(allParts) == 0 {
@@ -167,7 +178,7 @@ func (*sensitiveFieldExtractor) plsqlIsRecursiveCTE(ctx plsql.IFactoring_element
 	return lastPart.ALL() != nil, lastPart
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryExceptLastPart(ctx plsql.ISubqueryContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractSubqueryExceptLastPart(ctx plsql.ISubqueryContext) ([]base.FieldInfo, error) {
 	subqueryBasicElements := ctx.Subquery_basic_elements()
 	if subqueryBasicElements == nil {
 		return nil, nil
@@ -189,7 +200,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryExceptLastPart(ctx
 	return leftField, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
 	fieldList, err := extractor.plsqlExtractSubquery(ctx.Subquery())
 	if err != nil {
 		return db.TableSchema{}, err
@@ -227,7 +238,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractSelectOnlyStatement(ctx plsql.ISelect_only_statementContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractSelectOnlyStatement(ctx plsql.ISelect_only_statementContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -240,7 +251,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSelectOnlyStatement(ctx pl
 	return extractor.plsqlExtractSubquery(subquery)
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractSelect(ctx plsql.ISelect_statementContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractSelect(ctx plsql.ISelect_statementContext) ([]base.FieldInfo, error) {
 	selectOnlyStatement := ctx.Select_only_statement()
 	if selectOnlyStatement == nil {
 		return nil, nil
@@ -249,7 +260,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSelect(ctx plsql.ISelect_s
 	return extractor.plsqlExtractSelectOnlyStatement(selectOnlyStatement)
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractSubquery(ctx plsql.ISubqueryContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractSubquery(ctx plsql.ISubqueryContext) ([]base.FieldInfo, error) {
 	subqueryBasicElements := ctx.Subquery_basic_elements()
 	if subqueryBasicElements == nil {
 		return nil, nil
@@ -270,7 +281,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSubquery(ctx plsql.ISubque
 	return leftField, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryOperationPart(ctx plsql.ISubquery_operation_partContext, leftField []base.FieldInfo) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractSubqueryOperationPart(ctx plsql.ISubquery_operation_partContext, leftField []base.FieldInfo) ([]base.FieldInfo, error) {
 	rightField, err := extractor.plsqlExtractSubqueryBasicElements(ctx.Subquery_basic_elements())
 	if err != nil {
 		return nil, err
@@ -297,7 +308,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryOperationPart(ctx 
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryBasicElements(ctx plsql.ISubquery_basic_elementsContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractSubqueryBasicElements(ctx plsql.ISubquery_basic_elementsContext) ([]base.FieldInfo, error) {
 	if ctx.Query_block() != nil {
 		return extractor.plsqlExtractQueryBlock(ctx.Query_block())
 	}
@@ -309,7 +320,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractSubqueryBasicElements(ctx 
 	return nil, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContext) (result []base.FieldInfo, err error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContext) (result []base.FieldInfo, err error) {
 	withClause := ctx.Subquery_factoring_clause()
 	if withClause != nil {
 		cteOuterLength := len(extractor.cteOuterSchemaInfo)
@@ -376,7 +387,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuer
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlCheckFieldMaskingLevel(schemaName string, tableName string, columnName string) storepb.MaskingLevel {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlCheckFieldMaskingLevel(schemaName string, tableName string, columnName string) storepb.MaskingLevel {
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
 	//
 	//  select (
@@ -412,7 +423,7 @@ func (extractor *sensitiveFieldExtractor) plsqlCheckFieldMaskingLevel(schemaName
 	return defaultMaskingLevel
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
 	if ctx == nil {
 		return "", defaultMaskingLevel, nil
 	}
@@ -497,7 +508,7 @@ func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx 
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
-		subqueryExtractor := &sensitiveFieldExtractor{
+		subqueryExtractor := &PLSQLSensitiveFieldExtractor{
 			currentDatabase: extractor.currentDatabase,
 			schemaInfo:      extractor.schemaInfo,
 			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
@@ -520,7 +531,7 @@ func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx 
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
-		subqueryExtractor := &sensitiveFieldExtractor{
+		subqueryExtractor := &PLSQLSensitiveFieldExtractor{
 			currentDatabase: extractor.currentDatabase,
 			schemaInfo:      extractor.schemaInfo,
 			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
@@ -700,7 +711,7 @@ func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx 
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
-		subqueryExtractor := &sensitiveFieldExtractor{
+		subqueryExtractor := &PLSQLSensitiveFieldExtractor{
 			currentDatabase: extractor.currentDatabase,
 			schemaInfo:      extractor.schemaInfo,
 			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
@@ -951,7 +962,7 @@ func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx 
 	return "", defaultMaskingLevel, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpressionList(list []antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlEvalMaskingLevelInExpressionList(list []antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
 	var fieldName string
 	var err error
 	var level storepb.MaskingLevel
@@ -974,7 +985,7 @@ func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpressionList(
 	return fieldName, finalLevel, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractFromClause(ctx plsql.IFrom_clauseContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractFromClause(ctx plsql.IFrom_clauseContext) ([]base.FieldInfo, error) {
 	tableReferenceList := ctx.Table_ref_list()
 	if tableReferenceList == nil {
 		return nil, nil
@@ -993,7 +1004,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractFromClause(ctx plsql.IFrom
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractTableRef(ctx plsql.ITable_refContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractTableRef(ctx plsql.ITable_refContext) ([]base.FieldInfo, error) {
 	tableRefAux := ctx.Table_ref_aux()
 	if tableRefAux == nil {
 		return nil, nil
@@ -1019,7 +1030,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractTableRef(ctx plsql.ITable_
 	return leftField, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlMergeJoin(leftField []base.FieldInfo, ctx plsql.IJoin_clauseContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlMergeJoin(leftField []base.FieldInfo, ctx plsql.IJoin_clauseContext) ([]base.FieldInfo, error) {
 	rightField, err := extractor.plsqlExtractTableRefAux(ctx.Table_ref_aux())
 	if err != nil {
 		return nil, err
@@ -1110,7 +1121,7 @@ func (extractor *sensitiveFieldExtractor) plsqlMergeJoin(leftField []base.FieldI
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractTableRefAux(ctx plsql.ITable_ref_auxContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractTableRefAux(ctx plsql.ITable_ref_auxContext) ([]base.FieldInfo, error) {
 	tableRefAuxInternal := ctx.Table_ref_aux_internal()
 
 	list, err := extractor.plsqlExtractTableRefAuxInternal(tableRefAuxInternal)
@@ -1138,7 +1149,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractTableRefAux(ctx plsql.ITab
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractTableRefAuxInternal(ctx plsql.ITable_ref_aux_internalContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractTableRefAuxInternal(ctx plsql.ITable_ref_aux_internalContext) ([]base.FieldInfo, error) {
 	switch rule := ctx.(type) {
 	case *plsql.Table_ref_aux_internal_oneContext:
 		return extractor.plsqlExtractDmlTableExpressionClause(rule.Dml_table_expression_clause())
@@ -1152,7 +1163,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractTableRefAuxInternal(ctx pl
 	}
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.IDml_table_expression_clauseContext) ([]base.FieldInfo, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.IDml_table_expression_clauseContext) ([]base.FieldInfo, error) {
 	tableViewName := ctx.Tableview_name()
 	if tableViewName != nil {
 		schema, table := normalizeTableViewName(extractor.currentDatabase, tableViewName)
@@ -1181,7 +1192,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractDmlTableExpressionClause(c
 	return nil, errors.Errorf("unknown DML_TABLE_EXPRESSION_CLAUSE rule: %T", ctx)
 }
 
-func (extractor *sensitiveFieldExtractor) plsqlFindTableSchema(schemaName, tableName string) (db.TableSchema, error) {
+func (extractor *PLSQLSensitiveFieldExtractor) plsqlFindTableSchema(schemaName, tableName string) (db.TableSchema, error) {
 	if tableName == "DUAL" {
 		return db.TableSchema{
 			Name:       "DUAL",

@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -14,17 +13,6 @@ var (
 	defaultMaskingLevel storepb.MaskingLevel = storepb.MaskingLevel_NONE
 	maxMaskingLevel     storepb.MaskingLevel = storepb.MaskingLevel_FULL
 )
-
-type sensitiveFieldExtractor struct {
-	// For Oracle, we need to know the current database to determine if the table is in the current schema.
-	currentDatabase    string
-	schemaInfo         *db.SensitiveSchemaInfo
-	outerSchemaInfo    []base.FieldInfo
-	cteOuterSchemaInfo []db.TableSchema
-
-	// SELECT statement specific field.
-	fromFieldList []base.FieldInfo
-}
 
 func extractSensitiveField(dbType db.Type, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
 	if schemaInfo == nil {
@@ -44,7 +32,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 				return nil, errors.Errorf("TiDB schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
 			}
 		}
-		extractor := &sensitiveFieldExtractor{
+		extractor := &TiDBSensitiveFieldExtractor{
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
@@ -65,7 +53,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 				return nil, errors.Errorf("MySQL schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
 			}
 		}
-		extractor := &sensitiveFieldExtractor{
+		extractor := &MySQLSensitiveFieldExtractor{
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
@@ -75,7 +63,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		}
 		return result, nil
 	case db.Postgres, db.Redshift, db.RisingWave:
-		extractor := &sensitiveFieldExtractor{
+		extractor := &PGSensitiveFieldExtractor{
 			schemaInfo: schemaInfo,
 		}
 		result, err := extractor.extractPostgreSQLSensitiveField(statement)
@@ -101,7 +89,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 				return nil, errors.Errorf("Oracle schema info should have the same database name and schema name, but got %s and %s", database.Name, database.SchemaList[0].Name)
 			}
 		}
-		extractor := &sensitiveFieldExtractor{
+		extractor := &PLSQLSensitiveFieldExtractor{
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
@@ -111,7 +99,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		}
 		return result, nil
 	case db.Snowflake:
-		extractor := &sensitiveFieldExtractor{
+		extractor := &SnowSensitiveFieldExtractor{
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
@@ -121,7 +109,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		}
 		return result, nil
 	case db.MSSQL:
-		extractor := &sensitiveFieldExtractor{
+		extractor := &TSQLSensitiveFieldExtractor{
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
