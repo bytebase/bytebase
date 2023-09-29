@@ -18,15 +18,15 @@ import (
 
 type TSQLSensitiveFieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
-	currentDatabase    string
-	schemaInfo         *db.SensitiveSchemaInfo
+	CurrentDatabase    string
+	SchemaInfo         *db.SensitiveSchemaInfo
 	cteOuterSchemaInfo []db.TableSchema
 
 	// SELECT statement specific field.
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFields(sql string) ([]db.SensitiveField, error) {
+func (extractor *TSQLSensitiveFieldExtractor) ExtractTSqlSensitiveFields(sql string) ([]db.SensitiveField, error) {
 	tree, err := tsqlparser.ParseTSQL(sql)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse snowsql")
@@ -419,7 +419,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTabl
 	var err error
 	// TODO(zp): handle other cases likes ROWSET_FUNCTION.
 	if ctx.Full_table_name() != nil {
-		normalizedDatabaseName, tableSchema, err := extractor.tsqlFindTableSchema(ctx.Full_table_name(), "", extractor.currentDatabase, "dbo")
+		normalizedDatabaseName, tableSchema, err := extractor.tsqlFindTableSchema(ctx.Full_table_name(), "", extractor.CurrentDatabase, "dbo")
 		if err != nil {
 			return nil, err
 		}
@@ -558,7 +558,7 @@ func (extractor *TSQLSensitiveFieldExtractor) tsqlFindTableSchema(fullTableName 
 		// TODO(zp): How do we handle the linked server?
 		return "", db.TableSchema{}, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
 	}
-	for _, databaseSchema := range extractor.schemaInfo.DatabaseList {
+	for _, databaseSchema := range extractor.SchemaInfo.DatabaseList {
 		if normalizedDatabaseName != "" && !extractor.isIdentifierEqual(normalizedDatabaseName, databaseSchema.Name) {
 			continue
 		}
@@ -764,7 +764,7 @@ func (extractor *TSQLSensitiveFieldExtractor) tsqlIsFieldSensitive(normalizedDat
 // isIdentifierEqual compares the identifier with the given normalized parts, returns true if they are equal.
 // It will consider the case sensitivity based on the current database.
 func (extractor *TSQLSensitiveFieldExtractor) isIdentifierEqual(a, b string) bool {
-	if !extractor.schemaInfo.IgnoreCaseSensitive {
+	if !extractor.SchemaInfo.IgnoreCaseSensitive {
 		return a == b
 	}
 	if len(a) != len(b) {
@@ -1042,8 +1042,8 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 	case *parser.SubqueryContext:
 		// For subquery, we clone the current extractor, reset the from list, but keep the cte, and then extract the sensitive fields from the subquery
 		cloneExtractor := &TSQLSensitiveFieldExtractor{
-			currentDatabase:    extractor.currentDatabase,
-			schemaInfo:         extractor.schemaInfo,
+			CurrentDatabase:    extractor.CurrentDatabase,
+			SchemaInfo:         extractor.SchemaInfo,
 			cteOuterSchemaInfo: extractor.cteOuterSchemaInfo,
 		}
 		fieldInfo, err := cloneExtractor.extractTSqlSensitiveFieldsFromSubquery(ctx)
