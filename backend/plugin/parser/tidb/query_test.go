@@ -3,6 +3,7 @@ package tidb
 import (
 	"testing"
 
+	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/stretchr/testify/require"
 )
 
