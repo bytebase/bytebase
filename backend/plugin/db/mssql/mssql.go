@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -28,7 +29,7 @@ var (
 )
 
 func init() {
-	db.Register(db.MSSQL, newDriver)
+	db.Register(storepb.Engine_MSSQL, newDriver)
 }
 
 // Driver is the MSSQL driver.
@@ -42,7 +43,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a MSSQL driver.
-func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	query := url.Values{}
 	query.Add("app name", "Bytebase")
 	if config.Database != "" {
@@ -74,8 +75,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.MSSQL
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_MSSQL
 }
 
 // GetDB gets the database.
@@ -166,7 +167,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		queryContext.ReadOnly = false
 	}
 	startTime := time.Now()
-	result, err := util.Query(ctx, db.MSSQL, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_MSSQL, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

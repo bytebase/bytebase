@@ -28,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // NewPITRRestoreExecutor creates a PITR restore task executor.
@@ -107,7 +108,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 
 	if payload.TargetInstanceID == nil {
 		// Backup restore in place
-		if instance.Engine == db.Postgres {
+		if instance.Engine == storepb.Engine_POSTGRES {
 			issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 			if err != nil {
 				return nil, err

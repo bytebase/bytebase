@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Postgres, advisor.PostgreSQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
 }
 
 // StatementDisallowCommitAdvisor is the advisor checking for to disallow commit.

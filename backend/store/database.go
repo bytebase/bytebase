@@ -11,7 +11,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -72,7 +71,7 @@ type FindDatabaseMessage struct {
 	InstanceID             *string
 	DatabaseName           *string
 	UID                    *int
-	Engine                 *db.Type
+	Engine                 *storepb.Engine
 	// When this is used, we will return databases from archived instances or environments.
 	// This is used for existing tasks with archived databases.
 	ShowDeleted bool

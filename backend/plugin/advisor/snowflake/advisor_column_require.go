@@ -10,8 +10,8 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Snowflake, advisor.SnowflakeColumnRequirement, &ColumnRequireAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeColumnRequirement, &ColumnRequireAdvisor{})
 }
 
 // ColumnRequireAdvisor is the advisor checking for column requirement.

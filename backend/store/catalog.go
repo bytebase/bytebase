@@ -5,8 +5,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,16 +18,11 @@ type Catalog struct {
 }
 
 // NewCatalog creates a new database catalog.
-func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Type, syntaxMode advisor.SyntaxMode) (catalog.Catalog, error) {
+func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType storepb.Engine, syntaxMode advisor.SyntaxMode) (catalog.Catalog, error) {
 	c := &Catalog{}
 
 	if syntaxMode == advisor.SyntaxModeSDL {
 		return NewEmptyCatalog(engineType)
-	}
-
-	dbType, err := advisorDB.ConvertToAdvisorDBType(string(engineType))
-	if err != nil {
-		return nil, err
 	}
 
 	databaseMeta, err := s.GetDBSchema(ctx, databaseID)
@@ -39,7 +33,7 @@ func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Ty
 		return nil, nil
 	}
 
-	c.Finder = catalog.NewFinder(databaseMeta.Metadata, &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType})
+	c.Finder = catalog.NewFinder(databaseMeta.Metadata, &catalog.FinderContext{CheckIntegrity: true, EngineType: engineType})
 	return c, nil
 }
 
@@ -49,13 +43,8 @@ func (c *Catalog) GetFinder() *catalog.Finder {
 }
 
 // NewEmptyCatalog creates a new empty database catalog.
-func NewEmptyCatalog(engineType db.Type) (catalog.Catalog, error) {
-	dbType, err := advisorDB.ConvertToAdvisorDBType(string(engineType))
-	if err != nil {
-		return nil, err
-	}
-
+func NewEmptyCatalog(engineType storepb.Engine) (catalog.Catalog, error) {
 	return &Catalog{
-		catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false, EngineType: dbType}),
+		catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false, EngineType: engineType}),
 	}, nil
 }

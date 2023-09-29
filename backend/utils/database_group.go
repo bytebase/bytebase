@@ -7,29 +7,29 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // ConvertDatabaseToParserEngineType converts a database type to a parser engine type.
-func ConvertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error) {
+func ConvertDatabaseToParserEngineType(engine storepb.Engine) (parser.EngineType, error) {
 	switch engine {
-	case db.Oracle:
+	case storepb.Engine_ORACLE:
 		return parser.Oracle, nil
-	case db.MSSQL:
+	case storepb.Engine_MSSQL:
 		return parser.MSSQL, nil
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		return parser.Postgres, nil
-	case db.Redshift:
+	case storepb.Engine_REDSHIFT:
 		return parser.Redshift, nil
-	case db.MySQL:
+	case storepb.Engine_MYSQL:
 		return parser.MySQL, nil
-	case db.TiDB:
+	case storepb.Engine_TIDB:
 		return parser.TiDB, nil
-	case db.MariaDB:
+	case storepb.Engine_MARIADB:
 		return parser.MariaDB, nil
-	case db.OceanBase:
+	case storepb.Engine_OCEANBASE:
 		return parser.OceanBase, nil
 	}
 	return parser.EngineType("UNKNOWN"), errors.Errorf("unsupported engine type %q", engine)

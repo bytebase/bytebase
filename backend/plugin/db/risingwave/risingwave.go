@@ -38,7 +38,7 @@ var (
 )
 
 func init() {
-	db.Register(db.RisingWave, newDriver)
+	db.Register(storepb.Engine_RISINGWAVE, newDriver)
 }
 
 // Driver is the Postgres driver.
@@ -61,7 +61,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 }
 
 // Open opens a RisingWave driver.
-func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {
@@ -183,8 +183,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.RisingWave
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_RISINGWAVE
 }
 
 // GetDB gets the database.
@@ -434,7 +434,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, db.Postgres, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_POSTGRES, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

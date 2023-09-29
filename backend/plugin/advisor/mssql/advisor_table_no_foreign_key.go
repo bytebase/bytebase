@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MSSQL, advisor.MSSQLTableNoFK, &TableNoForeignKeyAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLTableNoFK, &TableNoForeignKeyAdvisor{})
 }
 
 // TableNoForeignKeyAdvisor is the advisor checking for table disallow foreign key..

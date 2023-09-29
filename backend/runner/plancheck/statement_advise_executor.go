@@ -11,7 +11,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -152,11 +151,6 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
 
-	dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
-	if err != nil {
-		return nil, err
-	}
-
 	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return nil, err
@@ -170,7 +164,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   dbSchema.Metadata.CharacterSet,
 		Collation: dbSchema.Metadata.Collation,
-		DbType:    dbType,
+		DbType:    instance.Engine,
 		Catalog:   catalog,
 		Driver:    connection,
 		Context:   ctx,
@@ -369,11 +363,6 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 			}
 
-			dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
-			if err != nil {
-				return nil, err
-			}
-
 			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
 				driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, db)
 				if err != nil {
@@ -388,7 +377,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
 					Charset:   dbSchema.Metadata.CharacterSet,
 					Collation: dbSchema.Metadata.Collation,
-					DbType:    dbType,
+					DbType:    instance.Engine,
 					Catalog:   catalog,
 					Driver:    connection,
 					Context:   ctx,

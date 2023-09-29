@@ -12,8 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisorDb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -39,7 +37,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	testInstance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
 		ResourceID:   postgres.TestSampleInstanceResourceID,
 		Title:        "Test Sample Instance",
-		Engine:       db.Postgres,
+		Engine:       storepb.Engine_POSTGRES,
 		ExternalLink: "",
 		DataSources: []*store.DataSourceMessage{
 			{
@@ -98,7 +96,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	prodInstance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
 		ResourceID:   postgres.ProdSampleInstanceResourceID,
 		Title:        "Prod Sample Instance",
-		Engine:       db.Postgres,
+		Engine:       storepb.Engine_POSTGRES,
 		ExternalLink: "",
 		DataSources: []*store.DataSourceMessage{
 			{
@@ -341,7 +339,7 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 	ruleList := []*advisor.SQLReviewRule{}
 
 	// Add DropEmptyDatabase rule for MySQL, TiDB, MariaDB.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB} {
+	for _, e := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB} {
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
 			Type:    advisor.SchemaRuleDropEmptyDatabase,
 			Level:   advisor.SchemaRuleLevelError,
@@ -351,7 +349,7 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 	}
 
 	// Add ColumnNotNull rule for MySQL, TiDB, MariaDB, Postgres.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
+	for _, e := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_POSTGRES} {
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
 			Type:    advisor.SchemaRuleColumnNotNull,
 			Level:   advisor.SchemaRuleLevelWarning,
@@ -361,7 +359,7 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 	}
 
 	// Add TableDropNamingConvention rule for MySQL, TiDB, MariaDB Postgres.
-	for _, e := range []advisorDb.Type{advisorDb.MySQL, advisorDb.TiDB, advisorDb.MariaDB, advisorDb.Postgres} {
+	for _, e := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_POSTGRES} {
 		ruleList = append(ruleList, &advisor.SQLReviewRule{
 			Type:    advisor.SchemaRuleTableDropNamingConvention,
 			Level:   advisor.SchemaRuleLevelError,

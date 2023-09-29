@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,10 +18,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
 }
 
 // TableDisallowPartitionAdvisor is the advisor checking for disallow table partition.

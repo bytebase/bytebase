@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -29,7 +30,7 @@ var (
 )
 
 func init() {
-	db.Register(db.SQLite, newDriver)
+	db.Register(storepb.Engine_SQLITE, newDriver)
 }
 
 // Driver is the SQLite driver.
@@ -45,7 +46,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a SQLite driver.
-func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	// Host is the directory (instance) containing all SQLite databases.
 	driver.dir = config.Host
 
@@ -74,8 +75,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.SQLite
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_SQLITE
 }
 
 // GetDB gets the database.
@@ -157,7 +158,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 // QueryConn queries a SQL statement in a given connection.
 func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	startTime := time.Now()
-	result, err := util.Query(ctx, db.SQLite, conn, statement, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_SQLITE, conn, statement, queryContext)
 	if err != nil {
 		return nil, err
 	}

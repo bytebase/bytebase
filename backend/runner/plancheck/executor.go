@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -32,27 +31,27 @@ type Executor interface {
 	Run(ctx context.Context, config *storepb.PlanCheckRunConfig) (results []*storepb.PlanCheckRunResult_Result, err error)
 }
 
-func isStatementTypeCheckSupported(dbType db.Type) bool {
+func isStatementTypeCheckSupported(dbType storepb.Engine) bool {
 	switch dbType {
-	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB, db.OceanBase:
+	case storepb.Engine_POSTGRES, storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return true
 	default:
 		return false
 	}
 }
 
-func isStatementAdviseSupported(dbType db.Type) bool {
+func isStatementAdviseSupported(dbType storepb.Engine) bool {
 	switch dbType {
-	case db.MySQL, db.TiDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL:
 		return true
 	default:
 		return false
 	}
 }
 
-func isStatementReportSupported(dbType db.Type) bool {
+func isStatementReportSupported(dbType storepb.Engine) bool {
 	switch dbType {
-	case db.Postgres, db.MySQL, db.OceanBase, db.Oracle:
+	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_OCEANBASE, storepb.Engine_ORACLE:
 		return true
 	default:
 		return false

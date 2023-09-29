@@ -28,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Sample data is from https://github.com/bytebase/employee-sample-database/tree/main/postgres/dataset_small
@@ -312,7 +313,7 @@ func SetupTestInstance(t *testing.T, port int, resourceDir string) func() {
 func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string) bool {
 	driver, err := db.Open(
 		ctx,
-		db.Postgres,
+		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
 			Username: pgUser,
@@ -348,7 +349,7 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	// Connect the just created sample database to load data.
 	driver, err := db.Open(
 		ctx,
-		db.Postgres,
+		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
 			Username: pgUser,
@@ -392,7 +393,7 @@ func prepareDemoDatabase(ctx context.Context, pgUser, host, port, database strin
 	// Connect the default postgres database created by initdb.
 	driver, err := db.Open(
 		ctx,
-		db.Postgres,
+		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
 			Username: pgUser,
@@ -445,7 +446,7 @@ func StartSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, port i
 func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, database string) error {
 	driver, err := db.Open(
 		ctx,
-		db.Postgres,
+		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
 			Username: pgUser,

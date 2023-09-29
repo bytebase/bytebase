@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pingcap/tidb/parser/ast"
 )
@@ -17,10 +17,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.

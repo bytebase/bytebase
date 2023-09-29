@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // NewPITRCutoverExecutor creates a PITR cutover task executor.
@@ -183,7 +184,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 
 func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, instance *store.InstanceMessage, issue *store.IssueMessage, databaseName string) error {
 	switch instance.Engine {
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		// Retry so that if there are clients reconnecting to the related databases, we can potentially kill the connections and do the cutover successfully.
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
@@ -205,7 +206,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, instance *store.
 				return errors.Errorf("context is canceled when doing cutover for PostgreSQL")
 			}
 		}
-	case db.MySQL, db.MariaDB:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 		if err := exec.pitrCutoverMySQL(ctx, instance, issue, databaseName); err != nil {
 			return errors.Wrap(err, "failed to do cutover for MySQL")
 		}

@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,10 +19,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.
