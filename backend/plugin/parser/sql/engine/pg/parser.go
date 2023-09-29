@@ -16,6 +16,8 @@ import (
 const (
 	operatorLike    string = "~~"
 	operatorNotLike string = "!~~"
+	// DeparseIndentString is the string for each indent level.
+	deparseIndentString = "    "
 )
 
 // ParseContext is the context for parsing.

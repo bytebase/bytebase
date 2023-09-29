@@ -29,6 +29,4 @@ const (
 	SQLServer EngineType = "SQLSERVER"
 	// RisingWave is the engine type for RisingWave.
 	RisingWave EngineType = "RISINGWAVE"
-	// DeparseIndentString is the string for each indent level.
-	DeparseIndentString = "    "
 )
