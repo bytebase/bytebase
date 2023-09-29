@@ -11,14 +11,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type MySQLSensitiveFieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
-	currentDatabase    string
-	schemaInfo         *db.SensitiveSchemaInfo
+	CurrentDatabase    string
+	SchemaInfo         *db.SensitiveSchemaInfo
 	outerSchemaInfo    []base.FieldInfo
 	cteOuterSchemaInfo []db.TableSchema
 
@@ -312,7 +311,7 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 		switch child := child.(type) {
 		case *mysql.QueryPrimaryContext:
 			if !findRecursivePart {
-				resource, err := parser.ExtractResourceList(parser.MySQL, "", "", child.GetParser().GetTokenStream().GetTextFromRuleContext(child))
+				resource, err := mysqlparser.ExtractMySQLResourceList("", child.GetParser().GetTokenStream().GetTextFromRuleContext(child))
 				if err != nil {
 					l.err = err
 					return
@@ -357,7 +356,7 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 			}
 
 			if !findRecursivePart {
-				resource, err := parser.ExtractResourceList(parser.MySQL, "", "", queryExpression.GetParser().GetTokenStream().GetTextFromRuleContext(queryExpression))
+				resource, err := mysqlparser.ExtractMySQLResourceList("", queryExpression.GetParser().GetTokenStream().GetTextFromRuleContext(queryExpression))
 				if err != nil {
 					l.err = err
 					return
@@ -682,32 +681,32 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlFindTableSchema(databaseName
 		}
 	}
 
-	for _, database := range extractor.schemaInfo.DatabaseList {
+	for _, database := range extractor.SchemaInfo.DatabaseList {
 		if len(database.SchemaList) == 0 {
 			continue
 		}
 		tableList := database.SchemaList[0].TableList
 
-		if extractor.schemaInfo.IgnoreCaseSensitive {
+		if extractor.SchemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerTable := strings.ToLower(tableName)
-			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.CurrentDatabase)) {
 				for _, table := range tableList {
 					if lowerTable == strings.ToLower(table.Name) {
 						explicitDatabase := databaseName
 						if explicitDatabase == "" {
-							explicitDatabase = extractor.currentDatabase
+							explicitDatabase = extractor.CurrentDatabase
 						}
 						return explicitDatabase, table, nil
 					}
 				}
 			}
-		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
+		} else if databaseName == database.Name || (databaseName == "" && extractor.CurrentDatabase == database.Name) {
 			for _, table := range tableList {
 				if tableName == table.Name {
 					explicitDatabase := databaseName
 					if explicitDatabase == "" {
-						explicitDatabase = extractor.currentDatabase
+						explicitDatabase = extractor.CurrentDatabase
 					}
 					return explicitDatabase, table, nil
 				}
@@ -723,21 +722,21 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlFindTableSchema(databaseName
 }
 
 func (extractor *MySQLSensitiveFieldExtractor) mysqlFindViewSchema(databaseName, viewName string) (string, db.TableSchema, error) {
-	for _, database := range extractor.schemaInfo.DatabaseList {
+	for _, database := range extractor.SchemaInfo.DatabaseList {
 		if len(database.SchemaList) == 0 {
 			continue
 		}
 		viewList := database.SchemaList[0].ViewList
 
-		if extractor.schemaInfo.IgnoreCaseSensitive {
+		if extractor.SchemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerView := strings.ToLower(viewName)
-			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.CurrentDatabase)) {
 				for _, view := range viewList {
 					if lowerView == strings.ToLower(view.Name) {
 						explicitDatabase := databaseName
 						if explicitDatabase == "" {
-							explicitDatabase = extractor.currentDatabase
+							explicitDatabase = extractor.CurrentDatabase
 						}
 
 						table, err := extractor.mysqlBuildTableSchemaForView(view.Name, view.Definition)
@@ -745,12 +744,12 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlFindViewSchema(databaseName,
 					}
 				}
 			}
-		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
+		} else if databaseName == database.Name || (databaseName == "" && extractor.CurrentDatabase == database.Name) {
 			for _, view := range viewList {
 				if viewName == view.Name {
 					explicitDatabase := databaseName
 					if explicitDatabase == "" {
-						explicitDatabase = extractor.currentDatabase
+						explicitDatabase = extractor.CurrentDatabase
 					}
 
 					table, err := extractor.mysqlBuildTableSchemaForView(view.Name, view.Definition)
@@ -895,16 +894,16 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlExtractTableWild(ctx mysql.I
 	for _, field := range extractor.fromFieldList {
 		sameDatabase := false
 		sameTable := false
-		if extractor.schemaInfo.IgnoreCaseSensitive {
+		if extractor.SchemaInfo.IgnoreCaseSensitive {
 			sameDatabase = (strings.EqualFold(field.Database, databaseName)) ||
-				(databaseName == "" && strings.EqualFold(field.Database, extractor.currentDatabase)) ||
-				(field.Database == "" && strings.EqualFold(extractor.currentDatabase, databaseName)) ||
+				(databaseName == "" && strings.EqualFold(field.Database, extractor.CurrentDatabase)) ||
+				(field.Database == "" && strings.EqualFold(extractor.CurrentDatabase, databaseName)) ||
 				(databaseName == "" && field.Database == "")
 			sameTable = strings.EqualFold(field.Table, tableName)
 		} else {
 			sameDatabase = (field.Database == databaseName) ||
-				(databaseName == "" && field.Database == extractor.currentDatabase) ||
-				(field.Database == "" && extractor.currentDatabase == databaseName) ||
+				(databaseName == "" && field.Database == extractor.CurrentDatabase) ||
+				(field.Database == "" && extractor.CurrentDatabase == databaseName) ||
 				(databaseName == "" && field.Database == "")
 			sameTable = field.Table == tableName
 		}
@@ -1306,8 +1305,8 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx a
 		// So that the subquery can access the outer schema.
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &MySQLSensitiveFieldExtractor{
-			currentDatabase: extractor.currentDatabase,
-			schemaInfo:      extractor.schemaInfo,
+			CurrentDatabase: extractor.CurrentDatabase,
+			SchemaInfo:      extractor.SchemaInfo,
 			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
 		}
 		fieldList, err := subqueryExtractor.mysqlExtractSubquery(ctx)
@@ -1387,14 +1386,14 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlCheckFieldMaskingLevel(datab
 	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
 		field := extractor.outerSchemaInfo[i]
 		var sameDatabase, sameTable, sameField bool
-		if extractor.schemaInfo.IgnoreCaseSensitive {
+		if extractor.SchemaInfo.IgnoreCaseSensitive {
 			sameDatabase = (strings.EqualFold(databaseName, field.Database) ||
-				(databaseName == "" && strings.EqualFold(field.Database, extractor.currentDatabase))) ||
+				(databaseName == "" && strings.EqualFold(field.Database, extractor.CurrentDatabase))) ||
 				(databaseName == "" && field.Database == "")
 			sameTable = (strings.EqualFold(tableName, field.Table) || tableName == "")
 		} else {
 			sameDatabase = (databaseName == field.Database ||
-				(databaseName == "" && field.Database == extractor.currentDatabase) ||
+				(databaseName == "" && field.Database == extractor.CurrentDatabase) ||
 				(databaseName == "" && field.Database == ""))
 			sameTable = (tableName == field.Table || tableName == "")
 		}
@@ -1407,14 +1406,14 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlCheckFieldMaskingLevel(datab
 
 	for _, field := range extractor.fromFieldList {
 		var sameDatabase, sameTable, sameField bool
-		if extractor.schemaInfo.IgnoreCaseSensitive {
+		if extractor.SchemaInfo.IgnoreCaseSensitive {
 			sameDatabase = (strings.EqualFold(databaseName, field.Database) ||
-				(databaseName == "" && strings.EqualFold(field.Database, extractor.currentDatabase)) ||
+				(databaseName == "" && strings.EqualFold(field.Database, extractor.CurrentDatabase)) ||
 				(databaseName == "" && field.Database == ""))
 			sameTable = (strings.EqualFold(tableName, field.Table) || tableName == "")
 		} else {
 			sameDatabase = (databaseName == field.Database ||
-				(databaseName == "" && field.Database == extractor.currentDatabase) ||
+				(databaseName == "" && field.Database == extractor.CurrentDatabase) ||
 				(databaseName == "" && field.Database == ""))
 			sameTable = (tableName == field.Table || tableName == "")
 		}
