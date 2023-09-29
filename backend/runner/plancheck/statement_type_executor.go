@@ -600,7 +600,7 @@ func postgresqlCreateAndDropDatabaseCheck(nodeList []ast.Node) []*storepb.PlanCh
 }
 
 func postgresqlStatementTypeCheck(statement string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
-	stmts, err := pgrawparser.Parse(parser.ParseContext{}, statement)
+	stmts, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{

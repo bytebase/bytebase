@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
@@ -420,7 +419,7 @@ func (d *DatabaseState) pgAlterColumnType(schema *SchemaState, t *TableState, no
 		}
 	}
 
-	typeString, deparseErr := pgrawparser.Deparse(parser.DeparseContext{}, node.Type)
+	typeString, deparseErr := pgrawparser.Deparse(pgrawparser.DeparseContext{}, node.Type)
 	if deparseErr != nil {
 		return &WalkThroughError{
 			Type:    ErrorTypeDeparseError,
@@ -696,7 +695,7 @@ func (s *SchemaState) pgCreateColumn(t *TableState, column *ast.ColumnDef, ifNot
 	}
 
 	pos := len(t.columnSet) + 1
-	typeString, err := pgrawparser.Deparse(parser.DeparseContext{}, column.Type)
+	typeString, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, column.Type)
 	if err != nil {
 		return &WalkThroughError{
 			Type:    ErrorTypeDeparseError,
@@ -1064,7 +1063,7 @@ func (t *TableState) getColumn(columnName string) (*ColumnState, *WalkThroughErr
 }
 
 func pgParse(stmt string) ([]ast.Node, error) {
-	return pgrawparser.Parse(parser.ParseContext{}, stmt)
+	return pgrawparser.Parse(pgrawparser.ParseContext{}, stmt)
 }
 
 func normalizeCollation(collation *ast.CollationNameDef) string {

@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
@@ -21,7 +20,7 @@ type testData struct {
 
 func runTests(t *testing.T, tests []testData) {
 	for _, test := range tests {
-		res, err := Parse(parser.ParseContext{}, test.stmt)
+		res, err := Parse(ParseContext{}, test.stmt)
 		require.NoError(t, err)
 		for i := range test.want {
 			test.want[i].SetText(test.statementList[i].Text)
@@ -3262,7 +3261,7 @@ func TestPGCreateTableSetLine(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		nodeList, err := Parse(parser.ParseContext{}, test.statement)
+		nodeList, err := Parse(ParseContext{}, test.statement)
 		require.NoError(t, err)
 		require.Len(t, nodeList, 1)
 		node, ok := nodeList[0].(*ast.CreateTableStmt)
