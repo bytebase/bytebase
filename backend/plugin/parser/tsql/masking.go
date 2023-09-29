@@ -25,7 +25,11 @@ type SensitiveFieldExtractor struct {
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *SensitiveFieldExtractor) ExtractTSqlSensitiveFields(sql string) ([]db.SensitiveField, error) {
+func (extractor *SensitiveFieldExtractor) ExtractSensitiveFields(sql string) ([]db.SensitiveField, error) {
+	if extractor.SchemaInfo == nil {
+		return nil, nil
+	}
+
 	tree, err := ParseTSQL(sql)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse snowsql")

@@ -24,7 +24,11 @@ type SensitiveFieldExtractor struct {
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *SensitiveFieldExtractor) ExtractMySQLSensitiveField(statement string) ([]db.SensitiveField, error) {
+func (extractor *SensitiveFieldExtractor) ExtractSensitiveField(statement string) ([]db.SensitiveField, error) {
+	if extractor.SchemaInfo == nil {
+		return nil, nil
+	}
+
 	list, err := ParseMySQL(statement)
 	if err != nil {
 		return nil, err

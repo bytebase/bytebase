@@ -26,9 +26,12 @@ type SensitiveFieldExtractor struct {
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *SensitiveFieldExtractor) ExtractTiDBSensitiveField(statement string) ([]db.SensitiveField, error) {
-	p := parser.New()
+func (extractor *SensitiveFieldExtractor) ExtractSensitiveField(statement string) ([]db.SensitiveField, error) {
+	if extractor.SchemaInfo == nil {
+		return nil, nil
+	}
 
+	p := parser.New()
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
@@ -612,7 +615,7 @@ func (extractor *SensitiveFieldExtractor) buildTableSchemaForView(viewName strin
 		CurrentDatabase: extractor.CurrentDatabase,
 		SchemaInfo:      extractor.SchemaInfo,
 	}
-	fields, err := newExtractor.ExtractTiDBSensitiveField(definition)
+	fields, err := newExtractor.ExtractSensitiveField(definition)
 	if err != nil {
 		return db.TableSchema{}, err
 	}
