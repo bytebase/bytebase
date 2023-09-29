@@ -36,14 +36,8 @@ func TestMySQLValidateForEditor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		trees, err := ParseMySQL(test.statement)
-		require.NoError(t, err)
-		err = ValidateForEditor(trees[0].Tree)
-		if test.validate {
-			require.NoError(t, err)
-		} else {
-			require.Error(t, err)
-		}
+		got := ValidateSQLForEditor(test.statement)
+		require.Equal(t, test.validate, got)
 	}
 }
 

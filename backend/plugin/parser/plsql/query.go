@@ -9,7 +9,25 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	base.RegisterQueryValidator(storepb.Engine_ORACLE, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_DM, ValidateSQLForEditor)
+}
+
+// ValidateSQLForEditor validates the SQL statement for SQL editor.
+func ValidateSQLForEditor(statement string) bool {
+	tree, _, err := ParsePLSQL(statement)
+	if err != nil {
+		return false
+	}
+	if err := ValidateForEditor(tree); err != nil {
+		return false
+	}
+	return true
+}
 
 func ExtractChangedResources(currentDatabase string, currentSchema string, statement string) ([]base.SchemaResource, error) {
 	tree, _, err := ParsePLSQL(statement)
