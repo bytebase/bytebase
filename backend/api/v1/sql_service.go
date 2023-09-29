@@ -2003,7 +2003,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 
 	switch instance.Engine {
 	case db.Postgres:
-		stmtList, err := pgrawparser.Parse(parser.ParseContext{}, statement)
+		stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}

@@ -2595,7 +2595,7 @@ func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.Advis
 
 		// Generate suggestion and create index statement.
 		if resp.CreateIndexStatement != "" {
-			nodes, err := pgrawparser.Parse(parser.ParseContext{}, resp.CreateIndexStatement)
+			nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, resp.CreateIndexStatement)
 			if err != nil {
 				return errors.Errorf("failed to parse create index statement: %v", err)
 			}

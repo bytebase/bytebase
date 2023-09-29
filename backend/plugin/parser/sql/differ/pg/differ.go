@@ -454,7 +454,7 @@ func (m schemaMap) addSequenceOwnedBy(id int, alterStmt *ast.AlterSequenceStmt) 
 }
 
 func parseAndPreprocessStatement(statement string) ([]ast.Node, []string, error) {
-	nodeList, err := pgrawparser.Parse(parser.ParseContext{}, statement)
+	nodeList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to parse statement %q", statement)
 	}
@@ -1043,11 +1043,11 @@ func isEqualConstraint(oldConstraint *ast.ConstraintDef, newConstraint *ast.Cons
 	case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion, ast.ConstraintTypeForeign:
 		// TODO(zp): To make the logic simple now, we just restore the statement, and drop and create the new one if
 		// there is any difference.
-		oldAlterTableAddConstraint, err := pgrawparser.Deparse(parser.DeparseContext{}, oldConstraint)
+		oldAlterTableAddConstraint, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, oldConstraint)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to deparse old alter table constraintDef: %v", oldConstraint)
 		}
-		newAlterTableAddConstraint, err := pgrawparser.Deparse(parser.DeparseContext{}, newConstraint)
+		newAlterTableAddConstraint, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, newConstraint)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to deparse new alter table constraintDef: %v", newConstraint)
 		}
@@ -1441,11 +1441,11 @@ func hasNotNull(column *ast.ColumnDef) bool {
 }
 
 func equivalentType(typeA ast.DataType, typeB ast.DataType) (bool, error) {
-	typeStringA, err := pgrawparser.Deparse(parser.DeparseContext{}, typeA)
+	typeStringA, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, typeA)
 	if err != nil {
 		return false, err
 	}
-	typeStringB, err := pgrawparser.Deparse(parser.DeparseContext{}, typeB)
+	typeStringB, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, typeB)
 	if err != nil {
 		return false, err
 	}
@@ -1466,7 +1466,7 @@ func printStmtSliceByText(buf io.Writer, nodeList []ast.Node) error {
 
 func printStmtSlice(buf io.Writer, nodeList []ast.Node) error {
 	for _, node := range nodeList {
-		sql, err := pgrawparser.Deparse(parser.DeparseContext{}, node)
+		sql, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, node)
 		if err != nil {
 			return err
 		}
@@ -1854,7 +1854,7 @@ func writeStringWithNewLine(out io.Writer, str string) error {
 
 // use DROP FUNCTION statement as the function signature.
 func functionSignature(function *ast.FunctionDef) (string, error) {
-	return pgrawparser.Deparse(parser.DeparseContext{}, &ast.DropFunctionStmt{
+	return pgrawparser.Deparse(pgrawparser.DeparseContext{}, &ast.DropFunctionStmt{
 		FunctionList: []*ast.FunctionDef{function},
 	})
 }

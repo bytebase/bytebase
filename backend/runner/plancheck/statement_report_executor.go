@@ -511,7 +511,7 @@ func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]
 }
 
 func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
-	stmts, err := pgrawparser.Parse(parser.ParseContext{}, statement)
+	stmts, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{

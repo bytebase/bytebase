@@ -6,8 +6,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
@@ -41,7 +39,7 @@ func TestEquivalentType(t *testing.T) {
 
 	for _, test := range tests {
 		stmt := fmt.Sprintf("ALTER TABLE t ADD COLUMN a %s", test.originType)
-		nodeList, err := Parse(parser.ParseContext{}, stmt)
+		nodeList, err := Parse(ParseContext{}, stmt)
 		require.NoError(t, err)
 		require.Len(t, nodeList, 1)
 		node := nodeList[0]

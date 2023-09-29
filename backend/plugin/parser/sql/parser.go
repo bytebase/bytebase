@@ -1,10 +1,6 @@
 // Package parser provides the interfaces and libraries for SQL parser.
 package parser
 
-import (
-	"strings"
-)
-
 // EngineType is the type of a parser engine.
 type EngineType string
 
@@ -36,24 +32,3 @@ const (
 	// DeparseIndentString is the string for each indent level.
 	DeparseIndentString = "    "
 )
-
-// ParseContext is the context for parsing.
-type ParseContext struct {
-}
-
-// DeparseContext is the contxt for restoring.
-type DeparseContext struct {
-	// IndentLevel is indent level for current line.
-	// The parser deparses statements with the indent level for pretty format.
-	IndentLevel int
-}
-
-// WriteIndent is the helper function to write indent string.
-func (ctx DeparseContext) WriteIndent(buf *strings.Builder, indent string) error {
-	for i := 0; i < ctx.IndentLevel; i++ {
-		if _, err := buf.WriteString(indent); err != nil {
-			return err
-		}
-	}
-	return nil
-}
