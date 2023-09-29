@@ -1,4 +1,4 @@
-package util
+package tsql
 
 import (
 	"cmp"
@@ -12,11 +12,10 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-type TSQLSensitiveFieldExtractor struct {
+type SensitiveFieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
 	CurrentDatabase    string
 	SchemaInfo         *db.SensitiveSchemaInfo
@@ -26,8 +25,8 @@ type TSQLSensitiveFieldExtractor struct {
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) ExtractTSqlSensitiveFields(sql string) ([]db.SensitiveField, error) {
-	tree, err := tsqlparser.ParseTSQL(sql)
+func (extractor *SensitiveFieldExtractor) ExtractTSqlSensitiveFields(sql string) ([]db.SensitiveField, error) {
+	tree, err := ParseTSQL(sql)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse snowsql")
 	}
@@ -46,7 +45,7 @@ func (extractor *TSQLSensitiveFieldExtractor) ExtractTSqlSensitiveFields(sql str
 type tsqlTSQLSensitiveFieldExtractorListener struct {
 	*parser.BaseTSqlParserListener
 
-	extractor *TSQLSensitiveFieldExtractor
+	extractor *SensitiveFieldExtractor
 	result    []db.SensitiveField
 	err       error
 }
@@ -72,7 +71,7 @@ func (l *tsqlTSQLSensitiveFieldExtractorListener) EnterDml_clause(ctx *parser.Dm
 }
 
 // extractTSqlSensitiveFieldsFromSelectStatementStandalone extracts sensitive fields from select_statement_standalone.
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementStandalone(ctx parser.ISelect_statement_standaloneContext) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementStandalone(ctx parser.ISelect_statement_standaloneContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -84,7 +83,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSele
 		for _, commonTableExpression := range allCommonTableExpression {
 			var result []base.FieldInfo
 			var err error
-			normalizedCTEName := tsqlparser.NormalizeTSQLIdentifier(commonTableExpression.GetExpression_name())
+			normalizedCTEName := NormalizeTSQLIdentifier(commonTableExpression.GetExpression_name())
 
 			var fieldsInAnchorClause []base.FieldInfo
 			// If statement has more than one UNION, the first one is the anchor, and the rest are recursive.
@@ -186,7 +185,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSele
 					return nil, errors.Errorf("the number of column name list %d does not match the number of columns %d", len(v.AllId_()), len(result))
 				}
 				for i, columnName := range v.AllId_() {
-					normalizedColumnName := tsqlparser.NormalizeTSQLIdentifier(columnName)
+					normalizedColumnName := NormalizeTSQLIdentifier(columnName)
 					result[i].Name = normalizedColumnName
 				}
 			}
@@ -208,7 +207,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSele
 }
 
 // extractTSqlSensitiveFieldsFromSelectStatement extracts sensitive fields from select_statement.
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectStatement(ctx parser.ISelect_statementContext) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectStatement(ctx parser.ISelect_statementContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -221,7 +220,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSele
 	return queryResult, nil
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQueryExpression(ctx parser.IQuery_expressionContext) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQueryExpression(ctx parser.IQuery_expressionContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -279,7 +278,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuer
 	panic("never reach here")
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ctx parser.IQuery_specificationContext) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ctx parser.IQuery_specificationContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -337,7 +336,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuer
 	return result, nil
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSources(ctx parser.ITable_sourcesContext) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSources(ctx parser.ITable_sourcesContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -361,7 +360,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTabl
 	return result, nil
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parser.ITable_sourceContext) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parser.ITable_sourceContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -410,7 +409,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTabl
 }
 
 // extractTSqlSensitiveFieldsFromTableSourceItem extracts sensitive fields from table source item.
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx parser.ITable_source_itemContext) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx parser.ITable_source_itemContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -449,7 +448,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTabl
 	// SELECT t1.id FROM blog.dbo.t1 AS TT1; -- The multi-part identifier "t1.id" could not be bound.
 	// SELECT TT1.id FROM blog.dbo.t1 AS TT1; -- OK
 	if asTableAlias := ctx.As_table_alias(); asTableAlias != nil {
-		asName := tsqlparser.NormalizeTSQLIdentifier(asTableAlias.Table_alias().Id_())
+		asName := NormalizeTSQLIdentifier(asTableAlias.Table_alias().Id_())
 		for i := 0; i < len(result); i++ {
 			result[i].Table = asName
 			result[i].Schema = ""
@@ -464,7 +463,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTabl
 		}
 		for i := 0; i < len(result); i++ {
 			if allColumnAlias[i].Id_() != nil {
-				result[i].Name = tsqlparser.NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
+				result[i].Name = NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
 				continue
 			} else if allColumnAlias[i].STRING() != nil {
 				result[i].Name = allColumnAlias[i].STRING().GetText()
@@ -477,7 +476,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTabl
 	return result, nil
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromDerivedTable(ctx parser.IDerived_tableContext) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTSqlSensitiveFieldsFromDerivedTable(ctx parser.IDerived_tableContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -514,7 +513,7 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromDeri
 	panic("never reach here")
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableValueConstructor(ctx parser.ITable_value_constructorContext) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableValueConstructor(ctx parser.ITable_value_constructorContext) ([]base.FieldInfo, error) {
 	if allExpressionList := ctx.AllExpression_list_(); len(allExpressionList) > 0 {
 		// The number of expression in each expression list should be the same.
 		// But we do not check, just use the first one, and engine will throw a compilation error if the number of expressions are not the same.
@@ -535,11 +534,11 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTabl
 	panic("never reach here")
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx parser.ISubqueryContext) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx parser.ISubqueryContext) ([]base.FieldInfo, error) {
 	return extractor.extractTSqlSensitiveFieldsFromSelectStatement(ctx.Select_statement())
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) tsqlFindTableSchema(fullTableName parser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, db.TableSchema, error) {
+func (extractor *SensitiveFieldExtractor) tsqlFindTableSchema(fullTableName parser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, db.TableSchema, error) {
 	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(fullTableName, "", "", "")
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
@@ -581,7 +580,7 @@ func (extractor *TSQLSensitiveFieldExtractor) tsqlFindTableSchema(fullTableName 
 func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (string, string, string) {
 	var database string
 	if d := tableName.GetDatabase(); d != nil {
-		normalizedD := tsqlparser.NormalizeTSQLIdentifier(d)
+		normalizedD := NormalizeTSQLIdentifier(d)
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -589,7 +588,7 @@ func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (str
 
 	var schema string
 	if s := tableName.GetSchema(); s != nil {
-		normalizedS := tsqlparser.NormalizeTSQLIdentifier(s)
+		normalizedS := NormalizeTSQLIdentifier(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
@@ -597,7 +596,7 @@ func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (str
 
 	var table string
 	if t := tableName.GetTable(); t != nil {
-		normalizedT := tsqlparser.NormalizeTSQLIdentifier(t)
+		normalizedT := NormalizeTSQLIdentifier(t)
 		if normalizedT != "" {
 			table = normalizedT
 		}
@@ -613,12 +612,12 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 	// TODO(zp): unify here and the related code in sql_service.go
 	linkedServer := normalizedFallbackLinkedServerName
 	if server := fullTableName.GetLinkedServer(); server != nil {
-		linkedServer = tsqlparser.NormalizeTSQLIdentifier(server)
+		linkedServer = NormalizeTSQLIdentifier(server)
 	}
 
 	database := normalizedFallbackDatabaseName
 	if d := fullTableName.GetDatabase(); d != nil {
-		normalizedD := tsqlparser.NormalizeTSQLIdentifier(d)
+		normalizedD := NormalizeTSQLIdentifier(d)
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -626,7 +625,7 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 
 	schema := normalizedFallbackSchemaName
 	if s := fullTableName.GetSchema(); s != nil {
-		normalizedS := tsqlparser.NormalizeTSQLIdentifier(s)
+		normalizedS := NormalizeTSQLIdentifier(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
@@ -634,7 +633,7 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 
 	var table string
 	if t := fullTableName.GetTable(); t != nil {
-		normalizedT := tsqlparser.NormalizeTSQLIdentifier(t)
+		normalizedT := NormalizeTSQLIdentifier(t)
 		if normalizedT != "" {
 			table = normalizedT
 		}
@@ -643,7 +642,7 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 	return linkedServer, database, schema, table
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]base.FieldInfo, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
@@ -684,17 +683,17 @@ func (extractor *TSQLSensitiveFieldExtractor) tsqlGetAllFieldsOfTableInFromOrOut
 	return result, nil
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_column_nameContext) (base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_column_nameContext) (base.FieldInfo, error) {
 	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(ctx.Full_table_name(), "", "", "")
 	if normalizedLinkedServer != "" {
 		return base.FieldInfo{}, errors.Errorf("linked server is not supported yet, but found %q", ctx.GetText())
 	}
-	normalizedColumnName := tsqlparser.NormalizeTSQLIdentifier(ctx.Id_())
+	normalizedColumnName := NormalizeTSQLIdentifier(ctx.Id_())
 
 	return extractor.tsqlIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
 
-func (extractor *TSQLSensitiveFieldExtractor) tsqlIsFieldSensitive(normalizedDatabaseName string, normalizedSchemaName string, normalizedTableName string, normalizedColumnName string) (base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) tsqlIsFieldSensitive(normalizedDatabaseName string, normalizedSchemaName string, normalizedTableName string, normalizedColumnName string) (base.FieldInfo, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
@@ -763,7 +762,7 @@ func (extractor *TSQLSensitiveFieldExtractor) tsqlIsFieldSensitive(normalizedDat
 
 // isIdentifierEqual compares the identifier with the given normalized parts, returns true if they are equal.
 // It will consider the case sensitivity based on the current database.
-func (extractor *TSQLSensitiveFieldExtractor) isIdentifierEqual(a, b string) bool {
+func (extractor *SensitiveFieldExtractor) isIdentifierEqual(a, b string) bool {
 	if !extractor.SchemaInfo.IgnoreCaseSensitive {
 		return a == b
 	}
@@ -781,7 +780,7 @@ func (extractor *TSQLSensitiveFieldExtractor) isIdentifierEqual(a, b string) boo
 
 // evalExpressionElemMaskingLevel returns true if the expression element is sensitive, and returns the column name.
 // It is the closure of the expression_elemContext, it will recursively check the sub expression element.
-func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleContext) (string, storepb.MaskingLevel, error) {
+func (extractor *SensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleContext) (string, storepb.MaskingLevel, error) {
 	if ctx == nil {
 		return "", base.DefaultMaskingLevel, nil
 	}
@@ -792,9 +791,9 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the expression element is sensitive")
 		}
 		if columnAlias := ctx.Column_alias(); columnAlias != nil {
-			columName = tsqlparser.NormalizeTSQLIdentifier(columnAlias.Id_())
+			columName = NormalizeTSQLIdentifier(columnAlias.Id_())
 		} else if asColumnAlias := ctx.As_column_alias(); asColumnAlias != nil {
-			columName = tsqlparser.NormalizeTSQLIdentifier(asColumnAlias.Column_alias().Id_())
+			columName = NormalizeTSQLIdentifier(asColumnAlias.Column_alias().Id_())
 		}
 		return columName, maskingLevel, nil
 	case *parser.ExpressionContext:
@@ -1041,7 +1040,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		return ctx.GetText(), finalLevel, nil
 	case *parser.SubqueryContext:
 		// For subquery, we clone the current extractor, reset the from list, but keep the cte, and then extract the sensitive fields from the subquery
-		cloneExtractor := &TSQLSensitiveFieldExtractor{
+		cloneExtractor := &SensitiveFieldExtractor{
 			CurrentDatabase:    extractor.CurrentDatabase,
 			SchemaInfo:         extractor.SchemaInfo,
 			cteOuterSchemaInfo: extractor.cteOuterSchemaInfo,
