@@ -20,13 +20,12 @@ const (
 	pgUnknownFieldName = "?column?"
 )
 
-func isSystemSchema(schema string) bool {
-	switch schema {
-	case "information_schema", "pg_catalog", "rw_catalog":
-		return true
-	}
-	return false
+func init() {
+	base.RegisterGetMaskedFieldsFunc(storepb.Engine_POSTGRES, GetMaskedFields)
+	base.RegisterGetMaskedFieldsFunc(storepb.Engine_REDSHIFT, GetMaskedFields)
+	base.RegisterGetMaskedFieldsFunc(storepb.Engine_RISINGWAVE, GetMaskedFields)
 }
+
 func GetMaskedFields(statement, _ string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
 	extractor := &fieldExtractor{
 		schemaInfo: schemaInfo,
@@ -86,6 +85,14 @@ func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]db.
 		})
 	}
 	return result, nil
+}
+
+func isSystemSchema(schema string) bool {
+	switch schema {
+	case "information_schema", "pg_catalog", "rw_catalog":
+		return true
+	}
+	return false
 }
 
 func (extractor *fieldExtractor) pgExtractNode(in *pgquery.Node) ([]base.FieldInfo, error) {

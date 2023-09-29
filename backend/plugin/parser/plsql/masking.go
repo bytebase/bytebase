@@ -12,6 +12,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+func init() {
+	base.RegisterGetMaskedFieldsFunc(storepb.Engine_ORACLE, GetMaskedFields)
+	base.RegisterGetMaskedFieldsFunc(storepb.Engine_DM, GetMaskedFields)
+}
+
 func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
 	extractor := &fieldExtractor{
 		currentDatabase: currentDatabase,
