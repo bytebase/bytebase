@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -16,6 +15,7 @@ import (
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	standardparser "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
@@ -64,134 +64,20 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 
 // SplitMultiSQL splits statement into a slice of the single SQL.
 func SplitMultiSQL(engineType EngineType, statement string) ([]base.SingleSQL, error) {
-	var list []base.SingleSQL
-	var err error
 	switch engineType {
 	case Oracle:
 		return plsqlparser.SplitPLSQL(statement)
 	case MSSQL:
-		t := tokenizer.NewTokenizer(statement)
-		list, err = t.SplitStandardMultiSQL()
+		return tsqlparser.SplitSQL(statement)
 	case Postgres, Redshift, RisingWave:
-		t := tokenizer.NewTokenizer(statement)
-		list, err = t.SplitPostgreSQLMultiSQL()
+		return pgparser.SplitSQL(statement)
 	case MySQL, MariaDB, OceanBase:
 		return mysqlparser.SplitMySQL(statement)
 	case TiDB:
-		t := tokenizer.NewTokenizer(statement)
-		list, err = t.SplitTiDBMultiSQL()
+		return tidbparser.SplitSQL(statement)
 	default:
-		err = applyMultiStatements(strings.NewReader(statement), func(sql string) error {
-			list = append(list, base.SingleSQL{
-				Text:     sql,
-				LastLine: 0,
-				Empty:    false,
-			})
-			return nil
-		})
+		return standardparser.SplitSQL(statement)
 	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	var result []base.SingleSQL
-	for _, sql := range list {
-		if sql.Empty {
-			continue
-		}
-		if engineType == Oracle {
-			sql.Text = strings.TrimRight(sql.Text, " \n\t;")
-		}
-		result = append(result, sql)
-	}
-	return result, nil
-}
-
-// applyMultiStatements will apply the split statements from scanner.
-// This function only used for SQLite, snowflake.
-// For MySQL and PostgreSQL, use parser.SplitMultiSQLStream instead.
-// Copy from plugin/db/util/driverutil.go.
-func applyMultiStatements(sc io.Reader, f func(string) error) error {
-	// TODO(rebelice): use parser/tokenizer to split SQL statements.
-	reader := bufio.NewReader(sc)
-	var sb strings.Builder
-	delimiter := false
-	comment := false
-	done := false
-	for !done {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				done = true
-			} else {
-				return err
-			}
-		}
-		line = strings.TrimRight(line, "\r\n")
-
-		execute := false
-		switch {
-		case strings.HasPrefix(line, "/*"):
-			if strings.Contains(line, "*/") {
-				if !strings.HasSuffix(line, "*/") {
-					return errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
-				}
-			} else {
-				comment = true
-			}
-			continue
-		case comment && !strings.Contains(line, "*/"):
-			// Skip the line when in comment mode.
-			continue
-		case comment && strings.Contains(line, "*/"):
-			if !strings.HasSuffix(line, "*/") {
-				return errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
-			}
-			comment = false
-			continue
-		case sb.Len() == 0 && line == "":
-			continue
-		case strings.HasPrefix(line, "--"):
-			continue
-		case line == "DELIMITER ;;":
-			delimiter = true
-			continue
-		case line == "DELIMITER ;" && delimiter:
-			delimiter = false
-			execute = true
-		case strings.HasSuffix(line, ";"):
-			_, _ = sb.WriteString(line)
-			_, _ = sb.WriteString("\n")
-			if !delimiter {
-				execute = true
-			}
-		default:
-			_, _ = sb.WriteString(line)
-			_, _ = sb.WriteString("\n")
-			continue
-		}
-		if execute {
-			s := sb.String()
-			s = strings.Trim(s, "\n\t ")
-			if s != "" {
-				if err := f(s); err != nil {
-					return errors.Wrapf(err, "execute query %q failed", s)
-				}
-			}
-			sb.Reset()
-		}
-	}
-	// Apply the remaining content.
-	s := sb.String()
-	s = strings.Trim(s, "\n\t ")
-	if s != "" {
-		if err := f(s); err != nil {
-			return errors.Wrapf(err, "execute query %q failed", s)
-		}
-	}
-
-	return nil
 }
 
 // SplitMultiSQLStream splits statement stream into a slice of the single SQL.
