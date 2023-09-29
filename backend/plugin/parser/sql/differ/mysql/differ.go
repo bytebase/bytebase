@@ -19,6 +19,7 @@ import (
 	"github.com/pingcap/tidb/types"
 	"github.com/pkg/errors"
 
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
@@ -599,7 +600,7 @@ func classifyStatement(statement string) ([]string, string, error) {
 	}
 	var afterFilter []string
 	for _, stmt := range unsupported {
-		if !bbparser.IsDelimiter(stmt) {
+		if !mysqlparser.IsDelimiter(stmt) {
 			afterFilter = append(afterFilter, stmt)
 		}
 	}

@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 // TestData is the test data for mybatis parser. It contains the xml and the expected sql.
@@ -68,7 +68,7 @@ func runTest(t *testing.T, filepath string, record bool) {
 		}
 
 		// The result should be parsed correctly by MySQL parser.
-		_, err = tsqlparser.ParseMySQL(testCases[i].MySQL)
+		_, err = mysqlparser.ParseMySQL(testCases[i].MySQL)
 		require.NoError(t, err, "failed to parse restored sql with MySQL parser: %s", testCases[i].MySQL)
 	}
 

@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -657,7 +658,7 @@ func newTiDBParser() *tidbparser.Parser {
 }
 
 func mysqlSyntaxCheck(statement string) (any, []Advice) {
-	list, err := parser.SplitMySQL(statement)
+	list, err := mysqlparser.SplitMySQL(statement)
 	if err != nil {
 		return nil, []Advice{
 			{
@@ -678,7 +679,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 		if err != nil {
 			// TiDB parser doesn't fully support MySQL syntax, so we need to use MySQL parser to parse the statement.
 			// But MySQL parser has some performance issue, so we only use it to parse the statement after TiDB parser failed.
-			if _, err := parser.ParseMySQL(item.Text); err != nil {
+			if _, err := mysqlparser.ParseMySQL(item.Text); err != nil {
 				if syntaxErr, ok := err.(*base.SyntaxError); ok {
 					return nil, []Advice{
 						{
