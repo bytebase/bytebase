@@ -135,15 +135,8 @@ func ExtractSensitiveField(dbType storepb.Engine, statement string, currentDatab
 // We support the following SQLs:
 // 1. EXPLAIN statement, except EXPLAIN ANALYZE
 // 2. SELECT statement
-//
 // We also support CTE with SELECT statements, but not with DML statements.
 func ValidateSQLForEditor(engine storepb.Engine, statement string) bool {
-	switch engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
-		return pgparser.ValidateSQLForEditor(statement)
-	case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return mysqlparser.ValidateSQLForEditor(statement)
-	default:
-		return standardparser.ValidateSQLForEditor(statement)
-	}
+	f := base.QueryValidator[engine]
+	return f(statement)
 }
