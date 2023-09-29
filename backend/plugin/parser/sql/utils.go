@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -103,5 +104,67 @@ func ExtractDatabaseList(engineType EngineType, statement string, fallbackNormal
 		return tsqlparser.ExtractMSSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
+	}
+}
+
+func ExtractSensitiveField(dbType db.Type, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+	switch dbType {
+	case db.MySQL, db.MariaDB, db.OceanBase:
+		extractor := &mysqlparser.SensitiveFieldExtractor{
+			CurrentDatabase: currentDatabase,
+			SchemaInfo:      schemaInfo,
+		}
+		result, err := extractor.ExtractSensitiveField(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
+	case db.TiDB:
+		extractor := &tidbparser.SensitiveFieldExtractor{
+			CurrentDatabase: currentDatabase,
+			SchemaInfo:      schemaInfo,
+		}
+		result, err := extractor.ExtractSensitiveField(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
+	case db.Postgres, db.Redshift, db.RisingWave:
+		extractor := &pgparser.SensitiveFieldExtractor{
+			SchemaInfo: schemaInfo,
+		}
+		return extractor.ExtractSensitiveField(statement)
+	case db.Oracle, db.DM:
+		extractor := &plsqlparser.SensitiveFieldExtractor{
+			CurrentDatabase: currentDatabase,
+			SchemaInfo:      schemaInfo,
+		}
+		result, err := extractor.ExtractSensitiveField(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
+	case db.Snowflake:
+		extractor := &snowparser.SensitiveFieldExtractor{
+			CurrentDatabase: currentDatabase,
+			SchemaInfo:      schemaInfo,
+		}
+		result, err := extractor.ExtractSensitiveFields(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
+	case db.MSSQL:
+		extractor := &tsqlparser.SensitiveFieldExtractor{
+			CurrentDatabase: currentDatabase,
+			SchemaInfo:      schemaInfo,
+		}
+		result, err := extractor.ExtractSensitiveFields(statement)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
+	default:
+		return nil, nil
 	}
 }
