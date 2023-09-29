@@ -8,6 +8,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -29,9 +30,9 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 				return nil, errors.Errorf("TiDB schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
 			}
 		}
-		extractor := &TiDBSensitiveFieldExtractor{
-			currentDatabase: currentDatabase,
-			schemaInfo:      schemaInfo,
+		extractor := &tidbparser.SensitiveFieldExtractor{
+			CurrentDatabase: currentDatabase,
+			SchemaInfo:      schemaInfo,
 		}
 		result, err := extractor.ExtractTiDBSensitiveField(statement)
 		if err != nil {
