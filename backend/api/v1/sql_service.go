@@ -1989,10 +1989,8 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 // 3. Parse statement for Postgres, MySQL, TiDB, Oracle.
 // 4. Check if all statements are (EXPLAIN) SELECT statements.
 func validateQueryRequest(instance *store.InstanceMessage, databaseName string, statement string) error {
-	if instance.Engine == storepb.Engine_POSTGRES {
-		if databaseName == "" {
-			return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
-		}
+	if instance.Engine == storepb.Engine_POSTGRES && databaseName == "" {
+		return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
 	}
 
 	switch instance.Engine {
