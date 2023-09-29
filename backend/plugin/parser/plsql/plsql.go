@@ -1,7 +1,6 @@
 package plsql
 
 import (
-	"io"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -123,52 +122,4 @@ func NormalizeIndexName(indexName parser.IIndex_nameContext) (string, string) {
 	}
 
 	return "", NormalizeIdentifierContext(indexName.Identifier())
-}
-
-// SplitMultiSQLStream splits MySQL multiSQL to stream.
-// Note that the reader is read completely into memory and so it must actually
-// have a stopping point - you cannot pass in a reader on an open-ended source such
-// as a socket for instance.
-func SplitMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
-	text := antlr.NewIoStream(src).String()
-	sqls, err := SplitPLSQL(text)
-	if err != nil {
-		return nil, err
-	}
-	for _, sql := range sqls {
-		if f != nil {
-			if err := f(sql.Text); err != nil {
-				return nil, err
-			}
-		}
-	}
-	return sqls, nil
-}
-
-// SplitPLSQL splits the given SQL statement into multiple SQL statements.
-func SplitPLSQL(statement string) ([]base.SingleSQL, error) {
-	tree, tokens, err := ParsePLSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []base.SingleSQL
-	for _, item := range tree.GetChildren() {
-		if stmt, ok := item.(parser.IUnit_statementContext); ok {
-			stopIndex := stmt.GetStop().GetTokenIndex()
-			if stmt.GetStop().GetTokenType() == parser.PlSqlParserSEMICOLON {
-				stopIndex--
-			}
-			lastToken := tokens.Get(stopIndex)
-			text := tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
-			text = strings.TrimRight(text, " \n\t;")
-
-			result = append(result, base.SingleSQL{
-				Text:     text,
-				LastLine: lastToken.GetLine(),
-				Empty:    false,
-			})
-		}
-	}
-	return result, nil
 }

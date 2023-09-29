@@ -1,4 +1,4 @@
-package parser
+package mysql
 
 import (
 	"fmt"
@@ -7,12 +7,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/stretchr/testify/require"
+
+	parser "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-type testData struct {
+type splitTestData struct {
 	statement string
 	want      resData
 }
@@ -34,7 +37,7 @@ func generateOneMBInsert() string {
 
 func TestMySQLSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
-	tests := []testData{
+	tests := []splitTestData{
 		{
 			statement: `-- klsjdfjasldf
 			-- klsjdflkjaskldfj
@@ -286,18 +289,70 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := SplitMultiSQL(MySQL, test.statement)
+		res, err := SplitMySQL(test.statement)
 		errStr := ""
 		if err != nil {
 			errStr = err.Error()
 		}
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 
-		res, err = SplitMultiSQLStream(MySQL, strings.NewReader(test.statement), nil)
+		res, err = SplitMultiSQLStream(strings.NewReader(test.statement), nil)
 		errStr = ""
 		if err != nil {
 			errStr = err.Error()
 		}
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
+	}
+}
+
+func TestSplitMySQLStatements(t *testing.T) {
+	tests := []struct {
+		statement string
+		expected  []string
+	}{
+		{
+			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
+			expected: []string{
+				"SELECT * FROM t1 WHERE c1 = 1;",
+				" SELECT * FROM t2;",
+			},
+		},
+		{
+			statement: `CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+			  SELECT name INTO name FROM users WHERE id = id;
+			END; SELECT * FROM t2;`,
+			expected: []string{
+				`CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+			  SELECT name INTO name FROM users WHERE id = id;
+			END;`,
+				" SELECT * FROM t2;",
+			},
+		},
+		{
+			statement: `CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+				SELECT IF(id = 1, 'one', 'other') INTO name FROM users;
+			END; SELECT REPEAT('123', a) FROM t2;`,
+			expected: []string{
+				`CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
+			BEGIN
+				SELECT IF(id = 1, 'one', 'other') INTO name FROM users;
+			END;`,
+				" SELECT REPEAT('123', a) FROM t2;",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		lexer := parser.NewMySQLLexer(antlr.NewInputStream(test.statement))
+		stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+		list, err := splitMySQLStatement(stream)
+		require.NoError(t, err)
+		require.Equal(t, len(test.expected), len(list))
+		for i, statement := range list {
+			require.Equal(t, test.expected[i], statement.Text)
+		}
 	}
 }
