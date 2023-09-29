@@ -20,6 +20,7 @@ import (
 
 	plsql "github.com/bytebase/plsql-parser"
 
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
@@ -414,7 +415,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	var err error
 	switch engineType {
 	case Oracle:
-		tree, tokens, err := ParsePLSQL(statement)
+		tree, tokens, err := plsqlparser.ParsePLSQL(statement)
 		if err != nil {
 			return nil, err
 		}

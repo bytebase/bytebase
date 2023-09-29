@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -568,7 +569,7 @@ func snowflakeSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func oracleSyntaxCheck(statement string) (any, []Advice) {
-	tree, _, err := parser.ParsePLSQL(statement + ";")
+	tree, _, err := plsqlparser.ParsePLSQL(statement + ";")
 	if err != nil {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{
