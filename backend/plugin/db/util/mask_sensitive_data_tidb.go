@@ -5,17 +5,18 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pkg/errors"
 
-	tidbparser "github.com/pingcap/tidb/parser"
+	parser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
+
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
 func (extractor *sensitiveFieldExtractor) extractTiDBSensitiveField(statement string) ([]db.SensitiveField, error) {
-	p := tidbparser.New()
+	p := parser.New()
 
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.
@@ -137,7 +138,7 @@ func (extractor *sensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt
 
 func splitInitialAndRecursivePart(node *tidbast.SetOprStmt, selfName string) ([]tidbast.Node, []tidbast.Node) {
 	for i, selectStmt := range node.SelectList.Selects {
-		tableList := parser.ExtractMySQLTableList(selectStmt, false /* asName */)
+		tableList := tidbparser.ExtractMySQLTableList(selectStmt, false /* asName */)
 		for _, table := range tableList {
 			if table.Schema.O == "" && table.Name.O == selfName {
 				return node.SelectList.Selects[:i], node.SelectList.Selects[i:]
