@@ -7,8 +7,18 @@ import (
 	"golang.org/x/exp/slog"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	base.RegisterQueryValidator(storepb.Engine_CLICKHOUSE, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_SNOWFLAKE, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_SQLITE, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_SPANNER, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_MSSQL, ValidateSQLForEditor)
+}
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.
 // We validate the statement by following steps:

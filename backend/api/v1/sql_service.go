@@ -41,8 +41,6 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -1989,25 +1987,21 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 // 3. Parse statement for Postgres, MySQL, TiDB, Oracle.
 // 4. Check if all statements are (EXPLAIN) SELECT statements.
 func validateQueryRequest(instance *store.InstanceMessage, databaseName string, statement string) error {
-	if instance.Engine == storepb.Engine_POSTGRES {
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 		if databaseName == "" {
 			return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
 		}
+	case storepb.Engine_ORACLE, storepb.Engine_DM:
+		if instance.Options != nil && instance.Options.SchemaTenantMode && databaseName == "" {
+			return status.Error(codes.InvalidArgument, "connection_database is required for oracle schema tenant mode instance")
+		}
+	case storepb.Engine_MONGODB, storepb.Engine_REDIS:
+		// Do nothing.
+		return nil
 	}
 
 	switch instance.Engine {
-	case storepb.Engine_POSTGRES:
-		stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
-		if err != nil {
-			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
-		}
-		for _, stmt := range stmtList {
-			switch stmt.(type) {
-			case *ast.SelectStmt, *ast.ExplainStmt:
-			default:
-				return nonSelectSQLError.Err()
-			}
-		}
 	case storepb.Engine_MYSQL:
 		trees, err := mysqlparser.ParseMySQL(statement)
 		if err != nil {
@@ -2047,8 +2041,6 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		if err := plsqlparser.ValidateForEditor(tree); err != nil {
 			return nonSelectSQLError.Err()
 		}
-	case storepb.Engine_MONGODB, storepb.Engine_REDIS:
-		// Do nothing.
 	default:
 		// TODO(rebelice): support multiple statements here.
 		if !parser.ValidateSQLForEditor(instance.Engine, statement) {
