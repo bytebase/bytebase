@@ -2020,7 +2020,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		}
 		for _, item := range trees {
 			tree := item.Tree
-			if err := parser.MySQLValidateForEditor(tree); err != nil {
+			if err := mysqlparser.ValidateForEditor(tree); err != nil {
 				return nonSelectSQLError.Err()
 			}
 		}

@@ -1,4 +1,4 @@
-package parser
+package mysql
 
 import (
 	"testing"
@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 func TestMySQLValidateForEditor(t *testing.T) {
@@ -37,9 +36,9 @@ func TestMySQLValidateForEditor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		trees, err := mysqlparser.ParseMySQL(test.statement)
+		trees, err := ParseMySQL(test.statement)
 		require.NoError(t, err)
-		err = MySQLValidateForEditor(trees[0].Tree)
+		err = ValidateForEditor(trees[0].Tree)
 		if test.validate {
 			require.NoError(t, err)
 		} else {
@@ -95,7 +94,7 @@ func TestExtractMySQLResourceList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resources, err := extractMySQLResourceList("db", test.statement)
+		resources, err := ExtractMySQLResourceList("db", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
 	}
@@ -149,7 +148,7 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resources, err := extractMySQLChangedResources("db", test.statement)
+		resources, err := ExtractMySQLChangedResources("db", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
 	}
