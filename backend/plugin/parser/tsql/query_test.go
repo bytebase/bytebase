@@ -1,4 +1,4 @@
-package parser
+package tsql
 
 import (
 	"testing"
@@ -81,7 +81,7 @@ func TestExtractMSSQLNormalizedResourceListFromSelectStatement(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := extractMSSQLNormalizedResourceListFromSelectStatement("MyDB", "dbo", test.statement)
+		res, err := ExtractMSSQLNormalizedResourceListFromSelectStatement("MyDB", "dbo", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.want, res, "for statement: %v", test.statement)
 	}
