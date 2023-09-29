@@ -78,6 +78,27 @@ func SplitMySQL(statement string) ([]base.SingleSQL, error) {
 	return splitMySQLStatement(stream)
 }
 
+// SplitMySQLMultiSQLStream splits MySQL multiSQL to stream.
+// Note that the reader is read completely into memory and so it must actually
+// have a stopping point - you cannot pass in a reader on an open-ended source such
+// as a socket for instance.
+func SplitMySQLMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
+	result, err := SplitMySQLStream(src)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, sql := range result {
+		if f != nil {
+			if err := f(sql.Text); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return result, nil
+}
+
 // SplitMySQLStream splits the given SQL stream into multiple SQL statements.
 // Note that the reader is read completely into memory and so it must actually
 // have a stopping point - you cannot pass in a reader on an open-ended source such
@@ -444,4 +465,25 @@ func hasDelimiter(statement string) (bool, []base.SingleSQL, error) {
 	}
 
 	return false, list, nil
+}
+
+// IsMySQLAffectedRowsStatement returns true if the given statement is an affected rows statement.
+func IsMySQLAffectedRowsStatement(statement string) bool {
+	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	stream.Fill()
+	tokens := stream.GetAllTokens()
+
+	for _, token := range tokens {
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			switch token.GetTokenType() {
+			case parser.MySQLParserDELETE_SYMBOL, parser.MySQLParserINSERT_SYMBOL, parser.MySQLParserREPLACE_SYMBOL, parser.MySQLParserUPDATE_SYMBOL:
+				return true
+			default:
+				return false
+			}
+		}
+	}
+
+	return false
 }
