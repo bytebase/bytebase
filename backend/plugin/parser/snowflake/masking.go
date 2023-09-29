@@ -14,6 +14,10 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+func init() {
+	base.RegisterGetMaskedFieldsFunc(storepb.Engine_SNOWFLAKE, GetMaskedFields)
+}
+
 func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
 	extractor := &fieldExtractor{
 		currentDatabase: currentDatabase,

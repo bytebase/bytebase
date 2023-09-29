@@ -15,6 +15,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+func init() {
+	base.RegisterGetMaskedFieldsFunc(storepb.Engine_TIDB, GetMaskedFields)
+}
+
 func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
 	extractor := &fieldExtractor{
 		currentDatabase: currentDatabase,
