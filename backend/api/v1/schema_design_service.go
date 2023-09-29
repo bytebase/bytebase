@@ -14,7 +14,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -540,7 +539,7 @@ func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMe
 		return nil, err
 	}
 
-	diff, err := differ.SchemaDiff(convertEngineToParserType(request.Engine), sourceSchema, targetSchema, false /* ignoreCaseSensitive */)
+	diff, err := differ.SchemaDiff(convertEngine(request.Engine), sourceSchema, targetSchema, false /* ignoreCaseSensitive */)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
 	}
@@ -548,21 +547,6 @@ func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMe
 	return &v1pb.DiffMetadataResponse{
 		Diff: diff,
 	}, nil
-}
-
-func convertEngineToParserType(engine v1pb.Engine) parser.EngineType {
-	switch engine {
-	case v1pb.Engine_POSTGRES:
-		return parser.Postgres
-	case v1pb.Engine_MYSQL:
-		return parser.MySQL
-	case v1pb.Engine_TIDB:
-		return parser.TiDB
-	case v1pb.Engine_ORACLE:
-		return parser.Oracle
-	default:
-		return parser.Standard
-	}
 }
 
 func (s *SchemaDesignService) listSheets(ctx context.Context, find *store.FindSheetMessage) ([]*store.SheetMessage, error) {

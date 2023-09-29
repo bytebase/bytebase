@@ -10,10 +10,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	differ.Register(parser.Postgres, &SchemaDiffer{})
+	differ.Register(storepb.Engine_POSTGRES, &SchemaDiffer{})
 }
 
 // SchemaDiffer it the parser for PostgreSQL dialect.

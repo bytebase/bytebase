@@ -17,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -309,5 +308,5 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, parser.Snowflake, conn, statement)
+	return util.RunStatement(ctx, storepb.Engine_SNOWFLAKE, conn, statement)
 }

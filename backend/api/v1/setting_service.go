@@ -23,7 +23,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -757,7 +756,7 @@ func convertToAddColumnContext(column *v1pb.ColumnMetadata) *api.AddColumnContex
 }
 
 func validateDatabaseEdit(engine v1pb.Engine, createTableContext *api.CreateTableContext) error {
-	engineType := parser.EngineType(engine.String())
+	engineType := convertEngine(engine)
 	databaseEdit := &api.DatabaseEdit{
 		DatabaseID: api.UnknownID,
 		CreateTableList: []*api.CreateTableContext{
