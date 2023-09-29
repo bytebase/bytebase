@@ -95,7 +95,7 @@ type maskingPolicyKey struct {
 
 // Pretty returns pretty format SDL.
 func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb.PrettyResponse, error) {
-	engine := storepb.Engine(convertEngine(request.Engine))
+	engine := convertEngine(request.Engine)
 	if _, err := transform.CheckFormat(engine, request.ExpectedSchema); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "User SDL is not SDL format: %s", err.Error())
 	}
