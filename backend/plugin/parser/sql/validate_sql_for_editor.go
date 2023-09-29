@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 // ValidateSQLForEditor validates the SQL statement for editor.
@@ -166,9 +167,9 @@ func removeQuotedTextAndComment(engine EngineType, statement string) (string, er
 	case Postgres, RisingWave:
 		return "", errors.Errorf("unsupported engine type: %s", engine)
 	case MySQL, TiDB, MariaDB, OceanBase:
-		return MysqlRemoveQuotedTextAndComment(statement)
+		return tokenizer.MysqlRemoveQuotedTextAndComment(statement)
 	case Standard, Oracle, MSSQL:
-		return StandardRemoveQuotedTextAndComment(statement)
+		return tokenizer.StandardRemoveQuotedTextAndComment(statement)
 	}
 	return "", errors.Errorf("unsupported engine type: %s", engine)
 }
