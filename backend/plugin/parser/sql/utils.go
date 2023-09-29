@@ -115,60 +115,17 @@ func ExtractSensitiveField(dbType storepb.Engine, statement string, currentDatab
 	}
 	switch dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		extractor := &mysqlparser.SensitiveFieldExtractor{
-			CurrentDatabase: currentDatabase,
-			SchemaInfo:      schemaInfo,
-		}
-		result, err := extractor.ExtractSensitiveField(statement)
-		if err != nil {
-			return nil, err
-		}
-		return result, nil
+		return mysqlparser.GetMaskedFields(statement, currentDatabase, schemaInfo)
 	case storepb.Engine_TIDB:
-		extractor := &tidbparser.SensitiveFieldExtractor{
-			CurrentDatabase: currentDatabase,
-			SchemaInfo:      schemaInfo,
-		}
-		result, err := extractor.ExtractSensitiveField(statement)
-		if err != nil {
-			return nil, err
-		}
-		return result, nil
+		return tidbparser.GetMaskedFields(statement, currentDatabase, schemaInfo)
 	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
-		extractor := &pgparser.SensitiveFieldExtractor{
-			SchemaInfo: schemaInfo,
-		}
-		return extractor.ExtractSensitiveField(statement)
+		return pgparser.GetMaskedFields(statement, "", schemaInfo)
 	case storepb.Engine_ORACLE, storepb.Engine_DM:
-		extractor := &plsqlparser.SensitiveFieldExtractor{
-			CurrentDatabase: currentDatabase,
-			SchemaInfo:      schemaInfo,
-		}
-		result, err := extractor.ExtractSensitiveField(statement)
-		if err != nil {
-			return nil, err
-		}
-		return result, nil
+		return plsqlparser.GetMaskedFields(statement, currentDatabase, schemaInfo)
 	case storepb.Engine_SNOWFLAKE:
-		extractor := &snowparser.SensitiveFieldExtractor{
-			CurrentDatabase: currentDatabase,
-			SchemaInfo:      schemaInfo,
-		}
-		result, err := extractor.ExtractSensitiveFields(statement)
-		if err != nil {
-			return nil, err
-		}
-		return result, nil
+		return snowparser.GetMaskedFields(statement, currentDatabase, schemaInfo)
 	case storepb.Engine_MSSQL:
-		extractor := &tsqlparser.SensitiveFieldExtractor{
-			CurrentDatabase: currentDatabase,
-			SchemaInfo:      schemaInfo,
-		}
-		result, err := extractor.ExtractSensitiveFields(statement)
-		if err != nil {
-			return nil, err
-		}
-		return result, nil
+		return tsqlparser.GetMaskedFields(statement, currentDatabase, schemaInfo)
 	default:
 		return nil, nil
 	}
