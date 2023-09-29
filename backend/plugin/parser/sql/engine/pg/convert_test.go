@@ -20,10 +20,8 @@ type testData struct {
 }
 
 func runTests(t *testing.T, tests []testData) {
-	p := &PostgreSQLParser{}
-
 	for _, test := range tests {
-		res, err := p.Parse(parser.ParseContext{}, test.stmt)
+		res, err := Parse(parser.ParseContext{}, test.stmt)
 		require.NoError(t, err)
 		for i := range test.want {
 			test.want[i].SetText(test.statementList[i].Text)
@@ -3264,7 +3262,7 @@ func TestPGCreateTableSetLine(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		nodeList, err := parser.Parse(parser.Postgres, parser.ParseContext{}, test.statement)
+		nodeList, err := Parse(parser.ParseContext{}, test.statement)
 		require.NoError(t, err)
 		require.Len(t, nodeList, 1)
 		node, ok := nodeList[0].(*ast.CreateTableStmt)

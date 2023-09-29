@@ -39,11 +39,9 @@ func TestEquivalentType(t *testing.T) {
 		},
 	}
 
-	p := &PostgreSQLParser{}
-
 	for _, test := range tests {
 		stmt := fmt.Sprintf("ALTER TABLE t ADD COLUMN a %s", test.originType)
-		nodeList, err := p.Parse(parser.ParseContext{}, stmt)
+		nodeList, err := Parse(parser.ParseContext{}, stmt)
 		require.NoError(t, err)
 		require.Len(t, nodeList, 1)
 		node := nodeList[0]

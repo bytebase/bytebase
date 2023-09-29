@@ -7,13 +7,11 @@ import (
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-)
-
-var (
-	_ parser.Parser = (*PostgreSQLParser)(nil)
 )
 
 const (
@@ -21,16 +19,8 @@ const (
 	operatorNotLike string = "!~~"
 )
 
-func init() {
-	parser.Register(parser.Postgres, &PostgreSQLParser{})
-}
-
-// PostgreSQLParser it the parser for PostgreSQL dialect.
-type PostgreSQLParser struct {
-}
-
 // Parse implements the parser.Parser interface.
-func (*PostgreSQLParser) Parse(_ parser.ParseContext, statement string) ([]ast.Node, error) {
+func Parse(_ parser.ParseContext, statement string) ([]ast.Node, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
@@ -42,7 +32,7 @@ func (*PostgreSQLParser) Parse(_ parser.ParseContext, statement string) ([]ast.N
 	}
 
 	// setting line stage
-	textList, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	textList, err := splitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -62,10 +52,27 @@ func (*PostgreSQLParser) Parse(_ parser.ParseContext, statement string) ([]ast.N
 	return nodeList, nil
 }
 
+// splitSQL splits the given SQL statement into multiple SQL statements.
+func splitSQL(statement string) ([]base.SingleSQL, error) {
+	t := tokenizer.NewTokenizer(statement)
+	list, err := t.SplitPostgreSQLMultiSQL()
+	if err != nil {
+		return nil, err
+	}
+	var results []base.SingleSQL
+	for _, sql := range list {
+		if sql.Empty {
+			continue
+		}
+		results = append(results, sql)
+	}
+	return results, nil
+}
+
 // Deparse implements the parser.Deparse interface.
-func (*PostgreSQLParser) Deparse(context parser.DeparseContext, node ast.Node) (string, error) {
+func Deparse(context parser.DeparseContext, node ast.Node) (string, error) {
 	buf := &strings.Builder{}
-	if err := deparse(context, node, buf); err != nil {
+	if err := deparseImpl(context, node, buf); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
