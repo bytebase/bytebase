@@ -539,11 +539,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		extractor := &SensitiveFieldExtractor{
-			CurrentDatabase: defaultSchema,
-			SchemaInfo:      test.schemaInfo,
-		}
-		res, err := extractor.ExtractSensitiveField(test.statement)
+		res, err := GetMaskedFields(test.statement, defaultSchema, test.schemaInfo)
 		require.NoError(t, err, test.statement)
 		require.Equal(t, test.fieldList, res, test.statement)
 	}

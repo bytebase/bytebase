@@ -14,17 +14,29 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-type SensitiveFieldExtractor struct {
+func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+	extractor := &fieldExtractor{
+		currentDatabase: currentDatabase,
+		schemaInfo:      schemaInfo,
+	}
+	result, err := extractor.extractSensitiveFields(statement)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+type fieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
-	CurrentDatabase    string
-	SchemaInfo         *db.SensitiveSchemaInfo
+	currentDatabase    string
+	schemaInfo         *db.SensitiveSchemaInfo
 	cteOuterSchemaInfo []db.TableSchema
 
 	// SELECT statement specific field.
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *SensitiveFieldExtractor) ExtractSensitiveFields(sql string) ([]db.SensitiveField, error) {
+func (extractor *fieldExtractor) extractSensitiveFields(sql string) ([]db.SensitiveField, error) {
 	tree, err := ParseSnowSQL(sql)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse snowsql")
@@ -44,7 +56,7 @@ func (extractor *SensitiveFieldExtractor) ExtractSensitiveFields(sql string) ([]
 type snowsqlSnowSensitiveFieldExtractorListener struct {
 	*parser.BaseSnowflakeParserListener
 
-	extractor *SensitiveFieldExtractor
+	extractor *fieldExtractor
 	result    []db.SensitiveField
 	err       error
 }
@@ -67,7 +79,7 @@ func (l *snowsqlSnowSensitiveFieldExtractorListener) EnterDml_command(ctx *parse
 	}
 }
 
-func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx parser.IQuery_statementContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx parser.IQuery_statementContext) ([]base.FieldInfo, error) {
 	if ctx.With_expression() != nil {
 		allCommandTableExpression := ctx.With_expression().AllCommon_table_expression()
 
@@ -178,11 +190,11 @@ func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsQueryStat
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldSetOperator(ctx parser.ISet_operatorsContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldSetOperator(ctx parser.ISet_operatorsContext) ([]base.FieldInfo, error) {
 	return extractor.extractSnowsqlSensitiveFieldsSelectStatement(ctx.Select_statement())
 }
 
-func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectStatement(ctx parser.ISelect_statementContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsSelectStatement(ctx parser.ISelect_statementContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -279,7 +291,7 @@ func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsSelectSta
 }
 
 // The closure of the IExprContext.
-func (extractor *SensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.RuleContext) (string, storepb.MaskingLevel, error) {
+func (extractor *fieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.RuleContext) (string, storepb.MaskingLevel, error) {
 	switch ctx := ctx.(type) {
 	case *parser.ExprContext:
 		if v := ctx.Primitive_expression(); v != nil {
@@ -364,7 +376,7 @@ func (extractor *SensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 		}
 		return fieldInfo.Name, fieldInfo.MaskingLevel, nil
 	case *parser.Object_nameContext:
-		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, extractor.CurrentDatabase, "PUBLIC")
+		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, extractor.currentDatabase, "PUBLIC")
 		fieldInfo, err := extractor.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
@@ -820,7 +832,7 @@ func (extractor *SensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.
 	panic("never reach here")
 }
 
-func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFromClause(ctx parser.IFrom_clauseContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsFromClause(ctx parser.IFrom_clauseContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -828,7 +840,7 @@ func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsFromClaus
 	return extractor.extractSnowsqlSensitiveFieldsTableSources(ctx.Table_sources())
 }
 
-func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSources(ctx parser.ITable_sourcesContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsTableSources(ctx parser.ITable_sourcesContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -845,14 +857,14 @@ func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSour
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSource(ctx parser.ITable_sourceContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsTableSource(ctx parser.ITable_sourceContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 	return extractor.extractSnowsqlSensitiveFieldsTableSourceItemJoined(ctx.Table_source_item_joined())
 }
 
-func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSourceItemJoined(ctx parser.ITable_source_item_joinedContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsTableSourceItemJoined(ctx parser.ITable_source_item_joinedContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -883,7 +895,7 @@ func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsTableSour
 	return left, nil
 }
 
-func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoinClause(ctx parser.IJoin_clauseContext, left []base.FieldInfo) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsJoinClause(ctx parser.IJoin_clauseContext, left []base.FieldInfo) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -925,7 +937,7 @@ func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsJoinClaus
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx parser.IObject_refContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx parser.IObject_refContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -933,7 +945,7 @@ func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 	var result []base.FieldInfo
 
 	if objectName := ctx.Object_name(); objectName != nil {
-		normalizedDatabaseName, tableSchema, err := extractor.snowsqlFindTableSchema(objectName, extractor.CurrentDatabase, "PUBLIC")
+		normalizedDatabaseName, tableSchema, err := extractor.snowsqlFindTableSchema(objectName, extractor.currentDatabase, "PUBLIC")
 		if err != nil {
 			return nil, err
 		}
@@ -1071,7 +1083,7 @@ func (extractor *SensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjectRef
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) snowsqlFindTableSchema(objectName parser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, db.TableSchema, error) {
+func (extractor *fieldExtractor) snowsqlFindTableSchema(objectName parser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, db.TableSchema, error) {
 	normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(objectName, "", "")
 	// For snowflake, we should find the table schema in cteOuterSchemaInfo by ascending order.
 	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
@@ -1082,7 +1094,7 @@ func (extractor *SensitiveFieldExtractor) snowsqlFindTableSchema(objectName pars
 		}
 	}
 	normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(objectName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName)
-	for _, databaseSchema := range extractor.SchemaInfo.DatabaseList {
+	for _, databaseSchema := range extractor.schemaInfo.DatabaseList {
 		if normalizedDatabaseName != "" && normalizedDatabaseName != databaseSchema.Name {
 			continue
 		}
@@ -1101,7 +1113,7 @@ func (extractor *SensitiveFieldExtractor) snowsqlFindTableSchema(objectName pars
 	return "", db.TableSchema{}, errors.Errorf(`table %s.%s.%s is not found`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 }
 
-func (extractor *SensitiveFieldExtractor) getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]base.FieldInfo, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
@@ -1143,7 +1155,7 @@ func (extractor *SensitiveFieldExtractor) getAllFieldsOfTableInFromOrOuterCTE(no
 }
 
 // snowflakeGetField iterates through the fromFieldList sequentially until we find the first matching object and return the column name, and returns the fieldInfo.
-func (extractor *SensitiveFieldExtractor) snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) (base.FieldInfo, error) {
+func (extractor *fieldExtractor) snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) (base.FieldInfo, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0

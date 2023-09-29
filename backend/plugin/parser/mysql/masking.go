@@ -13,10 +13,22 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-type SensitiveFieldExtractor struct {
+func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+	extractor := &fieldExtractor{
+		currentDatabase: currentDatabase,
+		schemaInfo:      schemaInfo,
+	}
+	result, err := extractor.extractSensitiveFields(statement)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+type fieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
-	CurrentDatabase    string
-	SchemaInfo         *db.SensitiveSchemaInfo
+	currentDatabase    string
+	schemaInfo         *db.SensitiveSchemaInfo
 	outerSchemaInfo    []base.FieldInfo
 	cteOuterSchemaInfo []db.TableSchema
 
@@ -24,7 +36,7 @@ type SensitiveFieldExtractor struct {
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *SensitiveFieldExtractor) ExtractSensitiveField(statement string) ([]db.SensitiveField, error) {
+func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]db.SensitiveField, error) {
 	list, err := ParseMySQL(statement)
 	if err != nil {
 		return nil, err
@@ -46,7 +58,7 @@ func (extractor *SensitiveFieldExtractor) ExtractSensitiveField(statement string
 type mysqlSensitiveFieldListener struct {
 	*mysql.BaseMySQLParserListener
 
-	extractor *SensitiveFieldExtractor
+	extractor *fieldExtractor
 	result    []db.SensitiveField
 	err       error
 }
@@ -103,7 +115,7 @@ func (l *mysqlSensitiveFieldListener) EnterCreateView(ctx *mysql.CreateViewConte
 	}
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractCreateView(ctx mysql.ICreateViewContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractCreateView(ctx mysql.ICreateViewContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -111,7 +123,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractCreateView(ctx mysql.ICrea
 	return extractor.mysqlExtractQueryExpressionOrParens(ctx.ViewTail().ViewSelect().QueryExpressionOrParens())
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractQueryExpressionOrParens(ctx mysql.IQueryExpressionOrParensContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractQueryExpressionOrParens(ctx mysql.IQueryExpressionOrParensContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -126,7 +138,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractQueryExpressionOrParens(ct
 	return nil, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractContext(ctx antlr.ParserRuleContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractContext(ctx antlr.ParserRuleContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -139,7 +151,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractContext(ctx antlr.ParserRu
 	}
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractSelectStatement(ctx mysql.ISelectStatementContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractSelectStatement(ctx mysql.ISelectStatementContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -154,7 +166,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractSelectStatement(ctx mysql.
 	return nil, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractQueryExpressionParens(ctx mysql.IQueryExpressionParensContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractQueryExpressionParens(ctx mysql.IQueryExpressionParensContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -169,7 +181,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractQueryExpressionParens(ctx 
 	return nil, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractQueryExpression(ctx mysql.IQueryExpressionContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractQueryExpression(ctx mysql.IQueryExpressionContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -199,7 +211,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractQueryExpression(ctx mysql.
 	return nil, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractCommonTableExpression(ctx mysql.ICommonTableExpressionContext, recursive bool) (db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlExtractCommonTableExpression(ctx mysql.ICommonTableExpressionContext, recursive bool) (db.TableSchema, error) {
 	if ctx == nil {
 		return db.TableSchema{}, nil
 	}
@@ -210,7 +222,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractCommonTableExpression(ctx 
 	return extractor.mysqlExtractNonRecursiveCTE(ctx)
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (db.TableSchema, error) {
 	cteName := NormalizeMySQLIdentifier(ctx.Identifier())
 	l := &recursiveCTEListener{
 		extractor: extractor,
@@ -242,7 +254,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICo
 type recursiveCTEListener struct {
 	*mysql.BaseMySQLParserListener
 
-	extractor                     *SensitiveFieldExtractor
+	extractor                     *fieldExtractor
 	cteInfo                       db.TableSchema
 	selfName                      string
 	outerCTEs                     []mysql.IWithClauseContext
@@ -502,7 +514,7 @@ func extractQueryExpression(ctx mysql.IQueryExpressionParensContext) mysql.IQuer
 	return nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractNonRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlExtractNonRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (db.TableSchema, error) {
 	fieldList, err := extractor.mysqlExtractSubquery(ctx.Subquery())
 	if err != nil {
 		return db.TableSchema{}, err
@@ -530,7 +542,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractNonRecursiveCTE(ctx mysql.
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractQueryExpressionBody(ctx mysql.IQueryExpressionBodyContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractQueryExpressionBody(ctx mysql.IQueryExpressionBodyContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -581,7 +593,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractQueryExpressionBody(ctx my
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractQueryPrimary(ctx *mysql.QueryPrimaryContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractQueryPrimary(ctx *mysql.QueryPrimaryContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -598,7 +610,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractQueryPrimary(ctx *mysql.Qu
 	return nil, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractTableValueConstructor(ctx mysql.ITableValueConstructorContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractTableValueConstructor(ctx mysql.ITableValueConstructorContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -639,7 +651,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractTableValueConstructor(ctx 
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractExplicitTable(ctx mysql.IExplicitTableContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractExplicitTable(ctx mysql.IExplicitTableContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -663,7 +675,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractExplicitTable(ctx mysql.IE
 	return res, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlFindTableSchema(databaseName, tableName string) (string, db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlFindTableSchema(databaseName, tableName string) (string, db.TableSchema, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
 	//  with tt2 as (
@@ -680,32 +692,32 @@ func (extractor *SensitiveFieldExtractor) mysqlFindTableSchema(databaseName, tab
 		}
 	}
 
-	for _, database := range extractor.SchemaInfo.DatabaseList {
+	for _, database := range extractor.schemaInfo.DatabaseList {
 		if len(database.SchemaList) == 0 {
 			continue
 		}
 		tableList := database.SchemaList[0].TableList
 
-		if extractor.SchemaInfo.IgnoreCaseSensitive {
+		if extractor.schemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerTable := strings.ToLower(tableName)
-			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.CurrentDatabase)) {
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
 				for _, table := range tableList {
 					if lowerTable == strings.ToLower(table.Name) {
 						explicitDatabase := databaseName
 						if explicitDatabase == "" {
-							explicitDatabase = extractor.CurrentDatabase
+							explicitDatabase = extractor.currentDatabase
 						}
 						return explicitDatabase, table, nil
 					}
 				}
 			}
-		} else if databaseName == database.Name || (databaseName == "" && extractor.CurrentDatabase == database.Name) {
+		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
 			for _, table := range tableList {
 				if tableName == table.Name {
 					explicitDatabase := databaseName
 					if explicitDatabase == "" {
-						explicitDatabase = extractor.CurrentDatabase
+						explicitDatabase = extractor.currentDatabase
 					}
 					return explicitDatabase, table, nil
 				}
@@ -720,22 +732,22 @@ func (extractor *SensitiveFieldExtractor) mysqlFindTableSchema(databaseName, tab
 	return "", db.TableSchema{}, errors.Wrapf(err, "Table or view %q.%q not found", databaseName, tableName)
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlFindViewSchema(databaseName, viewName string) (string, db.TableSchema, error) {
-	for _, database := range extractor.SchemaInfo.DatabaseList {
+func (extractor *fieldExtractor) mysqlFindViewSchema(databaseName, viewName string) (string, db.TableSchema, error) {
+	for _, database := range extractor.schemaInfo.DatabaseList {
 		if len(database.SchemaList) == 0 {
 			continue
 		}
 		viewList := database.SchemaList[0].ViewList
 
-		if extractor.SchemaInfo.IgnoreCaseSensitive {
+		if extractor.schemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerView := strings.ToLower(viewName)
-			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.CurrentDatabase)) {
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
 				for _, view := range viewList {
 					if lowerView == strings.ToLower(view.Name) {
 						explicitDatabase := databaseName
 						if explicitDatabase == "" {
-							explicitDatabase = extractor.CurrentDatabase
+							explicitDatabase = extractor.currentDatabase
 						}
 
 						table, err := extractor.mysqlBuildTableSchemaForView(view.Name, view.Definition)
@@ -743,12 +755,12 @@ func (extractor *SensitiveFieldExtractor) mysqlFindViewSchema(databaseName, view
 					}
 				}
 			}
-		} else if databaseName == database.Name || (databaseName == "" && extractor.CurrentDatabase == database.Name) {
+		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
 			for _, view := range viewList {
 				if viewName == view.Name {
 					explicitDatabase := databaseName
 					if explicitDatabase == "" {
-						explicitDatabase = extractor.CurrentDatabase
+						explicitDatabase = extractor.currentDatabase
 					}
 
 					table, err := extractor.mysqlBuildTableSchemaForView(view.Name, view.Definition)
@@ -760,7 +772,7 @@ func (extractor *SensitiveFieldExtractor) mysqlFindViewSchema(databaseName, view
 	return "", db.TableSchema{}, errors.Errorf("View %q.%q not found", databaseName, viewName)
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlBuildTableSchemaForView(viewName string, viewDefinition string) (db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlBuildTableSchemaForView(viewName string, viewDefinition string) (db.TableSchema, error) {
 	list, err := ParseMySQL(viewDefinition)
 	if err != nil {
 		return db.TableSchema{}, err
@@ -794,7 +806,7 @@ func (extractor *SensitiveFieldExtractor) mysqlBuildTableSchemaForView(viewName 
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractQuerySpecification(ctx mysql.IQuerySpecificationContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractQuerySpecification(ctx mysql.IQuerySpecificationContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -815,7 +827,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractQuerySpecification(ctx mys
 	return extractor.mysqlExtractSelectItemList(ctx.SelectItemList())
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractSelectItemList(ctx mysql.ISelectItemListContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractSelectItemList(ctx mysql.ISelectItemListContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -837,7 +849,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractSelectItemList(ctx mysql.I
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractSelectItem(ctx mysql.ISelectItemContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractSelectItem(ctx mysql.ISelectItemContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -866,7 +878,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractSelectItem(ctx mysql.ISele
 	return nil, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractTableWild(ctx mysql.ITableWildContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractTableWild(ctx mysql.ITableWildContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -893,16 +905,16 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractTableWild(ctx mysql.ITable
 	for _, field := range extractor.fromFieldList {
 		sameDatabase := false
 		sameTable := false
-		if extractor.SchemaInfo.IgnoreCaseSensitive {
+		if extractor.schemaInfo.IgnoreCaseSensitive {
 			sameDatabase = (strings.EqualFold(field.Database, databaseName)) ||
-				(databaseName == "" && strings.EqualFold(field.Database, extractor.CurrentDatabase)) ||
-				(field.Database == "" && strings.EqualFold(extractor.CurrentDatabase, databaseName)) ||
+				(databaseName == "" && strings.EqualFold(field.Database, extractor.currentDatabase)) ||
+				(field.Database == "" && strings.EqualFold(extractor.currentDatabase, databaseName)) ||
 				(databaseName == "" && field.Database == "")
 			sameTable = strings.EqualFold(field.Table, tableName)
 		} else {
 			sameDatabase = (field.Database == databaseName) ||
-				(databaseName == "" && field.Database == extractor.CurrentDatabase) ||
-				(field.Database == "" && extractor.CurrentDatabase == databaseName) ||
+				(databaseName == "" && field.Database == extractor.currentDatabase) ||
+				(field.Database == "" && extractor.currentDatabase == databaseName) ||
 				(databaseName == "" && field.Database == "")
 			sameTable = field.Table == tableName
 		}
@@ -915,7 +927,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractTableWild(ctx mysql.ITable
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractFromClause(ctx mysql.IFromClauseContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractFromClause(ctx mysql.IFromClauseContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -927,7 +939,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractFromClause(ctx mysql.IFrom
 	return extractor.mysqlExtractTableReferenceList(ctx.TableReferenceList())
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractTableReference(ctx mysql.ITableReferenceContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractTableReference(ctx mysql.ITableReferenceContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -955,7 +967,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractTableReference(ctx mysql.I
 	return fieldList, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlMergeJoin(leftField []base.FieldInfo, joinedTable mysql.IJoinedTableContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlMergeJoin(leftField []base.FieldInfo, joinedTable mysql.IJoinedTableContext) ([]base.FieldInfo, error) {
 	if joinedTable == nil {
 		return leftField, nil
 	}
@@ -1086,7 +1098,7 @@ func (extractor *SensitiveFieldExtractor) mysqlMergeJoin(leftField []base.FieldI
 	return nil, errors.New("Unsupported join type")
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractTableFactor(ctx mysql.ITableFactorContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractTableFactor(ctx mysql.ITableFactorContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1107,7 +1119,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractTableFactor(ctx mysql.ITab
 	return nil, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractSingleTable(ctx mysql.ISingleTableContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractSingleTable(ctx mysql.ISingleTableContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1136,7 +1148,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractSingleTable(ctx mysql.ISin
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractSingleTableParens(ctx mysql.ISingleTableParensContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractSingleTableParens(ctx mysql.ISingleTableParensContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1151,7 +1163,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractSingleTableParens(ctx mysq
 	return nil, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractDerivedTable(ctx mysql.IDerivedTableContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractDerivedTable(ctx mysql.IDerivedTableContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1193,7 +1205,7 @@ func mysqlExtractColumnInternalRefList(ctx mysql.IColumnInternalRefListContext) 
 	return result
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractSubquery(ctx mysql.ISubqueryContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractSubquery(ctx mysql.ISubqueryContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1201,7 +1213,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractSubquery(ctx mysql.ISubque
 	return extractor.mysqlExtractQueryExpressionParens(ctx.QueryExpressionParens())
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractTableReferenceListParens(ctx mysql.ITableReferenceListParensContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractTableReferenceListParens(ctx mysql.ITableReferenceListParensContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1216,7 +1228,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractTableReferenceListParens(c
 	return nil, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractTableReferenceList(ctx mysql.ITableReferenceListContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractTableReferenceList(ctx mysql.ITableReferenceListContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1234,7 +1246,7 @@ func (extractor *SensitiveFieldExtractor) mysqlExtractTableReferenceList(ctx mys
 	return result, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlExtractTableFunction(ctx mysql.ITableFunctionContext) ([]base.FieldInfo, error) {
+func (extractor *fieldExtractor) mysqlExtractTableFunction(ctx mysql.ITableFunctionContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -1291,7 +1303,7 @@ func mysqlExtractJtColumn(ctx mysql.IJtColumnContext) []string {
 	return []string{}
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
+func (extractor *fieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
 	if ctx == nil {
 		return "", base.DefaultMaskingLevel, nil
 	}
@@ -1303,9 +1315,9 @@ func (extractor *SensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
-		subqueryExtractor := &SensitiveFieldExtractor{
-			CurrentDatabase: extractor.CurrentDatabase,
-			SchemaInfo:      extractor.SchemaInfo,
+		subqueryExtractor := &fieldExtractor{
+			currentDatabase: extractor.currentDatabase,
+			schemaInfo:      extractor.schemaInfo,
 			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
 		}
 		fieldList, err := subqueryExtractor.mysqlExtractSubquery(ctx)
@@ -1345,7 +1357,7 @@ func (extractor *SensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.
 	return fieldName, level, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlEvalMaskingLevelInExprList(list []antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
+func (extractor *fieldExtractor) mysqlEvalMaskingLevelInExprList(list []antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
 	finalLevel := base.DefaultMaskingLevel
 	var fieldName string
 	var err error
@@ -1368,7 +1380,7 @@ func (extractor *SensitiveFieldExtractor) mysqlEvalMaskingLevelInExprList(list [
 	return fieldName, finalLevel, nil
 }
 
-func (extractor *SensitiveFieldExtractor) mysqlCheckFieldMaskingLevel(databaseName string, tableName string, columnName string) storepb.MaskingLevel {
+func (extractor *fieldExtractor) mysqlCheckFieldMaskingLevel(databaseName string, tableName string, columnName string) storepb.MaskingLevel {
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
 	//
 	//  select (
@@ -1385,14 +1397,14 @@ func (extractor *SensitiveFieldExtractor) mysqlCheckFieldMaskingLevel(databaseNa
 	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
 		field := extractor.outerSchemaInfo[i]
 		var sameDatabase, sameTable, sameField bool
-		if extractor.SchemaInfo.IgnoreCaseSensitive {
+		if extractor.schemaInfo.IgnoreCaseSensitive {
 			sameDatabase = (strings.EqualFold(databaseName, field.Database) ||
-				(databaseName == "" && strings.EqualFold(field.Database, extractor.CurrentDatabase))) ||
+				(databaseName == "" && strings.EqualFold(field.Database, extractor.currentDatabase))) ||
 				(databaseName == "" && field.Database == "")
 			sameTable = (strings.EqualFold(tableName, field.Table) || tableName == "")
 		} else {
 			sameDatabase = (databaseName == field.Database ||
-				(databaseName == "" && field.Database == extractor.CurrentDatabase) ||
+				(databaseName == "" && field.Database == extractor.currentDatabase) ||
 				(databaseName == "" && field.Database == ""))
 			sameTable = (tableName == field.Table || tableName == "")
 		}
@@ -1405,14 +1417,14 @@ func (extractor *SensitiveFieldExtractor) mysqlCheckFieldMaskingLevel(databaseNa
 
 	for _, field := range extractor.fromFieldList {
 		var sameDatabase, sameTable, sameField bool
-		if extractor.SchemaInfo.IgnoreCaseSensitive {
+		if extractor.schemaInfo.IgnoreCaseSensitive {
 			sameDatabase = (strings.EqualFold(databaseName, field.Database) ||
-				(databaseName == "" && strings.EqualFold(field.Database, extractor.CurrentDatabase)) ||
+				(databaseName == "" && strings.EqualFold(field.Database, extractor.currentDatabase)) ||
 				(databaseName == "" && field.Database == ""))
 			sameTable = (strings.EqualFold(tableName, field.Table) || tableName == "")
 		} else {
 			sameDatabase = (databaseName == field.Database ||
-				(databaseName == "" && field.Database == extractor.CurrentDatabase) ||
+				(databaseName == "" && field.Database == extractor.currentDatabase) ||
 				(databaseName == "" && field.Database == ""))
 			sameTable = (tableName == field.Table || tableName == "")
 		}
