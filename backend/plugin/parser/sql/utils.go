@@ -137,6 +137,6 @@ func ExtractSensitiveField(dbType storepb.Engine, statement string, currentDatab
 // 2. SELECT statement
 // We also support CTE with SELECT statements, but not with DML statements.
 func ValidateSQLForEditor(engine storepb.Engine, statement string) bool {
-	f := base.QueryValidator[engine]
+	f := base.QueryValidators[engine]
 	return f(statement)
 }
