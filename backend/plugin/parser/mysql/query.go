@@ -6,8 +6,12 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/slog"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	standardparser "github.com/bytebase/bytebase/backend/plugin/parser/standard"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 // ValidateForEditor validates the given SQL statement for editor.
@@ -210,4 +214,19 @@ func (l *mysqlResourceExtractListener) EnterTableRef(ctx *parser.TableRefContext
 	}
 	resource.Table = table
 	l.resourceMap[resource.String()] = resource
+}
+
+// ValidateSQLForEditor validates the SQL statement for SQL editor.
+// We validate the statement by following steps:
+// 1. Remove all quoted text(quoted identifier, string literal) and comments from the statement.
+// 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
+// 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
+func ValidateSQLForEditor(statement string) bool {
+	textWithoutQuotedAndComment, err := tokenizer.MysqlRemoveQuotedTextAndComment(statement)
+	if err != nil {
+		slog.Debug("Failed to remove quoted text and comment", slog.String("statement", statement), log.BBError(err))
+		return false
+	}
+
+	return standardparser.CheckStatementWithoutQuotedTextAndComment(textWithoutQuotedAndComment)
 }
