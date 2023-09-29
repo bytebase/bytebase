@@ -9,12 +9,12 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 
 	plsql "github.com/bytebase/plsql-parser"
 
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	differ.Register(parser.Oracle, &SchemaDiffer{})
+	differ.Register(storepb.Engine_ORACLE, &SchemaDiffer{})
 }
 
 // SchemaDiffer is the schema differ for plsql.

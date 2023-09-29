@@ -95,7 +95,7 @@ type maskingPolicyKey struct {
 
 // Pretty returns pretty format SDL.
 func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb.PrettyResponse, error) {
-	engine := parser.EngineType(convertEngine(request.Engine))
+	engine := convertEngine(request.Engine)
 	if _, err := transform.CheckFormat(engine, request.ExpectedSchema); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "User SDL is not SDL format: %s", err.Error())
 	}
@@ -385,7 +385,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_SQL:
-		resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), request.ConnectionDatabase, request.Statement, instance)
+		resourceList, err := s.extractResourceList(ctx, instance.Engine, request.ConnectionDatabase, request.Statement, instance)
 		if err != nil {
 			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
 		}
@@ -816,7 +816,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	var sensitiveSchemaInfo *db.SensitiveSchemaInfo
 	switch instance.Engine {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement, "")
+		databaseList, err := parser.ExtractDatabaseList(storepb.Engine_MYSQL, request.Statement, "")
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 		}
@@ -834,7 +834,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	case storepb.Engine_ORACLE, storepb.Engine_DM:
 		var databaseList []string
 		if instance.Options != nil && instance.Options.SchemaTenantMode {
-			list, err := parser.ExtractResourceList(parser.Oracle, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
+			list, err := parser.ExtractResourceList(storepb.Engine_ORACLE, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
 			if err != nil {
 				return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", request.Statement)
 			}
@@ -855,7 +855,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 		}
 	case storepb.Engine_SNOWFLAKE:
-		databaseList, err := parser.ExtractDatabaseList(parser.Snowflake, request.Statement, request.ConnectionDatabase)
+		databaseList, err := parser.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, request.Statement, request.ConnectionDatabase)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 		}
@@ -865,7 +865,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
 	case storepb.Engine_MSSQL:
-		databaseList, err := parser.ExtractDatabaseList(parser.MSSQL, request.Statement, request.ConnectionDatabase)
+		databaseList, err := parser.ExtractDatabaseList(storepb.Engine_MSSQL, request.Statement, request.ConnectionDatabase)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 		}
@@ -1229,7 +1229,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	if adviceStatus != advisor.Error {
 		switch instance.Engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement, "")
+			databaseList, err := parser.ExtractDatabaseList(storepb.Engine_MYSQL, request.Statement, "")
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 			}
@@ -1259,7 +1259,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 				}
 			} else {
-				list, err := parser.ExtractResourceList(parser.Oracle, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
+				list, err := parser.ExtractResourceList(storepb.Engine_ORACLE, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
 				if err != nil {
 					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", request.Statement)
 				}
@@ -1278,7 +1278,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 				}
 			}
 		case storepb.Engine_SNOWFLAKE:
-			databaseList, err := parser.ExtractDatabaseList(parser.Snowflake, request.Statement, request.ConnectionDatabase)
+			databaseList, err := parser.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, request.Statement, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 			}
@@ -1288,7 +1288,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
 		case storepb.Engine_MSSQL:
-			databaseList, err := parser.ExtractDatabaseList(parser.MSSQL, request.Statement, request.ConnectionDatabase)
+			databaseList, err := parser.ExtractDatabaseList(storepb.Engine_MSSQL, request.Statement, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 			}
@@ -1331,7 +1331,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 
 func allPostgresSystemObjects(statement string) bool {
 	// We need to distinguish between specified public schema and by default.
-	resources, err := parser.ExtractResourceList(parser.Postgres, "", "", statement)
+	resources, err := parser.ExtractResourceList(storepb.Engine_POSTGRES, "", "", statement)
 	if err != nil {
 		slog.Debug("Failed to extract resource list from statement", slog.String("statement", statement), log.BBError(err))
 		return false
@@ -2051,7 +2051,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		// Do nothing.
 	default:
 		// TODO(rebelice): support multiple statements here.
-		if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), statement) {
+		if !parser.ValidateSQLForEditor(instance.Engine, statement) {
 			return nonSelectSQLError.Err()
 		}
 	}
@@ -2059,9 +2059,9 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 	return nil
 }
 
-func (s *SQLService) extractResourceList(ctx context.Context, engine parser.EngineType, databaseName string, statement string, instance *store.InstanceMessage) ([]base.SchemaResource, error) {
+func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Engine, databaseName string, statement string, instance *store.InstanceMessage) ([]base.SchemaResource, error) {
 	switch engine {
-	case parser.MySQL, parser.MariaDB, parser.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		list, err := parser.ExtractResourceList(engine, databaseName, "", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
@@ -2125,7 +2125,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			result = append(result, resource)
 		}
 		return result, nil
-	case parser.Postgres, parser.Redshift:
+	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
 		list, err := parser.ExtractResourceList(engine, databaseName, "public", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
@@ -2165,7 +2165,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		}
 
 		return result, nil
-	case parser.Oracle:
+	case storepb.Engine_ORACLE:
 		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
 		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 		// If there are no read-only data source, fall back to admin data source.
@@ -2242,7 +2242,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 		}
 
 		return result, nil
-	case parser.Snowflake:
+	case storepb.Engine_SNOWFLAKE:
 		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
 		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 		// If there are no read-only data source, fall back to admin data source.
@@ -2312,7 +2312,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine parser.Engi
 			result = append(result, resource)
 		}
 		return result, nil
-	case parser.SQLServer:
+	case storepb.Engine_MSSQL:
 		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
 		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 		// If there are no read-only data source, fall back to admin data source.
@@ -2455,7 +2455,7 @@ func (s *SQLService) checkQueryRights(
 	if datashare {
 		extractingStatement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", databaseName), "")
 	}
-	resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), databaseName, extractingStatement, instance)
+	resourceList, err := s.extractResourceList(ctx, instance.Engine, databaseName, extractingStatement, instance)
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
 	}
@@ -2735,33 +2735,6 @@ func (s *SQLService) getInstanceMessage(ctx context.Context, name string) (*stor
 	}
 
 	return instance, nil
-}
-
-func convertToParserEngine(engine storepb.Engine) parser.EngineType {
-	// convert to parser engine
-	switch engine {
-	case storepb.Engine_POSTGRES:
-		return parser.Postgres
-	case storepb.Engine_REDSHIFT:
-		return parser.Redshift
-	case storepb.Engine_MYSQL:
-		return parser.MySQL
-	case storepb.Engine_TIDB:
-		return parser.TiDB
-	case storepb.Engine_MARIADB:
-		return parser.MariaDB
-	case storepb.Engine_ORACLE:
-		return parser.Oracle
-	case storepb.Engine_MSSQL:
-		return parser.MSSQL
-	case storepb.Engine_OCEANBASE:
-		return parser.OceanBase
-	case storepb.Engine_SNOWFLAKE:
-		return parser.Snowflake
-	case storepb.Engine_DM:
-		return parser.Oracle
-	}
-	return parser.Standard
 }
 
 // IsSQLReviewSupported checks the engine type if SQL review supports it.

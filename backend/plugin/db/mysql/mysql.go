@@ -202,7 +202,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
+	singleSQLs, err := parser.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -300,5 +300,5 @@ func updateTiDBExplainResult(result *v1pb.QueryResult) error {
 
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, parser.MySQL, conn, statement)
+	return util.RunStatement(ctx, storepb.Engine_MYSQL, conn, statement)
 }

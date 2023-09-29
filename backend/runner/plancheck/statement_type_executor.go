@@ -341,7 +341,7 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 		return nil, err
 	}
 
-	list, err := parser.SplitMultiSQL(parser.MySQL, ddl)
+	list, err := parser.SplitMultiSQL(storepb.Engine_MYSQL, ddl)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split SQL")
 	}

@@ -610,7 +610,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	if request.SdlFormat {
 		switch instance.Engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			sdlSchema, err := transform.SchemaTransform(parser.MySQL, schema)
+			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, schema)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
 			}
@@ -948,12 +948,12 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	if request.SdlFormat {
 		switch instance.Engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			sdlSchema, err := transform.SchemaTransform(parser.MySQL, converted.Schema)
+			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, converted.Schema)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
 			}
 			converted.Schema = sdlSchema
-			sdlSchema, err = transform.SchemaTransform(parser.MySQL, converted.PrevSchema)
+			sdlSchema, err = transform.SchemaTransform(storepb.Engine_MYSQL, converted.PrevSchema)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert previous schema to sdl format, error %v", err.Error())
 			}
@@ -1037,9 +1037,9 @@ func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.Dif
 	return schema, nil
 }
 
-func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (parser.EngineType, error) {
+func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (storepb.Engine, error) {
 	var instanceID string
-	var engine parser.EngineType
+	var engine storepb.Engine
 
 	if strings.Contains(request.Name, common.ChangeHistoryPrefix) {
 		insID, _, _, err := common.GetInstanceDatabaseIDChangeHistory(request.Name)
@@ -1065,13 +1065,13 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 
 	switch instance.Engine {
 	case storepb.Engine_POSTGRES:
-		engine = parser.Postgres
+		engine = storepb.Engine_POSTGRES
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		engine = parser.MySQL
+		engine = storepb.Engine_MYSQL
 	case storepb.Engine_TIDB:
-		engine = parser.TiDB
+		engine = storepb.Engine_TIDB
 	case storepb.Engine_ORACLE:
-		engine = parser.Oracle
+		engine = storepb.Engine_ORACLE
 	default:
 		return engine, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid engine type %v", instance.Engine))
 	}
@@ -2381,7 +2381,7 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 	var schemas []*store.DBSchema
 
 	// Deal with the cross database query
-	dbList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement, "")
+	dbList, err := parser.ExtractDatabaseList(storepb.Engine_MYSQL, request.Statement, "")
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract database list: %v", err)
 	}

@@ -196,7 +196,7 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 }
 
 // RunStatement runs a SQL statement in a given connection.
-func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(engineType, statement)
 	if err != nil {
 		return nil, err
