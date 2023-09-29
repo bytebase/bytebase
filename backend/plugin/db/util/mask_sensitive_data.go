@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -61,14 +62,14 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		}
 		return result, nil
 	case db.Postgres, db.Redshift, db.RisingWave:
-		extractor := &PGSensitiveFieldExtractor{
-			schemaInfo: schemaInfo,
+		extractor := &pgparser.SensitiveFieldExtractor{
+			SchemaInfo: schemaInfo,
 		}
 		result, err := extractor.ExtractPostgreSQLSensitiveField(statement)
 		if err != nil {
 			tableNotFound := regexp.MustCompile("^Table \"(.*)\\.(.*)\" not found$")
 			content := tableNotFound.FindStringSubmatch(err.Error())
-			if len(content) == 3 && (isPostgreSQLSystemSchema(content[1]) || dbType == db.RisingWave && isRisingWaveSystemSchema(content[1])) {
+			if len(content) == 3 && (pgparser.IsPostgreSQLSystemSchema(content[1]) || dbType == db.RisingWave && pgparser.IsRisingWaveSystemSchema(content[1])) {
 				// skip for system schema
 				return nil, nil
 			}

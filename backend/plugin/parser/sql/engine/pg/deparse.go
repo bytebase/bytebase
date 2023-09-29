@@ -7,8 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
@@ -107,7 +105,7 @@ func deparseImpl(context DeparseContext, in ast.Node, buf *strings.Builder) erro
 }
 
 func deparseDropIndex(context DeparseContext, in *ast.DropIndexStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -151,7 +149,7 @@ func deparseDropIndex(context DeparseContext, in *ast.DropIndexStmt, buf *string
 }
 
 func deparseCreateIndex(context DeparseContext, in *ast.CreateIndexStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -244,7 +242,7 @@ func deparseIndexMethod(method ast.IndexMethodType, buf *strings.Builder) (err e
 }
 
 func deparseIndexKey(context DeparseContext, in *ast.IndexKeyDef, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -286,7 +284,7 @@ func deparseIndexKey(context DeparseContext, in *ast.IndexKeyDef, buf *strings.B
 }
 
 func deparseDropTable(context DeparseContext, in *ast.DropTableStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -387,7 +385,7 @@ func deparseAlterTable(context DeparseContext, in *ast.AlterTableStmt, buf *stri
 }
 
 func deparseRenameColumn(context DeparseContext, in *ast.RenameColumnStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString("RENAME COLUMN "); err != nil {
@@ -403,7 +401,7 @@ func deparseRenameColumn(context DeparseContext, in *ast.RenameColumnStmt, buf *
 }
 
 func deparseRenameTable(context DeparseContext, in *ast.RenameTableStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString("RENAME TO "); err != nil {
@@ -413,7 +411,7 @@ func deparseRenameTable(context DeparseContext, in *ast.RenameTableStmt, buf *st
 }
 
 func deparseSetDefault(context DeparseContext, in *ast.SetDefaultStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
@@ -432,7 +430,7 @@ func deparseSetDefault(context DeparseContext, in *ast.SetDefaultStmt, buf *stri
 }
 
 func deparseDropDefault(context DeparseContext, in *ast.DropDefaultStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
@@ -448,7 +446,7 @@ func deparseDropDefault(context DeparseContext, in *ast.DropDefaultStmt, buf *st
 }
 
 func deparseAddConstraint(context DeparseContext, in *ast.AddConstraintStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString("ADD "); err != nil {
@@ -681,7 +679,7 @@ func deparseForeignMatchType(_ DeparseContext, in ast.ForeignMatchType, buf *str
 }
 
 func deparseDropConstraint(context DeparseContext, in *ast.DropConstraintStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString("DROP CONSTRAINT "); err != nil {
@@ -697,7 +695,7 @@ func deparseDropConstraint(context DeparseContext, in *ast.DropConstraintStmt, b
 }
 
 func deparseDropNotNull(context DeparseContext, in *ast.DropNotNullStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -714,7 +712,7 @@ func deparseDropNotNull(context DeparseContext, in *ast.DropNotNullStmt, buf *st
 }
 
 func deparseSetNotNull(context DeparseContext, in *ast.SetNotNullStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -731,7 +729,7 @@ func deparseSetNotNull(context DeparseContext, in *ast.SetNotNullStmt, buf *stri
 }
 
 func deparseDropColumn(context DeparseContext, in *ast.DropColumnStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -753,7 +751,7 @@ func deparseDropColumn(context DeparseContext, in *ast.DropColumnStmt, buf *stri
 }
 
 func deparseAlterColumnType(context DeparseContext, in *ast.AlterColumnTypeStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -770,7 +768,7 @@ func deparseAlterColumnType(context DeparseContext, in *ast.AlterColumnTypeStmt,
 }
 
 func deparseAddColumnList(context DeparseContext, in *ast.AddColumnListStmt, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -902,7 +900,7 @@ func deparsePartitionDef(_ DeparseContext, in *ast.PartitionDef, buf *strings.Bu
 }
 
 func deparseTableConstraint(context DeparseContext, in *ast.ConstraintDef, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -921,7 +919,7 @@ func deparseTableConstraint(context DeparseContext, in *ast.ConstraintDef, buf *
 }
 
 func deparseColumnDef(context DeparseContext, in *ast.ColumnDef, buf *strings.Builder) error {
-	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
 		return err
 	}
 
@@ -1121,7 +1119,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1137,7 +1135,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1150,7 +1148,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1161,7 +1159,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1174,7 +1172,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1185,7 +1183,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1198,7 +1196,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1211,7 +1209,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1224,7 +1222,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1237,7 +1235,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1256,7 +1254,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1267,7 +1265,7 @@ func deparseAlterSequence(ctx DeparseContext, in *ast.AlterSequenceStmt, buf *st
 		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
-		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := itemContext.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 
@@ -1514,7 +1512,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
-		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString("AS "); err != nil {
@@ -1528,7 +1526,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
-		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString(fmt.Sprintf("INCREMENT BY %d", *in.IncrementBy)); err != nil {
@@ -1539,7 +1537,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
-		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString(fmt.Sprintf("MINVALUE %d", *in.MinValue)); err != nil {
@@ -1549,7 +1547,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
-		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString("NO MINVALUE"); err != nil {
@@ -1560,7 +1558,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
-		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString(fmt.Sprintf("MAXVALUE %d", *in.MaxValue)); err != nil {
@@ -1570,7 +1568,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
-		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString("NO MAXVALUE"); err != nil {
@@ -1581,7 +1579,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
-		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString(fmt.Sprintf("START WITH %d", *in.StartWith)); err != nil {
@@ -1592,7 +1590,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
-		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString(fmt.Sprintf("CACHE %d", *in.Cache)); err != nil {
@@ -1603,7 +1601,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
-		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString("CYCLE"); err != nil {
@@ -1614,7 +1612,7 @@ func depraseSequenceDef(ctx DeparseContext, in *ast.SequenceDef, buf *strings.Bu
 		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
-		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		if err := ctx.WriteIndent(buf, deparseIndentString); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString("OWNED BY "); err != nil {
