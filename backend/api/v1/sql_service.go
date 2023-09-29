@@ -1987,8 +1987,18 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 // 3. Parse statement for Postgres, MySQL, TiDB, Oracle.
 // 4. Check if all statements are (EXPLAIN) SELECT statements.
 func validateQueryRequest(instance *store.InstanceMessage, databaseName string, statement string) error {
-	if instance.Engine == storepb.Engine_POSTGRES && databaseName == "" {
-		return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
+		if databaseName == "" {
+			return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
+		}
+	case storepb.Engine_ORACLE, storepb.Engine_DM:
+		if instance.Options != nil && instance.Options.SchemaTenantMode && databaseName == "" {
+			return status.Error(codes.InvalidArgument, "connection_database is required for oracle schema tenant mode instance")
+		}
+	case storepb.Engine_MONGODB, storepb.Engine_REDIS:
+		// Do nothing.
+		return nil
 	}
 
 	switch instance.Engine {
@@ -2031,8 +2041,6 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		if err := plsqlparser.ValidateForEditor(tree); err != nil {
 			return nonSelectSQLError.Err()
 		}
-	case storepb.Engine_MONGODB, storepb.Engine_REDIS:
-		// Do nothing.
 	default:
 		// TODO(rebelice): support multiple statements here.
 		if !parser.ValidateSQLForEditor(instance.Engine, statement) {
