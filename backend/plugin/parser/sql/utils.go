@@ -3,15 +3,12 @@ package parser
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	pgquery "github.com/pganalyze/pg_query_go/v4"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
@@ -20,6 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -32,7 +30,7 @@ import (
 func ExtractChangedResources(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
 	switch engineType {
 	case MySQL, MariaDB, OceanBase:
-		return extractMySQLChangedResources(currentDatabase, sql)
+		return mysqlparser.ExtractMySQLChangedResources(currentDatabase, sql)
 	case Oracle:
 		return plsqlparser.ExtractOracleChangedResources(currentDatabase, currentSchema, sql)
 	default:
@@ -50,13 +48,13 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 		return tidbparser.ExtractTiDBResourceList(currentDatabase, sql)
 	case MySQL, MariaDB, OceanBase:
 		// The resource list for MySQL may contains table, view and temporary table.
-		return extractMySQLResourceList(currentDatabase, sql)
+		return mysqlparser.ExtractMySQLResourceList(currentDatabase, sql)
 	case Oracle:
 		// The resource list for Oracle may contains table, view and temporary table.
 		return plsqlparser.ExtractOracleResourceList(currentDatabase, currentSchema, sql)
 	case Postgres, RisingWave:
 		// The resource list for Postgres may contains table, view and temporary table.
-		return extractPostgresResourceList(currentDatabase, currentSchema, sql)
+		return pgparser.ExtractPostgresResourceList(currentDatabase, currentSchema, sql)
 	case Snowflake:
 		return snowparser.ExtractSnowflakeNormalizeResourceListFromSelectStatement(currentDatabase, "PUBLIC", sql)
 	case MSSQL:
@@ -67,66 +65,6 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 		}
 		return []base.SchemaResource{{Database: currentDatabase}}, nil
 	}
-}
-
-func extractPostgresResourceList(currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
-	jsonText, err := pgquery.ParseToJSON(sql)
-	if err != nil {
-		return nil, err
-	}
-
-	var jsonData map[string]any
-
-	if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
-		return nil, err
-	}
-
-	resourceMap := make(map[string]base.SchemaResource)
-	list := extractRangeVarFromJSON(currentDatabase, currentSchema, jsonData)
-	for _, resource := range list {
-		resourceMap[resource.String()] = resource
-	}
-	list = []base.SchemaResource{}
-	for _, resource := range resourceMap {
-		list = append(list, resource)
-	}
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].String() < list[j].String()
-	})
-	return list, nil
-}
-
-func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonData map[string]any) []base.SchemaResource {
-	var result []base.SchemaResource
-	if jsonData["RangeVar"] != nil {
-		resource := base.SchemaResource{
-			Database: currentDatabase,
-			Schema:   currentSchema,
-		}
-		rangeVar := jsonData["RangeVar"].(map[string]any)
-		if rangeVar["schemaname"] != nil {
-			resource.Schema = rangeVar["schemaname"].(string)
-		}
-		if rangeVar["relname"] != nil {
-			resource.Table = rangeVar["relname"].(string)
-		}
-		result = append(result, resource)
-	}
-
-	for _, value := range jsonData {
-		switch v := value.(type) {
-		case map[string]any:
-			result = append(result, extractRangeVarFromJSON(currentDatabase, currentSchema, v)...)
-		case []any:
-			for _, item := range v {
-				if m, ok := item.(map[string]any); ok {
-					result = append(result, extractRangeVarFromJSON(currentDatabase, currentSchema, m)...)
-				}
-			}
-		}
-	}
-
-	return result
 }
 
 // GetSQLFingerprint returns the fingerprint of the SQL.
@@ -365,26 +303,6 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]base.SingleSQL, e
 	return result, nil
 }
 
-// Note that the reader is read completely into memory and so it must actually
-// have a stopping point - you cannot pass in a reader on an open-ended source such
-// as a socket for instance.
-func splitMySQLMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
-	result, err := mysqlparser.SplitMySQLStream(src)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, sql := range result {
-		if f != nil {
-			if err := f(sql.Text); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return result, nil
-}
-
 // applyMultiStatements will apply the split statements from scanner.
 // This function only used for SQLite, snowflake.
 // For MySQL and PostgreSQL, use parser.SplitMultiSQLStream instead.
@@ -497,7 +415,7 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 		t := tokenizer.NewStreamTokenizer(src, f)
 		list, err = t.SplitPostgreSQLMultiSQL()
 	case MySQL, MariaDB, OceanBase:
-		return splitMySQLMultiSQLStream(src, f)
+		return mysqlparser.SplitMySQLMultiSQLStream(src, f)
 	case TiDB:
 		t := tokenizer.NewStreamTokenizer(src, f)
 		list, err = t.SplitTiDBMultiSQL()

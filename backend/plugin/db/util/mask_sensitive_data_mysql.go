@@ -201,7 +201,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractCommonTableExpression(ctx 
 }
 
 func (extractor *sensitiveFieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (db.TableSchema, error) {
-	cteName := parser.NormalizeMySQLIdentifier(ctx.Identifier())
+	cteName := mysqlparser.NormalizeMySQLIdentifier(ctx.Identifier())
 	l := &recursiveCTEListener{
 		extractor: extractor,
 		cteInfo: db.TableSchema{
@@ -506,7 +506,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractNonRecursiveCTE(ctx mysql.
 			fieldList[i].name = columnList[i]
 		}
 	}
-	cteName := parser.NormalizeMySQLIdentifier(ctx.Identifier())
+	cteName := mysqlparser.NormalizeMySQLIdentifier(ctx.Identifier())
 	result := db.TableSchema{
 		Name:       cteName,
 		ColumnList: []db.ColumnInfo{},
@@ -634,7 +634,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractExplicitTable(ctx mysql.IE
 		return nil, nil
 	}
 
-	databaseName, tableName := parser.NormalizeMySQLTableRef(ctx.TableRef())
+	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 	databaseName, tableSchema, err := extractor.mysqlFindTableSchema(databaseName, tableName)
 	if err != nil {
 		return nil, err
@@ -841,7 +841,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractSelectItem(ctx mysql.ISele
 			return nil, err
 		}
 		if ctx.SelectAlias() != nil {
-			fieldName = parser.NormalizeMySQLSelectAlias(ctx.SelectAlias())
+			fieldName = mysqlparser.NormalizeMySQLSelectAlias(ctx.SelectAlias())
 		} else if fieldName == "" {
 			fieldName = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 		}
@@ -863,7 +863,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractTableWild(ctx mysql.ITable
 
 	var ids []string
 	for _, identifier := range ctx.AllIdentifier() {
-		ids = append(ids, parser.NormalizeMySQLIdentifier(identifier))
+		ids = append(ids, mysqlparser.NormalizeMySQLIdentifier(identifier))
 	}
 
 	var databaseName, tableName string
@@ -969,7 +969,7 @@ func (extractor *sensitiveFieldExtractor) mysqlMergeJoin(leftField []fieldInfo, 
 
 		// ... JOIN ... USING (...) will merge the column in USING.
 		usingMap := make(map[string]bool)
-		for _, identifier := range parser.NormalizeMySQLIdentifierList(joinedTable.IdentifierListWithParentheses().IdentifierList()) {
+		for _, identifier := range mysqlparser.NormalizeMySQLIdentifierList(joinedTable.IdentifierListWithParentheses().IdentifierList()) {
 			// Column name in MySQL is NOT case sensitive.
 			usingMap[strings.ToLower(identifier)] = true
 		}
@@ -1012,7 +1012,7 @@ func (extractor *sensitiveFieldExtractor) mysqlMergeJoin(leftField []fieldInfo, 
 
 		// ... JOIN ... USING (...) will merge the column in USING.
 		usingMap := make(map[string]bool)
-		for _, identifier := range parser.NormalizeMySQLIdentifierList(joinedTable.IdentifierListWithParentheses().IdentifierList()) {
+		for _, identifier := range mysqlparser.NormalizeMySQLIdentifierList(joinedTable.IdentifierListWithParentheses().IdentifierList()) {
 			// Column name in MySQL is NOT case sensitive.
 			usingMap[strings.ToLower(identifier)] = true
 		}
@@ -1102,7 +1102,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractSingleTable(ctx mysql.ISin
 		return nil, nil
 	}
 
-	databaseName, tableName := parser.NormalizeMySQLTableRef(ctx.TableRef())
+	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 	databaseName, tableSchema, err := extractor.mysqlFindTableSchema(databaseName, tableName)
 	if err != nil {
 		return nil, err
@@ -1110,7 +1110,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractSingleTable(ctx mysql.ISin
 
 	tableName = tableSchema.Name
 	if ctx.TableAlias() != nil {
-		tableName = parser.NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
+		tableName = mysqlparser.NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
 	}
 
 	var result []fieldInfo
@@ -1152,7 +1152,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractDerivedTable(ctx mysql.IDe
 	}
 
 	if ctx.TableAlias() != nil {
-		alias := parser.NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
+		alias := mysqlparser.NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
 		for i := range fieldList {
 			fieldList[i].table = alias
 		}
@@ -1178,7 +1178,7 @@ func mysqlExtractColumnInternalRefList(ctx mysql.IColumnInternalRefListContext) 
 
 	var result []string
 	for _, columnInternalRef := range ctx.AllColumnInternalRef() {
-		result = append(result, parser.NormalizeMySQLIdentifier(columnInternalRef.Identifier()))
+		result = append(result, mysqlparser.NormalizeMySQLIdentifier(columnInternalRef.Identifier()))
 	}
 	return result
 }
@@ -1237,7 +1237,7 @@ func (extractor *sensitiveFieldExtractor) mysqlExtractTableFunction(ctx mysql.IT
 	columnList := mysqlExtractColumnsClause(ctx.ColumnsClause())
 
 	if ctx.TableAlias() != nil {
-		tableName = parser.NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
+		tableName = mysqlparser.NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
 	} else if tableName == "" {
 		tableName = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Expr())
 	}
@@ -1273,7 +1273,7 @@ func mysqlExtractJtColumn(ctx mysql.IJtColumnContext) []string {
 
 	switch {
 	case ctx.Identifier() != nil:
-		return []string{parser.NormalizeMySQLIdentifier(ctx.Identifier())}
+		return []string{mysqlparser.NormalizeMySQLIdentifier(ctx.Identifier())}
 	case ctx.ColumnsClause() != nil:
 		return mysqlExtractColumnsClause(ctx.ColumnsClause())
 	}
@@ -1313,7 +1313,7 @@ func (extractor *sensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.
 		}
 		return "", finalLevel, nil
 	case mysql.IColumnRefContext:
-		databaseName, tableName, fieldName := parser.NormalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
+		databaseName, tableName, fieldName := mysqlparser.NormalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
 		level := extractor.mysqlCheckFieldMaskingLevel(databaseName, tableName, fieldName)
 		return fieldName, level, nil
 	}
