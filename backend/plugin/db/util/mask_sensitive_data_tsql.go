@@ -314,13 +314,13 @@ func (extractor *TSQLSensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuer
 			// TODO(zp): handle the UDT.
 			result = append(result, base.FieldInfo{
 				Name:         fmt.Sprintf("UNSUPPORTED UDT %s", selectListElem.GetText()),
-				MaskingLevel: defaultMaskingLevel,
+				MaskingLevel: base.DefaultMaskingLevel,
 			})
 		} else if selectListElem.LOCAL_ID() != nil {
 			// TODO(zp): handle the local variable, SELECT @a=id FROM blog.dbo.t1;
 			result = append(result, base.FieldInfo{
 				Name:         fmt.Sprintf("UNSUPPORTED LOCALID %s", selectListElem.GetText()),
-				MaskingLevel: defaultMaskingLevel,
+				MaskingLevel: base.DefaultMaskingLevel,
 			})
 		} else if expressionElem := selectListElem.Expression_elem(); expressionElem != nil {
 			columnName, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expressionElem)
@@ -783,7 +783,7 @@ func (extractor *TSQLSensitiveFieldExtractor) isIdentifierEqual(a, b string) boo
 // It is the closure of the expression_elemContext, it will recursively check the sub expression element.
 func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleContext) (string, storepb.MaskingLevel, error) {
 	if ctx == nil {
-		return "", defaultMaskingLevel, nil
+		return "", base.DefaultMaskingLevel, nil
 	}
 	switch ctx := ctx.(type) {
 	case *parser.Expression_elemContext:
@@ -804,7 +804,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		if ctx.Function_call() != nil {
 			return extractor.evalExpressionElemMaskingLevel(ctx.Function_call())
 		}
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -814,7 +814,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -854,7 +854,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		if expression := ctx.Expression(); expression != nil {
 			return extractor.evalExpressionElemMaskingLevel(expression)
 		}
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.Bracket_expressionContext:
 		if expression := ctx.Expression(); expression != nil {
 			return extractor.evalExpressionElemMaskingLevel(expression)
@@ -862,9 +862,9 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		if subquery := ctx.Subquery(); subquery != nil {
 			return extractor.evalExpressionElemMaskingLevel(subquery)
 		}
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.Case_expressionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -874,7 +874,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -888,7 +888,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -902,14 +902,14 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Switch_sectionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -919,14 +919,14 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Switch_search_condition_sectionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if searchCondition := ctx.Search_condition(); searchCondition != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(searchCondition)
 			if err != nil {
@@ -935,7 +935,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -947,7 +947,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -956,7 +956,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		if predicate := ctx.Predicate(); predicate != nil {
 			return extractor.evalExpressionElemMaskingLevel(predicate)
 		}
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if allSearchConditions := ctx.AllSearch_condition(); len(allSearchConditions) > 0 {
 			for _, searchCondition := range allSearchConditions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(searchCondition)
@@ -966,7 +966,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -980,7 +980,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			return extractor.evalExpressionElemMaskingLevel(freeTextPredicate)
 		}
 
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -990,7 +990,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -1003,13 +1003,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Freetext_predicateContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -1019,7 +1019,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -1033,7 +1033,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -1053,18 +1053,18 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the subquery is sensitive")
 		}
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, field := range fieldInfo {
 			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
 				finalLevel = field.MaskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Hierarchyid_callContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -1074,20 +1074,20 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Query_callContext:
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.Exist_callContext:
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.Modify_callContext:
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.Value_callContext:
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.Primitive_expressionContext:
 		if ctx.Primitive_constant() != nil {
 			_, sensitive, err := extractor.evalExpressionElemMaskingLevel(ctx.Primitive_constant())
@@ -1098,7 +1098,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		panic("never reach here")
 	case *parser.Primitive_constantContext:
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.Function_callContext:
 		// In parser.g4, the function_callContext is defined as:
 		// 	function_call
@@ -1112,7 +1112,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 	case *parser.RANKING_WINDOWED_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Ranking_windowed_function())
 	case *parser.Ranking_windowed_functionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if overClause := ctx.Over_clause(); overClause != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(overClause)
 			if err != nil {
@@ -1121,7 +1121,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1133,13 +1133,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Over_clauseContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
@@ -1148,7 +1148,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1160,7 +1160,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1172,13 +1172,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Expression_list_Context:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1187,13 +1187,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Order_by_clauseContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, orderByExpression := range ctx.GetOrder_bys() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(orderByExpression)
 			if err != nil {
@@ -1202,7 +1202,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1231,7 +1231,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			return ctx.GetText(), maskingLevel, nil
 		}
 		if windowFrameBounds := ctx.AllWindow_frame_bound(); len(windowFrameBounds) > 0 {
-			finalLevel := defaultMaskingLevel
+			finalLevel := base.DefaultMaskingLevel
 			for _, windowFrameBound := range windowFrameBounds {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(windowFrameBound)
 				if err != nil {
@@ -1240,7 +1240,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -1262,13 +1262,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		panic("never reach here")
 	case *parser.Window_frame_precedingContext:
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.Window_frame_followingContext:
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.AGGREGATE_WINDOWED_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Aggregate_windowed_function())
 	case *parser.Aggregate_windowed_functionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if allDistinctExpression := ctx.All_distinct_expression(); allDistinctExpression != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(allDistinctExpression)
 			if err != nil {
@@ -1277,7 +1277,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1289,7 +1289,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1301,7 +1301,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1313,7 +1313,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1327,7 +1327,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 	case *parser.ANALYTIC_WINDOWED_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Analytic_windowed_function())
 	case *parser.Analytic_windowed_functionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -1337,7 +1337,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -1350,7 +1350,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1362,7 +1362,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1374,7 +1374,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1382,9 +1382,9 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 	case *parser.BUILT_IN_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Built_in_functions())
 	case *parser.APP_NAMEContext:
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.APPLOCK_MODEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1393,13 +1393,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.APPLOCK_TESTContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1408,13 +1408,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.ASSEMBLYPROPERTYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1423,13 +1423,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.COL_LENGTHContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1438,13 +1438,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.COL_NAMEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1453,13 +1453,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.COLUMNPROPERTYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1468,13 +1468,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATABASEPROPERTYEXContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1483,7 +1483,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1531,7 +1531,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.FILEGROUPPROPERTYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1540,13 +1540,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.FILEPROPERTYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1555,13 +1555,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.FILEPROPERTYEXContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1570,13 +1570,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.FULLTEXTCATALOGPROPERTYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1585,7 +1585,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1597,7 +1597,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.INDEX_COLContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1606,13 +1606,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.INDEXKEY_PROPERTYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1621,13 +1621,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.INDEXPROPERTYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1636,7 +1636,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1648,7 +1648,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.OBJECT_IDContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1657,13 +1657,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.OBJECT_NAMEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1672,13 +1672,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.OBJECT_SCHEMA_NAMEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1687,13 +1687,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.OBJECTPROPERTYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1702,13 +1702,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.OBJECTPROPERTYEXContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1717,13 +1717,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.PARSENAMEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1732,7 +1732,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1756,7 +1756,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.STATS_DATEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1765,7 +1765,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1783,7 +1783,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.TYPEPROPERTYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1792,7 +1792,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1810,7 +1810,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.CHARINDEXContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1819,13 +1819,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.CONCATContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1834,13 +1834,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.CONCAT_WSContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1849,13 +1849,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DIFFERENCEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1864,13 +1864,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.FORMATContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1879,13 +1879,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.LEFTContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1894,7 +1894,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1924,7 +1924,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.PATINDEXContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1933,13 +1933,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.QUOTENAMEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1948,13 +1948,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.REPLACEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1963,13 +1963,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.REPLICATEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1978,7 +1978,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1990,7 +1990,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.RIGHTContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1999,7 +1999,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2023,7 +2023,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.STRContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2032,13 +2032,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.STRINGAGGContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2047,13 +2047,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.STRING_ESCAPEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2062,13 +2062,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.STUFFContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2077,13 +2077,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.SUBSTRINGContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2092,13 +2092,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.TRANSLATEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2107,13 +2107,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.TRIMContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2122,7 +2122,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2140,7 +2140,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.BINARY_CHECKSUMContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2149,13 +2149,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.CHECKSUMContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2164,11 +2164,11 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.COMPRESSContext:
 		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
@@ -2182,7 +2182,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.FORMATMESSAGEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2191,13 +2191,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.ISNULLContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2206,7 +2206,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2230,7 +2230,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.CONVERTContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2239,13 +2239,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.COALESCEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
@@ -2254,7 +2254,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2302,7 +2302,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.DATE_BUCKETContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2311,13 +2311,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATEADDContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2326,13 +2326,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATEDIFFContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2341,13 +2341,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATEDIFF_BIGContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2356,13 +2356,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATEFROMPARTSContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2371,7 +2371,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2389,7 +2389,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.DATETIME2FROMPARTSContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2398,13 +2398,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATETIMEFROMPARTSContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2413,13 +2413,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATETIMEOFFSETFROMPARTSContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2428,7 +2428,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2446,7 +2446,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.EOMONTHContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2455,7 +2455,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2473,7 +2473,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.SMALLDATETIMEFROMPARTSContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2482,13 +2482,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.SWITCHOFFSETContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2497,13 +2497,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.TIMEFROMPARTSContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2512,13 +2512,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.TODATETIMEOFFSETContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2527,7 +2527,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2539,7 +2539,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.NULLIFContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2548,13 +2548,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.PARSEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2563,13 +2563,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.IIFContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2578,13 +2578,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.ISJSONContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2593,13 +2593,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.JSON_ARRAYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
@@ -2608,13 +2608,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.JSON_VALUEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2623,13 +2623,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.JSON_QUERYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2638,13 +2638,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.JSON_MODIFYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2653,13 +2653,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.JSON_PATH_EXISTSContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2668,7 +2668,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2698,7 +2698,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.ATN2Context:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2707,7 +2707,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2749,7 +2749,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.LOGContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2758,7 +2758,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2770,7 +2770,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.POWERContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2779,7 +2779,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2797,7 +2797,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.ROUNDContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2806,7 +2806,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2866,7 +2866,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.CERTPRIVATEKEYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2875,7 +2875,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2893,7 +2893,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.HAS_PERMS_BY_NAMEContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2902,7 +2902,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2914,7 +2914,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.IS_ROLEMEMBERContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2923,13 +2923,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.IS_SRVROLEMEMBERContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2938,13 +2938,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.LOGINPROPERTYContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2953,13 +2953,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.PERMISSIONSContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2968,7 +2968,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -2980,7 +2980,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.PWDCOMPAREContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2989,7 +2989,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -3013,7 +3013,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.SUSER_SIDContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -3022,7 +3022,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -3040,7 +3040,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.SCALAR_FUNCTIONContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
@@ -3049,7 +3049,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -3061,15 +3061,15 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Scalar_function_nameContext:
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.Freetext_functionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if allFullColumnName := ctx.AllFull_column_name(); len(allFullColumnName) > 0 {
 			for _, fullColumnName := range allFullColumnName {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(fullColumnName)
@@ -3079,13 +3079,13 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
-			finalLevel := defaultMaskingLevel
+			finalLevel := base.DefaultMaskingLevel
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 				if err != nil {
@@ -3094,7 +3094,7 @@ func (extractor *TSQLSensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
