@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -50,11 +51,11 @@ func TestMySQLValidateForEditor(t *testing.T) {
 func TestExtractMySQLResourceList(t *testing.T) {
 	tests := []struct {
 		statement string
-		expected  []SchemaResource
+		expected  []base.SchemaResource
 	}{
 		{
 			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
-			expected: []SchemaResource{
+			expected: []base.SchemaResource{
 				{
 					Database: "db",
 					Table:    "t1",
@@ -67,7 +68,7 @@ func TestExtractMySQLResourceList(t *testing.T) {
 		},
 		{
 			statement: "SELECT * FROM db1.t1 JOIN db2.t2 ON t1.c1 = t2.c1;",
-			expected: []SchemaResource{
+			expected: []base.SchemaResource{
 				{
 					Database: "db1",
 					Table:    "t1",
@@ -80,7 +81,7 @@ func TestExtractMySQLResourceList(t *testing.T) {
 		},
 		{
 			statement: "SELECT a > (select max(a) from t1) FROM t2;",
-			expected: []SchemaResource{
+			expected: []base.SchemaResource{
 				{
 					Database: "db",
 					Table:    "t1",
@@ -103,11 +104,11 @@ func TestExtractMySQLResourceList(t *testing.T) {
 func TestExtractMySQLChangedResources(t *testing.T) {
 	tests := []struct {
 		statement string
-		expected  []SchemaResource
+		expected  []base.SchemaResource
 	}{
 		{
 			statement: "CREATE TABLE t1 (c1 INT);",
-			expected: []SchemaResource{
+			expected: []base.SchemaResource{
 				{
 					Database: "db",
 					Table:    "t1",
@@ -116,7 +117,7 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 		},
 		{
 			statement: "DROP TABLE t1;",
-			expected: []SchemaResource{
+			expected: []base.SchemaResource{
 				{
 					Database: "db",
 					Table:    "t1",
@@ -125,7 +126,7 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 		},
 		{
 			statement: "ALTER TABLE t1 ADD COLUMN c1 INT;",
-			expected: []SchemaResource{
+			expected: []base.SchemaResource{
 				{
 					Database: "db",
 					Table:    "t1",
@@ -134,7 +135,7 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 		},
 		{
 			statement: "RENAME TABLE t1 TO t2;",
-			expected: []SchemaResource{
+			expected: []base.SchemaResource{
 				{
 					Database: "db",
 					Table:    "t1",

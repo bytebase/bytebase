@@ -19,6 +19,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store"
@@ -353,7 +354,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 		}, nil
 	}
 
-	var changedResources []parser.SchemaResource
+	var changedResources []base.SchemaResource
 
 	for _, stmt := range singleSQLs {
 		if stmt.Empty || stmt.Text == "" {
@@ -383,7 +384,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 	}, nil
 }
 
-func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) ([]parser.SchemaResource, error) {
+func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) ([]base.SchemaResource, error) {
 	return parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, statement)
 }
 
@@ -411,7 +412,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 
 	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
-	var changedResources []parser.SchemaResource
+	var changedResources []base.SchemaResource
 
 	p := tidbparser.New()
 	p.EnableWindowFunc(true)
@@ -486,7 +487,7 @@ func isDML(tp string) bool {
 	}
 }
 
-func convertToChangedResources(resources []parser.SchemaResource) *storepb.ChangedResources {
+func convertToChangedResources(resources []base.SchemaResource) *storepb.ChangedResources {
 	meta := &storepb.ChangedResources{}
 	// resources is ordered by (db, schema, table)
 	for _, resource := range resources {
@@ -503,7 +504,7 @@ func convertToChangedResources(resources []parser.SchemaResource) *storepb.Chang
 	return meta
 }
 
-func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]parser.SchemaResource, error) {
+func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]base.SchemaResource, error) {
 	return parser.ExtractChangedResources(parser.MySQL, currentDatabase, "" /* currentSchema */, statement)
 }
 
@@ -528,7 +529,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 
 	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
-	var changedResources []parser.SchemaResource
+	var changedResources []base.SchemaResource
 
 	for _, stmt := range stmts {
 		sqlType, resources := getStatementTypeAndResourcesFromAstNode(database, "public", stmt)
@@ -571,7 +572,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 	}, nil
 }
 
-func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]parser.SchemaResource, error) {
+func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]base.SchemaResource, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
@@ -589,7 +590,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 					if err != nil {
 						return nil, err
 					}
-					resource := parser.SchemaResource{
+					resource := base.SchemaResource{
 						Database: database,
 						Schema:   schemaName,
 						Table:    tableName,
@@ -597,12 +598,12 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 					if resource.Schema == "" {
 						resource.Schema = defaultSchema
 					}
-					return []parser.SchemaResource{resource}, nil
+					return []base.SchemaResource{resource}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
 			case pgquery.ObjectType_OBJECT_TABCONSTRAINT:
-				resource := parser.SchemaResource{
+				resource := base.SchemaResource{
 					Database: database,
 					Schema:   defaultSchema,
 				}
@@ -616,12 +617,12 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 						resource.Schema = schemaName
 					}
 					resource.Table = tableName
-					return []parser.SchemaResource{resource}, nil
+					return []base.SchemaResource{resource}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
 			case pgquery.ObjectType_OBJECT_TABLE:
-				resource := parser.SchemaResource{
+				resource := base.SchemaResource{
 					Database: database,
 					Schema:   defaultSchema,
 				}
@@ -635,7 +636,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 						resource.Schema = schemaName
 					}
 					resource.Table = tableName
-					return []parser.SchemaResource{resource}, nil
+					return []base.SchemaResource{resource}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
@@ -703,8 +704,8 @@ func convertColumnName(node *pgquery.Node_List) (string, string, string, error) 
 	}
 }
 
-func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (string, []parser.SchemaResource) {
-	var result []parser.SchemaResource
+func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (string, []base.SchemaResource) {
+	var result []base.SchemaResource
 	switch n := node.(type) {
 	// DDL
 
@@ -714,7 +715,7 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 	case *tidbast.CreateIndexStmt:
 		return "CREATE_INDEX", result
 	case *tidbast.CreateTableStmt:
-		resource := parser.SchemaResource{
+		resource := base.SchemaResource{
 			Database: n.Table.Schema.L,
 			Table:    n.Table.Name.L,
 		}
@@ -735,7 +736,7 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 		return "DROP_INDEX", result
 	case *tidbast.DropTableStmt:
 		for _, table := range n.Tables {
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: table.Schema.L,
 				Table:    table.Name.L,
 			}
@@ -754,7 +755,7 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 
 	// ALTER
 	case *tidbast.AlterTableStmt:
-		resource := parser.SchemaResource{
+		resource := base.SchemaResource{
 			Database: n.Table.Schema.L,
 			Table:    n.Table.Name.L,
 		}
@@ -775,7 +776,7 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 	// RENAME
 	case *tidbast.RenameTableStmt:
 		for _, pair := range n.TableToTables {
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: pair.OldTable.Schema.L,
 				Table:    pair.OldTable.Name.L,
 			}
@@ -784,7 +785,7 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 			}
 			result = append(result, resource)
 
-			newResource := parser.SchemaResource{
+			newResource := base.SchemaResource{
 				Database: pair.NewTable.Schema.L,
 				Table:    pair.NewTable.Name.L,
 			}
@@ -810,8 +811,8 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 	return "UNKNOWN", result
 }
 
-func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []parser.SchemaResource) {
-	result := []parser.SchemaResource{}
+func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []base.SchemaResource) {
+	result := []base.SchemaResource{}
 	switch node := node.(type) {
 	// DDL
 
@@ -823,7 +824,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 		case ast.TableTypeView:
 			return "CREATE_VIEW", result
 		case ast.TableTypeBaseTable:
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: node.Name.Database,
 				Schema:   node.Name.Schema,
 				Table:    node.Name.Name,
@@ -875,7 +876,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 		return "DROP_SEQUENCE", result
 	case *ast.DropTableStmt:
 		for _, table := range node.TableList {
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: table.Database,
 				Schema:   table.Schema,
 				Table:    table.Name,
@@ -905,7 +906,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 		case ast.TableTypeView:
 			return "ALTER_VIEW", result
 		case ast.TableTypeBaseTable:
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: node.Table.Database,
 				Schema:   node.Table.Schema,
 				Table:    node.Table.Name,
@@ -941,7 +942,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 		case ast.TableTypeView:
 			return "RENAME_VIEW", result
 		case ast.TableTypeBaseTable:
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: node.Table.Database,
 				Schema:   node.Table.Schema,
 				Table:    node.Table.Name,
@@ -954,7 +955,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			}
 			result = append(result, resource)
 
-			newResource := parser.SchemaResource{
+			newResource := base.SchemaResource{
 				Database: resource.Database,
 				Schema:   resource.Schema,
 				Table:    node.NewName,

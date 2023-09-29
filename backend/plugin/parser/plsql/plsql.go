@@ -67,3 +67,59 @@ func IsOracleKeyword(text string) bool {
 
 	return oracleKeywords[strings.ToUpper(text)] || oracleReservedWords[strings.ToUpper(text)]
 }
+
+// NormalizeConstraintName returns the normalized constraint name from the given context.
+func NormalizeConstraintName(constraintName parser.IConstraint_nameContext) (string, string) {
+	if constraintName == nil {
+		return "", ""
+	}
+
+	if constraintName.Id_expression(0) != nil {
+		return NormalizeIdentifierContext(constraintName.Identifier()),
+			NormalizeIDExpression(constraintName.Id_expression(0))
+	}
+
+	return "", NormalizeIdentifierContext(constraintName.Identifier())
+}
+
+// NormalizeIdentifierContext returns the normalized identifier from the given context.
+func NormalizeIdentifierContext(identifier parser.IIdentifierContext) string {
+	if identifier == nil {
+		return ""
+	}
+
+	return NormalizeIDExpression(identifier.Id_expression())
+}
+
+// NormalizeIDExpression returns the normalized identifier from the given context.
+func NormalizeIDExpression(idExpression parser.IId_expressionContext) string {
+	if idExpression == nil {
+		return ""
+	}
+
+	regularID := idExpression.Regular_id()
+	if regularID != nil {
+		return strings.ToUpper(regularID.GetText())
+	}
+
+	delimitedID := idExpression.DELIMITED_ID()
+	if delimitedID != nil {
+		return strings.Trim(delimitedID.GetText(), "\"")
+	}
+
+	return ""
+}
+
+// NormalizeIndexName returns the normalized index name from the given context.
+func NormalizeIndexName(indexName parser.IIndex_nameContext) (string, string) {
+	if indexName == nil {
+		return "", ""
+	}
+
+	if indexName.Id_expression() != nil {
+		return NormalizeIdentifierContext(indexName.Identifier()),
+			NormalizeIDExpression(indexName.Id_expression())
+	}
+
+	return "", NormalizeIdentifierContext(indexName.Identifier())
+}

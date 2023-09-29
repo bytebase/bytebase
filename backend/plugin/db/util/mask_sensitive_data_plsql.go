@@ -10,7 +10,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -78,7 +77,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractContext(ctx antlr.ParserRu
 
 func (extractor *sensitiveFieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
 	// Deal with recursive CTE first.
-	tableName := parser.PLSQLNormalizeIdentifierContext(ctx.Query_name().Identifier())
+	tableName := plsqlparser.NormalizeIdentifierContext(ctx.Query_name().Identifier())
 
 	if yes, lastPart := extractor.plsqlIsRecursiveCTE(ctx); yes {
 		subquery := ctx.Subquery()
@@ -212,7 +211,7 @@ func (extractor *sensitiveFieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.
 		}
 	}
 
-	tableName := parser.PLSQLNormalizeIdentifierContext(ctx.Query_name().Identifier())
+	tableName := plsqlparser.NormalizeIdentifierContext(ctx.Query_name().Identifier())
 
 	result := db.TableSchema{
 		Name:       tableName,
@@ -425,7 +424,7 @@ func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx 
 		}
 		return columnName, extractor.plsqlCheckFieldMaskingLevel(schemaName, tableName, columnName), nil
 	case plsql.IIdentifierContext:
-		id := parser.PLSQLNormalizeIdentifierContext(rule)
+		id := plsqlparser.NormalizeIdentifierContext(rule)
 		return id, extractor.plsqlCheckFieldMaskingLevel("", "", id), nil
 	case plsql.IConstantContext:
 		list := rule.AllQuoted_string()
@@ -445,7 +444,7 @@ func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx 
 		}
 		var list []string
 		for _, item := range rule.AllId_expression() {
-			list = append(list, parser.PLSQLNormalizeIDExpression(item))
+			list = append(list, plsqlparser.NormalizeIDExpression(item))
 		}
 		switch len(list) {
 		case 1:
@@ -473,7 +472,7 @@ func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx 
 		// This case is for column names, such as root.a.b
 		var list []string
 		for _, item := range rule.AllId_expression() {
-			list = append(list, parser.PLSQLNormalizeIDExpression(item))
+			list = append(list, plsqlparser.NormalizeIDExpression(item))
 		}
 		switch len(list) {
 		case 1:
@@ -884,7 +883,7 @@ func (extractor *sensitiveFieldExtractor) plsqlEvalMaskingLevelInExpression(ctx 
 		// handled as column name
 		var str []string
 		for _, item := range rule.AllId_expression() {
-			str = append(str, parser.PLSQLNormalizeIDExpression(item))
+			str = append(str, plsqlparser.NormalizeIDExpression(item))
 		}
 		switch len(str) {
 		case 1:
@@ -1225,9 +1224,9 @@ func (extractor *sensitiveFieldExtractor) plsqlFindTableSchema(schemaName, table
 
 func plsqlNormalizeColumnName(currentSchema string, ctx plsql.IColumn_nameContext) (string, string, string, error) {
 	var buf []string
-	buf = append(buf, parser.PLSQLNormalizeIdentifierContext(ctx.Identifier()))
+	buf = append(buf, plsqlparser.NormalizeIdentifierContext(ctx.Identifier()))
 	for _, idExpression := range ctx.AllId_expression() {
-		buf = append(buf, parser.PLSQLNormalizeIDExpression(idExpression))
+		buf = append(buf, plsqlparser.NormalizeIDExpression(idExpression))
 	}
 	switch len(buf) {
 	case 1:
@@ -1247,7 +1246,7 @@ func normalizeColumnAlias(ctx plsql.IColumn_aliasContext) string {
 	}
 
 	if ctx.Identifier() != nil {
-		return parser.PLSQLNormalizeIdentifierContext(ctx.Identifier())
+		return plsqlparser.NormalizeIdentifierContext(ctx.Identifier())
 	}
 
 	if ctx.Quoted_string() != nil {
@@ -1263,7 +1262,7 @@ func normalizeTableAlias(ctx plsql.ITable_aliasContext) string {
 	}
 
 	if ctx.Identifier() != nil {
-		return parser.PLSQLNormalizeIdentifierContext(ctx.Identifier())
+		return plsqlparser.NormalizeIdentifierContext(ctx.Identifier())
 	}
 
 	if ctx.Quoted_string() != nil {
@@ -1280,13 +1279,13 @@ func normalizeTableViewName(currentSchema string, ctx plsql.ITableview_nameConte
 		return "", ""
 	}
 
-	identifier := parser.PLSQLNormalizeIdentifierContext(ctx.Identifier())
+	identifier := plsqlparser.NormalizeIdentifierContext(ctx.Identifier())
 
 	if ctx.Id_expression() == nil {
 		return currentSchema, identifier
 	}
 
-	idExpression := parser.PLSQLNormalizeIDExpression(ctx.Id_expression())
+	idExpression := plsqlparser.NormalizeIDExpression(ctx.Id_expression())
 
 	return identifier, idExpression
 }

@@ -4,16 +4,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestExtractSnowflakeNormalizeResourceListFromSelectStatement(t *testing.T) {
 	tests := []struct {
 		statement string
-		want      []SchemaResource
+		want      []base.SchemaResource
 	}{
 		{
 			statement: `SELECT * FROM T1;SELECT * FROM T2;`,
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "db",
 					Schema:   "PUBLIC",
@@ -28,7 +30,7 @@ func TestExtractSnowflakeNormalizeResourceListFromSelectStatement(t *testing.T) 
 		},
 		{
 			statement: `SELECT * FROM t1;SELECT * FROM T1;`,
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "db",
 					Schema:   "PUBLIC",
@@ -38,7 +40,7 @@ func TestExtractSnowflakeNormalizeResourceListFromSelectStatement(t *testing.T) 
 		},
 		{
 			statement: `SELECT * FROM t1;SELECT * FROM t2;`,
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "db",
 					Schema:   "PUBLIC",
@@ -53,7 +55,7 @@ func TestExtractSnowflakeNormalizeResourceListFromSelectStatement(t *testing.T) 
 		},
 		{
 			statement: "SELECT * FROM SCHEMA_1.T1 JOIN SCHEMA_2.T2 ON T1.C1 = T2.C2;",
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "db",
 					Schema:   "SCHEMA_1",
@@ -68,7 +70,7 @@ func TestExtractSnowflakeNormalizeResourceListFromSelectStatement(t *testing.T) 
 		},
 		{
 			statement: "SELECT * FROM DB_1.SCHEMA_1.T1 JOIN DB_2.SCHEMA_2.T2 ON T1.C1 = T2.C2;",
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "DB_1",
 					Schema:   "SCHEMA_1",
@@ -83,7 +85,7 @@ func TestExtractSnowflakeNormalizeResourceListFromSelectStatement(t *testing.T) 
 		},
 		{
 			statement: "SELECT A > (SELECT MAX(A) FROM T1) FROM T2;",
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "db",
 					Schema:   "PUBLIC",
