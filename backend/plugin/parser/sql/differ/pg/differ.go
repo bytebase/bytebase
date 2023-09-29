@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
@@ -1181,12 +1182,12 @@ func (diff *diffNode) addEnumValue(oldType *ast.CreateTypeStmt, newType *ast.Cre
 	oldEnum, ok := oldType.Type.(*ast.EnumTypeDef)
 	if !ok {
 		// never catch
-		return parser.NewConvertErrorf("expected EnumTypeDef but found %t", oldType.Type)
+		return pgparser.NewConvertErrorf("expected EnumTypeDef but found %t", oldType.Type)
 	}
 	newEnum, ok := newType.Type.(*ast.EnumTypeDef)
 	if !ok {
 		// never catch
-		return parser.NewConvertErrorf("expected EnumTypeDef but found %t", newType.Type)
+		return pgparser.NewConvertErrorf("expected EnumTypeDef but found %t", newType.Type)
 	}
 
 	// oldEnum has empty label list, so append newEnum labels.

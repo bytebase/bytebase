@@ -1,4 +1,4 @@
-package parser
+package pg
 
 import "github.com/pkg/errors"
 
