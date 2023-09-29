@@ -18,8 +18,8 @@ import (
 
 type SnowSensitiveFieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
-	currentDatabase    string
-	schemaInfo         *db.SensitiveSchemaInfo
+	CurrentDatabase    string
+	SchemaInfo         *db.SensitiveSchemaInfo
 	cteOuterSchemaInfo []db.TableSchema
 
 	// SELECT statement specific field.
@@ -366,7 +366,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		return fieldInfo.Name, fieldInfo.MaskingLevel, nil
 	case *parser.Object_nameContext:
-		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, extractor.currentDatabase, "PUBLIC")
+		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, extractor.CurrentDatabase, "PUBLIC")
 		fieldInfo, err := extractor.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
@@ -935,7 +935,7 @@ func (extractor *SnowSensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjec
 	var result []base.FieldInfo
 
 	if objectName := ctx.Object_name(); objectName != nil {
-		normalizedDatabaseName, tableSchema, err := extractor.snowsqlFindTableSchema(objectName, extractor.currentDatabase, "PUBLIC")
+		normalizedDatabaseName, tableSchema, err := extractor.snowsqlFindTableSchema(objectName, extractor.CurrentDatabase, "PUBLIC")
 		if err != nil {
 			return nil, err
 		}
@@ -1084,7 +1084,7 @@ func (extractor *SnowSensitiveFieldExtractor) snowsqlFindTableSchema(objectName 
 		}
 	}
 	normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(objectName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName)
-	for _, databaseSchema := range extractor.schemaInfo.DatabaseList {
+	for _, databaseSchema := range extractor.SchemaInfo.DatabaseList {
 		if normalizedDatabaseName != "" && normalizedDatabaseName != databaseSchema.Name {
 			continue
 		}

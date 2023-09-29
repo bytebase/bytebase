@@ -45,7 +45,7 @@ type PGSensitiveFieldExtractor struct {
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *PGSensitiveFieldExtractor) extractPostgreSQLSensitiveField(statement string) ([]db.SensitiveField, error) {
+func (extractor *PGSensitiveFieldExtractor) ExtractPostgreSQLSensitiveField(statement string) ([]db.SensitiveField, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err

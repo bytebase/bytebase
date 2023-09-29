@@ -31,7 +31,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		result, err := extractor.extractTiDBSensitiveField(statement)
+		result, err := extractor.ExtractTiDBSensitiveField(statement)
 		if err != nil {
 			return nil, err
 		}
@@ -52,7 +52,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			currentDatabase: currentDatabase,
 			schemaInfo:      schemaInfo,
 		}
-		result, err := extractor.extractMySQLSensitiveField(statement)
+		result, err := extractor.ExtractMySQLSensitiveField(statement)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +61,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		extractor := &PGSensitiveFieldExtractor{
 			schemaInfo: schemaInfo,
 		}
-		result, err := extractor.extractPostgreSQLSensitiveField(statement)
+		result, err := extractor.ExtractPostgreSQLSensitiveField(statement)
 		if err != nil {
 			tableNotFound := regexp.MustCompile("^Table \"(.*)\\.(.*)\" not found$")
 			content := tableNotFound.FindStringSubmatch(err.Error())
@@ -95,8 +95,8 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		return result, nil
 	case db.Snowflake:
 		extractor := &SnowSensitiveFieldExtractor{
-			currentDatabase: currentDatabase,
-			schemaInfo:      schemaInfo,
+			CurrentDatabase: currentDatabase,
+			SchemaInfo:      schemaInfo,
 		}
 		result, err := extractor.extractSnowsqlSensitiveFields(statement)
 		if err != nil {
@@ -105,10 +105,10 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		return result, nil
 	case db.MSSQL:
 		extractor := &TSQLSensitiveFieldExtractor{
-			currentDatabase: currentDatabase,
-			schemaInfo:      schemaInfo,
+			CurrentDatabase: currentDatabase,
+			SchemaInfo:      schemaInfo,
 		}
-		result, err := extractor.extractTSqlSensitiveFields(statement)
+		result, err := extractor.ExtractTSqlSensitiveFields(statement)
 		if err != nil {
 			return nil, err
 		}

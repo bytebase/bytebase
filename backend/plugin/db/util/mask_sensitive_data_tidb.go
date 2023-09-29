@@ -27,7 +27,7 @@ type TiDBSensitiveFieldExtractor struct {
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractTiDBSensitiveField(statement string) ([]db.SensitiveField, error) {
+func (extractor *TiDBSensitiveFieldExtractor) ExtractTiDBSensitiveField(statement string) ([]db.SensitiveField, error) {
 	p := parser.New()
 
 	// To support MySQL8 window function syntax.
@@ -613,7 +613,7 @@ func (extractor *TiDBSensitiveFieldExtractor) buildTableSchemaForView(viewName s
 		currentDatabase: extractor.currentDatabase,
 		schemaInfo:      extractor.schemaInfo,
 	}
-	fields, err := newExtractor.extractTiDBSensitiveField(definition)
+	fields, err := newExtractor.ExtractTiDBSensitiveField(definition)
 	if err != nil {
 		return db.TableSchema{}, err
 	}
