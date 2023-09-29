@@ -25,6 +25,7 @@ import (
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
 	// register pg parser.
@@ -714,7 +715,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 		node.SetText(nil, item.Text)
 		node.SetOriginTextPosition(item.LastLine)
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
-			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
+			if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
 				return nil, append(adviceList, Advice{
 					Status:  Error,
 					Code:    Internal,

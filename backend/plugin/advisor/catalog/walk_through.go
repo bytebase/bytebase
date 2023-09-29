@@ -16,7 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	mysqlbbparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
 // WalkThroughErrorType is the type of WalkThroughError.
@@ -1354,7 +1354,7 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 					node.SetText(nil, text)
 					node.SetOriginTextPosition(lastLine)
 					if n, ok := node.(*tidbast.CreateTableStmt); ok {
-						if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
+						if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
 							return nil, NewParseError(err.Error())
 						}
 					}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
@@ -22,7 +23,7 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			res.SetLastLine(statement.LastLine)
 			switch n := res.(type) {
 			case *ast.CreateTableStmt:
-				err = parser.SetLineForCreateTableStmt(parser.Postgres, n)
+				err = setLineForCreateTableStmt(n)
 			case *ast.AlterTableStmt:
 				for _, item := range n.AlterItemList {
 					item.SetLastLine(n.LastLine())
@@ -797,6 +798,13 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 	}
 
 	return nil, nil
+}
+
+// setLineForCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
+func setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
+	t := tokenizer.NewTokenizer(node.Text())
+	firstLine := node.LastLine() - strings.Count(node.Text(), "\n")
+	return t.SetLineForPGCreateTableStmt(node, firstLine)
 }
 
 func convertEnumLabelList(list []*pgquery.Node) ([]string, error) {

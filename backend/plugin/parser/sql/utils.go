@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strings"
 
-	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
 
@@ -17,7 +16,6 @@ import (
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
@@ -234,30 +232,6 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	}
 
 	return result, nil
-}
-
-// SetLineForCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
-func SetLineForCreateTableStmt(engineType EngineType, node *ast.CreateTableStmt) error {
-	switch engineType {
-	case Postgres:
-		t := tokenizer.NewTokenizer(node.Text())
-		firstLine := node.LastLine() - strings.Count(node.Text(), "\n")
-		return t.SetLineForPGCreateTableStmt(node, firstLine)
-	default:
-		return errors.Errorf("engine type is not supported: %s", engineType)
-	}
-}
-
-// SetLineForMySQLCreateTableStmt sets the line for columns and table constraints in MySQL CREATE TABLE statments.
-// This is a temporary function. Because we do not convert tidb AST to our AST. So we have to implement this.
-// TODO(rebelice): remove it.
-func SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
-	// exclude CREATE TABLE ... AS and CREATE TABLE ... LIKE statement.
-	if len(node.Cols) == 0 {
-		return nil
-	}
-	firstLine := node.OriginTextPosition() - strings.Count(node.Text(), "\n")
-	return tokenizer.NewTokenizer(node.Text()).SetLineForMySQLCreateTableStmt(node, firstLine)
 }
 
 // ExtractTiDBUnsupportedStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
