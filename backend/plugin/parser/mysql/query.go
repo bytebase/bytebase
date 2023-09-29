@@ -61,7 +61,7 @@ func (l *mysqlValidateForEditorListener) EnterExplainableStatement(ctx *parser.E
 	}
 }
 
-func ExtractMySQLChangedResources(currentDatabase string, statement string) ([]base.SchemaResource, error) {
+func ExtractChangedResources(currentDatabase string, _, statement string) ([]base.SchemaResource, error) {
 	treeList, err := ParseMySQL(statement)
 	if err != nil {
 		return nil, err
