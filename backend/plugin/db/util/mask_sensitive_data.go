@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
@@ -52,7 +53,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 				return nil, errors.Errorf("MySQL schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
 			}
 		}
-		extractor := &MySQLSensitiveFieldExtractor{
+		extractor := &mysqlparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
 		}
