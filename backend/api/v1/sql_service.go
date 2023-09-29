@@ -2049,7 +2049,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
-		if err := parser.PLSQLValidateForEditor(tree); err != nil {
+		if err := plsqlparser.ValidateForEditor(tree); err != nil {
 			return nonSelectSQLError.Err()
 		}
 	case db.MongoDB, db.Redis:

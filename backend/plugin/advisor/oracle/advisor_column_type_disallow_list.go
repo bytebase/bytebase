@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -81,7 +81,7 @@ func (l *columnTypeDisallowListListener) isDisallowType(tp parser.IDatatypeConte
 		return false
 	}
 	for _, disallowType := range l.disallowList {
-		if equivalent, err := bbparser.PLSQLEquivalentType(tp, disallowType); err == nil && equivalent {
+		if equivalent, err := plsqlparser.EquivalentType(tp, disallowType); err == nil && equivalent {
 			return true
 		}
 	}
