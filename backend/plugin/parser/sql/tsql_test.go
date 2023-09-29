@@ -4,16 +4,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestExtractMSSQLNormalizedResourceListFromSelectStatement(t *testing.T) {
 	tests := []struct {
 		statement string
-		want      []SchemaResource
+		want      []base.SchemaResource
 	}{
 		{
 			statement: `SELECT * FROM t1;SELECT * FROM t2;`,
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "MyDB",
 					Schema:   "dbo",
@@ -28,7 +30,7 @@ func TestExtractMSSQLNormalizedResourceListFromSelectStatement(t *testing.T) {
 		},
 		{
 			statement: `SELECT * FROM myTable;SELECT * FROM MyTable;`,
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "MyDB",
 					Schema:   "dbo",
@@ -38,7 +40,7 @@ func TestExtractMSSQLNormalizedResourceListFromSelectStatement(t *testing.T) {
 		},
 		{
 			statement: `SELECT * FROM TableOne JOIN TableTwo ON TableOne.ID = TableTwo.ID;`,
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "MyDB",
 					Schema:   "dbo",
@@ -53,7 +55,7 @@ func TestExtractMSSQLNormalizedResourceListFromSelectStatement(t *testing.T) {
 		},
 		{
 			statement: `SELECT * FROM DatabaseA.dbo.[TableOne] JOIN DatabaseB.dbo.TableTwo ON DatabaseA.dbo.TableOne.ID = DatabaseB.dbo.TableTwo.ID;`,
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "databasea",
 					Schema:   "dbo",
@@ -68,7 +70,7 @@ func TestExtractMSSQLNormalizedResourceListFromSelectStatement(t *testing.T) {
 		},
 		{
 			statement: `SELECT (SELECT MAX(b) FROM t1 WHERE c > 0);`,
-			want: []SchemaResource{
+			want: []base.SchemaResource{
 				{
 					Database: "MyDB",
 					Schema:   "dbo",

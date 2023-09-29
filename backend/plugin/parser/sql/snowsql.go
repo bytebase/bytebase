@@ -8,6 +8,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -16,7 +17,7 @@ type snowsqlResourceExtractListener struct {
 
 	currentDatabase string
 	currentSchema   string
-	resourceMap     map[string]SchemaResource
+	resourceMap     map[string]base.SchemaResource
 }
 
 func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refContext) {
@@ -54,7 +55,7 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 	parts = append(parts, table)
 
 	normalizedObjectName := strings.Join(parts, ".")
-	l.resourceMap[normalizedObjectName] = SchemaResource{
+	l.resourceMap[normalizedObjectName] = base.SchemaResource{
 		Database: database,
 		Schema:   schema,
 		Table:    table,
@@ -62,7 +63,7 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 }
 
 // extractSnowflakeNormalizeResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
-func extractSnowflakeNormalizeResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]SchemaResource, error) {
+func extractSnowflakeNormalizeResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]base.SchemaResource, error) {
 	tree, err := snowparser.ParseSnowSQL(selectStatement)
 	if err != nil {
 		return nil, err
@@ -71,10 +72,10 @@ func extractSnowflakeNormalizeResourceListFromSelectStatement(currentNormalizedD
 	l := &snowsqlResourceExtractListener{
 		currentDatabase: currentNormalizedDatabase,
 		currentSchema:   currentNormalizedSchema,
-		resourceMap:     make(map[string]SchemaResource),
+		resourceMap:     make(map[string]base.SchemaResource),
 	}
 
-	var result []SchemaResource
+	var result []base.SchemaResource
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
 	for _, resource := range l.resourceMap {
 		result = append(result, resource)

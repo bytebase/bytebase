@@ -228,7 +228,7 @@ func buildConstraintMap(table *tableInfo) map[string]plsql.IRelational_propertyC
 			if constraint.Constraint_name() == nil {
 				continue
 			}
-			_, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
+			_, constraintName := plsqlparser.NormalizeConstraintName(constraint.Constraint_name())
 			if constraintName == "" {
 				continue
 			}
@@ -238,7 +238,7 @@ func buildConstraintMap(table *tableInfo) map[string]plsql.IRelational_propertyC
 			if constraint.Constraint_name() == nil {
 				continue
 			}
-			_, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
+			_, constraintName := plsqlparser.NormalizeConstraintName(constraint.Constraint_name())
 			if constraintName == "" {
 				continue
 			}
@@ -264,7 +264,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 			if constraint.Constraint_name() == nil {
 				continue
 			}
-			_, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
+			_, constraintName := plsqlparser.NormalizeConstraintName(constraint.Constraint_name())
 			if constraintName == "" {
 				continue
 			}
@@ -284,7 +284,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 			if constraint.Constraint_name() == nil {
 				continue
 			}
-			_, constraintName := parser.PLSQLNormalizeConstraintName(constraint.Constraint_name())
+			_, constraintName := plsqlparser.NormalizeConstraintName(constraint.Constraint_name())
 			if constraintName == "" {
 				continue
 			}
@@ -404,7 +404,7 @@ func buildColumnMap(table *tableInfo) map[string]plsql.IColumn_definitionContext
 		if item.Column_definition() == nil {
 			continue
 		}
-		columnName := parser.PLSQLNormalizeIdentifierContext(item.Column_definition().Column_name().Identifier())
+		columnName := plsqlparser.NormalizeIdentifierContext(item.Column_definition().Column_name().Identifier())
 		columnMap[columnName] = item.Column_definition()
 	}
 	return columnMap
@@ -425,7 +425,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) error {
 			continue
 		}
 
-		newColumnName := parser.PLSQLNormalizeIdentifierContext(item.Column_definition().Column_name().Identifier())
+		newColumnName := plsqlparser.NormalizeIdentifierContext(item.Column_definition().Column_name().Identifier())
 		oldColumn, ok := oldColumnMap[newColumnName]
 		if !ok {
 			addColumns = append(addColumns, item.Column_definition())
@@ -439,7 +439,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) error {
 		delete(oldColumnMap, newColumnName)
 	}
 	for _, column := range oldColumnMap {
-		dropColumns = append(dropColumns, parser.PLSQLNormalizeIdentifierContext(column.Column_name().Identifier()))
+		dropColumns = append(dropColumns, plsqlparser.NormalizeIdentifierContext(column.Column_name().Identifier()))
 	}
 
 	sort.Slice(dropColumns, func(i, j int) bool {
@@ -626,7 +626,7 @@ func (l *buildSchemaInfoListener) EnterCreate_table(ctx *plsql.Create_tableConte
 	}
 
 	if ctx.Schema_name() != nil {
-		schemaName := parser.PLSQLNormalizeIdentifierContext(ctx.Schema_name().Identifier())
+		schemaName := plsqlparser.NormalizeIdentifierContext(ctx.Schema_name().Identifier())
 		if l.schemaInfo.name == "" {
 			l.schemaInfo.name = schemaName
 		}
@@ -635,7 +635,7 @@ func (l *buildSchemaInfoListener) EnterCreate_table(ctx *plsql.Create_tableConte
 			return
 		}
 	}
-	tableName := parser.PLSQLNormalizeIdentifierContext(ctx.Table_name().Identifier())
+	tableName := plsqlparser.NormalizeIdentifierContext(ctx.Table_name().Identifier())
 	l.schemaInfo.tableMap[tableName] = &tableInfo{
 		id:          len(l.schemaInfo.tableMap),
 		name:        tableName,
@@ -655,7 +655,7 @@ func (l *buildSchemaInfoListener) EnterCreate_index(ctx *plsql.Create_indexConte
 		return
 	}
 
-	schema, index := parser.PLSQLNormalizeIndexName(ctx.Index_name())
+	schema, index := plsqlparser.NormalizeIndexName(ctx.Index_name())
 	if schema != "" && l.schemaInfo.name == "" {
 		l.schemaInfo.name = schema
 	}
