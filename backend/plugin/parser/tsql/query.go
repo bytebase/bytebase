@@ -10,6 +10,21 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+// ExtractMSSQLNormalizedDatabaseList extracts the database names.
+func ExtractMSSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
+	schemaPlaceholder := "dbo"
+	schemaResource, err := ExtractMSSQLNormalizedResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for _, resource := range schemaResource {
+		result = append(result, resource.Database)
+	}
+	return result, nil
+}
+
 // ExtractMSSQLNormalizedResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
 func ExtractMSSQLNormalizedResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]base.SchemaResource, error) {
 	tree, err := ParseTSQL(selectStatement)

@@ -4,7 +4,68 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+func TestExtractPostgresResourceList(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      []base.SchemaResource
+	}{
+		{
+			statement: `SELECT * FROM t;SELECT * FROM t1;`,
+			want: []base.SchemaResource{
+				{
+					Database: "db",
+					Schema:   "public",
+					Table:    "t",
+				},
+				{
+					Database: "db",
+					Schema:   "public",
+					Table:    "t1",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM schema1.t1 JOIN schema2.t2 ON t1.c1 = t2.c1;",
+			want: []base.SchemaResource{
+				{
+					Database: "db",
+					Schema:   "schema1",
+					Table:    "t1",
+				},
+				{
+					Database: "db",
+					Schema:   "schema2",
+					Table:    "t2",
+				},
+			},
+		},
+		{
+			statement: "SELECT a > (select max(a) from t1) FROM t2;",
+			want: []base.SchemaResource{
+				{
+					Database: "db",
+					Schema:   "public",
+					Table:    "t1",
+				},
+				{
+					Database: "db",
+					Schema:   "public",
+					Table:    "t2",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		res, err := ExtractPostgresResourceList("db", "public", test.statement)
+		require.NoError(t, err)
+		require.Equal(t, test.want, res)
+	}
+}
 
 type testData struct {
 	sql string

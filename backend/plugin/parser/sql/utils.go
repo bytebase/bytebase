@@ -240,40 +240,10 @@ func ExtractDatabaseList(engineType EngineType, statement string, fallbackNormal
 	case MySQL, TiDB, MariaDB, OceanBase:
 		return tidbparser.ExtractDatabaseList(statement)
 	case Snowflake:
-		return extractSnowSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
+		return snowparser.ExtractSnowSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
 	case MSSQL:
-		return extractMSSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
+		return tsqlparser.ExtractMSSQLNormalizedDatabaseList(statement, fallbackNormalizedDatabaseName)
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
-}
-
-func extractMSSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
-	schemaPlaceholder := "dbo"
-	schemaResource, err := tsqlparser.ExtractMSSQLNormalizedResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []string
-	for _, resource := range schemaResource {
-		result = append(result, resource.Database)
-	}
-	return result, nil
-}
-
-// extractSnowSQLNormalizedDatabaseList extracts all databases from statement, and normalizes the database name.
-// If the database name is not specified, it will fallback to the normalizedDatabaseName.
-func extractSnowSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
-	schemaPlaceholder := "schema_placeholder"
-	schemaResource, err := snowparser.ExtractSnowflakeNormalizeResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []string
-	for _, resource := range schemaResource {
-		result = append(result, resource.Database)
-	}
-	return result, nil
 }
