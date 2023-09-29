@@ -1,4 +1,4 @@
-package util
+package tidb
 
 import (
 	"cmp"
@@ -13,13 +13,12 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
-type TiDBSensitiveFieldExtractor struct {
+type SensitiveFieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
-	currentDatabase    string
-	schemaInfo         *db.SensitiveSchemaInfo
+	CurrentDatabase    string
+	SchemaInfo         *db.SensitiveSchemaInfo
 	outerSchemaInfo    []base.FieldInfo
 	cteOuterSchemaInfo []db.TableSchema
 
@@ -27,7 +26,7 @@ type TiDBSensitiveFieldExtractor struct {
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) ExtractTiDBSensitiveField(statement string) ([]db.SensitiveField, error) {
+func (extractor *SensitiveFieldExtractor) ExtractTiDBSensitiveField(statement string) ([]db.SensitiveField, error) {
 	p := parser.New()
 
 	// To support MySQL8 window function syntax.
@@ -67,7 +66,7 @@ func (extractor *TiDBSensitiveFieldExtractor) ExtractTiDBSensitiveField(statemen
 	return result, nil
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractNode(in tidbast.Node) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractNode(in tidbast.Node) ([]base.FieldInfo, error) {
 	if in == nil {
 		return nil, nil
 	}
@@ -110,7 +109,7 @@ func (extractor *TiDBSensitiveFieldExtractor) extractNode(in tidbast.Node) ([]ba
 	return nil, nil
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt) ([]base.FieldInfo, error) {
 	if node.With != nil {
 		cteOuterLength := len(extractor.cteOuterSchemaInfo)
 		defer func() {
@@ -150,7 +149,7 @@ func (extractor *TiDBSensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOpr
 
 func splitInitialAndRecursivePart(node *tidbast.SetOprStmt, selfName string) ([]tidbast.Node, []tidbast.Node) {
 	for i, selectStmt := range node.SelectList.Selects {
-		tableList := tidbparser.ExtractMySQLTableList(selectStmt, false /* asName */)
+		tableList := ExtractMySQLTableList(selectStmt, false /* asName */)
 		for _, table := range tableList {
 			if table.Schema.O == "" && table.Name.O == selfName {
 				return node.SelectList.Selects[:i], node.SelectList.Selects[i:]
@@ -160,7 +159,7 @@ func splitInitialAndRecursivePart(node *tidbast.SetOprStmt, selfName string) ([]
 	return node.SelectList.Selects, nil
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
+func (extractor *SensitiveFieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
 	cteInfo := db.TableSchema{Name: node.Name.O}
 
 	switch x := node.Query.Query.(type) {
@@ -269,7 +268,7 @@ func (extractor *TiDBSensitiveFieldExtractor) extractRecursiveCTE(node *tidbast.
 	}
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractNonRecursiveCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
+func (extractor *SensitiveFieldExtractor) extractNonRecursiveCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
 	fieldList, err := extractor.extractNode(node.Query.Query)
 	if err != nil {
 		return db.TableSchema{}, err
@@ -296,14 +295,14 @@ func (extractor *TiDBSensitiveFieldExtractor) extractNonRecursiveCTE(node *tidba
 	return result, nil
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
+func (extractor *SensitiveFieldExtractor) extractCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
 	if node.IsRecursive {
 		return extractor.extractRecursiveCTE(node)
 	}
 	return extractor.extractNonRecursiveCTE(node)
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt) ([]base.FieldInfo, error) {
 	if node.With != nil {
 		cteOuterLength := len(extractor.cteOuterSchemaInfo)
 		defer func() {
@@ -340,7 +339,7 @@ func (extractor *TiDBSensitiveFieldExtractor) extractSelect(node *tidbast.Select
 					result = append(result, fromFieldList...)
 				} else {
 					for _, fromField := range fromFieldList {
-						sameDatabase := (field.WildCard.Schema.O == fromField.Database || (field.WildCard.Schema.O == "" && fromField.Database == extractor.currentDatabase))
+						sameDatabase := (field.WildCard.Schema.O == fromField.Database || (field.WildCard.Schema.O == "" && fromField.Database == extractor.CurrentDatabase))
 						sameTable := (field.WildCard.Table.O == fromField.Table)
 						if sameDatabase && sameTable {
 							result = append(result, fromField)
@@ -380,7 +379,7 @@ func extractFieldName(in *tidbast.SelectField) string {
 	return ""
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) checkFieldMaskingLevel(databaseName string, tableName string, fieldName string) storepb.MaskingLevel {
+func (extractor *SensitiveFieldExtractor) checkFieldMaskingLevel(databaseName string, tableName string, fieldName string) storepb.MaskingLevel {
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
 	//
 	//  select (
@@ -396,7 +395,7 @@ func (extractor *TiDBSensitiveFieldExtractor) checkFieldMaskingLevel(databaseNam
 	// This is the reason we loop the slice in reversed order.
 	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
 		field := extractor.outerSchemaInfo[i]
-		sameDatabase := (databaseName == field.Database || (databaseName == "" && field.Database == extractor.currentDatabase))
+		sameDatabase := (databaseName == field.Database || (databaseName == "" && field.Database == extractor.CurrentDatabase))
 		sameTable := (tableName == field.Table || tableName == "")
 		sameField := (fieldName == field.Name)
 		if sameDatabase && sameTable && sameField {
@@ -405,7 +404,7 @@ func (extractor *TiDBSensitiveFieldExtractor) checkFieldMaskingLevel(databaseNam
 	}
 
 	for _, field := range extractor.fromFieldList {
-		sameDatabase := (databaseName == field.Database || (databaseName == "" && field.Database == extractor.currentDatabase))
+		sameDatabase := (databaseName == field.Database || (databaseName == "" && field.Database == extractor.CurrentDatabase))
 		sameTable := (tableName == field.Table || tableName == "")
 		sameField := (fieldName == field.Name)
 		if sameDatabase && sameTable && sameField {
@@ -416,7 +415,7 @@ func (extractor *TiDBSensitiveFieldExtractor) checkFieldMaskingLevel(databaseNam
 	return base.DefaultMaskingLevel
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) (maskingLevel storepb.MaskingLevel, err error) {
+func (extractor *SensitiveFieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) (maskingLevel storepb.MaskingLevel, err error) {
 	if in == nil {
 		return base.DefaultMaskingLevel, nil
 	}
@@ -450,9 +449,9 @@ func (extractor *TiDBSensitiveFieldExtractor) extractColumnFromExprNode(in tidba
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
-		subqueryExtractor := &TiDBSensitiveFieldExtractor{
-			currentDatabase: extractor.currentDatabase,
-			schemaInfo:      extractor.schemaInfo,
+		subqueryExtractor := &SensitiveFieldExtractor{
+			CurrentDatabase: extractor.CurrentDatabase,
+			SchemaInfo:      extractor.SchemaInfo,
 			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
 		}
 		fieldList, err := subqueryExtractor.extractNode(node.Query)
@@ -513,7 +512,7 @@ func (extractor *TiDBSensitiveFieldExtractor) extractColumnFromExprNode(in tidba
 	return base.DefaultMaskingLevel, nil
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractColumnFromExprNodeList(nodeList []tidbast.ExprNode) (maskingLevel storepb.MaskingLevel, err error) {
+func (extractor *SensitiveFieldExtractor) extractColumnFromExprNodeList(nodeList []tidbast.ExprNode) (maskingLevel storepb.MaskingLevel, err error) {
 	finalLevel := base.DefaultMaskingLevel
 	for _, node := range nodeList {
 		maskingLevel, err := extractor.extractColumnFromExprNode(node)
@@ -530,7 +529,7 @@ func (extractor *TiDBSensitiveFieldExtractor) extractColumnFromExprNodeList(node
 	return finalLevel, nil
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractTableSource(node *tidbast.TableSource) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTableSource(node *tidbast.TableSource) ([]base.FieldInfo, error) {
 	fieldList, err := extractor.extractNode(node.Source)
 	if err != nil {
 		return nil, err
@@ -551,7 +550,7 @@ func (extractor *TiDBSensitiveFieldExtractor) extractTableSource(node *tidbast.T
 	return res, nil
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) findTableSchema(databaseName string, tableName string) (string, db.TableSchema, error) {
+func (extractor *SensitiveFieldExtractor) findTableSchema(databaseName string, tableName string) (string, db.TableSchema, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
 	//  with tt2 as (
@@ -568,32 +567,32 @@ func (extractor *TiDBSensitiveFieldExtractor) findTableSchema(databaseName strin
 		}
 	}
 
-	for _, database := range extractor.schemaInfo.DatabaseList {
+	for _, database := range extractor.SchemaInfo.DatabaseList {
 		if len(database.SchemaList) == 0 {
 			continue
 		}
 		tableList := database.SchemaList[0].TableList
 
-		if extractor.schemaInfo.IgnoreCaseSensitive {
+		if extractor.SchemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerTable := strings.ToLower(tableName)
-			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.CurrentDatabase)) {
 				for _, table := range tableList {
 					if lowerTable == strings.ToLower(table.Name) {
 						explicitDatabase := databaseName
 						if explicitDatabase == "" {
-							explicitDatabase = extractor.currentDatabase
+							explicitDatabase = extractor.CurrentDatabase
 						}
 						return explicitDatabase, table, nil
 					}
 				}
 			}
-		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
+		} else if databaseName == database.Name || (databaseName == "" && extractor.CurrentDatabase == database.Name) {
 			for _, table := range tableList {
 				if tableName == table.Name {
 					explicitDatabase := databaseName
 					if explicitDatabase == "" {
-						explicitDatabase = extractor.currentDatabase
+						explicitDatabase = extractor.CurrentDatabase
 					}
 					return explicitDatabase, table, nil
 				}
@@ -608,10 +607,10 @@ func (extractor *TiDBSensitiveFieldExtractor) findTableSchema(databaseName strin
 	return "", db.TableSchema{}, errors.Wrapf(err, "Table or view %q.%q not found", databaseName, tableName)
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) buildTableSchemaForView(viewName string, definition string) (db.TableSchema, error) {
-	newExtractor := &TiDBSensitiveFieldExtractor{
-		currentDatabase: extractor.currentDatabase,
-		schemaInfo:      extractor.schemaInfo,
+func (extractor *SensitiveFieldExtractor) buildTableSchemaForView(viewName string, definition string) (db.TableSchema, error) {
+	newExtractor := &SensitiveFieldExtractor{
+		CurrentDatabase: extractor.CurrentDatabase,
+		SchemaInfo:      extractor.SchemaInfo,
 	}
 	fields, err := newExtractor.ExtractTiDBSensitiveField(definition)
 	if err != nil {
@@ -632,22 +631,22 @@ func (extractor *TiDBSensitiveFieldExtractor) buildTableSchemaForView(viewName s
 	return result, nil
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) findViewSchema(databaseName string, viewName string) (string, db.TableSchema, error) {
-	for _, database := range extractor.schemaInfo.DatabaseList {
+func (extractor *SensitiveFieldExtractor) findViewSchema(databaseName string, viewName string) (string, db.TableSchema, error) {
+	for _, database := range extractor.SchemaInfo.DatabaseList {
 		if len(database.SchemaList) == 0 {
 			continue
 		}
 		viewList := database.SchemaList[0].ViewList
 
-		if extractor.schemaInfo.IgnoreCaseSensitive {
+		if extractor.SchemaInfo.IgnoreCaseSensitive {
 			lowerDatabase := strings.ToLower(database.Name)
 			lowerView := strings.ToLower(viewName)
-			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.currentDatabase)) {
+			if lowerDatabase == strings.ToLower(databaseName) || (databaseName == "" && lowerDatabase == strings.ToLower(extractor.CurrentDatabase)) {
 				for _, view := range viewList {
 					if lowerView == strings.ToLower(view.Name) {
 						explicitDatabase := databaseName
 						if explicitDatabase == "" {
-							explicitDatabase = extractor.currentDatabase
+							explicitDatabase = extractor.CurrentDatabase
 						}
 
 						table, err := extractor.buildTableSchemaForView(view.Name, view.Definition)
@@ -655,12 +654,12 @@ func (extractor *TiDBSensitiveFieldExtractor) findViewSchema(databaseName string
 					}
 				}
 			}
-		} else if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
+		} else if databaseName == database.Name || (databaseName == "" && extractor.CurrentDatabase == database.Name) {
 			for _, view := range viewList {
 				if viewName == view.Name {
 					explicitDatabase := databaseName
 					if explicitDatabase == "" {
-						explicitDatabase = extractor.currentDatabase
+						explicitDatabase = extractor.CurrentDatabase
 					}
 
 					table, err := extractor.buildTableSchemaForView(view.Name, view.Definition)
@@ -672,7 +671,7 @@ func (extractor *TiDBSensitiveFieldExtractor) findViewSchema(databaseName string
 	return "", db.TableSchema{}, errors.Errorf("View %q.%q not found", databaseName, viewName)
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractTableName(node *tidbast.TableName) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractTableName(node *tidbast.TableName) ([]base.FieldInfo, error) {
 	databaseName, tableSchema, err := extractor.findTableSchema(node.Schema.O, node.Name.O)
 	if err != nil {
 		return nil, err
@@ -690,7 +689,7 @@ func (extractor *TiDBSensitiveFieldExtractor) extractTableName(node *tidbast.Tab
 	return res, nil
 }
 
-func (extractor *TiDBSensitiveFieldExtractor) extractJoin(node *tidbast.Join) ([]base.FieldInfo, error) {
+func (extractor *SensitiveFieldExtractor) extractJoin(node *tidbast.Join) ([]base.FieldInfo, error) {
 	if node.Right == nil {
 		// This case is not Join
 		return extractor.extractNode(node.Left)
