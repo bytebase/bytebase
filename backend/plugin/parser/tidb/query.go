@@ -46,8 +46,8 @@ func ExtractTiDBResourceList(currentDatabase string, sql string) ([]base.SchemaR
 	return resourceList, nil
 }
 
-// ExtractMySQLDatabaseList extracts mysql database list.
-func ExtractMySQLDatabaseList(statement string) ([]string, error) {
+// ExtractDatabaseList extracts mysql database list.
+func ExtractDatabaseList(statement string) ([]string, error) {
 	databaseMap := make(map[string]bool)
 
 	// TODO(d): replace it with mysql parser.

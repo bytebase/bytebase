@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -621,7 +622,7 @@ func analyzeSlowLog(logs []*slowLog) (map[string]*storepb.SlowQueryStatistics, e
 
 	for _, log := range logs {
 		databaseList := extractDatabase(log.database, log.details.SqlText)
-		fingerprint, err := parser.GetSQLFingerprint(parser.MySQL, log.details.SqlText)
+		fingerprint, err := mysqlparser.GetFingerprint(log.details.SqlText)
 		if err != nil {
 			return nil, errors.Wrapf(err, "get sql fingerprint failed, sql: %s", log.details.SqlText)
 		}
