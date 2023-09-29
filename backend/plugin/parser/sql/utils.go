@@ -429,16 +429,16 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]base.SingleSQL, e
 		}
 		return result, nil
 	case MSSQL:
-		t := newTokenizer(statement)
-		list, err = t.splitStandardMultiSQL()
+		t := NewTokenizer(statement)
+		list, err = t.SplitStandardMultiSQL()
 	case Postgres, Redshift, RisingWave:
-		t := newTokenizer(statement)
-		list, err = t.splitPostgreSQLMultiSQL()
+		t := NewTokenizer(statement)
+		list, err = t.SplitPostgreSQLMultiSQL()
 	case MySQL, MariaDB, OceanBase:
 		return SplitMySQL(statement)
 	case TiDB:
-		t := newTokenizer(statement)
-		list, err = t.splitTiDBMultiSQL()
+		t := NewTokenizer(statement)
+		list, err = t.SplitTiDBMultiSQL()
 	default:
 		err = applyMultiStatements(strings.NewReader(statement), func(sql string) error {
 			list = append(list, base.SingleSQL{
@@ -593,16 +593,16 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 		}
 		return sqls, nil
 	case MSSQL:
-		t := newStreamTokenizer(src, f)
-		list, err = t.splitStandardMultiSQL()
+		t := NewStreamTokenizer(src, f)
+		list, err = t.SplitStandardMultiSQL()
 	case Postgres, Redshift, RisingWave:
-		t := newStreamTokenizer(src, f)
-		list, err = t.splitPostgreSQLMultiSQL()
+		t := NewStreamTokenizer(src, f)
+		list, err = t.SplitPostgreSQLMultiSQL()
 	case MySQL, MariaDB, OceanBase:
 		return splitMySQLMultiSQLStream(src, f)
 	case TiDB:
-		t := newStreamTokenizer(src, f)
-		list, err = t.splitTiDBMultiSQL()
+		t := NewStreamTokenizer(src, f)
+		list, err = t.SplitTiDBMultiSQL()
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
@@ -629,9 +629,9 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 func SetLineForCreateTableStmt(engineType EngineType, node *ast.CreateTableStmt) error {
 	switch engineType {
 	case Postgres:
-		t := newTokenizer(node.Text())
+		t := NewTokenizer(node.Text())
 		firstLine := node.LastLine() - strings.Count(node.Text(), "\n")
-		return t.setLineForPGCreateTableStmt(node, firstLine)
+		return t.SetLineForPGCreateTableStmt(node, firstLine)
 	default:
 		return errors.Errorf("engine type is not supported: %s", engineType)
 	}
@@ -646,7 +646,7 @@ func SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
 		return nil
 	}
 	firstLine := node.OriginTextPosition() - strings.Count(node.Text(), "\n")
-	return newTokenizer(node.Text()).setLineForMySQLCreateTableStmt(node, firstLine)
+	return NewTokenizer(node.Text()).SetLineForMySQLCreateTableStmt(node, firstLine)
 }
 
 // ExtractTiDBUnsupportedStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"strings"
 	"unicode"
@@ -23,7 +24,7 @@ var (
 	delimiterRuneList = []rune{'D', 'E', 'L', 'I', 'M', 'I', 'T', 'E', 'R'}
 )
 
-type tokenizer struct {
+type Tokenizer struct {
 	buffer         []rune
 	cursor         uint
 	len            uint
@@ -36,10 +37,10 @@ type tokenizer struct {
 	readErr error
 }
 
-// newTokenizer creates a new tokenizer.
+// NewTokenizer creates a new tokenizer.
 // Notice: we append an additional eofRune in the statement. This is a sentinel rune.
-func newTokenizer(statement string) *tokenizer {
-	t := &tokenizer{
+func NewTokenizer(statement string) *Tokenizer {
+	t := &Tokenizer{
 		buffer: []rune(statement),
 		cursor: 0,
 		line:   1,
@@ -50,8 +51,8 @@ func newTokenizer(statement string) *tokenizer {
 	return t
 }
 
-func newStreamTokenizer(src io.Reader, f func(string) error) *tokenizer {
-	t := &tokenizer{
+func NewStreamTokenizer(src io.Reader, f func(string) error) *Tokenizer {
+	t := &Tokenizer{
 		cursor: 0,
 		line:   1,
 		reader: bufio.NewReader(src),
@@ -61,7 +62,7 @@ func newStreamTokenizer(src io.Reader, f func(string) error) *tokenizer {
 	return t
 }
 
-func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt, firstLine int) error {
+func (t *Tokenizer) SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt, firstLine int) error {
 	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
 	// and the identifiers don't equal any keywords in CREATE TABLE statements.
 	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
@@ -203,8 +204,8 @@ func matchMySQLTableConstraint(text string, cons *tidbast.Constraint) bool {
 	return false
 }
 
-// setLineForPGCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
-func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt, firstLine int) error {
+// SetLineForPGCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
+func (t *Tokenizer) SetLineForPGCreateTableStmt(node *ast.CreateTableStmt, firstLine int) error {
 	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
 	// and the identifiers don't equal any keywords in CREATE TABLE statements.
 	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
@@ -331,7 +332,7 @@ func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt, first
 	}
 }
 
-func (t *tokenizer) aboveNonBlankLineDistance() int {
+func (t *Tokenizer) aboveNonBlankLineDistance() int {
 	pos := uint(1)
 	dis := 0
 	for {
@@ -364,8 +365,8 @@ func matchTableConstraint(text string, cons *ast.ConstraintDef) bool {
 	return false
 }
 
-// splitTiDBMultiSQL splits the statement to a string slice.
-func (t *tokenizer) splitTiDBMultiSQL() ([]base.SingleSQL, error) {
+// SplitTiDBMultiSQL splits the statement to a string slice.
+func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 	var res []base.SingleSQL
 	delimiter := []rune{';'}
 
@@ -473,7 +474,7 @@ func (t *tokenizer) splitTiDBMultiSQL() ([]base.SingleSQL, error) {
 	}
 }
 
-// splitStandardMultiSQL splits the statement to a string slice.
+// SplitStandardMultiSQL splits the statement to a string slice.
 // We mainly considered:
 //
 //	comments
@@ -486,7 +487,7 @@ func (t *tokenizer) splitTiDBMultiSQL() ([]base.SingleSQL, error) {
 //
 // The difference between PostgreSQL and Oracle is that PostgreSQL supports
 // dollar-quoted string, but Oracle does not.
-func (t *tokenizer) splitStandardMultiSQL() ([]base.SingleSQL, error) {
+func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 	var res []base.SingleSQL
 
 	t.skipBlank()
@@ -567,7 +568,7 @@ func (t *tokenizer) splitStandardMultiSQL() ([]base.SingleSQL, error) {
 	}
 }
 
-// splitPostgreSQLMultiSQL splits the statement to a string slice.
+// SplitPostgreSQLMultiSQL splits the statement to a string slice.
 // We mainly considered:
 //
 //	comments
@@ -583,7 +584,7 @@ func (t *tokenizer) splitStandardMultiSQL() ([]base.SingleSQL, error) {
 //   - We support PostgreSQL CREATE PROCEDURE statement with $$ $$ style,
 //     but do not support BEGIN ATOMIC ... END; style.
 //     See https://www.postgresql.org/docs/14/sql-createprocedure.html.
-func (t *tokenizer) splitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
+func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 	var res []base.SingleSQL
 
 	t.skipBlank()
@@ -679,7 +680,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 
 // Assume that identifier only contains letters, underscores, digits (0-9), or dollar signs ($).
 // See https://www.postgresql.org/docs/current/sql-syntax-lexical.html.
-func (t *tokenizer) scanIdentifier(delimiter rune) error {
+func (t *Tokenizer) scanIdentifier(delimiter rune) error {
 	if t.char(0) != delimiter {
 		return errors.Errorf("delimiter doesn't start with delimiter: %c, but found: %c", delimiter, t.char(0))
 	}
@@ -702,7 +703,7 @@ func (t *tokenizer) scanIdentifier(delimiter rune) error {
 // We only handle the case \', because the second case does not require special handling.
 // And this is extensible.
 // For MySQL, user can enclose string within double quote(").
-func (t *tokenizer) scanString(delimiter rune) error {
+func (t *Tokenizer) scanString(delimiter rune) error {
 	if t.char(0) != delimiter {
 		return errors.Errorf("string doesn't start with delimiter: %c, but found: %c", delimiter, t.char(0))
 	}
@@ -732,7 +733,7 @@ func (t *tokenizer) scanString(delimiter rune) error {
 // - $$ string $$
 // - $tag$ string $tag$
 // See https://www.postgresql.org/docs/current/sql-syntax-lexical.html.
-func (t *tokenizer) scanDoubleDollarQuotedString() error {
+func (t *Tokenizer) scanDoubleDollarQuotedString() error {
 	startPos := t.pos()
 	// scan the tag string quoted by the dollar sign($)
 	if err := t.scanString('$'); err != nil {
@@ -743,7 +744,7 @@ func (t *tokenizer) scanDoubleDollarQuotedString() error {
 	return t.scanTo(tag)
 }
 
-func (t *tokenizer) scanComment() error {
+func (t *Tokenizer) scanComment() error {
 	switch {
 	case t.char(0) == '/' && t.char(1) == '*':
 		t.skip(2)
@@ -774,7 +775,7 @@ func (t *tokenizer) scanComment() error {
 }
 
 // scanTo scans to delimiter. Use KMP algorithm.
-func (t *tokenizer) scanTo(delimiter []rune) error {
+func (t *Tokenizer) scanTo(delimiter []rune) error {
 	if len(delimiter) == 0 {
 		return errors.Errorf("scanTo failed: delimiter cannot be nil")
 	}
@@ -826,7 +827,7 @@ func (t *tokenizer) scanTo(delimiter []rune) error {
 	}
 }
 
-func (t *tokenizer) scan() {
+func (t *Tokenizer) scan() {
 	if t.reader != nil {
 		s, err := t.reader.ReadString('\n')
 		if err == nil {
@@ -846,7 +847,7 @@ func (t *tokenizer) scan() {
 	}
 }
 
-func (t *tokenizer) processStreaming(statement string) error {
+func (t *Tokenizer) processStreaming(statement string) error {
 	if t.f == nil {
 		return nil
 	}
@@ -868,7 +869,7 @@ buffer [.............]
 After:        |
 buffer       [.......].
 */
-func (t *tokenizer) truncate(pos uint) {
+func (t *Tokenizer) truncate(pos uint) {
 	if pos > t.len {
 		pos = t.len
 	}
@@ -881,7 +882,7 @@ func (t *tokenizer) truncate(pos uint) {
 	t.cursor -= pos
 }
 
-func (t *tokenizer) char(after uint) rune {
+func (t *Tokenizer) char(after uint) rune {
 	for t.cursor+after >= t.len && t.reader != nil {
 		t.scan()
 	}
@@ -893,7 +894,7 @@ func (t *tokenizer) char(after uint) rune {
 	return t.buffer[t.cursor+after]
 }
 
-func (t *tokenizer) preChar(before uint) rune {
+func (t *Tokenizer) preChar(before uint) rune {
 	if t.cursor < before {
 		return eofRune
 	}
@@ -901,7 +902,7 @@ func (t *tokenizer) preChar(before uint) rune {
 	return t.buffer[t.cursor-before]
 }
 
-func (t *tokenizer) skip(step uint) {
+func (t *Tokenizer) skip(step uint) {
 	t.cursor += step
 	for t.cursor > t.len && t.reader != nil {
 		t.scan()
@@ -911,7 +912,7 @@ func (t *tokenizer) skip(step uint) {
 	}
 }
 
-func (t *tokenizer) skipBlank() {
+func (t *Tokenizer) skipBlank() {
 	r := t.char(0)
 	for r == ' ' || r == '\n' || r == '\r' || r == '\t' {
 		t.skip(1)
@@ -922,7 +923,7 @@ func (t *tokenizer) skipBlank() {
 	}
 }
 
-func (t *tokenizer) skipToBlank() {
+func (t *Tokenizer) skipToBlank() {
 	r := t.char(0)
 	for r != ' ' && r != '\n' && r != '\r' && r != '\t' && r != eofRune {
 		t.skip(1)
@@ -930,7 +931,7 @@ func (t *tokenizer) skipToBlank() {
 	}
 }
 
-func (t *tokenizer) skipToNewLine() {
+func (t *Tokenizer) skipToNewLine() {
 	r := t.char(0)
 	for r != '\n' {
 		if r == eofRune {
@@ -943,15 +944,15 @@ func (t *tokenizer) skipToNewLine() {
 	t.skip(1)
 }
 
-func (t *tokenizer) pos() uint {
+func (t *Tokenizer) pos() uint {
 	return t.cursor
 }
 
-func (t *tokenizer) getString(startPos uint, length uint) string {
+func (t *Tokenizer) getString(startPos uint, length uint) string {
 	return string(t.runeList(startPos, length))
 }
 
-func (t *tokenizer) runeList(startPos uint, length uint) []rune {
+func (t *Tokenizer) runeList(startPos uint, length uint) []rune {
 	endPos := startPos + length
 	if endPos > t.len {
 		endPos = t.len
@@ -959,7 +960,7 @@ func (t *tokenizer) runeList(startPos uint, length uint) []rune {
 	return t.buffer[startPos:endPos]
 }
 
-func (t *tokenizer) equalWordCaseInsensitive(word []rune) bool {
+func (t *Tokenizer) equalWordCaseInsensitive(word []rune) bool {
 	for i := range word {
 		if unicode.ToLower(t.char(uint(i))) != unicode.ToLower(word[i]) {
 			return false
@@ -980,4 +981,154 @@ func emptyString(s string) bool {
 	}
 
 	return true
+}
+
+// StandardRemoveQuotedTextAndComment removes the quoted text and comment.
+func StandardRemoveQuotedTextAndComment(statement string) (string, error) {
+	var buf bytes.Buffer
+	t := NewTokenizer(statement)
+
+	t.skipBlank()
+	startPos := t.pos()
+	for {
+		switch {
+		case t.char(0) == '/' && t.char(1) == '*':
+			text := t.getString(startPos, t.pos()-startPos)
+			if err := t.scanComment(); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			if err := buf.WriteByte(' '); err != nil {
+				return "", err
+			}
+			startPos = t.pos()
+		case t.char(0) == '-' && t.char(1) == '-':
+			text := t.getString(startPos, t.pos()-startPos)
+			if err := t.scanComment(); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			if err := buf.WriteByte(' '); err != nil {
+				return "", err
+			}
+			startPos = t.pos()
+		case t.char(0) == '\'':
+			text := t.getString(startPos, t.pos()-startPos)
+			if err := t.scanString('\''); err != nil {
+				return "'", err
+			}
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			if err := buf.WriteByte(' '); err != nil {
+				return "", err
+			}
+			startPos = t.pos()
+		case t.char(0) == '"':
+			text := t.getString(startPos, t.pos()-startPos)
+			if err := t.scanIdentifier('"'); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			if err := buf.WriteByte(' '); err != nil {
+				return "", err
+			}
+			startPos = t.pos()
+		case t.char(0) == eofRune:
+			text := t.getString(startPos, t.pos()-startPos)
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			return buf.String(), nil
+		default:
+			t.skip(1)
+		}
+	}
+}
+
+// MysqlRemoveQuotedTextAndComment removes quoted text and comment.
+func MysqlRemoveQuotedTextAndComment(statement string) (string, error) {
+	var buf bytes.Buffer
+	t := NewTokenizer(statement)
+
+	t.skipBlank()
+	startPos := t.pos()
+	for {
+		switch {
+		case t.char(0) == eofRune:
+			text := t.getString(startPos, t.pos()-startPos)
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			return buf.String(), nil
+		case t.char(0) == '/' && t.char(1) == '*':
+			text := t.getString(startPos, t.pos()-startPos)
+			if err := t.scanComment(); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			if err := buf.WriteByte(' '); err != nil {
+				return "", err
+			}
+			startPos = t.pos()
+		case t.char(0) == '-' && t.char(1) == '-':
+			text := t.getString(startPos, t.pos()-startPos)
+			if err := t.scanComment(); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			if err := buf.WriteByte(' '); err != nil {
+				return "", err
+			}
+			startPos = t.pos()
+		case t.char(0) == '#':
+			text := t.getString(startPos, t.pos()-startPos)
+			if err := t.scanComment(); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			if err := buf.WriteByte(' '); err != nil {
+				return "", err
+			}
+			startPos = t.pos()
+		case t.char(0) == '\'' || t.char(0) == '"':
+			text := t.getString(startPos, t.pos()-startPos)
+			if err := t.scanString(t.char(0)); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			if err := buf.WriteByte(' '); err != nil {
+				return "", err
+			}
+			startPos = t.pos()
+		case t.char(0) == '`':
+			text := t.getString(startPos, t.pos()-startPos)
+			if err := t.scanIdentifier('`'); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(text); err != nil {
+				return "", err
+			}
+			if err := buf.WriteByte(' '); err != nil {
+				return "", err
+			}
+			startPos = t.pos()
+		default:
+			t.skip(1)
+		}
+	}
 }
