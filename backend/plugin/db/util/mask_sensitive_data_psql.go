@@ -475,7 +475,7 @@ func (extractor *PGSensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_S
 		}
 		var result []base.FieldInfo
 		for i, field := range leftField {
-			finalLevel := defaultMaskingLevel
+			finalLevel := base.DefaultMaskingLevel
 			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
 				finalLevel = field.MaskingLevel
 			}
@@ -758,12 +758,12 @@ func (extractor *PGSensitiveFieldExtractor) pgCheckFieldMaskingLevel(schemaName 
 		}
 	}
 
-	return defaultMaskingLevel
+	return base.DefaultMaskingLevel
 }
 
 func (extractor *PGSensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquery.Node) (storepb.MaskingLevel, error) {
 	if in == nil {
-		return defaultMaskingLevel, nil
+		return base.DefaultMaskingLevel, nil
 	}
 
 	switch node := in.Node.(type) {
@@ -787,7 +787,7 @@ func (extractor *PGSensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode
 	case *pgquery.Node_TypeCast:
 		return extractor.pgExtractColumnRefFromExpressionNode(node.TypeCast.Arg)
 	case *pgquery.Node_AConst:
-		return defaultMaskingLevel, nil
+		return base.DefaultMaskingLevel, nil
 	case *pgquery.Node_ColumnRef:
 		columnNameDef, err := pg.ConvertNodeListToColumnNameDef(node.ColumnRef.Fields)
 		if err != nil {
@@ -817,7 +817,7 @@ func (extractor *PGSensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode
 	case *pgquery.Node_XmlSerialize:
 		return extractor.pgExtractColumnRefFromExpressionNode(node.XmlSerialize.Expr)
 	case *pgquery.Node_ParamRef:
-		return defaultMaskingLevel, nil
+		return base.DefaultMaskingLevel, nil
 	case *pgquery.Node_BoolExpr:
 		return extractor.pgExtractColumnRefFromExpressionNodeList(node.BoolExpr.Args)
 	case *pgquery.Node_SubLink:
@@ -842,7 +842,7 @@ func (extractor *PGSensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode
 			if cmp.Less[storepb.MaskingLevel](maskingLevel, field.MaskingLevel) {
 				maskingLevel = field.MaskingLevel
 			}
-			if maskingLevel == maxMaskingLevel {
+			if maskingLevel == base.MaxMaskingLevel {
 				return maskingLevel, nil
 			}
 		}
@@ -852,15 +852,15 @@ func (extractor *PGSensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode
 	case *pgquery.Node_CoalesceExpr:
 		return extractor.pgExtractColumnRefFromExpressionNodeList(node.CoalesceExpr.Args)
 	case *pgquery.Node_SetToDefault:
-		return defaultMaskingLevel, nil
+		return base.DefaultMaskingLevel, nil
 	case *pgquery.Node_AIndirection:
 		return extractor.pgExtractColumnRefFromExpressionNode(node.AIndirection.Arg)
 	case *pgquery.Node_CollateClause:
 		return extractor.pgExtractColumnRefFromExpressionNode(node.CollateClause.Arg)
 	case *pgquery.Node_CurrentOfExpr:
-		return defaultMaskingLevel, nil
+		return base.DefaultMaskingLevel, nil
 	case *pgquery.Node_SqlvalueFunction:
-		return defaultMaskingLevel, nil
+		return base.DefaultMaskingLevel, nil
 	case *pgquery.Node_MinMaxExpr:
 		return extractor.pgExtractColumnRefFromExpressionNodeList(node.MinMaxExpr.Args)
 	case *pgquery.Node_BooleanTest:
@@ -868,11 +868,11 @@ func (extractor *PGSensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode
 	case *pgquery.Node_GroupingFunc:
 		return extractor.pgExtractColumnRefFromExpressionNodeList(node.GroupingFunc.Args)
 	}
-	return defaultMaskingLevel, nil
+	return base.DefaultMaskingLevel, nil
 }
 
 func (extractor *PGSensitiveFieldExtractor) pgExtractColumnRefFromExpressionNodeList(list []*pgquery.Node) (storepb.MaskingLevel, error) {
-	finalLevel := defaultMaskingLevel
+	finalLevel := base.DefaultMaskingLevel
 	for _, node := range list {
 		maskingLevel, err := extractor.pgExtractColumnRefFromExpressionNode(node)
 		if err != nil {
@@ -881,7 +881,7 @@ func (extractor *PGSensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode
 		if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 			finalLevel = maskingLevel
 		}
-		if finalLevel == maxMaskingLevel {
+		if finalLevel == base.MaxMaskingLevel {
 			return finalLevel, nil
 		}
 	}
