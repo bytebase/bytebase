@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
@@ -57,7 +58,7 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 		// The resource list for Postgres may contains table, view and temporary table.
 		return extractPostgresResourceList(currentDatabase, currentSchema, sql)
 	case Snowflake:
-		return extractSnowflakeNormalizeResourceListFromSelectStatement(currentDatabase, "PUBLIC", sql)
+		return snowparser.ExtractSnowflakeNormalizeResourceListFromSelectStatement(currentDatabase, "PUBLIC", sql)
 	case MSSQL:
 		return extractMSSQLNormalizedResourceListFromSelectStatement(currentDatabase, "dbo", sql)
 	default:
@@ -728,7 +729,7 @@ func extractMSSQLNormalizedDatabaseList(statement string, normalizedDatabaseName
 // If the database name is not specified, it will fallback to the normalizedDatabaseName.
 func extractSnowSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
 	schemaPlaceholder := "schema_placeholder"
-	schemaResource, err := extractSnowflakeNormalizeResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
+	schemaResource, err := snowparser.ExtractSnowflakeNormalizeResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
 	if err != nil {
 		return nil, err
 	}

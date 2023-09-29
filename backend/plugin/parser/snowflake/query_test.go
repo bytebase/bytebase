@@ -1,4 +1,4 @@
-package parser
+package snowflake
 
 import (
 	"testing"
@@ -101,7 +101,7 @@ func TestExtractSnowflakeNormalizeResourceListFromSelectStatement(t *testing.T) 
 	}
 
 	for _, test := range tests {
-		res, err := extractSnowflakeNormalizeResourceListFromSelectStatement("db", "PUBLIC", test.statement)
+		res, err := ExtractSnowflakeNormalizeResourceListFromSelectStatement("db", "PUBLIC", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.want, res, "for statement: %v", test.statement)
 	}
