@@ -27,10 +27,6 @@ type SensitiveFieldExtractor struct {
 }
 
 func (extractor *SensitiveFieldExtractor) ExtractSensitiveField(statement string) ([]db.SensitiveField, error) {
-	if extractor.SchemaInfo == nil {
-		return nil, nil
-	}
-
 	p := parser.New()
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.

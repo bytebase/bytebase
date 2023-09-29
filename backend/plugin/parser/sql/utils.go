@@ -110,6 +110,9 @@ func ExtractDatabaseList(engineType EngineType, statement string, fallbackNormal
 }
 
 func ExtractSensitiveField(dbType storepb.Engine, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+	if schemaInfo == nil {
+		return nil, nil
+	}
 	switch dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		extractor := &mysqlparser.SensitiveFieldExtractor{
