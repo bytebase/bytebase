@@ -8,7 +8,7 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 	"github.com/pkg/errors"
 
-	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"

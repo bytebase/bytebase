@@ -38,9 +38,11 @@ import (
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -2021,7 +2023,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 			}
 		}
 	case db.TiDB:
-		stmtList, err := parser.ParseTiDB(statement, "", "")
+		stmtList, err := tidbparser.ParseTiDB(statement, "", "")
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
@@ -2041,7 +2043,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		if instance.Options != nil && instance.Options.SchemaTenantMode && databaseName == "" {
 			return status.Error(codes.InvalidArgument, "connection_database is required for oracle schema tenant mode instance")
 		}
-		tree, _, err := parser.ParsePLSQL(statement)
+		tree, _, err := plsqlparser.ParsePLSQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}

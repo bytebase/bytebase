@@ -1,5 +1,4 @@
-// Package parser is the parser for SQL statement.
-package parser
+package tidb
 
 import (
 	tidbparser "github.com/pingcap/tidb/parser"

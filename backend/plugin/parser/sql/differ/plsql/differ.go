@@ -9,11 +9,12 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 
 	plsql "github.com/bytebase/plsql-parser"
 
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -589,7 +590,7 @@ func isColumnEqual(oldColumn, newColumn plsql.IColumn_definitionContext) bool {
 }
 
 func buildSchemaInfo(statement string) (*schemaInfo, error) {
-	node, _, err := parser.ParsePLSQL(statement)
+	node, _, err := plsqlparser.ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
 	}

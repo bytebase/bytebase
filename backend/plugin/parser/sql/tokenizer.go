@@ -9,6 +9,7 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
@@ -364,8 +365,8 @@ func matchTableConstraint(text string, cons *ast.ConstraintDef) bool {
 }
 
 // splitTiDBMultiSQL splits the statement to a string slice.
-func (t *tokenizer) splitTiDBMultiSQL() ([]SingleSQL, error) {
-	var res []SingleSQL
+func (t *tokenizer) splitTiDBMultiSQL() ([]base.SingleSQL, error) {
+	var res []base.SingleSQL
 	delimiter := []rune{';'}
 
 	t.skipBlank()
@@ -377,7 +378,7 @@ func (t *tokenizer) splitTiDBMultiSQL() ([]SingleSQL, error) {
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
 				if t.f == nil {
-					res = append(res, SingleSQL{
+					res = append(res, base.SingleSQL{
 						Text: s,
 						// Consider this text:
 						// CREATE TABLE t(
@@ -404,7 +405,7 @@ func (t *tokenizer) splitTiDBMultiSQL() ([]SingleSQL, error) {
 			t.skip(uint(len(delimiter)))
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
-				res = append(res, SingleSQL{
+				res = append(res, base.SingleSQL{
 					Text:     text,
 					LastLine: t.line,
 					Empty:    t.emptyStatement,
@@ -425,7 +426,7 @@ func (t *tokenizer) splitTiDBMultiSQL() ([]SingleSQL, error) {
 			delimiter = t.runeList(delimiterStart, t.pos()-delimiterStart)
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
-				res = append(res, SingleSQL{
+				res = append(res, base.SingleSQL{
 					Text:     text,
 					LastLine: t.line,
 					Empty:    false,
@@ -485,8 +486,8 @@ func (t *tokenizer) splitTiDBMultiSQL() ([]SingleSQL, error) {
 //
 // The difference between PostgreSQL and Oracle is that PostgreSQL supports
 // dollar-quoted string, but Oracle does not.
-func (t *tokenizer) splitStandardMultiSQL() ([]SingleSQL, error) {
-	var res []SingleSQL
+func (t *tokenizer) splitStandardMultiSQL() ([]base.SingleSQL, error) {
+	var res []base.SingleSQL
 
 	t.skipBlank()
 	t.emptyStatement = true
@@ -517,7 +518,7 @@ func (t *tokenizer) splitStandardMultiSQL() ([]SingleSQL, error) {
 			t.skip(1)
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
-				res = append(res, SingleSQL{
+				res = append(res, base.SingleSQL{
 					Text:     text,
 					LastLine: t.line,
 					Empty:    t.emptyStatement,
@@ -533,7 +534,7 @@ func (t *tokenizer) splitStandardMultiSQL() ([]SingleSQL, error) {
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
 				if t.f == nil {
-					res = append(res, SingleSQL{
+					res = append(res, base.SingleSQL{
 						Text: s,
 						// Consider this text:
 						// CREATE TABLE t(
@@ -582,8 +583,8 @@ func (t *tokenizer) splitStandardMultiSQL() ([]SingleSQL, error) {
 //   - We support PostgreSQL CREATE PROCEDURE statement with $$ $$ style,
 //     but do not support BEGIN ATOMIC ... END; style.
 //     See https://www.postgresql.org/docs/14/sql-createprocedure.html.
-func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
-	var res []SingleSQL
+func (t *tokenizer) splitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
+	var res []base.SingleSQL
 
 	t.skipBlank()
 	t.emptyStatement = true
@@ -619,7 +620,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 			t.skip(1)
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
-				res = append(res, SingleSQL{
+				res = append(res, base.SingleSQL{
 					Text:     text,
 					LastLine: t.line,
 					Empty:    t.emptyStatement,
@@ -635,7 +636,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
 				if t.f == nil {
-					res = append(res, SingleSQL{
+					res = append(res, base.SingleSQL{
 						Text: s,
 						// Consider this text:
 						// CREATE TABLE t(
