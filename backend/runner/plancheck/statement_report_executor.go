@@ -362,7 +362,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 		if stmt.Empty || stmt.Text == "" {
 			continue
 		}
-		resources, err := getChangedResourcesForOracle(databaseName, schemaName, stmt.Text)
+		resources, err := parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, stmt.Text)
 		if err != nil {
 			slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
 		} else {
@@ -384,10 +384,6 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 			},
 		},
 	}, nil
-}
-
-func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) ([]base.SchemaResource, error) {
-	return parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, statement)
 }
 
 func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
@@ -440,7 +436,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 		sqlTypeSet[sqlType] = struct{}{}
 		if !isDML(sqlType) {
 			if dbType != db.TiDB {
-				resources, err := getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
+				resources, err := parser.ExtractChangedResources(parser.MySQL, databaseName, "" /* currentSchema */, stmt.Text)
 				if err != nil {
 					slog.Error("failed to get statement changed resources", log.BBError(err))
 				} else {
@@ -504,10 +500,6 @@ func convertToChangedResources(resources []base.SchemaResource) *storepb.Changed
 		schema.Tables = append(schema.Tables, &storepb.ChangedResourceTable{Name: resource.Table})
 	}
 	return meta
-}
-
-func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]base.SchemaResource, error) {
-	return parser.ExtractChangedResources(parser.MySQL, currentDatabase, "" /* currentSchema */, statement)
 }
 
 func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
