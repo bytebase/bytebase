@@ -41,8 +41,6 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -1994,18 +1992,6 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 	}
 
 	switch instance.Engine {
-	case storepb.Engine_POSTGRES:
-		stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
-		if err != nil {
-			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
-		}
-		for _, stmt := range stmtList {
-			switch stmt.(type) {
-			case *ast.SelectStmt, *ast.ExplainStmt:
-			default:
-				return nonSelectSQLError.Err()
-			}
-		}
 	case storepb.Engine_MYSQL:
 		trees, err := mysqlparser.ParseMySQL(statement)
 		if err != nil {

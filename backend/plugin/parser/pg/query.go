@@ -11,6 +11,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -85,6 +87,19 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 // For EXPLAIN and normal SELECT statements, we can directly use regexp to check.
 // For CTE, we need to parse the statement to JSON and check the JSON keys.
 func ValidateSQLForEditor(statement string) bool {
+	stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
+	if err != nil {
+		return false
+	}
+	for _, stmt := range stmtList {
+		switch stmt.(type) {
+		case *ast.SelectStmt, *ast.ExplainStmt:
+		default:
+			return false
+		}
+	}
+
+	// TODO(d): figure out whether this is still needed.
 	jsonText, err := pgquery.ParseToJSON(statement)
 	if err != nil {
 		slog.Debug("Failed to parse statement to JSON", slog.String("statement", statement), log.BBError(err))
