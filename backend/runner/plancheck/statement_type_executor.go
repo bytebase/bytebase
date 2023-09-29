@@ -13,6 +13,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	runnerutils "github.com/bytebase/bytebase/backend/runner/utils"
@@ -347,7 +348,7 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 
 	var results []*storepb.PlanCheckRunResult_Result
 	for _, stmt := range list {
-		if parser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			continue
 		}
 		nodeList, _, err := tidbparser.New().Parse(stmt.Text, "", "")
@@ -482,7 +483,7 @@ func mysqlCreateAndDropDatabaseCheck(nodeList []tidbast.StmtNode) []*storepb.Pla
 func mysqlStatementTypeCheck(statement string, charset string, collation string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
 	// Due to the limitation of TiDB parser, we should split the multi-statement into single statements, and extract
 	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
-	unsupportStmt, supportStmt, err := parser.ExtractTiDBUnsupportedStmts(statement)
+	unsupportStmt, supportStmt, err := mysqlparser.ExtractTiDBUnsupportedStmts(statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
