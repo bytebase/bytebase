@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,10 +18,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
 }
 
 // DisallowOrderByAdvisor is the advisor checking for no ORDER BY clause in DELETE/UPDATE statements.

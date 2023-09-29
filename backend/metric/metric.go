@@ -3,8 +3,8 @@ package metric
 
 import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -50,7 +50,7 @@ const (
 
 // InstanceCountMetric is the API message for bb.instance.count.
 type InstanceCountMetric struct {
-	Engine        db.Type
+	Engine        storepb.Engine
 	EnvironmentID int
 	RowStatus     api.RowStatus
 	Count         int

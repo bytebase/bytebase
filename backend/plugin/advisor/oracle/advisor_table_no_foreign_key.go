@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Oracle, advisor.OracleTableNoFK, &TableNoForeignKeyAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.OracleTableNoFK, &TableNoForeignKeyAdvisor{})
 }
 
 // TableNoForeignKeyAdvisor is the advisor checking for table disallow foreign key.

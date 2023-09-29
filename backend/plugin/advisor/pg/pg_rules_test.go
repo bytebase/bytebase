@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestPostgreSQLRules(t *testing.T) {
@@ -50,6 +50,6 @@ func TestPostgreSQLRules(t *testing.T) {
 	}
 
 	for _, rule := range pgRules {
-		advisor.RunSQLReviewRuleTest(t, rule, db.Postgres, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, false /* record */)
 	}
 }

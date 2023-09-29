@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,10 +18,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
 }
 
 // ColumnDisallowChangingAdvisor is the advisor checking for disallow CHANGE COLUMN statement.

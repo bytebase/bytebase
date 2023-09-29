@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
@@ -119,6 +119,6 @@ func TestMySQLRules(t *testing.T) {
 	}
 
 	for _, rule := range mysqlRules {
-		advisor.RunSQLReviewRuleTest(t, rule, db.MySQL, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MYSQL, false /* record */)
 	}
 }

@@ -24,7 +24,6 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
@@ -32,6 +31,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -1772,7 +1772,7 @@ func (ctl *controller) postVCSSQLReview(ctx context.Context, gitOpsInfo *v1pb.Pr
 func TestGetLatestSchema(t *testing.T) {
 	tests := []struct {
 		name                 string
-		dbType               db.Type
+		dbType               storepb.Engine
 		instanceID           string
 		databaseName         string
 		ddl                  string
@@ -1782,7 +1782,7 @@ func TestGetLatestSchema(t *testing.T) {
 	}{
 		{
 			name:         "MySQL",
-			dbType:       db.MySQL,
+			dbType:       storepb.Engine_MYSQL,
 			instanceID:   "latest-schema-mysql",
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
@@ -1839,7 +1839,7 @@ func TestGetLatestSchema(t *testing.T) {
 		},
 		{
 			name:         "PostgreSQL",
-			dbType:       db.Postgres,
+			dbType:       storepb.Engine_POSTGRES,
 			instanceID:   "latest-schema-postgres",
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
@@ -1911,10 +1911,10 @@ CREATE TABLE public.book (
 		t.Run(test.name, func(t *testing.T) {
 			dbPort := getTestPort()
 			switch test.dbType {
-			case db.Postgres:
+			case storepb.Engine_POSTGRES:
 				stopInstance := postgres.SetupTestInstance(t, dbPort, resourceDir)
 				defer stopInstance()
-			case db.MySQL:
+			case storepb.Engine_MYSQL:
 				stopInstance := mysql.SetupTestInstance(t, dbPort, mysqlBinDir)
 				defer stopInstance()
 			default:
@@ -1924,7 +1924,7 @@ CREATE TABLE public.book (
 			// Add an instance.
 			var instance *v1pb.Instance
 			switch test.dbType {
-			case db.Postgres:
+			case storepb.Engine_POSTGRES:
 				instance, err = ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 					InstanceId: test.instanceID,
 					Instance: &v1pb.Instance{
@@ -1935,7 +1935,7 @@ CREATE TABLE public.book (
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(dbPort), Username: "root"}},
 					},
 				})
-			case db.MySQL:
+			case storepb.Engine_MYSQL:
 				instance, err = ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 					InstanceId: test.instanceID,
 					Instance: &v1pb.Instance{
@@ -1980,7 +1980,7 @@ CREATE TABLE public.book (
 			})
 			a.NoError(err)
 			a.Equal(test.wantRawSchema, latestSchema.Schema)
-			if test.dbType == db.MySQL {
+			if test.dbType == storepb.Engine_MYSQL {
 				latestSchemaSDL, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
 					Name:      fmt.Sprintf("%s/schema", database.Name),
 					SdlFormat: true,

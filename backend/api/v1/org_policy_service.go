@@ -20,8 +20,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -840,7 +838,7 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 			Type:    string(rule.Type),
 			Payload: rule.Payload,
 			Comment: rule.Comment,
-			Engine:  convertToEngine(db.Type(rule.Engine)),
+			Engine:  convertToEngine(storepb.Engine(rule.Engine)),
 		})
 	}
 
@@ -871,7 +869,7 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 			Payload: rule.Payload,
 			Type:    advisor.SQLReviewRuleType(rule.Type),
 			Comment: rule.Comment,
-			Engine:  advisorDB.Type(convertEngine(rule.Engine)),
+			Engine:  convertEngine(rule.Engine),
 		})
 	}
 

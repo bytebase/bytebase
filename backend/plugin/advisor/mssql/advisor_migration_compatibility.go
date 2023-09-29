@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MSSQL, advisor.MSSQLMigrationCompatibility, &MigrationCompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLMigrationCompatibility, &MigrationCompatibilityAdvisor{})
 }
 
 // MigrationCompatibilityAdvisor is the advisor checking for migration compatibility..

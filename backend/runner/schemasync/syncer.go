@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -779,27 +778,27 @@ func getOrDefaultLastSyncTime(t *timestamppb.Timestamp) time.Time {
 	return time.Unix(0, 0)
 }
 
-func disableSchemaDriftAnomalyCheck(dbTp db.Type) bool {
-	m := map[db.Type]struct{}{
-		db.MongoDB:  {},
-		db.Redis:    {},
-		db.Oracle:   {},
-		db.MSSQL:    {},
-		db.Redshift: {},
+func disableSchemaDriftAnomalyCheck(dbTp storepb.Engine) bool {
+	m := map[storepb.Engine]struct{}{
+		storepb.Engine_MONGODB:  {},
+		storepb.Engine_REDIS:    {},
+		storepb.Engine_ORACLE:   {},
+		storepb.Engine_MSSQL:    {},
+		storepb.Engine_REDSHIFT: {},
 	}
 	_, ok := m[dbTp]
 	return ok
 }
 
-func disableBackupAnomalyCheck(dbTp db.Type) bool {
-	m := map[db.Type]struct{}{
-		db.MongoDB:  {},
-		db.Spanner:  {},
-		db.Redis:    {},
-		db.Oracle:   {},
-		db.MSSQL:    {},
-		db.MariaDB:  {},
-		db.Redshift: {},
+func disableBackupAnomalyCheck(dbTp storepb.Engine) bool {
+	m := map[storepb.Engine]struct{}{
+		storepb.Engine_MONGODB:  {},
+		storepb.Engine_SPANNER:  {},
+		storepb.Engine_REDIS:    {},
+		storepb.Engine_ORACLE:   {},
+		storepb.Engine_MSSQL:    {},
+		storepb.Engine_MARIADB:  {},
+		storepb.Engine_REDSHIFT: {},
 	}
 	_, ok := m[dbTp]
 	return ok

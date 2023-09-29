@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -120,7 +119,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 	renderedStatement := utils.RenderStatement(statement, materials)
 
 	switch instance.Engine {
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 		if err != nil {
 			return nil, err
@@ -129,7 +128,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		sqlDB := driver.GetDB()
 
 		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-	case db.MySQL, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 		if err != nil {
 			return nil, err
@@ -138,7 +137,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		sqlDB := driver.GetDB()
 
 		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-	case db.Oracle:
+	case storepb.Engine_ORACLE:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
 			adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
@@ -277,7 +276,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			renderedStatement := utils.RenderStatement(statement, materials)
 			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
 				switch instance.Engine {
-				case db.Postgres:
+				case storepb.Engine_POSTGRES:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 					if err != nil {
 						return nil, err
@@ -286,7 +285,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					sqlDB := driver.GetDB()
 
 					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-				case db.MySQL, db.OceanBase:
+				case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 					if err != nil {
 						return nil, err
@@ -295,7 +294,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					sqlDB := driver.GetDB()
 
 					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-				case db.Oracle:
+				case storepb.Engine_ORACLE:
 					schema := ""
 					if instance.Options == nil || !instance.Options.SchemaTenantMode {
 						adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
@@ -386,7 +385,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 	}, nil
 }
 
-func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType storepb.Engine, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
 	charset := dbMetadata.CharacterSet
 	collation := dbMetadata.Collation
 
@@ -435,7 +434,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
 		sqlTypeSet[sqlType] = struct{}{}
 		if !isDML(sqlType) {
-			if dbType != db.TiDB {
+			if dbType != storepb.Engine_TIDB {
 				resources, err := parser.ExtractChangedResources(parser.MySQL, databaseName, "" /* currentSchema */, stmt.Text)
 				if err != nil {
 					slog.Error("failed to get statement changed resources", log.BBError(err))

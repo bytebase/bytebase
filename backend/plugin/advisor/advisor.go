@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Status is the advisor result status.
@@ -546,13 +546,13 @@ type Advisor interface {
 
 var (
 	advisorMu sync.RWMutex
-	advisors  = make(map[db.Type]map[Type]Advisor)
+	advisors  = make(map[storepb.Engine]map[Type]Advisor)
 )
 
 // Register makes a advisor available by the provided id.
 // If Register is called twice with the same name or if advisor is nil,
 // it panics.
-func Register(dbType db.Type, advType Type, f Advisor) {
+func Register(dbType storepb.Engine, advType Type, f Advisor) {
 	advisorMu.Lock()
 	defer advisorMu.Unlock()
 	if f == nil {
@@ -572,7 +572,7 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType db.Type, advType Type, ctx Context, statement string) (adviceList []Advice, err error) {
+func Check(dbType storepb.Engine, advType Type, ctx Context, statement string) (adviceList []Advice, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			err = errors.Errorf("panic in advisor check: %v", panicErr)
@@ -592,22 +592,4 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) (adviceL
 	}
 
 	return f.Check(ctx, statement)
-}
-
-// IsSyntaxCheckSupported checks the engine type if syntax check supports it.
-func IsSyntaxCheckSupported(dbType db.Type) bool {
-	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
-		return true
-	}
-	return false
-}
-
-// IsSQLReviewSupported checks the engine type if SQL review supports it.
-func IsSQLReviewSupported(dbType db.Type) bool {
-	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
-		return true
-	}
-	return false
 }

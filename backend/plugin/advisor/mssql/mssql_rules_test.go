@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestMSSQLRules(t *testing.T) {
@@ -25,6 +25,6 @@ func TestMSSQLRules(t *testing.T) {
 	}
 
 	for _, rule := range snowflakeRules {
-		advisor.RunSQLReviewRuleTest(t, rule, db.MSSQL, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MSSQL, false /* record */)
 	}
 }

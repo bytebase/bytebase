@@ -14,9 +14,9 @@ import (
 	"github.com/pingcap/tidb/sessionctx/stmtctx"
 	"github.com/pingcap/tidb/types"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	mysqlbbparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // WalkThroughErrorType is the type of WalkThroughError.
@@ -208,9 +208,9 @@ func (e *WalkThroughError) Error() string {
 // WalkThrough will collect the catalog schema in the databaseState as it walks through the stmt.
 func (d *DatabaseState) WalkThrough(stmt string) error {
 	switch d.dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return d.mysqlWalkThrough(stmt)
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		if err := d.pgWalkThrough(stmt); err != nil {
 			if d.ctx.CheckIntegrity {
 				return err

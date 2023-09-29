@@ -27,6 +27,7 @@ enum Engine {
   MARIADB = 13;
   OCEANBASE = 14;
   DM = 15;
+  RISINGWAVE = 16;
 }
 
 enum VcsType {

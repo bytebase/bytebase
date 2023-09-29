@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -17,10 +17,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking the MySQLTableDropNamingConvention rule.

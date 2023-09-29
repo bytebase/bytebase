@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestOracleRules(t *testing.T) {
@@ -31,6 +31,6 @@ func TestOracleRules(t *testing.T) {
 	}
 
 	for _, rule := range oracleRules {
-		advisor.RunSQLReviewRuleTest(t, rule, db.Oracle, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ORACLE, false /* record */)
 	}
 }

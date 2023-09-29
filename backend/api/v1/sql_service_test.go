@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -16,37 +15,37 @@ import (
 
 func TestGetSQLStatementPrefix(t *testing.T) {
 	tests := []struct {
-		engine       db.Type
+		engine       storepb.Engine
 		resourceList []base.SchemaResource
 		columnNames  []string
 		want         string
 	}{
 		{
-			engine:       db.MySQL,
+			engine:       storepb.Engine_MYSQL,
 			resourceList: nil,
 			columnNames:  []string{"a"},
 			want:         "INSERT INTO `<table_name>` (`a`) VALUES (",
 		},
 		{
-			engine:       db.MySQL,
+			engine:       storepb.Engine_MYSQL,
 			resourceList: []base.SchemaResource{{Database: "db1", Schema: "", Table: "table1"}},
 			columnNames:  []string{"a", "b"},
 			want:         "INSERT INTO `table1` (`a`,`b`) VALUES (",
 		},
 		{
-			engine:       db.Postgres,
+			engine:       storepb.Engine_POSTGRES,
 			resourceList: nil,
 			columnNames:  []string{"a"},
 			want:         "INSERT INTO \"<table_name>\" (\"a\") VALUES (",
 		},
 		{
-			engine:       db.Postgres,
+			engine:       storepb.Engine_POSTGRES,
 			resourceList: []base.SchemaResource{{Database: "db1", Schema: "", Table: "table1"}},
 			columnNames:  []string{"a"},
 			want:         "INSERT INTO \"table1\" (\"a\") VALUES (",
 		},
 		{
-			engine:       db.Postgres,
+			engine:       storepb.Engine_POSTGRES,
 			resourceList: []base.SchemaResource{{Database: "db1", Schema: "schema1", Table: "table1"}},
 			columnNames:  []string{"a"},
 			want:         "INSERT INTO \"schema1\".\"table1\" (\"a\") VALUES (",
@@ -63,13 +62,13 @@ func TestGetSQLStatementPrefix(t *testing.T) {
 
 func TestExportSQL(t *testing.T) {
 	tests := []struct {
-		engine          db.Type
+		engine          storepb.Engine
 		statementPrefix string
 		result          *v1pb.QueryResult
 		want            string
 	}{
 		{
-			engine:          db.MySQL,
+			engine:          storepb.Engine_MYSQL,
 			statementPrefix: "INSERT INTO `<table_name>` (`a`) VALUES (",
 			result: &v1pb.QueryResult{
 				Rows: []*v1pb.QueryRow{
@@ -104,7 +103,7 @@ func TestExportSQL(t *testing.T) {
 			want: "INSERT INTO `<table_name>` (`a`) VALUES (true,'abc',NULL);\nINSERT INTO `<table_name>` (`a`) VALUES (false,'abc',NULL);",
 		},
 		{
-			engine:          db.MySQL,
+			engine:          storepb.Engine_MYSQL,
 			statementPrefix: "INSERT INTO `<table_name>` (`a`) VALUES (",
 			result: &v1pb.QueryResult{
 				Rows: []*v1pb.QueryRow{
@@ -120,7 +119,7 @@ func TestExportSQL(t *testing.T) {
 			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\\nbc');",
 		},
 		{
-			engine:          db.MySQL,
+			engine:          storepb.Engine_MYSQL,
 			statementPrefix: "INSERT INTO `<table_name>` (`a`) VALUES (",
 			result: &v1pb.QueryResult{
 				Rows: []*v1pb.QueryRow{
@@ -136,7 +135,7 @@ func TestExportSQL(t *testing.T) {
 			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a''b');",
 		},
 		{
-			engine:          db.MySQL,
+			engine:          storepb.Engine_MYSQL,
 			statementPrefix: "INSERT INTO `<table_name>` (`a`) VALUES (",
 			result: &v1pb.QueryResult{
 				Rows: []*v1pb.QueryRow{
@@ -152,7 +151,7 @@ func TestExportSQL(t *testing.T) {
 			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\\b');",
 		},
 		{
-			engine:          db.Postgres,
+			engine:          storepb.Engine_POSTGRES,
 			statementPrefix: "INSERT INTO `<table_name>` (`a`) VALUES (",
 			result: &v1pb.QueryResult{
 				Rows: []*v1pb.QueryRow{
@@ -168,7 +167,7 @@ func TestExportSQL(t *testing.T) {
 			want: "INSERT INTO `<table_name>` (`a`) VALUES ('a\nbc');",
 		},
 		{
-			engine:          db.Postgres,
+			engine:          storepb.Engine_POSTGRES,
 			statementPrefix: "INSERT INTO `<table_name>` (`b`) VALUES (",
 			result: &v1pb.QueryResult{
 				Rows: []*v1pb.QueryRow{
