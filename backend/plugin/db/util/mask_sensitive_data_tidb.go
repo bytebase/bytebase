@@ -413,12 +413,12 @@ func (extractor *TiDBSensitiveFieldExtractor) checkFieldMaskingLevel(databaseNam
 		}
 	}
 
-	return defaultMaskingLevel
+	return base.DefaultMaskingLevel
 }
 
 func (extractor *TiDBSensitiveFieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) (maskingLevel storepb.MaskingLevel, err error) {
 	if in == nil {
-		return defaultMaskingLevel, nil
+		return base.DefaultMaskingLevel, nil
 	}
 
 	switch node := in.(type) {
@@ -459,12 +459,12 @@ func (extractor *TiDBSensitiveFieldExtractor) extractColumnFromExprNode(in tidba
 		if err != nil {
 			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, field := range fieldList {
 			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
 				finalLevel = field.MaskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return finalLevel, nil
 			}
 		}
@@ -510,11 +510,11 @@ func (extractor *TiDBSensitiveFieldExtractor) extractColumnFromExprNode(in tidba
 		*tidbast.DefaultExpr:
 		// No expression need to extract.
 	}
-	return defaultMaskingLevel, nil
+	return base.DefaultMaskingLevel, nil
 }
 
 func (extractor *TiDBSensitiveFieldExtractor) extractColumnFromExprNodeList(nodeList []tidbast.ExprNode) (maskingLevel storepb.MaskingLevel, err error) {
-	finalLevel := defaultMaskingLevel
+	finalLevel := base.DefaultMaskingLevel
 	for _, node := range nodeList {
 		maskingLevel, err := extractor.extractColumnFromExprNode(node)
 		if err != nil {
@@ -523,7 +523,7 @@ func (extractor *TiDBSensitiveFieldExtractor) extractColumnFromExprNodeList(node
 		if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 			finalLevel = maskingLevel
 		}
-		if finalLevel == maxMaskingLevel {
+		if finalLevel == base.MaxMaskingLevel {
 			return finalLevel, nil
 		}
 	}

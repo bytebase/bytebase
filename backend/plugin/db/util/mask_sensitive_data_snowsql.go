@@ -291,7 +291,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expr := range ctx.AllExpr() {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 			if err != nil {
@@ -300,7 +300,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -312,7 +312,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -353,7 +353,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -391,7 +391,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		panic("never reach here")
 	case *parser.Json_literalContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if v := ctx.AllKv_pair(); len(v) > 0 {
 			for _, kvPair := range v {
 				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(kvPair)
@@ -401,7 +401,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -417,7 +417,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		panic("never reach here")
 	case *parser.Arr_literalContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if v := ctx.AllValue(); len(v) > 0 {
 			for _, value := range v {
 				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(value)
@@ -427,7 +427,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -436,7 +436,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 	case *parser.ValueContext:
 		return extractor.evalSnowSQLExprMaskingLevel(ctx.Expr())
 	case *parser.Bracket_expressionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if v := ctx.Expr(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
@@ -445,7 +445,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -461,7 +461,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		panic("never reach here")
 	case *parser.Iff_exprContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if v := ctx.Search_condition(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(ctx.Search_condition())
 			if err != nil {
@@ -470,7 +470,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 			for _, expr := range ctx.AllExpr() {
@@ -481,7 +481,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -489,7 +489,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		panic("never reach here")
 	case *parser.Case_expressionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, expr := range ctx.AllExpr() {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
 			if err != nil {
@@ -498,7 +498,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -511,7 +511,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -526,7 +526,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -534,7 +534,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		panic("never reach here")
 	case *parser.Switch_sectionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if v := ctx.AllExpr(); len(v) > 0 {
 			for _, expr := range v {
 				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
@@ -544,7 +544,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -552,7 +552,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		panic("never reach here")
 	case *parser.Switch_search_condition_sectionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if v := ctx.Search_condition(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
@@ -561,7 +561,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 			_, maskingLevel, err = extractor.evalSnowSQLExprMaskingLevel(ctx.Expr())
@@ -575,7 +575,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		panic("never reach here")
 	case *parser.Search_conditionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if v := ctx.Predicate(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
@@ -594,7 +594,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -602,7 +602,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		panic("never reach here")
 	case *parser.PredicateContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if v := ctx.AllExpr(); len(v) > 0 {
 			for _, expr := range v {
 				_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
@@ -612,7 +612,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 					finalLevel = maskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					return ctx.GetText(), finalLevel, nil
 				}
 			}
@@ -634,7 +634,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -644,12 +644,12 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.GetText(), ctx.GetStart().GetLine())
 		}
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, field := range fields {
 			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
 				finalLevel = field.MaskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -658,7 +658,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		if v := ctx.Id_(); v != nil {
 			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
-		return ctx.GetText(), defaultMaskingLevel, nil
+		return ctx.GetText(), base.DefaultMaskingLevel, nil
 	case *parser.Function_callContext:
 		if v := ctx.Ranking_windowed_function(); v != nil {
 			return extractor.evalSnowSQLExprMaskingLevel(v)
@@ -667,7 +667,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			return extractor.evalSnowSQLExprMaskingLevel(v)
 		}
 		if v := ctx.Object_name(); v != nil {
-			return v.GetText(), defaultMaskingLevel, nil
+			return v.GetText(), base.DefaultMaskingLevel, nil
 		}
 		if v := ctx.Expr_list(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
@@ -693,10 +693,10 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			return ctx.GetText(), maskingLevel, nil
 		}
 		if ctx.STAR() != nil {
-			return ctx.GetText(), defaultMaskingLevel, nil
+			return ctx.GetText(), base.DefaultMaskingLevel, nil
 		}
 		if v := ctx.Expr(); v != nil {
-			finalLevel := defaultMaskingLevel
+			finalLevel := base.DefaultMaskingLevel
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
 				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
@@ -704,7 +704,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 			_, maskingLevel, err = extractor.evalSnowSQLExprMaskingLevel(ctx.Order_by_clause())
@@ -718,7 +718,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		panic("never reach here")
 	case *parser.Ranking_windowed_functionContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if v := ctx.Expr(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
@@ -727,7 +727,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -743,7 +743,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		panic("never reach here")
 	case *parser.Over_clauseContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		if v := ctx.Partition_by(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
 			if err != nil {
@@ -752,7 +752,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -780,7 +780,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.Expr_listContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		allExpr := ctx.AllExpr()
 		for _, expr := range allExpr {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
@@ -790,13 +790,13 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Expr_list_sortedContext:
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		allExpr := ctx.AllExpr()
 		for _, expr := range allExpr {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(expr)
@@ -806,7 +806,7 @@ func (extractor *SnowSensitiveFieldExtractor) evalSnowSQLExprMaskingLevel(ctx an
 			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
 				finalLevel = maskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
@@ -1029,12 +1029,12 @@ func (extractor *SnowSensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjec
 				result = append(result[:strippedColumnIndices[idx]], result[strippedColumnIndices[idx]+1:]...)
 			}
 
-			finalLevel := defaultMaskingLevel
+			finalLevel := base.DefaultMaskingLevel
 			for _, field := range strippedColumnInOriginalResult {
 				if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
 					finalLevel = field.MaskingLevel
 				}
-				if finalLevel == maxMaskingLevel {
+				if finalLevel == base.MaxMaskingLevel {
 					break
 				}
 			}
@@ -1047,7 +1047,7 @@ func (extractor *SnowSensitiveFieldExtractor) extractSnowsqlSensitiveFieldsObjec
 
 			result = append(result, base.FieldInfo{
 				Name:         normalizedNameColumnName,
-				MaskingLevel: defaultMaskingLevel,
+				MaskingLevel: base.DefaultMaskingLevel,
 			}, base.FieldInfo{
 				Name:         normalizedValueColumnName,
 				MaskingLevel: finalLevel,

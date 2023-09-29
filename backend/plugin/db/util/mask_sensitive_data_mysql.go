@@ -229,7 +229,7 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlExtractRecursiveCTE(ctx mysq
 		for i := range columnList {
 			l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, db.ColumnInfo{
 				Name:         columnList[i],
-				MaskingLevel: defaultMaskingLevel,
+				MaskingLevel: base.DefaultMaskingLevel,
 			})
 		}
 	}
@@ -632,7 +632,7 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlExtractTableValueConstructor
 			if child.GetSymbol().GetTokenType() == mysql.MySQLParserDEFAULT_SYMBOL {
 				result = append(result, base.FieldInfo{
 					Name:         "DEFAULT",
-					MaskingLevel: defaultMaskingLevel,
+					MaskingLevel: base.DefaultMaskingLevel,
 				})
 			}
 		}
@@ -1295,7 +1295,7 @@ func mysqlExtractJtColumn(ctx mysql.IJtColumnContext) []string {
 
 func (extractor *MySQLSensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
 	if ctx == nil {
-		return "", defaultMaskingLevel, nil
+		return "", base.DefaultMaskingLevel, nil
 	}
 
 	switch ctx := ctx.(type) {
@@ -1314,12 +1314,12 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx a
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
-		finalLevel := defaultMaskingLevel
+		finalLevel := base.DefaultMaskingLevel
 		for _, field := range fieldList {
 			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
 				finalLevel = field.MaskingLevel
 			}
-			if finalLevel == maxMaskingLevel {
+			if finalLevel == base.MaxMaskingLevel {
 				return "", finalLevel, nil
 			}
 		}
@@ -1339,7 +1339,7 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx a
 
 	fieldName, level, err := extractor.mysqlEvalMaskingLevelInExprList(list)
 	if err != nil {
-		return "", defaultMaskingLevel, err
+		return "", base.DefaultMaskingLevel, err
 	}
 	if len(ctx.GetChildren()) > 1 {
 		fieldName = ""
@@ -1348,14 +1348,14 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlEvalMaskingLevelInExpr(ctx a
 }
 
 func (extractor *MySQLSensitiveFieldExtractor) mysqlEvalMaskingLevelInExprList(list []antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
-	finalLevel := defaultMaskingLevel
+	finalLevel := base.DefaultMaskingLevel
 	var fieldName string
 	var err error
 	for _, ctx := range list {
 		var level storepb.MaskingLevel
 		fieldName, level, err = extractor.mysqlEvalMaskingLevelInExpr(ctx)
 		if err != nil {
-			return "", defaultMaskingLevel, err
+			return "", base.DefaultMaskingLevel, err
 		}
 		if len(list) != 1 {
 			fieldName = ""
@@ -1363,7 +1363,7 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlEvalMaskingLevelInExprList(l
 		if cmp.Less[storepb.MaskingLevel](finalLevel, level) {
 			finalLevel = level
 		}
-		if finalLevel == maxMaskingLevel {
+		if finalLevel == base.MaxMaskingLevel {
 			return fieldName, finalLevel, nil
 		}
 	}
@@ -1424,5 +1424,5 @@ func (extractor *MySQLSensitiveFieldExtractor) mysqlCheckFieldMaskingLevel(datab
 			return field.MaskingLevel
 		}
 	}
-	return defaultMaskingLevel
+	return base.DefaultMaskingLevel
 }

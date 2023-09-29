@@ -6,12 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-)
-
-var (
-	defaultMaskingLevel storepb.MaskingLevel = storepb.MaskingLevel_NONE
-	maxMaskingLevel     storepb.MaskingLevel = storepb.MaskingLevel_FULL
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 func extractSensitiveField(dbType db.Type, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
@@ -89,11 +84,11 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 				return nil, errors.Errorf("Oracle schema info should have the same database name and schema name, but got %s and %s", database.Name, database.SchemaList[0].Name)
 			}
 		}
-		extractor := &PLSQLSensitiveFieldExtractor{
-			currentDatabase: currentDatabase,
-			schemaInfo:      schemaInfo,
+		extractor := &plsqlparser.SensitiveFieldExtractor{
+			CurrentDatabase: currentDatabase,
+			SchemaInfo:      schemaInfo,
 		}
-		result, err := extractor.extractOracleSensitiveField(statement)
+		result, err := extractor.ExtractOracleSensitiveField(statement)
 		if err != nil {
 			return nil, err
 		}
