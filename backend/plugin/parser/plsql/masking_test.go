@@ -543,7 +543,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			CurrentDatabase: defaultSchema,
 			SchemaInfo:      test.schemaInfo,
 		}
-		res, err := extractor.ExtractOracleSensitiveField(test.statement)
+		res, err := extractor.ExtractSensitiveField(test.statement)
 		require.NoError(t, err, test.statement)
 		require.Equal(t, test.fieldList, res, test.statement)
 	}

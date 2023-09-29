@@ -494,7 +494,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			CurrentDatabase: defaultDatabase,
 			SchemaInfo:      test.schemaInfo,
 		}
-		res, err := extractor.ExtractTiDBSensitiveField(test.statement)
+		res, err := extractor.ExtractSensitiveField(test.statement)
 		require.NoError(t, err, test.statement)
 		require.Equal(t, test.fieldList, res, test.statement)
 	}

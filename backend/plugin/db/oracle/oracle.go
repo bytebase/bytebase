@@ -183,6 +183,18 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		queryContext.ReadOnly = false
 	}
 
+	for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
+		if len(database.SchemaList) == 0 {
+			continue
+		}
+		if len(database.SchemaList) > 1 {
+			return nil, errors.Errorf("Oracle schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
+		}
+		if database.SchemaList[0].Name != database.Name {
+			return nil, errors.Errorf("Oracle schema info should have the same database name and schema name, but got %s and %s", database.Name, database.SchemaList[0].Name)
+		}
+	}
+
 	startTime := time.Now()
 	result, err := util.Query(ctx, db.Oracle, conn, stmt, queryContext)
 	if err != nil {

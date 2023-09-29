@@ -1,8 +1,6 @@
 package util
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -13,49 +11,23 @@ import (
 )
 
 func extractSensitiveField(dbType db.Type, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
-	if schemaInfo == nil {
-		return nil, nil
-	}
-
 	switch dbType {
 	case db.MySQL, db.MariaDB, db.OceanBase:
-		for _, database := range schemaInfo.DatabaseList {
-			if len(database.SchemaList) == 0 {
-				continue
-			}
-			if len(database.SchemaList) > 1 {
-				return nil, errors.Errorf("MySQL schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
-			}
-			if database.SchemaList[0].Name != "" {
-				return nil, errors.Errorf("MySQL schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
-			}
-		}
 		extractor := &mysqlparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
 		}
-		result, err := extractor.ExtractMySQLSensitiveField(statement)
+		result, err := extractor.ExtractSensitiveField(statement)
 		if err != nil {
 			return nil, err
 		}
 		return result, nil
 	case db.TiDB:
-		for _, database := range schemaInfo.DatabaseList {
-			if len(database.SchemaList) == 0 {
-				continue
-			}
-			if len(database.SchemaList) > 1 {
-				return nil, errors.Errorf("TiDB schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
-			}
-			if database.SchemaList[0].Name != "" {
-				return nil, errors.Errorf("TiDB schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
-			}
-		}
 		extractor := &tidbparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
 		}
-		result, err := extractor.ExtractTiDBSensitiveField(statement)
+		result, err := extractor.ExtractSensitiveField(statement)
 		if err != nil {
 			return nil, err
 		}
@@ -64,24 +36,13 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		extractor := &pgparser.SensitiveFieldExtractor{
 			SchemaInfo: schemaInfo,
 		}
-		return extractor.ExtractPostgreSQLSensitiveField(statement)
+		return extractor.ExtractSensitiveField(statement)
 	case db.Oracle, db.DM:
-		for _, database := range schemaInfo.DatabaseList {
-			if len(database.SchemaList) == 0 {
-				continue
-			}
-			if len(database.SchemaList) > 1 {
-				return nil, errors.Errorf("Oracle schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
-			}
-			if database.SchemaList[0].Name != database.Name {
-				return nil, errors.Errorf("Oracle schema info should have the same database name and schema name, but got %s and %s", database.Name, database.SchemaList[0].Name)
-			}
-		}
 		extractor := &plsqlparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
 		}
-		result, err := extractor.ExtractOracleSensitiveField(statement)
+		result, err := extractor.ExtractSensitiveField(statement)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +52,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
 		}
-		result, err := extractor.ExtractSnowsqlSensitiveFields(statement)
+		result, err := extractor.ExtractSensitiveFields(statement)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +62,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
 		}
-		result, err := extractor.ExtractTSqlSensitiveFields(statement)
+		result, err := extractor.ExtractSensitiveFields(statement)
 		if err != nil {
 			return nil, err
 		}

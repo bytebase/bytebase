@@ -414,7 +414,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			CurrentDatabase: defaultDatabase,
 			SchemaInfo:      test.schemaInfo,
 		}
-		res, err := extractor.ExtractSnowsqlSensitiveFields(test.statement)
+		res, err := extractor.ExtractSensitiveFields(test.statement)
 		require.NoError(t, err, test.statement)
 		require.Equal(t, test.fieldList, res, test.statement)
 	}

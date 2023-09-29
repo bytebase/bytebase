@@ -282,7 +282,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 			CurrentDatabase: defaultDatabase,
 			SchemaInfo:      test.schemaInfo,
 		}
-		res, err := extractor.ExtractTSqlSensitiveFields(test.statement)
+		res, err := extractor.ExtractSensitiveFields(test.statement)
 		require.NoError(t, err, test.statement)
 		require.Equal(t, test.fieldList, res, test.statement)
 	}

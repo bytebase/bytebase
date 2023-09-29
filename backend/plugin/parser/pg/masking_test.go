@@ -569,7 +569,7 @@ func TestPostgreSQLExtractSensitiveField(t *testing.T) {
 		extractor := &SensitiveFieldExtractor{
 			SchemaInfo: test.schemaInfo,
 		}
-		res, err := extractor.ExtractPostgreSQLSensitiveField(test.statement)
+		res, err := extractor.ExtractSensitiveField(test.statement)
 		require.NoError(t, err)
 		require.NoError(t, err, test.statement)
 		require.Equal(t, test.fieldList, res, test.statement)
