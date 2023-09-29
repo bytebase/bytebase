@@ -8,6 +8,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 func extractSensitiveField(dbType db.Type, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
@@ -95,7 +96,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		}
 		return result, nil
 	case db.Snowflake:
-		extractor := &snowparser.SnowSensitiveFieldExtractor{
+		extractor := &snowparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
 		}
@@ -105,7 +106,7 @@ func extractSensitiveField(dbType db.Type, statement string, currentDatabase str
 		}
 		return result, nil
 	case db.MSSQL:
-		extractor := &TSQLSensitiveFieldExtractor{
+		extractor := &tsqlparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
 		}
