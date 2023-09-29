@@ -23,6 +23,7 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -510,7 +511,7 @@ func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]
 }
 
 func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
-	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+	stmts, err := pgrawparser.Parse(parser.ParseContext{}, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
