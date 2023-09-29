@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -403,7 +404,7 @@ func TestCreateTableGroup(t *testing.T) {
 				for preCreateDatabase := range prepareInstance.matchDatabasesNameTableName {
 					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
 					a.NoError(err)
-					dbDriver, err := db.Open(ctx, db.SQLite, db.DriverConfig{}, db.ConnectionConfig{
+					dbDriver, err := db.Open(ctx, storepb.Engine_SQLITE, db.DriverConfig{}, db.ConnectionConfig{
 						Host:     instanceDir,
 						Database: preCreateDatabase,
 					}, db.ConnectionContext{})

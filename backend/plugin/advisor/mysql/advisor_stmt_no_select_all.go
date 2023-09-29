@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -16,10 +16,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
 }
 
 // NoSelectAllAdvisor is the advisor checking for no "select *".

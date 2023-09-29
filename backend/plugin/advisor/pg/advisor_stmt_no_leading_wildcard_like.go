@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Postgres, advisor.PostgreSQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
 }
 
 // NoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.

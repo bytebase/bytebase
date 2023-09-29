@@ -1,7 +1,6 @@
 package catalog
 
 import (
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -23,7 +22,7 @@ type FinderContext struct {
 	CheckIntegrity bool
 
 	// EngineType is the engine type for database engine.
-	EngineType db.Type
+	EngineType storepb.Engine
 }
 
 // Copy returns the deep copy.

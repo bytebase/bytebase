@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // DBFactory is the factory for building database driver.
@@ -47,7 +48,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 	if database != nil && database.DataShare {
 		datashare = true
 	}
-	if instance.Engine == db.Oracle && database != nil && database.ServiceName != "" {
+	if instance.Engine == storepb.Engine_ORACLE && database != nil && database.ServiceName != "" {
 		// For Oracle, we map CDB as instance and PDB as database.
 		// The instance data source is the data source for CDB.
 		// So, if the database is not nil, which means we want to connect the PDB, we need to override the database name, service name, and sid.
@@ -82,7 +83,7 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 	if database != nil {
 		databaseName = database.DatabaseName
 	}
-	if instance.Engine == db.Oracle && database != nil && database.ServiceName != "" {
+	if instance.Engine == storepb.Engine_ORACLE && database != nil && database.ServiceName != "" {
 		// For Oracle, we map CDB as instance and PDB as database.
 		// The instance data source is the data source for CDB.
 		// So, if the database is not nil, which means we want to connect the PDB, we need to override the database name, service name, and sid.
@@ -104,15 +105,15 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
-func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine db.Type, dataSource *store.DataSourceMessage, databaseName, instanceID string, instanceUID int, datashare, readOnly bool, schemaTenantMode bool) (db.Driver, error) {
+func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine storepb.Engine, dataSource *store.DataSourceMessage, databaseName, instanceID string, instanceUID int, datashare, readOnly bool, schemaTenantMode bool) (db.Driver, error) {
 	dbBinDir := ""
 	switch engine {
-	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		// TODO(d): use maria mysqlbinlog for MariaDB.
 		dbBinDir = d.mysqlBinDir
-	case db.Postgres, db.RisingWave:
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
 		dbBinDir = d.pgBinDir
-	case db.MongoDB:
+	case storepb.Engine_MONGODB:
 		dbBinDir = d.mongoBinDir
 	}
 

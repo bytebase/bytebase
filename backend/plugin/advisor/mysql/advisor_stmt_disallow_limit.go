@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,10 +18,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
 }
 
 // DisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.

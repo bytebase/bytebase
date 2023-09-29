@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Snowflake, advisor.SnowflakeColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
 }
 
 // ColumnMaximumVarcharLengthAdvisor is the advisor checking for maximum varchar length.

@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -20,10 +20,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
 }
 
 // ColumnAutoIncrementMustIntegerAdvisor is the advisor checking for auto-increment column type.

@@ -24,13 +24,14 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var _ db.Driver = (*Driver)(nil)
 
 func init() {
-	db.Register(db.MongoDB, newDriver)
+	db.Register(storepb.Engine_MONGODB, newDriver)
 }
 
 // Driver is the MongoDB driver.
@@ -47,7 +48,7 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MongoDB driver.
-func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	connectionURI := getMongoDBConnectionURI(connCfg)
 	opts := options.Client().ApplyURI(connectionURI)
 	client, err := mongo.Connect(ctx, opts)
@@ -78,8 +79,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.MongoDB
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_MONGODB
 }
 
 // GetDB gets the database.

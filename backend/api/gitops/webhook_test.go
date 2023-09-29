@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // TODO(d): fix the double underscore "__".
@@ -365,20 +366,20 @@ func TestGetFileInfo(t *testing.T) {
 func TestExtractDBTypeFromJDBCConnectionString(t *testing.T) {
 	testCases := []struct {
 		jdbcConnectionString string
-		want                 db.Type
+		want                 storepb.Engine
 		wantErr              bool
 	}{
 		{
 			jdbcConnectionString: "jdbc:mysql://localhost:3306/bytebase?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC",
-			want:                 db.MySQL,
+			want:                 storepb.Engine_MYSQL,
 		},
 		{
 			jdbcConnectionString: "jdbc:mysql+srv+loadbalance://localhost:3306/bytebase?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC",
-			want:                 db.MySQL,
+			want:                 storepb.Engine_MYSQL,
 		},
 		{
 			jdbcConnectionString: "jdbc:postgresql://localhost:5432/bytebase?currentSchema=public&sslmode=disable",
-			want:                 db.Postgres,
+			want:                 storepb.Engine_POSTGRES,
 		},
 	}
 

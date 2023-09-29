@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -15,7 +15,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Snowflake, advisor.SnowflakeNoSelectAll, &SelectNoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeNoSelectAll, &SelectNoSelectAllAdvisor{})
 }
 
 // SelectNoSelectAllAdvisor is the advisor checking for no select all.

@@ -13,7 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -22,10 +22,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
 }
 
 // IndexTypeNoBlobAdvisor is the advisor checking for index type no blob.

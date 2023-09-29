@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -123,7 +122,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	if instance == nil {
 		return nil, nil, errors.Errorf("instance ID not found %v", instanceID)
 	}
-	if instance.Engine == db.Oracle {
+	if instance.Engine == storepb.Engine_ORACLE {
 		return nil, nil, errors.Errorf("creating Oracle database is not supported")
 	}
 	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
@@ -138,7 +137,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, nil, err
 	}
 
-	if instance.Engine == db.MongoDB && c.Table == "" {
+	if instance.Engine == storepb.Engine_MONGODB && c.Table == "" {
 		return nil, nil, errors.Errorf("collection name is required for MongoDB")
 	}
 
@@ -149,11 +148,11 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if c.Database == "" {
 			return nil, errors.Errorf("database name is required")
 		}
-		if instance.Engine == db.Snowflake {
+		if instance.Engine == storepb.Engine_SNOWFLAKE {
 			// Snowflake needs to use upper case of DatabaseName.
 			c.Database = strings.ToUpper(c.Database)
 		}
-		if instance.Engine == db.MongoDB && c.Table == "" {
+		if instance.Engine == storepb.Engine_MONGODB && c.Table == "" {
 			return nil, common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB")
 		}
 		// Validate the labels. Labels are set upon task completion.
@@ -176,10 +175,10 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 		databaseName := c.Database
 		switch instance.Engine {
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			// Snowflake needs to use upper case of DatabaseName.
 			databaseName = strings.ToUpper(databaseName)
-		case db.MySQL, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			// For MySQL, we need to use different case of DatabaseName depends on the variable `lower_case_table_names`.
 			// https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
 			// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
@@ -868,9 +867,9 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 }
 
 // checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.
-func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, owner string) error {
+func checkCharacterSetCollationOwner(dbType storepb.Engine, characterSet, collation, owner string) error {
 	switch dbType {
-	case db.Spanner:
+	case storepb.Engine_SPANNER:
 		// Spanner does not support character set and collation at the database level.
 		if characterSet != "" {
 			return errors.Errorf("Spanner does not support character set, but got %s", characterSet)
@@ -878,7 +877,7 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		if collation != "" {
 			return errors.Errorf("Spanner does not support collation, but got %s", collation)
 		}
-	case db.ClickHouse:
+	case storepb.Engine_CLICKHOUSE:
 		// ClickHouse does not support character set and collation at the database level.
 		if characterSet != "" {
 			return errors.Errorf("ClickHouse does not support character set, but got %s", characterSet)
@@ -886,29 +885,29 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		if collation != "" {
 			return errors.Errorf("ClickHouse does not support collation, but got %s", collation)
 		}
-	case db.Snowflake:
+	case storepb.Engine_SNOWFLAKE:
 		if characterSet != "" {
 			return errors.Errorf("Snowflake does not support character set, but got %s", characterSet)
 		}
 		if collation != "" {
 			return errors.Errorf("Snowflake does not support collation, but got %s", collation)
 		}
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		if owner == "" {
 			return errors.Errorf("database owner is required for PostgreSQL")
 		}
-	case db.Redshift:
+	case storepb.Engine_REDSHIFT:
 		if owner == "" {
 			return errors.Errorf("database owner is required for Redshift")
 		}
-	case db.RisingWave:
+	case storepb.Engine_RISINGWAVE:
 		if characterSet != "" {
 			return errors.Errorf("RisingWave does not support character set, but got %s", characterSet)
 		}
 		if collation != "" {
 			return errors.Errorf("RisingWave does not support collation, but got %s", collation)
 		}
-	case db.SQLite, db.MongoDB, db.MSSQL:
+	case storepb.Engine_SQLITE, storepb.Engine_MONGODB, storepb.Engine_MSSQL:
 		// no-op.
 	default:
 		if characterSet == "" {
@@ -924,14 +923,14 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 	return nil
 }
 
-func getCreateDatabaseStatement(dbType db.Type, c *storepb.PlanConfig_CreateDatabaseConfig, databaseName, adminDatasourceUser string) (string, error) {
+func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_CreateDatabaseConfig, databaseName, adminDatasourceUser string) (string, error) {
 	var stmt string
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, c.CharacterSet, c.Collation), nil
-	case db.MSSQL:
+	case storepb.Engine_MSSQL:
 		return fmt.Sprintf(`CREATE DATABASE "%s";`, databaseName), nil
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
 		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
 		if adminDatasourceUser != "" && c.Owner != adminDatasourceUser {
@@ -952,27 +951,27 @@ func getCreateDatabaseStatement(dbType db.Type, c *storepb.PlanConfig_CreateData
 		// For tenant project, the schema for the newly created database will belong to the same owner.
 		// TODO(d): alter schema "public" owner to the database owner.
 		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, c.Owner), nil
-	case db.ClickHouse:
+	case storepb.Engine_CLICKHOUSE:
 		clusterPart := ""
 		if c.Cluster != "" {
 			clusterPart = fmt.Sprintf(" ON CLUSTER `%s`", c.Cluster)
 		}
 		return fmt.Sprintf("CREATE DATABASE `%s`%s;", databaseName, clusterPart), nil
-	case db.Snowflake:
+	case storepb.Engine_SNOWFLAKE:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
-	case db.SQLite:
+	case storepb.Engine_SQLITE:
 		// This is a fake CREATE DATABASE and USE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
 		return fmt.Sprintf("CREATE DATABASE '%s';", databaseName), nil
-	case db.MongoDB:
+	case storepb.Engine_MONGODB:
 		// We just run createCollection in mongosh instead of execute `use <database>` first, because we execute the
 		// mongodb statement in mongosh with --file flag, and it doesn't support `use <database>` statement in the file.
 		// And we pass the database name to Bytebase engine driver, which will be used to build the connection string.
 		return fmt.Sprintf(`db.createCollection("%s");`, c.Table), nil
-	case db.Spanner:
+	case storepb.Engine_SPANNER:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
-	case db.Oracle:
+	case storepb.Engine_ORACLE:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
-	case db.Redshift:
+	case storepb.Engine_REDSHIFT:
 		options := make(map[string]string)
 		if adminDatasourceUser != "" && c.Owner != adminDatasourceUser {
 			options["OWNER"] = fmt.Sprintf("%q", c.Owner)

@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Oracle, advisor.OracleIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.OracleIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
 }
 
 // IndexKeyNumberLimitAdvisor is the advisor checking for index key number limit.

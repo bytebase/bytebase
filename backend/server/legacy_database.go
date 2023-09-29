@@ -49,7 +49,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed post database edit request").SetInternal(err)
 		}
 
-		engineType := parser.EngineType(instance.Engine)
+		engineType := parser.EngineType(instance.Engine.String())
 		validateResultList, err := edit.ValidateDatabaseEdit(engineType, databaseEdit)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate DatabaseEdit").SetInternal(err)

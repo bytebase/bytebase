@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -16,10 +16,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.

@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -37,17 +38,17 @@ var (
 )
 
 func init() {
-	db.Register(db.MySQL, newDriver)
-	db.Register(db.TiDB, newDriver)
-	db.Register(db.MariaDB, newDriver)
-	db.Register(db.OceanBase, newDriver)
+	db.Register(storepb.Engine_MYSQL, newDriver)
+	db.Register(storepb.Engine_TIDB, newDriver)
+	db.Register(storepb.Engine_MARIADB, newDriver)
+	db.Register(storepb.Engine_OCEANBASE, newDriver)
 }
 
 // Driver is the MySQL driver.
 type Driver struct {
 	connectionCtx db.ConnectionContext
 	connCfg       db.ConnectionConfig
-	dbType        db.Type
+	dbType        storepb.Engine
 	dbBinDir      string
 	binlogDir     string
 	db            *sql.DB
@@ -66,7 +67,7 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
@@ -91,7 +92,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 	if err != nil {
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
-	tlsKey := "db.mysql.tls"
+	tlsKey := "storepb.Engine_MYSQL.tls"
 	if tlsConfig != nil {
 		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
 			return nil, errors.Wrap(err, "sql: failed to register tls config")
@@ -135,7 +136,7 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (driver *Driver) GetType() db.Type {
+func (driver *Driver) GetType() storepb.Engine {
 	return driver.dbType
 }
 
@@ -240,7 +241,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		}
 	}
 
-	if driver.dbType == db.TiDB && queryContext.ReadOnly {
+	if driver.dbType == storepb.Engine_TIDB && queryContext.ReadOnly {
 		// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
 		// https://github.com/pingcap/tidb/issues/34626
 		queryContext.ReadOnly = false
@@ -267,7 +268,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
 	result.Statement = statement
-	if isExplain && driver.dbType == db.TiDB {
+	if isExplain && driver.dbType == storepb.Engine_TIDB {
 		if err := updateTiDBExplainResult(result); err != nil {
 			return nil, err
 		}

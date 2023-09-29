@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,10 +18,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
 }
 
 // IndexNoDuplicateColumnAdvisor is the advisor checking for no duplicate columns in index.

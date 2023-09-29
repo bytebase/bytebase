@@ -30,7 +30,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	configparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/configuration"
 	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
@@ -801,7 +800,7 @@ func (s *Service) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *myba
 				if err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract db type").SetInternal(err)
 				}
-				if engineType == db.UnknownType {
+				if engineType == storepb.Engine_ENGINE_UNSPECIFIED {
 					continue
 				}
 				emptyCatalog, err := store.NewEmptyCatalog(engineType)
@@ -814,13 +813,9 @@ func (s *Service) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *myba
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract mybatis mapper sql").SetInternal(err)
 				}
 
-				dbType, err := advisorDB.ConvertToAdvisorDBType(string(engineType))
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert to advisor db type").SetInternal(err)
-				}
 				adviceList, err := advisor.SQLReviewCheck(mybatisSQLs, policy.RuleList, advisor.SQLReviewCheckContext{
 					Catalog: emptyCatalog,
-					DbType:  dbType,
+					DbType:  engineType,
 				})
 				if err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check sql review").SetInternal(err)
@@ -999,11 +994,6 @@ func (s *Service) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to get SQL review policy in environment %v with error: %v", instance.EnvironmentID, err)
 		}
 
-		dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
-		if err != nil {
-			return nil, errors.Errorf("Failed to convert database engine type %v to advisor db type with error: %v", instance.Engine, err)
-		}
-
 		advisorMode := advisor.SyntaxModeNormal
 		if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 			advisorMode = advisor.SyntaxModeSDL
@@ -1028,7 +1018,7 @@ func (s *Service) sqlAdviceForFile(
 		adviceList, err := advisor.SQLReviewCheck(fileContent, policy.RuleList, advisor.SQLReviewCheckContext{
 			Charset:   dbSchema.Metadata.CharacterSet,
 			Collation: dbSchema.Metadata.Collation,
-			DbType:    dbType,
+			DbType:    instance.Engine,
 			Catalog:   catalog,
 			Driver:    connection,
 			Context:   ctx,
@@ -2451,24 +2441,24 @@ func filterBitbucketBytebaseCommit(list []bitbucket.WebhookCommit) []bitbucket.W
 
 // extractDBTypeFromJDBCConnectionString will extract the DB type from JDBC connection string. Only support MySQL and Postgres for now.
 // It will return UnknownType if the DB type is not supported, and returns error if cannot parse the JDBC connection string.
-func extractDBTypeFromJDBCConnectionString(jdbcURL string) (db.Type, error) {
+func extractDBTypeFromJDBCConnectionString(jdbcURL string) (storepb.Engine, error) {
 	trimmed := strings.TrimPrefix(strings.TrimSpace(jdbcURL), "jdbc:")
 	u, err := url.Parse(trimmed)
 	if err != nil {
-		return db.UnknownType, err
+		return storepb.Engine_ENGINE_UNSPECIFIED, err
 	}
 
 	switch {
 	case strings.HasPrefix(u.Scheme, "mysql"):
-		return db.MySQL, nil
+		return storepb.Engine_MYSQL, nil
 	case strings.HasPrefix(u.Scheme, "postgresql"):
-		return db.Postgres, nil
+		return storepb.Engine_POSTGRES, nil
 	}
-	return db.UnknownType, nil
+	return storepb.Engine_ENGINE_UNSPECIFIED, nil
 }
 
 // extractMybatisMapperSQL will extract the SQL from mybatis mapper XML.
-func extractMybatisMapperSQL(mapperContent string, engineType db.Type) (string, []*ast.MybatisSQLLineMapping, error) {
+func extractMybatisMapperSQL(mapperContent string, engineType storepb.Engine) (string, []*ast.MybatisSQLLineMapping, error) {
 	mybatisMapperParser := mapperparser.NewParser(mapperContent)
 	mybatisMapperNode, err := mybatisMapperParser.Parse()
 	if err != nil {
@@ -2477,9 +2467,9 @@ func extractMybatisMapperSQL(mapperContent string, engineType db.Type) (string, 
 
 	var placeholder string
 	switch engineType {
-	case db.MySQL:
+	case storepb.Engine_MYSQL:
 		placeholder = "?"
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		placeholder = "$1"
 	default:
 		return "", nil, errors.Errorf("unsupported database type %q", engineType)

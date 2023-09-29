@@ -35,7 +35,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -478,16 +477,16 @@ func escapeCSVString(str string) string {
 	return escapedStr
 }
 
-func getSQLStatementPrefix(engine db.Type, resourceList []base.SchemaResource, columnNames []string) (string, error) {
+func getSQLStatementPrefix(engine storepb.Engine, resourceList []base.SchemaResource, columnNames []string) (string, error) {
 	var escapeQuote string
 	switch engine {
-	case db.MySQL, db.MariaDB, db.TiDB, db.OceanBase, db.Spanner:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB, storepb.Engine_OCEANBASE, storepb.Engine_SPANNER:
 		escapeQuote = "`"
-	case db.ClickHouse, db.MSSQL, db.Oracle, db.DM, db.Postgres, db.Redshift, db.SQLite, db.Snowflake:
+	case storepb.Engine_CLICKHOUSE, storepb.Engine_MSSQL, storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_SQLITE, storepb.Engine_SNOWFLAKE:
 		// ClickHouse takes both double-quotes or backticks.
 		escapeQuote = "\""
 	default:
-		// db.MongoDB, db.Redis
+		// storepb.Engine_MONGODB, storepb.Engine_REDIS
 		return "", errors.Errorf("unsupported engine %v for exporting as SQL", engine)
 	}
 
@@ -509,7 +508,7 @@ func getSQLStatementPrefix(engine db.Type, resourceList []base.SchemaResource, c
 	return s, nil
 }
 
-func exportSQL(engine db.Type, statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
+func exportSQL(engine storepb.Engine, statementPrefix string, result *v1pb.QueryResult) ([]byte, error) {
 	var buf bytes.Buffer
 	for i, row := range result.Rows {
 		if _, err := buf.WriteString(statementPrefix); err != nil {
@@ -538,7 +537,7 @@ func exportSQL(engine db.Type, statementPrefix string, result *v1pb.QueryResult)
 	return buf.Bytes(), nil
 }
 
-func convertValueToBytesInSQL(engine db.Type, value *v1pb.RowValue) []byte {
+func convertValueToBytesInSQL(engine storepb.Engine, value *v1pb.RowValue) []byte {
 	switch value.Kind.(type) {
 	case *v1pb.RowValue_StringValue:
 		return escapeSQLString(engine, []byte(value.GetStringValue()))
@@ -568,9 +567,9 @@ func convertValueToBytesInSQL(engine db.Type, value *v1pb.RowValue) []byte {
 	}
 }
 
-func escapeSQLString(engine db.Type, v []byte) []byte {
+func escapeSQLString(engine storepb.Engine, v []byte) []byte {
 	switch engine {
-	case db.Postgres, db.Redshift:
+	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
 		escapedStr := pq.QuoteLiteral(string(v))
 		return []byte(escapedStr)
 	default:
@@ -584,9 +583,9 @@ func escapeSQLString(engine db.Type, v []byte) []byte {
 	}
 }
 
-func escapeSQLBytes(engine db.Type, v []byte) []byte {
+func escapeSQLBytes(engine storepb.Engine, v []byte) []byte {
 	switch engine {
-	case db.MySQL, db.MariaDB:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 		result := []byte("B'")
 		s := fmt.Sprintf("%b", v)
 		s = s[1 : len(s)-1]
@@ -816,7 +815,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	// Get sensitive schema info.
 	var sensitiveSchemaInfo *db.SensitiveSchemaInfo
 	switch instance.Engine {
-	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement, "")
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
@@ -826,13 +825,13 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
-	case db.Postgres, db.RisingWave:
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
 		databaseList := []string{request.ConnectionDatabase}
 		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
-	case db.Oracle, db.DM:
+	case storepb.Engine_ORACLE, storepb.Engine_DM:
 		var databaseList []string
 		if instance.Options != nil && instance.Options.SchemaTenantMode {
 			list, err := parser.ExtractResourceList(parser.Oracle, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
@@ -855,7 +854,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 		}
-	case db.Snowflake:
+	case storepb.Engine_SNOWFLAKE:
 		databaseList, err := parser.ExtractDatabaseList(parser.Snowflake, request.Statement, request.ConnectionDatabase)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
@@ -865,7 +864,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
-	case db.MSSQL:
+	case storepb.Engine_MSSQL:
 		databaseList, err := parser.ExtractDatabaseList(parser.MSSQL, request.Statement, request.ConnectionDatabase)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
@@ -1229,7 +1228,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	var sensitiveSchemaInfo *db.SensitiveSchemaInfo
 	if adviceStatus != advisor.Error {
 		switch instance.Engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement, "")
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
@@ -1239,12 +1238,12 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
-		case db.Redshift, db.RisingWave:
+		case storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			if allPostgresSystemObjects(request.Statement) {
 				sensitiveSchemaInfo = nil
 			} else {
@@ -1253,7 +1252,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 				}
 			}
-		case db.Oracle, db.DM:
+		case storepb.Engine_ORACLE, storepb.Engine_DM:
 			if instance.Options == nil || !instance.Options.SchemaTenantMode {
 				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
 				if err != nil {
@@ -1278,7 +1277,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 				}
 			}
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			databaseList, err := parser.ExtractDatabaseList(parser.Snowflake, request.Statement, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
@@ -1288,7 +1287,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			databaseList, err := parser.ExtractDatabaseList(parser.MSSQL, request.Statement, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
@@ -1519,7 +1518,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			return nil, status.Errorf(codes.Internal, "Failed to find schema for database %q in instance %q: %v", databaseName, instance.Title, err)
 		}
 
-		if instance.Engine == db.Oracle || instance.Engine == db.DM {
+		if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM {
 			for _, schema := range dbSchema.Metadata.Schemas {
 				databaseSchema := db.DatabaseSchema{
 					Name: schema.Name,
@@ -1756,16 +1755,16 @@ func getClassificationLevelOfColumn(columnClassificationID string, classificatio
 	return *classification.LevelId
 }
 
-func isExcludeDatabase(dbType db.Type, database string) bool {
+func isExcludeDatabase(dbType storepb.Engine, database string) bool {
 	switch dbType {
-	case db.MySQL, db.MariaDB:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 		return isMySQLExcludeDatabase(database)
-	case db.TiDB:
+	case storepb.Engine_TIDB:
 		if isMySQLExcludeDatabase(database) {
 			return true
 		}
 		return database == "metrics_schema"
-	case db.Snowflake:
+	case storepb.Engine_SNOWFLAKE:
 		return database == "SNOWFLAKE"
 	default:
 		return false
@@ -1803,10 +1802,6 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 		return advisor.Success, nil, nil
 	}
 
-	dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
-	if err != nil {
-		return advisor.Error, nil, status.Errorf(codes.Internal, "failed to convert engine to advisor db type: %v", err)
-	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
@@ -1830,7 +1825,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 	}
 
 	currentSchema := ""
-	if instance.Engine == db.Oracle || instance.Engine == db.DM {
+	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM {
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
 			currentSchema = getReadOnlyDataSource(instance).Username
 		} else {
@@ -1846,7 +1841,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 	connection := driver.GetDB()
 	adviceLevel, adviceList, err := s.sqlCheck(
 		ctx,
-		dbType,
+		instance.Engine,
 		dbSchema.Metadata.CharacterSet,
 		dbSchema.Metadata.Collation,
 		environment.UID,
@@ -1894,7 +1889,7 @@ func convertAdviceStatus(status advisor.Status) v1pb.Advice_Status {
 
 func (s *SQLService) sqlCheck(
 	ctx context.Context,
-	dbType advisorDB.Type,
+	dbType storepb.Engine,
 	dbCharacterSet string,
 	dbCollation string,
 	environmentID int,
@@ -1994,14 +1989,14 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 // 3. Parse statement for Postgres, MySQL, TiDB, Oracle.
 // 4. Check if all statements are (EXPLAIN) SELECT statements.
 func validateQueryRequest(instance *store.InstanceMessage, databaseName string, statement string) error {
-	if instance.Engine == db.Postgres {
+	if instance.Engine == storepb.Engine_POSTGRES {
 		if databaseName == "" {
 			return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
 		}
 	}
 
 	switch instance.Engine {
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
@@ -2013,7 +2008,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 				return nonSelectSQLError.Err()
 			}
 		}
-	case db.MySQL:
+	case storepb.Engine_MYSQL:
 		trees, err := mysqlparser.ParseMySQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
@@ -2024,7 +2019,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 				return nonSelectSQLError.Err()
 			}
 		}
-	case db.TiDB:
+	case storepb.Engine_TIDB:
 		stmtList, err := tidbparser.ParseTiDB(statement, "", "")
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
@@ -2041,7 +2036,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 				return nonSelectSQLError.Err()
 			}
 		}
-	case db.Oracle, db.DM:
+	case storepb.Engine_ORACLE, storepb.Engine_DM:
 		if instance.Options != nil && instance.Options.SchemaTenantMode && databaseName == "" {
 			return status.Error(codes.InvalidArgument, "connection_database is required for oracle schema tenant mode instance")
 		}
@@ -2052,7 +2047,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		if err := plsqlparser.ValidateForEditor(tree); err != nil {
 			return nonSelectSQLError.Err()
 		}
-	case db.MongoDB, db.Redis:
+	case storepb.Engine_MONGODB, storepb.Engine_REDIS:
 		// Do nothing.
 	default:
 		// TODO(rebelice): support multiple statements here.
@@ -2467,7 +2462,7 @@ func (s *SQLService) checkQueryRights(
 
 	databaseMap := make(map[string]bool)
 	for _, resource := range resourceList {
-		if resource.LinkedServer != "" && instance.Engine == db.MSSQL {
+		if resource.LinkedServer != "" && instance.Engine == storepb.Engine_MSSQL {
 			continue
 		}
 		databaseMap[resource.Database] = true
@@ -2742,43 +2737,38 @@ func (s *SQLService) getInstanceMessage(ctx context.Context, name string) (*stor
 	return instance, nil
 }
 
-func convertToParserEngine(engine db.Type) parser.EngineType {
+func convertToParserEngine(engine storepb.Engine) parser.EngineType {
 	// convert to parser engine
 	switch engine {
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		return parser.Postgres
-	case db.Redshift:
+	case storepb.Engine_REDSHIFT:
 		return parser.Redshift
-	case db.MySQL:
+	case storepb.Engine_MYSQL:
 		return parser.MySQL
-	case db.TiDB:
+	case storepb.Engine_TIDB:
 		return parser.TiDB
-	case db.MariaDB:
+	case storepb.Engine_MARIADB:
 		return parser.MariaDB
-	case db.Oracle:
+	case storepb.Engine_ORACLE:
 		return parser.Oracle
-	case db.MSSQL:
+	case storepb.Engine_MSSQL:
 		return parser.MSSQL
-	case db.OceanBase:
+	case storepb.Engine_OCEANBASE:
 		return parser.OceanBase
-	case db.Snowflake:
+	case storepb.Engine_SNOWFLAKE:
 		return parser.Snowflake
-	case db.DM:
+	case storepb.Engine_DM:
 		return parser.Oracle
 	}
 	return parser.Standard
 }
 
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
-func IsSQLReviewSupported(dbType db.Type) bool {
+func IsSQLReviewSupported(dbType storepb.Engine) bool {
 	switch dbType {
-	case db.Postgres, db.MySQL, db.TiDB, db.MariaDB, db.Oracle, db.OceanBase, db.Snowflake, db.DM, db.MSSQL:
-		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
-		if err != nil {
-			return false
-		}
-
-		return advisor.IsSQLReviewSupported(advisorDB)
+	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_DM, storepb.Engine_MSSQL:
+		return true
 	default:
 		return false
 	}

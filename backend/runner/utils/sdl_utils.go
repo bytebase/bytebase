@@ -8,12 +8,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // ComputeDatabaseSchemaDiff computes the diff between current database schema
@@ -36,9 +36,9 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 
 	var engine parser.EngineType
 	switch instance.Engine {
-	case db.Postgres, db.RisingWave:
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
 		engine = parser.Postgres
-	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		engine = parser.MySQL
 	default:
 		return "", errors.Errorf("unsupported database engine %q", instance.Engine)

@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -23,8 +23,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
 }
 
 // UseInnoDBAdvisor is the advisor checking for using InnoDB engine.
