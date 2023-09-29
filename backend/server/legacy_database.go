@@ -11,7 +11,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
 	"github.com/bytebase/bytebase/backend/store"
@@ -49,8 +48,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed post database edit request").SetInternal(err)
 		}
 
-		engineType := parser.EngineType(instance.Engine.String())
-		validateResultList, err := edit.ValidateDatabaseEdit(engineType, databaseEdit)
+		validateResultList, err := edit.ValidateDatabaseEdit(instance.Engine, databaseEdit)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate DatabaseEdit").SetInternal(err)
 		}
@@ -60,7 +58,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			ValidateResultList: validateResultList,
 		}
 		if len(validateResultList) == 0 {
-			statement, err := edit.DeparseDatabaseEdit(engineType, databaseEdit)
+			statement, err := edit.DeparseDatabaseEdit(instance.Engine, databaseEdit)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deparse DatabaseEdit").SetInternal(err)
 			}

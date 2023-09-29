@@ -263,7 +263,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 			}
 			return nil
 		}
-		if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
+		if _, err := parser.SplitMultiSQLStream(storepb.Engine_POSTGRES, strings.NewReader(statement), f); err != nil {
 			return 0, err
 		}
 		return 0, nil
@@ -286,7 +286,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
+	if _, err := parser.SplitMultiSQLStream(storepb.Engine_POSTGRES, strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
 
@@ -398,7 +398,7 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	singleSQLs, err := parser.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -445,5 +445,5 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, parser.Postgres, conn, statement)
+	return util.RunStatement(ctx, storepb.Engine_POSTGRES, conn, statement)
 }

@@ -116,7 +116,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	}
 
 	// use oracle sql parser
-	if _, err := parser.SplitMultiSQLStream(parser.Oracle, strings.NewReader(statement), f); err != nil {
+	if _, err := parser.SplitMultiSQLStream(storepb.Engine_ORACLE, strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
 
@@ -134,7 +134,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.Oracle, statement)
+	singleSQLs, err := parser.SplitMultiSQL(storepb.Engine_ORACLE, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -201,5 +201,5 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 // RunStatement runs a SQL statement in a given connection.
 // and like usual,use Oracle sql parser.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, parser.Oracle, conn, statement)
+	return util.RunStatement(ctx, storepb.Engine_ORACLE, conn, statement)
 }

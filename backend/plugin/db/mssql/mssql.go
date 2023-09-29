@@ -114,7 +114,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(parser.MSSQL, strings.NewReader(statement), f); err != nil {
+	if _, err := parser.SplitMultiSQLStream(storepb.Engine_MSSQL, strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
 
@@ -131,7 +131,7 @@ func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.MSSQL, statement)
+	singleSQLs, err := parser.SplitMultiSQL(storepb.Engine_MSSQL, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -178,5 +178,5 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 
 // RunStatement runs a SQL statement.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, parser.MSSQL, conn, statement)
+	return util.RunStatement(ctx, storepb.Engine_MSSQL, conn, statement)
 }

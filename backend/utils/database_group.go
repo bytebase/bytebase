@@ -13,30 +13,30 @@ import (
 )
 
 // ConvertDatabaseToParserEngineType converts a database type to a parser engine type.
-func ConvertDatabaseToParserEngineType(engine storepb.Engine) (parser.EngineType, error) {
+func ConvertDatabaseToParserEngineType(engine storepb.Engine) (storepb.Engine, error) {
 	switch engine {
 	case storepb.Engine_ORACLE:
-		return parser.Oracle, nil
+		return storepb.Engine_ORACLE, nil
 	case storepb.Engine_MSSQL:
-		return parser.MSSQL, nil
+		return storepb.Engine_MSSQL, nil
 	case storepb.Engine_POSTGRES:
-		return parser.Postgres, nil
+		return storepb.Engine_POSTGRES, nil
 	case storepb.Engine_REDSHIFT:
-		return parser.Redshift, nil
+		return storepb.Engine_REDSHIFT, nil
 	case storepb.Engine_MYSQL:
-		return parser.MySQL, nil
+		return storepb.Engine_MYSQL, nil
 	case storepb.Engine_TIDB:
-		return parser.TiDB, nil
+		return storepb.Engine_TIDB, nil
 	case storepb.Engine_MARIADB:
-		return parser.MariaDB, nil
+		return storepb.Engine_MARIADB, nil
 	case storepb.Engine_OCEANBASE:
-		return parser.OceanBase, nil
+		return storepb.Engine_OCEANBASE, nil
 	}
-	return parser.EngineType("UNKNOWN"), errors.Errorf("unsupported engine type %q", engine)
+	return storepb.Engine_ENGINE_UNSPECIFIED, errors.Errorf("unsupported engine type %q", engine)
 }
 
 // GetStatementsAndSchemaGroupsFromSchemaGroups takes in a statement template and a list of schema groups, returns a list of expanded(rendered) statements and schema group names.
-func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngineType parser.EngineType, schemaGroupParent string, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, []string, error) {
+func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngineType storepb.Engine, schemaGroupParent string, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, []string, error) {
 	flush := func(emptyStatementBuilder *strings.Builder, statementBuilder *strings.Builder, schemaGroup *store.SchemaGroupMessage, matchedTables []string) ([]string, []string) {
 		if statementBuilder.Len() == 0 {
 			return nil, nil
