@@ -78,11 +78,11 @@ func SplitMySQL(statement string) ([]base.SingleSQL, error) {
 	return splitMySQLStatement(stream)
 }
 
-// SplitMySQLMultiSQLStream splits MySQL multiSQL to stream.
+// SplitMultiSQLStream splits MySQL multiSQL to stream.
 // Note that the reader is read completely into memory and so it must actually
 // have a stopping point - you cannot pass in a reader on an open-ended source such
 // as a socket for instance.
-func SplitMySQLMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
+func SplitMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
 	result, err := SplitMySQLStream(src)
 	if err != nil {
 		return nil, err
