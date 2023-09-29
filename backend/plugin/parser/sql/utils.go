@@ -26,10 +26,7 @@ func ExtractChangedResources(engineType storepb.Engine, currentDatabase string, 
 	case storepb.Engine_ORACLE, storepb.Engine_DM:
 		return plsqlparser.ExtractChangedResources(currentDatabase, currentSchema, sql)
 	default:
-		if currentDatabase == "" {
-			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
-		}
-		return nil, errors.Errorf("engine type %q is not supported", engineType)
+		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
 }
 
