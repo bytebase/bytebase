@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"bytes"
 	"encoding/json"
 	"log/slog"
 	"regexp"
@@ -11,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 // ValidateSQLForEditor validates the SQL statement for editor.
@@ -167,157 +167,9 @@ func removeQuotedTextAndComment(engine EngineType, statement string) (string, er
 	case Postgres, RisingWave:
 		return "", errors.Errorf("unsupported engine type: %s", engine)
 	case MySQL, TiDB, MariaDB, OceanBase:
-		return mysqlRemoveQuotedTextAndComment(statement)
+		return tokenizer.MysqlRemoveQuotedTextAndComment(statement)
 	case Standard, Oracle, MSSQL:
-		return standardRemoveQuotedTextAndComment(statement)
+		return tokenizer.StandardRemoveQuotedTextAndComment(statement)
 	}
 	return "", errors.Errorf("unsupported engine type: %s", engine)
-}
-
-func standardRemoveQuotedTextAndComment(statement string) (string, error) {
-	var buf bytes.Buffer
-	t := newTokenizer(statement)
-
-	t.skipBlank()
-	startPos := t.pos()
-	for {
-		switch {
-		case t.char(0) == '/' && t.char(1) == '*':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanComment(); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '-' && t.char(1) == '-':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanComment(); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '\'':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanString('\''); err != nil {
-				return "'", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '"':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanIdentifier('"'); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == eofRune:
-			text := t.getString(startPos, t.pos()-startPos)
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			return buf.String(), nil
-		default:
-			t.skip(1)
-		}
-	}
-}
-
-func mysqlRemoveQuotedTextAndComment(statement string) (string, error) {
-	var buf bytes.Buffer
-	t := newTokenizer(statement)
-
-	t.skipBlank()
-	startPos := t.pos()
-	for {
-		switch {
-		case t.char(0) == eofRune:
-			text := t.getString(startPos, t.pos()-startPos)
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			return buf.String(), nil
-		case t.char(0) == '/' && t.char(1) == '*':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanComment(); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '-' && t.char(1) == '-':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanComment(); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '#':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanComment(); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '\'' || t.char(0) == '"':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanString(t.char(0)); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		case t.char(0) == '`':
-			text := t.getString(startPos, t.pos()-startPos)
-			if err := t.scanIdentifier('`'); err != nil {
-				return "", err
-			}
-			if _, err := buf.WriteString(text); err != nil {
-				return "", err
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				return "", err
-			}
-			startPos = t.pos()
-		default:
-			t.skip(1)
-		}
-	}
 }
