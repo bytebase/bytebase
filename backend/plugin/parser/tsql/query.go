@@ -1,5 +1,4 @@
-// Package parser is the parser for SQL statement.
-package parser
+package tsql
 
 import (
 	"sort"
@@ -9,29 +8,11 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
-// FlattenExecuteStatementArgExecuteStatementArgUnnamed returns the flattened unnamed execute statement arg.
-func FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx parser.IExecute_statement_argContext) []parser.IExecute_statement_arg_unnamedContext {
-	var queue []parser.IExecute_statement_arg_unnamedContext
-	ele := ctx
-	for {
-		if ele.Execute_statement_arg_unnamed() == nil {
-			break
-		}
-		queue = append(queue, ele.Execute_statement_arg_unnamed())
-		if len(ele.AllExecute_statement_arg()) != 1 {
-			break
-		}
-		ele = ele.AllExecute_statement_arg()[0]
-	}
-	return queue
-}
-
-// extractMSSQLNormalizedResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
-func extractMSSQLNormalizedResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]base.SchemaResource, error) {
-	tree, err := tsqlparser.ParseTSQL(selectStatement)
+// ExtractMSSQLNormalizedResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
+func ExtractMSSQLNormalizedResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]base.SchemaResource, error) {
+	tree, err := ParseTSQL(selectStatement)
 	if err != nil {
 		return nil, err
 	}
@@ -69,13 +50,13 @@ func (l *tsqlReasourceExtractListener) EnterTable_source_item(ctx *parser.Table_
 		var parts []string
 		var linkedServer string
 		if server := fullTableName.GetLinkedServer(); server != nil {
-			linkedServer = tsqlparser.NormalizeTSQLIdentifier(server)
+			linkedServer = NormalizeTSQLIdentifier(server)
 		}
 		parts = append(parts, linkedServer)
 
 		database := l.currentDatabase
 		if d := fullTableName.GetDatabase(); d != nil {
-			normalizedD := tsqlparser.NormalizeTSQLIdentifier(d)
+			normalizedD := NormalizeTSQLIdentifier(d)
 			if normalizedD != "" {
 				database = normalizedD
 			}
@@ -84,7 +65,7 @@ func (l *tsqlReasourceExtractListener) EnterTable_source_item(ctx *parser.Table_
 
 		schema := l.currentSchema
 		if s := fullTableName.GetSchema(); s != nil {
-			normalizedS := tsqlparser.NormalizeTSQLIdentifier(s)
+			normalizedS := NormalizeTSQLIdentifier(s)
 			if normalizedS != "" {
 				schema = normalizedS
 			}
@@ -93,7 +74,7 @@ func (l *tsqlReasourceExtractListener) EnterTable_source_item(ctx *parser.Table_
 
 		var table string
 		if t := fullTableName.GetTable(); t != nil {
-			normalizedT := tsqlparser.NormalizeTSQLIdentifier(t)
+			normalizedT := NormalizeTSQLIdentifier(t)
 			if normalizedT != "" {
 				table = normalizedT
 			}
