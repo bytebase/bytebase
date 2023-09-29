@@ -43,6 +43,7 @@ import (
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -2002,7 +2003,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 
 	switch instance.Engine {
 	case db.Postgres:
-		stmtList, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+		stmtList, err := pgrawparser.Parse(parser.ParseContext{}, statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}

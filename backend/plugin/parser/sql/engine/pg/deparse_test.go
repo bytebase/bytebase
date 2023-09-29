@@ -19,8 +19,6 @@ type TestDeparseData struct {
 }
 
 func runDeparseTest(t *testing.T, file string, record bool) {
-	p := &PostgreSQLParser{}
-
 	var tests []TestDeparseData
 	filepath := filepath.Join("test-data", file)
 	yamlFile, err := os.Open(filepath)
@@ -33,10 +31,10 @@ func runDeparseTest(t *testing.T, file string, record bool) {
 	require.NoError(t, err)
 
 	for i, test := range tests {
-		nodeList, err := p.Parse(parser.ParseContext{}, test.Stmt)
+		nodeList, err := Parse(parser.ParseContext{}, test.Stmt)
 		require.NoError(t, err)
 		require.Len(t, nodeList, 1)
-		res, err := p.Deparse(parser.DeparseContext{}, nodeList[0])
+		res, err := Deparse(parser.DeparseContext{}, nodeList[0])
 		require.NoError(t, err)
 		if record {
 			tests[i].Want = res

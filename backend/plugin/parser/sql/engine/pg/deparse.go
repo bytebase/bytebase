@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
-func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) error {
+func deparseImpl(context parser.DeparseContext, in ast.Node, buf *strings.Builder) error {
 	switch node := in.(type) {
 	case ast.DataType:
 		return deparseDataType(context, node, buf)

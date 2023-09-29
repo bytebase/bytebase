@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
 
 var (
@@ -94,7 +95,7 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) Visit(in ast.Node) ast.Visit
 
 	for _, column := range columnList {
 		if !allowType(checker.allowlist, column.Type) {
-			typeText, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, column.Type)
+			typeText, err := pgrawparser.Deparse(parser.DeparseContext{}, column.Type)
 			if err != nil {
 				slog.Warn("Failed to deparse the PostgreSQL data type",
 					slog.String("columnName", column.ColumnName),
