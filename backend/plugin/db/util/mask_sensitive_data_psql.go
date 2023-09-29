@@ -35,7 +35,17 @@ func isRisingWaveSystemSchema(schema string) bool {
 	return false
 }
 
-func (extractor *sensitiveFieldExtractor) extractPostgreSQLSensitiveField(statement string) ([]db.SensitiveField, error) {
+type PGSensitiveFieldExtractor struct {
+	// For Oracle, we need to know the current database to determine if the table is in the current schema.
+	schemaInfo         *db.SensitiveSchemaInfo
+	outerSchemaInfo    []base.FieldInfo
+	cteOuterSchemaInfo []db.TableSchema
+
+	// SELECT statement specific field.
+	fromFieldList []base.FieldInfo
+}
+
+func (extractor *PGSensitiveFieldExtractor) extractPostgreSQLSensitiveField(statement string) ([]db.SensitiveField, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
@@ -69,7 +79,7 @@ func (extractor *sensitiveFieldExtractor) extractPostgreSQLSensitiveField(statem
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]base.FieldInfo, error) {
+func (extractor *PGSensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]base.FieldInfo, error) {
 	if in == nil {
 		return nil, nil
 	}
@@ -87,7 +97,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]bas
 	return nil, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractJoin(in *pgquery.Node_JoinExpr) ([]base.FieldInfo, error) {
+func (extractor *PGSensitiveFieldExtractor) pgExtractJoin(in *pgquery.Node_JoinExpr) ([]base.FieldInfo, error) {
 	leftFieldInfo, err := extractor.pgExtractNode(in.JoinExpr.Larg)
 	if err != nil {
 		return nil, err
@@ -167,7 +177,7 @@ func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []base.FieldInfo, r
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.Node_RangeSubselect) ([]base.FieldInfo, error) {
+func (extractor *PGSensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.Node_RangeSubselect) ([]base.FieldInfo, error) {
 	fieldList, err := extractor.pgExtractNode(node.RangeSubselect.Subquery)
 	if err != nil {
 		return nil, err
@@ -213,7 +223,7 @@ func pgExtractAlias(alias *pgquery.Alias) (string, []string, error) {
 	return alias.Aliasname, columnNameList, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) ([]base.FieldInfo, error) {
+func (extractor *PGSensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) ([]base.FieldInfo, error) {
 	tableSchema, err := extractor.pgFindTableSchema(node.RangeVar.Schemaname, node.RangeVar.Relname)
 	if err != nil {
 		return nil, err
@@ -254,7 +264,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_R
 	return res, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgFindTableSchema(schemaName string, tableName string) (db.TableSchema, error) {
+func (extractor *PGSensitiveFieldExtractor) pgFindTableSchema(schemaName string, tableName string) (db.TableSchema, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
 	//  with tt2 as (
@@ -285,7 +295,7 @@ func (extractor *sensitiveFieldExtractor) pgFindTableSchema(schemaName string, t
 	return db.TableSchema{}, errors.Errorf("Table %q not found", tableName)
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.Node_CommonTableExpr) (db.TableSchema, error) {
+func (extractor *PGSensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.Node_CommonTableExpr) (db.TableSchema, error) {
 	switch selectNode := node.CommonTableExpr.Ctequery.Node.(type) {
 	case *pgquery.Node_SelectStmt:
 		if selectNode.SelectStmt.Op != pgquery.SetOperation_SETOP_UNION {
@@ -360,7 +370,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.No
 	}
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractNonRecursiveCTE(node *pgquery.Node_CommonTableExpr) (db.TableSchema, error) {
+func (extractor *PGSensitiveFieldExtractor) pgExtractNonRecursiveCTE(node *pgquery.Node_CommonTableExpr) (db.TableSchema, error) {
 	fieldList, err := extractor.pgExtractNode(node.CommonTableExpr.Ctequery)
 	if err != nil {
 		return db.TableSchema{}, err
@@ -396,7 +406,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractNonRecursiveCTE(node *pgquery
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) ([]base.FieldInfo, error) {
+func (extractor *PGSensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) ([]base.FieldInfo, error) {
 	if node.SelectStmt.WithClause != nil {
 		cteOuterLength := len(extractor.cteOuterSchemaInfo)
 		defer func() {
@@ -715,7 +725,7 @@ func extractSchemaTableColumnName(columnName *ast.ColumnNameDef) (string, string
 	return columnName.Table.Schema, columnName.Table.Name, columnName.ColumnName
 }
 
-func (extractor *sensitiveFieldExtractor) pgCheckFieldMaskingLevel(schemaName string, tableName string, fieldName string) storepb.MaskingLevel {
+func (extractor *PGSensitiveFieldExtractor) pgCheckFieldMaskingLevel(schemaName string, tableName string, fieldName string) storepb.MaskingLevel {
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
 	//
 	//  select (
@@ -751,7 +761,7 @@ func (extractor *sensitiveFieldExtractor) pgCheckFieldMaskingLevel(schemaName st
 	return defaultMaskingLevel
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquery.Node) (storepb.MaskingLevel, error) {
+func (extractor *PGSensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquery.Node) (storepb.MaskingLevel, error) {
 	if in == nil {
 		return defaultMaskingLevel, nil
 	}
@@ -820,7 +830,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(i
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
-		subqueryExtractor := &sensitiveFieldExtractor{
+		subqueryExtractor := &PGSensitiveFieldExtractor{
 			schemaInfo:      extractor.schemaInfo,
 			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
 		}
@@ -861,7 +871,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(i
 	return defaultMaskingLevel, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNodeList(list []*pgquery.Node) (storepb.MaskingLevel, error) {
+func (extractor *PGSensitiveFieldExtractor) pgExtractColumnRefFromExpressionNodeList(list []*pgquery.Node) (storepb.MaskingLevel, error) {
 	finalLevel := defaultMaskingLevel
 	for _, node := range list {
 		maskingLevel, err := extractor.pgExtractColumnRefFromExpressionNode(node)
