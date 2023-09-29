@@ -8,7 +8,37 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	base.RegisterQueryValidator(storepb.Engine_TIDB, ValidateSQLForEditor)
+}
+
+// ValidateSQLForEditor validates the SQL statement for SQL editor.
+// We validate the statement by following steps:
+// 1. Remove all quoted text(quoted identifier, string literal) and comments from the statement.
+// 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
+// 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
+func ValidateSQLForEditor(statement string) bool {
+	stmtList, err := ParseTiDB(statement, "", "")
+	if err != nil {
+		return false
+	}
+	for _, stmt := range stmtList {
+		switch stmt := stmt.(type) {
+		case *tidbast.SelectStmt:
+		case *tidbast.ExplainStmt:
+			// Disable DESC command.
+			if _, ok := stmt.Stmt.(*tidbast.ShowStmt); ok {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
 
 func ExtractTiDBResourceList(currentDatabase string, sql string) ([]base.SchemaResource, error) {
 	nodes, err := ParseTiDB(sql, "", "")

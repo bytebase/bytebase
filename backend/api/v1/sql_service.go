@@ -19,7 +19,6 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
-	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc/codes"
@@ -38,11 +37,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
-	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -2001,53 +1997,9 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		return nil
 	}
 
-	switch instance.Engine {
-	case storepb.Engine_MYSQL:
-		trees, err := mysqlparser.ParseMySQL(statement)
-		if err != nil {
-			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
-		}
-		for _, item := range trees {
-			tree := item.Tree
-			if err := mysqlparser.ValidateForEditor(tree); err != nil {
-				return nonSelectSQLError.Err()
-			}
-		}
-	case storepb.Engine_TIDB:
-		stmtList, err := tidbparser.ParseTiDB(statement, "", "")
-		if err != nil {
-			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
-		}
-		for _, stmt := range stmtList {
-			switch stmt := stmt.(type) {
-			case *tidbast.SelectStmt:
-			case *tidbast.ExplainStmt:
-				// Disable DESC command.
-				if _, ok := stmt.Stmt.(*tidbast.ShowStmt); ok {
-					return nonSelectSQLError.Err()
-				}
-			default:
-				return nonSelectSQLError.Err()
-			}
-		}
-	case storepb.Engine_ORACLE, storepb.Engine_DM:
-		if instance.Options != nil && instance.Options.SchemaTenantMode && databaseName == "" {
-			return status.Error(codes.InvalidArgument, "connection_database is required for oracle schema tenant mode instance")
-		}
-		tree, _, err := plsqlparser.ParsePLSQL(statement)
-		if err != nil {
-			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
-		}
-		if err := plsqlparser.ValidateForEditor(tree); err != nil {
-			return nonSelectSQLError.Err()
-		}
-	default:
-		// TODO(rebelice): support multiple statements here.
-		if !parser.ValidateSQLForEditor(instance.Engine, statement) {
-			return nonSelectSQLError.Err()
-		}
+	if !parser.ValidateSQLForEditor(instance.Engine, statement) {
+		return nonSelectSQLError.Err()
 	}
-
 	return nil
 }
 
