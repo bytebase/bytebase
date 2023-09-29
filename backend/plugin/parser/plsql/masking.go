@@ -25,10 +25,6 @@ type SensitiveFieldExtractor struct {
 }
 
 func (extractor *SensitiveFieldExtractor) ExtractSensitiveField(statement string) ([]db.SensitiveField, error) {
-	if extractor.SchemaInfo == nil {
-		return nil, nil
-	}
-
 	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
