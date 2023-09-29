@@ -24,7 +24,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
@@ -442,7 +441,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	if writebackBranch != "" {
 		// Transform the schema to standard style for SDL mode.
 		if instance.Engine == storepb.Engine_MYSQL || instance.Engine == storepb.Engine_MARIADB || instance.Engine == storepb.Engine_OCEANBASE {
-			standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
+			standardSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, schema)
 			if err != nil {
 				return true, nil, errors.Wrapf(err, "failed to transform to standard schema for database %q", database.DatabaseName)
 			}

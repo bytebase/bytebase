@@ -2,9 +2,8 @@
 package mysql
 
 import (
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -12,7 +11,7 @@ var (
 )
 
 func init() {
-	edit.Register(bbparser.MySQL, &SchemaEditor{})
+	edit.Register(storepb.Engine_MYSQL, &SchemaEditor{})
 }
 
 // SchemaEditor it the editor for MySQL dialect.

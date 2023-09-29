@@ -345,7 +345,7 @@ func convertToUserContent(upsert *db.DatabaseRoleUpsertMessage) (string, error) 
 }
 
 func splitGrantStatement(stmts string) ([]base.SingleSQL, error) {
-	list, err := parser.SplitMultiSQL(parser.MySQL, stmts)
+	list, err := parser.SplitMultiSQL(storepb.Engine_MYSQL, stmts)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Invalid, "failed to split grant statement")
 	}

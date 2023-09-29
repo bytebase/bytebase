@@ -337,7 +337,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 }
 
 func reportForOracle(databaseName string, schemaName string, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.Oracle, statement)
+	singleSQLs, err := parser.SplitMultiSQL(storepb.Engine_ORACLE, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -361,7 +361,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 		if stmt.Empty || stmt.Text == "" {
 			continue
 		}
-		resources, err := parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, stmt.Text)
+		resources, err := parser.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, stmt.Text)
 		if err != nil {
 			slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
 		} else {
@@ -389,7 +389,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType storepb.Engine, d
 	charset := dbMetadata.CharacterSet
 	collation := dbMetadata.Collation
 
-	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
+	singleSQLs, err := parser.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -435,7 +435,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType storepb.Engine, d
 		sqlTypeSet[sqlType] = struct{}{}
 		if !isDML(sqlType) {
 			if dbType != storepb.Engine_TIDB {
-				resources, err := parser.ExtractChangedResources(parser.MySQL, databaseName, "" /* currentSchema */, stmt.Text)
+				resources, err := parser.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
 				if err != nil {
 					slog.Error("failed to get statement changed resources", log.BBError(err))
 				} else {

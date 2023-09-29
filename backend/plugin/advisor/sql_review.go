@@ -631,7 +631,7 @@ func postgresSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func calculatePostgresErrorLine(statement string) int {
-	statementList, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	statementList, err := parser.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
 	if err != nil {
 		// nolint:nilerr
 		return 1

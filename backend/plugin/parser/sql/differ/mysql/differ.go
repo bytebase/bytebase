@@ -20,9 +20,9 @@ import (
 	"github.com/pkg/errors"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register pingcap parser driver.
 	driver "github.com/pingcap/tidb/types/parser_driver"
@@ -33,9 +33,9 @@ var (
 )
 
 func init() {
-	differ.Register(bbparser.MySQL, &SchemaDiffer{})
-	differ.Register(bbparser.TiDB, &SchemaDiffer{})
-	differ.Register(bbparser.OceanBase, &SchemaDiffer{})
+	differ.Register(storepb.Engine_MYSQL, &SchemaDiffer{})
+	differ.Register(storepb.Engine_TIDB, &SchemaDiffer{})
+	differ.Register(storepb.Engine_OCEANBASE, &SchemaDiffer{})
 }
 
 const (
