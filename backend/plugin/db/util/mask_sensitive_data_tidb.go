@@ -12,6 +12,7 @@ import (
 	parser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
@@ -48,14 +49,14 @@ func (extractor *sensitiveFieldExtractor) extractTiDBSensitiveField(statement st
 	result := []db.SensitiveField{}
 	for _, field := range fieldList {
 		result = append(result, db.SensitiveField{
-			Name:         field.name,
-			MaskingLevel: field.maskingLevel,
+			Name:         field.Name,
+			MaskingLevel: field.MaskingLevel,
 		})
 	}
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractNode(in tidbast.Node) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractNode(in tidbast.Node) ([]base.FieldInfo, error) {
 	if in == nil {
 		return nil, nil
 	}
@@ -76,20 +77,20 @@ func (extractor *sensitiveFieldExtractor) extractNode(in tidbast.Node) ([]fieldI
 		if err != nil {
 			return nil, err
 		}
-		var result []fieldInfo
+		var result []base.FieldInfo
 		if len(node.Cols) > 0 && len(node.Cols) != len(list) {
 			return nil, errors.Errorf("The used SELECT statements have a different number of columns for view %s", node.ViewName.Name.O)
 		}
 		for i, item := range list {
-			field := fieldInfo{
-				database: item.database,
-				schema:   item.schema,
-				table:    node.ViewName.Name.O,
-				name:     item.name,
+			field := base.FieldInfo{
+				Database: item.Database,
+				Schema:   item.Schema,
+				Table:    node.ViewName.Name.O,
+				Name:     item.Name,
 			}
 			if len(node.Cols) > 0 {
 				// The column name for MySQL is case insensitive.
-				field.name = node.Cols[i].L
+				field.Name = node.Cols[i].L
 			}
 			result = append(result, field)
 		}
@@ -98,7 +99,7 @@ func (extractor *sensitiveFieldExtractor) extractNode(in tidbast.Node) ([]fieldI
 	return nil, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt) ([]base.FieldInfo, error) {
 	if node.With != nil {
 		cteOuterLength := len(extractor.cteOuterSchemaInfo)
 		defer func() {
@@ -113,7 +114,7 @@ func (extractor *sensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt
 		}
 	}
 
-	result := []fieldInfo{}
+	result := []base.FieldInfo{}
 	for i, selectStmt := range node.SelectList.Selects {
 		fieldList, err := extractor.extractNode(selectStmt)
 		if err != nil {
@@ -127,8 +128,8 @@ func (extractor *sensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt
 				return nil, errors.Errorf("The used SELECT statements have a different number of columns")
 			}
 			for i := 0; i < len(result); i++ {
-				if cmp.Less[storepb.MaskingLevel](result[i].maskingLevel, fieldList[i].maskingLevel) {
-					result[i].maskingLevel = fieldList[i].maskingLevel
+				if cmp.Less[storepb.MaskingLevel](result[i].MaskingLevel, fieldList[i].MaskingLevel) {
+					result[i].MaskingLevel = fieldList[i].MaskingLevel
 				}
 			}
 		}
@@ -200,13 +201,13 @@ func (extractor *sensitiveFieldExtractor) extractRecursiveCTE(node *tidbast.Comm
 				return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
 			}
 			for i := 0; i < len(initialField); i++ {
-				initialField[i].name = node.ColNameList[i].O
+				initialField[i].Name = node.ColNameList[i].O
 			}
 		}
 		for _, field := range initialField {
 			cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
-				Name:         field.name,
-				MaskingLevel: field.maskingLevel,
+				Name:         field.Name,
+				MaskingLevel: field.MaskingLevel,
 			})
 		}
 
@@ -240,9 +241,9 @@ func (extractor *sensitiveFieldExtractor) extractRecursiveCTE(node *tidbast.Comm
 
 			changed := false
 			for i, field := range fieldList {
-				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingLevel, field.maskingLevel) {
+				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingLevel, field.MaskingLevel) {
 					changed = true
-					cteInfo.ColumnList[i].MaskingLevel = field.maskingLevel
+					cteInfo.ColumnList[i].MaskingLevel = field.MaskingLevel
 				}
 			}
 
@@ -268,7 +269,7 @@ func (extractor *sensitiveFieldExtractor) extractNonRecursiveCTE(node *tidbast.C
 			return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
 		}
 		for i := 0; i < len(fieldList); i++ {
-			fieldList[i].name = node.ColNameList[i].O
+			fieldList[i].Name = node.ColNameList[i].O
 		}
 	}
 	result := db.TableSchema{
@@ -277,8 +278,8 @@ func (extractor *sensitiveFieldExtractor) extractNonRecursiveCTE(node *tidbast.C
 	}
 	for _, field := range fieldList {
 		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
-			Name:         field.name,
-			MaskingLevel: field.maskingLevel,
+			Name:         field.Name,
+			MaskingLevel: field.MaskingLevel,
 		})
 	}
 	return result, nil
@@ -291,7 +292,7 @@ func (extractor *sensitiveFieldExtractor) extractCTE(node *tidbast.CommonTableEx
 	return extractor.extractNonRecursiveCTE(node)
 }
 
-func (extractor *sensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt) ([]base.FieldInfo, error) {
 	if node.With != nil {
 		cteOuterLength := len(extractor.cteOuterSchemaInfo)
 		defer func() {
@@ -306,7 +307,7 @@ func (extractor *sensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt
 		}
 	}
 
-	var fromFieldList []fieldInfo
+	var fromFieldList []base.FieldInfo
 	var err error
 	if node.From != nil {
 		fromFieldList, err = extractor.extractNode(node.From.TableRefs)
@@ -319,7 +320,7 @@ func (extractor *sensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt
 		}()
 	}
 
-	var result []fieldInfo
+	var result []base.FieldInfo
 
 	if node.Fields != nil {
 		for _, field := range node.Fields.Fields {
@@ -328,8 +329,8 @@ func (extractor *sensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt
 					result = append(result, fromFieldList...)
 				} else {
 					for _, fromField := range fromFieldList {
-						sameDatabase := (field.WildCard.Schema.O == fromField.database || (field.WildCard.Schema.O == "" && fromField.database == extractor.currentDatabase))
-						sameTable := (field.WildCard.Table.O == fromField.table)
+						sameDatabase := (field.WildCard.Schema.O == fromField.Database || (field.WildCard.Schema.O == "" && fromField.Database == extractor.currentDatabase))
+						sameTable := (field.WildCard.Table.O == fromField.Table)
 						if sameDatabase && sameTable {
 							result = append(result, fromField)
 						}
@@ -341,11 +342,11 @@ func (extractor *sensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt
 					return nil, err
 				}
 				fieldName := extractFieldName(field)
-				result = append(result, fieldInfo{
-					database:     "",
-					table:        "",
-					name:         fieldName,
-					maskingLevel: maskingLevel,
+				result = append(result, base.FieldInfo{
+					Database:     "",
+					Table:        "",
+					Name:         fieldName,
+					MaskingLevel: maskingLevel,
 				})
 			}
 		}
@@ -384,20 +385,20 @@ func (extractor *sensitiveFieldExtractor) checkFieldMaskingLevel(databaseName st
 	// This is the reason we loop the slice in reversed order.
 	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
 		field := extractor.outerSchemaInfo[i]
-		sameDatabase := (databaseName == field.database || (databaseName == "" && field.database == extractor.currentDatabase))
-		sameTable := (tableName == field.table || tableName == "")
-		sameField := (fieldName == field.name)
+		sameDatabase := (databaseName == field.Database || (databaseName == "" && field.Database == extractor.currentDatabase))
+		sameTable := (tableName == field.Table || tableName == "")
+		sameField := (fieldName == field.Name)
 		if sameDatabase && sameTable && sameField {
-			return field.maskingLevel
+			return field.MaskingLevel
 		}
 	}
 
 	for _, field := range extractor.fromFieldList {
-		sameDatabase := (databaseName == field.database || (databaseName == "" && field.database == extractor.currentDatabase))
-		sameTable := (tableName == field.table || tableName == "")
-		sameField := (fieldName == field.name)
+		sameDatabase := (databaseName == field.Database || (databaseName == "" && field.Database == extractor.currentDatabase))
+		sameTable := (tableName == field.Table || tableName == "")
+		sameField := (fieldName == field.Name)
 		if sameDatabase && sameTable && sameField {
-			return field.maskingLevel
+			return field.MaskingLevel
 		}
 	}
 
@@ -449,8 +450,8 @@ func (extractor *sensitiveFieldExtractor) extractColumnFromExprNode(in tidbast.E
 		}
 		finalLevel := defaultMaskingLevel
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
-				finalLevel = field.maskingLevel
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
+				finalLevel = field.MaskingLevel
 			}
 			if finalLevel == maxMaskingLevel {
 				return finalLevel, nil
@@ -518,19 +519,19 @@ func (extractor *sensitiveFieldExtractor) extractColumnFromExprNodeList(nodeList
 	return finalLevel, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractTableSource(node *tidbast.TableSource) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTableSource(node *tidbast.TableSource) ([]base.FieldInfo, error) {
 	fieldList, err := extractor.extractNode(node.Source)
 	if err != nil {
 		return nil, err
 	}
-	var res []fieldInfo
+	var res []base.FieldInfo
 	if node.AsName.O != "" {
 		for _, field := range fieldList {
-			res = append(res, fieldInfo{
-				name:         field.name,
-				table:        node.AsName.O,
-				database:     field.database,
-				maskingLevel: field.maskingLevel,
+			res = append(res, base.FieldInfo{
+				Name:         field.Name,
+				Table:        node.AsName.O,
+				Database:     field.Database,
+				MaskingLevel: field.MaskingLevel,
 			})
 		}
 	} else {
@@ -660,25 +661,25 @@ func (extractor *sensitiveFieldExtractor) findViewSchema(databaseName string, vi
 	return "", db.TableSchema{}, errors.Errorf("View %q.%q not found", databaseName, viewName)
 }
 
-func (extractor *sensitiveFieldExtractor) extractTableName(node *tidbast.TableName) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTableName(node *tidbast.TableName) ([]base.FieldInfo, error) {
 	databaseName, tableSchema, err := extractor.findTableSchema(node.Schema.O, node.Name.O)
 	if err != nil {
 		return nil, err
 	}
 
-	var res []fieldInfo
+	var res []base.FieldInfo
 	for _, column := range tableSchema.ColumnList {
-		res = append(res, fieldInfo{
-			name:         column.Name,
-			table:        tableSchema.Name,
-			database:     databaseName,
-			maskingLevel: column.MaskingLevel,
+		res = append(res, base.FieldInfo{
+			Name:         column.Name,
+			Table:        tableSchema.Name,
+			Database:     databaseName,
+			MaskingLevel: column.MaskingLevel,
 		})
 	}
 	return res, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractJoin(node *tidbast.Join) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractJoin(node *tidbast.Join) ([]base.FieldInfo, error) {
 	if node.Right == nil {
 		// This case is not Join
 		return extractor.extractNode(node.Left)
@@ -694,30 +695,30 @@ func (extractor *sensitiveFieldExtractor) extractJoin(node *tidbast.Join) ([]fie
 	return mergeJoinField(node, leftFieldInfo, rightFieldInfo)
 }
 
-func mergeJoinField(node *tidbast.Join, leftField []fieldInfo, rightField []fieldInfo) ([]fieldInfo, error) {
-	leftFieldMap := make(map[string]fieldInfo)
-	rightFieldMap := make(map[string]fieldInfo)
-	var result []fieldInfo
+func mergeJoinField(node *tidbast.Join, leftField []base.FieldInfo, rightField []base.FieldInfo) ([]base.FieldInfo, error) {
+	leftFieldMap := make(map[string]base.FieldInfo)
+	rightFieldMap := make(map[string]base.FieldInfo)
+	var result []base.FieldInfo
 	for _, field := range leftField {
 		// Column name in MySQL is NOT case-sensitive.
-		leftFieldMap[strings.ToLower(field.name)] = field
+		leftFieldMap[strings.ToLower(field.Name)] = field
 	}
 	for _, field := range rightField {
 		// Column name in MySQL is NOT case-sensitive.
-		rightFieldMap[strings.ToLower(field.name)] = field
+		rightFieldMap[strings.ToLower(field.Name)] = field
 	}
 	if node.NaturalJoin {
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			// Merge the sensitive attribute for the same column name field.
-			if rField, exists := rightFieldMap[strings.ToLower(field.name)]; exists && cmp.Less[storepb.MaskingLevel](field.maskingLevel, rField.maskingLevel) {
-				field.maskingLevel = rField.maskingLevel
+			if rField, exists := rightFieldMap[strings.ToLower(field.Name)]; exists && cmp.Less[storepb.MaskingLevel](field.MaskingLevel, rField.MaskingLevel) {
+				field.MaskingLevel = rField.MaskingLevel
 			}
 			result = append(result, field)
 		}
 
 		for _, field := range rightField {
-			if _, exists := leftFieldMap[strings.ToLower(field.name)]; !exists {
+			if _, exists := leftFieldMap[strings.ToLower(field.Name)]; !exists {
 				result = append(result, field)
 			}
 		}
@@ -731,18 +732,18 @@ func mergeJoinField(node *tidbast.Join, leftField []fieldInfo, rightField []fiel
 			}
 
 			for _, field := range leftField {
-				_, existsInUsingMap := usingMap[strings.ToLower(field.name)]
-				rField, existsInRightField := rightFieldMap[strings.ToLower(field.name)]
+				_, existsInUsingMap := usingMap[strings.ToLower(field.Name)]
+				rField, existsInRightField := rightFieldMap[strings.ToLower(field.Name)]
 				// Merge the sensitive attribute for the column name field in USING.
-				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.maskingLevel, rField.maskingLevel) {
-					field.maskingLevel = rField.maskingLevel
+				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.MaskingLevel, rField.MaskingLevel) {
+					field.MaskingLevel = rField.MaskingLevel
 				}
 				result = append(result, field)
 			}
 
 			for _, field := range rightField {
-				_, existsInUsingMap := usingMap[strings.ToLower(field.name)]
-				_, existsInLeftField := leftFieldMap[strings.ToLower(field.name)]
+				_, existsInUsingMap := usingMap[strings.ToLower(field.Name)]
+				_, existsInLeftField := leftFieldMap[strings.ToLower(field.Name)]
 				if existsInUsingMap && existsInLeftField {
 					continue
 				}
