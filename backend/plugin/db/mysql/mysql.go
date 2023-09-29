@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -158,7 +159,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opts db.ExecuteOptions) (int64, error) {
-	statement, err := parser.DealWithDelimiter(statement)
+	statement, err := mysqlparser.DealWithDelimiter(statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to deal with delimiter")
 	}
