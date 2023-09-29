@@ -14,6 +14,7 @@ import (
 	standardparser "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // ExtractChangedResources extracts the changed resources from the SQL.
@@ -108,9 +109,9 @@ func ExtractDatabaseList(engineType EngineType, statement string, fallbackNormal
 	}
 }
 
-func ExtractSensitiveField(dbType db.Type, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+func ExtractSensitiveField(dbType storepb.Engine, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
 	switch dbType {
-	case db.MySQL, db.MariaDB, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		extractor := &mysqlparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
@@ -120,7 +121,7 @@ func ExtractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			return nil, err
 		}
 		return result, nil
-	case db.TiDB:
+	case storepb.Engine_TIDB:
 		extractor := &tidbparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
@@ -130,12 +131,12 @@ func ExtractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			return nil, err
 		}
 		return result, nil
-	case db.Postgres, db.Redshift, db.RisingWave:
+	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 		extractor := &pgparser.SensitiveFieldExtractor{
 			SchemaInfo: schemaInfo,
 		}
 		return extractor.ExtractSensitiveField(statement)
-	case db.Oracle, db.DM:
+	case storepb.Engine_ORACLE, storepb.Engine_DM:
 		extractor := &plsqlparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
@@ -145,7 +146,7 @@ func ExtractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			return nil, err
 		}
 		return result, nil
-	case db.Snowflake:
+	case storepb.Engine_SNOWFLAKE:
 		extractor := &snowparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,
@@ -155,7 +156,7 @@ func ExtractSensitiveField(dbType db.Type, statement string, currentDatabase str
 			return nil, err
 		}
 		return result, nil
-	case db.MSSQL:
+	case storepb.Engine_MSSQL:
 		extractor := &tsqlparser.SensitiveFieldExtractor{
 			CurrentDatabase: currentDatabase,
 			SchemaInfo:      schemaInfo,

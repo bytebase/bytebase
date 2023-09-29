@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,10 +19,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
 }
 
 // CharsetAllowlistAdvisor is the advisor checking for charset allowlist.

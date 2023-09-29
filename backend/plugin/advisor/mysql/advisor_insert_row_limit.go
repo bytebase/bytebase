@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
 }
 
 // InsertRowLimitAdvisor is the advisor checking for to limit INSERT rows.

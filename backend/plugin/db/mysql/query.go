@@ -9,16 +9,16 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (string, error) {
 	switch driver.dbType {
-	case db.MySQL, db.MariaDB:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 		// MySQL 5.7 doesn't support WITH clause.
 		return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit), nil
-	case db.TiDB:
+	case storepb.Engine_TIDB:
 		return getStatementWithResultLimitForTiDB(stmt, limit)
 	default:
 		return "", errors.Errorf("unsupported database type %s", driver.dbType)

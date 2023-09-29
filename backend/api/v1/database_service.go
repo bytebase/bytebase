@@ -609,7 +609,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	schema := string(dbSchema.Schema)
 	if request.SdlFormat {
 		switch instance.Engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			sdlSchema, err := transform.SchemaTransform(parser.MySQL, schema)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
@@ -947,7 +947,7 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	}
 	if request.SdlFormat {
 		switch instance.Engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			sdlSchema, err := transform.SchemaTransform(parser.MySQL, converted.Schema)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
@@ -1064,13 +1064,13 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	}
 
 	switch instance.Engine {
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		engine = parser.Postgres
-	case db.MySQL, db.MariaDB, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		engine = parser.MySQL
-	case db.TiDB:
+	case storepb.Engine_TIDB:
 		engine = parser.TiDB
-	case db.Oracle:
+	case storepb.Engine_ORACLE:
 		engine = parser.Oracle
 	default:
 		return engine, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid engine type %v", instance.Engine))
@@ -2359,9 +2359,9 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	}
 
 	switch instance.Engine {
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		return s.pgAdviseIndex(ctx, request, database)
-	case db.MySQL:
+	case storepb.Engine_MYSQL:
 		return s.mysqlAdviseIndex(ctx, request, database)
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "AdviseIndex is not implemented for engine: %v", instance.Engine)

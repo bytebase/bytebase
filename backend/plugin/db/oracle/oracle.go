@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -29,7 +30,7 @@ var (
 )
 
 func init() {
-	db.Register(db.Oracle, newDriver)
+	db.Register(storepb.Engine_ORACLE, newDriver)
 }
 
 // Driver is the Oracle driver.
@@ -45,7 +46,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a Oracle driver.
-func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
@@ -82,8 +83,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.Oracle
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_ORACLE
 }
 
 // GetDB gets the database.
@@ -198,7 +199,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, db.Oracle, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_ORACLE, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

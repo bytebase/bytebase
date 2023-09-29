@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,10 +18,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 }
 
 // ColumnRequirementAdvisor is the advisor checking for column requirement.

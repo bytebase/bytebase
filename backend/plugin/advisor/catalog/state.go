@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -143,7 +142,7 @@ type DatabaseState struct {
 	name         string
 	characterSet string
 	collation    string
-	dbType       db.Type
+	dbType       storepb.Engine
 	schemaSet    schemaStateMap
 	deleted      bool
 	usable       bool
@@ -185,7 +184,7 @@ func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 	// In PostgreSQL, the index name is unique in a schema, not a table.
 	// In MySQL and TiDB, the index name is unique in a table.
 	// So for case one, we need match table name, but for case two, we don't need.
-	needMatchTable := (d.dbType != db.Postgres || find.SchemaName == "" || find.TableName != "")
+	needMatchTable := (d.dbType != storepb.Engine_POSTGRES || find.SchemaName == "" || find.TableName != "")
 	if needMatchTable {
 		schema, exists := d.schemaSet[find.SchemaName]
 		if !exists {

@@ -3,7 +3,7 @@ package fake
 
 import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -11,11 +11,11 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.Fake, &Advisor{})
-	advisor.Register(db.TiDB, advisor.Fake, &Advisor{})
-	advisor.Register(db.MariaDB, advisor.Fake, &Advisor{})
-	advisor.Register(db.Postgres, advisor.Fake, &Advisor{})
-	advisor.Register(db.OceanBase, advisor.Fake, &Advisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.Fake, &Advisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.Fake, &Advisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.Fake, &Advisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.Fake, &Advisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.Fake, &Advisor{})
 }
 
 // Advisor is the fake sql advisor.

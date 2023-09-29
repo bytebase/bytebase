@@ -11,17 +11,17 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestAdminQueryAffectedRows(t *testing.T) {
 	tests := []struct {
 		databaseName      string
-		dbType            db.Type
+		dbType            storepb.Engine
 		prepareStatements string
 		query             string
 		want              bool
@@ -29,7 +29,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	}{
 		{
 			databaseName:      "Test1",
-			dbType:            db.MySQL,
+			dbType:            storepb.Engine_MYSQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1);",
 			affectedRows: []*v1pb.QueryResult{
@@ -49,7 +49,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		},
 		{
 			databaseName:      "Test2",
-			dbType:            db.MySQL,
+			dbType:            storepb.Engine_MYSQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1); DELETE FROM tbl WHERE id = 1;",
 			affectedRows: []*v1pb.QueryResult{
@@ -81,7 +81,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		},
 		{
 			databaseName:      "Test3",
-			dbType:            db.Postgres,
+			dbType:            storepb.Engine_POSTGRES,
 			prepareStatements: "CREATE TABLE public.tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1),(2);",
 			affectedRows: []*v1pb.QueryResult{
@@ -101,7 +101,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		},
 		{
 			databaseName:      "Test4",
-			dbType:            db.Postgres,
+			dbType:            storepb.Engine_POSTGRES,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "ALTER TABLE tbl ADD COLUMN name VARCHAR(255);",
 			affectedRows: []*v1pb.QueryResult{
@@ -161,9 +161,9 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		var instance *v1pb.Instance
 		databaseOwner := ""
 		switch tt.dbType {
-		case db.MySQL:
+		case storepb.Engine_MYSQL:
 			instance = mysqlInstance
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			instance = pgInstance
 			databaseOwner = "root"
 		default:

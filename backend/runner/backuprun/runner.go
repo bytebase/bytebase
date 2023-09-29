@@ -23,11 +23,11 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // NewRunner creates a new backup runner.
@@ -127,7 +127,7 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 	}
 
 	for _, instance := range instanceList {
-		if instance.Engine != db.MySQL && instance.Engine != db.MariaDB {
+		if instance.Engine != storepb.Engine_MYSQL && instance.Engine != storepb.Engine_MARIADB {
 			continue
 		}
 		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
@@ -267,7 +267,7 @@ func (r *Runner) downloadBinlogFiles(ctx context.Context) {
 	r.downloadBinlogMu.Lock()
 	defer r.downloadBinlogMu.Unlock()
 	for _, instance := range instances {
-		if instance.Engine != db.MySQL && instance.Engine != db.MariaDB {
+		if instance.Engine != storepb.Engine_MYSQL && instance.Engine != storepb.Engine_MARIADB {
 			continue
 		}
 		if _, ok := r.downloadBinlogInstanceIDs[instance.UID]; !ok {
@@ -343,7 +343,7 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 			continue
 		}
 		// backup for ClickHouse, Snowflake, MongoDB, Spanner, Redis, Oracle is not supported.
-		if instance.Engine == db.ClickHouse || instance.Engine == db.Snowflake || instance.Engine == db.MongoDB || instance.Engine == db.Spanner || instance.Engine == db.Redis || instance.Engine == db.Oracle {
+		if instance.Engine == storepb.Engine_CLICKHOUSE || instance.Engine == storepb.Engine_SNOWFLAKE || instance.Engine == storepb.Engine_MONGODB || instance.Engine == storepb.Engine_SPANNER || instance.Engine == storepb.Engine_REDIS || instance.Engine == storepb.Engine_ORACLE {
 			continue
 		}
 		environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})

@@ -475,7 +475,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 						"environment_id": environmentID,
 						"project_id":     issue.Project.ResourceID,
 						"database_name":  databaseName,
-						// convert to string type otherwise cel-go will complain that db.Type is not string type.
+						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
 						"db_engine":     string(instance.Engine),
 						"sql_type":      "UNKNOWN",
 						"affected_rows": math.MaxInt32,
@@ -643,7 +643,7 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					"environment_id": database.EffectiveEnvironmentID,
 					"project_id":     issue.Project.ResourceID,
 					"database_name":  database.DatabaseName,
-					// convert to string type otherwise cel-go will complain that db.Type is not string type.
+					// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
 					"db_engine":       string(instance.Engine),
 					"export_rows":     factors.ExportRows,
 					"expiration_days": expirationDays,
@@ -675,7 +675,7 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					"environment_id": database.EffectiveEnvironmentID,
 					"project_id":     issue.Project.ResourceID,
 					"database_name":  database.DatabaseName,
-					// convert to string type otherwise cel-go will complain that db.Type is not string type.
+					// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
 					"db_engine":       string(instance.Engine),
 					"expiration_days": expirationDays,
 				}

@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -28,7 +29,7 @@ var (
 )
 
 func init() {
-	db.Register(db.DM, newDriver)
+	db.Register(storepb.Engine_DM, newDriver)
 }
 
 // Driver is the DM driver.
@@ -42,7 +43,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a DM driver.
-func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
@@ -71,8 +72,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.DM
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_DM
 }
 
 // GetDB gets the database.
@@ -188,7 +189,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, db.DM, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_DM, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}

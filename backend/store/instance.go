@@ -14,7 +14,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -22,7 +21,7 @@ import (
 type InstanceMessage struct {
 	ResourceID   string
 	Title        string
-	Engine       db.Type
+	Engine       storepb.Engine
 	ExternalLink string
 	DataSources  []*DataSourceMessage
 	Activation   bool
@@ -187,7 +186,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		creatorID,
 		environment.UID,
 		instanceCreate.Title,
-		instanceCreate.Engine,
+		instanceCreate.Engine.String(),
 		instanceCreate.ExternalLink,
 		instanceCreate.Activation,
 		optionBytes,
@@ -303,6 +302,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	instance := &InstanceMessage{
 		EnvironmentID: patch.EnvironmentID,
 	}
+	var engine string
 	query := fmt.Sprintf(`
 			UPDATE instance
 			SET `+strings.Join(set, ", ")+`
@@ -325,7 +325,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		&instance.UID,
 		&instance.ResourceID,
 		&instance.Title,
-		&instance.Engine,
+		&engine,
 		&instance.EngineVersion,
 		&instance.ExternalLink,
 		&instance.Activation,
@@ -338,6 +338,11 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 		return nil, err
 	}
+	engineTypeValue, ok := storepb.Engine_value[engine]
+	if !ok {
+		return nil, errors.Errorf("invalid engine %s", engine)
+	}
+	instance.Engine = storepb.Engine(engineTypeValue)
 
 	if patch.DataSources != nil {
 		if err := s.clearDataSourceImpl(ctx, tx, instance.UID); err != nil {
@@ -417,14 +422,14 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	defer rows.Close()
 	for rows.Next() {
 		var instanceMessage InstanceMessage
-		var rowStatus string
+		var engine, rowStatus string
 		var options, metadata []byte
 		if err := rows.Scan(
 			&instanceMessage.EnvironmentID,
 			&instanceMessage.UID,
 			&instanceMessage.ResourceID,
 			&instanceMessage.Title,
-			&instanceMessage.Engine,
+			&engine,
 			&instanceMessage.EngineVersion,
 			&instanceMessage.ExternalLink,
 			&instanceMessage.Activation,
@@ -434,6 +439,12 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		); err != nil {
 			return nil, err
 		}
+		engineTypeValue, ok := storepb.Engine_value[engine]
+		if !ok {
+			return nil, errors.Errorf("invalid engine %s", engine)
+		}
+		instanceMessage.Engine = storepb.Engine(engineTypeValue)
+
 		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		var instanceOptions storepb.InstanceOptions
 		if err := protojson.Unmarshal(options, &instanceOptions); err != nil {
@@ -536,11 +547,11 @@ func validateDataSourceList(dataSources []*DataSourceMessage) error {
 // IgnoreDatabaseAndTableCaseSensitive returns true if the engine ignores database and table case sensitive.
 func IgnoreDatabaseAndTableCaseSensitive(instance *InstanceMessage) bool {
 	switch instance.Engine {
-	case db.TiDB:
+	case storepb.Engine_TIDB:
 		return true
-	case db.MySQL, db.MariaDB:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 		return instance.Metadata != nil && instance.Metadata.MysqlLowerCaseTableNames != 0
-	case db.MSSQL:
+	case storepb.Engine_MSSQL:
 		// In fact, SQL Server is possible to create a case-sensitive database and case-insensitive database on one instance.
 		// https://www.webucator.com/article/how-to-check-case-sensitivity-in-sql-server/
 		// But by default, SQL Server is case-insensitive.
