@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -381,7 +380,7 @@ func transformAddColumnContext(_ *DeparseContext, addColumnContext *api.AddColum
 func transformColumnType(typeStr string) (ast.DataType, error) {
 	// Mock a CreateTableStmt with type string to get the actually types.FieldType.
 	stmt := fmt.Sprintf(`CREATE TABLE "public"."column_type" ("column_type" %s);`, typeStr)
-	nodeList, err := pgrawparser.Parse(parser.ParseContext{}, stmt)
+	nodeList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, stmt)
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +401,7 @@ func transformColumnType(typeStr string) (ast.DataType, error) {
 }
 
 func restoreASTNode(node ast.Node) (string, error) {
-	stmt, err := pgrawparser.Deparse(parser.DeparseContext{}, node)
+	stmt, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, node)
 	if err != nil {
 		return "", err
 	}

@@ -598,7 +598,7 @@ func oracleSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func postgresSyntaxCheck(statement string) (any, []Advice) {
-	nodes, err := pgrawparser.Parse(parser.ParseContext{}, statement)
+	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		if _, ok := err.(*pgrawparser.ConvertError); ok {
 			return nil, []Advice{
@@ -638,7 +638,7 @@ func calculatePostgresErrorLine(statement string) int {
 	}
 
 	for _, stmt := range statementList {
-		if _, err := pgrawparser.Parse(parser.ParseContext{}, stmt.Text); err != nil {
+		if _, err := pgrawparser.Parse(pgrawparser.ParseContext{}, stmt.Text); err != nil {
 			return stmt.LastLine
 		}
 	}

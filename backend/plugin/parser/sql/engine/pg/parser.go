@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -19,8 +18,29 @@ const (
 	operatorNotLike string = "!~~"
 )
 
+// ParseContext is the context for parsing.
+type ParseContext struct {
+}
+
+// DeparseContext is the contxt for restoring.
+type DeparseContext struct {
+	// IndentLevel is indent level for current line.
+	// The parser deparses statements with the indent level for pretty format.
+	IndentLevel int
+}
+
+// WriteIndent is the helper function to write indent string.
+func (ctx DeparseContext) WriteIndent(buf *strings.Builder, indent string) error {
+	for i := 0; i < ctx.IndentLevel; i++ {
+		if _, err := buf.WriteString(indent); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Parse implements the parser.Parser interface.
-func Parse(_ parser.ParseContext, statement string) ([]ast.Node, error) {
+func Parse(_ ParseContext, statement string) ([]ast.Node, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
@@ -70,7 +90,7 @@ func splitSQL(statement string) ([]base.SingleSQL, error) {
 }
 
 // Deparse implements the parser.Deparse interface.
-func Deparse(context parser.DeparseContext, node ast.Node) (string, error) {
+func Deparse(context DeparseContext, node ast.Node) (string, error) {
 	buf := &strings.Builder{}
 	if err := deparseImpl(context, node, buf); err != nil {
 		return "", err
