@@ -29,7 +29,7 @@ import (
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
 	// register pg parser.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
 
 // How to add a SQL review rule:
@@ -602,7 +602,7 @@ func oracleSyntaxCheck(statement string) (any, []Advice) {
 func postgresSyntaxCheck(statement string) (any, []Advice) {
 	nodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
-		if _, ok := err.(*parser.ConvertError); ok {
+		if _, ok := err.(*pg.ConvertError); ok {
 			return nil, []Advice{
 				{
 					Status:  Error,
