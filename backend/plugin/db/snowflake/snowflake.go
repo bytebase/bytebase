@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -264,7 +265,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	// TODO(rebelice): support multiple queries in a single statement.
 	var results []*v1pb.QueryResult
 
-	result, err := driver.querySingleSQL(ctx, conn, parser.SingleSQL{Text: statement}, queryContext)
+	result, err := driver.querySingleSQL(ctx, conn, base.SingleSQL{Text: statement}, queryContext)
 	if err != nil {
 		results = append(results, &v1pb.QueryResult{
 			Error: err.Error(),
@@ -281,7 +282,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", stmt, limit)
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
 	stmt := statement

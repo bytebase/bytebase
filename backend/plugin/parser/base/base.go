@@ -6,6 +6,15 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 )
 
+// SingleSQL is a separate SQL split from multi-SQL.
+type SingleSQL struct {
+	Text     string
+	BaseLine int
+	LastLine int
+	// The sql is empty, such as `/* comments */;` or just `;`.
+	Empty bool
+}
+
 // SyntaxError is a syntax error.
 type SyntaxError struct {
 	Line    int
