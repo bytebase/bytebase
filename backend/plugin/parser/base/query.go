@@ -3,7 +3,26 @@ package base
 import (
 	"fmt"
 	"strings"
+	"sync"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+var (
+	mux            sync.Mutex
+	QueryValidator = make(map[storepb.Engine]ValidateSQLForEditorFunc)
+)
+
+type ValidateSQLForEditorFunc func(string) bool
+
+func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := QueryValidator[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	QueryValidator[engine] = f
+}
 
 // SchemaResource is the resource of the schema.
 type SchemaResource struct {

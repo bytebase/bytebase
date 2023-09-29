@@ -11,7 +11,14 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	base.RegisterQueryValidator(storepb.Engine_POSTGRES, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_REDSHIFT, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_RISINGWAVE, ValidateSQLForEditor)
+}
 
 func ExtractPostgresResourceList(currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
 	jsonText, err := pgquery.ParseToJSON(sql)

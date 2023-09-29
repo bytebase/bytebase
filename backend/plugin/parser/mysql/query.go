@@ -12,7 +12,15 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	standardparser "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	base.RegisterQueryValidator(storepb.Engine_MYSQL, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_MARIADB, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_OCEANBASE, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_TIDB, ValidateSQLForEditor)
+}
 
 // ValidateForEditor validates the given SQL statement for editor.
 func ValidateForEditor(tree antlr.Tree) error {
