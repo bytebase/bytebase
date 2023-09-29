@@ -10,7 +10,7 @@ import (
 	"github.com/pingcap/tidb/parser/format"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
 func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (string, error) {
@@ -26,7 +26,7 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (strin
 }
 
 func getStatementWithResultLimitForTiDB(singleStatement string, limitCount int) (string, error) {
-	stmtList, err := parser.ParseTiDB(singleStatement, "", "")
+	stmtList, err := tidbparser.ParseTiDB(singleStatement, "", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse tidb statement: %s", singleStatement)
 	}

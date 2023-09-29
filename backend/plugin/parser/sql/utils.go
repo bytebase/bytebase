@@ -12,7 +12,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	pgquery "github.com/pganalyze/pg_query_go/v4"
-	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/model"
 	"github.com/pingcap/tidb/parser/mysql"
@@ -22,6 +21,7 @@ import (
 
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
 // SingleSQL is a separate SQL split from multi-SQL.
@@ -165,7 +165,7 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 }
 
 func extractTiDBResourceList(currentDatabase string, sql string) ([]SchemaResource, error) {
-	nodes, err := ParseTiDB(sql, "", "")
+	nodes, err := tidbparser.ParseTiDB(sql, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -681,7 +681,7 @@ func ExtractTiDBUnsupportedStmts(stmts string) ([]string, string, error) {
 
 // isTiDBUnsupportStmt returns true if this statement is unsupported in TiDB.
 func isTiDBUnsupportStmt(stmt string) bool {
-	if _, err := ParseTiDB(stmt, "", ""); err != nil {
+	if _, err := tidbparser.ParseTiDB(stmt, "", ""); err != nil {
 		return true
 	}
 	return false
@@ -850,26 +850,16 @@ func extractSnowSQLNormalizedDatabaseList(statement string, normalizedDatabaseNa
 	return result, nil
 }
 
-func newMySQLParser() *tidbparser.Parser {
-	p := tidbparser.New()
-
-	// To support MySQL8 window function syntax.
-	// See https://github.com/bytebase/bytebase/issues/175.
-	p.EnableWindowFunc(true)
-
-	return p
-}
-
 func extractMySQLDatabaseList(statement string) ([]string, error) {
 	databaseMap := make(map[string]bool)
 
-	p := newMySQLParser()
-	nodeList, _, err := p.Parse(statement, "", "")
+	// TODO(d): replace it with mysql parser.
+	nodes, err := tidbparser.ParseTiDB(statement, "", "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parser statement %q", statement)
 	}
 
-	for _, node := range nodeList {
+	for _, node := range nodes {
 		databaseList := extractMySQLDatabaseListFromNode(node)
 		for _, database := range databaseList {
 			databaseMap[database] = true
