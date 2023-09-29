@@ -8,12 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
-
-	plsql "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -73,27 +70,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]base.SingleSQL, e
 	var err error
 	switch engineType {
 	case Oracle:
-		tree, tokens, err := plsqlparser.ParsePLSQL(statement)
-		if err != nil {
-			return nil, err
-		}
-
-		var result []base.SingleSQL
-		for _, item := range tree.GetChildren() {
-			if stmt, ok := item.(plsql.IUnit_statementContext); ok {
-				stopIndex := stmt.GetStop().GetTokenIndex()
-				if stmt.GetStop().GetTokenType() == plsql.PlSqlParserSEMICOLON {
-					stopIndex--
-				}
-				lastToken := tokens.Get(stopIndex)
-				result = append(result, base.SingleSQL{
-					Text:     tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
-					LastLine: lastToken.GetLine(),
-					Empty:    false,
-				})
-			}
-		}
-		return result, nil
+		return plsqlparser.SplitPLSQL(statement)
 	case MSSQL:
 		t := tokenizer.NewTokenizer(statement)
 		list, err = t.SplitStandardMultiSQL()
@@ -225,19 +202,7 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	var err error
 	switch engineType {
 	case Oracle:
-		text := antlr.NewIoStream(src).String()
-		sqls, err := SplitMultiSQL(engineType, text)
-		if err != nil {
-			return nil, err
-		}
-		for _, sql := range sqls {
-			if f != nil {
-				if err := f(sql.Text); err != nil {
-					return nil, err
-				}
-			}
-		}
-		return sqls, nil
+		return plsqlparser.SplitMultiSQLStream(src, f)
 	case MSSQL:
 		t := tokenizer.NewStreamTokenizer(src, f)
 		list, err = t.SplitStandardMultiSQL()
@@ -245,7 +210,7 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 		t := tokenizer.NewStreamTokenizer(src, f)
 		list, err = t.SplitPostgreSQLMultiSQL()
 	case MySQL, MariaDB, OceanBase:
-		return mysqlparser.SplitMySQLMultiSQLStream(src, f)
+		return mysqlparser.SplitMultiSQLStream(src, f)
 	case TiDB:
 		t := tokenizer.NewStreamTokenizer(src, f)
 		list, err = t.SplitTiDBMultiSQL()
