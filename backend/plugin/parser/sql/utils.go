@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"strings"
 
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
@@ -17,7 +16,6 @@ import (
 	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	standardparser "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -82,42 +80,20 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]base.SingleSQL, e
 
 // SplitMultiSQLStream splits statement stream into a slice of the single SQL.
 func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
-	var list []base.SingleSQL
-	var err error
 	switch engineType {
 	case Oracle:
 		return plsqlparser.SplitMultiSQLStream(src, f)
 	case MSSQL:
-		t := tokenizer.NewStreamTokenizer(src, f)
-		list, err = t.SplitStandardMultiSQL()
+		return tsqlparser.SplitMultiSQLStream(src, f)
 	case Postgres, Redshift, RisingWave:
-		t := tokenizer.NewStreamTokenizer(src, f)
-		list, err = t.SplitPostgreSQLMultiSQL()
+		return pgparser.SplitMultiSQLStream(src, f)
 	case MySQL, MariaDB, OceanBase:
 		return mysqlparser.SplitMultiSQLStream(src, f)
 	case TiDB:
-		t := tokenizer.NewStreamTokenizer(src, f)
-		list, err = t.SplitTiDBMultiSQL()
+		return tidbparser.SplitMultiSQLStream(src, f)
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	var result []base.SingleSQL
-	for _, sql := range list {
-		if sql.Empty {
-			continue
-		}
-		if engineType == Oracle {
-			sql.Text = strings.TrimRight(sql.Text, " \n\t;")
-		}
-		result = append(result, sql)
-	}
-
-	return result, nil
 }
 
 // ExtractTiDBUnsupportedStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
