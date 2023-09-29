@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -14,23 +15,15 @@ var (
 	maxMaskingLevel     storepb.MaskingLevel = storepb.MaskingLevel_FULL
 )
 
-type fieldInfo struct {
-	name         string
-	table        string
-	schema       string
-	database     string
-	maskingLevel storepb.MaskingLevel
-}
-
 type sensitiveFieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
 	currentDatabase    string
 	schemaInfo         *db.SensitiveSchemaInfo
-	outerSchemaInfo    []fieldInfo
+	outerSchemaInfo    []base.FieldInfo
 	cteOuterSchemaInfo []db.TableSchema
 
 	// SELECT statement specific field.
-	fromFieldList []fieldInfo
+	fromFieldList []base.FieldInfo
 }
 
 func extractSensitiveField(dbType db.Type, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
