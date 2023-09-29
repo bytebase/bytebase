@@ -160,8 +160,11 @@ func SplitPLSQL(statement string) ([]base.SingleSQL, error) {
 				stopIndex--
 			}
 			lastToken := tokens.Get(stopIndex)
+			text := tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
+			text = strings.TrimRight(text, " \n\t;")
+
 			result = append(result, base.SingleSQL{
-				Text:     tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
+				Text:     text,
 				LastLine: lastToken.GetLine(),
 				Empty:    false,
 			})
