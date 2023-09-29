@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store"
@@ -421,7 +422,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 		if stmt.Empty {
 			continue
 		}
-		if parser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			continue
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
