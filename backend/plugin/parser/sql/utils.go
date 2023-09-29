@@ -109,26 +109,13 @@ func ExtractDatabaseList(engineType storepb.Engine, statement string, fallbackNo
 	}
 }
 
-func ExtractSensitiveField(dbType storepb.Engine, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+func ExtractSensitiveField(engine storepb.Engine, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
 	if schemaInfo == nil {
 		return nil, nil
 	}
-	switch dbType {
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return mysqlparser.GetMaskedFields(statement, currentDatabase, schemaInfo)
-	case storepb.Engine_TIDB:
-		return tidbparser.GetMaskedFields(statement, currentDatabase, schemaInfo)
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
-		return pgparser.GetMaskedFields(statement, "", schemaInfo)
-	case storepb.Engine_ORACLE, storepb.Engine_DM:
-		return plsqlparser.GetMaskedFields(statement, currentDatabase, schemaInfo)
-	case storepb.Engine_SNOWFLAKE:
-		return snowparser.GetMaskedFields(statement, currentDatabase, schemaInfo)
-	case storepb.Engine_MSSQL:
-		return tsqlparser.GetMaskedFields(statement, currentDatabase, schemaInfo)
-	default:
-		return nil, nil
-	}
+
+	f := base.FieldMaskers[engine]
+	return f(statement, currentDatabase, schemaInfo)
 }
 
 // ValidateSQLForEditor validates the SQL statement for editor.
