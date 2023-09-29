@@ -96,3 +96,20 @@ func IsTSQLKeyword(keyword string, caseSensitive bool) bool {
 	}
 	return tsqlKeywordsMap[keyword]
 }
+
+// FlattenExecuteStatementArgExecuteStatementArgUnnamed returns the flattened unnamed execute statement arg.
+func FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx parser.IExecute_statement_argContext) []parser.IExecute_statement_arg_unnamedContext {
+	var queue []parser.IExecute_statement_arg_unnamedContext
+	ele := ctx
+	for {
+		if ele.Execute_statement_arg_unnamed() == nil {
+			break
+		}
+		queue = append(queue, ele.Execute_statement_arg_unnamed())
+		if len(ele.AllExecute_statement_arg()) != 1 {
+			break
+		}
+		ele = ele.AllExecute_statement_arg()[0]
+	}
+	return queue
+}

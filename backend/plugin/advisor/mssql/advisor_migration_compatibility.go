@@ -11,7 +11,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -279,7 +278,7 @@ func (l *migrationCompatibilityChecker) EnterExecute_body(ctx *parser.Execute_bo
 		return
 	}
 
-	unnamedArguments := bbparser.FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx.Execute_statement_arg())
+	unnamedArguments := tsqlparser.FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx.Execute_statement_arg())
 
 	firstArgument := unnamedArguments[0]
 	if firstArgument == nil {
