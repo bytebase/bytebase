@@ -13,6 +13,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -45,7 +46,7 @@ func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) 
 }
 
 func parseMySQLSchemaStringToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
-	list, err := parser.ParseMySQL(schema)
+	list, err := mysqlparser.ParseMySQL(schema)
 	if err != nil {
 		return nil, err
 	}
@@ -702,7 +703,7 @@ func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.Databas
 
 func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
-	list, err := parser.ParseMySQL(baselineSchema)
+	list, err := mysqlparser.ParseMySQL(baselineSchema)
 	if err != nil {
 		return "", err
 	}
@@ -1442,6 +1443,6 @@ func checkColumnType(engine v1pb.Engine, tp string) bool {
 }
 
 func checkMySQLColumnType(tp string) bool {
-	_, err := parser.ParseMySQL(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
+	_, err := mysqlparser.ParseMySQL(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
 	return err == nil
 }

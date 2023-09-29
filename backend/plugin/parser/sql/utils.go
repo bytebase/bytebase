@@ -20,6 +20,7 @@ import (
 	plsql "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -363,45 +364,6 @@ func collapseUnion(query string) (string, error) {
 	return buf.String(), nil
 }
 
-// SplitMultiSQLAndNormalize split multiple SQLs and normalize them.
-// For MySQL, filter DELIMITER statements and replace all non-semicolon delimiters with semicolons.
-func SplitMultiSQLAndNormalize(engineType EngineType, statement string) ([]base.SingleSQL, error) {
-	switch engineType {
-	case MySQL:
-		has, list, err := hasDelimiter(statement)
-		if err != nil {
-			return nil, err
-		}
-		if has {
-			var result []base.SingleSQL
-			delimiter := `;`
-			for _, sql := range list {
-				if IsDelimiter(sql.Text) {
-					delimiter, err = ExtractDelimiter(sql.Text)
-					if err != nil {
-						return nil, err
-					}
-					continue
-				}
-				if delimiter != ";" {
-					result = append(result, base.SingleSQL{
-						Text:     fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)),
-						LastLine: sql.LastLine,
-						Empty:    sql.Empty,
-					})
-				} else {
-					result = append(result, sql)
-				}
-			}
-			return result, nil
-		}
-
-		return SplitMultiSQL(MySQL, statement)
-	default:
-		return SplitMultiSQL(engineType, statement)
-	}
-}
-
 // SplitMultiSQL splits statement into a slice of the single SQL.
 func SplitMultiSQL(engineType EngineType, statement string) ([]base.SingleSQL, error) {
 	var list []base.SingleSQL
@@ -436,7 +398,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]base.SingleSQL, e
 		t := tokenizer.NewTokenizer(statement)
 		list, err = t.SplitPostgreSQLMultiSQL()
 	case MySQL, MariaDB, OceanBase:
-		return SplitMySQL(statement)
+		return mysqlparser.SplitMySQL(statement)
 	case TiDB:
 		t := tokenizer.NewTokenizer(statement)
 		list, err = t.SplitTiDBMultiSQL()
@@ -472,7 +434,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]base.SingleSQL, e
 // have a stopping point - you cannot pass in a reader on an open-ended source such
 // as a socket for instance.
 func splitMySQLMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
-	result, err := SplitMySQLStream(src)
+	result, err := mysqlparser.SplitMySQLStream(src)
 	if err != nil {
 		return nil, err
 	}
@@ -680,22 +642,6 @@ func isTiDBUnsupportStmt(stmt string) bool {
 	return false
 }
 
-func hasDelimiter(statement string) (bool, []base.SingleSQL, error) {
-	// use splitTiDBMultiSQL to check if the statement has delimiter
-	list, err := SplitMultiSQL(TiDB, statement)
-	if err != nil {
-		return false, nil, errors.Errorf("failed to split multi sql: %v", err)
-	}
-
-	for _, sql := range list {
-		if IsDelimiter(sql.Text) {
-			return true, list, nil
-		}
-	}
-
-	return false, list, nil
-}
-
 // IsTiDBUnsupportDDLStmt checks whether the `stmt` is unsupported DDL statement in TiDB, the following statements are unsupported:
 // 1. `CREATE TRIGGER`
 // 2. `CREATE EVENT`
@@ -723,25 +669,6 @@ func IsTiDBUnsupportDDLStmt(stmt string) bool {
 		}
 	}
 	return false
-}
-
-// IsDelimiter returns true if the statement is a delimiter statement.
-func IsDelimiter(stmt string) bool {
-	delimiterRegex := `(?i)^\s*DELIMITER\s+`
-	re := regexp.MustCompile(delimiterRegex)
-	return re.MatchString(stmt)
-}
-
-// ExtractDelimiter extracts the delimiter from the delimiter statement.
-func ExtractDelimiter(stmt string) (string, error) {
-	delimiterRegex := `(?i)^\s*DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`
-	re := regexp.MustCompile(delimiterRegex)
-	matchList := re.FindStringSubmatch(stmt)
-	index := re.SubexpIndex("DELIMITER")
-	if index >= 0 && index < len(matchList) {
-		return matchList[index], nil
-	}
-	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
 }
 
 // TypeString returns the string representation of the type for MySQL.

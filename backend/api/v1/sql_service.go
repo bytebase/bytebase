@@ -38,6 +38,7 @@ import (
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -2012,7 +2013,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 			}
 		}
 	case db.MySQL:
-		trees, err := parser.ParseMySQL(statement)
+		trees, err := mysqlparser.ParseMySQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
