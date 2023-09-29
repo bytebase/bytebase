@@ -148,7 +148,7 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resources, err := ExtractMySQLChangedResources("db", test.statement)
+		resources, err := ExtractChangedResources("db", "", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
 	}

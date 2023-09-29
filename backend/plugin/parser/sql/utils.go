@@ -20,9 +20,10 @@ import (
 func ExtractChangedResources(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
 	switch engineType {
 	case MySQL, MariaDB, OceanBase:
-		return mysqlparser.ExtractMySQLChangedResources(currentDatabase, sql)
+		// currentSchema is empty.
+		return mysqlparser.ExtractChangedResources(currentDatabase, currentSchema, sql)
 	case Oracle:
-		return plsqlparser.ExtractOracleChangedResources(currentDatabase, currentSchema, sql)
+		return plsqlparser.ExtractChangedResources(currentDatabase, currentSchema, sql)
 	default:
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)

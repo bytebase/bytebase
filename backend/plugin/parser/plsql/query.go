@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func ExtractOracleChangedResources(currentDatabase string, currentSchema string, statement string) ([]base.SchemaResource, error) {
+func ExtractChangedResources(currentDatabase string, currentSchema string, statement string) ([]base.SchemaResource, error) {
 	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
