@@ -13,6 +13,7 @@ import (
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
 
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
@@ -94,8 +95,8 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 
 	changeDelimiter := false
 	for i, stmt := range list {
-		if bbparser.IsDelimiter(stmt.Text) {
-			delimiter, err := bbparser.ExtractDelimiter(stmt.Text)
+		if mysqlparser.IsDelimiter(stmt.Text) {
+			delimiter, err := mysqlparser.ExtractDelimiter(stmt.Text)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to extract delimiter from %q", stmt.Text)
 			}
@@ -348,8 +349,8 @@ func (*SchemaTransformer) Check(schema string) (int, error) {
 
 	changeDelimiter := false
 	for _, stmt := range list {
-		if bbparser.IsDelimiter(stmt.Text) {
-			delimiter, err := bbparser.ExtractDelimiter(stmt.Text)
+		if mysqlparser.IsDelimiter(stmt.Text) {
+			delimiter, err := mysqlparser.ExtractDelimiter(stmt.Text)
 			if err != nil {
 				return 0, errors.Wrapf(err, "failed to extract delimiter from %q", stmt.Text)
 			}
@@ -440,8 +441,8 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 
 	changeDelimiter := false
 	for _, stmt := range list {
-		if bbparser.IsDelimiter(stmt.Text) {
-			delimiter, err := bbparser.ExtractDelimiter(stmt.Text)
+		if mysqlparser.IsDelimiter(stmt.Text) {
+			delimiter, err := mysqlparser.ExtractDelimiter(stmt.Text)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to extract delimiter from %q", stmt.Text)
 			}

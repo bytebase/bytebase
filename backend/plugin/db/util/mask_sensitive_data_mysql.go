@@ -9,12 +9,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (extractor *sensitiveFieldExtractor) extractMySQLSensitiveField(statement string) ([]db.SensitiveField, error) {
-	list, err := parser.ParseMySQL(statement)
+	list, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -750,7 +751,7 @@ func (extractor *sensitiveFieldExtractor) mysqlFindViewSchema(databaseName, view
 }
 
 func (extractor *sensitiveFieldExtractor) mysqlBuildTableSchemaForView(viewName string, viewDefinition string) (db.TableSchema, error) {
-	list, err := parser.ParseMySQL(viewDefinition)
+	list, err := mysqlparser.ParseMySQL(viewDefinition)
 	if err != nil {
 		return db.TableSchema{}, err
 	}

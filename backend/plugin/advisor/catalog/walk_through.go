@@ -6,9 +6,6 @@ import (
 
 	mysqlparser "github.com/bytebase/mysql-parser"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
@@ -16,6 +13,10 @@ import (
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pingcap/tidb/sessionctx/stmtctx"
 	"github.com/pingcap/tidb/types"
+
+	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	mysqlbbparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
 // WalkThroughErrorType is the type of WalkThroughError.
@@ -1323,7 +1324,7 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
 
-	treeList, err := parser.ParseMySQL(statement)
+	treeList, err := mysqlbbparser.ParseMySQL(statement)
 	if err != nil {
 		return nil, NewParseError(err.Error())
 	}
