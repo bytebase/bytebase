@@ -1,5 +1,4 @@
-// Package parser is the parser for SQL statement.
-package parser
+package snowflake
 
 import (
 	"sort"
@@ -9,7 +8,6 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
 type snowsqlResourceExtractListener struct {
@@ -29,7 +27,7 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 	var parts []string
 	database := l.currentDatabase
 	if d := objectName.GetD(); d != nil {
-		normalizedD := snowparser.NormalizeSnowSQLObjectNamePart(d)
+		normalizedD := NormalizeSnowSQLObjectNamePart(d)
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -38,7 +36,7 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 
 	schema := l.currentSchema
 	if s := objectName.GetS(); s != nil {
-		normalizedS := snowparser.NormalizeSnowSQLObjectNamePart(s)
+		normalizedS := NormalizeSnowSQLObjectNamePart(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
@@ -47,7 +45,7 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 
 	var table string
 	if o := objectName.GetO(); o != nil {
-		normalizedO := snowparser.NormalizeSnowSQLObjectNamePart(o)
+		normalizedO := NormalizeSnowSQLObjectNamePart(o)
 		if normalizedO != "" {
 			table = normalizedO
 		}
@@ -62,9 +60,9 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 	}
 }
 
-// extractSnowflakeNormalizeResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
-func extractSnowflakeNormalizeResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]base.SchemaResource, error) {
-	tree, err := snowparser.ParseSnowSQL(selectStatement)
+// ExtractSnowflakeNormalizeResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
+func ExtractSnowflakeNormalizeResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]base.SchemaResource, error) {
+	tree, err := ParseSnowSQL(selectStatement)
 	if err != nil {
 		return nil, err
 	}
