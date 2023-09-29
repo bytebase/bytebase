@@ -594,7 +594,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive boo
 }
 
 func classifyStatement(statement string) ([]string, string, error) {
-	unsupported, supported, err := bbparser.ExtractTiDBUnsupportedStmts(statement)
+	unsupported, supported, err := mysqlparser.ExtractTiDBUnsupportedStmts(statement)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to extract TiDB unsupported statements from statements %q", statement)
 	}
