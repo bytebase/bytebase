@@ -1,8 +1,10 @@
-package parser
+package pg
 
 import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/postgresql-parser"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // ParsePostgreSQL parses the given SQL and returns the AST tree.
@@ -11,11 +13,11 @@ func ParsePostgreSQL(sql string) (antlr.Tree, error) {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(sql))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewPostgreSQLParser(stream)
-	lexerErrorListener := &ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 
@@ -23,12 +25,12 @@ func ParsePostgreSQL(sql string) (antlr.Tree, error) {
 	p.SetErrorHandler(antlr.NewBailErrorStrategy())
 
 	tree := p.Root()
-	if lexerErrorListener.err != nil {
-		return nil, lexerErrorListener.err
+	if lexerErrorListener.Err != nil {
+		return nil, lexerErrorListener.Err
 	}
 
-	if parserErrorListener.err != nil {
-		return nil, parserErrorListener.err
+	if parserErrorListener.Err != nil {
+		return nil, parserErrorListener.Err
 	}
 
 	return tree, nil

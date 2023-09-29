@@ -8,13 +8,14 @@ import (
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
 // convert converts the pg_query.Node to ast.Node.
-func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err error) {
+func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err error) {
 	defer func() {
 		if err == nil && res != nil {
 			res.SetText(strings.TrimSpace(statement.Text))

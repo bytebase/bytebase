@@ -10,6 +10,8 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // MySQLParseResult is the result of parsing a MySQL statement.
@@ -62,7 +64,7 @@ func DealWithDelimiter(statement string) (string, error) {
 }
 
 // SplitMySQL splits the given SQL statement into multiple SQL statements.
-func SplitMySQL(statement string) ([]SingleSQL, error) {
+func SplitMySQL(statement string) ([]base.SingleSQL, error) {
 	statement = strings.TrimRight(statement, " \r\n\t\f;") + "\n;"
 	var err error
 	statement, err = DealWithDelimiter(statement)
@@ -79,7 +81,7 @@ func SplitMySQL(statement string) ([]SingleSQL, error) {
 // Note that the reader is read completely into memory and so it must actually
 // have a stopping point - you cannot pass in a reader on an open-ended source such
 // as a socket for instance.
-func SplitMySQLStream(src io.Reader) ([]SingleSQL, error) {
+func SplitMySQLStream(src io.Reader) ([]base.SingleSQL, error) {
 	text := antlr.NewIoStream(src).String()
 	return SplitMySQL(text)
 }
@@ -115,8 +117,8 @@ func getDefaultChannelTokenType(tokens []antlr.Token, base int, offset int) int 
 	return tokens[current].GetTokenType()
 }
 
-func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]SingleSQL, error) {
-	var result []SingleSQL
+func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
+	var result []base.SingleSQL
 	stream.Fill()
 	tokens := stream.GetAllTokens()
 	start := 0
@@ -284,7 +286,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]SingleSQL, error) {
 				continue
 			}
 
-			result = append(result, SingleSQL{
+			result = append(result, base.SingleSQL{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[i]),
 				BaseLine: tokens[start].GetLine() - 1,
 				LastLine: tokens[i].GetLine()},
@@ -299,7 +301,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]SingleSQL, error) {
 			}
 
 			if start <= i-1 {
-				result = append(result, SingleSQL{
+				result = append(result, base.SingleSQL{
 					Text:     stream.GetTextFromTokens(tokens[start], tokens[i-1]),
 					BaseLine: tokens[start].GetLine() - 1,
 					LastLine: tokens[i-1].GetLine()},
@@ -317,11 +319,11 @@ func parseSingleStatement(statement string) (antlr.Tree, *antlr.CommonTokenStrea
 
 	p := parser.NewMySQLParser(stream)
 
-	lexerErrorListener := &ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 
@@ -329,12 +331,12 @@ func parseSingleStatement(statement string) (antlr.Tree, *antlr.CommonTokenStrea
 
 	tree := p.Script()
 
-	if lexerErrorListener.err != nil {
-		return nil, nil, lexerErrorListener.err
+	if lexerErrorListener.Err != nil {
+		return nil, nil, lexerErrorListener.Err
 	}
 
-	if parserErrorListener.err != nil {
-		return nil, nil, parserErrorListener.err
+	if parserErrorListener.Err != nil {
+		return nil, nil, parserErrorListener.Err
 	}
 
 	return tree, stream, nil

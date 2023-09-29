@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -73,7 +73,7 @@ func (l *namingTableNoKeywordListener) generateAdvice() ([]advisor.Advice, error
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableNoKeywordListener) EnterCreate_table(ctx *parser.Create_tableContext) {
 	tableName := normalizeIdentifier(ctx.Table_name(), l.currentSchema)
-	if bbparser.IsOracleKeyword(tableName) {
+	if plsqlparser.IsOracleKeyword(tableName) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,
@@ -90,7 +90,7 @@ func (l *namingTableNoKeywordListener) EnterAlter_table_properties(ctx *parser.A
 		return
 	}
 	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentSchema))
-	if bbparser.IsOracleKeyword(tableName) {
+	if plsqlparser.IsOracleKeyword(tableName) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,

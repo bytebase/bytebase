@@ -12,7 +12,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	pgquery "github.com/pganalyze/pg_query_go/v4"
-	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/model"
 	"github.com/pingcap/tidb/parser/mysql"
@@ -20,17 +19,11 @@ import (
 
 	plsql "github.com/bytebase/plsql-parser"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
-
-// SingleSQL is a separate SQL split from multi-SQL.
-type SingleSQL struct {
-	Text     string
-	BaseLine int
-	LastLine int
-	// The sql is empty, such as `/* comments */;` or just `;`.
-	Empty bool
-}
 
 // SchemaResource is the resource of the schema.
 type SchemaResource struct {
@@ -164,7 +157,7 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 }
 
 func extractTiDBResourceList(currentDatabase string, sql string) ([]SchemaResource, error) {
-	nodes, err := ParseTiDB(sql, "", "")
+	nodes, err := tidbparser.ParseTiDB(sql, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +364,7 @@ func collapseUnion(query string) (string, error) {
 
 // SplitMultiSQLAndNormalize split multiple SQLs and normalize them.
 // For MySQL, filter DELIMITER statements and replace all non-semicolon delimiters with semicolons.
-func SplitMultiSQLAndNormalize(engineType EngineType, statement string) ([]SingleSQL, error) {
+func SplitMultiSQLAndNormalize(engineType EngineType, statement string) ([]base.SingleSQL, error) {
 	switch engineType {
 	case MySQL:
 		has, list, err := hasDelimiter(statement)
@@ -379,7 +372,7 @@ func SplitMultiSQLAndNormalize(engineType EngineType, statement string) ([]Singl
 			return nil, err
 		}
 		if has {
-			var result []SingleSQL
+			var result []base.SingleSQL
 			delimiter := `;`
 			for _, sql := range list {
 				if IsDelimiter(sql.Text) {
@@ -390,7 +383,7 @@ func SplitMultiSQLAndNormalize(engineType EngineType, statement string) ([]Singl
 					continue
 				}
 				if delimiter != ";" {
-					result = append(result, SingleSQL{
+					result = append(result, base.SingleSQL{
 						Text:     fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)),
 						LastLine: sql.LastLine,
 						Empty:    sql.Empty,
@@ -409,17 +402,17 @@ func SplitMultiSQLAndNormalize(engineType EngineType, statement string) ([]Singl
 }
 
 // SplitMultiSQL splits statement into a slice of the single SQL.
-func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error) {
-	var list []SingleSQL
+func SplitMultiSQL(engineType EngineType, statement string) ([]base.SingleSQL, error) {
+	var list []base.SingleSQL
 	var err error
 	switch engineType {
 	case Oracle:
-		tree, tokens, err := ParsePLSQL(statement)
+		tree, tokens, err := plsqlparser.ParsePLSQL(statement)
 		if err != nil {
 			return nil, err
 		}
 
-		var result []SingleSQL
+		var result []base.SingleSQL
 		for _, item := range tree.GetChildren() {
 			if stmt, ok := item.(plsql.IUnit_statementContext); ok {
 				stopIndex := stmt.GetStop().GetTokenIndex()
@@ -427,7 +420,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 					stopIndex--
 				}
 				lastToken := tokens.Get(stopIndex)
-				result = append(result, SingleSQL{
+				result = append(result, base.SingleSQL{
 					Text:     tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
 					LastLine: lastToken.GetLine(),
 					Empty:    false,
@@ -448,7 +441,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 		list, err = t.splitTiDBMultiSQL()
 	default:
 		err = applyMultiStatements(strings.NewReader(statement), func(sql string) error {
-			list = append(list, SingleSQL{
+			list = append(list, base.SingleSQL{
 				Text:     sql,
 				LastLine: 0,
 				Empty:    false,
@@ -461,7 +454,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 		return nil, err
 	}
 
-	var result []SingleSQL
+	var result []base.SingleSQL
 	for _, sql := range list {
 		if sql.Empty {
 			continue
@@ -477,7 +470,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 // Note that the reader is read completely into memory and so it must actually
 // have a stopping point - you cannot pass in a reader on an open-ended source such
 // as a socket for instance.
-func splitMySQLMultiSQLStream(src io.Reader, f func(string) error) ([]SingleSQL, error) {
+func splitMySQLMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
 	result, err := SplitMySQLStream(src)
 	if err != nil {
 		return nil, err
@@ -581,8 +574,8 @@ func applyMultiStatements(sc io.Reader, f func(string) error) error {
 }
 
 // SplitMultiSQLStream splits statement stream into a slice of the single SQL.
-func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) error) ([]SingleSQL, error) {
-	var list []SingleSQL
+func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
+	var list []base.SingleSQL
 	var err error
 	switch engineType {
 	case Oracle:
@@ -618,7 +611,7 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 		return nil, err
 	}
 
-	var result []SingleSQL
+	var result []base.SingleSQL
 	for _, sql := range list {
 		if sql.Empty {
 			continue
@@ -680,13 +673,13 @@ func ExtractTiDBUnsupportedStmts(stmts string) ([]string, string, error) {
 
 // isTiDBUnsupportStmt returns true if this statement is unsupported in TiDB.
 func isTiDBUnsupportStmt(stmt string) bool {
-	if _, err := ParseTiDB(stmt, "", ""); err != nil {
+	if _, err := tidbparser.ParseTiDB(stmt, "", ""); err != nil {
 		return true
 	}
 	return false
 }
 
-func hasDelimiter(statement string) (bool, []SingleSQL, error) {
+func hasDelimiter(statement string) (bool, []base.SingleSQL, error) {
 	// use splitTiDBMultiSQL to check if the statement has delimiter
 	list, err := SplitMultiSQL(TiDB, statement)
 	if err != nil {
@@ -849,26 +842,16 @@ func extractSnowSQLNormalizedDatabaseList(statement string, normalizedDatabaseNa
 	return result, nil
 }
 
-func newMySQLParser() *tidbparser.Parser {
-	p := tidbparser.New()
-
-	// To support MySQL8 window function syntax.
-	// See https://github.com/bytebase/bytebase/issues/175.
-	p.EnableWindowFunc(true)
-
-	return p
-}
-
 func extractMySQLDatabaseList(statement string) ([]string, error) {
 	databaseMap := make(map[string]bool)
 
-	p := newMySQLParser()
-	nodeList, _, err := p.Parse(statement, "", "")
+	// TODO(d): replace it with mysql parser.
+	nodes, err := tidbparser.ParseTiDB(statement, "", "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parser statement %q", statement)
 	}
 
-	for _, node := range nodeList {
+	for _, node := range nodes {
 		databaseList := extractMySQLDatabaseListFromNode(node)
 		for _, database := range databaseList {
 			databaseMap[database] = true

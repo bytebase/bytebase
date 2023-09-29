@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -73,8 +73,8 @@ func (l *namingTableNoKeywordChecker) generateAdvice() ([]advisor.Advice, error)
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	tableName := ctx.Table_name().GetTable()
-	normalizedTableName := bbparser.NormalizeTSQLIdentifier(tableName)
-	if bbparser.IsTSQLKeyword(normalizedTableName, false) {
+	normalizedTableName := tsqlparser.NormalizeTSQLIdentifier(tableName)
+	if tsqlparser.IsTSQLKeyword(normalizedTableName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,
