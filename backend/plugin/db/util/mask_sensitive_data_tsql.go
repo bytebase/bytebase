@@ -11,6 +11,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -54,14 +55,14 @@ func (l *tsqlSensitiveFieldExtractorListener) EnterDml_clause(ctx *parser.Dml_cl
 
 	for _, field := range result {
 		l.result = append(l.result, db.SensitiveField{
-			Name:         field.name,
-			MaskingLevel: field.maskingLevel,
+			Name:         field.Name,
+			MaskingLevel: field.MaskingLevel,
 		})
 	}
 }
 
 // extractTSqlSensitiveFieldsFromSelectStatementStandalone extracts sensitive fields from select_statement_standalone.
-func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementStandalone(ctx parser.ISelect_statement_standaloneContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementStandalone(ctx parser.ISelect_statement_standaloneContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -71,11 +72,11 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectSt
 		allCommonTableExpression := ctx.With_expression().AllCommon_table_expression()
 		// TSQL do not have `RECURSIVE` keyword, if we detect `UNION`, we will treat it as `RECURSIVE`.
 		for _, commonTableExpression := range allCommonTableExpression {
-			var result []fieldInfo
+			var result []base.FieldInfo
 			var err error
 			normalizedCTEName := tsqlparser.NormalizeTSQLIdentifier(commonTableExpression.GetExpression_name())
 
-			var fieldsInAnchorClause []fieldInfo
+			var fieldsInAnchorClause []base.FieldInfo
 			// If statement has more than one UNION, the first one is the anchor, and the rest are recursive.
 			recursiveCTE := false
 			queryExpression := commonTableExpression.Select_statement().Query_expression()
@@ -97,8 +98,8 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectSt
 							return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(fieldsInAnchorClause), i+1, allSQLUnions[i].GetStart().GetLine(), len(right))
 						}
 						for j := range right {
-							if cmp.Less[storepb.MaskingLevel](fieldsInAnchorClause[j].maskingLevel, right[j].maskingLevel) {
-								fieldsInAnchorClause[j].maskingLevel = right[j].maskingLevel
+							if cmp.Less[storepb.MaskingLevel](fieldsInAnchorClause[j].MaskingLevel, right[j].MaskingLevel) {
+								fieldsInAnchorClause[j].MaskingLevel = right[j].MaskingLevel
 							}
 						}
 					}
@@ -120,8 +121,8 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectSt
 				}
 				for i := 0; i < len(fieldsInAnchorClause); i++ {
 					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, db.ColumnInfo{
-						Name:         fieldsInAnchorClause[i].name,
-						MaskingLevel: fieldsInAnchorClause[i].maskingLevel,
+						Name:         fieldsInAnchorClause[i].Name,
+						MaskingLevel: fieldsInAnchorClause[i].MaskingLevel,
 					})
 					result = append(result, fieldsInAnchorClause[i])
 				}
@@ -139,10 +140,10 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectSt
 						}
 						extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:originalSize]
 						for i := 0; i < len(fieldsInRecursiveClause); i++ {
-							if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].maskingLevel) {
+							if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].MaskingLevel) {
 								change = true
-								tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].maskingLevel
-								result[i].maskingLevel = fieldsInRecursiveClause[i].maskingLevel
+								tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
+								result[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
 							}
 						}
 					} else if allQueryExpression := queryExpression.AllQuery_expression(); len(allQueryExpression) > 1 {
@@ -155,10 +156,10 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectSt
 						}
 						extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:originalSize]
 						for i := 0; i < len(fieldsInRecursiveClause); i++ {
-							if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].maskingLevel) {
+							if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].MaskingLevel) {
 								change = true
-								tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].maskingLevel
-								result[i].maskingLevel = fieldsInRecursiveClause[i].maskingLevel
+								tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
+								result[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
 							}
 						}
 					}
@@ -176,15 +177,15 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectSt
 				}
 				for i, columnName := range v.AllId_() {
 					normalizedColumnName := tsqlparser.NormalizeTSQLIdentifier(columnName)
-					result[i].name = normalizedColumnName
+					result[i].Name = normalizedColumnName
 				}
 			}
 			// Append to the extractor.schemaInfo.DatabaseList
 			columnList := make([]db.ColumnInfo, 0, len(result))
 			for _, field := range result {
 				columnList = append(columnList, db.ColumnInfo{
-					Name:         field.name,
-					MaskingLevel: field.maskingLevel,
+					Name:         field.Name,
+					MaskingLevel: field.MaskingLevel,
 				})
 			}
 			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, db.TableSchema{
@@ -197,7 +198,7 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectSt
 }
 
 // extractTSqlSensitiveFieldsFromSelectStatement extracts sensitive fields from select_statement.
-func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectStatement(ctx parser.ISelect_statementContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectStatement(ctx parser.ISelect_statementContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -210,7 +211,7 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSelectSt
 	return queryResult, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQueryExpression(ctx parser.IQuery_expressionContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQueryExpression(ctx parser.IQuery_expressionContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -232,8 +233,8 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQueryExp
 					return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(left), i+1, sqlUnion.GetStart().GetLine(), len(right))
 				}
 				for i := range right {
-					if cmp.Less[storepb.MaskingLevel](left[i].maskingLevel, right[i].maskingLevel) {
-						left[i].maskingLevel = right[i].maskingLevel
+					if cmp.Less[storepb.MaskingLevel](left[i].MaskingLevel, right[i].MaskingLevel) {
+						left[i].MaskingLevel = right[i].MaskingLevel
 					}
 				}
 			}
@@ -257,8 +258,8 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQueryExp
 				return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(left), i+1, allQueryExpressions[i].GetStart().GetLine(), len(right))
 			}
 			for i := range right {
-				if cmp.Less[storepb.MaskingLevel](left[i].maskingLevel, right[i].maskingLevel) {
-					left[i].maskingLevel = right[i].maskingLevel
+				if cmp.Less[storepb.MaskingLevel](left[i].MaskingLevel, right[i].MaskingLevel) {
+					left[i].MaskingLevel = right[i].MaskingLevel
 				}
 			}
 		}
@@ -268,7 +269,7 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQueryExp
 	panic("never reach here")
 }
 
-func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ctx parser.IQuery_specificationContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ctx parser.IQuery_specificationContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -285,7 +286,7 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuerySpe
 		}()
 	}
 
-	var result []fieldInfo
+	var result []base.FieldInfo
 
 	selectList := ctx.Select_list()
 	for _, selectListElem := range selectList.AllSelect_list_elem() {
@@ -301,24 +302,24 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuerySpe
 			result = append(result, left...)
 		} else if selectListElem.Udt_elem() != nil {
 			// TODO(zp): handle the UDT.
-			result = append(result, fieldInfo{
-				name:         fmt.Sprintf("UNSUPPORTED UDT %s", selectListElem.GetText()),
-				maskingLevel: defaultMaskingLevel,
+			result = append(result, base.FieldInfo{
+				Name:         fmt.Sprintf("UNSUPPORTED UDT %s", selectListElem.GetText()),
+				MaskingLevel: defaultMaskingLevel,
 			})
 		} else if selectListElem.LOCAL_ID() != nil {
 			// TODO(zp): handle the local variable, SELECT @a=id FROM blog.dbo.t1;
-			result = append(result, fieldInfo{
-				name:         fmt.Sprintf("UNSUPPORTED LOCALID %s", selectListElem.GetText()),
-				maskingLevel: defaultMaskingLevel,
+			result = append(result, base.FieldInfo{
+				Name:         fmt.Sprintf("UNSUPPORTED LOCALID %s", selectListElem.GetText()),
+				MaskingLevel: defaultMaskingLevel,
 			})
 		} else if expressionElem := selectListElem.Expression_elem(); expressionElem != nil {
 			columnName, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expressionElem)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to check if the expression element is sensitive")
 			}
-			result = append(result, fieldInfo{
-				name:         columnName,
-				maskingLevel: maskingLevel,
+			result = append(result, base.FieldInfo{
+				Name:         columnName,
+				MaskingLevel: maskingLevel,
 			})
 		}
 	}
@@ -326,7 +327,7 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromQuerySpe
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSources(ctx parser.ITable_sourcesContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSources(ctx parser.ITable_sourcesContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -338,7 +339,7 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSou
 		allTableSources = ctx.GetSource()
 	}
 
-	var result []fieldInfo
+	var result []base.FieldInfo
 	// If there are multiple table sources, the default join type is CROSS JOIN.
 	for _, tableSource := range allTableSources {
 		tableSourceResult, err := extractor.extractTSqlSensitiveFieldsFromTableSource(tableSource)
@@ -350,12 +351,12 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSou
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parser.ITable_sourceContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parser.ITable_sourceContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 
-	var result []fieldInfo
+	var result []base.FieldInfo
 	left, err := extractor.extractTSqlSensitiveFieldsFromTableSourceItem(ctx.Table_source_item())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_source_item` in `table_source`")
@@ -399,12 +400,12 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSou
 }
 
 // extractTSqlSensitiveFieldsFromTableSourceItem extracts sensitive fields from table source item.
-func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx parser.ITable_source_itemContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx parser.ITable_source_itemContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 
-	var result []fieldInfo
+	var result []base.FieldInfo
 	var err error
 	// TODO(zp): handle other cases likes ROWSET_FUNCTION.
 	if ctx.Full_table_name() != nil {
@@ -413,11 +414,11 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSou
 			return nil, err
 		}
 		for _, column := range tableSchema.ColumnList {
-			result = append(result, fieldInfo{
-				database:     normalizedDatabaseName,
-				table:        tableSchema.Name,
-				name:         column.Name,
-				maskingLevel: column.MaskingLevel,
+			result = append(result, base.FieldInfo{
+				Database:     normalizedDatabaseName,
+				Table:        tableSchema.Name,
+				Name:         column.Name,
+				MaskingLevel: column.MaskingLevel,
 			})
 		}
 	}
@@ -440,9 +441,9 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSou
 	if asTableAlias := ctx.As_table_alias(); asTableAlias != nil {
 		asName := tsqlparser.NormalizeTSQLIdentifier(asTableAlias.Table_alias().Id_())
 		for i := 0; i < len(result); i++ {
-			result[i].table = asName
-			result[i].schema = ""
-			result[i].database = ""
+			result[i].Table = asName
+			result[i].Schema = ""
+			result[i].Database = ""
 		}
 	}
 
@@ -453,10 +454,10 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSou
 		}
 		for i := 0; i < len(result); i++ {
 			if allColumnAlias[i].Id_() != nil {
-				result[i].name = tsqlparser.NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
+				result[i].Name = tsqlparser.NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
 				continue
 			} else if allColumnAlias[i].STRING() != nil {
-				result[i].name = allColumnAlias[i].STRING().GetText()
+				result[i].Name = allColumnAlias[i].STRING().GetText()
 				continue
 			}
 			panic("never reach here")
@@ -466,7 +467,7 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableSou
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromDerivedTable(ctx parser.IDerived_tableContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromDerivedTable(ctx parser.IDerived_tableContext) ([]base.FieldInfo, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -488,8 +489,8 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromDerivedT
 				return nil, errors.Wrapf(err, "the number of columns in the derived table statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(left), i+1, allSubquery[i].GetStart().GetLine(), len(right))
 			}
 			for i := range right {
-				if cmp.Less[storepb.MaskingLevel](left[i].maskingLevel, right[i].maskingLevel) {
-					left[i].maskingLevel = right[i].maskingLevel
+				if cmp.Less[storepb.MaskingLevel](left[i].MaskingLevel, right[i].MaskingLevel) {
+					left[i].MaskingLevel = right[i].MaskingLevel
 				}
 			}
 		}
@@ -503,20 +504,20 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromDerivedT
 	panic("never reach here")
 }
 
-func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableValueConstructor(ctx parser.ITable_value_constructorContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableValueConstructor(ctx parser.ITable_value_constructorContext) ([]base.FieldInfo, error) {
 	if allExpressionList := ctx.AllExpression_list_(); len(allExpressionList) > 0 {
 		// The number of expression in each expression list should be the same.
 		// But we do not check, just use the first one, and engine will throw a compilation error if the number of expressions are not the same.
 		expressionList := allExpressionList[0]
-		var result []fieldInfo
+		var result []base.FieldInfo
 		for _, expression := range expressionList.AllExpression() {
 			columnName, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to check if the expression is sensitive")
 			}
-			result = append(result, fieldInfo{
-				name:         columnName,
-				maskingLevel: maskingLevel,
+			result = append(result, base.FieldInfo{
+				Name:         columnName,
+				MaskingLevel: maskingLevel,
 			})
 		}
 		return result, nil
@@ -524,7 +525,7 @@ func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromTableVal
 	panic("never reach here")
 }
 
-func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx parser.ISubqueryContext) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx parser.ISubqueryContext) ([]base.FieldInfo, error) {
 	return extractor.extractTSqlSensitiveFieldsFromSelectStatement(ctx.Select_statement())
 }
 
@@ -632,7 +633,7 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 	return linkedServer, database, schema, table
 }
 
-func (extractor *sensitiveFieldExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]base.FieldInfo, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
@@ -657,15 +658,15 @@ func (extractor *sensitiveFieldExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCT
 		mask |= maskDatabaseName
 	}
 
-	var result []fieldInfo
+	var result []base.FieldInfo
 	for _, field := range extractor.fromFieldList {
-		if mask&maskDatabaseName != 0 && !extractor.isIdentifierEqual(normalizedDatabaseName, field.database) {
+		if mask&maskDatabaseName != 0 && !extractor.isIdentifierEqual(normalizedDatabaseName, field.Database) {
 			continue
 		}
-		if mask&maskSchemaName != 0 && !extractor.isIdentifierEqual(normalizedSchemaName, field.schema) {
+		if mask&maskSchemaName != 0 && !extractor.isIdentifierEqual(normalizedSchemaName, field.Schema) {
 			continue
 		}
-		if mask&maskTableName != 0 && !extractor.isIdentifierEqual(normalizedTableName, field.table) {
+		if mask&maskTableName != 0 && !extractor.isIdentifierEqual(normalizedTableName, field.Table) {
 			continue
 		}
 		result = append(result, field)
@@ -673,17 +674,17 @@ func (extractor *sensitiveFieldExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCT
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_column_nameContext) (fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_column_nameContext) (base.FieldInfo, error) {
 	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(ctx.Full_table_name(), "", "", "")
 	if normalizedLinkedServer != "" {
-		return fieldInfo{}, errors.Errorf("linked server is not supported yet, but found %q", ctx.GetText())
+		return base.FieldInfo{}, errors.Errorf("linked server is not supported yet, but found %q", ctx.GetText())
 	}
 	normalizedColumnName := tsqlparser.NormalizeTSQLIdentifier(ctx.Id_())
 
 	return extractor.tsqlIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
 
-func (extractor *sensitiveFieldExtractor) tsqlIsFieldSensitive(normalizedDatabaseName string, normalizedSchemaName string, normalizedTableName string, normalizedColumnName string) (fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) tsqlIsFieldSensitive(normalizedDatabaseName string, normalizedSchemaName string, normalizedTableName string, normalizedColumnName string) (base.FieldInfo, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
@@ -698,25 +699,25 @@ func (extractor *sensitiveFieldExtractor) tsqlIsFieldSensitive(normalizedDatabas
 	}
 	if normalizedTableName != "" {
 		if mask&maskColumnName == 0 {
-			return fieldInfo{}, errors.Errorf(`table name %s is specified without column name`, normalizedTableName)
+			return base.FieldInfo{}, errors.Errorf(`table name %s is specified without column name`, normalizedTableName)
 		}
 		mask |= maskTableName
 	}
 	if normalizedSchemaName != "" {
 		if mask&maskTableName == 0 {
-			return fieldInfo{}, errors.Errorf(`schema name %s is specified without table name`, normalizedSchemaName)
+			return base.FieldInfo{}, errors.Errorf(`schema name %s is specified without table name`, normalizedSchemaName)
 		}
 		mask |= maskSchemaName
 	}
 	if normalizedDatabaseName != "" {
 		if mask&maskSchemaName == 0 {
-			return fieldInfo{}, errors.Errorf(`database name %s is specified without schema name`, normalizedDatabaseName)
+			return base.FieldInfo{}, errors.Errorf(`database name %s is specified without schema name`, normalizedDatabaseName)
 		}
 		mask |= maskDatabaseName
 	}
 
 	if mask == maskNone {
-		return fieldInfo{}, errors.Errorf(`no object name is specified`)
+		return base.FieldInfo{}, errors.Errorf(`no object name is specified`)
 	}
 
 	// We just need to iterate through the fromFieldList sequentially until we find the first matching object.
@@ -733,21 +734,21 @@ func (extractor *sensitiveFieldExtractor) tsqlIsFieldSensitive(normalizedDatabas
 	// Further more, users can not use the original table name if they specify the alias name:
 	// SELECT T1.C1 FROM T1 AS T3, T2; -- invalid identifier 'ADDRESS.ID'
 	for _, field := range extractor.fromFieldList {
-		if mask&maskDatabaseName != 0 && !extractor.isIdentifierEqual(normalizedDatabaseName, field.database) {
+		if mask&maskDatabaseName != 0 && !extractor.isIdentifierEqual(normalizedDatabaseName, field.Database) {
 			continue
 		}
-		if mask&maskSchemaName != 0 && !extractor.isIdentifierEqual(normalizedSchemaName, field.schema) {
+		if mask&maskSchemaName != 0 && !extractor.isIdentifierEqual(normalizedSchemaName, field.Schema) {
 			continue
 		}
-		if mask&maskTableName != 0 && !extractor.isIdentifierEqual(normalizedTableName, field.table) {
+		if mask&maskTableName != 0 && !extractor.isIdentifierEqual(normalizedTableName, field.Table) {
 			continue
 		}
-		if mask&maskColumnName != 0 && !extractor.isIdentifierEqual(normalizedColumnName, field.name) {
+		if mask&maskColumnName != 0 && !extractor.isIdentifierEqual(normalizedColumnName, field.Name) {
 			continue
 		}
 		return field, nil
 	}
-	return fieldInfo{}, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+	return base.FieldInfo{}, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
 
 // isIdentifierEqual compares the identifier with the given normalized parts, returns true if they are equal.
@@ -1044,8 +1045,8 @@ func (extractor *sensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx ant
 		}
 		finalLevel := defaultMaskingLevel
 		for _, field := range fieldInfo {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
-				finalLevel = field.maskingLevel
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
+				finalLevel = field.MaskingLevel
 			}
 			if finalLevel == maxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
@@ -3094,7 +3095,7 @@ func (extractor *sensitiveFieldExtractor) evalExpressionElemMaskingLevel(ctx ant
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the full_column_name is sensitive")
 		}
-		return fieldInfo.name, fieldInfo.maskingLevel, nil
+		return fieldInfo.Name, fieldInfo.MaskingLevel, nil
 	case *parser.PARTITION_FUNCContext:
 		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Partition_function().Expression())
 		if err != nil {

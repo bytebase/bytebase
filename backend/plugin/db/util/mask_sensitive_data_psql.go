@@ -7,6 +7,7 @@ import (
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -61,14 +62,14 @@ func (extractor *sensitiveFieldExtractor) extractPostgreSQLSensitiveField(statem
 	result := []db.SensitiveField{}
 	for _, field := range fieldList {
 		result = append(result, db.SensitiveField{
-			Name:         field.name,
-			MaskingLevel: field.maskingLevel,
+			Name:         field.Name,
+			MaskingLevel: field.MaskingLevel,
 		})
 	}
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]base.FieldInfo, error) {
 	if in == nil {
 		return nil, nil
 	}
@@ -86,7 +87,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractNode(in *pgquery.Node) ([]fie
 	return nil, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractJoin(in *pgquery.Node_JoinExpr) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) pgExtractJoin(in *pgquery.Node_JoinExpr) ([]base.FieldInfo, error) {
 	leftFieldInfo, err := extractor.pgExtractNode(in.JoinExpr.Larg)
 	if err != nil {
 		return nil, err
@@ -98,28 +99,28 @@ func (extractor *sensitiveFieldExtractor) pgExtractJoin(in *pgquery.Node_JoinExp
 	return pgMergeJoinField(in, leftFieldInfo, rightFieldInfo)
 }
 
-func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []fieldInfo, rightField []fieldInfo) ([]fieldInfo, error) {
-	leftFieldMap := make(map[string]fieldInfo)
-	rightFieldMap := make(map[string]fieldInfo)
-	var result []fieldInfo
+func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []base.FieldInfo, rightField []base.FieldInfo) ([]base.FieldInfo, error) {
+	leftFieldMap := make(map[string]base.FieldInfo)
+	rightFieldMap := make(map[string]base.FieldInfo)
+	var result []base.FieldInfo
 	for _, field := range leftField {
-		leftFieldMap[field.name] = field
+		leftFieldMap[field.Name] = field
 	}
 	for _, field := range rightField {
-		rightFieldMap[field.name] = field
+		rightFieldMap[field.Name] = field
 	}
 	if node.JoinExpr.IsNatural {
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			// Merge the sensitive attribute for the same column name field.
-			if rField, exists := rightFieldMap[field.name]; exists && cmp.Less[storepb.MaskingLevel](field.maskingLevel, rField.maskingLevel) {
-				field.maskingLevel = rField.maskingLevel
+			if rField, exists := rightFieldMap[field.Name]; exists && cmp.Less[storepb.MaskingLevel](field.MaskingLevel, rField.MaskingLevel) {
+				field.MaskingLevel = rField.MaskingLevel
 			}
 			result = append(result, field)
 		}
 
 		for _, field := range rightField {
-			if _, exists := leftFieldMap[field.name]; !exists {
+			if _, exists := leftFieldMap[field.Name]; !exists {
 				result = append(result, field)
 			}
 		}
@@ -140,18 +141,18 @@ func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []fieldInfo, rightF
 			}
 
 			for _, field := range leftField {
-				_, existsInUsingMap := usingMap[field.name]
-				rField, existsInRightField := rightFieldMap[field.name]
+				_, existsInUsingMap := usingMap[field.Name]
+				rField, existsInRightField := rightFieldMap[field.Name]
 				// Merge the sensitive attribute for the column name field in USING.
-				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.maskingLevel, rField.maskingLevel) {
-					field.maskingLevel = rField.maskingLevel
+				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.MaskingLevel, rField.MaskingLevel) {
+					field.MaskingLevel = rField.MaskingLevel
 				}
 				result = append(result, field)
 			}
 
 			for _, field := range rightField {
-				_, existsInUsingMap := usingMap[field.name]
-				_, existsInLeftField := leftFieldMap[field.name]
+				_, existsInUsingMap := usingMap[field.Name]
+				_, existsInLeftField := leftFieldMap[field.Name]
 				if existsInUsingMap && existsInLeftField {
 					continue
 				}
@@ -166,13 +167,13 @@ func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []fieldInfo, rightF
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.Node_RangeSubselect) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.Node_RangeSubselect) ([]base.FieldInfo, error) {
 	fieldList, err := extractor.pgExtractNode(node.RangeSubselect.Subquery)
 	if err != nil {
 		return nil, err
 	}
 	if node.RangeSubselect.Alias != nil {
-		var result []fieldInfo
+		var result []base.FieldInfo
 		aliasName, columnNameList, err := pgExtractAlias(node.RangeSubselect.Alias)
 		if err != nil {
 			return nil, err
@@ -181,15 +182,15 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeSubselect(node *pgquery.
 			return nil, errors.Errorf("expect equal length but found %d and %d", len(columnNameList), len(fieldList))
 		}
 		for i, item := range fieldList {
-			columnName := item.name
+			columnName := item.Name
 			if len(columnNameList) > 0 {
 				columnName = columnNameList[i]
 			}
-			result = append(result, fieldInfo{
-				schema:       "public",
-				table:        aliasName,
-				name:         columnName,
-				maskingLevel: item.maskingLevel,
+			result = append(result, base.FieldInfo{
+				Schema:       "public",
+				Table:        aliasName,
+				Name:         columnName,
+				MaskingLevel: item.MaskingLevel,
 			})
 		}
 		return result, nil
@@ -212,19 +213,19 @@ func pgExtractAlias(alias *pgquery.Alias) (string, []string, error) {
 	return alias.Aliasname, columnNameList, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) ([]base.FieldInfo, error) {
 	tableSchema, err := extractor.pgFindTableSchema(node.RangeVar.Schemaname, node.RangeVar.Relname)
 	if err != nil {
 		return nil, err
 	}
 
-	var res []fieldInfo
+	var res []base.FieldInfo
 	if node.RangeVar.Alias == nil {
 		for _, column := range tableSchema.ColumnList {
-			res = append(res, fieldInfo{
-				name:         column.Name,
-				table:        tableSchema.Name,
-				maskingLevel: column.MaskingLevel,
+			res = append(res, base.FieldInfo{
+				Name:         column.Name,
+				Table:        tableSchema.Name,
+				MaskingLevel: column.MaskingLevel,
 			})
 		}
 	} else {
@@ -241,11 +242,11 @@ func (extractor *sensitiveFieldExtractor) pgExtractRangeVar(node *pgquery.Node_R
 			if len(columnNameList) > 0 {
 				columnName = columnNameList[i]
 			}
-			res = append(res, fieldInfo{
-				schema:       "public",
-				name:         columnName,
-				table:        aliasName,
-				maskingLevel: column.MaskingLevel,
+			res = append(res, base.FieldInfo{
+				Schema:       "public",
+				Name:         columnName,
+				Table:        aliasName,
+				MaskingLevel: column.MaskingLevel,
 			})
 		}
 	}
@@ -305,15 +306,15 @@ func (extractor *sensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.No
 				if !yes {
 					return db.TableSchema{}, errors.Errorf("expect Node_String_ but found %T", nameNode.Node)
 				}
-				initialField[i].name = stringNode.String_.Sval
+				initialField[i].Name = stringNode.String_.Sval
 			}
 		}
 
 		cteInfo := db.TableSchema{Name: node.CommonTableExpr.Ctename}
 		for _, field := range initialField {
 			cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
-				Name:         field.name,
-				MaskingLevel: field.maskingLevel,
+				Name:         field.Name,
+				MaskingLevel: field.MaskingLevel,
 			})
 		}
 
@@ -342,9 +343,9 @@ func (extractor *sensitiveFieldExtractor) pgExtractRecursiveCTE(node *pgquery.No
 
 			changed := false
 			for i, field := range fieldList {
-				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingLevel, field.maskingLevel) {
+				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingLevel, field.MaskingLevel) {
 					changed = true
-					cteInfo.ColumnList[i].MaskingLevel = field.maskingLevel
+					cteInfo.ColumnList[i].MaskingLevel = field.MaskingLevel
 				}
 			}
 
@@ -377,7 +378,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractNonRecursiveCTE(node *pgquery
 			nameList = append(nameList, stringNode.String_.Sval)
 		}
 		for i := 0; i < len(fieldList); i++ {
-			fieldList[i].name = nameList[i]
+			fieldList[i].Name = nameList[i]
 		}
 	}
 	result := db.TableSchema{
@@ -387,15 +388,15 @@ func (extractor *sensitiveFieldExtractor) pgExtractNonRecursiveCTE(node *pgquery
 
 	for _, field := range fieldList {
 		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
-			Name:         field.name,
-			MaskingLevel: field.maskingLevel,
+			Name:         field.Name,
+			MaskingLevel: field.MaskingLevel,
 		})
 	}
 
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) ([]fieldInfo, error) {
+func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) ([]base.FieldInfo, error) {
 	if node.SelectStmt.WithClause != nil {
 		cteOuterLength := len(extractor.cteOuterSchemaInfo)
 		defer func() {
@@ -422,7 +423,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 
 	// The VALUES case.
 	if len(node.SelectStmt.ValuesLists) > 0 {
-		var result []fieldInfo
+		var result []base.FieldInfo
 		for _, row := range node.SelectStmt.ValuesLists {
 			var maskingLevelList []storepb.MaskingLevel
 			list, yes := row.Node.(*pgquery.Node_List)
@@ -439,9 +440,9 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 			}
 			if len(result) == 0 {
 				for i, item := range maskingLevelList {
-					result = append(result, fieldInfo{
-						name:         fmt.Sprintf("column%d", i+1),
-						maskingLevel: item,
+					result = append(result, base.FieldInfo{
+						Name:         fmt.Sprintf("column%d", i+1),
+						MaskingLevel: item,
 					})
 				}
 			}
@@ -462,19 +463,19 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 		if len(leftField) != len(rightField) {
 			return nil, errors.Errorf("each UNION/INTERSECT/EXCEPT query must have the same number of columns")
 		}
-		var result []fieldInfo
+		var result []base.FieldInfo
 		for i, field := range leftField {
 			finalLevel := defaultMaskingLevel
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.maskingLevel) {
-				finalLevel = field.maskingLevel
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
+				finalLevel = field.MaskingLevel
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, rightField[i].maskingLevel) {
-				finalLevel = rightField[i].maskingLevel
+			if cmp.Less[storepb.MaskingLevel](finalLevel, rightField[i].MaskingLevel) {
+				finalLevel = rightField[i].MaskingLevel
 			}
-			result = append(result, fieldInfo{
-				name:         field.name,
-				table:        field.table,
-				maskingLevel: finalLevel,
+			result = append(result, base.FieldInfo{
+				Name:         field.Name,
+				Table:        field.Table,
+				MaskingLevel: finalLevel,
 			})
 		}
 		return result, nil
@@ -484,7 +485,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 	}
 
 	// SetOperation_SETOP_NONE case
-	var fromFieldList []fieldInfo
+	var fromFieldList []base.FieldInfo
 	var err error
 	// Extract From field list.
 	for _, item := range node.SelectStmt.FromClause {
@@ -498,7 +499,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 		extractor.fromFieldList = nil
 	}()
 
-	var result []fieldInfo
+	var result []base.FieldInfo
 
 	// Extract Target field list.
 	for _, field := range node.SelectStmt.TargetList {
@@ -519,7 +520,7 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 				} else {
 					schemaName, tableName, _ := extractSchemaTableColumnName(columnRef)
 					for _, fromField := range fromFieldList {
-						if fromField.schema == schemaName && fromField.table == tableName {
+						if fromField.Schema == schemaName && fromField.Table == tableName {
 							result = append(result, fromField)
 						}
 					}
@@ -533,9 +534,9 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 				if resTarget.ResTarget.Name != "" {
 					columnName = resTarget.ResTarget.Name
 				}
-				result = append(result, fieldInfo{
-					name:         columnName,
-					maskingLevel: maskingLevel,
+				result = append(result, base.FieldInfo{
+					Name:         columnName,
+					MaskingLevel: maskingLevel,
 				})
 			}
 		default:
@@ -549,9 +550,9 @@ func (extractor *sensitiveFieldExtractor) pgExtractSelect(node *pgquery.Node_Sel
 					return nil, err
 				}
 			}
-			result = append(result, fieldInfo{
-				name:         fieldName,
-				maskingLevel: maskingLevel,
+			result = append(result, base.FieldInfo{
+				Name:         fieldName,
+				MaskingLevel: maskingLevel,
 			})
 		}
 	}
@@ -730,20 +731,20 @@ func (extractor *sensitiveFieldExtractor) pgCheckFieldMaskingLevel(schemaName st
 	// This is the reason we loop the slice in reversed order.
 	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
 		field := extractor.outerSchemaInfo[i]
-		if (schemaName == "" && field.schema == "public") || schemaName == field.schema {
-			sameTable := (tableName == field.table || tableName == "")
-			sameField := (fieldName == field.name)
+		if (schemaName == "" && field.Schema == "public") || schemaName == field.Schema {
+			sameTable := (tableName == field.Table || tableName == "")
+			sameField := (fieldName == field.Name)
 			if sameTable && sameField {
-				return field.maskingLevel
+				return field.MaskingLevel
 			}
 		}
 	}
 
 	for _, field := range extractor.fromFieldList {
-		sameTable := (tableName == field.table || tableName == "")
-		sameField := (fieldName == field.name)
+		sameTable := (tableName == field.Table || tableName == "")
+		sameField := (fieldName == field.Name)
 		if sameTable && sameField {
-			return field.maskingLevel
+			return field.MaskingLevel
 		}
 	}
 
@@ -828,8 +829,8 @@ func (extractor *sensitiveFieldExtractor) pgExtractColumnRefFromExpressionNode(i
 			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](maskingLevel, field.maskingLevel) {
-				maskingLevel = field.maskingLevel
+			if cmp.Less[storepb.MaskingLevel](maskingLevel, field.MaskingLevel) {
+				maskingLevel = field.MaskingLevel
 			}
 			if maskingLevel == maxMaskingLevel {
 				return maskingLevel, nil
