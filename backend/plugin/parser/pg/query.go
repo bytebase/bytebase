@@ -89,16 +89,16 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 // Consider that the tokenizer cannot handle the dollar-sign($), so that we use pg_query_go to parse the statement.
 // For EXPLAIN and normal SELECT statements, we can directly use regexp to check.
 // For CTE, we need to parse the statement to JSON and check the JSON keys.
-func ValidateSQLForEditor(statement string) bool {
+func ValidateSQLForEditor(statement string) (bool, error) {
 	stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
-		return false
+		return false, err
 	}
 	for _, stmt := range stmtList {
 		switch stmt.(type) {
 		case *ast.SelectStmt, *ast.ExplainStmt:
 		default:
-			return false
+			return false, nil
 		}
 	}
 
@@ -106,23 +106,23 @@ func ValidateSQLForEditor(statement string) bool {
 	jsonText, err := pgquery.ParseToJSON(statement)
 	if err != nil {
 		slog.Debug("Failed to parse statement to JSON", slog.String("statement", statement), log.BBError(err))
-		return false
+		return false, err
 	}
 
 	formattedStr := strings.ToUpper(strings.TrimSpace(statement))
 	if isSelect, _ := regexp.MatchString(`^SELECT\s+?`, formattedStr); isSelect {
-		return true
+		return true, nil
 	}
 
 	if isSelect, _ := regexp.MatchString(`^SELECT\*\s+?`, formattedStr); isSelect {
-		return true
+		return true, nil
 	}
 
 	if isExplain, _ := regexp.MatchString(`^EXPLAIN\s+?`, formattedStr); isExplain {
 		if isExplainAnalyze, _ := regexp.MatchString(`^EXPLAIN\s+ANALYZE\s+?`, formattedStr); isExplainAnalyze {
-			return false
+			return false, nil
 		}
-		return true
+		return true, nil
 	}
 
 	cteRegex := regexp.MustCompile(`^WITH\s+?`)
@@ -131,15 +131,15 @@ func ValidateSQLForEditor(statement string) bool {
 
 		if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
 			slog.Debug("Failed to unmarshal JSON", slog.String("jsonText", jsonText), log.BBError(err))
-			return false
+			return false, err
 		}
 
 		dmlKeyList := []string{"InsertStmt", "UpdateStmt", "DeleteStmt"}
 
-		return !keyExistsInJSONData(jsonData, dmlKeyList)
+		return !keyExistsInJSONData(jsonData, dmlKeyList), nil
 	}
 
-	return false
+	return false, nil
 }
 
 func keyExistsInJSONData(jsonData map[string]any, keyList []string) bool {
