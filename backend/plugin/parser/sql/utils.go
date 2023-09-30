@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -107,23 +106,4 @@ func ExtractDatabaseList(engineType storepb.Engine, statement string, fallbackNo
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
-}
-
-func ExtractSensitiveField(engine storepb.Engine, statement string, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
-	if schemaInfo == nil {
-		return nil, nil
-	}
-
-	f := base.FieldMaskers[engine]
-	return f(statement, currentDatabase, schemaInfo)
-}
-
-// ValidateSQLForEditor validates the SQL statement for editor.
-// We support the following SQLs:
-// 1. EXPLAIN statement, except EXPLAIN ANALYZE
-// 2. SELECT statement
-// We also support CTE with SELECT statements, but not with DML statements.
-func ValidateSQLForEditor(engine storepb.Engine, statement string) bool {
-	f := base.QueryValidators[engine]
-	return f(statement)
 }
