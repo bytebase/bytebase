@@ -4,6 +4,7 @@ import (
 	// Drivers.
 	_ "github.com/pingcap/tidb/types/parser_driver"
 
+	// SQLite package.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/sqlite"
 
 	// Advisors.
