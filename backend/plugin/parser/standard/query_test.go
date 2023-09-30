@@ -6,12 +6,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testData struct {
-	sql string
-	ans bool
-}
-
 func TestValidateSQLForStandard(t *testing.T) {
+	type testData struct {
+		sql string
+		ans bool
+	}
 	tests := []testData{
 		{
 			sql: `select* from t`,
@@ -69,7 +68,8 @@ func TestValidateSQLForStandard(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ans := ValidateSQLForEditor(test.sql)
+		ans, err := ValidateSQLForEditor(test.sql)
+		require.NoError(t, err)
 		require.Equal(t, test.ans, ans, test.sql)
 	}
 }

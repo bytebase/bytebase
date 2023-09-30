@@ -26,10 +26,10 @@ func init() {
 // 1. Remove all quoted text(quoted identifier, string literal) and comments from the statement.
 // 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
 // 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
-func ValidateSQLForEditor(statement string) bool {
+func ValidateSQLForEditor(statement string) (bool, error) {
 	stmtList, err := ParseTiDB(statement, "", "")
 	if err != nil {
-		return false
+		return false, err
 	}
 	for _, stmt := range stmtList {
 		switch stmt := stmt.(type) {
@@ -37,13 +37,13 @@ func ValidateSQLForEditor(statement string) bool {
 		case *tidbast.ExplainStmt:
 			// Disable DESC command.
 			if _, ok := stmt.Stmt.(*tidbast.ShowStmt); ok {
-				return false
+				return false, nil
 			}
 		default:
-			return false
+			return false, nil
 		}
 	}
-	return true
+	return true, nil
 }
 
 func ExtractResourceList(currentDatabase string, _, sql string) ([]base.SchemaResource, error) {
