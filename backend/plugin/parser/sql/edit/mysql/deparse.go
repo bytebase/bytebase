@@ -120,11 +120,9 @@ func transformCreateTableContext(createTableContext *api.CreateTableContext) (*t
 		createTableStmt.Constraints = append(createTableStmt.Constraints, &pkConstrains)
 	}
 
-	if len(createTableContext.AddForeignKeyList) != 0 {
-		for _, addForeignKeyContext := range createTableContext.AddForeignKeyList {
-			constraint := transfromAddForeignKeyContext(addForeignKeyContext)
-			createTableStmt.Constraints = append(createTableStmt.Constraints, constraint)
-		}
+	for _, addForeignKeyContext := range createTableContext.AddForeignKeyList {
+		constraint := transfromAddForeignKeyContext(addForeignKeyContext)
+		createTableStmt.Constraints = append(createTableStmt.Constraints, constraint)
 	}
 
 	return createTableStmt, nil
@@ -139,16 +137,14 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) (*tidb
 		Specs: []*tidbast.AlterTableSpec{},
 	}
 
-	if len(alterTableContext.DropColumnList) > 0 {
-		for _, dropColumnContext := range alterTableContext.DropColumnList {
-			alterTableSpec := &tidbast.AlterTableSpec{
-				Tp: tidbast.AlterTableDropColumn,
-				OldColumnName: &tidbast.ColumnName{
-					Name: model.NewCIStr(dropColumnContext.Name),
-				},
-			}
-			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
+	for _, dropColumnContext := range alterTableContext.DropColumnList {
+		alterTableSpec := &tidbast.AlterTableSpec{
+			Tp: tidbast.AlterTableDropColumn,
+			OldColumnName: &tidbast.ColumnName{
+				Name: model.NewCIStr(dropColumnContext.Name),
+			},
 		}
+		alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
 	}
 
 	if len(alterTableContext.AddColumnList) > 0 {
@@ -166,30 +162,28 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) (*tidb
 		alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
 	}
 
-	if len(alterTableContext.ChangeColumnList) > 0 {
-		for _, changeColumnContext := range alterTableContext.ChangeColumnList {
-			oldColumnName := &tidbast.ColumnName{
-				Name: model.NewCIStr(changeColumnContext.OldName),
-			}
-			newColumnName := &tidbast.ColumnName{
-				Name: model.NewCIStr(changeColumnContext.NewName),
-			}
-			alterTableSpec := &tidbast.AlterTableSpec{
-				Tp:            tidbast.AlterTableChangeColumn,
-				OldColumnName: oldColumnName,
-				NewColumnName: newColumnName,
-				// TODO(steven): support modify the column position.
-				Position: &tidbast.ColumnPosition{
-					Tp: tidbast.ColumnPositionNone,
-				},
-			}
-			column, err := transformChangeColumnContext(changeColumnContext)
-			if err != nil {
-				return nil, err
-			}
-			alterTableSpec.NewColumns = []*tidbast.ColumnDef{column}
-			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
+	for _, changeColumnContext := range alterTableContext.ChangeColumnList {
+		oldColumnName := &tidbast.ColumnName{
+			Name: model.NewCIStr(changeColumnContext.OldName),
 		}
+		newColumnName := &tidbast.ColumnName{
+			Name: model.NewCIStr(changeColumnContext.NewName),
+		}
+		alterTableSpec := &tidbast.AlterTableSpec{
+			Tp:            tidbast.AlterTableChangeColumn,
+			OldColumnName: oldColumnName,
+			NewColumnName: newColumnName,
+			// TODO(steven): support modify the column position.
+			Position: &tidbast.ColumnPosition{
+				Tp: tidbast.ColumnPositionNone,
+			},
+		}
+		column, err := transformChangeColumnContext(changeColumnContext)
+		if err != nil {
+			return nil, err
+		}
+		alterTableSpec.NewColumns = []*tidbast.ColumnDef{column}
+		alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
 	}
 
 	if alterTableContext.PrimaryKeyList != nil {
@@ -221,25 +215,21 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) (*tidb
 		}
 	}
 
-	if len(alterTableContext.DropForeignKeyList) != 0 {
-		for _, name := range alterTableContext.DropForeignKeyList {
-			alterTableSpec := tidbast.AlterTableSpec{
-				Tp:   tidbast.AlterTableDropForeignKey,
-				Name: name,
-			}
-			alterTableStmt.Specs = append(alterTableStmt.Specs, &alterTableSpec)
+	for _, name := range alterTableContext.DropForeignKeyList {
+		alterTableSpec := tidbast.AlterTableSpec{
+			Tp:   tidbast.AlterTableDropForeignKey,
+			Name: name,
 		}
+		alterTableStmt.Specs = append(alterTableStmt.Specs, &alterTableSpec)
 	}
 
-	if len(alterTableContext.AddForeignKeyList) != 0 {
-		for _, addForeignKeyContext := range alterTableContext.AddForeignKeyList {
-			alterTableSpec := tidbast.AlterTableSpec{
-				Tp: tidbast.AlterTableAddConstraint,
-			}
-			constraint := transfromAddForeignKeyContext(addForeignKeyContext)
-			alterTableSpec.Constraint = constraint
-			alterTableStmt.Specs = append(alterTableStmt.Specs, &alterTableSpec)
+	for _, addForeignKeyContext := range alterTableContext.AddForeignKeyList {
+		alterTableSpec := tidbast.AlterTableSpec{
+			Tp: tidbast.AlterTableAddConstraint,
 		}
+		constraint := transfromAddForeignKeyContext(addForeignKeyContext)
+		alterTableSpec.Constraint = constraint
+		alterTableStmt.Specs = append(alterTableStmt.Specs, &alterTableSpec)
 	}
 
 	return alterTableStmt, nil
