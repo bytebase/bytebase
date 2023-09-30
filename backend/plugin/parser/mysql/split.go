@@ -9,10 +9,17 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// SplitMySQL splits the given SQL statement into multiple SQL statements.
-func SplitMySQL(statement string) ([]base.SingleSQL, error) {
+func init() {
+	base.RegisterSplitterFunc(storepb.Engine_MYSQL, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_MARIADB, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_OCEANBASE, SplitSQL)
+}
+
+// SplitSQL splits the given SQL statement into multiple SQL statements.
+func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	statement = strings.TrimRight(statement, " \r\n\t\f;") + "\n;"
 	var err error
 	statement, err = DealWithDelimiter(statement)
@@ -63,7 +70,7 @@ func SplitMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL,
 // as a socket for instance.
 func SplitMySQLStream(src io.Reader) ([]base.SingleSQL, error) {
 	text := antlr.NewIoStream(src).String()
-	return SplitMySQL(text)
+	return SplitSQL(text)
 }
 
 func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {

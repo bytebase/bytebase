@@ -8,7 +8,13 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	base.RegisterSplitterFunc(storepb.Engine_ORACLE, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_DM, SplitSQL)
+}
 
 // SplitMultiSQLStream splits MySQL multiSQL to stream.
 // Note that the reader is read completely into memory and so it must actually
@@ -16,7 +22,7 @@ import (
 // as a socket for instance.
 func SplitMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
 	text := antlr.NewIoStream(src).String()
-	sqls, err := SplitPLSQL(text)
+	sqls, err := SplitSQL(text)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +36,8 @@ func SplitMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL,
 	return sqls, nil
 }
 
-// SplitPLSQL splits the given SQL statement into multiple SQL statements.
-func SplitPLSQL(statement string) ([]base.SingleSQL, error) {
+// SplitSQL splits the given SQL statement into multiple SQL statements.
+func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	tree, tokens, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err

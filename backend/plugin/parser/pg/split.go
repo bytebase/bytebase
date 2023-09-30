@@ -5,7 +5,14 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	base.RegisterSplitterFunc(storepb.Engine_POSTGRES, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_REDSHIFT, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_RISINGWAVE, SplitSQL)
+}
 
 // SplitMultiSQLStream splits multiSQL to stream.
 func SplitMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {

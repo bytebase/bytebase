@@ -16,7 +16,7 @@ func ExtractTiDBUnsupportedStmts(stmts string) ([]string, string, error) {
 	var unsupportStmts []string
 	var supportedStmts bytes.Buffer
 	// We use our bb tokenizer to help us split the multi-statements into statement list.
-	singleSQLs, err := SplitMySQL(stmts)
+	singleSQLs, err := SplitSQL(stmts)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "cannot split multi sql %q via bytebase parser", stmts)
 	}
