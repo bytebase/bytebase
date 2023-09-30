@@ -199,8 +199,3 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 		require.Equal(t, test.expected, resources, test.statement)
 	}
 }
-
-type testData struct {
-	sql string
-	ans bool
-}
