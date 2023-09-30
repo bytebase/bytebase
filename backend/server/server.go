@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"runtime"
 	"sync"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	v1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -297,8 +297,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
 	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
-		stack := make([]byte, maxStacksize)
-		stack = stack[:runtime.Stack(stack, true)]
+		stack := stacktrace.TakeStacktrace(20, 5)
 		// keep a multiline stack
 		slog.Error("v1 server panic error", log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
 		return status.Errorf(codes.Internal, "error: %v\n%s", p, stack)
