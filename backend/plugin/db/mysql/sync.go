@@ -22,8 +22,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -699,7 +699,7 @@ func mergeSlowLog(fingerprint string, statistics *storepb.SlowQueryStatisticsIte
 }
 
 func extractDatabase(defaultDB string, sql string) []string {
-	list, err := parser.ExtractDatabaseList(storepb.Engine_MYSQL, sql, "")
+	list, err := base.ExtractDatabaseList(storepb.Engine_MYSQL, sql, "")
 	if err != nil {
 		// If we can't extract the database, we just use the default database.
 		slog.Debug("extract database failed", log.BBError(err), slog.String("sql", sql))
