@@ -7,6 +7,8 @@ import (
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type setLineTestData struct {
@@ -110,4 +112,14 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 			require.Equal(t, cons.OriginTextPosition(), test.constraintLineList[i], i)
 		}
 	}
+}
+
+func TestTiDBParserError(t *testing.T) {
+	_, err := ParseTiDB("SELECT hello TO world;", "", "")
+	require.Error(t, err)
+	syntaxErr, ok := err.(*base.SyntaxError)
+	require.True(t, ok)
+	require.Equal(t, 1, syntaxErr.Line)
+	require.Equal(t, 15, syntaxErr.Column)
+	require.Equal(t, `line 1 column 15 near "TO world;" `, syntaxErr.Message)
 }
