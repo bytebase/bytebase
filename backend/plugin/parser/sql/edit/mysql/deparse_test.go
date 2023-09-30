@@ -6,9 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-
-	// Register pingcap parser driver.
-	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 func TestDeparseCreateTable(t *testing.T) {
