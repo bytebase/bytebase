@@ -16,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db/pg"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -153,7 +153,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		if database.SyncState != api.OK {
 			continue
 		}
-		if pg.IsSystemDatabase(database.DatabaseName) {
+		if pgparser.IsSystemDatabase(database.DatabaseName) {
 			continue
 		}
 		if err := func() error {
