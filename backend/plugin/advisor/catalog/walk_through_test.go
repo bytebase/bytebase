@@ -13,9 +13,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
-	// Register pingcap parser driver.
-	_ "github.com/pingcap/tidb/types/parser_driver"
-
 	// Register postgresql parser driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
