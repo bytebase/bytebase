@@ -31,7 +31,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -2381,7 +2381,7 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 	var schemas []*store.DBSchema
 
 	// Deal with the cross database query
-	dbList, err := parser.ExtractDatabaseList(storepb.Engine_MYSQL, request.Statement, "")
+	dbList, err := base.ExtractDatabaseList(storepb.Engine_MYSQL, request.Statement, "")
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract database list: %v", err)
 	}

@@ -14,6 +14,11 @@ import (
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_TIDB, ValidateSQLForEditor)
 	base.RegisterExtractResourceListFunc(storepb.Engine_TIDB, ExtractResourceList)
+	// TODO(d): migrate to mysql parser.
+	base.RegisterExtractDatabaseListFunc(storepb.Engine_MYSQL, ExtractDatabaseList)
+	base.RegisterExtractDatabaseListFunc(storepb.Engine_MARIADB, ExtractDatabaseList)
+	base.RegisterExtractDatabaseListFunc(storepb.Engine_OCEANBASE, ExtractDatabaseList)
+	base.RegisterExtractDatabaseListFunc(storepb.Engine_TIDB, ExtractDatabaseList)
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.

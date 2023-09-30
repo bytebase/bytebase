@@ -37,7 +37,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -810,7 +809,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	var sensitiveSchemaInfo *db.SensitiveSchemaInfo
 	switch instance.Engine {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		databaseList, err := parser.ExtractDatabaseList(storepb.Engine_MYSQL, request.Statement, "")
+		databaseList, err := base.ExtractDatabaseList(storepb.Engine_MYSQL, request.Statement, "")
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 		}
@@ -849,7 +848,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 		}
 	case storepb.Engine_SNOWFLAKE:
-		databaseList, err := parser.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, request.Statement, request.ConnectionDatabase)
+		databaseList, err := base.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, request.Statement, request.ConnectionDatabase)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 		}
@@ -859,7 +858,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
 	case storepb.Engine_MSSQL:
-		databaseList, err := parser.ExtractDatabaseList(storepb.Engine_MSSQL, request.Statement, request.ConnectionDatabase)
+		databaseList, err := base.ExtractDatabaseList(storepb.Engine_MSSQL, request.Statement, request.ConnectionDatabase)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 		}
@@ -1223,7 +1222,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	if adviceStatus != advisor.Error {
 		switch instance.Engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			databaseList, err := parser.ExtractDatabaseList(storepb.Engine_MYSQL, request.Statement, "")
+			databaseList, err := base.ExtractDatabaseList(storepb.Engine_MYSQL, request.Statement, "")
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 			}
@@ -1272,7 +1271,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 				}
 			}
 		case storepb.Engine_SNOWFLAKE:
-			databaseList, err := parser.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, request.Statement, request.ConnectionDatabase)
+			databaseList, err := base.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, request.Statement, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 			}
@@ -1282,7 +1281,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
 		case storepb.Engine_MSSQL:
-			databaseList, err := parser.ExtractDatabaseList(storepb.Engine_MSSQL, request.Statement, request.ConnectionDatabase)
+			databaseList, err := base.ExtractDatabaseList(storepb.Engine_MSSQL, request.Statement, request.ConnectionDatabase)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", request.Statement, err)
 			}
