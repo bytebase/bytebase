@@ -10,8 +10,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// ExtractMSSQLNormalizedDatabaseList extracts the database names.
-func ExtractMSSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
+// ExtractDatabaseList extracts the database names.
+func ExtractDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
 	schemaPlaceholder := "dbo"
 	schemaResource, err := ExtractMSSQLNormalizedResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
 	if err != nil {

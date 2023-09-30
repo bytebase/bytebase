@@ -38,7 +38,7 @@ func TestMySQLExtractDatabaseList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := ExtractDatabaseList(test.stmt)
+		res, err := ExtractDatabaseList(test.stmt, "")
 		require.NoError(t, err)
 		require.Equal(t, test.want, res)
 	}
