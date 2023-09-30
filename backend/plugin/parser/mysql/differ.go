@@ -19,33 +19,23 @@ import (
 	"github.com/pingcap/tidb/types"
 	"github.com/pkg/errors"
 
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register pingcap parser driver.
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
-var (
-	_ differ.SchemaDiffer = (*SchemaDiffer)(nil)
-)
-
 func init() {
-	differ.Register(storepb.Engine_MYSQL, &SchemaDiffer{})
-	differ.Register(storepb.Engine_TIDB, &SchemaDiffer{})
-	differ.Register(storepb.Engine_OCEANBASE, &SchemaDiffer{})
+	base.RegisterSchemaDiffFunc(storepb.Engine_MYSQL, SchemaDiff)
+	base.RegisterSchemaDiffFunc(storepb.Engine_TIDB, SchemaDiff)
+	base.RegisterSchemaDiffFunc(storepb.Engine_OCEANBASE, SchemaDiff)
 }
 
 const (
 	disableFKCheckStmt string = "SET FOREIGN_KEY_CHECKS=0;\n\n"
 	enableFKCheckStmt  string = "SET FOREIGN_KEY_CHECKS=1;\n"
 )
-
-// SchemaDiffer it the parser for MySQL dialect.
-type SchemaDiffer struct {
-}
 
 // diffNode defines different modification types as the safe change order.
 // The safe change order means we can change them with no dependency conflicts as this order.
@@ -568,7 +558,7 @@ type constraintMap map[string]*ast.Constraint
 
 // SchemaDiff returns the schema diff.
 // It only supports schema information from mysqldump.
-func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive bool) (string, error) {
+func SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive bool) (string, error) {
 	// 1. Preprocessing Stage.
 	// TiDB parser doesn't support some statements like `CREATE EVENT`, so we need to extract them out and diff them based on string compare.
 	oldUnsupportedStmtList, oldSupportedStmt, err := classifyStatement(oldStmt)
@@ -594,13 +584,13 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive boo
 }
 
 func classifyStatement(statement string) ([]string, string, error) {
-	unsupported, supported, err := mysqlparser.ExtractTiDBUnsupportedStmts(statement)
+	unsupported, supported, err := ExtractTiDBUnsupportedStmts(statement)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to extract TiDB unsupported statements from statements %q", statement)
 	}
 	var afterFilter []string
 	for _, stmt := range unsupported {
-		if !mysqlparser.IsDelimiter(stmt) {
+		if !IsDelimiter(stmt) {
 			afterFilter = append(afterFilter, stmt)
 		}
 	}

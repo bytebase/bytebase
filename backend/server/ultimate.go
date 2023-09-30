@@ -24,7 +24,4 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
-
-	// Differs.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/plsql"
 )
