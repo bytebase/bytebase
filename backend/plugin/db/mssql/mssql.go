@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -132,7 +131,7 @@ func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := parser.SplitMultiSQL(storepb.Engine_MSSQL, statement)
+	singleSQLs, err := tsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}

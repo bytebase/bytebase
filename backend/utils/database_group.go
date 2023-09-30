@@ -36,7 +36,7 @@ func ConvertDatabaseToParserEngineType(engine storepb.Engine) (storepb.Engine, e
 }
 
 // GetStatementsAndSchemaGroupsFromSchemaGroups takes in a statement template and a list of schema groups, returns a list of expanded(rendered) statements and schema group names.
-func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngineType storepb.Engine, schemaGroupParent string, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, []string, error) {
+func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, engine storepb.Engine, schemaGroupParent string, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, []string, error) {
 	flush := func(emptyStatementBuilder *strings.Builder, statementBuilder *strings.Builder, schemaGroup *store.SchemaGroupMessage, matchedTables []string) ([]string, []string) {
 		if statementBuilder.Len() == 0 {
 			return nil, nil
@@ -59,7 +59,7 @@ func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngine
 		return resultStatements, schemaGroupNames
 	}
 
-	singleStatements, err := parser.SplitMultiSQL(parserEngineType, statement)
+	singleStatements, err := parser.SplitMultiSQL(engine, statement)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to split sql")
 	}
