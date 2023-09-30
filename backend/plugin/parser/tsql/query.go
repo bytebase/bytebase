@@ -13,6 +13,7 @@ import (
 
 func init() {
 	base.RegisterExtractResourceListFunc(storepb.Engine_MSSQL, ExtractResourceList)
+	base.RegisterExtractDatabaseListFunc(storepb.Engine_MSSQL, ExtractDatabaseList)
 }
 
 // ExtractDatabaseList extracts the database names.

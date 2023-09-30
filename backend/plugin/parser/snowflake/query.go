@@ -13,6 +13,7 @@ import (
 
 func init() {
 	base.RegisterExtractResourceListFunc(storepb.Engine_SNOWFLAKE, ExtractResourceList)
+	base.RegisterExtractDatabaseListFunc(storepb.Engine_SNOWFLAKE, ExtractDatabaseList)
 }
 
 type snowsqlResourceExtractListener struct {
