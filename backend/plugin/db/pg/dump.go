@@ -16,8 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 // sslCAThreshold is the block size for splitting sslCA.
@@ -263,7 +262,7 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(storepb.Engine_POSTGRES, sc, f); err != nil {
+	if _, err := pgparser.SplitMultiSQLStream(sc, f); err != nil {
 		return err
 	}
 

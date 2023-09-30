@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -114,7 +115,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(storepb.Engine_MSSQL, strings.NewReader(statement), f); err != nil {
+	if _, err := tsqlparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
 

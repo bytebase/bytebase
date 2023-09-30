@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -116,7 +117,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	}
 
 	// use oracle sql parser
-	if _, err := parser.SplitMultiSQLStream(storepb.Engine_ORACLE, strings.NewReader(statement), f); err != nil {
+	if _, err := plsqlparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
 

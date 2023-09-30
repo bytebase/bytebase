@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -288,7 +289,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 			}
 			return nil
 		}
-		if _, err := parser.SplitMultiSQLStream(storepb.Engine_POSTGRES, strings.NewReader(statement), f); err != nil {
+		if _, err := pgparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
 			return 0, err
 		}
 		return 0, nil
@@ -325,7 +326,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(storepb.Engine_POSTGRES, strings.NewReader(statement), f); err != nil {
+	if _, err := pgparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
 
