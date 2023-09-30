@@ -1,6 +1,8 @@
 package tidb
 
 import (
+	"regexp"
+	"strconv"
 	"strings"
 
 	tidbparser "github.com/pingcap/tidb/parser"
@@ -10,6 +12,7 @@ import (
 	// The packege parser_driver has to be imported.
 	_ "github.com/pingcap/tidb/types/parser_driver"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
@@ -22,7 +25,38 @@ func ParseTiDB(sql string, charset string, collation string) ([]ast.StmtNode, er
 	p.EnableWindowFunc(true)
 
 	nodes, _, err := p.Parse(sql, charset, collation)
-	return nodes, err
+	if err != nil {
+		return nil, convertParserError(err)
+	}
+	return nodes, nil
+}
+
+var (
+	lineColumnRegex = regexp.MustCompile(`line (\d+) column (\d+)`)
+)
+
+func convertParserError(parserErr error) error {
+	// line 1 column 15 near "TO world;"
+	res := lineColumnRegex.FindAllStringSubmatch(parserErr.Error(), -1)
+	if len(res) != 1 {
+		return parserErr
+	}
+	if len(res[0]) != 3 {
+		return parserErr
+	}
+	line, err := strconv.Atoi(res[0][1])
+	if err != nil {
+		return parserErr
+	}
+	column, err := strconv.Atoi(res[0][2])
+	if err != nil {
+		return parserErr
+	}
+	return &base.SyntaxError{
+		Line:    line,
+		Column:  column,
+		Message: parserErr.Error(),
+	}
 }
 
 // SetLineForMySQLCreateTableStmt sets the line for columns and table constraints in MySQL CREATE TABLE statments.
