@@ -361,7 +361,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 		if stmt.Empty || stmt.Text == "" {
 			continue
 		}
-		resources, err := parser.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, stmt.Text)
+		resources, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, stmt.Text)
 		if err != nil {
 			slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
 		} else {
@@ -435,7 +435,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType storepb.Engine, d
 		sqlTypeSet[sqlType] = struct{}{}
 		if !isDML(sqlType) {
 			if dbType != storepb.Engine_TIDB {
-				resources, err := parser.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
+				resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
 				if err != nil {
 					slog.Error("failed to get statement changed resources", log.BBError(err))
 				} else {
