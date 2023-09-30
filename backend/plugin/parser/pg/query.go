@@ -25,6 +25,90 @@ func init() {
 	base.RegisterExtractResourceListFunc(storepb.Engine_RISINGWAVE, ExtractResourceList)
 }
 
+// ValidateSQLForEditor validates the SQL statement for SQL editor.
+// Consider that the tokenizer cannot handle the dollar-sign($), so that we use pg_query_go to parse the statement.
+// For EXPLAIN and normal SELECT statements, we can directly use regexp to check.
+// For CTE, we need to parse the statement to JSON and check the JSON keys.
+func ValidateSQLForEditor(statement string) (bool, error) {
+	stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
+	if err != nil {
+		return false, err
+	}
+	for _, stmt := range stmtList {
+		switch stmt.(type) {
+		case *ast.SelectStmt, *ast.ExplainStmt:
+		default:
+			return false, nil
+		}
+	}
+
+	// TODO(d): figure out whether this is still needed.
+	jsonText, err := pgquery.ParseToJSON(statement)
+	if err != nil {
+		slog.Debug("Failed to parse statement to JSON", slog.String("statement", statement), log.BBError(err))
+		return false, err
+	}
+
+	formattedStr := strings.ToUpper(strings.TrimSpace(statement))
+	if isSelect, _ := regexp.MatchString(`^SELECT\s+?`, formattedStr); isSelect {
+		return true, nil
+	}
+
+	if isSelect, _ := regexp.MatchString(`^SELECT\*\s+?`, formattedStr); isSelect {
+		return true, nil
+	}
+
+	if isExplain, _ := regexp.MatchString(`^EXPLAIN\s+?`, formattedStr); isExplain {
+		if isExplainAnalyze, _ := regexp.MatchString(`^EXPLAIN\s+ANALYZE\s+?`, formattedStr); isExplainAnalyze {
+			return false, nil
+		}
+		return true, nil
+	}
+
+	cteRegex := regexp.MustCompile(`^WITH\s+?`)
+	if matchResult := cteRegex.MatchString(formattedStr); matchResult {
+		var jsonData map[string]any
+
+		if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
+			slog.Debug("Failed to unmarshal JSON", slog.String("jsonText", jsonText), log.BBError(err))
+			return false, err
+		}
+
+		dmlKeyList := []string{"InsertStmt", "UpdateStmt", "DeleteStmt"}
+
+		return !keyExistsInJSONData(jsonData, dmlKeyList), nil
+	}
+
+	return false, nil
+}
+
+func keyExistsInJSONData(jsonData map[string]any, keyList []string) bool {
+	for _, key := range keyList {
+		if _, ok := jsonData[key]; ok {
+			return true
+		}
+	}
+
+	for _, value := range jsonData {
+		switch v := value.(type) {
+		case map[string]any:
+			if keyExistsInJSONData(v, keyList) {
+				return true
+			}
+		case []any:
+			for _, item := range v {
+				if m, ok := item.(map[string]any); ok {
+					if keyExistsInJSONData(m, keyList) {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
 func ExtractResourceList(currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
 	jsonText, err := pgquery.ParseToJSON(sql)
 	if err != nil {
@@ -83,88 +167,4 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 	}
 
 	return result
-}
-
-// ValidateSQLForEditor validates the SQL statement for SQL editor.
-// Consider that the tokenizer cannot handle the dollar-sign($), so that we use pg_query_go to parse the statement.
-// For EXPLAIN and normal SELECT statements, we can directly use regexp to check.
-// For CTE, we need to parse the statement to JSON and check the JSON keys.
-func ValidateSQLForEditor(statement string) bool {
-	stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
-	if err != nil {
-		return false
-	}
-	for _, stmt := range stmtList {
-		switch stmt.(type) {
-		case *ast.SelectStmt, *ast.ExplainStmt:
-		default:
-			return false
-		}
-	}
-
-	// TODO(d): figure out whether this is still needed.
-	jsonText, err := pgquery.ParseToJSON(statement)
-	if err != nil {
-		slog.Debug("Failed to parse statement to JSON", slog.String("statement", statement), log.BBError(err))
-		return false
-	}
-
-	formattedStr := strings.ToUpper(strings.TrimSpace(statement))
-	if isSelect, _ := regexp.MatchString(`^SELECT\s+?`, formattedStr); isSelect {
-		return true
-	}
-
-	if isSelect, _ := regexp.MatchString(`^SELECT\*\s+?`, formattedStr); isSelect {
-		return true
-	}
-
-	if isExplain, _ := regexp.MatchString(`^EXPLAIN\s+?`, formattedStr); isExplain {
-		if isExplainAnalyze, _ := regexp.MatchString(`^EXPLAIN\s+ANALYZE\s+?`, formattedStr); isExplainAnalyze {
-			return false
-		}
-		return true
-	}
-
-	cteRegex := regexp.MustCompile(`^WITH\s+?`)
-	if matchResult := cteRegex.MatchString(formattedStr); matchResult {
-		var jsonData map[string]any
-
-		if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
-			slog.Debug("Failed to unmarshal JSON", slog.String("jsonText", jsonText), log.BBError(err))
-			return false
-		}
-
-		dmlKeyList := []string{"InsertStmt", "UpdateStmt", "DeleteStmt"}
-
-		return !keyExistsInJSONData(jsonData, dmlKeyList)
-	}
-
-	return false
-}
-
-func keyExistsInJSONData(jsonData map[string]any, keyList []string) bool {
-	for _, key := range keyList {
-		if _, ok := jsonData[key]; ok {
-			return true
-		}
-	}
-
-	for _, value := range jsonData {
-		switch v := value.(type) {
-		case map[string]any:
-			if keyExistsInJSONData(v, keyList) {
-				return true
-			}
-		case []any:
-			for _, item := range v {
-				if m, ok := item.(map[string]any); ok {
-					if keyExistsInJSONData(m, keyList) {
-						return true
-					}
-				}
-			}
-		}
-	}
-
-	return false
 }

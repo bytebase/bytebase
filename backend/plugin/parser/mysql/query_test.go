@@ -12,6 +12,7 @@ func TestValidateSQLForEditor(t *testing.T) {
 	tests := []struct {
 		statement string
 		validate  bool
+		err       bool
 	}{
 		{
 			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
@@ -66,6 +67,7 @@ func TestValidateSQLForEditor(t *testing.T) {
 				insert into t values (1, 2, 3);
 				`,
 			validate: false,
+			err:      true,
 		},
 		{
 			statement: "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
@@ -88,8 +90,13 @@ func TestValidateSQLForEditor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got := ValidateSQLForEditor(test.statement)
-		require.Equal(t, test.validate, got)
+		got, err := ValidateSQLForEditor(test.statement)
+		if test.err {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+			require.Equal(t, test.validate, got)
+		}
 	}
 }
 

@@ -23,12 +23,10 @@ type ParseResult struct {
 
 // ParseMySQL parses the given SQL statement and returns the AST.
 func ParseMySQL(statement string) ([]*ParseResult, error) {
-	var err error
-	statement, err = DealWithDelimiter(statement)
+	statement, err := DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
 	}
-
 	return parseInputStream(antlr.NewInputStream(statement))
 }
 
