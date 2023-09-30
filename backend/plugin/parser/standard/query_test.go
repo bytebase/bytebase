@@ -6,12 +6,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testData struct {
-	sql string
-	ans bool
-}
-
 func TestValidateSQLForStandard(t *testing.T) {
+	type testData struct {
+		sql string
+		ans bool
+	}
 	tests := []testData{
 		{
 			sql: `select* from t`,
