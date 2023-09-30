@@ -40,7 +40,7 @@ func ValidateSQLForEditor(statement string) bool {
 	return true
 }
 
-func ExtractTiDBResourceList(currentDatabase string, sql string) ([]base.SchemaResource, error) {
+func ExtractResourceList(currentDatabase string, sql string) ([]base.SchemaResource, error) {
 	nodes, err := ParseTiDB(sql, "", "")
 	if err != nil {
 		return nil, err

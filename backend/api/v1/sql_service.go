@@ -2196,7 +2196,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		if dataSource == nil {
 			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
 		}
-		list, err := parser.ExtractResourceList(engine, databaseName, dataSource.Username, statement)
+		list, err := parser.ExtractResourceList(engine, databaseName, "PUBLIC", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
@@ -2266,7 +2266,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		if dataSource == nil {
 			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
 		}
-		list, err := parser.ExtractResourceList(engine, databaseName, dataSource.Username, statement)
+		list, err := parser.ExtractResourceList(engine, databaseName, "dbo", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}

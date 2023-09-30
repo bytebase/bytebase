@@ -133,7 +133,7 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_table_properties(ctx *p
 	l.resourceMap[resource.String()] = resource
 }
 
-func ExtractOracleResourceList(currentDatabase string, currentSchema string, statement string) ([]base.SchemaResource, error) {
+func ExtractResourceList(currentDatabase string, currentSchema string, statement string) ([]base.SchemaResource, error) {
 	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err

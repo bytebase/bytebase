@@ -101,7 +101,7 @@ func TestExtractSnowflakeNormalizeResourceListFromSelectStatement(t *testing.T) 
 	}
 
 	for _, test := range tests {
-		res, err := ExtractSnowflakeNormalizeResourceListFromSelectStatement("db", "PUBLIC", test.statement)
+		res, err := ExtractResourceList("db", "PUBLIC", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.want, res, "for statement: %v", test.statement)
 	}
