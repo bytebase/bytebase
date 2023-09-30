@@ -60,9 +60,9 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 	}
 }
 
-// ExtractSnowSQLNormalizedDatabaseList extracts all databases from statement, and normalizes the database name.
+// ExtractDatabaseList extracts all databases from statement, and normalizes the database name.
 // If the database name is not specified, it will fallback to the normalizedDatabaseName.
-func ExtractSnowSQLNormalizedDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
+func ExtractDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
 	schemaPlaceholder := "schema_placeholder"
 	schemaResource, err := ExtractSnowflakeNormalizeResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
 	if err != nil {
