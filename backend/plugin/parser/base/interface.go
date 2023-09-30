@@ -20,7 +20,7 @@ var (
 	databaseGetter         = make(map[storepb.Engine]ExtractDatabaseListFunc)
 )
 
-type ValidateSQLForEditorFunc func(string) bool
+type ValidateSQLForEditorFunc func(string) (bool, error)
 type GetMaskedFieldsFunc func(string, string, *db.SensitiveSchemaInfo) ([]db.SensitiveField, error)
 type ExtractChangedResourcesFunc func(string, string, string) ([]SchemaResource, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
@@ -41,8 +41,11 @@ func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 // 1. EXPLAIN statement, except EXPLAIN ANALYZE
 // 2. SELECT statement
 // We also support CTE with SELECT statements, but not with DML statements.
-func ValidateSQLForEditor(engine storepb.Engine, statement string) bool {
-	f := queryValidators[engine]
+func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, error) {
+	f, ok := queryValidators[engine]
+	if !ok {
+		return false, errors.Errorf("engine %s is not supported", engine)
+	}
 	return f(statement)
 }
 
@@ -62,7 +65,7 @@ func ExtractSensitiveField(engine storepb.Engine, statement string, currentDatab
 
 	f, ok := fieldMaskers[engine]
 	if !ok {
-		return nil, errors.Errorf("engine type is not supported: %s", engine)
+		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(statement, currentDatabase, schemaInfo)
 }
@@ -80,7 +83,7 @@ func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChanged
 func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
 	f, ok := changedResourcesGetter[engine]
 	if !ok {
-		return nil, errors.Errorf("engine type is not supported: %s", engine)
+		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(currentDatabase, currentSchema, sql)
 }
@@ -97,7 +100,7 @@ func RegisterExtractResourceListFunc(engine storepb.Engine, f ExtractResourceLis
 func ExtractResourceList(engine storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
 	f, ok := resourcesGetter[engine]
 	if !ok {
-		return nil, errors.Errorf("engine type is not supported: %s", engine)
+		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(currentDatabase, currentSchema, sql)
 }
@@ -115,7 +118,7 @@ func RegisterSplitterFunc(engine storepb.Engine, f SplitMultiSQLFunc) {
 func SplitMultiSQL(engine storepb.Engine, statement string) ([]SingleSQL, error) {
 	f, ok := splitter[engine]
 	if !ok {
-		return nil, errors.Errorf("engine type is not supported: %s", engine)
+		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(statement)
 }
@@ -133,7 +136,7 @@ func RegisterExtractDatabaseListFunc(engine storepb.Engine, f ExtractDatabaseLis
 func ExtractDatabaseList(engine storepb.Engine, statement string, currentDatabase string) ([]string, error) {
 	f, ok := databaseGetter[engine]
 	if !ok {
-		return nil, errors.Errorf("engine type is not supported: %s", engine)
+		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(statement, currentDatabase)
 }

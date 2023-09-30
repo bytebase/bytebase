@@ -9,17 +9,15 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-type testData struct {
-	statement string
-	want      resData
-}
-
-type resData struct {
-	res []base.SingleSQL
-	err string
-}
-
 func TestOracleSplitMultiSQL(t *testing.T) {
+	type resData struct {
+		res []base.SingleSQL
+		err string
+	}
+	type testData struct {
+		statement string
+		want      resData
+	}
 	tests := []testData{
 		{
 			statement: `-- klsjdfjasldf

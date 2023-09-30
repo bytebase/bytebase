@@ -22,15 +22,15 @@ func init() {
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.
-func ValidateSQLForEditor(statement string) bool {
+func ValidateSQLForEditor(statement string) (bool, error) {
 	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
-		return false
+		return false, err
 	}
 	if err := ValidateForEditor(tree); err != nil {
-		return false
+		return false, err
 	}
-	return true
+	return true, nil
 }
 
 func ExtractChangedResources(currentDatabase string, currentSchema string, statement string) ([]base.SchemaResource, error) {
