@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"io"
-
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -31,24 +29,6 @@ func SplitMultiSQL(engineType storepb.Engine, statement string) ([]base.SingleSQ
 		return tsqlparser.SplitSQL(statement)
 	default:
 		return standardparser.SplitSQL(statement)
-	}
-}
-
-// SplitMultiSQLStream splits statement stream into a slice of the single SQL.
-func SplitMultiSQLStream(engineType storepb.Engine, src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
-	switch engineType {
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return mysqlparser.SplitMultiSQLStream(src, f)
-	case storepb.Engine_TIDB:
-		return tidbparser.SplitMultiSQLStream(src, f)
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
-		return pgparser.SplitMultiSQLStream(src, f)
-	case storepb.Engine_ORACLE, storepb.Engine_DM:
-		return plsqlparser.SplitMultiSQLStream(src, f)
-	case storepb.Engine_MSSQL:
-		return tsqlparser.SplitMultiSQLStream(src, f)
-	default:
-		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
 }
 
