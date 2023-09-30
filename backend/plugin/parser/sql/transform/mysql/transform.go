@@ -88,7 +88,7 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 
 	// Phase One: build the schema table set.
 	tableSet := make(tableSet)
-	list, err := mysqlparser.SplitMySQL(schema)
+	list, err := mysqlparser.SplitSQL(schema)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to split SQL")
 	}
@@ -141,7 +141,7 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 	}
 
 	// Phase Two: find the missing table and index for schema and remove the collation and charset if needed.
-	standardList, err := mysqlparser.SplitMySQL(standard)
+	standardList, err := mysqlparser.SplitSQL(standard)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to split SQL")
 	}
@@ -342,7 +342,7 @@ func extractEngineCharsetAndCollation(table *ast.CreateTableStmt) (engine, chars
 
 // Check checks the schema format.
 func (*SchemaTransformer) Check(schema string) (int, error) {
-	list, err := mysqlparser.SplitMySQL(schema)
+	list, err := mysqlparser.SplitSQL(schema)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split SQL")
 	}
@@ -434,7 +434,7 @@ func (*SchemaTransformer) Check(schema string) (int, error) {
 // Transform returns the transformed schema.
 func (*SchemaTransformer) Transform(schema string) (string, error) {
 	var result []string
-	list, err := mysqlparser.SplitMySQL(schema)
+	list, err := mysqlparser.SplitSQL(schema)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to split SQL")
 	}

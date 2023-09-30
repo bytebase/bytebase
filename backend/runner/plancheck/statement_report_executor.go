@@ -20,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/store"
@@ -337,7 +336,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 }
 
 func reportForOracle(databaseName string, schemaName string, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
-	singleSQLs, err := parser.SplitMultiSQL(storepb.Engine_ORACLE, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_ORACLE, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -389,7 +388,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 	charset := dbMetadata.CharacterSet
 	collation := dbMetadata.Collation
 
-	singleSQLs, err := parser.SplitMultiSQL(engine, statement)
+	singleSQLs, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{

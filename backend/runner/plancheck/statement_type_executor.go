@@ -12,8 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	runnerutils "github.com/bytebase/bytebase/backend/runner/utils"
@@ -341,7 +341,7 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 		return nil, err
 	}
 
-	list, err := parser.SplitMultiSQL(storepb.Engine_MYSQL, ddl)
+	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, ddl)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split SQL")
 	}

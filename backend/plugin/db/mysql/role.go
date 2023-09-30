@@ -16,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -345,7 +344,7 @@ func convertToUserContent(upsert *db.DatabaseRoleUpsertMessage) (string, error) 
 }
 
 func splitGrantStatement(stmts string) ([]base.SingleSQL, error) {
-	list, err := parser.SplitMultiSQL(storepb.Engine_MYSQL, stmts)
+	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, stmts)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Invalid, "failed to split grant statement")
 	}

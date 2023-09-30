@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -59,7 +59,7 @@ func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, engine store
 		return resultStatements, schemaGroupNames
 	}
 
-	singleStatements, err := parser.SplitMultiSQL(engine, statement)
+	singleStatements, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to split sql")
 	}

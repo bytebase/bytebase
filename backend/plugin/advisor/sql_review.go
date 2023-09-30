@@ -22,7 +22,6 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -631,7 +630,7 @@ func postgresSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func calculatePostgresErrorLine(statement string) int {
-	statementList, err := parser.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
+	statementList, err := base.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
 	if err != nil {
 		// nolint:nilerr
 		return 1
@@ -657,7 +656,7 @@ func newTiDBParser() *tidbparser.Parser {
 }
 
 func mysqlSyntaxCheck(statement string) (any, []Advice) {
-	list, err := mysqlparser.SplitMySQL(statement)
+	list, err := mysqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, []Advice{
 			{
