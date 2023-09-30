@@ -9,7 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -47,7 +47,7 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to transform SDL format")
 	}
-	diff, err := differ.SchemaDiff(engine, sdlFormat, newSchema, store.IgnoreDatabaseAndTableCaseSensitive(instance))
+	diff, err := base.SchemaDiff(engine, sdlFormat, newSchema, store.IgnoreDatabaseAndTableCaseSensitive(instance))
 	if err != nil {
 		return "", errors.Wrapf(err, "compute schema diff")
 	}

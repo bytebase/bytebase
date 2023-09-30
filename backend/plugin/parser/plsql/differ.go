@@ -9,24 +9,14 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
-
 	plsql "github.com/bytebase/plsql-parser"
 
-	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var (
-	_ differ.SchemaDiffer = (*SchemaDiffer)(nil)
-)
-
 func init() {
-	differ.Register(storepb.Engine_ORACLE, &SchemaDiffer{})
-}
-
-// SchemaDiffer is the schema differ for plsql.
-type SchemaDiffer struct {
+	base.RegisterSchemaDiffFunc(storepb.Engine_ORACLE, SchemaDiff)
 }
 
 type diffNode struct {
@@ -120,7 +110,7 @@ func (diff *diffNode) String() (string, error) {
 }
 
 // SchemaDiff implements the differ.SchemaDiffer interface.
-func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error) {
+func SchemaDiff(oldStmt, newStmt string, _ bool) (string, error) {
 	oldSchemaInfo, err := buildSchemaInfo(oldStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to build schema info for old statement")
@@ -228,7 +218,7 @@ func buildConstraintMap(table *tableInfo) map[string]plsql.IRelational_propertyC
 			if constraint.Constraint_name() == nil {
 				continue
 			}
-			_, constraintName := plsqlparser.NormalizeConstraintName(constraint.Constraint_name())
+			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
 			if constraintName == "" {
 				continue
 			}
@@ -238,7 +228,7 @@ func buildConstraintMap(table *tableInfo) map[string]plsql.IRelational_propertyC
 			if constraint.Constraint_name() == nil {
 				continue
 			}
-			_, constraintName := plsqlparser.NormalizeConstraintName(constraint.Constraint_name())
+			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
 			if constraintName == "" {
 				continue
 			}
@@ -264,7 +254,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 			if constraint.Constraint_name() == nil {
 				continue
 			}
-			_, constraintName := plsqlparser.NormalizeConstraintName(constraint.Constraint_name())
+			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
 			if constraintName == "" {
 				continue
 			}
@@ -284,7 +274,7 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 			if constraint.Constraint_name() == nil {
 				continue
 			}
-			_, constraintName := plsqlparser.NormalizeConstraintName(constraint.Constraint_name())
+			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
 			if constraintName == "" {
 				continue
 			}
@@ -404,7 +394,7 @@ func buildColumnMap(table *tableInfo) map[string]plsql.IColumn_definitionContext
 		if item.Column_definition() == nil {
 			continue
 		}
-		columnName := plsqlparser.NormalizeIdentifierContext(item.Column_definition().Column_name().Identifier())
+		columnName := NormalizeIdentifierContext(item.Column_definition().Column_name().Identifier())
 		columnMap[columnName] = item.Column_definition()
 	}
 	return columnMap
@@ -425,7 +415,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) error {
 			continue
 		}
 
-		newColumnName := plsqlparser.NormalizeIdentifierContext(item.Column_definition().Column_name().Identifier())
+		newColumnName := NormalizeIdentifierContext(item.Column_definition().Column_name().Identifier())
 		oldColumn, ok := oldColumnMap[newColumnName]
 		if !ok {
 			addColumns = append(addColumns, item.Column_definition())
@@ -439,7 +429,7 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) error {
 		delete(oldColumnMap, newColumnName)
 	}
 	for _, column := range oldColumnMap {
-		dropColumns = append(dropColumns, plsqlparser.NormalizeIdentifierContext(column.Column_name().Identifier()))
+		dropColumns = append(dropColumns, NormalizeIdentifierContext(column.Column_name().Identifier()))
 	}
 
 	sort.Slice(dropColumns, func(i, j int) bool {
@@ -590,7 +580,7 @@ func isColumnEqual(oldColumn, newColumn plsql.IColumn_definitionContext) bool {
 }
 
 func buildSchemaInfo(statement string) (*schemaInfo, error) {
-	node, _, err := plsqlparser.ParsePLSQL(statement)
+	node, _, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -626,7 +616,7 @@ func (l *buildSchemaInfoListener) EnterCreate_table(ctx *plsql.Create_tableConte
 	}
 
 	if ctx.Schema_name() != nil {
-		schemaName := plsqlparser.NormalizeIdentifierContext(ctx.Schema_name().Identifier())
+		schemaName := NormalizeIdentifierContext(ctx.Schema_name().Identifier())
 		if l.schemaInfo.name == "" {
 			l.schemaInfo.name = schemaName
 		}
@@ -635,7 +625,7 @@ func (l *buildSchemaInfoListener) EnterCreate_table(ctx *plsql.Create_tableConte
 			return
 		}
 	}
-	tableName := plsqlparser.NormalizeIdentifierContext(ctx.Table_name().Identifier())
+	tableName := NormalizeIdentifierContext(ctx.Table_name().Identifier())
 	l.schemaInfo.tableMap[tableName] = &tableInfo{
 		id:          len(l.schemaInfo.tableMap),
 		name:        tableName,
@@ -655,7 +645,7 @@ func (l *buildSchemaInfoListener) EnterCreate_index(ctx *plsql.Create_indexConte
 		return
 	}
 
-	schema, index := plsqlparser.NormalizeIndexName(ctx.Index_name())
+	schema, index := NormalizeIndexName(ctx.Index_name())
 	if schema != "" && l.schemaInfo.name == "" {
 		l.schemaInfo.name = schema
 	}

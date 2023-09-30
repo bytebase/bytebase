@@ -20,8 +20,6 @@ type DifferTestData struct {
 }
 
 func runDifferTest(t *testing.T, file string, record bool) {
-	pgDiffer := &SchemaDiffer{}
-
 	var tests []DifferTestData
 	filepath := filepath.Join("test-data", file)
 	yamlFile, err := os.Open(filepath)
@@ -34,7 +32,7 @@ func runDifferTest(t *testing.T, file string, record bool) {
 	require.NoError(t, err)
 
 	for i, test := range tests {
-		diff, err := pgDiffer.SchemaDiff(test.OldSchema, test.NewSchema, false /* ignoreCaseSensitive */)
+		diff, err := SchemaDiff(test.OldSchema, test.NewSchema, false /* ignoreCaseSensitive */)
 		require.NoError(t, err)
 		if record {
 			tests[i].Diff = diff
