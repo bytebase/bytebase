@@ -16,29 +16,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// ExtractResourceList extracts the resource list from the SQL.
-func ExtractResourceList(engineType storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
-	switch engineType {
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		// The resource list for MySQL may contains table, view and temporary table.
-		return mysqlparser.ExtractResourceList(currentDatabase, sql)
-	case storepb.Engine_TIDB:
-		return tidbparser.ExtractResourceList(currentDatabase, sql)
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
-		// The resource list for Postgres may contains table, view and temporary table.
-		return pgparser.ExtractResourceList(currentDatabase, currentSchema, sql)
-	case storepb.Engine_ORACLE, storepb.Engine_DM:
-		// The resource list for Oracle may contains table, view and temporary table.
-		return plsqlparser.ExtractResourceList(currentDatabase, currentSchema, sql)
-	case storepb.Engine_SNOWFLAKE:
-		return snowparser.ExtractResourceList(currentDatabase, currentSchema, sql)
-	case storepb.Engine_MSSQL:
-		return tsqlparser.ExtractResourceList(currentDatabase, currentSchema, sql)
-	default:
-		return standardparser.ExtractResourceList(currentDatabase, currentSchema, sql)
-	}
-}
-
 // SplitMultiSQL splits statement into a slice of the single SQL.
 func SplitMultiSQL(engineType storepb.Engine, statement string) ([]base.SingleSQL, error) {
 	switch engineType {

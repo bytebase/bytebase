@@ -20,6 +20,9 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_POSTGRES, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_REDSHIFT, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_RISINGWAVE, ValidateSQLForEditor)
+	base.RegisterExtractResourceListFunc(storepb.Engine_POSTGRES, ExtractResourceList)
+	base.RegisterExtractResourceListFunc(storepb.Engine_REDSHIFT, ExtractResourceList)
+	base.RegisterExtractResourceListFunc(storepb.Engine_RISINGWAVE, ExtractResourceList)
 }
 
 func ExtractResourceList(currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {

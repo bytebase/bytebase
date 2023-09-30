@@ -828,7 +828,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 	case storepb.Engine_ORACLE, storepb.Engine_DM:
 		var databaseList []string
 		if instance.Options != nil && instance.Options.SchemaTenantMode {
-			list, err := parser.ExtractResourceList(storepb.Engine_ORACLE, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
+			list, err := base.ExtractResourceList(storepb.Engine_ORACLE, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
 			if err != nil {
 				return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", request.Statement)
 			}
@@ -1253,7 +1253,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 				}
 			} else {
-				list, err := parser.ExtractResourceList(storepb.Engine_ORACLE, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
+				list, err := base.ExtractResourceList(storepb.Engine_ORACLE, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
 				if err != nil {
 					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", request.Statement)
 				}
@@ -1325,7 +1325,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 
 func allPostgresSystemObjects(statement string) bool {
 	// We need to distinguish between specified public schema and by default.
-	resources, err := parser.ExtractResourceList(storepb.Engine_POSTGRES, "", "", statement)
+	resources, err := base.ExtractResourceList(storepb.Engine_POSTGRES, "", "", statement)
 	if err != nil {
 		slog.Debug("Failed to extract resource list from statement", slog.String("statement", statement), log.BBError(err))
 		return false
@@ -2006,7 +2006,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Engine, databaseName string, statement string, instance *store.InstanceMessage) ([]base.SchemaResource, error) {
 	switch engine {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		list, err := parser.ExtractResourceList(engine, databaseName, "", statement)
+		list, err := base.ExtractResourceList(engine, databaseName, "", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		} else if databaseName == "" {
@@ -2070,7 +2070,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		}
 		return result, nil
 	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
-		list, err := parser.ExtractResourceList(engine, databaseName, "public", statement)
+		list, err := base.ExtractResourceList(engine, databaseName, "public", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
@@ -2123,7 +2123,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		if instance.Options != nil && instance.Options.SchemaTenantMode {
 			currentSchema = databaseName
 		}
-		list, err := parser.ExtractResourceList(engine, databaseName, currentSchema, statement)
+		list, err := base.ExtractResourceList(engine, databaseName, currentSchema, statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
@@ -2196,7 +2196,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		if dataSource == nil {
 			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
 		}
-		list, err := parser.ExtractResourceList(engine, databaseName, "PUBLIC", statement)
+		list, err := base.ExtractResourceList(engine, databaseName, "PUBLIC", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
@@ -2266,7 +2266,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		if dataSource == nil {
 			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
 		}
-		list, err := parser.ExtractResourceList(engine, databaseName, "dbo", statement)
+		list, err := base.ExtractResourceList(engine, databaseName, "dbo", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
@@ -2330,7 +2330,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		}
 		return result, nil
 	default:
-		return parser.ExtractResourceList(engine, databaseName, "", statement)
+		return base.ExtractResourceList(engine, databaseName, "", statement)
 	}
 }
 

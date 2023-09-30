@@ -88,7 +88,7 @@ func TestExtractMySQLResourceList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resources, err := ExtractResourceList("db", test.statement)
+		resources, err := ExtractResourceList("db", "", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
 	}
