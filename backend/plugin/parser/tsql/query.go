@@ -13,7 +13,7 @@ import (
 // ExtractDatabaseList extracts the database names.
 func ExtractDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
 	schemaPlaceholder := "dbo"
-	schemaResource, err := ExtractMSSQLNormalizedResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
+	schemaResource, err := ExtractResourceList(normalizedDatabaseName, schemaPlaceholder, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -25,8 +25,8 @@ func ExtractDatabaseList(statement string, normalizedDatabaseName string) ([]str
 	return result, nil
 }
 
-// ExtractMSSQLNormalizedResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
-func ExtractMSSQLNormalizedResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]base.SchemaResource, error) {
+// ExtractResourceList extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
+func ExtractResourceList(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]base.SchemaResource, error) {
 	tree, err := ParseTSQL(selectStatement)
 	if err != nil {
 		return nil, err

@@ -64,7 +64,7 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 // If the database name is not specified, it will fallback to the normalizedDatabaseName.
 func ExtractDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
 	schemaPlaceholder := "schema_placeholder"
-	schemaResource, err := ExtractSnowflakeNormalizeResourceListFromSelectStatement(normalizedDatabaseName, schemaPlaceholder, statement)
+	schemaResource, err := ExtractResourceList(normalizedDatabaseName, schemaPlaceholder, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -76,16 +76,16 @@ func ExtractDatabaseList(statement string, normalizedDatabaseName string) ([]str
 	return result, nil
 }
 
-// ExtractSnowflakeNormalizeResourceListFromSelectStatement extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
-func ExtractSnowflakeNormalizeResourceListFromSelectStatement(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) ([]base.SchemaResource, error) {
+// ExtractResourceList extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
+func ExtractResourceList(currentDatabase string, currentSchema string, selectStatement string) ([]base.SchemaResource, error) {
 	tree, err := ParseSnowSQL(selectStatement)
 	if err != nil {
 		return nil, err
 	}
 
 	l := &snowsqlResourceExtractListener{
-		currentDatabase: currentNormalizedDatabase,
-		currentSchema:   currentNormalizedSchema,
+		currentDatabase: currentDatabase,
+		currentSchema:   currentSchema,
 		resourceMap:     make(map[string]base.SchemaResource),
 	}
 

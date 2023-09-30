@@ -177,7 +177,7 @@ func (l *mysqlChangedResourceExtractListener) EnterRenameTableStatement(ctx *par
 	}
 }
 
-func ExtractMySQLResourceList(currentDatabase string, statement string) ([]base.SchemaResource, error) {
+func ExtractResourceList(currentDatabase string, statement string) ([]base.SchemaResource, error) {
 	treeList, err := ParseMySQL(statement)
 	if err != nil {
 		return nil, err

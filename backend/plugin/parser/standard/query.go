@@ -6,6 +6,8 @@ import (
 
 	"golang.org/x/exp/slog"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
@@ -64,4 +66,11 @@ func CheckStatementWithoutQuotedTextAndComment(statement string) bool {
 	}
 
 	return false
+}
+
+func ExtractResourceList(currentDatabase string, _ string, _ string) ([]base.SchemaResource, error) {
+	if currentDatabase == "" {
+		return nil, errors.Errorf("database must be specified")
+	}
+	return []base.SchemaResource{{Database: currentDatabase}}, nil
 }

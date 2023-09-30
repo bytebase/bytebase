@@ -61,7 +61,7 @@ func TestExtractOracleResourceList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resources, err := ExtractOracleResourceList("DB", "ROOT", test.statement)
+		resources, err := ExtractResourceList("DB", "ROOT", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
 	}
