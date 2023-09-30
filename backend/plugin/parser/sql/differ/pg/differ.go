@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/db/pg"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -233,7 +233,7 @@ func newTypeInfo(id int, createType *ast.CreateTypeStmt) *typeInfo {
 }
 
 func (m schemaMap) addTable(id int, table *ast.CreateTableStmt) error {
-	if pg.IsSystemSchema(table.Name.Schema) {
+	if pgparser.IsSystemSchema(table.Name.Schema) {
 		return nil
 	}
 	schema, exists := m[table.Name.Schema]
@@ -253,7 +253,7 @@ func (m schemaMap) getTable(schemaName string, tableName string) *tableInfo {
 }
 
 func (m schemaMap) addConstraint(id int, addConstraint *ast.AddConstraintStmt) error {
-	if pg.IsSystemSchema(addConstraint.Table.Schema) {
+	if pgparser.IsSystemSchema(addConstraint.Table.Schema) {
 		return nil
 	}
 	schema, exists := m[addConstraint.Table.Schema]
@@ -285,7 +285,7 @@ func (m schemaMap) getConstraint(schemaName string, tableName string, constraint
 }
 
 func (m schemaMap) addExtension(id int, extension *ast.CreateExtensionStmt) error {
-	if pg.IsSystemSchema(extension.Schema) {
+	if pgparser.IsSystemSchema(extension.Schema) {
 		return nil
 	}
 	schema, exists := m[extension.Schema]
@@ -305,7 +305,7 @@ func (m schemaMap) getExtension(schemaName string, extensionName string) *extens
 }
 
 func (m schemaMap) addFunction(id int, function *ast.CreateFunctionStmt) error {
-	if pg.IsSystemSchema(function.Function.Schema) {
+	if pgparser.IsSystemSchema(function.Function.Schema) {
 		return nil
 	}
 	schema, exists := m[function.Function.Schema]
@@ -329,7 +329,7 @@ func (m schemaMap) getFunction(schemaName string, signature string) *functionInf
 }
 
 func (m schemaMap) addIndex(id int, index *ast.CreateIndexStmt) error {
-	if pg.IsSystemSchema(index.Index.Table.Schema) {
+	if pgparser.IsSystemSchema(index.Index.Table.Schema) {
 		return nil
 	}
 	schema, exists := m[index.Index.Table.Schema]
@@ -349,7 +349,7 @@ func (m schemaMap) getIndex(schemaName string, indexName string) *indexInfo {
 }
 
 func (m schemaMap) addSequence(id int, sequence *ast.CreateSequenceStmt) error {
-	if pg.IsSystemSchema(sequence.SequenceDef.SequenceName.Schema) {
+	if pgparser.IsSystemSchema(sequence.SequenceDef.SequenceName.Schema) {
 		return nil
 	}
 	schema, exists := m[sequence.SequenceDef.SequenceName.Schema]
@@ -369,7 +369,7 @@ func (m schemaMap) getSequence(schemaName string, sequenceName string) *sequence
 }
 
 func (m schemaMap) addTrigger(id int, trigger *ast.CreateTriggerStmt) error {
-	if pg.IsSystemSchema(trigger.Trigger.Table.Schema) {
+	if pgparser.IsSystemSchema(trigger.Trigger.Table.Schema) {
 		return nil
 	}
 	schema, exists := m[trigger.Trigger.Table.Schema]
@@ -397,7 +397,7 @@ func (m schemaMap) getTrigger(schemaName string, tableName string, triggerName s
 }
 
 func (m schemaMap) addType(id int, createType *ast.CreateTypeStmt) error {
-	if pg.IsSystemSchema(createType.Type.TypeName().Schema) {
+	if pgparser.IsSystemSchema(createType.Type.TypeName().Schema) {
 		return nil
 	}
 	schema, exists := m[createType.Type.TypeName().Schema]
@@ -438,7 +438,7 @@ func (m schemaMap) addSequenceOwnedBy(id int, alterStmt *ast.AlterSequenceStmt) 
 		return errors.Errorf("expect OwnedBy only, but found %v", alterStmt)
 	}
 
-	if pg.IsSystemSchema(alterStmt.Name.Schema) {
+	if pgparser.IsSystemSchema(alterStmt.Name.Schema) {
 		return nil
 	}
 	schema, exists := m[alterStmt.Name.Schema]
@@ -639,7 +639,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
 				continue
 			}
-			if pg.IsSystemSchema(stmt.Name.Schema) {
+			if pgparser.IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
 			oldTable := oldSchemaMap.getTable(stmt.Name.Schema, stmt.Name.Name)
@@ -654,7 +654,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateSchemaStmt:
-			if pg.IsSystemSchema(stmt.Name) {
+			if pgparser.IsSystemSchema(stmt.Name) {
 				continue
 			}
 			schema, hasSchema := oldSchemaMap[stmt.Name]
@@ -668,7 +668,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Table.Schema, stmt.Table.Name)]; exists {
 				continue
 			}
-			if pg.IsSystemSchema(stmt.Table.Schema) {
+			if pgparser.IsSystemSchema(stmt.Table.Schema) {
 				continue
 			}
 			for _, alterItem := range stmt.AlterItemList {
@@ -708,7 +708,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Index.Table.Schema, stmt.Index.Table.Name)]; exists {
 				continue
 			}
-			if pg.IsSystemSchema(stmt.Index.Table.Schema) {
+			if pgparser.IsSystemSchema(stmt.Index.Table.Schema) {
 				continue
 			}
 			oldIndex := oldSchemaMap.getIndex(stmt.Index.Table.Schema, stmt.Index.Name)
@@ -723,7 +723,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateSequenceStmt:
-			if pg.IsSystemSchema(stmt.SequenceDef.SequenceName.Schema) {
+			if pgparser.IsSystemSchema(stmt.SequenceDef.SequenceName.Schema) {
 				continue
 			}
 			oldSequence := oldSchemaMap.getSequence(stmt.SequenceDef.SequenceName.Schema, stmt.SequenceDef.SequenceName.Name)
@@ -741,7 +741,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 			if !onlySetOwnedBy(stmt) {
 				return "", errors.Errorf("expect OwnedBy only, but found %v", stmt)
 			}
-			if pg.IsSystemSchema(stmt.Name.Schema) {
+			if pgparser.IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
 			oldSequence := oldSchemaMap.getSequence(stmt.Name.Schema, stmt.Name.Name)
@@ -755,7 +755,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateExtensionStmt:
-			if pg.IsSystemSchema(stmt.Schema) {
+			if pgparser.IsSystemSchema(stmt.Schema) {
 				continue
 			}
 			oldExtension := oldSchemaMap.getExtension(stmt.Schema, stmt.Name)
@@ -770,7 +770,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateFunctionStmt:
-			if pg.IsSystemSchema(stmt.Function.Schema) {
+			if pgparser.IsSystemSchema(stmt.Function.Schema) {
 				continue
 			}
 			signature, err := functionSignature(stmt.Function)
@@ -789,7 +789,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateTriggerStmt:
-			if pg.IsSystemSchema(stmt.Trigger.Table.Schema) {
+			if pgparser.IsSystemSchema(stmt.Trigger.Table.Schema) {
 				continue
 			}
 			oldTrigger := oldSchemaMap.getTrigger(stmt.Trigger.Table.Schema, stmt.Trigger.Table.Name, stmt.Trigger.Name)
@@ -804,7 +804,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string, _ bool) (string, error)
 				return "", err
 			}
 		case *ast.CreateTypeStmt:
-			if pg.IsSystemSchema(stmt.Type.TypeName().Schema) {
+			if pgparser.IsSystemSchema(stmt.Type.TypeName().Schema) {
 				continue
 			}
 			oldType := oldSchemaMap.getType(stmt.Type.TypeName().Schema, stmt.Type.TypeName().Name)

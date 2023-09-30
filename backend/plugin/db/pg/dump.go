@@ -49,7 +49,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 		dumpableDbNames = []string{driver.databaseName}
 	} else {
 		for _, n := range databases {
-			if IsSystemDatabase(n.Name) {
+			if pgparser.IsSystemDatabase(n.Name) {
 				continue
 			}
 			dumpableDbNames = append(dumpableDbNames, n.Name)

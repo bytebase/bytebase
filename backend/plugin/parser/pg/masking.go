@@ -70,7 +70,7 @@ func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]db.
 	if err != nil {
 		tableNotFound := regexp.MustCompile("^Table \"(.*)\\.(.*)\" not found$")
 		content := tableNotFound.FindStringSubmatch(err.Error())
-		if len(content) == 3 && isSystemSchema(content[1]) {
+		if len(content) == 3 && IsSystemSchema(content[1]) {
 			// skip for system schema
 			return nil, nil
 		}
@@ -85,14 +85,6 @@ func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]db.
 		})
 	}
 	return result, nil
-}
-
-func isSystemSchema(schema string) bool {
-	switch schema {
-	case "information_schema", "pg_catalog", "rw_catalog":
-		return true
-	}
-	return false
 }
 
 func (extractor *fieldExtractor) pgExtractNode(in *pgquery.Node) ([]base.FieldInfo, error) {

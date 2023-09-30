@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -43,7 +44,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	var filteredDatabases []*storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		// Skip all system databases
-		if IsSystemDatabase(database.Name) {
+		if pgparser.IsSystemDatabase(database.Name) {
 			continue
 		}
 		filteredDatabases = append(filteredDatabases, database)
@@ -150,7 +151,7 @@ FROM
 WHERE
 	n.nspname NOT IN(%s)
 	AND c.contype = 'f'
-ORDER BY fk_schema, fk_table, fk_name;`, systemSchemaWhereClause)
+ORDER BY fk_schema, fk_table, fk_name;`, pgparser.SystemSchemaWhereClause)
 
 func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
@@ -268,7 +269,7 @@ var listSchemaQuery = fmt.Sprintf(`
 SELECT nspname
 FROM pg_catalog.pg_namespace
 WHERE nspname NOT IN (%s);
-`, systemSchemaWhereClause)
+`, pgparser.SystemSchemaWhereClause)
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
 	rows, err := txn.Query(listSchemaQuery)
@@ -283,7 +284,7 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 		if err := rows.Scan(&schemaName); err != nil {
 			return nil, err
 		}
-		if IsSystemSchema(schemaName) {
+		if pgparser.IsSystemSchema(schemaName) {
 			continue
 		}
 		result = append(result, schemaName)
@@ -304,7 +305,7 @@ SELECT tbl.schemaname, tbl.tablename,
 FROM pg_catalog.pg_tables tbl
 LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass` + fmt.Sprintf(`
 WHERE tbl.schemaname NOT IN (%s)
-ORDER BY tbl.schemaname, tbl.tablename;`, systemSchemaWhereClause)
+ORDER BY tbl.schemaname, tbl.tablename;`, pgparser.SystemSchemaWhereClause)
 
 // getTables gets all tables of a database.
 func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
@@ -335,7 +336,7 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 		if err := rows.Scan(&schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment); err != nil {
 			return nil, err
 		}
-		if IsSystemTable(table.Name) {
+		if pgparser.IsSystemTable(table.Name) {
 			continue
 		}
 		if comment.Valid {
@@ -370,7 +371,7 @@ SELECT
 	pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
 FROM INFORMATION_SCHEMA.COLUMNS AS cols` + fmt.Sprintf(`
 WHERE cols.table_schema NOT IN (%s)
-ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, systemSchemaWhereClause)
+ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, pgparser.SystemSchemaWhereClause)
 
 // getTableColumns gets the columns of a table.
 func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
@@ -416,7 +417,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 
 var listViewQuery = `
 SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views` + fmt.Sprintf(`
-WHERE schemaname NOT IN (%s);`, systemSchemaWhereClause)
+WHERE schemaname NOT IN (%s);`, pgparser.SystemSchemaWhereClause)
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
@@ -435,7 +436,7 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 			return nil, err
 		}
 		// Skip system views.
-		if IsSystemView(view.Name) {
+		if pgparser.IsSystemView(view.Name) {
 			continue
 		}
 
@@ -553,7 +554,7 @@ SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
 	AND constraint_type = 'PRIMARY KEY') AS primary,
 	obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment` + fmt.Sprintf(`
 FROM pg_indexes AS idx WHERE idx.schemaname NOT IN (%s)
-ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, systemSchemaWhereClause)
+ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, pgparser.SystemSchemaWhereClause)
 
 // getIndexes gets all indices of a database.
 func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
@@ -625,7 +626,7 @@ left join pg_namespace n on p.pronamespace = n.oid
 left join pg_language l on p.prolang = l.oid
 left join pg_type t on t.oid = p.prorettype ` + fmt.Sprintf(`
 where n.nspname not in (%s)
-order by function_schema, function_name;`, systemSchemaWhereClause)
+order by function_schema, function_name;`, pgparser.SystemSchemaWhereClause)
 
 // getFunctions gets all functions of a database.
 func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
@@ -643,7 +644,7 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 			return nil, err
 		}
 		// Skip internal functions.
-		if IsSystemFunctions(function.Name, function.Definition) {
+		if pgparser.IsSystemFunctions(function.Name, function.Definition) {
 			continue
 		}
 
