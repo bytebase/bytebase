@@ -16,12 +16,16 @@ var (
 	fieldMaskers           = make(map[storepb.Engine]GetMaskedFieldsFunc)
 	changedResourcesGetter = make(map[storepb.Engine]ExtractChangedResourcesFunc)
 	resourcesGetter        = make(map[storepb.Engine]ExtractResourceListFunc)
+	splitter               = make(map[storepb.Engine]SplitMultiSQLFunc)
+	databaseGetter         = make(map[storepb.Engine]ExtractDatabaseListFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) bool
 type GetMaskedFieldsFunc func(string, string, *db.SensitiveSchemaInfo) ([]db.SensitiveField, error)
 type ExtractChangedResourcesFunc func(string, string, string) ([]SchemaResource, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
+type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
+type ExtractDatabaseListFunc func(string, string) ([]string, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -80,6 +84,7 @@ func ExtractChangedResources(engine storepb.Engine, currentDatabase string, curr
 	}
 	return f(currentDatabase, currentSchema, sql)
 }
+
 func RegisterExtractResourceListFunc(engine storepb.Engine, f ExtractResourceListFunc) {
 	mux.Lock()
 	defer mux.Unlock()
@@ -95,4 +100,40 @@ func ExtractResourceList(engine storepb.Engine, currentDatabase string, currentS
 		return nil, errors.Errorf("engine type is not supported: %s", engine)
 	}
 	return f(currentDatabase, currentSchema, sql)
+}
+
+func RegisterSplitterFunc(engine storepb.Engine, f SplitMultiSQLFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := splitter[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	splitter[engine] = f
+}
+
+// SplitMultiSQL splits statement into a slice of the single SQL.
+func SplitMultiSQL(engine storepb.Engine, statement string) ([]SingleSQL, error) {
+	f, ok := splitter[engine]
+	if !ok {
+		return nil, errors.Errorf("engine type is not supported: %s", engine)
+	}
+	return f(statement)
+}
+
+func RegisterExtractDatabaseListFunc(engine storepb.Engine, f ExtractDatabaseListFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := databaseGetter[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	databaseGetter[engine] = f
+}
+
+// ExtractDatabaseList extracts all databases from statement.
+func ExtractDatabaseList(engine storepb.Engine, statement string, currentDatabase string) ([]string, error) {
+	f, ok := databaseGetter[engine]
+	if !ok {
+		return nil, errors.Errorf("engine type is not supported: %s", engine)
+	}
+	return f(statement, currentDatabase)
 }
