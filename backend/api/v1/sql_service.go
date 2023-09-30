@@ -1998,6 +1998,20 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 
 	ok, err := base.ValidateSQLForEditor(instance.Engine, statement)
 	if err != nil {
+		syntaxErr, ok := err.(*base.SyntaxError)
+		if ok {
+			querySyntaxError, err := status.New(codes.InvalidArgument, err.Error()).WithDetails(
+				&v1pb.PlanCheckRun_Result_SqlReviewReport{
+					Line:   int64(syntaxErr.Line),
+					Column: int64(syntaxErr.Column),
+					Detail: syntaxErr.Message,
+				},
+			)
+			if err != nil {
+				return syntaxErr
+			}
+			return querySyntaxError.Err()
+		}
 		return err
 	}
 	if !ok {

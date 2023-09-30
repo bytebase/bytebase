@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -148,6 +149,18 @@ func TestSensitiveData(t *testing.T) {
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
+
+	// Validate query syntax error.
+	_, err = ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
+		Name: instance.Name, ConnectionDatabase: databaseName, Statement: "SELECT hello TO world;",
+	})
+	st := status.Convert(err)
+	a.Len(st.Details(), 1)
+	report, ok := st.Details()[0].(*v1pb.PlanCheckRun_Result_SqlReviewReport)
+	a.True(ok)
+	a.Equal(int64(1), report.Line)
+	a.Equal(int64(13), report.Column)
+	a.Equal("Syntax error at line 1:13 \nrelated text: SELECT hello TO", report.Detail)
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
