@@ -1,11 +1,18 @@
 package server
 
 import (
-	// Drivers.
-	_ "github.com/pingcap/tidb/types/parser_driver"
+	// This includes the first-class databases including MySQL, Postgres, SQLite, TiDB.
 
-	// SQLite package.
+	// Drivers.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/sqlite"
+
+	// Parsers.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 
 	// Advisors.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/fake"

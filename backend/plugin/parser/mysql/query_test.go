@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestMySQLValidateForEditor(t *testing.T) {
+func TestValidateSQLForEditor(t *testing.T) {
 	tests := []struct {
 		statement string
 		validate  bool
@@ -31,6 +31,58 @@ func TestMySQLValidateForEditor(t *testing.T) {
 		},
 		{
 			statement: "EXPLAIN FORMAT=JSON DELETE FROM t1;",
+			validate:  false,
+		},
+		{
+			statement: `select* from t`,
+			validate:  true,
+		},
+		{
+			statement: `explain select * from t;`,
+			validate:  true,
+		},
+		{
+			statement: `explain    analyze select * from t`,
+			validate:  true,
+		},
+		{
+			statement: `
+				With t as (
+					select * from t1
+				), tx as (
+					select * from t1
+				)
+				update t set a = 1;
+				`,
+			validate: false,
+		},
+		{
+			statement: `
+				With t as (
+					select * from t1
+				), tx as (
+					select * from t1
+				)
+				insert into t values (1, 2, 3);
+				`,
+			validate: false,
+		},
+		{
+			statement: "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
+			validate:  true,
+		},
+		{
+			statement: `
+				With t as (
+					select * from t1 where a = 'insert'
+				), tx as (` +
+				"   select * from `delete`" +
+				`) /* UPDATE */` +
+				"select `update` from t;",
+			validate: true,
+		},
+		{
+			statement: `create table t (a int);`,
 			validate:  false,
 		},
 	}
@@ -151,66 +203,4 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 type testData struct {
 	sql string
 	ans bool
-}
-
-func TestValidateSQLForMySQL(t *testing.T) {
-	tests := []testData{
-		{
-			sql: `select* from t`,
-			ans: true,
-		},
-		{
-			sql: `explain select * from t;`,
-			ans: true,
-		},
-		{
-			sql: `explain    analyze select * from t`,
-			ans: false,
-		},
-		{
-			sql: `
-				With t as (
-					select * from t1
-				), tx as (
-					select * from t1
-				)
-				update t set a = 1;
-				`,
-			ans: false,
-		},
-		{
-			sql: `
-				With t as (
-					select * from t1
-				), tx as (
-					select * from t1
-				)
-				insert into t values (1, 2, 3);
-				`,
-			ans: false,
-		},
-		{
-			sql: "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
-			ans: true,
-		},
-		{
-			sql: `
-				With t as (
-					select * from t1 where a = 'insert'
-				), tx as (` +
-				"   select * from `delete`" +
-				`) /* UPDATE */` +
-				"select `update` from t;",
-			ans: true,
-		},
-		{
-			sql: `create table t (a int);`,
-			ans: false,
-		},
-	}
-
-	for _, test := range tests {
-		ans := ValidateSQLForEditor(test.sql)
-		require.Equal(t, test.ans, ans, test.sql)
-	}
 }

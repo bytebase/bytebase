@@ -13,6 +13,11 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/spanner"
 
+	// Parsers.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+
 	// Advisors.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"

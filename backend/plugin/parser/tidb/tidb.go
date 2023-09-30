@@ -7,6 +7,9 @@ import (
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/mysql"
 
+	// The packege parser_driver has to be imported.
+	_ "github.com/pingcap/tidb/types/parser_driver"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
