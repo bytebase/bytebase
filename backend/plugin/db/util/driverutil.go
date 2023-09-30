@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -143,7 +144,7 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 	if dbType == storepb.Engine_REDSHIFT && queryContext.ShareDB {
 		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
 	}
-	fieldList, err := parser.ExtractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
+	fieldList, err := base.ExtractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
 	}

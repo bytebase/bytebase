@@ -1997,7 +1997,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		return nil
 	}
 
-	if !parser.ValidateSQLForEditor(instance.Engine, statement) {
+	if !base.ValidateSQLForEditor(instance.Engine, statement) {
 		return nonSelectSQLError.Err()
 	}
 	return nil
