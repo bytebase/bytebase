@@ -1,5 +1,4 @@
 //go:build mysql
-// +build mysql
 
 // Package mysql provides the resource for MySQL server and utility packages.
 package mysql
