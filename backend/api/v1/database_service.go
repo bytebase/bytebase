@@ -33,7 +33,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
@@ -980,7 +979,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 		return nil, status.Errorf(codes.Internal, "failed to get parser engine, error: %v", err)
 	}
 
-	diff, err := differ.SchemaDiff(engine, source, target, false /* ignoreCaseSensitive */)
+	diff, err := base.SchemaDiff(engine, source, target, false /* ignoreCaseSensitive */)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
 	}

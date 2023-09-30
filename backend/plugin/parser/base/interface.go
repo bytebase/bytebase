@@ -11,13 +11,14 @@ import (
 )
 
 var (
-	mux                    sync.Mutex
-	queryValidators        = make(map[storepb.Engine]ValidateSQLForEditorFunc)
-	fieldMaskers           = make(map[storepb.Engine]GetMaskedFieldsFunc)
-	changedResourcesGetter = make(map[storepb.Engine]ExtractChangedResourcesFunc)
-	resourcesGetter        = make(map[storepb.Engine]ExtractResourceListFunc)
-	splitter               = make(map[storepb.Engine]SplitMultiSQLFunc)
-	databaseGetter         = make(map[storepb.Engine]ExtractDatabaseListFunc)
+	mux                     sync.Mutex
+	queryValidators         = make(map[storepb.Engine]ValidateSQLForEditorFunc)
+	fieldMaskers            = make(map[storepb.Engine]GetMaskedFieldsFunc)
+	changedResourcesGetters = make(map[storepb.Engine]ExtractChangedResourcesFunc)
+	resourcesGetters        = make(map[storepb.Engine]ExtractResourceListFunc)
+	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
+	databaseGetters         = make(map[storepb.Engine]ExtractDatabaseListFunc)
+	schemaDiffers           = make(map[storepb.Engine]SchemaDiffFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, error)
@@ -26,6 +27,7 @@ type ExtractChangedResourcesFunc func(string, string, string) ([]SchemaResource,
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type ExtractDatabaseListFunc func(string, string) ([]string, error)
+type SchemaDiffFunc func(oldStmt, newStmt string, ignoreCaseSensitivity bool) (string, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -73,15 +75,15 @@ func ExtractSensitiveField(engine storepb.Engine, statement string, currentDatab
 func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChangedResourcesFunc) {
 	mux.Lock()
 	defer mux.Unlock()
-	if _, dup := changedResourcesGetter[engine]; dup {
+	if _, dup := changedResourcesGetters[engine]; dup {
 		panic(fmt.Sprintf("Register called twice %s", engine))
 	}
-	changedResourcesGetter[engine] = f
+	changedResourcesGetters[engine] = f
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
 func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
-	f, ok := changedResourcesGetter[engine]
+	f, ok := changedResourcesGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
@@ -91,14 +93,14 @@ func ExtractChangedResources(engine storepb.Engine, currentDatabase string, curr
 func RegisterExtractResourceListFunc(engine storepb.Engine, f ExtractResourceListFunc) {
 	mux.Lock()
 	defer mux.Unlock()
-	if _, dup := resourcesGetter[engine]; dup {
+	if _, dup := resourcesGetters[engine]; dup {
 		panic(fmt.Sprintf("Register called twice %s", engine))
 	}
-	resourcesGetter[engine] = f
+	resourcesGetters[engine] = f
 }
 
 func ExtractResourceList(engine storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
-	f, ok := resourcesGetter[engine]
+	f, ok := resourcesGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
@@ -108,15 +110,15 @@ func ExtractResourceList(engine storepb.Engine, currentDatabase string, currentS
 func RegisterSplitterFunc(engine storepb.Engine, f SplitMultiSQLFunc) {
 	mux.Lock()
 	defer mux.Unlock()
-	if _, dup := splitter[engine]; dup {
+	if _, dup := splitters[engine]; dup {
 		panic(fmt.Sprintf("Register called twice %s", engine))
 	}
-	splitter[engine] = f
+	splitters[engine] = f
 }
 
 // SplitMultiSQL splits statement into a slice of the single SQL.
 func SplitMultiSQL(engine storepb.Engine, statement string) ([]SingleSQL, error) {
-	f, ok := splitter[engine]
+	f, ok := splitters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
@@ -126,17 +128,34 @@ func SplitMultiSQL(engine storepb.Engine, statement string) ([]SingleSQL, error)
 func RegisterExtractDatabaseListFunc(engine storepb.Engine, f ExtractDatabaseListFunc) {
 	mux.Lock()
 	defer mux.Unlock()
-	if _, dup := databaseGetter[engine]; dup {
+	if _, dup := databaseGetters[engine]; dup {
 		panic(fmt.Sprintf("Register called twice %s", engine))
 	}
-	databaseGetter[engine] = f
+	databaseGetters[engine] = f
 }
 
 // ExtractDatabaseList extracts all databases from statement.
 func ExtractDatabaseList(engine storepb.Engine, statement string, currentDatabase string) ([]string, error) {
-	f, ok := databaseGetter[engine]
+	f, ok := databaseGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(statement, currentDatabase)
+}
+
+func RegisterSchemaDiffFunc(engine storepb.Engine, f SchemaDiffFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := schemaDiffers[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	schemaDiffers[engine] = f
+}
+
+func SchemaDiff(engine storepb.Engine, oldStmt, newStmt string, ignoreCaseSensitivity bool) (string, error) {
+	f, ok := schemaDiffers[engine]
+	if !ok {
+		return "", errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(oldStmt, newStmt, ignoreCaseSensitivity)
 }
