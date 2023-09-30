@@ -16,19 +16,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engineType storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
-	switch engineType {
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		// currentSchema is empty.
-		return mysqlparser.ExtractChangedResources(currentDatabase, currentSchema, sql)
-	case storepb.Engine_ORACLE, storepb.Engine_DM:
-		return plsqlparser.ExtractChangedResources(currentDatabase, currentSchema, sql)
-	default:
-		return nil, errors.Errorf("engine type is not supported: %s", engineType)
-	}
-}
-
 // ExtractResourceList extracts the resource list from the SQL.
 func ExtractResourceList(engineType storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
 	switch engineType {

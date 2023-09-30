@@ -14,6 +14,9 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_MYSQL, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_MARIADB, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_OCEANBASE, ValidateSQLForEditor)
+	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MYSQL, ExtractChangedResources)
+	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MARIADB, ExtractChangedResources)
+	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE, ExtractChangedResources)
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.
