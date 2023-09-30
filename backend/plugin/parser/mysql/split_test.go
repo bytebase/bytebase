@@ -289,7 +289,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := SplitMySQL(test.statement)
+		res, err := SplitSQL(test.statement)
 		errStr := ""
 		if err != nil {
 			errStr = err.Error()

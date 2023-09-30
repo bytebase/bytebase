@@ -23,7 +23,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -198,7 +197,7 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 
 // RunStatement runs a SQL statement in a given connection.
 func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := parser.SplitMultiSQL(engineType, statement)
+	singleSQLs, err := base.SplitMultiSQL(engineType, statement)
 	if err != nil {
 		return nil, err
 	}

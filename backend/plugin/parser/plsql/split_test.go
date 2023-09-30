@@ -47,7 +47,7 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := SplitPLSQL(test.statement)
+		res, err := SplitSQL(test.statement)
 		errStr := ""
 		if err != nil {
 			errStr = err.Error()

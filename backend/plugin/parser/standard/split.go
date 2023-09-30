@@ -8,7 +8,14 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	base.RegisterSplitterFunc(storepb.Engine_CLICKHOUSE, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_SQLITE, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_SPANNER, SplitSQL)
+}
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
