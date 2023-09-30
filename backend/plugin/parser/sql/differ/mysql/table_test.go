@@ -2,8 +2,6 @@ package mysql
 
 import (
 	"testing"
-
-	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 func TestTable(t *testing.T) {
