@@ -25,7 +25,10 @@ func ParseTiDB(sql string, charset string, collation string) ([]ast.StmtNode, er
 	p.EnableWindowFunc(true)
 
 	nodes, _, err := p.Parse(sql, charset, collation)
-	return nodes, convertParserError(err)
+	if err != nil {
+		return nil, convertParserError(err)
+	}
+	return nodes, nil
 }
 
 var (
