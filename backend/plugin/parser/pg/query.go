@@ -32,6 +32,11 @@ func init() {
 func ValidateSQLForEditor(statement string) (bool, error) {
 	stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
+		// Parse error again for getting a better error message.
+		_, syntaxError := ParsePostgreSQL(statement)
+		if syntaxError != nil {
+			return false, syntaxError
+		}
 		return false, err
 	}
 	for _, stmt := range stmtList {
