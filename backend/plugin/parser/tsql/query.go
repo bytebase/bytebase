@@ -8,7 +8,12 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	base.RegisterExtractResourceListFunc(storepb.Engine_MSSQL, ExtractResourceList)
+}
 
 // ExtractDatabaseList extracts the database names.
 func ExtractDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {

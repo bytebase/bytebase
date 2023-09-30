@@ -328,7 +328,7 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 		switch child := child.(type) {
 		case *mysql.QueryPrimaryContext:
 			if !findRecursivePart {
-				resource, err := ExtractResourceList("", child.GetParser().GetTokenStream().GetTextFromRuleContext(child))
+				resource, err := ExtractResourceList("", "", child.GetParser().GetTokenStream().GetTextFromRuleContext(child))
 				if err != nil {
 					l.err = err
 					return
@@ -373,7 +373,7 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 			}
 
 			if !findRecursivePart {
-				resource, err := ExtractResourceList("", queryExpression.GetParser().GetTokenStream().GetTextFromRuleContext(queryExpression))
+				resource, err := ExtractResourceList("", "", queryExpression.GetParser().GetTokenStream().GetTextFromRuleContext(queryExpression))
 				if err != nil {
 					l.err = err
 					return

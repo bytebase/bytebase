@@ -13,6 +13,7 @@ import (
 
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_TIDB, ValidateSQLForEditor)
+	base.RegisterExtractResourceListFunc(storepb.Engine_TIDB, ExtractResourceList)
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.
@@ -40,7 +41,7 @@ func ValidateSQLForEditor(statement string) bool {
 	return true
 }
 
-func ExtractResourceList(currentDatabase string, sql string) ([]base.SchemaResource, error) {
+func ExtractResourceList(currentDatabase string, _, sql string) ([]base.SchemaResource, error) {
 	nodes, err := ParseTiDB(sql, "", "")
 	if err != nil {
 		return nil, err
