@@ -8,9 +8,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	// Register pingcap parser driver.
-	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 func TestToStoredVersion(t *testing.T) {
