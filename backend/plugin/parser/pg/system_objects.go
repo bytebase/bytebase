@@ -28,12 +28,13 @@ var (
 		"information_schema":       true,
 		"pg_catalog":               true,
 		"pg_toast":                 true,
+		"rw_catalog":               true,
+		"timescaledb_information":  true,
+		"timescaledb_experimental": true,
 		"_timescaledb_cache":       true,
 		"_timescaledb_catalog":     true,
 		"_timescaledb_internal":    true,
 		"_timescaledb_config":      true,
-		"timescaledb_information":  true,
-		"timescaledb_experimental": true,
 	}
 
 	// systemTables is the list of system tables that we will exclude from the schema sync.
@@ -125,7 +126,7 @@ var (
 		"pg_stat_slru":               true,
 	}
 
-	systemSchemaWhereClause = func() string {
+	SystemSchemaWhereClause = func() string {
 		var schemas []string
 		for schema := range systemSchemas {
 			schemas = append(schemas, fmt.Sprintf("'%s'", schema))
@@ -147,6 +148,7 @@ func IsSystemSchema(schema string) bool {
 	_, ok := systemSchemas[schema]
 	return ok
 }
+
 func IsSystemTable(table string) bool {
 	_, ok := systemTables[table]
 	return ok

@@ -35,8 +35,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -1330,12 +1330,12 @@ func allPostgresSystemObjects(statement string) bool {
 		return false
 	}
 	for _, resource := range resources {
-		if pg.IsSystemSchema(resource.Schema) {
+		if pgparser.IsSystemSchema(resource.Schema) {
 			continue
 		}
 		// If schema is not specified, user can access the pg_catalog schema if the table is pg_catalog's system table.
 		// So we need to check this case.
-		if resource.Schema == "" && pg.IsSystemTable(resource.Table) {
+		if resource.Schema == "" && pgparser.IsSystemTable(resource.Table) {
 			continue
 		}
 		return false
