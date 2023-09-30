@@ -8,7 +8,12 @@ import (
 	parser "github.com/bytebase/snowsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	base.RegisterExtractResourceListFunc(storepb.Engine_SNOWFLAKE, ExtractResourceList)
+}
 
 type snowsqlResourceExtractListener struct {
 	*parser.BaseSnowflakeParserListener

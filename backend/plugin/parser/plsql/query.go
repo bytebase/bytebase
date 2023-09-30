@@ -17,6 +17,8 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_DM, ValidateSQLForEditor)
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_ORACLE, ExtractChangedResources)
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DM, ExtractChangedResources)
+	base.RegisterExtractResourceListFunc(storepb.Engine_ORACLE, ExtractResourceList)
+	base.RegisterExtractResourceListFunc(storepb.Engine_DM, ExtractResourceList)
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.

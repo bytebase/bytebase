@@ -88,3 +88,11 @@ func RegisterExtractResourceListFunc(engine storepb.Engine, f ExtractResourceLis
 	}
 	resourcesGetter[engine] = f
 }
+
+func ExtractResourceList(engine storepb.Engine, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+	f, ok := resourcesGetter[engine]
+	if !ok {
+		return nil, errors.Errorf("engine type is not supported: %s", engine)
+	}
+	return f(currentDatabase, currentSchema, sql)
+}

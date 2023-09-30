@@ -17,6 +17,9 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MYSQL, ExtractChangedResources)
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MARIADB, ExtractChangedResources)
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE, ExtractChangedResources)
+	base.RegisterExtractResourceListFunc(storepb.Engine_MYSQL, ExtractResourceList)
+	base.RegisterExtractResourceListFunc(storepb.Engine_MARIADB, ExtractResourceList)
+	base.RegisterExtractResourceListFunc(storepb.Engine_OCEANBASE, ExtractResourceList)
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.
@@ -180,7 +183,7 @@ func (l *mysqlChangedResourceExtractListener) EnterRenameTableStatement(ctx *par
 	}
 }
 
-func ExtractResourceList(currentDatabase string, statement string) ([]base.SchemaResource, error) {
+func ExtractResourceList(currentDatabase string, _, statement string) ([]base.SchemaResource, error) {
 	treeList, err := ParseMySQL(statement)
 	if err != nil {
 		return nil, err
