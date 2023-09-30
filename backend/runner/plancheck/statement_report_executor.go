@@ -137,7 +137,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		sqlDB := driver.GetDB()
 
 		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-	case storepb.Engine_ORACLE:
+	case storepb.Engine_ORACLE, storepb.Engine_DM:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
 			adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
@@ -285,7 +285,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					sqlDB := driver.GetDB()
 
 					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-				case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
+				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 					if err != nil {
 						return nil, err
@@ -294,7 +294,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					sqlDB := driver.GetDB()
 
 					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-				case storepb.Engine_ORACLE:
+				case storepb.Engine_ORACLE, storepb.Engine_DM:
 					schema := ""
 					if instance.Options == nil || !instance.Options.SchemaTenantMode {
 						adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
@@ -385,11 +385,11 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 	}, nil
 }
 
-func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType storepb.Engine, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
 	charset := dbMetadata.CharacterSet
 	collation := dbMetadata.Collation
 
-	singleSQLs, err := parser.SplitMultiSQL(storepb.Engine_MYSQL, statement)
+	singleSQLs, err := parser.SplitMultiSQL(engine, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -434,7 +434,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType storepb.Engine, d
 		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
 		sqlTypeSet[sqlType] = struct{}{}
 		if !isDML(sqlType) {
-			if dbType != storepb.Engine_TIDB {
+			if engine != storepb.Engine_TIDB {
 				resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
 				if err != nil {
 					slog.Error("failed to get statement changed resources", log.BBError(err))
@@ -446,7 +446,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType storepb.Engine, d
 			}
 		}
 
-		affectedRows, err := getAffectedRowsForMysql(ctx, dbType, sqlDB, dbMetadata, root[0])
+		affectedRows, err := getAffectedRowsForMysql(ctx, engine, sqlDB, dbMetadata, root[0])
 		if err != nil {
 			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
 		} else {

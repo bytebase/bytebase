@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
@@ -89,7 +88,7 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 
 	// Phase One: build the schema table set.
 	tableSet := make(tableSet)
-	list, err := bbparser.SplitMultiSQL(storepb.Engine_MYSQL, schema)
+	list, err := mysqlparser.SplitMySQL(schema)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to split SQL")
 	}
@@ -142,7 +141,7 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 	}
 
 	// Phase Two: find the missing table and index for schema and remove the collation and charset if needed.
-	standardList, err := bbparser.SplitMultiSQL(storepb.Engine_MYSQL, standard)
+	standardList, err := mysqlparser.SplitMySQL(standard)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to split SQL")
 	}
@@ -343,7 +342,7 @@ func extractEngineCharsetAndCollation(table *ast.CreateTableStmt) (engine, chars
 
 // Check checks the schema format.
 func (*SchemaTransformer) Check(schema string) (int, error) {
-	list, err := bbparser.SplitMultiSQL(storepb.Engine_MYSQL, schema)
+	list, err := mysqlparser.SplitMySQL(schema)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split SQL")
 	}
@@ -435,7 +434,7 @@ func (*SchemaTransformer) Check(schema string) (int, error) {
 // Transform returns the transformed schema.
 func (*SchemaTransformer) Transform(schema string) (string, error) {
 	var result []string
-	list, err := bbparser.SplitMultiSQL(storepb.Engine_MYSQL, schema)
+	list, err := mysqlparser.SplitMySQL(schema)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to split SQL")
 	}

@@ -220,13 +220,13 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]any, er
 	return []any{columnNames, columnTypeNames, data}, nil
 }
 
-func getAffectedRowsForMysql(ctx context.Context, dbType storepb.Engine, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node tidbast.StmtNode) (int64, error) {
+func getAffectedRowsForMysql(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node tidbast.StmtNode) (int64, error) {
 	switch node := node.(type) {
 	case *tidbast.InsertStmt, *tidbast.UpdateStmt, *tidbast.DeleteStmt:
 		if node, ok := node.(*tidbast.InsertStmt); ok && node.Select == nil {
 			return int64(len(node.Lists)), nil
 		}
-		if dbType == storepb.Engine_OCEANBASE {
+		if engine == storepb.Engine_OCEANBASE {
 			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", node.Text()), getAffectedRowsCountForOceanBase)
 		}
 		return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()), getAffectedRowsCountForMysql)
