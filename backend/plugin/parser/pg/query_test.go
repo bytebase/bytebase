@@ -61,7 +61,7 @@ func TestExtractPostgresResourceList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := ExtractPostgresResourceList("db", "public", test.statement)
+		res, err := ExtractResourceList("db", "public", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.want, res)
 	}

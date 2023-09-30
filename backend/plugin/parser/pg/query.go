@@ -22,7 +22,7 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_RISINGWAVE, ValidateSQLForEditor)
 }
 
-func ExtractPostgresResourceList(currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
+func ExtractResourceList(currentDatabase string, currentSchema string, sql string) ([]base.SchemaResource, error) {
 	jsonText, err := pgquery.ParseToJSON(sql)
 	if err != nil {
 		return nil, err

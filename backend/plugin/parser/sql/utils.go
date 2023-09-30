@@ -34,24 +34,21 @@ func ExtractResourceList(engineType storepb.Engine, currentDatabase string, curr
 	switch engineType {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		// The resource list for MySQL may contains table, view and temporary table.
-		return mysqlparser.ExtractMySQLResourceList(currentDatabase, sql)
+		return mysqlparser.ExtractResourceList(currentDatabase, sql)
 	case storepb.Engine_TIDB:
-		return tidbparser.ExtractTiDBResourceList(currentDatabase, sql)
+		return tidbparser.ExtractResourceList(currentDatabase, sql)
 	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 		// The resource list for Postgres may contains table, view and temporary table.
-		return pgparser.ExtractPostgresResourceList(currentDatabase, currentSchema, sql)
+		return pgparser.ExtractResourceList(currentDatabase, currentSchema, sql)
 	case storepb.Engine_ORACLE, storepb.Engine_DM:
 		// The resource list for Oracle may contains table, view and temporary table.
-		return plsqlparser.ExtractOracleResourceList(currentDatabase, currentSchema, sql)
+		return plsqlparser.ExtractResourceList(currentDatabase, currentSchema, sql)
 	case storepb.Engine_SNOWFLAKE:
-		return snowparser.ExtractSnowflakeNormalizeResourceListFromSelectStatement(currentDatabase, "PUBLIC", sql)
+		return snowparser.ExtractResourceList(currentDatabase, currentSchema, sql)
 	case storepb.Engine_MSSQL:
-		return tsqlparser.ExtractMSSQLNormalizedResourceListFromSelectStatement(currentDatabase, "dbo", sql)
+		return tsqlparser.ExtractResourceList(currentDatabase, currentSchema, sql)
 	default:
-		if currentDatabase == "" {
-			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
-		}
-		return []base.SchemaResource{{Database: currentDatabase}}, nil
+		return standardparser.ExtractResourceList(currentDatabase, currentSchema, sql)
 	}
 }
 
