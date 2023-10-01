@@ -4,13 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
-
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 // PolicyType is the type or name of a policy.
@@ -170,41 +163,6 @@ func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
 		return nil, errors.Wrapf(err, "failed to unmarshal backup plan policy %q", payload)
 	}
 	return &bp, nil
-}
-
-// UnmarshalSQLReviewPolicy will unmarshal payload to SQL review policy.
-func UnmarshalSQLReviewPolicy(payload string) (*advisor.SQLReviewPolicy, error) {
-	storePolicy := new(storepb.SQLReviewPolicy)
-	if err := protojson.Unmarshal([]byte(payload), storePolicy); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to unmarshal stored sql review policy with error: %v", err)
-	}
-
-	var ruleList []*advisor.SQLReviewRule
-	for _, rule := range storePolicy.RuleList {
-		var level advisor.SQLReviewRuleLevel
-		switch rule.Level {
-		case storepb.SQLReviewRuleLevel_ERROR:
-			level = advisor.SchemaRuleLevelError
-		case storepb.SQLReviewRuleLevel_WARNING:
-			level = advisor.SchemaRuleLevelWarning
-		case storepb.SQLReviewRuleLevel_DISABLED:
-			level = advisor.SchemaRuleLevelDisabled
-		default:
-			return nil, errors.Errorf("invalid rule level %v", rule.Level)
-		}
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Level:   level,
-			Payload: rule.Payload,
-			Type:    advisor.SQLReviewRuleType(rule.Type),
-			Comment: rule.Comment,
-			Engine:  rule.Engine,
-		})
-	}
-
-	return &advisor.SQLReviewPolicy{
-		Name:     storePolicy.Name,
-		RuleList: ruleList,
-	}, nil
 }
 
 // EnvironmentTierPolicy is the tier of an environment.

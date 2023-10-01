@@ -729,7 +729,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
-func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
+func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	ast, result := syntaxCheck(statements, checkContext)
 	if ast == nil || len(ruleList) == 0 {
 		return result, nil
@@ -747,11 +747,11 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DbType {
 			continue
 		}
-		if rule.Level == SchemaRuleLevelDisabled {
+		if rule.Level == storepb.SQLReviewRuleLevel_DISABLED {
 			continue
 		}
 
-		advisorType, err := getAdvisorTypeByRule(rule.Type, checkContext.DbType)
+		advisorType, err := getAdvisorTypeByRule(SQLReviewRuleType(rule.Type), checkContext.DbType)
 		if err != nil {
 			if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED {
 				slog.Warn("not supported rule", slog.String("rule type", string(rule.Type)), slog.String("engine", string(rule.Engine)), log.BBError(err))

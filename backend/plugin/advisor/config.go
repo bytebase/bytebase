@@ -6,6 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed config/sql-review.sample.yaml
@@ -41,7 +43,7 @@ type SQLReviewConfigOverride struct {
 }
 
 // MergeSQLReviewRules will merge the input YML config into default template.
-func MergeSQLReviewRules(override *SQLReviewConfigOverride) ([]*SQLReviewRule, error) {
+func MergeSQLReviewRules(override *SQLReviewConfigOverride) ([]*storepb.SQLReviewRule, error) {
 	templateList, err := parseSQLReviewTemplateList()
 	if err != nil {
 		return nil, err
@@ -57,7 +59,7 @@ func MergeSQLReviewRules(override *SQLReviewConfigOverride) ([]*SQLReviewRule, e
 		ruleUpdateMap[rule.Type] = rule
 	}
 
-	var res []*SQLReviewRule
+	var res []*storepb.SQLReviewRule
 
 	for _, ruleTemplate := range template.RuleList {
 		ruleUpdate := ruleUpdateMap[ruleTemplate.Type]
@@ -101,7 +103,7 @@ func findTemplate(templateList []*SQLReviewTemplateData, id SQLReviewTemplateID)
 	return nil
 }
 
-func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*SQLReviewRule, error) {
+func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*storepb.SQLReviewRule, error) {
 	payload := source.Payload
 	level := source.Level
 	comment := source.Comment
@@ -122,10 +124,19 @@ func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*SQLRevi
 	if err != nil {
 		return nil, err
 	}
+	ruleLevel := storepb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED
+	switch level {
+	case SchemaRuleLevelError:
+		ruleLevel = storepb.SQLReviewRuleLevel_ERROR
+	case SchemaRuleLevelWarning:
+		ruleLevel = storepb.SQLReviewRuleLevel_WARNING
+	case SchemaRuleLevelDisabled:
+		ruleLevel = storepb.SQLReviewRuleLevel_DISABLED
+	}
 
-	return &SQLReviewRule{
-		Type:    source.Type,
-		Level:   level,
+	return &storepb.SQLReviewRule{
+		Type:    string(source.Type),
+		Level:   ruleLevel,
 		Comment: comment,
 		Payload: string(str),
 	}, nil

@@ -165,10 +165,10 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)
 
-		ruleList := []*SQLReviewRule{
+		ruleList := []*storepb.SQLReviewRule{
 			{
-				Type:    rule,
-				Level:   SchemaRuleLevelWarning,
+				Type:    string(rule),
+				Level:   storepb.SQLReviewRuleLevel_DISABLED,
 				Payload: string(payload),
 			},
 		}
