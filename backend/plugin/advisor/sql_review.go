@@ -230,6 +230,7 @@ type SQLReviewPolicy struct {
 	RuleList []*SQLReviewRule `json:"ruleList"`
 }
 
+// TODO(d): validate payload.
 // Validate validates the SQLReviewPolicy. It also validates the each review rule.
 func (policy *SQLReviewPolicy) Validate() error {
 	if policy.Name == "" || len(policy.RuleList) == 0 {
