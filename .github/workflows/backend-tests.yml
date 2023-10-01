@@ -22,6 +22,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.21.1
+          cache: false
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
