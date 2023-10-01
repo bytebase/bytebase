@@ -131,8 +131,11 @@
     - [MaskingPolicy](#bytebase-store-MaskingPolicy)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
+    - [SQLReviewPolicy](#bytebase-store-SQLReviewPolicy)
+    - [SQLReviewRule](#bytebase-store-SQLReviewRule)
   
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
+    - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
     - [Project](#bytebase-store-Project)
@@ -2051,6 +2054,41 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 
 
+
+<a name="bytebase-store-SQLReviewPolicy"></a>
+
+### SQLReviewPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| rule_list | [SQLReviewRule](#bytebase-store-SQLReviewRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-SQLReviewRule"></a>
+
+### SQLReviewRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [string](#string) |  |  |
+| level | [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel) |  |  |
+| payload | [string](#string) |  |  |
+| engine | [Engine](#bytebase-store-Engine) |  |  |
+| comment | [string](#string) |  |  |
+
+
+
+
+
  
 
 
@@ -2064,6 +2102,20 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | ACTION_UNSPECIFIED | 0 |  |
 | QUERY | 1 |  |
 | EXPORT | 2 |  |
+
+
+
+<a name="bytebase-store-SQLReviewRuleLevel"></a>
+
+### SQLReviewRuleLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+| DISABLED | 3 |  |
 
 
  
