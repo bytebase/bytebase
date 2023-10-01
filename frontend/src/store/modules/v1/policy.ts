@@ -266,6 +266,7 @@ export const getDefaultBackupPlanPolicy = (
     enforce: true,
     backupPlanPolicy: {
       schedule: defaultBackupSchedule,
+      retentionDuration: undefined,
     },
   };
 };

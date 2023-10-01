@@ -304,7 +304,7 @@ message MaskData {
 
 message SQLReviewPolicy {
   string name = 1;
-  repeated SQLReviewRule rules = 2;
+  repeated SQLReviewRule rule_list = 2;
 }
 
 message SQLReviewRule {

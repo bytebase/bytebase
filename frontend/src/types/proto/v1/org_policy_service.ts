@@ -480,7 +480,7 @@ export interface MaskData {
 
 export interface SQLReviewPolicy {
   name: string;
-  rules: SQLReviewRule[];
+  ruleList: SQLReviewRule[];
 }
 
 export interface SQLReviewRule {
@@ -1855,7 +1855,7 @@ export const MaskData = {
 };
 
 function createBaseSQLReviewPolicy(): SQLReviewPolicy {
-  return { name: "", rules: [] };
+  return { name: "", ruleList: [] };
 }
 
 export const SQLReviewPolicy = {
@@ -1863,7 +1863,7 @@ export const SQLReviewPolicy = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    for (const v of message.rules) {
+    for (const v of message.ruleList) {
       SQLReviewRule.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
@@ -1888,7 +1888,7 @@ export const SQLReviewPolicy = {
             break;
           }
 
-          message.rules.push(SQLReviewRule.decode(reader, reader.uint32()));
+          message.ruleList.push(SQLReviewRule.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1902,17 +1902,17 @@ export const SQLReviewPolicy = {
   fromJSON(object: any): SQLReviewPolicy {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      rules: Array.isArray(object?.rules) ? object.rules.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
+      ruleList: Array.isArray(object?.ruleList) ? object.ruleList.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: SQLReviewPolicy): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    if (message.rules) {
-      obj.rules = message.rules.map((e) => e ? SQLReviewRule.toJSON(e) : undefined);
+    if (message.ruleList) {
+      obj.ruleList = message.ruleList.map((e) => e ? SQLReviewRule.toJSON(e) : undefined);
     } else {
-      obj.rules = [];
+      obj.ruleList = [];
     }
     return obj;
   },
@@ -1924,7 +1924,7 @@ export const SQLReviewPolicy = {
   fromPartial(object: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
     const message = createBaseSQLReviewPolicy();
     message.name = object.name ?? "";
-    message.rules = object.rules?.map((e) => SQLReviewRule.fromPartial(e)) || [];
+    message.ruleList = object.ruleList?.map((e) => SQLReviewRule.fromPartial(e)) || [];
     return message;
   },
 };

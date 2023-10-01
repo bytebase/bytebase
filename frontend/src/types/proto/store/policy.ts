@@ -1,9 +1,54 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
 import { Expr } from "../google/type/expr";
-import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON } from "./common";
+import { Engine, engineFromJSON, engineToJSON, MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON } from "./common";
 
 export const protobufPackage = "bytebase.store";
+
+export enum SQLReviewRuleLevel {
+  LEVEL_UNSPECIFIED = 0,
+  ERROR = 1,
+  WARNING = 2,
+  DISABLED = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function sQLReviewRuleLevelFromJSON(object: any): SQLReviewRuleLevel {
+  switch (object) {
+    case 0:
+    case "LEVEL_UNSPECIFIED":
+      return SQLReviewRuleLevel.LEVEL_UNSPECIFIED;
+    case 1:
+    case "ERROR":
+      return SQLReviewRuleLevel.ERROR;
+    case 2:
+    case "WARNING":
+      return SQLReviewRuleLevel.WARNING;
+    case 3:
+    case "DISABLED":
+      return SQLReviewRuleLevel.DISABLED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SQLReviewRuleLevel.UNRECOGNIZED;
+  }
+}
+
+export function sQLReviewRuleLevelToJSON(object: SQLReviewRuleLevel): string {
+  switch (object) {
+    case SQLReviewRuleLevel.LEVEL_UNSPECIFIED:
+      return "LEVEL_UNSPECIFIED";
+    case SQLReviewRuleLevel.ERROR:
+      return "ERROR";
+    case SQLReviewRuleLevel.WARNING:
+      return "WARNING";
+    case SQLReviewRuleLevel.DISABLED:
+      return "DISABLED";
+    case SQLReviewRuleLevel.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
 
 export interface IamPolicy {
   /** Collection of binding. */
@@ -116,6 +161,19 @@ export interface MaskingRulePolicy_MaskingRule {
   id: string;
   condition: Expr | undefined;
   maskingLevel: MaskingLevel;
+}
+
+export interface SQLReviewPolicy {
+  name: string;
+  ruleList: SQLReviewRule[];
+}
+
+export interface SQLReviewRule {
+  type: string;
+  level: SQLReviewRuleLevel;
+  payload: string;
+  engine: Engine;
+  comment: string;
 }
 
 function createBaseIamPolicy(): IamPolicy {
@@ -737,6 +795,191 @@ export const MaskingRulePolicy_MaskingRule = {
       ? Expr.fromPartial(object.condition)
       : undefined;
     message.maskingLevel = object.maskingLevel ?? 0;
+    return message;
+  },
+};
+
+function createBaseSQLReviewPolicy(): SQLReviewPolicy {
+  return { name: "", ruleList: [] };
+}
+
+export const SQLReviewPolicy = {
+  encode(message: SQLReviewPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.ruleList) {
+      SQLReviewRule.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SQLReviewPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSQLReviewPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.ruleList.push(SQLReviewRule.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SQLReviewPolicy {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      ruleList: Array.isArray(object?.ruleList) ? object.ruleList.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: SQLReviewPolicy): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.ruleList) {
+      obj.ruleList = message.ruleList.map((e) => e ? SQLReviewRule.toJSON(e) : undefined);
+    } else {
+      obj.ruleList = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
+    return SQLReviewPolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
+    const message = createBaseSQLReviewPolicy();
+    message.name = object.name ?? "";
+    message.ruleList = object.ruleList?.map((e) => SQLReviewRule.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSQLReviewRule(): SQLReviewRule {
+  return { type: "", level: 0, payload: "", engine: 0, comment: "" };
+}
+
+export const SQLReviewRule = {
+  encode(message: SQLReviewRule, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== "") {
+      writer.uint32(10).string(message.type);
+    }
+    if (message.level !== 0) {
+      writer.uint32(16).int32(message.level);
+    }
+    if (message.payload !== "") {
+      writer.uint32(26).string(message.payload);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(32).int32(message.engine);
+    }
+    if (message.comment !== "") {
+      writer.uint32(42).string(message.comment);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SQLReviewRule {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSQLReviewRule();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.type = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.level = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.payload = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SQLReviewRule {
+    return {
+      type: isSet(object.type) ? String(object.type) : "",
+      level: isSet(object.level) ? sQLReviewRuleLevelFromJSON(object.level) : 0,
+      payload: isSet(object.payload) ? String(object.payload) : "",
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      comment: isSet(object.comment) ? String(object.comment) : "",
+    };
+  },
+
+  toJSON(message: SQLReviewRule): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = message.type);
+    message.level !== undefined && (obj.level = sQLReviewRuleLevelToJSON(message.level));
+    message.payload !== undefined && (obj.payload = message.payload);
+    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.comment !== undefined && (obj.comment = message.comment);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SQLReviewRule>): SQLReviewRule {
+    return SQLReviewRule.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SQLReviewRule>): SQLReviewRule {
+    const message = createBaseSQLReviewRule();
+    message.type = object.type ?? "";
+    message.level = object.level ?? 0;
+    message.payload = object.payload ?? "";
+    message.engine = object.engine ?? 0;
+    message.comment = object.comment ?? "";
     return message;
   },
 };

@@ -43,7 +43,7 @@ const convertToSQLReviewPolicy = async (
   }
 
   const ruleList: SchemaPolicyRule[] = [];
-  for (const r of policy.sqlReviewPolicy.rules) {
+  for (const r of policy.sqlReviewPolicy.ruleList) {
     const rule: SchemaPolicyRule = {
       type: r.type as RuleType,
       level: r.level,
@@ -130,7 +130,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     }) {
       const sqlReviewPolicy: SQLReviewPolicyV1 = {
         name,
-        rules: ruleList.map((r) => {
+        ruleList: ruleList.map((r) => {
           return {
             type: r.type as string,
             level: r.level,
@@ -204,7 +204,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         updateMask.push("payload");
         policy.sqlReviewPolicy = {
           name,
-          rules: ruleList.map((r) => {
+          ruleList: ruleList.map((r) => {
             return {
               type: r.type as string,
               level: r.level,

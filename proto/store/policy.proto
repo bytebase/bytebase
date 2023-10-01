@@ -79,3 +79,23 @@ message MaskingRulePolicy {
   }
   repeated MaskingRule rules = 1;
 }
+
+message SQLReviewPolicy {
+  string name = 1;
+  repeated SQLReviewRule rule_list = 2;
+}
+
+message SQLReviewRule {
+  string type = 1;
+  SQLReviewRuleLevel level = 2;
+  string payload = 3;
+  Engine engine = 4;
+  string comment = 5;
+}
+
+enum SQLReviewRuleLevel {
+  LEVEL_UNSPECIFIED = 0;
+  ERROR = 1;
+  WARNING = 2;
+  DISABLED = 3;
+}

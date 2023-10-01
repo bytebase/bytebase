@@ -55,7 +55,7 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 func prodTemplateSQLReviewPolicyForPostgreSQL() (*v1pb.SQLReviewPolicy, error) {
 	policy := &v1pb.SQLReviewPolicy{
 		Name: "Prod",
-		Rules: []*v1pb.SQLReviewRule{
+		RuleList: []*v1pb.SQLReviewRule{
 			// Naming
 			{
 				Type:   string(advisor.SchemaRuleTableNaming),
@@ -267,7 +267,7 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (*v1pb.SQLReviewPolicy, error) {
 		},
 	}
 
-	for _, rule := range policy.Rules {
+	for _, rule := range policy.RuleList {
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(advisor.SQLReviewRuleType(rule.Type), storepb.Engine_POSTGRES)
 		if err != nil {
 			return nil, err
@@ -280,7 +280,7 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (*v1pb.SQLReviewPolicy, error) {
 func prodTemplateSQLReviewPolicyForMySQL() (*v1pb.SQLReviewPolicy, error) {
 	policy := &v1pb.SQLReviewPolicy{
 		Name: "Prod",
-		Rules: []*v1pb.SQLReviewRule{
+		RuleList: []*v1pb.SQLReviewRule{
 			// Engine
 			{
 				Type:   string(advisor.SchemaRuleMySQLEngine),
@@ -538,7 +538,7 @@ func prodTemplateSQLReviewPolicyForMySQL() (*v1pb.SQLReviewPolicy, error) {
 		},
 	}
 
-	for _, rule := range policy.Rules {
+	for _, rule := range policy.RuleList {
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(advisor.SQLReviewRuleType(rule.Type), storepb.Engine_POSTGRES)
 		if err != nil {
 			return nil, err

@@ -591,7 +591,16 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		if err := payload.Validate(); err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		return payload.String()
+
+		storePolicy := new(storepb.SQLReviewPolicy)
+		if err := convertV1PbToStorePb(policy.GetSqlReviewPolicy(), storePolicy); err != nil {
+			return "", status.Errorf(codes.Internal, "failed to convert sql review policy with error: %v", err)
+		}
+		bytes, err := protojson.Marshal(storePolicy)
+		if err != nil {
+			return "", status.Errorf(codes.Internal, "failed to marshal sql review policy with error: %v", err)
+		}
+		return string(bytes), nil
 	case v1pb.PolicyType_MASKING:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
@@ -844,15 +853,15 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 
 	return &v1pb.Policy_SqlReviewPolicy{
 		SqlReviewPolicy: &v1pb.SQLReviewPolicy{
-			Name:  payload.Name,
-			Rules: rules,
+			Name:     payload.Name,
+			RuleList: rules,
 		},
 	}, nil
 }
 
 func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQLReviewPolicy, error) {
 	var ruleList []*advisor.SQLReviewRule
-	for _, rule := range policy.Rules {
+	for _, rule := range policy.RuleList {
 		var level advisor.SQLReviewRuleLevel
 		switch rule.Level {
 		case v1pb.SQLReviewRuleLevel_ERROR:
