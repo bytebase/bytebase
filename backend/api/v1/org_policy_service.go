@@ -588,19 +588,11 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		if err := payload.Validate(); err != nil {
-			return "", status.Errorf(codes.InvalidArgument, err.Error())
-		}
-
-		storePolicy := new(storepb.SQLReviewPolicy)
-		if err := convertV1PbToStorePb(policy.GetSqlReviewPolicy(), storePolicy); err != nil {
-			return "", status.Errorf(codes.Internal, "failed to convert sql review policy with error: %v", err)
-		}
-		bytes, err := protojson.Marshal(storePolicy)
+		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", status.Errorf(codes.Internal, "failed to marshal sql review policy with error: %v", err)
 		}
-		return string(bytes), nil
+		return string(payloadBytes), nil
 	case v1pb.PolicyType_MASKING:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
@@ -853,36 +845,36 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 
 	return &v1pb.Policy_SqlReviewPolicy{
 		SqlReviewPolicy: &v1pb.SQLReviewPolicy{
-			Name:     payload.Name,
-			RuleList: rules,
+			Name:  payload.Name,
+			Rules: rules,
 		},
 	}, nil
 }
 
-func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQLReviewPolicy, error) {
-	var ruleList []*advisor.SQLReviewRule
-	for _, rule := range policy.RuleList {
-		var level advisor.SQLReviewRuleLevel
+func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*storepb.SQLReviewPolicy, error) {
+	var ruleList []*storepb.SQLReviewRule
+	for _, rule := range policy.Rules {
+		var level storepb.SQLReviewRuleLevel
 		switch rule.Level {
 		case v1pb.SQLReviewRuleLevel_ERROR:
-			level = advisor.SchemaRuleLevelError
+			level = storepb.SQLReviewRuleLevel_ERROR
 		case v1pb.SQLReviewRuleLevel_WARNING:
-			level = advisor.SchemaRuleLevelWarning
+			level = storepb.SQLReviewRuleLevel_WARNING
 		case v1pb.SQLReviewRuleLevel_DISABLED:
-			level = advisor.SchemaRuleLevelDisabled
+			level = storepb.SQLReviewRuleLevel_DISABLED
 		default:
 			return nil, errors.Errorf("invalid rule level %v", rule.Level)
 		}
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
+		ruleList = append(ruleList, &storepb.SQLReviewRule{
 			Level:   level,
 			Payload: rule.Payload,
-			Type:    advisor.SQLReviewRuleType(rule.Type),
+			Type:    rule.Type,
 			Comment: rule.Comment,
 			Engine:  convertEngine(rule.Engine),
 		})
 	}
 
-	return &advisor.SQLReviewPolicy{
+	return &storepb.SQLReviewPolicy{
 		Name:     policy.Name,
 		RuleList: ruleList,
 	}, nil

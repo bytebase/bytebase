@@ -1234,7 +1234,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
-| rule_list | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
+| rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
 
 
 
