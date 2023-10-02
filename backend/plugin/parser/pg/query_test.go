@@ -81,7 +81,7 @@ func TestValidateSQLForEditor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ans, err := ValidateSQLForEditor(test.sql)
+		ans, err := validateQuery(test.sql)
 		require.NoError(t, err)
 		require.Equal(t, test.ans, ans, test.sql)
 	}
