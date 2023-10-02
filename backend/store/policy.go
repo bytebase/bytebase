@@ -11,7 +11,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -57,7 +56,7 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 }
 
 // GetSQLReviewPolicy will get the SQL review policy for an environment.
-func (s *Store) GetSQLReviewPolicy(ctx context.Context, environmentID int) (*advisor.SQLReviewPolicy, error) {
+func (s *Store) GetSQLReviewPolicy(ctx context.Context, environmentID int) (*storepb.SQLReviewPolicy, error) {
 	resourceType := api.PolicyResourceTypeEnvironment
 	pType := api.PolicyTypeSQLReview
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
@@ -74,7 +73,13 @@ func (s *Store) GetSQLReviewPolicy(ctx context.Context, environmentID int) (*adv
 	if !policy.Enforce {
 		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy is not enforced for environment %d", environmentID)}
 	}
-	return api.UnmarshalSQLReviewPolicy(policy.Payload)
+
+	p := new(storepb.SQLReviewPolicy)
+	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
 // GetSlowQueryPolicy will get the slow query policy for instance ID.

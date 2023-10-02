@@ -27,6 +27,7 @@ import (
 	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // How to add a SQL review rule:
@@ -224,77 +225,44 @@ var (
 	}
 )
 
-// SQLReviewPolicy is the policy configuration for SQL review.
-type SQLReviewPolicy struct {
-	Name     string           `json:"name"`
-	RuleList []*SQLReviewRule `json:"ruleList"`
-}
-
-// Validate validates the SQLReviewPolicy. It also validates the each review rule.
-func (policy *SQLReviewPolicy) Validate() error {
-	if policy.Name == "" || len(policy.RuleList) == 0 {
+// ValidateSQLReviewRule validates the SQL review rule.
+func ValidateSQLReviewPolicy(policy *v1pb.SQLReviewPolicy) error {
+	if policy.Name == "" || len(policy.Rules) == 0 {
 		return errors.Errorf("invalid payload, name or rule list cannot be empty")
 	}
-	for _, rule := range policy.RuleList {
-		if err := rule.Validate(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// String returns the marshal string value for SQL review policy.
-func (policy *SQLReviewPolicy) String() (string, error) {
-	s, err := json.Marshal(policy)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
-
-// SQLReviewRule is the rule for SQL review policy.
-type SQLReviewRule struct {
-	Type    SQLReviewRuleType  `json:"type"`
-	Level   SQLReviewRuleLevel `json:"level"`
-	Engine  storepb.Engine     `json:"engine"`
-	Comment string             `json:"comment"`
-	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, StringArrayTypeRulePayload)
-	// If the rule doesn't have any payload configuration, the payload would be "{}"
-	Payload string `json:"payload"`
-}
-
-// Validate validates the SQL review rule.
-func (rule *SQLReviewRule) Validate() error {
-	// TODO(rebelice): add other SQL review rule validation.
-	switch rule.Type {
-	case SchemaRuleTableNaming, SchemaRuleColumnNaming, SchemaRuleAutoIncrementColumnNaming:
-		if _, _, err := UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
-		if _, _, _, err := UnmarshalNamingRulePayloadAsTemplate(rule.Type, rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleRequiredColumn:
-		if _, err := UnmarshalRequiredColumnList(rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleColumnCommentConvention, SchemaRuleTableCommentConvention:
-		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit,
-		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnMaximumVarcharLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleStatementAffectedRowLimit:
-		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleColumnTypeDisallowList, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist, SchemaRuleIndexPrimaryKeyTypeAllowlist:
-		if _, err := UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleIdentifierCase:
-		if _, err := UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
-			return err
+	for _, rule := range policy.Rules {
+		ruleType := SQLReviewRuleType(rule.Type)
+		// TODO(rebelice): add other SQL review rule validation.
+		switch ruleType {
+		case SchemaRuleTableNaming, SchemaRuleColumnNaming, SchemaRuleAutoIncrementColumnNaming:
+			if _, _, err := UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
+				return err
+			}
+		case SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
+			if _, _, _, err := UnmarshalNamingRulePayloadAsTemplate(ruleType, rule.Payload); err != nil {
+				return err
+			}
+		case SchemaRuleRequiredColumn:
+			if _, err := UnmarshalRequiredColumnList(rule.Payload); err != nil {
+				return err
+			}
+		case SchemaRuleColumnCommentConvention, SchemaRuleTableCommentConvention:
+			if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit,
+			SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnMaximumVarcharLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleStatementAffectedRowLimit:
+			if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		case SchemaRuleColumnTypeDisallowList, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist, SchemaRuleIndexPrimaryKeyTypeAllowlist:
+			if _, err := UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		case SchemaRuleIdentifierCase:
+			if _, err := UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -729,7 +697,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
-func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
+func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	ast, result := syntaxCheck(statements, checkContext)
 	if ast == nil || len(ruleList) == 0 {
 		return result, nil
@@ -747,11 +715,11 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DbType {
 			continue
 		}
-		if rule.Level == SchemaRuleLevelDisabled {
+		if rule.Level == storepb.SQLReviewRuleLevel_DISABLED {
 			continue
 		}
 
-		advisorType, err := getAdvisorTypeByRule(rule.Type, checkContext.DbType)
+		advisorType, err := getAdvisorTypeByRule(SQLReviewRuleType(rule.Type), checkContext.DbType)
 		if err != nil {
 			if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED {
 				slog.Warn("not supported rule", slog.String("rule type", string(rule.Type)), slog.String("engine", string(rule.Engine)), log.BBError(err))

@@ -584,7 +584,11 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
 		}
-		payload, err := convertToSQLReviewPolicyPayload(policy.GetSqlReviewPolicy())
+		v1SqlReviewPolicy := policy.GetSqlReviewPolicy()
+		if err := advisor.ValidateSQLReviewPolicy(v1SqlReviewPolicy); err != nil {
+			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		payload, err := convertToSQLReviewPolicyPayload(v1SqlReviewPolicy)
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -816,22 +820,20 @@ func convertToStorePBWorkspaceIAMPolicy(policy *v1pb.IamPolicy) *storepb.IamPoli
 }
 
 func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, error) {
-	payload, err := api.UnmarshalSQLReviewPolicy(
-		payloadStr,
-	)
-	if err != nil {
+	p := new(storepb.SQLReviewPolicy)
+	if err := protojson.Unmarshal([]byte(payloadStr), p); err != nil {
 		return nil, err
 	}
 
 	var rules []*v1pb.SQLReviewRule
-	for _, rule := range payload.RuleList {
+	for _, rule := range p.RuleList {
 		level := v1pb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED
 		switch rule.Level {
-		case advisor.SchemaRuleLevelError:
+		case storepb.SQLReviewRuleLevel_ERROR:
 			level = v1pb.SQLReviewRuleLevel_ERROR
-		case advisor.SchemaRuleLevelWarning:
+		case storepb.SQLReviewRuleLevel_WARNING:
 			level = v1pb.SQLReviewRuleLevel_WARNING
-		case advisor.SchemaRuleLevelDisabled:
+		case storepb.SQLReviewRuleLevel_DISABLED:
 			level = v1pb.SQLReviewRuleLevel_DISABLED
 		}
 		rules = append(rules, &v1pb.SQLReviewRule{
@@ -839,13 +841,13 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 			Type:    string(rule.Type),
 			Payload: rule.Payload,
 			Comment: rule.Comment,
-			Engine:  convertToEngine(storepb.Engine(rule.Engine)),
+			Engine:  convertToEngine(rule.Engine),
 		})
 	}
 
 	return &v1pb.Policy_SqlReviewPolicy{
 		SqlReviewPolicy: &v1pb.SQLReviewPolicy{
-			Name:  payload.Name,
+			Name:  p.Name,
 			Rules: rules,
 		},
 	}, nil

@@ -37,7 +37,7 @@ func (*NamingIndexConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 		return nil, err
 	}
 
-	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(ctx.Rule.Type), ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
