@@ -39,10 +39,10 @@ func (c *catalogService) GetFinder() *catalog.Finder {
 }
 
 type sqlCheckRequestBody struct {
-	Statement    string                      `json:"statement"`
-	DatabaseType string                      `json:"databaseType"`
-	TemplateID   advisor.SQLReviewTemplateID `json:"templateId"`
-	Override     string                      `json:"override"`
+	Statement    string `json:"statement"`
+	DatabaseType string `json:"databaseType"`
+	TemplateID   string `json:"templateId"`
+	Override     string `json:"override"`
 }
 
 func (s *Server) registerAdvisorRoutes(g *echo.Group) {
