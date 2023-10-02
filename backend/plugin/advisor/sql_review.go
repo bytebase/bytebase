@@ -35,20 +35,10 @@ import (
 //   3. Add advisor error code if needed(plugin/advisor/code.go).
 //   4. Map SQLReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
-// SQLReviewRuleLevel is the error level for SQL review rule.
-type SQLReviewRuleLevel string
-
 // SQLReviewRuleType is the type of schema rule.
 type SQLReviewRuleType string
 
 const (
-	// SchemaRuleLevelError is the error level of SQLReviewRuleLevel.
-	SchemaRuleLevelError SQLReviewRuleLevel = "ERROR"
-	// SchemaRuleLevelWarning is the warning level of SQLReviewRuleLevel.
-	SchemaRuleLevelWarning SQLReviewRuleLevel = "WARNING"
-	// SchemaRuleLevelDisabled is the disabled level of SQLReviewRuleLevel.
-	SchemaRuleLevelDisabled SQLReviewRuleLevel = "DISABLED"
-
 	// SchemaRuleMySQLEngine require InnoDB as the storage engine.
 	SchemaRuleMySQLEngine SQLReviewRuleType = "engine.mysql.use-innodb"
 

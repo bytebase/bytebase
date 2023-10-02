@@ -5,10 +5,7 @@ package advisor
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"log/slog"
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -491,23 +488,6 @@ type Advice struct {
 	Line    int    `json:"line"`
 	Column  int    `json:"column"`
 	Details string `json:"details,omitempty"`
-}
-
-// SLogAdviceArray is a helper to format array of Advice.
-type SLogAdviceArray []Advice
-
-// LogValue implements the LogValuer interface.
-func (arr SLogAdviceArray) LogValue() slog.Value {
-	logArr := []string{}
-	for _, advice := range arr {
-		payload, err := json.Marshal(advice)
-		if err != nil {
-			logArr = append(logArr, err.Error())
-			continue
-		}
-		logArr = append(logArr, string(payload))
-	}
-	return slog.StringValue(strings.Join(logArr, ","))
 }
 
 // SyntaxMode is the type of syntax mode.

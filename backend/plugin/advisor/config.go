@@ -19,26 +19,23 @@ var sqlReviewDevTemplateStr string
 //go:embed config/sql-review.prod.yaml
 var sqlReviewProdTemplateStr string
 
-// SQLReviewTemplateID is the template id for SQL review rules.
-type SQLReviewTemplateID string
-
 // SQLReviewTemplateData is the API message for SQL review rule template.
 type SQLReviewTemplateData struct {
-	ID       SQLReviewTemplateID  `yaml:"id"`
+	ID       string               `yaml:"id"`
 	RuleList []*SQLReviewRuleData `yaml:"ruleList"`
 }
 
 // SQLReviewRuleData is the API message for SQL review rule update.
 type SQLReviewRuleData struct {
-	Type    SQLReviewRuleType  `yaml:"type"`
-	Level   SQLReviewRuleLevel `yaml:"level,omitempty"`
-	Comment string             `yaml:"comment"`
-	Payload map[string]any     `yaml:"payload"`
+	Type    SQLReviewRuleType `yaml:"type"`
+	Level   string            `yaml:"level,omitempty"`
+	Comment string            `yaml:"comment"`
+	Payload map[string]any    `yaml:"payload"`
 }
 
 // SQLReviewConfigOverride is the API message for SQL review configuration override.
 type SQLReviewConfigOverride struct {
-	Template SQLReviewTemplateID  `yaml:"template"`
+	Template string               `yaml:"template"`
 	RuleList []*SQLReviewRuleData `yaml:"ruleList"`
 }
 
@@ -94,7 +91,7 @@ func parseSQLReviewTemplateList() ([]*SQLReviewTemplateData, error) {
 	}, nil
 }
 
-func findTemplate(templateList []*SQLReviewTemplateData, id SQLReviewTemplateID) *SQLReviewTemplateData {
+func findTemplate(templateList []*SQLReviewTemplateData, id string) *SQLReviewTemplateData {
 	for _, template := range templateList {
 		if template.ID == id {
 			return template
@@ -124,19 +121,14 @@ func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*storepb
 	if err != nil {
 		return nil, err
 	}
-	ruleLevel := storepb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED
-	switch level {
-	case SchemaRuleLevelError:
-		ruleLevel = storepb.SQLReviewRuleLevel_ERROR
-	case SchemaRuleLevelWarning:
-		ruleLevel = storepb.SQLReviewRuleLevel_WARNING
-	case SchemaRuleLevelDisabled:
-		ruleLevel = storepb.SQLReviewRuleLevel_DISABLED
+	ruleLevelValue, ok := storepb.SQLReviewRuleLevel_value[level]
+	if !ok {
+		return nil, errors.Errorf("invalid rule level %q", level)
 	}
 
 	return &storepb.SQLReviewRule{
 		Type:    string(source.Type),
-		Level:   ruleLevel,
+		Level:   storepb.SQLReviewRuleLevel(ruleLevelValue),
 		Comment: comment,
 		Payload: string(str),
 	}, nil
