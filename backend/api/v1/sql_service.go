@@ -269,7 +269,23 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
-	instance, database, sensitiveSchemaInfo, activity, err := s.preExport(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, request.Admin)
+	user, instance, database, sensitiveSchemaInfo, err := s.preExport(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, request.Admin)
+	if err != nil {
+		return nil, err
+	}
+
+	databaseID := 0
+	if database != nil {
+		databaseID = database.UID
+	}
+	// Create export activity.
+	level := api.ActivityInfo
+	activity, err := s.createExportActivity(ctx, user, level, instance.UID, api.ActivitySQLExportPayload{
+		Statement:    request.Statement,
+		InstanceID:   instance.UID,
+		DatabaseID:   databaseID,
+		DatabaseName: request.ConnectionDatabase,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -766,7 +782,7 @@ func convertValueToStringInXLSX(value *v1pb.RowValue) string {
 	}
 }
 
-func (s *SQLService) preExport(ctx context.Context, instanceName, connectionDatabase, statement string, limit int32, isAdmin bool) (*store.InstanceMessage, *store.DatabaseMessage, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
+func (s *SQLService) preExport(ctx context.Context, instanceName, connectionDatabase, statement string, limit int32, isAdmin bool) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, *db.SensitiveSchemaInfo, error) {
 	// Prepare related message.
 	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, instanceName, connectionDatabase)
 	if err != nil {
@@ -866,23 +882,7 @@ func (s *SQLService) preExport(ctx context.Context, instanceName, connectionData
 		}
 	}
 
-	databaseID := 0
-	if database != nil {
-		databaseID = database.UID
-	}
-	// Create export activity.
-	level := api.ActivityInfo
-	activity, err := s.createExportActivity(ctx, user, level, instance.UID, api.ActivitySQLExportPayload{
-		Statement:    statement,
-		InstanceID:   instance.UID,
-		DatabaseID:   databaseID,
-		DatabaseName: connectionDatabase,
-	})
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-
-	return instance, database, sensitiveSchemaInfo, activity, nil
+	return user, instance, database, sensitiveSchemaInfo, nil
 }
 
 func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLExportPayload) (*store.ActivityMessage, error) {
@@ -971,7 +971,30 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 //  2. do query
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
-	user, instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, activity, err := s.preQuery(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit)
+	user, instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, err := s.preQuery(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create query activity.
+	level := api.ActivityInfo
+	switch adviceStatus {
+	case advisor.Error:
+		level = api.ActivityError
+	case advisor.Warn:
+		level = api.ActivityWarn
+	}
+	databaseID := 0
+	if database != nil {
+		databaseID = database.UID
+	}
+	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, api.ActivitySQLEditorQueryPayload{
+		Statement:              request.Statement,
+		InstanceID:             instance.UID,
+		DeprecatedInstanceName: instance.Title,
+		DatabaseID:             databaseID,
+		DatabaseName:           request.ConnectionDatabase,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -983,7 +1006,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database, sensitiveSchemaInfo)
 	}
 
-	adviceList, err = s.postQuery(ctx, request, adviceStatus, adviceList, instance, activity, durationNs, queryErr)
+	err = s.postQuery(ctx, activity, durationNs, queryErr)
 	if err != nil {
 		return nil, err
 	}
@@ -1046,28 +1069,13 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 // postQuery does the following:
 //  1. Check index hit Explain statements
 //  2. Update SQL query activity
-func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, adviceStatus advisor.Status, adviceList []*v1pb.Advice, _ *store.InstanceMessage, activity *store.ActivityMessage, durationNs int64, queryErr error) ([]*v1pb.Advice, error) {
-	indexHitAdvices, err := s.checkIndexHit()
-	if err != nil {
-		return nil, err
-	}
-
-	var finalAdviceList []*v1pb.Advice
+func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
 	newLevel := activity.Level
-	if len(indexHitAdvices) == 0 {
-		finalAdviceList = append(finalAdviceList, adviceList...)
-	} else {
-		if adviceStatus != advisor.Success {
-			finalAdviceList = append(finalAdviceList, adviceList...)
-		}
-		finalAdviceList = append(finalAdviceList, indexHitAdvices...)
-		newLevel = api.ActivityError
-	}
 
 	// Update the activity
 	var payload api.ActivitySQLEditorQueryPayload
 	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to unmarshal activity payload: %v", err)
+		return status.Errorf(codes.Internal, "failed to unmarshal activity payload: %v", err)
 	}
 
 	payload.DurationNs = durationNs
@@ -1085,7 +1093,7 @@ func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, advice
 			slog.Int("instance_id", payload.InstanceID),
 			slog.String("statement", payload.Statement),
 			log.BBError(err))
-		return nil, status.Errorf(codes.Internal, "Failed to marshal activity after executing sql statement: %v", err)
+		return status.Errorf(codes.Internal, "Failed to marshal activity after executing sql statement: %v", err)
 	}
 
 	payloadString := string(payloadBytes)
@@ -1095,15 +1103,10 @@ func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, advice
 		Level:      &newLevel,
 		Payload:    &payloadString,
 	}); err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to update activity after executing sql statement: %v", err)
+		return status.Errorf(codes.Internal, "Failed to update activity after executing sql statement: %v", err)
 	}
 
-	return finalAdviceList, nil
-}
-
-func (*SQLService) checkIndexHit() ([]*v1pb.Advice, error) {
-	// TODO(rebelice): implement checkIndexHit
-	return nil, nil
+	return nil
 }
 
 func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
@@ -1175,16 +1178,16 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 //  5. Create query activity.
 //
 // Due to the performance consideration, we DO NOT get the sensitive schema info if there are advice error in SQL review.
-func (s *SQLService) preQuery(ctx context.Context, instanceName, connectionDatabase, statement string, limit int32) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, *store.ActivityMessage, error) {
+func (s *SQLService) preQuery(ctx context.Context, instanceName, connectionDatabase, statement string, limit int32) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, error) {
 	// Prepare related message.
 	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, instanceName, connectionDatabase)
 	if err != nil {
-		return nil, nil, nil, advisor.Success, nil, nil, nil, err
+		return nil, nil, nil, advisor.Success, nil, nil, err
 	}
 
 	// Validate the request.
 	if err := validateQueryRequest(instance, connectionDatabase, statement); err != nil {
-		return nil, nil, nil, advisor.Success, nil, nil, nil, err
+		return nil, nil, nil, advisor.Success, nil, nil, err
 	}
 
 	// dataShare must be false when connecting to instance (not database) in sql editor
@@ -1199,12 +1202,12 @@ func (s *SQLService) preQuery(ctx context.Context, instanceName, connectionDatab
 		// Check if the environment is open for query privileges.
 		result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectQuerier, environment)
 		if err != nil {
-			return nil, nil, nil, advisor.Success, nil, nil, nil, err
+			return nil, nil, nil, advisor.Success, nil, nil, err
 		}
 		if !result {
 			// Check if the user has permission to execute the query.
 			if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, false); err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, nil, err
+				return nil, nil, nil, advisor.Success, nil, nil, err
 			}
 		}
 	}
@@ -1212,7 +1215,7 @@ func (s *SQLService) preQuery(ctx context.Context, instanceName, connectionDatab
 	// Run SQL review.
 	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase)
 	if err != nil {
-		return nil, nil, nil, adviceStatus, adviceList, nil, nil, err
+		return nil, nil, nil, adviceStatus, adviceList, nil, err
 	}
 
 	// Get sensitive schema info.
@@ -1222,12 +1225,12 @@ func (s *SQLService) preQuery(ctx context.Context, instanceName, connectionDatab
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			databaseList, err := base.ExtractDatabaseList(storepb.Engine_MYSQL, statement, "")
 			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
 			}
 
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
 			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
 			}
 		case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 			if allPostgresSystemObjects(statement) {
@@ -1235,7 +1238,7 @@ func (s *SQLService) preQuery(ctx context.Context, instanceName, connectionDatab
 			} else {
 				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{connectionDatabase}, connectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
 				if err != nil {
-					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
+					return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
 				}
 			}
 		case storepb.Engine_ORACLE, storepb.Engine_DM:
@@ -1243,7 +1246,7 @@ func (s *SQLService) preQuery(ctx context.Context, instanceName, connectionDatab
 			if instance.Options != nil && instance.Options.SchemaTenantMode {
 				list, err := base.ExtractResourceList(storepb.Engine_ORACLE, connectionDatabase, connectionDatabase, statement)
 				if err != nil {
-					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", statement)
+					return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", statement)
 				}
 				databaseMap := make(map[string]bool)
 				for _, resource := range list {
@@ -1256,58 +1259,32 @@ func (s *SQLService) preQuery(ctx context.Context, instanceName, connectionDatab
 
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databases, connectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
 			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
 			}
 		case storepb.Engine_SNOWFLAKE:
 			databaseList, err := base.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, statement, connectionDatabase)
 			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
 			}
 
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
 			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
 			}
 		case storepb.Engine_MSSQL:
 			databaseList, err := base.ExtractDatabaseList(storepb.Engine_MSSQL, statement, connectionDatabase)
 			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
 			}
 
 			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
 			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", statement)
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", statement)
 			}
 		}
 	}
 
-	// Create query activity.
-	level := api.ActivityInfo
-	switch adviceStatus {
-	case advisor.Error:
-		level = api.ActivityError
-	case advisor.Warn:
-		level = api.ActivityWarn
-	}
-	databaseID := 0
-	if maybeDatabase != nil {
-		databaseID = maybeDatabase.UID
-	}
-	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, api.ActivitySQLEditorQueryPayload{
-		Statement:              statement,
-		InstanceID:             instance.UID,
-		DeprecatedInstanceName: instance.Title,
-		DatabaseID:             databaseID,
-		DatabaseName:           connectionDatabase,
-		// TODO: here we should use []*v1pb.Advice instead of []advisor.Advice
-		// This should fix when we migrate to v1 activity API
-		// AdviceList:             adviceList,
-	})
-	if err != nil {
-		return nil, nil, nil, advisor.Success, nil, nil, nil, err
-	}
-
-	return user, instance, maybeDatabase, adviceStatus, adviceList, sensitiveSchemaInfo, activity, nil
+	return user, instance, maybeDatabase, adviceStatus, adviceList, sensitiveSchemaInfo, nil
 }
 
 func allPostgresSystemObjects(statement string) bool {
