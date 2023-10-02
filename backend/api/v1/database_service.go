@@ -2361,13 +2361,13 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	case storepb.Engine_POSTGRES:
 		return s.pgAdviseIndex(ctx, request, database)
 	case storepb.Engine_MYSQL:
-		return s.mysqlAdviseIndex(ctx, request, database)
+		return s.mysqlAdviseIndex(ctx, request, instance, database)
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "AdviseIndex is not implemented for engine: %v", instance.Engine)
 	}
 }
 
-func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest, database *store.DatabaseMessage) (*v1pb.AdviseIndexResponse, error) {
+func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest, instance *store.InstanceMessage, database *store.DatabaseMessage) (*v1pb.AdviseIndexResponse, error) {
 	openaiKeyName := api.SettingPluginOpenAIKey
 	key, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &openaiKeyName})
 	if err != nil {
@@ -2380,18 +2380,14 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 	var schemas []*store.DBSchema
 
 	// Deal with the cross database query
-	dbList, err := base.ExtractDatabaseList(storepb.Engine_MYSQL, request.Statement, "")
+	dbList, err := base.ExtractDatabaseList(instance.Engine, request.Statement, "")
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract database list: %v", err)
 	}
 	for _, db := range dbList {
 		if db != "" && db != database.DatabaseName {
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get instance %s", database.InstanceID)
-			}
 			findDatabase := &store.FindDatabaseMessage{
-				InstanceID:          &database.InstanceID,
+				InstanceID:          &instance.ResourceID,
 				DatabaseName:        &db,
 				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 			}

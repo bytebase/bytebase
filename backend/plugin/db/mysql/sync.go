@@ -602,7 +602,7 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (m
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
-	return analyzeSlowLog(logs)
+	return analyzeSlowLog(driver.dbType, logs)
 }
 
 func parseDuration(s string) (time.Duration, error) {
@@ -617,11 +617,11 @@ func parseDuration(s string) (time.Duration, error) {
 	return time.ParseDuration(duration)
 }
 
-func analyzeSlowLog(logs []*slowLog) (map[string]*storepb.SlowQueryStatistics, error) {
+func analyzeSlowLog(engine storepb.Engine, logs []*slowLog) (map[string]*storepb.SlowQueryStatistics, error) {
 	logMap := make(map[string]map[string]*storepb.SlowQueryStatisticsItem)
 
 	for _, log := range logs {
-		databaseList := extractDatabase(log.database, log.details.SqlText)
+		databaseList := extractDatabase(engine, log.database, log.details.SqlText)
 		fingerprint, err := mysqlparser.GetFingerprint(log.details.SqlText)
 		if err != nil {
 			return nil, errors.Wrapf(err, "get sql fingerprint failed, sql: %s", log.details.SqlText)
@@ -698,8 +698,8 @@ func mergeSlowLog(fingerprint string, statistics *storepb.SlowQueryStatisticsIte
 	return statistics
 }
 
-func extractDatabase(defaultDB string, sql string) []string {
-	list, err := base.ExtractDatabaseList(storepb.Engine_MYSQL, sql, "")
+func extractDatabase(engne storepb.Engine, defaultDB string, sql string) []string {
+	list, err := base.ExtractDatabaseList(engne, sql, "")
 	if err != nil {
 		// If we can't extract the database, we just use the default database.
 		slog.Debug("extract database failed", log.BBError(err), slog.String("sql", sql))
