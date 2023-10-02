@@ -585,7 +585,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
 		}
 		v1SqlReviewPolicy := policy.GetSqlReviewPolicy()
-		if err := advisor.ValidateSQLReviewPolicy(v1SqlReviewPolicy); err != nil {
+		if err := validateSQLReviewPolicy(v1SqlReviewPolicy); err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		payload, err := convertToSQLReviewPolicyPayload(v1SqlReviewPolicy)
@@ -1311,4 +1311,47 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeDisableCopyData, nil
 	}
 	return policyType, errors.Errorf("invalid policy type %v", pType)
+}
+
+// validateSQLReviewPolicy validates the SQL review rule.
+func validateSQLReviewPolicy(policy *v1pb.SQLReviewPolicy) error {
+	if policy.Name == "" || len(policy.Rules) == 0 {
+		return errors.Errorf("invalid payload, name or rule list cannot be empty")
+	}
+	for _, rule := range policy.Rules {
+		ruleType := advisor.SQLReviewRuleType(rule.Type)
+		// TODO(rebelice): add other SQL review rule validation.
+		switch ruleType {
+		case advisor.SchemaRuleTableNaming, advisor.SchemaRuleColumnNaming, advisor.SchemaRuleAutoIncrementColumnNaming:
+			if _, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleFKNaming, advisor.SchemaRuleIDXNaming, advisor.SchemaRuleUKNaming:
+			if _, _, _, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ruleType, rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleRequiredColumn:
+			if _, err := advisor.UnmarshalRequiredColumnList(rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleColumnCommentConvention, advisor.SchemaRuleTableCommentConvention:
+			if _, err := advisor.UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleIndexKeyNumberLimit, advisor.SchemaRuleStatementInsertRowLimit, advisor.SchemaRuleIndexTotalNumberLimit,
+			advisor.SchemaRuleColumnMaximumCharacterLength, advisor.SchemaRuleColumnMaximumVarcharLength, advisor.SchemaRuleColumnAutoIncrementInitialValue, advisor.SchemaRuleStatementAffectedRowLimit:
+			if _, err := advisor.UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleColumnTypeDisallowList, advisor.SchemaRuleCharsetAllowlist, advisor.SchemaRuleCollationAllowlist, advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist:
+			if _, err := advisor.UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleIdentifierCase:
+			if _, err := advisor.UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -27,7 +27,6 @@ import (
 	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // How to add a SQL review rule:
@@ -224,49 +223,6 @@ var (
 		},
 	}
 )
-
-// ValidateSQLReviewRule validates the SQL review rule.
-func ValidateSQLReviewPolicy(policy *v1pb.SQLReviewPolicy) error {
-	if policy.Name == "" || len(policy.Rules) == 0 {
-		return errors.Errorf("invalid payload, name or rule list cannot be empty")
-	}
-	for _, rule := range policy.Rules {
-		ruleType := SQLReviewRuleType(rule.Type)
-		// TODO(rebelice): add other SQL review rule validation.
-		switch ruleType {
-		case SchemaRuleTableNaming, SchemaRuleColumnNaming, SchemaRuleAutoIncrementColumnNaming:
-			if _, _, err := UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
-				return err
-			}
-		case SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
-			if _, _, _, err := UnmarshalNamingRulePayloadAsTemplate(ruleType, rule.Payload); err != nil {
-				return err
-			}
-		case SchemaRuleRequiredColumn:
-			if _, err := UnmarshalRequiredColumnList(rule.Payload); err != nil {
-				return err
-			}
-		case SchemaRuleColumnCommentConvention, SchemaRuleTableCommentConvention:
-			if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
-				return err
-			}
-		case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit,
-			SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnMaximumVarcharLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleStatementAffectedRowLimit:
-			if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
-				return err
-			}
-		case SchemaRuleColumnTypeDisallowList, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist, SchemaRuleIndexPrimaryKeyTypeAllowlist:
-			if _, err := UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
-				return err
-			}
-		case SchemaRuleIdentifierCase:
-			if _, err := UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
 
 // NamingRulePayload is the payload for naming rule.
 type NamingRulePayload struct {
