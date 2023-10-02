@@ -1241,12 +1241,8 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 				}
 			}
 		case storepb.Engine_ORACLE, storepb.Engine_DM:
-			if instance.Options == nil || !instance.Options.SchemaTenantMode {
-				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
-				if err != nil {
-					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
-				}
-			} else {
+			databases := []string{request.ConnectionDatabase}
+			if instance.Options != nil && instance.Options.SchemaTenantMode {
 				list, err := base.ExtractResourceList(storepb.Engine_ORACLE, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
 				if err != nil {
 					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", request.Statement)
@@ -1255,15 +1251,14 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 				for _, resource := range list {
 					databaseMap[resource.Database] = true
 				}
-				var databaseList []string
-				databaseList = append(databaseList, request.ConnectionDatabase)
 				for database := range databaseMap {
-					databaseList = append(databaseList, database)
+					databases = append(databases, database)
 				}
-				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
-				if err != nil {
-					return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
-				}
+			}
+
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databases, request.ConnectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
+			if err != nil {
+				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
 		case storepb.Engine_SNOWFLAKE:
 			databaseList, err := base.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, request.Statement, request.ConnectionDatabase)
