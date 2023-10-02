@@ -1096,66 +1096,55 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 	}
 	var sensitiveSchemaInfo *db.SensitiveSchemaInfo
 	if adviceStatus != advisor.Error {
+		databaseMap := make(map[string]bool)
 		switch instance.Engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			databaseList, err := base.ExtractDatabaseList(storepb.Engine_MYSQL, statement, "")
+			databases, err := base.ExtractDatabaseList(storepb.Engine_MYSQL, statement, "")
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
 			}
-
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, maskingType)
-			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
+			for _, database := range databases {
+				databaseMap[database] = true
 			}
 		case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
-			if allPostgresSystemObjects(statement) {
-				sensitiveSchemaInfo = nil
-			} else {
-				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{connectionDatabase}, connectionDatabase, maskingType)
-				if err != nil {
-					return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
-				}
+			if !allPostgresSystemObjects(statement) {
+				databaseMap[connectionDatabase] = true
 			}
 		case storepb.Engine_ORACLE, storepb.Engine_DM:
-			databases := []string{connectionDatabase}
+			databaseMap[connectionDatabase] = true
 			if instance.Options != nil && instance.Options.SchemaTenantMode {
 				list, err := base.ExtractResourceList(storepb.Engine_ORACLE, connectionDatabase, connectionDatabase, statement)
 				if err != nil {
 					return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", statement)
 				}
-				databaseMap := make(map[string]bool)
 				for _, resource := range list {
 					databaseMap[resource.Database] = true
 				}
-				for database := range databaseMap {
-					databases = append(databases, database)
-				}
-			}
-
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databases, connectionDatabase, maskingType)
-			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
 			}
 		case storepb.Engine_SNOWFLAKE:
-			databaseList, err := base.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, statement, connectionDatabase)
+			databases, err := base.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, statement, connectionDatabase)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
 			}
-
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, maskingType)
-			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
+			for _, database := range databases {
+				databaseMap[database] = true
 			}
 		case storepb.Engine_MSSQL:
-			databaseList, err := base.ExtractDatabaseList(storepb.Engine_MSSQL, statement, connectionDatabase)
+			databases, err := base.ExtractDatabaseList(storepb.Engine_MSSQL, statement, connectionDatabase)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
 			}
-
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, maskingType)
-			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", statement)
+			for _, database := range databases {
+				databaseMap[database] = true
 			}
+		}
+		var databases []string
+		for k := range databaseMap {
+			databases = append(databases, k)
+		}
+		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databases, connectionDatabase, maskingType)
+		if err != nil {
+			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
 		}
 	}
 
