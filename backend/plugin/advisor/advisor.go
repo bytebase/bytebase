@@ -33,11 +33,11 @@ const (
 )
 
 // NewStatusBySQLReviewRuleLevel returns status by SQLReviewRuleLevel.
-func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
+func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRuleLevel) (Status, error) {
 	switch level {
-	case SchemaRuleLevelError:
+	case storepb.SQLReviewRuleLevel_ERROR:
 		return Error, nil
-	case SchemaRuleLevelWarning:
+	case storepb.SQLReviewRuleLevel_WARNING:
 		return Warn, nil
 	}
 	return "", errors.Errorf("unexpected rule level type: %s", level)
@@ -528,7 +528,7 @@ type Context struct {
 
 	// SQL review rule special fields.
 	AST     any
-	Rule    *SQLReviewRule
+	Rule    *storepb.SQLReviewRule
 	Catalog *catalog.Finder
 	Driver  *sql.DB
 	Context context.Context
