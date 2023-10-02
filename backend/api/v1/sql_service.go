@@ -818,14 +818,14 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
-	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
+	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 		databaseList := []string{request.ConnectionDatabase}
 		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
 		}
 	case storepb.Engine_ORACLE, storepb.Engine_DM:
-		var databaseList []string
+		databaseList := []string{request.ConnectionDatabase}
 		if instance.Options != nil && instance.Options.SchemaTenantMode {
 			list, err := base.ExtractResourceList(storepb.Engine_ORACLE, request.ConnectionDatabase, request.ConnectionDatabase, request.Statement)
 			if err != nil {
@@ -835,12 +835,9 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 			for _, resource := range list {
 				databaseMap[resource.Database] = true
 			}
-			databaseList = append(databaseList, request.ConnectionDatabase)
 			for database := range databaseMap {
 				databaseList = append(databaseList, database)
 			}
-		} else {
-			databaseList = []string{request.ConnectionDatabase}
 		}
 
 		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
