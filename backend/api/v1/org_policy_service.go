@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -583,7 +584,11 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
 		}
-		payload, err := convertToSQLReviewPolicyPayload(policy.GetSqlReviewPolicy())
+		v1SqlReviewPolicy := policy.GetSqlReviewPolicy()
+		if err := advisor.ValidateSQLReviewPolicy(v1SqlReviewPolicy); err != nil {
+			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		payload, err := convertToSQLReviewPolicyPayload(v1SqlReviewPolicy)
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
