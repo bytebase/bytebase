@@ -8,6 +8,7 @@ import (
 
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -153,11 +154,10 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Add a sample SQL Review policy to the prod environment. This pairs with the following schema
 	// change issue to demonstrate the SQL Review feature.
-	policyPayload, err := json.Marshal(*getSampleSQLReviewPolicy())
+	policyPayload, err := protojson.Marshal(getSampleSQLReviewPolicy())
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal onboarding SQL Review policy")
 	}
-
 	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
 		ResourceUID:       api.DefaultProdEnvironmentUID,
 		ResourceType:      api.PolicyResourceTypeEnvironment,
@@ -331,18 +331,18 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 }
 
 // getSampleSQLReviewPolicy returns a sample SQL review policy for preparing onboardign data.
-func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
-	policy := &advisor.SQLReviewPolicy{
+func getSampleSQLReviewPolicy() *storepb.SQLReviewPolicy {
+	policy := &storepb.SQLReviewPolicy{
 		Name: "SQL Review Sample Policy",
 	}
 
-	ruleList := []*advisor.SQLReviewRule{}
+	ruleList := []*storepb.SQLReviewRule{}
 
 	// Add DropEmptyDatabase rule for MySQL, TiDB, MariaDB.
 	for _, e := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB} {
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    advisor.SchemaRuleDropEmptyDatabase,
-			Level:   advisor.SchemaRuleLevelError,
+		ruleList = append(ruleList, &storepb.SQLReviewRule{
+			Type:    string(advisor.SchemaRuleDropEmptyDatabase),
+			Level:   storepb.SQLReviewRuleLevel_ERROR,
 			Engine:  e,
 			Payload: "{}",
 		})
@@ -350,9 +350,9 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 
 	// Add ColumnNotNull rule for MySQL, TiDB, MariaDB, Postgres.
 	for _, e := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_POSTGRES} {
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    advisor.SchemaRuleColumnNotNull,
-			Level:   advisor.SchemaRuleLevelWarning,
+		ruleList = append(ruleList, &storepb.SQLReviewRule{
+			Type:    string(advisor.SchemaRuleColumnNotNull),
+			Level:   storepb.SQLReviewRuleLevel_WARNING,
 			Engine:  e,
 			Payload: "{}",
 		})
@@ -360,9 +360,9 @@ func getSampleSQLReviewPolicy() *advisor.SQLReviewPolicy {
 
 	// Add TableDropNamingConvention rule for MySQL, TiDB, MariaDB Postgres.
 	for _, e := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_POSTGRES} {
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    advisor.SchemaRuleTableDropNamingConvention,
-			Level:   advisor.SchemaRuleLevelError,
+		ruleList = append(ruleList, &storepb.SQLReviewRule{
+			Type:    string(advisor.SchemaRuleTableDropNamingConvention),
+			Level:   storepb.SQLReviewRuleLevel_ERROR,
 			Engine:  e,
 			Payload: "{\"format\":\"_del$\"}",
 		})
