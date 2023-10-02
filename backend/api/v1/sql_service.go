@@ -1090,6 +1090,10 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 	}
 
 	// Get sensitive schema info.
+	maskingType := storepb.MaskingExceptionPolicy_MaskingException_QUERY
+	if isExport {
+		maskingType = storepb.MaskingExceptionPolicy_MaskingException_EXPORT
+	}
 	var sensitiveSchemaInfo *db.SensitiveSchemaInfo
 	if adviceStatus != advisor.Error {
 		switch instance.Engine {
@@ -1099,7 +1103,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
 			}
 
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, maskingType)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
 			}
@@ -1107,7 +1111,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 			if allPostgresSystemObjects(statement) {
 				sensitiveSchemaInfo = nil
 			} else {
-				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{connectionDatabase}, connectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
+				sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{connectionDatabase}, connectionDatabase, maskingType)
 				if err != nil {
 					return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
 				}
@@ -1128,7 +1132,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 				}
 			}
 
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databases, connectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databases, connectionDatabase, maskingType)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
 			}
@@ -1138,7 +1142,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
 			}
 
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, maskingType)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
 			}
@@ -1148,7 +1152,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
 			}
 
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, connectionDatabase, maskingType)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", statement)
 			}
