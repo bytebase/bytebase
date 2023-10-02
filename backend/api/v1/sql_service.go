@@ -1231,12 +1231,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
 			}
-		case storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
-			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", request.Statement, err.Error())
-			}
-		case storepb.Engine_POSTGRES:
+		case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 			if allPostgresSystemObjects(request.Statement) {
 				sensitiveSchemaInfo = nil
 			} else {
