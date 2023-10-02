@@ -1015,38 +1015,9 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, queryErr
 	}
 
-	allowExport := false
-	// Check if the environment is open for export privileges for enterprise version.
-	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-			ResourceID: &database.EffectiveEnvironmentID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to get environment %s: %v", database.EffectiveEnvironmentID, err)
-		}
-		if environment == nil {
-			return nil, status.Errorf(codes.NotFound, "environment %s not found", database.EffectiveEnvironmentID)
-		}
-		// Check if the environment is open for export privileges.
-		result, err := s.checkWorkspaceIAMPolicy(ctx, common.ProjectExporter, environment)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to check workspace IAM policy: %v", err)
-		}
-		if result {
-			allowExport = true
-		}
-	}
-	// If the environment is not open for export privileges, check if the user has permission to export the query.
-	if !allowExport {
-		dataShare := false
-		if database != nil {
-			dataShare = database.DataShare
-		}
-		// Check if the user has permission to execute the query.
-		if err := s.checkQueryRights(ctx, request.ConnectionDatabase, dataShare, request.Statement, countResultsRows(results), user, instance, true); err == nil {
-			allowExport = true
-		}
-	}
+	// AllowExport is a validate only check.
+	_, _, _, _, err = s.preExport(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */)
+	allowExport := (err == nil)
 
 	response := &v1pb.QueryResponse{
 		Results:     results,
@@ -1083,8 +1054,6 @@ func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMess
 		payload.Error = queryErr.Error()
 		newLevel = api.ActivityError
 	}
-
-	// TODO: update the advice list
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -2689,12 +2658,4 @@ func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewR
 	return &v1pb.DifferPreviewResponse{
 		Schema: schema,
 	}, nil
-}
-
-func countResultsRows(results []*v1pb.QueryResult) int32 {
-	var count int32
-	for _, result := range results {
-		count += int32(len(result.Rows))
-	}
-	return count
 }
