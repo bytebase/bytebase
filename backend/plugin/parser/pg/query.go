@@ -17,19 +17,19 @@ import (
 )
 
 func init() {
-	base.RegisterQueryValidator(storepb.Engine_POSTGRES, ValidateSQLForEditor)
-	base.RegisterQueryValidator(storepb.Engine_REDSHIFT, ValidateSQLForEditor)
-	base.RegisterQueryValidator(storepb.Engine_RISINGWAVE, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_POSTGRES, validateQuery)
+	base.RegisterQueryValidator(storepb.Engine_REDSHIFT, validateQuery)
+	base.RegisterQueryValidator(storepb.Engine_RISINGWAVE, validateQuery)
 	base.RegisterExtractResourceListFunc(storepb.Engine_POSTGRES, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_REDSHIFT, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_RISINGWAVE, ExtractResourceList)
 }
 
-// ValidateSQLForEditor validates the SQL statement for SQL editor.
+// validateQuery validates the SQL statement for SQL editor.
 // Consider that the tokenizer cannot handle the dollar-sign($), so that we use pg_query_go to parse the statement.
 // For EXPLAIN and normal SELECT statements, we can directly use regexp to check.
 // For CTE, we need to parse the statement to JSON and check the JSON keys.
-func ValidateSQLForEditor(statement string) (bool, error) {
+func validateQuery(statement string) (bool, error) {
 	stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		// Parse error again for getting a better error message.

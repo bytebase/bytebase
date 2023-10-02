@@ -90,7 +90,7 @@ func TestValidateSQLForEditor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got, err := ValidateSQLForEditor(test.statement)
+		got, err := validateQuery(test.statement)
 		if test.err {
 			require.Error(t, err)
 		} else {
@@ -201,7 +201,7 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resources, err := ExtractChangedResources("db", "", test.statement)
+		resources, err := extractChangedResources("db", "", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
 	}

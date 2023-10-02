@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	base.RegisterQueryValidator(storepb.Engine_TIDB, ValidateSQLForEditor)
+	base.RegisterQueryValidator(storepb.Engine_TIDB, validateQuery)
 	base.RegisterExtractResourceListFunc(storepb.Engine_TIDB, ExtractResourceList)
 	// TODO(d): migrate to mysql parser.
 	base.RegisterExtractDatabaseListFunc(storepb.Engine_MYSQL, ExtractDatabaseList)
@@ -21,12 +21,12 @@ func init() {
 	base.RegisterExtractDatabaseListFunc(storepb.Engine_TIDB, ExtractDatabaseList)
 }
 
-// ValidateSQLForEditor validates the SQL statement for SQL editor.
+// validateQuery validates the SQL statement for SQL editor.
 // We validate the statement by following steps:
 // 1. Remove all quoted text(quoted identifier, string literal) and comments from the statement.
 // 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
 // 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
-func ValidateSQLForEditor(statement string) (bool, error) {
+func validateQuery(statement string) (bool, error) {
 	stmtList, err := ParseTiDB(statement, "", "")
 	if err != nil {
 		return false, err
