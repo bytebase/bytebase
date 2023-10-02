@@ -137,9 +137,8 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			policy = &advisor.SQLReviewPolicy{
-				Name:     "Default",
-				RuleList: []*advisor.SQLReviewRule{},
+			policy = &storepb.SQLReviewPolicy{
+				Name: "Default",
 			}
 		} else {
 			return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
@@ -349,9 +348,8 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
 			if err != nil {
 				if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-					policy = &advisor.SQLReviewPolicy{
-						Name:     "Default",
-						RuleList: []*advisor.SQLReviewRule{},
+					policy = &storepb.SQLReviewPolicy{
+						Name: "Default",
 					}
 				} else {
 					return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")

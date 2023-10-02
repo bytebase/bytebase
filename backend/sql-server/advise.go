@@ -137,7 +137,7 @@ func sqlCheck(
 	dbCharacterSet string,
 	dbCollation string,
 	statement string,
-	ruleList []*advisor.SQLReviewRule,
+	ruleList []*storepb.SQLReviewRule,
 	catalog catalog.Catalog,
 ) ([]advisor.Advice, error) {
 	var adviceList []advisor.Advice
