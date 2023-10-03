@@ -1122,17 +1122,17 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 				}
 			}
 		case storepb.Engine_SNOWFLAKE:
-			databases, err := base.ExtractDatabaseList(storepb.Engine_SNOWFLAKE, statement, connectionDatabase)
+			resources, err := base.ExtractResourceList(storepb.Engine_SNOWFLAKE, connectionDatabase, "schema_placeholder", statement)
 			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s with error %v", statement, err)
 			}
-			for _, database := range databases {
-				databaseMap[database] = true
+			for _, resource := range resources {
+				databaseMap[resource.Database] = true
 			}
 		case storepb.Engine_MSSQL:
 			resources, err := base.ExtractResourceList(storepb.Engine_MSSQL, connectionDatabase, "dbo", statement)
 			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s with error %v", statement, err)
 			}
 			for _, resource := range resources {
 				databaseMap[resource.Database] = true
