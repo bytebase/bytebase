@@ -81,7 +81,7 @@ func ExtractResourceList(currentDatabase string, _, statement string) ([]base.Sc
 		return nil, err
 	}
 
-	l := &mysqlResourceExtractListener{
+	l := &resourceExtractListener{
 		currentDatabase: currentDatabase,
 		resourceMap:     make(map[string]base.SchemaResource),
 	}
@@ -104,7 +104,7 @@ func ExtractResourceList(currentDatabase string, _, statement string) ([]base.Sc
 	return result, nil
 }
 
-type mysqlResourceExtractListener struct {
+type resourceExtractListener struct {
 	*parser.BaseMySQLParserListener
 
 	currentDatabase string
@@ -112,7 +112,7 @@ type mysqlResourceExtractListener struct {
 }
 
 // EnterTableRef is called when production tableRef is entered.
-func (l *mysqlResourceExtractListener) EnterTableRef(ctx *parser.TableRefContext) {
+func (l *resourceExtractListener) EnterTableRef(ctx *parser.TableRefContext) {
 	resource := base.SchemaResource{Database: l.currentDatabase}
 	if ctx.DotIdentifier() != nil {
 		resource.Table = NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())

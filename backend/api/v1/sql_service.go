@@ -1113,11 +1113,11 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 		case storepb.Engine_ORACLE, storepb.Engine_DM:
 			databaseMap[connectionDatabase] = true
 			if instance.Options != nil && instance.Options.SchemaTenantMode {
-				list, err := base.ExtractResourceList(storepb.Engine_ORACLE, connectionDatabase, connectionDatabase, statement)
+				resources, err := base.ExtractResourceList(storepb.Engine_ORACLE, connectionDatabase, connectionDatabase, statement)
 				if err != nil {
 					return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", statement)
 				}
-				for _, resource := range list {
+				for _, resource := range resources {
 					databaseMap[resource.Database] = true
 				}
 			}
@@ -1130,12 +1130,12 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 				databaseMap[database] = true
 			}
 		case storepb.Engine_MSSQL:
-			databases, err := base.ExtractDatabaseList(storepb.Engine_MSSQL, statement, connectionDatabase)
+			resources, err := base.ExtractResourceList(storepb.Engine_MSSQL, connectionDatabase, "dbo", statement)
 			if err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
 			}
-			for _, database := range databases {
-				databaseMap[database] = true
+			for _, resource := range resources {
+				databaseMap[resource.Database] = true
 			}
 		}
 		var databases []string
