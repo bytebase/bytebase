@@ -26,16 +26,10 @@
           </span>
         </label>
         <div class="mb-3 text-sm text-gray-400">
-          <i18n-t keypath="settings.general.workspace.external-url.description">
-            <template #viewDoc>
-              <a
-                href="https://www.bytebase.com/docs/get-started/install/external-url"
-                class="normal-link"
-                target="_blank"
-                >{{ $t("common.view-doc") }}</a
-              >
-            </template>
-          </i18n-t>
+          {{ $t("settings.general.workspace.external-url.description") }}
+          <LearnMoreLink
+            url="https://www.bytebase.com/docs/get-started/install/external-url?source=console"
+          />
         </div>
         <BBTextField
           class="mb-4 w-full"
@@ -60,13 +54,18 @@
           </span>
         </label>
         <div class="mb-3 text-sm text-gray-400">
-          <i18n-t
-            keypath="settings.general.workspace.gitops-webhook-url.description"
-          >
-          </i18n-t>
+          {{ $t("settings.general.workspace.gitops-webhook-url.description") }}
+          <LearnMoreLink
+            url="https://www.bytebase.com/docs/get-started/install/external-url#gitops-webhook-url?source=console"
+          />
         </div>
         <BBTextField
           class="mb-4 w-full"
+          :placeholder="
+            t(
+              'settings.general.workspace.gitops-webhook-url.default-to-external-url'
+            )
+          "
           :disabled="!allowEdit"
           :value="state.gitopsWebhookUrl"
           @input="handleGitOpsWebhookUrlChange"
