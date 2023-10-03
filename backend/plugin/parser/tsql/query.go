@@ -13,22 +13,6 @@ import (
 
 func init() {
 	base.RegisterExtractResourceListFunc(storepb.Engine_MSSQL, ExtractResourceList)
-	base.RegisterExtractDatabaseListFunc(storepb.Engine_MSSQL, ExtractDatabaseList)
-}
-
-// ExtractDatabaseList extracts the database names.
-func ExtractDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
-	schemaPlaceholder := "dbo"
-	schemaResource, err := ExtractResourceList(normalizedDatabaseName, schemaPlaceholder, statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []string
-	for _, resource := range schemaResource {
-		result = append(result, resource.Database)
-	}
-	return result, nil
 }
 
 // ExtractResourceList extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
@@ -38,7 +22,7 @@ func ExtractResourceList(currentNormalizedDatabase string, currentNormalizedSche
 		return nil, err
 	}
 
-	l := &tsqlReasourceExtractListener{
+	l := &reasourceExtractListener{
 		currentDatabase: currentNormalizedDatabase,
 		currentSchema:   currentNormalizedSchema,
 		resourceMap:     make(map[string]base.SchemaResource),
@@ -57,7 +41,7 @@ func ExtractResourceList(currentNormalizedDatabase string, currentNormalizedSche
 	return result, nil
 }
 
-type tsqlReasourceExtractListener struct {
+type reasourceExtractListener struct {
 	*parser.BaseTSqlParserListener
 
 	currentDatabase string
@@ -66,7 +50,7 @@ type tsqlReasourceExtractListener struct {
 }
 
 // EnterTable_source_item is called when the parser enters the table_source_item production.
-func (l *tsqlReasourceExtractListener) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
+func (l *reasourceExtractListener) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
 	if fullTableName := ctx.Full_table_name(); fullTableName != nil {
 		var parts []string
 		var linkedServer string
