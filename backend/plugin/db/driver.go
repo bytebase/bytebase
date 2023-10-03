@@ -15,6 +15,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -370,7 +371,7 @@ type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
 	Limit               int
 	ReadOnly            bool
-	SensitiveSchemaInfo *SensitiveSchemaInfo
+	SensitiveSchemaInfo *base.SensitiveSchemaInfo
 	// EnableSensitive will set to be true if the database instance has license.
 	EnableSensitive bool
 
@@ -495,49 +496,4 @@ func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig,
 type ExecuteOptions struct {
 	BeginFunc          func(ctx context.Context, conn *sql.Conn) error
 	EndTransactionFunc func(tx *sql.Tx) error
-}
-
-// SensitiveSchemaInfo is the schema info using to extract sensitive fields.
-type SensitiveSchemaInfo struct {
-	// IgnoreCaseSensitive is the flag to ignore case sensitive.
-	// IMPORTANT: This flag is ONLY for database names, table names and view names in MySQL-like database.
-	IgnoreCaseSensitive bool
-	DatabaseList        []DatabaseSchema
-}
-
-// DatabaseSchema is the database schema using to extract sensitive fields.
-type DatabaseSchema struct {
-	Name       string
-	SchemaList []SchemaSchema
-}
-
-// SchemaSchema is the schema of the schema using to extract sensitive fields.
-type SchemaSchema struct {
-	Name      string
-	TableList []TableSchema
-	ViewList  []ViewSchema
-}
-
-// ViewSchema is the view schema using to extract sensitive fields.
-type ViewSchema struct {
-	Name       string
-	Definition string
-}
-
-// TableSchema is the table schema using to extract sensitive fields.
-type TableSchema struct {
-	Name       string
-	ColumnList []ColumnInfo
-}
-
-// ColumnInfo is the column info using to extract sensitive fields.
-type ColumnInfo struct {
-	Name         string
-	MaskingLevel storepb.MaskingLevel
-}
-
-// SensitiveField is the struct about SELECT fields.
-type SensitiveField struct {
-	Name         string
-	MaskingLevel storepb.MaskingLevel
 }

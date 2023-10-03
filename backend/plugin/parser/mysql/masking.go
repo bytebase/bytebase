@@ -8,7 +8,6 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -19,7 +18,7 @@ func init() {
 	base.RegisterGetMaskedFieldsFunc(storepb.Engine_OCEANBASE, GetMaskedFields)
 }
 
-func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+func GetMaskedFields(statement, currentDatabase string, schemaInfo *base.SensitiveSchemaInfo) ([]base.SensitiveField, error) {
 	extractor := &fieldExtractor{
 		currentDatabase: currentDatabase,
 		schemaInfo:      schemaInfo,
@@ -34,15 +33,15 @@ func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.Sensitive
 type fieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
 	currentDatabase    string
-	schemaInfo         *db.SensitiveSchemaInfo
+	schemaInfo         *base.SensitiveSchemaInfo
 	outerSchemaInfo    []base.FieldInfo
-	cteOuterSchemaInfo []db.TableSchema
+	cteOuterSchemaInfo []base.TableSchema
 
 	// SELECT statement specific field.
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]db.SensitiveField, error) {
+func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]base.SensitiveField, error) {
 	list, err := ParseMySQL(statement)
 	if err != nil {
 		return nil, err
@@ -65,7 +64,7 @@ type mysqlSensitiveFieldListener struct {
 	*mysql.BaseMySQLParserListener
 
 	extractor *fieldExtractor
-	result    []db.SensitiveField
+	result    []base.SensitiveField
 	err       error
 }
 
@@ -87,7 +86,7 @@ func (l *mysqlSensitiveFieldListener) EnterSelectStatement(ctx *mysql.SelectStat
 	}
 
 	for _, field := range fieldList {
-		l.result = append(l.result, db.SensitiveField{
+		l.result = append(l.result, base.SensitiveField{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
 		})
@@ -103,7 +102,7 @@ func (l *mysqlSensitiveFieldListener) EnterCreateView(ctx *mysql.CreateViewConte
 	}
 
 	for _, field := range fieldList {
-		l.result = append(l.result, db.SensitiveField{
+		l.result = append(l.result, base.SensitiveField{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
 		})
@@ -217,9 +216,9 @@ func (extractor *fieldExtractor) mysqlExtractQueryExpression(ctx mysql.IQueryExp
 	return nil, nil
 }
 
-func (extractor *fieldExtractor) mysqlExtractCommonTableExpression(ctx mysql.ICommonTableExpressionContext, recursive bool) (db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlExtractCommonTableExpression(ctx mysql.ICommonTableExpressionContext, recursive bool) (base.TableSchema, error) {
 	if ctx == nil {
-		return db.TableSchema{}, nil
+		return base.TableSchema{}, nil
 	}
 
 	if recursive {
@@ -228,13 +227,13 @@ func (extractor *fieldExtractor) mysqlExtractCommonTableExpression(ctx mysql.ICo
 	return extractor.mysqlExtractNonRecursiveCTE(ctx)
 }
 
-func (extractor *fieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (base.TableSchema, error) {
 	cteName := NormalizeMySQLIdentifier(ctx.Identifier())
 	l := &recursiveCTEListener{
 		extractor: extractor,
-		cteInfo: db.TableSchema{
+		cteInfo: base.TableSchema{
 			Name:       cteName,
-			ColumnList: []db.ColumnInfo{},
+			ColumnList: []base.ColumnInfo{},
 		},
 		selfName:                      cteName,
 		foundFirstQueryExpressionBody: false,
@@ -243,7 +242,7 @@ func (extractor *fieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICommonTable
 	if ctx.ColumnInternalRefList() != nil {
 		columnList := mysqlExtractColumnInternalRefList(ctx.ColumnInternalRefList())
 		for i := range columnList {
-			l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, db.ColumnInfo{
+			l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, base.ColumnInfo{
 				Name:         columnList[i],
 				MaskingLevel: base.DefaultMaskingLevel,
 			})
@@ -251,7 +250,7 @@ func (extractor *fieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICommonTable
 	}
 	antlr.ParseTreeWalkerDefault.Walk(l, ctx.Subquery())
 	if l.err != nil {
-		return db.TableSchema{}, l.err
+		return base.TableSchema{}, l.err
 	}
 
 	return l.cteInfo, nil
@@ -261,7 +260,7 @@ type recursiveCTEListener struct {
 	*mysql.BaseMySQLParserListener
 
 	extractor                     *fieldExtractor
-	cteInfo                       db.TableSchema
+	cteInfo                       base.TableSchema
 	selfName                      string
 	outerCTEs                     []mysql.IWithClauseContext
 	foundFirstQueryExpressionBody bool
@@ -424,7 +423,7 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 	// If any performance issues in use, optimize here.
 	if len(l.cteInfo.ColumnList) == 0 {
 		for _, item := range initialPart {
-			l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, db.ColumnInfo{
+			l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, base.ColumnInfo{
 				Name:         item.Name,
 				MaskingLevel: item.MaskingLevel,
 			})
@@ -520,27 +519,27 @@ func extractQueryExpression(ctx mysql.IQueryExpressionParensContext) mysql.IQuer
 	return nil
 }
 
-func (extractor *fieldExtractor) mysqlExtractNonRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlExtractNonRecursiveCTE(ctx mysql.ICommonTableExpressionContext) (base.TableSchema, error) {
 	fieldList, err := extractor.mysqlExtractSubquery(ctx.Subquery())
 	if err != nil {
-		return db.TableSchema{}, err
+		return base.TableSchema{}, err
 	}
 	if ctx.ColumnInternalRefList() != nil {
 		columnList := mysqlExtractColumnInternalRefList(ctx.ColumnInternalRefList())
 		if len(columnList) != len(fieldList) {
-			return db.TableSchema{}, errors.Errorf("MySQL CTE column list should have the same length, but got %d and %d", len(columnList), len(fieldList))
+			return base.TableSchema{}, errors.Errorf("MySQL CTE column list should have the same length, but got %d and %d", len(columnList), len(fieldList))
 		}
 		for i := range fieldList {
 			fieldList[i].Name = columnList[i]
 		}
 	}
 	cteName := NormalizeMySQLIdentifier(ctx.Identifier())
-	result := db.TableSchema{
+	result := base.TableSchema{
 		Name:       cteName,
-		ColumnList: []db.ColumnInfo{},
+		ColumnList: []base.ColumnInfo{},
 	}
 	for _, field := range fieldList {
-		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
 		})
@@ -681,7 +680,7 @@ func (extractor *fieldExtractor) mysqlExtractExplicitTable(ctx mysql.IExplicitTa
 	return res, nil
 }
 
-func (extractor *fieldExtractor) mysqlFindTableSchema(databaseName, tableName string) (string, db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlFindTableSchema(databaseName, tableName string) (string, base.TableSchema, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
 	//  with tt2 as (
@@ -735,10 +734,10 @@ func (extractor *fieldExtractor) mysqlFindTableSchema(databaseName, tableName st
 	if err == nil {
 		return database, schema, nil
 	}
-	return "", db.TableSchema{}, errors.Wrapf(err, "Table or view %q.%q not found", databaseName, tableName)
+	return "", base.TableSchema{}, errors.Wrapf(err, "Table or view %q.%q not found", databaseName, tableName)
 }
 
-func (extractor *fieldExtractor) mysqlFindViewSchema(databaseName, viewName string) (string, db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlFindViewSchema(databaseName, viewName string) (string, base.TableSchema, error) {
 	for _, database := range extractor.schemaInfo.DatabaseList {
 		if len(database.SchemaList) == 0 {
 			continue
@@ -775,19 +774,19 @@ func (extractor *fieldExtractor) mysqlFindViewSchema(databaseName, viewName stri
 			}
 		}
 	}
-	return "", db.TableSchema{}, errors.Errorf("View %q.%q not found", databaseName, viewName)
+	return "", base.TableSchema{}, errors.Errorf("View %q.%q not found", databaseName, viewName)
 }
 
-func (extractor *fieldExtractor) mysqlBuildTableSchemaForView(viewName string, viewDefinition string) (db.TableSchema, error) {
+func (extractor *fieldExtractor) mysqlBuildTableSchemaForView(viewName string, viewDefinition string) (base.TableSchema, error) {
 	list, err := ParseMySQL(viewDefinition)
 	if err != nil {
-		return db.TableSchema{}, err
+		return base.TableSchema{}, err
 	}
 	if len(list) == 0 {
-		return db.TableSchema{}, errors.Errorf("MySQL view definition should only have one statement, but got %d", len(list))
+		return base.TableSchema{}, errors.Errorf("MySQL view definition should only have one statement, but got %d", len(list))
 	}
 	if len(list) != 1 {
-		return db.TableSchema{}, errors.Errorf("MySQL view definition should only have one statement, but got %d", len(list))
+		return base.TableSchema{}, errors.Errorf("MySQL view definition should only have one statement, but got %d", len(list))
 	}
 
 	listener := &mysqlSensitiveFieldListener{
@@ -795,16 +794,16 @@ func (extractor *fieldExtractor) mysqlBuildTableSchemaForView(viewName string, v
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, list[0].Tree)
 	if listener.err != nil {
-		return db.TableSchema{}, listener.err
+		return base.TableSchema{}, listener.err
 	}
 
-	result := db.TableSchema{
+	result := base.TableSchema{
 		Name:       viewName,
-		ColumnList: []db.ColumnInfo{},
+		ColumnList: []base.ColumnInfo{},
 	}
 	for _, field := range listener.result {
 		// nolint:gosimple
-		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
 		})

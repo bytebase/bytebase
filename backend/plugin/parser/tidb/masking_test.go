@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -14,17 +14,17 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 		defaultDatabase = "db"
 	)
 	var (
-		defaultDatabaseSchema = &db.SensitiveSchemaInfo{
-			DatabaseList: []db.DatabaseSchema{
+		defaultDatabaseSchema = &base.SensitiveSchemaInfo{
+			DatabaseList: []base.DatabaseSchema{
 				{
 					Name: defaultDatabase,
-					SchemaList: []db.SchemaSchema{
+					SchemaList: []base.SchemaSchema{
 						{
 							Name: "",
-							TableList: []db.TableSchema{
+							TableList: []base.TableSchema{
 								{
 									Name: "t",
-									ColumnList: []db.ColumnInfo{
+									ColumnList: []base.ColumnInfo{
 										{
 											Name:         "a",
 											MaskingLevel: storepb.MaskingLevel_FULL,
@@ -52,14 +52,14 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 	)
 	tests := []struct {
 		statement  string
-		schemaInfo *db.SensitiveSchemaInfo
-		fieldList  []db.SensitiveField
+		schemaInfo *base.SensitiveSchemaInfo
+		fieldList  []base.SensitiveField
 	}{
 		{
 			// Test for case-insensitive column names.
 			statement:  `SELECT * FROM (select * from (select a from t) t1 join t as t2 using(A)) result LIMIT 10000;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -82,7 +82,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for explicit database name.
 			statement:  `select concat(db.t.a, db.t.b, db.t.c) from t`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "concat(db.t.a, db.t.b, db.t.c)",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -100,7 +100,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 				select * from t1;
 			`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "cc1",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -130,7 +130,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 				select * from t1;
 			`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "c1",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -153,7 +153,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for Common Table Expression with UNION.
 			statement:  `with t1 as (select * from t), t2 as (select * from t1) select * from t1 union all select * from t2`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -176,7 +176,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for Common Table Expression reference.
 			statement:  `with t1 as (select * from t), t2 as (select * from t1) select * from t2`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -199,7 +199,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for multi-level Common Table Expression.
 			statement:  `with tt2 as (with tt2 as (select * from t) select max(a) from tt2) select * from tt2;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "max(a)",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -210,7 +210,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test that Common Table Expression rename field names.
 			statement:  `with t1(d, c, b, a) as (select * from t) select * from t1`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "d",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -233,7 +233,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for Common Table Expression.
 			statement:  `with t1 as (select * from t) select * from t1`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -256,7 +256,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for associated sub-query.
 			statement:  `select a, (select max(b) > y.a from t as x) from t as y`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -271,7 +271,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for UNION.
 			statement:  `select * from t UNION ALL select * from t`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -294,7 +294,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for JOIN with ON clause.
 			statement:  `select * from t as t1 join t as t2 on t1.a = t2.a`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -333,7 +333,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for natural JOIN.
 			statement:  `select * from t as t1 natural join t as t2`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -356,7 +356,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for JOIN with USING clause.
 			statement:  `select * from t as t1 join t as t2 using(a)`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -391,7 +391,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for functions.
 			statement:  `select max(a), a-b, a=b, a>b, b in (a, c, d) from (select * from t) result`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "max(a)",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -418,7 +418,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for non-associated sub-query
 			statement:  "select t.a, (select max(a) from t) from t as t1 join t on t.a = t1.b",
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -433,7 +433,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for sub-query
 			statement:  "select * from (select * from t) result LIMIT 100000;",
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -456,7 +456,7 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 			// Test for field name.
 			statement:  "select * from (select a, t.b, db.t.c, d as d1 from db.t) result LIMIT 100000;",
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -478,13 +478,13 @@ func TestMySQLExtractSensitiveField(t *testing.T) {
 		{
 			// Test for no FROM clause.
 			statement:  "select 1;",
-			schemaInfo: &db.SensitiveSchemaInfo{},
-			fieldList:  []db.SensitiveField{{Name: "1", MaskingLevel: storepb.MaskingLevel_NONE}},
+			schemaInfo: &base.SensitiveSchemaInfo{},
+			fieldList:  []base.SensitiveField{{Name: "1", MaskingLevel: storepb.MaskingLevel_NONE}},
 		},
 		{
 			// Test for EXPLAIN statements.
 			statement:  "explain select 1;",
-			schemaInfo: &db.SensitiveSchemaInfo{},
+			schemaInfo: &base.SensitiveSchemaInfo{},
 			fieldList:  nil,
 		},
 	}
