@@ -1099,12 +1099,13 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 		databaseMap := make(map[string]bool)
 		switch instance.Engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			databases, err := base.ExtractDatabaseList(storepb.Engine_MYSQL, statement, "")
+			databaseMap[connectionDatabase] = true
+			resources, err := base.ExtractResourceList(instance.Engine, connectionDatabase, "", statement)
 			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s with error %v", statement, err)
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s with error %v", statement, err)
 			}
-			for _, database := range databases {
-				databaseMap[database] = true
+			for _, resource := range resources {
+				databaseMap[resource.Database] = true
 			}
 		case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 			if !allPostgresSystemObjects(statement) {

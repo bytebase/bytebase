@@ -2379,38 +2379,42 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 
 	var schemas []*store.DBSchema
 
-	// Deal with the cross database query
-	dbList, err := base.ExtractDatabaseList(instance.Engine, request.Statement, "")
+	// Deal with the cross database query.
+	resources, err := base.ExtractResourceList(instance.Engine, database.DatabaseName, "", request.Statement)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract database list: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract resource list: %v", err)
 	}
-	for _, db := range dbList {
-		if db != "" && db != database.DatabaseName {
-			findDatabase := &store.FindDatabaseMessage{
-				InstanceID:          &instance.ResourceID,
-				DatabaseName:        &db,
-				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-			}
-			database, err := s.store.GetDatabaseV2(ctx, findDatabase)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
-			}
-			if database == nil {
-				return nil, status.Errorf(codes.NotFound, "database %q not found", db)
-			}
-			schema, err := s.store.GetDBSchema(ctx, database.UID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
-			}
-			schemas = append(schemas, schema)
-		}
+	databaseMap := make(map[string]bool)
+	for _, resource := range resources {
+		databaseMap[resource.Database] = true
+	}
+	var databases []string
+	for database := range databaseMap {
+		databases = append(databases, database)
+	}
+	if len(databases) == 0 {
+		databases = append(databases, database.DatabaseName)
 	}
 
-	schema, err := s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
+	for _, db := range databases {
+		findDatabase := &store.FindDatabaseMessage{
+			InstanceID:          &instance.ResourceID,
+			DatabaseName:        &db,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		}
+		database, err := s.store.GetDatabaseV2(ctx, findDatabase)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
+		}
+		if database == nil {
+			return nil, status.Errorf(codes.NotFound, "database %q not found", db)
+		}
+		schema, err := s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
+		}
+		schemas = append(schemas, schema)
 	}
-	schemas = append(schemas, schema)
 
 	var compactBuf bytes.Buffer
 	for _, schema := range schemas {
