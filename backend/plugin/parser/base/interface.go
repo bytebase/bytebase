@@ -17,7 +17,6 @@ var (
 	changedResourcesGetters = make(map[storepb.Engine]ExtractChangedResourcesFunc)
 	resourcesGetters        = make(map[storepb.Engine]ExtractResourceListFunc)
 	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
-	databaseGetters         = make(map[storepb.Engine]ExtractDatabaseListFunc)
 	schemaDiffers           = make(map[storepb.Engine]SchemaDiffFunc)
 )
 
@@ -26,7 +25,6 @@ type GetMaskedFieldsFunc func(string, string, *db.SensitiveSchemaInfo) ([]db.Sen
 type ExtractChangedResourcesFunc func(string, string, string) ([]SchemaResource, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
-type ExtractDatabaseListFunc func(string, string) ([]string, error)
 type SchemaDiffFunc func(oldStmt, newStmt string, ignoreCaseSensitivity bool) (string, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
@@ -66,24 +64,6 @@ func ExtractResourceList(engine storepb.Engine, currentDatabase string, currentS
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(currentDatabase, currentSchema, sql)
-}
-
-func RegisterExtractDatabaseListFunc(engine storepb.Engine, f ExtractDatabaseListFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := databaseGetters[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	databaseGetters[engine] = f
-}
-
-// ExtractDatabaseList extracts all databases from statement.
-func ExtractDatabaseList(engine storepb.Engine, statement string, currentDatabase string) ([]string, error) {
-	f, ok := databaseGetters[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(statement, currentDatabase)
 }
 
 func RegisterGetMaskedFieldsFunc(engine storepb.Engine, f GetMaskedFieldsFunc) {

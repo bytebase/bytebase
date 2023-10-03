@@ -5,7 +5,6 @@ import (
 
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/model"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -14,11 +13,6 @@ import (
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_TIDB, validateQuery)
 	base.RegisterExtractResourceListFunc(storepb.Engine_TIDB, ExtractResourceList)
-	// TODO(d): migrate to mysql parser.
-	base.RegisterExtractDatabaseListFunc(storepb.Engine_MYSQL, ExtractDatabaseList)
-	base.RegisterExtractDatabaseListFunc(storepb.Engine_MARIADB, ExtractDatabaseList)
-	base.RegisterExtractDatabaseListFunc(storepb.Engine_OCEANBASE, ExtractDatabaseList)
-	base.RegisterExtractDatabaseListFunc(storepb.Engine_TIDB, ExtractDatabaseList)
 }
 
 // validateQuery validates the SQL statement for SQL editor.
@@ -82,56 +76,11 @@ func ExtractResourceList(currentDatabase string, _, sql string) ([]base.SchemaRe
 	return resourceList, nil
 }
 
-// ExtractDatabaseList extracts mysql database list.
-func ExtractDatabaseList(statement, _ string) ([]string, error) {
-	databaseMap := make(map[string]bool)
-
-	// TODO(d): replace it with mysql parser.
-	nodes, err := ParseTiDB(statement, "", "")
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parser statement %q", statement)
-	}
-
-	for _, node := range nodes {
-		databaseList := extractMySQLDatabaseListFromNode(node)
-		for _, database := range databaseList {
-			databaseMap[database] = true
-		}
-	}
-
-	var databaseList []string
-	for database := range databaseMap {
-		databaseList = append(databaseList, database)
-	}
-	sort.Slice(databaseList, func(i, j int) bool {
-		return databaseList[i] < databaseList[j]
-	})
-	return databaseList, nil
-}
-
 // ExtractMySQLTableList extracts all the TableNames from node.
 // If asName is true, extract AsName prior to OrigName.
 func ExtractMySQLTableList(in tidbast.Node, asName bool) []*tidbast.TableName {
 	input := []*tidbast.TableName{}
 	return extractTableList(in, input, asName)
-}
-
-// extractMySQLDatabaseListFromNode extracts all the database from node.
-func extractMySQLDatabaseListFromNode(in tidbast.Node) []string {
-	tableNameList := ExtractMySQLTableList(in, false /* asName */)
-
-	databaseMap := make(map[string]bool)
-	for _, tableName := range tableNameList {
-		databaseMap[tableName.Schema.O] = true
-	}
-
-	var databaseList []string
-	for databaseName := range databaseMap {
-		databaseList = append(databaseList, databaseName)
-	}
-
-	sort.Strings(databaseList)
-	return databaseList
 }
 
 // -------------------------------------------- DO NOT TOUCH --------------------------------------------

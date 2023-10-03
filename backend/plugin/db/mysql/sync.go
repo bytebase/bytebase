@@ -699,25 +699,24 @@ func mergeSlowLog(fingerprint string, statistics *storepb.SlowQueryStatisticsIte
 }
 
 func extractDatabase(engne storepb.Engine, defaultDB string, sql string) []string {
-	list, err := base.ExtractDatabaseList(engne, sql, "")
+	resources, err := base.ExtractResourceList(engne, defaultDB /* currentDatabase */, "" /* currentSchema */, sql)
 	if err != nil {
 		// If we can't extract the database, we just use the default database.
 		slog.Debug("extract database failed", log.BBError(err), slog.String("sql", sql))
 		return []string{defaultDB}
 	}
-
-	var result []string
-	for _, db := range list {
-		if db == "" {
-			result = append(result, defaultDB)
-		} else {
-			result = append(result, db)
-		}
+	databaseMap := make(map[string]bool)
+	for _, resource := range resources {
+		databaseMap[resource.Database] = true
 	}
-	if len(result) == 0 {
-		result = append(result, defaultDB)
+	var databases []string
+	for database := range databaseMap {
+		databases = append(databases, database)
 	}
-	return result
+	if len(databases) == 0 {
+		databases = append(databases, defaultDB)
+	}
+	return databases
 }
 
 // CheckSlowQueryLogEnabled checks whether the slow query log is enabled.
