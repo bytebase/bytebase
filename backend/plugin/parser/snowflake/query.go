@@ -13,10 +13,35 @@ import (
 
 func init() {
 	base.RegisterExtractResourceListFunc(storepb.Engine_SNOWFLAKE, ExtractResourceList)
-	base.RegisterExtractDatabaseListFunc(storepb.Engine_SNOWFLAKE, ExtractDatabaseList)
 }
 
-type snowsqlResourceExtractListener struct {
+// ExtractResourceList extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
+func ExtractResourceList(currentDatabase string, currentSchema string, selectStatement string) ([]base.SchemaResource, error) {
+	tree, err := ParseSnowSQL(selectStatement)
+	if err != nil {
+		return nil, err
+	}
+
+	l := &resourceExtractListener{
+		currentDatabase: currentDatabase,
+		currentSchema:   currentSchema,
+		resourceMap:     make(map[string]base.SchemaResource),
+	}
+
+	var result []base.SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	for _, resource := range l.resourceMap {
+		result = append(result, resource)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return result, nil
+}
+
+type resourceExtractListener struct {
 	*parser.BaseSnowflakeParserListener
 
 	currentDatabase string
@@ -24,7 +49,7 @@ type snowsqlResourceExtractListener struct {
 	resourceMap     map[string]base.SchemaResource
 }
 
-func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refContext) {
+func (l *resourceExtractListener) EnterObject_ref(ctx *parser.Object_refContext) {
 	objectName := ctx.Object_name()
 	if objectName == nil {
 		return
@@ -64,46 +89,4 @@ func (l *snowsqlResourceExtractListener) EnterObject_ref(ctx *parser.Object_refC
 		Schema:   schema,
 		Table:    table,
 	}
-}
-
-// ExtractDatabaseList extracts all databases from statement, and normalizes the database name.
-// If the database name is not specified, it will fallback to the normalizedDatabaseName.
-func ExtractDatabaseList(statement string, normalizedDatabaseName string) ([]string, error) {
-	schemaPlaceholder := "schema_placeholder"
-	schemaResource, err := ExtractResourceList(normalizedDatabaseName, schemaPlaceholder, statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []string
-	for _, resource := range schemaResource {
-		result = append(result, resource.Database)
-	}
-	return result, nil
-}
-
-// ExtractResourceList extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
-func ExtractResourceList(currentDatabase string, currentSchema string, selectStatement string) ([]base.SchemaResource, error) {
-	tree, err := ParseSnowSQL(selectStatement)
-	if err != nil {
-		return nil, err
-	}
-
-	l := &snowsqlResourceExtractListener{
-		currentDatabase: currentDatabase,
-		currentSchema:   currentSchema,
-		resourceMap:     make(map[string]base.SchemaResource),
-	}
-
-	var result []base.SchemaResource
-	antlr.ParseTreeWalkerDefault.Walk(l, tree)
-	for _, resource := range l.resourceMap {
-		result = append(result, resource)
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].String() < result[j].String()
-	})
-
-	return result, nil
 }
