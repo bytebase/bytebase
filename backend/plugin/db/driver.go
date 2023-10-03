@@ -497,34 +497,6 @@ type ExecuteOptions struct {
 	EndTransactionFunc func(tx *sql.Tx) error
 }
 
-// FormatParamNameInQuestionMark formats the param name in question mark.
-// For example, it will be WHERE hello = ? AND world = ?.
-func FormatParamNameInQuestionMark(paramNames []string) string {
-	if len(paramNames) == 0 {
-		return ""
-	}
-	for i, param := range paramNames {
-		if !strings.Contains(param, "?") {
-			paramNames[i] = param + " = ?"
-		}
-	}
-	return fmt.Sprintf("WHERE %s ", strings.Join(paramNames, " AND "))
-}
-
-// FormatParamNameInNumberedPosition formats the param name in numbered positions.
-func FormatParamNameInNumberedPosition(paramNames []string) string {
-	if len(paramNames) == 0 {
-		return ""
-	}
-	var parts []string
-	for i, param := range paramNames {
-		idx := fmt.Sprintf("$%d", i+1)
-		param = param + "=" + idx
-		parts = append(parts, param)
-	}
-	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
-}
-
 // SensitiveSchemaInfo is the schema info using to extract sensitive fields.
 type SensitiveSchemaInfo struct {
 	// IgnoreCaseSensitive is the flag to ignore case sensitive.
