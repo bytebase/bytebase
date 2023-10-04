@@ -568,11 +568,12 @@
         "network": "网络",
         "external-url": {
           "self": "External URL",
-          "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。{viewDoc}"
+          "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。"
         },
         "gitops-webhook-url": {
           "self": "GitOps Webhook URL",
-          "description": "用于 GitOps 中第三方服务向 Bytebase 发送 Webhook 的 URL。"
+          "description": "用于 GitOps 中第三方服务向 Bytebase 发送 Webhook 的 URL。",
+          "default-to-external-url": "默认值是 External URL"
         },
         "sign-in-frequency": {
           "self": "登录频率",
