@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pkg/errors"
@@ -19,7 +18,7 @@ func init() {
 	base.RegisterGetMaskedFieldsFunc(storepb.Engine_TIDB, GetMaskedFields)
 }
 
-func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+func GetMaskedFields(statement, currentDatabase string, schemaInfo *base.SensitiveSchemaInfo) ([]base.SensitiveField, error) {
 	extractor := &fieldExtractor{
 		currentDatabase: currentDatabase,
 		schemaInfo:      schemaInfo,
@@ -34,15 +33,15 @@ func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.Sensitive
 type fieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
 	currentDatabase    string
-	schemaInfo         *db.SensitiveSchemaInfo
+	schemaInfo         *base.SensitiveSchemaInfo
 	outerSchemaInfo    []base.FieldInfo
-	cteOuterSchemaInfo []db.TableSchema
+	cteOuterSchemaInfo []base.TableSchema
 
 	// SELECT statement specific field.
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]db.SensitiveField, error) {
+func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]base.SensitiveField, error) {
 	p := parser.New()
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.
@@ -71,9 +70,9 @@ func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]db.
 	if err != nil {
 		return nil, err
 	}
-	result := []db.SensitiveField{}
+	result := []base.SensitiveField{}
 	for _, field := range fieldList {
-		result = append(result, db.SensitiveField{
+		result = append(result, base.SensitiveField{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
 		})
@@ -174,8 +173,8 @@ func splitInitialAndRecursivePart(node *tidbast.SetOprStmt, selfName string) ([]
 	return node.SelectList.Selects, nil
 }
 
-func (extractor *fieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
-	cteInfo := db.TableSchema{Name: node.Name.O}
+func (extractor *fieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableExpression) (base.TableSchema, error) {
+	cteInfo := base.TableSchema{Name: node.Name.O}
 
 	switch x := node.Query.Query.(type) {
 	case *tidbast.SetOprStmt:
@@ -187,7 +186,7 @@ func (extractor *fieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableEx
 			for _, cte := range x.With.CTEs {
 				cteTable, err := extractor.extractCTE(cte)
 				if err != nil {
-					return db.TableSchema{}, err
+					return base.TableSchema{}, err
 				}
 				extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
 			}
@@ -205,7 +204,7 @@ func (extractor *fieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableEx
 
 		initialPart, recursivePart := splitInitialAndRecursivePart(x, node.Name.O)
 		if len(initialPart) == 0 {
-			return db.TableSchema{}, errors.Errorf("Failed to find initial part for recursive common table expression")
+			return base.TableSchema{}, errors.Errorf("Failed to find initial part for recursive common table expression")
 		}
 		if len(recursivePart) == 0 {
 			return extractor.extractNonRecursiveCTE(node)
@@ -217,20 +216,20 @@ func (extractor *fieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableEx
 			},
 		})
 		if err != nil {
-			return db.TableSchema{}, err
+			return base.TableSchema{}, err
 		}
 
 		if len(node.ColNameList) > 0 {
 			if len(node.ColNameList) != len(initialField) {
 				// The error content comes from MySQL.
-				return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
+				return base.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
 			}
 			for i := 0; i < len(initialField); i++ {
 				initialField[i].Name = node.ColNameList[i].O
 			}
 		}
 		for _, field := range initialField {
-			cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
+			cteInfo.ColumnList = append(cteInfo.ColumnList, base.ColumnInfo{
 				Name:         field.Name,
 				MaskingLevel: field.MaskingLevel,
 			})
@@ -257,11 +256,11 @@ func (extractor *fieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableEx
 				},
 			})
 			if err != nil {
-				return db.TableSchema{}, err
+				return base.TableSchema{}, err
 			}
 			if len(fieldList) != len(cteInfo.ColumnList) {
 				// The error content comes from MySQL.
-				return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
+				return base.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
 			}
 
 			changed := false
@@ -283,26 +282,26 @@ func (extractor *fieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableEx
 	}
 }
 
-func (extractor *fieldExtractor) extractNonRecursiveCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
+func (extractor *fieldExtractor) extractNonRecursiveCTE(node *tidbast.CommonTableExpression) (base.TableSchema, error) {
 	fieldList, err := extractor.extractNode(node.Query.Query)
 	if err != nil {
-		return db.TableSchema{}, err
+		return base.TableSchema{}, err
 	}
 	if len(node.ColNameList) > 0 {
 		if len(node.ColNameList) != len(fieldList) {
 			// The error content comes from MySQL.
-			return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
+			return base.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
 		}
 		for i := 0; i < len(fieldList); i++ {
 			fieldList[i].Name = node.ColNameList[i].O
 		}
 	}
-	result := db.TableSchema{
+	result := base.TableSchema{
 		Name:       node.Name.O,
-		ColumnList: []db.ColumnInfo{},
+		ColumnList: []base.ColumnInfo{},
 	}
 	for _, field := range fieldList {
-		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
 		})
@@ -310,7 +309,7 @@ func (extractor *fieldExtractor) extractNonRecursiveCTE(node *tidbast.CommonTabl
 	return result, nil
 }
 
-func (extractor *fieldExtractor) extractCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
+func (extractor *fieldExtractor) extractCTE(node *tidbast.CommonTableExpression) (base.TableSchema, error) {
 	if node.IsRecursive {
 		return extractor.extractRecursiveCTE(node)
 	}
@@ -565,7 +564,7 @@ func (extractor *fieldExtractor) extractTableSource(node *tidbast.TableSource) (
 	return res, nil
 }
 
-func (extractor *fieldExtractor) findTableSchema(databaseName string, tableName string) (string, db.TableSchema, error) {
+func (extractor *fieldExtractor) findTableSchema(databaseName string, tableName string) (string, base.TableSchema, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
 	//  with tt2 as (
@@ -619,26 +618,26 @@ func (extractor *fieldExtractor) findTableSchema(databaseName string, tableName 
 	if err == nil {
 		return database, schema, nil
 	}
-	return "", db.TableSchema{}, errors.Wrapf(err, "Table or view %q.%q not found", databaseName, tableName)
+	return "", base.TableSchema{}, errors.Wrapf(err, "Table or view %q.%q not found", databaseName, tableName)
 }
 
-func (extractor *fieldExtractor) buildTableSchemaForView(viewName string, definition string) (db.TableSchema, error) {
+func (extractor *fieldExtractor) buildTableSchemaForView(viewName string, definition string) (base.TableSchema, error) {
 	newExtractor := &fieldExtractor{
 		currentDatabase: extractor.currentDatabase,
 		schemaInfo:      extractor.schemaInfo,
 	}
 	fields, err := newExtractor.extractSensitiveFields(definition)
 	if err != nil {
-		return db.TableSchema{}, err
+		return base.TableSchema{}, err
 	}
 
-	result := db.TableSchema{
+	result := base.TableSchema{
 		Name:       viewName,
-		ColumnList: []db.ColumnInfo{},
+		ColumnList: []base.ColumnInfo{},
 	}
 	for _, field := range fields {
 		// nolint:gosimple
-		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
 		})
@@ -646,7 +645,7 @@ func (extractor *fieldExtractor) buildTableSchemaForView(viewName string, defini
 	return result, nil
 }
 
-func (extractor *fieldExtractor) findViewSchema(databaseName string, viewName string) (string, db.TableSchema, error) {
+func (extractor *fieldExtractor) findViewSchema(databaseName string, viewName string) (string, base.TableSchema, error) {
 	for _, database := range extractor.schemaInfo.DatabaseList {
 		if len(database.SchemaList) == 0 {
 			continue
@@ -683,7 +682,7 @@ func (extractor *fieldExtractor) findViewSchema(databaseName string, viewName st
 			}
 		}
 	}
-	return "", db.TableSchema{}, errors.Errorf("View %q.%q not found", databaseName, viewName)
+	return "", base.TableSchema{}, errors.Errorf("View %q.%q not found", databaseName, viewName)
 }
 
 func (extractor *fieldExtractor) extractTableName(node *tidbast.TableName) ([]base.FieldInfo, error) {

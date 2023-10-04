@@ -10,7 +10,6 @@ import (
 
 	parser "github.com/bytebase/tsql-parser"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -19,7 +18,7 @@ func init() {
 	base.RegisterGetMaskedFieldsFunc(storepb.Engine_MSSQL, GetMaskedFields)
 }
 
-func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+func GetMaskedFields(statement, currentDatabase string, schemaInfo *base.SensitiveSchemaInfo) ([]base.SensitiveField, error) {
 	extractor := &fieldExtractor{
 		currentDatabase: currentDatabase,
 		schemaInfo:      schemaInfo,
@@ -34,14 +33,14 @@ func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.Sensitive
 type fieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
 	currentDatabase    string
-	schemaInfo         *db.SensitiveSchemaInfo
-	cteOuterSchemaInfo []db.TableSchema
+	schemaInfo         *base.SensitiveSchemaInfo
+	cteOuterSchemaInfo []base.TableSchema
 
 	// SELECT statement specific field.
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *fieldExtractor) extractSensitiveFields(sql string) ([]db.SensitiveField, error) {
+func (extractor *fieldExtractor) extractSensitiveFields(sql string) ([]base.SensitiveField, error) {
 	tree, err := ParseTSQL(sql)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse snowsql")
@@ -62,7 +61,7 @@ type tsqlTSQLSensitiveFieldExtractorListener struct {
 	*parser.BaseTSqlParserListener
 
 	extractor *fieldExtractor
-	result    []db.SensitiveField
+	result    []base.SensitiveField
 	err       error
 }
 
@@ -79,7 +78,7 @@ func (l *tsqlTSQLSensitiveFieldExtractorListener) EnterDml_clause(ctx *parser.Dm
 	}
 
 	for _, field := range result {
-		l.result = append(l.result, db.SensitiveField{
+		l.result = append(l.result, base.SensitiveField{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
 		})
@@ -141,11 +140,11 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 			if !recursiveCTE {
 				result = fieldsInAnchorClause
 			} else {
-				tempCTEOuterSchemaInfo := db.TableSchema{
+				tempCTEOuterSchemaInfo := base.TableSchema{
 					Name: normalizedCTEName,
 				}
 				for i := 0; i < len(fieldsInAnchorClause); i++ {
-					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, db.ColumnInfo{
+					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, base.ColumnInfo{
 						Name:         fieldsInAnchorClause[i].Name,
 						MaskingLevel: fieldsInAnchorClause[i].MaskingLevel,
 					})
@@ -206,14 +205,14 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 				}
 			}
 			// Append to the extractor.schemaInfo.DatabaseList
-			columnList := make([]db.ColumnInfo, 0, len(result))
+			columnList := make([]base.ColumnInfo, 0, len(result))
 			for _, field := range result {
-				columnList = append(columnList, db.ColumnInfo{
+				columnList = append(columnList, base.ColumnInfo{
 					Name:         field.Name,
 					MaskingLevel: field.MaskingLevel,
 				})
 			}
-			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, db.TableSchema{
+			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, base.TableSchema{
 				Name:       normalizedCTEName,
 				ColumnList: columnList,
 			})
@@ -554,11 +553,11 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx pars
 	return extractor.extractTSqlSensitiveFieldsFromSelectStatement(ctx.Select_statement())
 }
 
-func (extractor *fieldExtractor) tsqlFindTableSchema(fullTableName parser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, db.TableSchema, error) {
+func (extractor *fieldExtractor) tsqlFindTableSchema(fullTableName parser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, base.TableSchema, error) {
 	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(fullTableName, "", "", "")
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
-		return "", db.TableSchema{}, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
+		return "", base.TableSchema{}, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
 	}
 	// For tsql, we should find the table schema in cteOuterSchemaInfo by ascending order.
 	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
@@ -571,7 +570,7 @@ func (extractor *fieldExtractor) tsqlFindTableSchema(fullTableName parser.IFull_
 	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeFullTableName(fullTableName, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName)
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
-		return "", db.TableSchema{}, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
+		return "", base.TableSchema{}, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
 	}
 	for _, databaseSchema := range extractor.schemaInfo.DatabaseList {
 		if normalizedDatabaseName != "" && !extractor.isIdentifierEqual(normalizedDatabaseName, databaseSchema.Name) {
@@ -589,7 +588,7 @@ func (extractor *fieldExtractor) tsqlFindTableSchema(fullTableName parser.IFull_
 			}
 		}
 	}
-	return "", db.TableSchema{}, errors.Errorf("table %s.%s.%s is not found", normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+	return "", base.TableSchema{}, errors.Errorf("table %s.%s.%s is not found", normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 }
 
 // splitTableNameIntoNormalizedParts splits the table name into normalized 3 parts: database, schema, table.

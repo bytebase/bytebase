@@ -7,7 +7,6 @@ import (
 	plsql "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -17,7 +16,7 @@ func init() {
 	base.RegisterGetMaskedFieldsFunc(storepb.Engine_DM, GetMaskedFields)
 }
 
-func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+func GetMaskedFields(statement, currentDatabase string, schemaInfo *base.SensitiveSchemaInfo) ([]base.SensitiveField, error) {
 	extractor := &fieldExtractor{
 		currentDatabase: currentDatabase,
 		schemaInfo:      schemaInfo,
@@ -33,15 +32,15 @@ func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.Sensitive
 type fieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
 	currentDatabase    string
-	schemaInfo         *db.SensitiveSchemaInfo
+	schemaInfo         *base.SensitiveSchemaInfo
 	outerSchemaInfo    []base.FieldInfo
-	cteOuterSchemaInfo []db.TableSchema
+	cteOuterSchemaInfo []base.TableSchema
 
 	// SELECT statement specific field.
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *fieldExtractor) extractSensitiveField(statement string) ([]db.SensitiveField, error) {
+func (extractor *fieldExtractor) extractSensitiveField(statement string) ([]base.SensitiveField, error) {
 	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
@@ -61,7 +60,7 @@ type selectStatementListener struct {
 	*plsql.BasePlSqlParserListener
 
 	extractor *fieldExtractor
-	result    []db.SensitiveField
+	result    []base.SensitiveField
 	err       error
 }
 
@@ -81,7 +80,7 @@ func (l *selectStatementListener) EnterSelect_statement(ctx *plsql.Select_statem
 			}
 
 			for _, field := range fieldList {
-				l.result = append(l.result, db.SensitiveField{
+				l.result = append(l.result, base.SensitiveField{
 					Name:         field.Name,
 					MaskingLevel: field.MaskingLevel,
 				})
@@ -103,7 +102,7 @@ func (extractor *fieldExtractor) plsqlExtractContext(ctx antlr.ParserRuleContext
 	}
 }
 
-func (extractor *fieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
+func (extractor *fieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactoring_elementContext) (base.TableSchema, error) {
 	// Deal with recursive CTE first.
 	tableName := NormalizeIdentifierContext(ctx.Query_name().Identifier())
 
@@ -111,7 +110,7 @@ func (extractor *fieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactori
 		subquery := ctx.Subquery()
 		initialField, err := extractor.plsqlExtractSubqueryExceptLastPart(subquery)
 		if err != nil {
-			return db.TableSchema{}, err
+			return base.TableSchema{}, err
 		}
 
 		if ctx.Paren_column_list() != nil {
@@ -119,24 +118,24 @@ func (extractor *fieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactori
 			for _, column := range ctx.Paren_column_list().Column_list().AllColumn_name() {
 				_, _, columnName, err := plsqlNormalizeColumnName("", column)
 				if err != nil {
-					return db.TableSchema{}, err
+					return base.TableSchema{}, err
 				}
 				columnNameList = append(columnNameList, columnName)
 			}
 			if len(columnNameList) != len(initialField) {
-				return db.TableSchema{}, errors.Errorf("column list and subquery must have the same number of columns")
+				return base.TableSchema{}, errors.Errorf("column list and subquery must have the same number of columns")
 			}
 			for i, columnName := range columnNameList {
 				initialField[i].Name = columnName
 			}
 		}
 
-		cteInfo := db.TableSchema{
+		cteInfo := base.TableSchema{
 			Name:       tableName,
-			ColumnList: []db.ColumnInfo{},
+			ColumnList: []base.ColumnInfo{},
 		}
 		for _, field := range initialField {
-			cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
+			cteInfo.ColumnList = append(cteInfo.ColumnList, base.ColumnInfo{
 				Name:         field.Name,
 				MaskingLevel: field.MaskingLevel,
 			})
@@ -159,10 +158,10 @@ func (extractor *fieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactori
 		for {
 			fieldList, err := extractor.plsqlExtractSubqueryBasicElements(lastPart.Subquery_basic_elements())
 			if err != nil {
-				return db.TableSchema{}, err
+				return base.TableSchema{}, err
 			}
 			if len(fieldList) != len(cteInfo.ColumnList) {
-				return db.TableSchema{}, errors.Errorf("recursive WITH clause members must have the same number of columns")
+				return base.TableSchema{}, errors.Errorf("recursive WITH clause members must have the same number of columns")
 			}
 
 			changed := false
@@ -216,10 +215,10 @@ func (extractor *fieldExtractor) plsqlExtractSubqueryExceptLastPart(ctx plsql.IS
 	return leftField, nil
 }
 
-func (extractor *fieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactoring_elementContext) (db.TableSchema, error) {
+func (extractor *fieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactoring_elementContext) (base.TableSchema, error) {
 	fieldList, err := extractor.plsqlExtractSubquery(ctx.Subquery())
 	if err != nil {
-		return db.TableSchema{}, err
+		return base.TableSchema{}, err
 	}
 
 	if ctx.Paren_column_list() != nil {
@@ -227,12 +226,12 @@ func (extractor *fieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactorin
 		for _, column := range ctx.Paren_column_list().Column_list().AllColumn_name() {
 			_, _, columnName, err := plsqlNormalizeColumnName("", column)
 			if err != nil {
-				return db.TableSchema{}, err
+				return base.TableSchema{}, err
 			}
 			columnNameList = append(columnNameList, columnName)
 		}
 		if len(columnNameList) != len(fieldList) {
-			return db.TableSchema{}, errors.Errorf("column list and subquery must have the same number of columns")
+			return base.TableSchema{}, errors.Errorf("column list and subquery must have the same number of columns")
 		}
 		for i, columnName := range columnNameList {
 			fieldList[i].Name = columnName
@@ -241,12 +240,12 @@ func (extractor *fieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactorin
 
 	tableName := NormalizeIdentifierContext(ctx.Query_name().Identifier())
 
-	result := db.TableSchema{
+	result := base.TableSchema{
 		Name:       tableName,
-		ColumnList: []db.ColumnInfo{},
+		ColumnList: []base.ColumnInfo{},
 	}
 	for _, field := range fieldList {
-		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
 		})
@@ -1208,11 +1207,11 @@ func (extractor *fieldExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.
 	return nil, errors.Errorf("unknown DML_TABLE_EXPRESSION_CLAUSE rule: %T", ctx)
 }
 
-func (extractor *fieldExtractor) plsqlFindTableSchema(schemaName, tableName string) (db.TableSchema, error) {
+func (extractor *fieldExtractor) plsqlFindTableSchema(schemaName, tableName string) (base.TableSchema, error) {
 	if tableName == "DUAL" {
-		return db.TableSchema{
+		return base.TableSchema{
 			Name:       "DUAL",
-			ColumnList: []db.ColumnInfo{},
+			ColumnList: []base.ColumnInfo{},
 		}, nil
 	}
 
@@ -1247,7 +1246,7 @@ func (extractor *fieldExtractor) plsqlFindTableSchema(schemaName, tableName stri
 		}
 	}
 
-	return db.TableSchema{}, errors.Errorf("table %s.%s not found", schemaName, tableName)
+	return base.TableSchema{}, errors.Errorf("table %s.%s not found", schemaName, tableName)
 }
 
 func plsqlNormalizeColumnName(currentSchema string, ctx plsql.IColumn_nameContext) (string, string, string, error) {
