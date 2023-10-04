@@ -7,23 +7,23 @@ import (
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestSnowSQLExtractSensitiveField(t *testing.T) {
 	var (
 		defaultDatabase       = "SNOWFLAKE"
-		defaultDatabaseSchema = &db.SensitiveSchemaInfo{
-			DatabaseList: []db.DatabaseSchema{
+		defaultDatabaseSchema = &base.SensitiveSchemaInfo{
+			DatabaseList: []base.DatabaseSchema{
 				{
 					Name: defaultDatabase,
-					SchemaList: []db.SchemaSchema{
+					SchemaList: []base.SchemaSchema{
 						{
 							Name: "PUBLIC",
-							TableList: []db.TableSchema{
+							TableList: []base.TableSchema{
 								{
 									Name: "T1",
-									ColumnList: []db.ColumnInfo{
+									ColumnList: []base.ColumnInfo{
 										{
 											Name:         "A",
 											MaskingLevel: storepb.MaskingLevel_FULL,
@@ -44,7 +44,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 								},
 								{
 									Name: "T2",
-									ColumnList: []db.ColumnInfo{
+									ColumnList: []base.ColumnInfo{
 										{
 											Name:         "A",
 											MaskingLevel: storepb.MaskingLevel_NONE,
@@ -57,7 +57,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 								},
 								{
 									Name: "T3",
-									ColumnList: []db.ColumnInfo{
+									ColumnList: []base.ColumnInfo{
 										{
 											Name:         "E",
 											MaskingLevel: storepb.MaskingLevel_FULL,
@@ -78,8 +78,8 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 
 	tests := []struct {
 		statement  string
-		schemaInfo *db.SensitiveSchemaInfo
-		fieldList  []db.SensitiveField
+		schemaInfo *base.SensitiveSchemaInfo
+		fieldList  []base.SensitiveField
 	}{
 		{
 			// Test for recursive CTE.
@@ -91,7 +91,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			SELECT * FROM CTE_01;
 			`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "C1",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -114,7 +114,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			// Test for UNPIVOT.
 			statement:  `SELECT * FROM T1 UNPIVOT(E FOR F IN (B, C, D));`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -133,7 +133,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			// Test for PIVOT.
 			statement:  `SELECT TT1.* FROM T1 PIVOT(MAX(A) FOR B IN ('a', 'b', 'c')) AS TT1`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "C",
 					MaskingLevel: storepb.MaskingLevel_NONE,
@@ -160,7 +160,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			// Test for correlated sub-query.
 			statement:  `SELECT A, (SELECT MAX(B) > Y.A FROM T1 X) FROM T1 Y`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -181,7 +181,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			)
 			SELECT * FROM TT1;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "T1_COL1",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -196,7 +196,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			// Test for expression.
 			statement:  `SELECT (SELECT A FROM T1 LIMIT 1), A + 1, 1, FUNCTIONCALL(D) FROM T1;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "(SELECTAFROMT1LIMIT1)",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -227,7 +227,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			SELECT * FROM TT1 JOIN TT2;
 			`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "T1_COL1",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -258,7 +258,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			// Test for set operators(UNION, INTERSECT, ...)
 			statement:  `SELECT A, B FROM T1 UNION SELECT * FROM T2 INTERSECT SELECT * FROM T3`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -273,7 +273,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			// Test for subquery in from cluase with as alias.
 			statement:  `SELECT T.A, A, B FROM (SELECT * FROM T1) AS T`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -292,7 +292,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 			// Test for field name.
 			statement:  "SELECT $1, A, T.B AS N, T.C from T1 AS T",
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -314,7 +314,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		{
 			statement:  `SELECT * FROM T1, T2, T3;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -352,7 +352,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		{
 			statement:  `SELECT A, E, F FROM T1 NATURAL JOIN T2 NATURAL JOIN T3;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -370,7 +370,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		{
 			statement:  `SELECT A, B, D FROM T1;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -388,7 +388,7 @@ func TestSnowSQLExtractSensitiveField(t *testing.T) {
 		{
 			statement:  `SELECT * FROM T1;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
