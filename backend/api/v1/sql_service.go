@@ -345,7 +345,7 @@ func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMes
 	return nil
 }
 
-func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]byte, int64, error) {
+func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *base.SensitiveSchemaInfo) ([]byte, int64, error) {
 	// Don't anonymize data for exporting data using admin mode.
 	if request.Admin {
 		sensitiveSchemaInfo = nil
@@ -975,7 +975,7 @@ func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMess
 	return nil
 }
 
-func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
+func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *base.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
 	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return nil, 0, err
@@ -1044,7 +1044,7 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 //  5. Create query activity.
 //
 // Due to the performance consideration, we DO NOT get the sensitive schema info if there are advice error in SQL review.
-func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatabase, statement string, limit int32, isAdmin, isExport bool) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, error) {
+func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatabase, statement string, limit int32, isAdmin, isExport bool) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *base.SensitiveSchemaInfo, error) {
 	// Prepare related message.
 	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, instanceName, connectionDatabase)
 	if err != nil {
@@ -1094,7 +1094,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 	if isExport {
 		maskingType = storepb.MaskingExceptionPolicy_MaskingException_EXPORT
 	}
-	var sensitiveSchemaInfo *db.SensitiveSchemaInfo
+	var sensitiveSchemaInfo *base.SensitiveSchemaInfo
 	if adviceStatus != advisor.Error {
 		databaseMap := make(map[string]bool)
 		switch instance.Engine {
@@ -1202,7 +1202,7 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 	return activity, nil
 }
 
-func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store.InstanceMessage, databaseList []string, currentDatabase string, action storepb.MaskingExceptionPolicy_MaskingException_Action) (*db.SensitiveSchemaInfo, error) {
+func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store.InstanceMessage, databaseList []string, currentDatabase string, action storepb.MaskingExceptionPolicy_MaskingException_Action) (*base.SensitiveSchemaInfo, error) {
 	currentPrincipalUID := ctx.Value(common.PrincipalIDContextKey).(int)
 	currentPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
 		ID: &currentPrincipalUID,
@@ -1213,9 +1213,9 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 
 	type sensitiveDataMap map[api.SensitiveData]api.SensitiveDataMaskType
 	isEmpty := true
-	result := &db.SensitiveSchemaInfo{
+	result := &base.SensitiveSchemaInfo{
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-		DatabaseList:        []db.DatabaseSchema{},
+		DatabaseList:        []base.DatabaseSchema{},
 	}
 
 	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
@@ -1343,17 +1343,17 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 
 		if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM {
 			for _, schema := range dbSchema.Metadata.Schemas {
-				databaseSchema := db.DatabaseSchema{
+				databaseSchema := base.DatabaseSchema{
 					Name: schema.Name,
 				}
-				schemaSchema := db.SchemaSchema{
+				schemaSchema := base.SchemaSchema{
 					Name:      schema.Name,
-					TableList: []db.TableSchema{},
+					TableList: []base.TableSchema{},
 				}
 				for _, table := range schema.Tables {
-					tableSchema := db.TableSchema{
+					tableSchema := base.TableSchema{
 						Name:       table.Name,
-						ColumnList: []db.ColumnInfo{},
+						ColumnList: []base.ColumnInfo{},
 					}
 					for _, column := range table.Columns {
 						slog.Debug("processing sensitive schema info", slog.String("schema", schema.Name), slog.String("table", table.Name))
@@ -1365,7 +1365,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						if sensitive {
 							isEmpty = false
 						}
-						tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
+						tableSchema.ColumnList = append(tableSchema.ColumnList, base.ColumnInfo{
 							Name:         column.Name,
 							MaskingLevel: maskingLevel,
 						})
@@ -1378,19 +1378,19 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			continue
 		}
 
-		databaseSchema := db.DatabaseSchema{
+		databaseSchema := base.DatabaseSchema{
 			Name:       databaseName,
-			SchemaList: []db.SchemaSchema{},
+			SchemaList: []base.SchemaSchema{},
 		}
 		for _, schema := range dbSchema.Metadata.Schemas {
-			schemaSchema := db.SchemaSchema{
+			schemaSchema := base.SchemaSchema{
 				Name:      schema.Name,
-				TableList: []db.TableSchema{},
+				TableList: []base.TableSchema{},
 			}
 			for _, table := range schema.Tables {
-				tableSchema := db.TableSchema{
+				tableSchema := base.TableSchema{
 					Name:       table.Name,
-					ColumnList: []db.ColumnInfo{},
+					ColumnList: []base.ColumnInfo{},
 				}
 				for _, column := range table.Columns {
 					slog.Debug("processing sensitive schema info", slog.String("database", database.DatabaseName), slog.String("schema", schema.Name), slog.String("table", table.Name), slog.String("column", column.Name))
@@ -1402,7 +1402,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					if sensitive {
 						isEmpty = false
 					}
-					tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
+					tableSchema.ColumnList = append(tableSchema.ColumnList, base.ColumnInfo{
 						Name:         column.Name,
 						MaskingLevel: maskingLevel,
 					})
@@ -1410,7 +1410,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
 			}
 			for _, view := range schema.Views {
-				viewSchema := db.ViewSchema{
+				viewSchema := base.ViewSchema{
 					Name:       view.Name,
 					Definition: view.Definition,
 				}

@@ -9,7 +9,6 @@ import (
 
 	parser "github.com/bytebase/snowsql-parser"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -18,7 +17,7 @@ func init() {
 	base.RegisterGetMaskedFieldsFunc(storepb.Engine_SNOWFLAKE, GetMaskedFields)
 }
 
-func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.SensitiveSchemaInfo) ([]db.SensitiveField, error) {
+func GetMaskedFields(statement, currentDatabase string, schemaInfo *base.SensitiveSchemaInfo) ([]base.SensitiveField, error) {
 	extractor := &fieldExtractor{
 		currentDatabase: currentDatabase,
 		schemaInfo:      schemaInfo,
@@ -33,14 +32,14 @@ func GetMaskedFields(statement, currentDatabase string, schemaInfo *db.Sensitive
 type fieldExtractor struct {
 	// For Oracle, we need to know the current database to determine if the table is in the current schema.
 	currentDatabase    string
-	schemaInfo         *db.SensitiveSchemaInfo
-	cteOuterSchemaInfo []db.TableSchema
+	schemaInfo         *base.SensitiveSchemaInfo
+	cteOuterSchemaInfo []base.TableSchema
 
 	// SELECT statement specific field.
 	fromFieldList []base.FieldInfo
 }
 
-func (extractor *fieldExtractor) extractSensitiveFields(sql string) ([]db.SensitiveField, error) {
+func (extractor *fieldExtractor) extractSensitiveFields(sql string) ([]base.SensitiveField, error) {
 	tree, err := ParseSnowSQL(sql)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse snowsql")
@@ -61,7 +60,7 @@ type snowsqlSnowSensitiveFieldExtractorListener struct {
 	*parser.BaseSnowflakeParserListener
 
 	extractor *fieldExtractor
-	result    []db.SensitiveField
+	result    []base.SensitiveField
 	err       error
 }
 
@@ -76,7 +75,7 @@ func (l *snowsqlSnowSensitiveFieldExtractorListener) EnterDml_command(ctx *parse
 		return
 	}
 	for _, field := range result {
-		l.result = append(l.result, db.SensitiveField{
+		l.result = append(l.result, base.SensitiveField{
 			Name:         field.Name,
 			MaskingLevel: field.MaskingLevel,
 		})
@@ -99,11 +98,11 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q near line %d", normalizedCTEName, commandTableExpression.GetStart().GetLine())
 				}
 
-				tempCTEOuterSchemaInfo := db.TableSchema{
+				tempCTEOuterSchemaInfo := base.TableSchema{
 					Name: normalizedCTEName,
 				}
 				for i := 0; i < len(fieldsInAnchorClause); i++ {
-					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, db.ColumnInfo{
+					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, base.ColumnInfo{
 						Name:         fieldsInAnchorClause[i].Name,
 						MaskingLevel: fieldsInAnchorClause[i].MaskingLevel,
 					})
@@ -152,14 +151,14 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx
 				}
 			}
 			// Append to the extractor.schemaInfo.DatabaseList
-			columnList := make([]db.ColumnInfo, 0, len(result))
+			columnList := make([]base.ColumnInfo, 0, len(result))
 			for _, field := range result {
-				columnList = append(columnList, db.ColumnInfo{
+				columnList = append(columnList, base.ColumnInfo{
 					Name:         field.Name,
 					MaskingLevel: field.MaskingLevel,
 				})
 			}
-			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, db.TableSchema{
+			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, base.TableSchema{
 				Name:       normalizedCTEName,
 				ColumnList: columnList,
 			})
@@ -1087,7 +1086,7 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx pars
 	return result, nil
 }
 
-func (extractor *fieldExtractor) snowsqlFindTableSchema(objectName parser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, db.TableSchema, error) {
+func (extractor *fieldExtractor) snowsqlFindTableSchema(objectName parser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, base.TableSchema, error) {
 	normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(objectName, "", "")
 	// For snowflake, we should find the table schema in cteOuterSchemaInfo by ascending order.
 	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
@@ -1114,7 +1113,7 @@ func (extractor *fieldExtractor) snowsqlFindTableSchema(objectName parser.IObjec
 			}
 		}
 	}
-	return "", db.TableSchema{}, errors.Errorf(`table %s.%s.%s is not found`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+	return "", base.TableSchema{}, errors.Errorf(`table %s.%s.%s is not found`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 }
 
 func (extractor *fieldExtractor) getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]base.FieldInfo, error) {

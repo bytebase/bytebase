@@ -7,7 +7,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestPLSQLExtractSensitiveField(t *testing.T) {
@@ -15,17 +15,17 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		defaultSchema = "ROOT"
 	)
 	var (
-		defaultDatabaseSchema = &db.SensitiveSchemaInfo{
-			DatabaseList: []db.DatabaseSchema{
+		defaultDatabaseSchema = &base.SensitiveSchemaInfo{
+			DatabaseList: []base.DatabaseSchema{
 				{
 					Name: defaultSchema,
-					SchemaList: []db.SchemaSchema{
+					SchemaList: []base.SchemaSchema{
 						{
 							Name: defaultSchema,
-							TableList: []db.TableSchema{
+							TableList: []base.TableSchema{
 								{
 									Name: "T",
-									ColumnList: []db.ColumnInfo{
+									ColumnList: []base.ColumnInfo{
 										{
 											Name:         "A",
 											MaskingLevel: storepb.MaskingLevel_FULL,
@@ -53,8 +53,8 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 	)
 	tests := []struct {
 		statement  string
-		schemaInfo *db.SensitiveSchemaInfo
-		fieldList  []db.SensitiveField
+		schemaInfo *base.SensitiveSchemaInfo
+		fieldList  []base.SensitiveField
 	}{
 		{
 			// Test for Recursive Common Table Expression dependent closures.
@@ -67,7 +67,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 				select * from t1;
 			`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "CC1",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -97,7 +97,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 				select * from t1;
 			`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "C1",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -120,7 +120,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test that Common Table Expression rename field names.
 			statement:  `with t1(d, c, b, a) as (select * from t) select * from t1`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "D",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -143,7 +143,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for Common Table Expression with UNION.
 			statement:  `with t1 as (select * from t), t2 as (select * from t1) select * from (select * from t1 union all select * from t2)`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -166,7 +166,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for Common Table Expression reference.
 			statement:  `with t1 as (select * from t), t2 as (select * from t1) select * from t2`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -189,7 +189,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for multi-level Common Table Expression.
 			statement:  `with tt2 as (with tt2 as (select * from t) select MAX(A) from tt2) select * from tt2`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "MAX(A)",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -200,7 +200,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for Common Table Expression.
 			statement:  `with t1 as (select * from t) select * from t1`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -223,7 +223,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for UNION.
 			statement:  `select 1 as c1, 2 as c2, 3 as c3, 4 from DUAL UNION ALL select * from t`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "C1",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -246,7 +246,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for UNION.
 			statement:  `select * from t UNION ALL select * from t`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -269,7 +269,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for explicit schema name.
 			statement:  `select CONCAT(ROOT.T.A, ROOT.T.B) from T`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "CONCAT(ROOT.T.A,ROOT.T.B)",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -280,7 +280,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for associated sub-query.
 			statement:  `select a, (SELECT MAX(B) > Y.A FROM T X) from t y`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -295,7 +295,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for JOIN with ON clause.
 			statement:  `select * from t t1 join t t2 on t1.a = t2.a`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -334,7 +334,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for natural JOIN.
 			statement:  `select * from t t1 natural join t t2`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -357,7 +357,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for JOIN with USING clause.
 			statement:  `select * from t t1 join t t2 using(a)`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -392,7 +392,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for non-associated sub-query
 			statement:  "select t.a, (SELECT MAX(A) FROM T) from t t1 join t on t.a = t1.b",
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -407,7 +407,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for functions.
 			statement:  `select A-B, B+C as c1 from (select * from t)`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A-B",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -422,7 +422,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for functions.
 			statement:  `select MAX(A), min(b) as c1 from (select * from t)`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "MAX(A)",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -437,7 +437,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for sub-query
 			statement:  "select * from (select * from t) where rownum <= 100000;",
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -460,7 +460,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for sub-select.
 			statement:  "select * from (select a, t.b, root.t.c, d as d1 from root.t) where ROWNUM <= 100000;",
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -483,7 +483,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for field name.
 			statement:  "select a, t.b, root.t.c, d as d1 from t",
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -505,7 +505,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		{
 			statement:  "SELECT * FROM ROOT.T;",
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "A",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -527,14 +527,14 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 		{
 			// Test for EXPLAIN statements.
 			statement:  "explain plan for select 1 from dual;",
-			schemaInfo: &db.SensitiveSchemaInfo{},
+			schemaInfo: &base.SensitiveSchemaInfo{},
 			fieldList:  nil,
 		},
 		{
 			// Test for no FROM DUAL.
 			statement:  "select 1 from dual;",
-			schemaInfo: &db.SensitiveSchemaInfo{},
-			fieldList:  []db.SensitiveField{{Name: "1", MaskingLevel: storepb.MaskingLevel_NONE}},
+			schemaInfo: &base.SensitiveSchemaInfo{},
+			fieldList:  []base.SensitiveField{{Name: "1", MaskingLevel: storepb.MaskingLevel_NONE}},
 		},
 	}
 

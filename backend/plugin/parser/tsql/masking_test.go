@@ -7,24 +7,24 @@ import (
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestTSQLExtractSensitiveField(t *testing.T) {
 	var (
 		defaultDatabase       = "MyDB"
-		defaultDatabaseSchema = &db.SensitiveSchemaInfo{
+		defaultDatabaseSchema = &base.SensitiveSchemaInfo{
 			IgnoreCaseSensitive: true,
-			DatabaseList: []db.DatabaseSchema{
+			DatabaseList: []base.DatabaseSchema{
 				{
 					Name: defaultDatabase,
-					SchemaList: []db.SchemaSchema{
+					SchemaList: []base.SchemaSchema{
 						{
 							Name: "dbo",
-							TableList: []db.TableSchema{
+							TableList: []base.TableSchema{
 								{
 									Name: "MyTable1",
-									ColumnList: []db.ColumnInfo{
+									ColumnList: []base.ColumnInfo{
 										{
 											Name:         "a",
 											MaskingLevel: storepb.MaskingLevel_FULL,
@@ -45,7 +45,7 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 								},
 								{
 									Name: "MyTable2",
-									ColumnList: []db.ColumnInfo{
+									ColumnList: []base.ColumnInfo{
 										{
 											Name:         "e",
 											MaskingLevel: storepb.MaskingLevel_FULL,
@@ -62,8 +62,8 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 
 	tests := []struct {
 		statement  string
-		schemaInfo *db.SensitiveSchemaInfo
-		fieldList  []db.SensitiveField
+		schemaInfo *base.SensitiveSchemaInfo
+		fieldList  []base.SensitiveField
 	}{
 		{
 			// Test for recursive CTE.
@@ -75,7 +75,7 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 			SELECT * FROM cte_01;
 			`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "c1",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -108,7 +108,7 @@ tt3(ee) AS (
 )
 SELECT * FROM tt1 JOIN tt2 ON tt1.aa = tt2.cc JOIN tt3 ON tt2.dd = tt3.ee;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "aa",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -139,7 +139,7 @@ WITH tt1(aa, bb) AS (
 )
 SELECT tt1.aa, bb FROM tt1;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "aa",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -154,7 +154,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 		{
 			statement:  `SELECT tt.a, b FROM (SELECT * FROM MyTable1) AS tt`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -169,7 +169,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 		{
 			statement:  `SELECT a, b, c, d, e FROM MyTable1, MyTable2;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -196,7 +196,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 		{
 			statement:  `SELECT a, b, c, d, e FROM MyTable1 JOIN MyTable2 ON MyTable1.a = MyTable2.e;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -223,7 +223,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 		{
 			statement:  `SELECT b FROM MyTable1 UNION SELECT e FROM MyTable2;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "b",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -234,7 +234,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 		{
 			statement:  `SELECT (SELECT MAX(e) FROM MyTable2) FROM MyTable1;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "SELECTMAX(e)FROMMyTable2",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -245,7 +245,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 		{
 			statement:  `SELECT T1.a FROM MyTable1 AS T1;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
@@ -256,7 +256,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 		{
 			statement:  `SELECT * FROM MyTable1;`,
 			schemaInfo: defaultDatabaseSchema,
-			fieldList: []db.SensitiveField{
+			fieldList: []base.SensitiveField{
 				{
 					Name:         "a",
 					MaskingLevel: storepb.MaskingLevel_FULL,
