@@ -20,9 +20,8 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -295,7 +294,7 @@ func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instan
 
 func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *store.ProjectMessage, instance *store.InstanceMessage) error {
 	switch instance.Engine {
-	case db.MySQL:
+	case storepb.Engine_MYSQL:
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {
 			return err
@@ -314,7 +313,7 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 			message.ProjectID = project.ResourceID
 		}
 		s.stateCfg.InstanceSlowQuerySyncChan <- message
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		findDatabase := &store.FindDatabaseMessage{
 			InstanceID: &instance.ResourceID,
 		}
@@ -331,7 +330,7 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 			if database.SyncState != api.OK {
 				continue
 			}
-			if pg.IsSystemDatabase(database.DatabaseName) {
+			if pgparser.IsSystemDatabase(database.DatabaseName) {
 				continue
 			}
 			if err := func() error {
@@ -389,7 +388,7 @@ func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, project
 		}
 
 		switch instance.Engine {
-		case db.MySQL, db.Postgres:
+		case storepb.Engine_MYSQL, storepb.Engine_POSTGRES:
 			if instance.Deleted {
 				continue
 			}

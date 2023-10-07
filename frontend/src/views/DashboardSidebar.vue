@@ -30,22 +30,6 @@
           <heroicons-outline:home class="w-5 h-5 mr-2" />
           {{ $t("issue.my-issues") }}
         </div>
-        <button
-          type="button"
-          class="p-1 rounded bg-gray-200 hover:bg-gray-300 border border-gray-300 mr-1"
-          @click.prevent.stop="
-            () => {
-              router.replace({
-                name: 'workspace.issue',
-                query: {
-                  autofocus: 1,
-                },
-              });
-            }
-          "
-        >
-          <heroicons-outline:search class="h-4 w-4 text-control" />
-        </button>
       </router-link>
       <router-link
         v-if="shouldShowSyncSchemaEntry"
@@ -103,7 +87,6 @@
 import { useKBarHandler } from "@bytebase/vue-kbar";
 import { PencilRuler } from "lucide-vue-next";
 import { computed } from "vue";
-import { useRouter } from "vue-router";
 import BookmarkListSidePanel from "@/components/BookmarkListSidePanel.vue";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import DatabaseListSidePanel from "@/components/DatabaseListSidePanel.vue";
@@ -116,7 +99,6 @@ import {
 const isMac = navigator.platform.match(/mac/i);
 
 const handler = useKBarHandler();
-const router = useRouter();
 
 // Only show sync schema if the user has permission to alter schema of at least one project.
 const shouldShowSyncSchemaEntry = computed(() => {

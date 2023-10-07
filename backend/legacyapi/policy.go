@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 // PolicyType is the type or name of a policy.
@@ -165,15 +163,6 @@ func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
 		return nil, errors.Wrapf(err, "failed to unmarshal backup plan policy %q", payload)
 	}
 	return &bp, nil
-}
-
-// UnmarshalSQLReviewPolicy will unmarshal payload to SQL review policy.
-func UnmarshalSQLReviewPolicy(payload string) (*advisor.SQLReviewPolicy, error) {
-	var sr advisor.SQLReviewPolicy
-	if err := json.Unmarshal([]byte(payload), &sr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal SQL review policy %q", payload)
-	}
-	return &sr, nil
 }
 
 // EnvironmentTierPolicy is the tier of an environment.

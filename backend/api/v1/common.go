@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -306,80 +305,80 @@ func normalizeFilter(filter string) (string, []string, error) {
 	return normalizedFilter, quotedStrings, nil
 }
 
-func convertToEngine(engine db.Type) v1pb.Engine {
+func convertToEngine(engine storepb.Engine) v1pb.Engine {
 	switch engine {
-	case db.ClickHouse:
+	case storepb.Engine_CLICKHOUSE:
 		return v1pb.Engine_CLICKHOUSE
-	case db.MySQL:
+	case storepb.Engine_MYSQL:
 		return v1pb.Engine_MYSQL
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		return v1pb.Engine_POSTGRES
-	case db.Snowflake:
+	case storepb.Engine_SNOWFLAKE:
 		return v1pb.Engine_SNOWFLAKE
-	case db.SQLite:
+	case storepb.Engine_SQLITE:
 		return v1pb.Engine_SQLITE
-	case db.TiDB:
+	case storepb.Engine_TIDB:
 		return v1pb.Engine_TIDB
-	case db.MongoDB:
+	case storepb.Engine_MONGODB:
 		return v1pb.Engine_MONGODB
-	case db.Redis:
+	case storepb.Engine_REDIS:
 		return v1pb.Engine_REDIS
-	case db.Oracle:
+	case storepb.Engine_ORACLE:
 		return v1pb.Engine_ORACLE
-	case db.Spanner:
+	case storepb.Engine_SPANNER:
 		return v1pb.Engine_SPANNER
-	case db.MSSQL:
+	case storepb.Engine_MSSQL:
 		return v1pb.Engine_MSSQL
-	case db.Redshift:
+	case storepb.Engine_REDSHIFT:
 		return v1pb.Engine_REDSHIFT
-	case db.MariaDB:
+	case storepb.Engine_MARIADB:
 		return v1pb.Engine_MARIADB
-	case db.OceanBase:
+	case storepb.Engine_OCEANBASE:
 		return v1pb.Engine_OCEANBASE
-	case db.RisingWave:
+	case storepb.Engine_RISINGWAVE:
 		return v1pb.Engine_RISINGWAVE
-	case db.DM:
+	case storepb.Engine_DM:
 		return v1pb.Engine_DM
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
 
-func convertEngine(engine v1pb.Engine) db.Type {
+func convertEngine(engine v1pb.Engine) storepb.Engine {
 	switch engine {
 	case v1pb.Engine_CLICKHOUSE:
-		return db.ClickHouse
+		return storepb.Engine_CLICKHOUSE
 	case v1pb.Engine_MYSQL:
-		return db.MySQL
+		return storepb.Engine_MYSQL
 	case v1pb.Engine_POSTGRES:
-		return db.Postgres
+		return storepb.Engine_POSTGRES
 	case v1pb.Engine_SNOWFLAKE:
-		return db.Snowflake
+		return storepb.Engine_SNOWFLAKE
 	case v1pb.Engine_SQLITE:
-		return db.SQLite
+		return storepb.Engine_SQLITE
 	case v1pb.Engine_TIDB:
-		return db.TiDB
+		return storepb.Engine_TIDB
 	case v1pb.Engine_MONGODB:
-		return db.MongoDB
+		return storepb.Engine_MONGODB
 	case v1pb.Engine_REDIS:
-		return db.Redis
+		return storepb.Engine_REDIS
 	case v1pb.Engine_ORACLE:
-		return db.Oracle
+		return storepb.Engine_ORACLE
 	case v1pb.Engine_SPANNER:
-		return db.Spanner
+		return storepb.Engine_SPANNER
 	case v1pb.Engine_MSSQL:
-		return db.MSSQL
+		return storepb.Engine_MSSQL
 	case v1pb.Engine_REDSHIFT:
-		return db.Redshift
+		return storepb.Engine_REDSHIFT
 	case v1pb.Engine_MARIADB:
-		return db.MariaDB
+		return storepb.Engine_MARIADB
 	case v1pb.Engine_OCEANBASE:
-		return db.OceanBase
+		return storepb.Engine_OCEANBASE
 	case v1pb.Engine_DM:
-		return db.DM
+		return storepb.Engine_DM
 	case v1pb.Engine_RISINGWAVE:
-		return db.RisingWave
+		return storepb.Engine_RISINGWAVE
 	}
-	return db.UnknownType
+	return storepb.Engine_ENGINE_UNSPECIFIED
 }
 
 func getPageToken(limit int, offset int) (string, error) {

@@ -18,34 +18,27 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-
-	// register pg parser.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // How to add a SQL review rule:
 //   1. Implement an advisor.(plugin/advisor/mysql or plugin/advisor/pg)
-//   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
+//   2. Register this advisor in map[storepb.Engine][AdvisorType].(plugin/advisor.go)
 //   3. Add advisor error code if needed(plugin/advisor/code.go).
 //   4. Map SQLReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
-
-// SQLReviewRuleLevel is the error level for SQL review rule.
-type SQLReviewRuleLevel string
 
 // SQLReviewRuleType is the type of schema rule.
 type SQLReviewRuleType string
 
 const (
-	// SchemaRuleLevelError is the error level of SQLReviewRuleLevel.
-	SchemaRuleLevelError SQLReviewRuleLevel = "ERROR"
-	// SchemaRuleLevelWarning is the warning level of SQLReviewRuleLevel.
-	SchemaRuleLevelWarning SQLReviewRuleLevel = "WARNING"
-	// SchemaRuleLevelDisabled is the disabled level of SQLReviewRuleLevel.
-	SchemaRuleLevelDisabled SQLReviewRuleLevel = "DISABLED"
-
 	// SchemaRuleMySQLEngine require InnoDB as the storage engine.
 	SchemaRuleMySQLEngine SQLReviewRuleType = "engine.mysql.use-innodb"
 
@@ -221,82 +214,6 @@ var (
 	}
 )
 
-// SQLReviewPolicy is the policy configuration for SQL review.
-type SQLReviewPolicy struct {
-	Name     string           `json:"name"`
-	RuleList []*SQLReviewRule `json:"ruleList"`
-}
-
-// Validate validates the SQLReviewPolicy. It also validates the each review rule.
-func (policy *SQLReviewPolicy) Validate() error {
-	if policy.Name == "" || len(policy.RuleList) == 0 {
-		return errors.Errorf("invalid payload, name or rule list cannot be empty")
-	}
-	for _, rule := range policy.RuleList {
-		if err := rule.Validate(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// String returns the marshal string value for SQL review policy.
-func (policy *SQLReviewPolicy) String() (string, error) {
-	s, err := json.Marshal(policy)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
-
-// SQLReviewRule is the rule for SQL review policy.
-type SQLReviewRule struct {
-	Type    SQLReviewRuleType  `json:"type"`
-	Level   SQLReviewRuleLevel `json:"level"`
-	Engine  db.Type            `json:"engine"`
-	Comment string             `json:"comment"`
-	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, StringArrayTypeRulePayload)
-	// If the rule doesn't have any payload configuration, the payload would be "{}"
-	Payload string `json:"payload"`
-}
-
-// Validate validates the SQL review rule.
-func (rule *SQLReviewRule) Validate() error {
-	// TODO(rebelice): add other SQL review rule validation.
-	switch rule.Type {
-	case SchemaRuleTableNaming, SchemaRuleColumnNaming, SchemaRuleAutoIncrementColumnNaming:
-		if _, _, err := UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
-		if _, _, _, err := UnmarshalNamingRulePayloadAsTemplate(rule.Type, rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleRequiredColumn:
-		if _, err := UnmarshalRequiredColumnList(rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleColumnCommentConvention, SchemaRuleTableCommentConvention:
-		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit,
-		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnMaximumVarcharLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleStatementAffectedRowLimit:
-		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleColumnTypeDisallowList, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist, SchemaRuleIndexPrimaryKeyTypeAllowlist:
-		if _, err := UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
-			return err
-		}
-	case SchemaRuleIdentifierCase:
-		if _, err := UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // NamingRulePayload is the payload for naming rule.
 type NamingRulePayload struct {
 	MaxLength int    `json:"maxLength"`
@@ -471,7 +388,7 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 type SQLReviewCheckContext struct {
 	Charset   string
 	Collation string
-	DbType    db.Type
+	DbType    storepb.Engine
 	Catalog   catalog.Catalog
 	Driver    *sql.DB
 	Context   context.Context
@@ -484,15 +401,15 @@ type SQLReviewCheckContext struct {
 
 func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []Advice) {
 	switch checkContext.DbType {
-	case db.MySQL, db.MariaDB, db.OceanBase, db.TiDB:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_TIDB:
 		return mysqlSyntaxCheck(statement)
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		return postgresSyntaxCheck(statement)
-	case db.Oracle:
+	case storepb.Engine_ORACLE:
 		return oracleSyntaxCheck(statement)
-	case db.Snowflake:
+	case storepb.Engine_SNOWFLAKE:
 		return snowflakeSyntaxCheck(statement)
-	case db.MSSQL:
+	case storepb.Engine_MSSQL:
 		return mssqlSyntaxCheck(statement)
 	}
 	return nil, []Advice{
@@ -507,9 +424,9 @@ func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []A
 }
 
 func mssqlSyntaxCheck(statement string) (any, []Advice) {
-	tree, err := parser.ParseTSQL(statement)
+	tree, err := tsqlparser.ParseTSQL(statement)
 	if err != nil {
-		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{
 				{
 					Status:  Warn,
@@ -536,9 +453,9 @@ func mssqlSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func snowflakeSyntaxCheck(statement string) (any, []Advice) {
-	tree, err := parser.ParseSnowSQL(statement + ";")
+	tree, err := snowsqlparser.ParseSnowSQL(statement + ";")
 	if err != nil {
-		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{
 				{
 					Status:  Warn,
@@ -565,9 +482,9 @@ func snowflakeSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func oracleSyntaxCheck(statement string) (any, []Advice) {
-	tree, _, err := parser.ParsePLSQL(statement + ";")
+	tree, _, err := plsqlparser.ParsePLSQL(statement + ";")
 	if err != nil {
-		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{
 				{
 					Status:  Warn,
@@ -594,9 +511,9 @@ func oracleSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func postgresSyntaxCheck(statement string) (any, []Advice) {
-	nodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
-		if _, ok := err.(*parser.ConvertError); ok {
+		if _, ok := err.(*pgrawparser.ConvertError); ok {
 			return nil, []Advice{
 				{
 					Status:  Error,
@@ -627,14 +544,14 @@ func postgresSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func calculatePostgresErrorLine(statement string) int {
-	statementList, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	statementList, err := base.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
 	if err != nil {
 		// nolint:nilerr
 		return 1
 	}
 
 	for _, stmt := range statementList {
-		if _, err := parser.Parse(parser.Postgres, parser.ParseContext{}, stmt.Text); err != nil {
+		if _, err := pgrawparser.Parse(pgrawparser.ParseContext{}, stmt.Text); err != nil {
 			return stmt.LastLine
 		}
 	}
@@ -653,7 +570,7 @@ func newTiDBParser() *tidbparser.Parser {
 }
 
 func mysqlSyntaxCheck(statement string) (any, []Advice) {
-	list, err := parser.SplitMySQL(statement)
+	list, err := mysqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, []Advice{
 			{
@@ -674,8 +591,8 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 		if err != nil {
 			// TiDB parser doesn't fully support MySQL syntax, so we need to use MySQL parser to parse the statement.
 			// But MySQL parser has some performance issue, so we only use it to parse the statement after TiDB parser failed.
-			if _, err := parser.ParseMySQL(item.Text); err != nil {
-				if syntaxErr, ok := err.(*parser.SyntaxError); ok {
+			if _, err := mysqlparser.ParseMySQL(item.Text); err != nil {
+				if syntaxErr, ok := err.(*base.SyntaxError); ok {
 					return nil, []Advice{
 						{
 							Status:  Error,
@@ -709,7 +626,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 		node.SetText(nil, item.Text)
 		node.SetOriginTextPosition(item.LastLine)
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
-			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
+			if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
 				return nil, append(adviceList, Advice{
 					Status:  Error,
 					Code:    Internal,
@@ -726,7 +643,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
-func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
+func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	ast, result := syntaxCheck(statements, checkContext)
 	if ast == nil || len(ruleList) == 0 {
 		return result, nil
@@ -734,23 +651,23 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
-	case db.TiDB, db.MySQL, db.MariaDB, db.Postgres, db.OceanBase:
+	case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
 		if err := finder.WalkThrough(statements); err != nil {
 			return convertWalkThroughErrorToAdvice(checkContext, err)
 		}
 	}
 
 	for _, rule := range ruleList {
-		if rule.Engine != "" && rule.Engine != checkContext.DbType {
+		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DbType {
 			continue
 		}
-		if rule.Level == SchemaRuleLevelDisabled {
+		if rule.Level == storepb.SQLReviewRuleLevel_DISABLED {
 			continue
 		}
 
-		advisorType, err := getAdvisorTypeByRule(rule.Type, checkContext.DbType)
+		advisorType, err := getAdvisorTypeByRule(SQLReviewRuleType(rule.Type), checkContext.DbType)
 		if err != nil {
-			if rule.Engine != "" {
+			if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED {
 				slog.Warn("not supported rule", slog.String("rule type", string(rule.Type)), slog.String("engine", string(rule.Engine)), log.BBError(err))
 			}
 			continue
@@ -943,7 +860,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 		})
 	case catalog.ErrorTypeColumnIsReferencedByView:
 		details := ""
-		if checkContext.DbType == db.Postgres {
+		if checkContext.DbType == storepb.Engine_POSTGRES {
 			list, yes := walkThroughError.Payload.([]string)
 			if !yes {
 				return nil, errors.Errorf("invalid payload for ColumnIsReferencedByView, expect []string but found %T", walkThroughError.Payload)
@@ -965,7 +882,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 		})
 	case catalog.ErrorTypeTableIsReferencedByView:
 		details := ""
-		if checkContext.DbType == db.Postgres {
+		if checkContext.DbType == storepb.Engine_POSTGRES {
 			list, yes := walkThroughError.Payload.([]string)
 			if !yes {
 				return nil, errors.Errorf("invalid payload for TableIsReferencedByView, expect []string but found %T", walkThroughError.Payload)
@@ -1050,444 +967,444 @@ func getViewDefinition(checkContext SQLReviewCheckContext, viewList []string) (s
 }
 
 // RuleExists returns true if rule exists.
-func RuleExists(ruleType SQLReviewRuleType, engine db.Type) bool {
+func RuleExists(ruleType SQLReviewRuleType, engine storepb.Engine) bool {
 	_, err := getAdvisorTypeByRule(ruleType, engine)
 	return err == nil
 }
 
-func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, error) {
+func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Type, error) {
 	switch ruleType {
 	case SchemaRuleStatementRequireWhere:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLWhereRequirement, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLWhereRequirement, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleWhereRequirement, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeWhereRequirement, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNoLeadingWildcardLike, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLNoLeadingWildcardLike, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleNoLeadingWildcardLike, nil
 		}
 	case SchemaRuleStatementNoSelectAll:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNoSelectAll, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLNoSelectAll, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleNoSelectAll, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeNoSelectAll, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLMigrationCompatibility, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLMigrationCompatibility, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeMigrationCompatibility, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingTableConvention, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLNamingTableConvention, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleNamingTableConvention, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeNamingTableConvention, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLNamingTableConvention, nil
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingIndexConvention, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLNamingIndexConvention, nil
 		}
 	case SchemaRulePKNaming:
-		if engine == db.Postgres {
+		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLNamingPKConvention, nil
 		}
 	case SchemaRuleUKNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingUKConvention, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLNamingUKConvention, nil
 		}
 	case SchemaRuleFKNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingFKConvention, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLNamingFKConvention, nil
 		}
 	case SchemaRuleColumnNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingColumnConvention, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLNamingColumnConvention, nil
 		}
 	case SchemaRuleAutoIncrementColumnNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingAutoIncrementColumnConvention, nil
 		}
 	case SchemaRuleTableNameNoKeyword:
 		switch engine {
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleTableNamingNoKeyword, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeTableNamingNoKeyword, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLTableNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierNoKeyword:
 		switch engine {
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleIdentifierNamingNoKeyword, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeIdentifierNamingNoKeyword, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLIdentifierNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierCase:
 		switch engine {
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleIdentifierCase, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeIdentifierCase, nil
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnRequirement, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLColumnRequirement, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleColumnRequirement, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeColumnRequirement, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLColumnRequirement, nil
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnNoNull, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLColumnNoNull, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleColumnNoNull, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeColumnNoNull, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLColumnNoNull, nil
 		}
 	case SchemaRuleColumnDisallowChangeType:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowChangingType, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLColumnDisallowChangingType, nil
 		}
 	case SchemaRuleColumnSetDefaultForNotNull:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnSetDefaultForNotNull, nil
 		}
 	case SchemaRuleColumnDisallowChange:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowChanging, nil
 		}
 	case SchemaRuleColumnDisallowChangingOrder:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowChangingOrder, nil
 		}
 	case SchemaRuleColumnCommentConvention:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnCommentConvention, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustInteger:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLAutoIncrementColumnMustInteger, nil
 		}
 	case SchemaRuleColumnTypeDisallowList:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnTypeRestriction, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLColumnTypeDisallowList, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleColumnTypeDisallowList, nil
 		}
 	case SchemaRuleColumnDisallowSetCharset:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLDisallowSetColumnCharset, nil
 		}
 	case SchemaRuleColumnMaximumCharacterLength:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnMaximumCharacterLength, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLColumnMaximumCharacterLength, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleColumnMaximumCharacterLength, nil
 		}
 	case SchemaRuleColumnMaximumVarcharLength:
 		switch engine {
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleColumnMaximumVarcharLength, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeColumnMaximumVarcharLength, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLColumnMaximumVarcharLength, nil
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLAutoIncrementColumnInitialValue, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustUnsigned:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLAutoIncrementColumnMustUnsigned, nil
 		}
 	case SchemaRuleCurrentTimeColumnCountLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLCurrentTimeColumnCountLimit, nil
 		}
 	case SchemaRuleColumnRequireDefault:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLRequireColumnDefault, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLRequireColumnDefault, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleRequireColumnDefault, nil
 		}
 	case SchemaRuleAddNotNullColumnRequireDefault:
-		if engine == db.Oracle {
+		if engine == storepb.Engine_ORACLE {
 			return OracleAddNotNullColumnRequireDefault, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableRequirePK, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLTableRequirePK, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleTableRequirePK, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeTableRequirePK, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLTableRequirePK, nil
 		}
 	case SchemaRuleTableNoFK:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableNoFK, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLTableNoFK, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleTableNoFK, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeTableNoFK, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLTableNoFK, nil
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableDropNamingConvention, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLTableDropNamingConvention, nil
-		case db.Snowflake:
+		case storepb.Engine_SNOWFLAKE:
 			return SnowflakeTableDropNamingConvention, nil
-		case db.MSSQL:
+		case storepb.Engine_MSSQL:
 			return MSSQLTableDropNamingConvention, nil
 		}
 	case SchemaRuleTableCommentConvention:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableCommentConvention, nil
 		}
 	case SchemaRuleTableDisallowPartition:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableDisallowPartition, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLTableDisallowPartition, nil
 		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
-		case db.MySQL, db.MariaDB:
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 			return MySQLUseInnoDB, nil
 		}
 	case SchemaRuleDropEmptyDatabase:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLDatabaseAllowDropIfEmpty, nil
 		}
 	case SchemaRuleIndexNoDuplicateColumn:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLIndexNoDuplicateColumn, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLIndexNoDuplicateColumn, nil
 		}
 	case SchemaRuleIndexKeyNumberLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLIndexKeyNumberLimit, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLIndexKeyNumberLimit, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleIndexKeyNumberLimit, nil
 		}
 	case SchemaRuleIndexTotalNumberLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLIndexTotalNumberLimit, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLIndexTotalNumberLimit, nil
 		}
 	case SchemaRuleStatementDisallowCommit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLStatementDisallowCommit, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLStatementDisallowCommit, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLCharsetAllowlist, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLEncodingAllowlist, nil
 		}
 	case SchemaRuleCollationAllowlist:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLCollationAllowlist, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLCollationAllowlist, nil
 		}
 	case SchemaRuleIndexPKTypeLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLIndexPKType, nil
 		}
 	case SchemaRuleIndexTypeNoBlob:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLIndexTypeNoBlob, nil
 		}
 	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
 		switch engine {
-		case db.MySQL, db.TiDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE:
 			return MySQLPrimaryKeyTypeAllowlist, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLPrimaryKeyTypeAllowlist, nil
 		}
 	case SchemaRuleCreateIndexConcurrently:
-		if engine == db.Postgres {
+		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLCreateIndexConcurrently, nil
 		}
 	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLInsertRowLimit, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLInsertRowLimit, nil
 		}
 	case SchemaRuleStatementInsertMustSpecifyColumn:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLInsertMustSpecifyColumn, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLInsertMustSpecifyColumn, nil
-		case db.Oracle:
+		case storepb.Engine_ORACLE:
 			return OracleInsertMustSpecifyColumn, nil
 		}
 	case SchemaRuleStatementInsertDisallowOrderByRand:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLInsertDisallowOrderByRand, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLInsertDisallowOrderByRand, nil
 		}
 	case SchemaRuleStatementDisallowLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLDisallowLimit, nil
 		}
 	case SchemaRuleStatementDisallowOrderBy:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLDisallowOrderBy, nil
 		}
 	case SchemaRuleStatementMergeAlterTable:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLMergeAlterTable, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLMergeAlterTable, nil
 		}
 	case SchemaRuleStatementAffectedRowLimit:
 		switch engine {
-		case db.MySQL, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLStatementAffectedRowLimit, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLStatementAffectedRowLimit, nil
 		}
 	case SchemaRuleStatementDMLDryRun:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLStatementDMLDryRun, nil
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			return PostgreSQLStatementDMLDryRun, nil
 		}
 	case SchemaRuleStatementDisallowAddColumnWithDefault:
-		if engine == db.Postgres {
+		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLDisallowAddColumnWithDefault, nil
 		}
 	case SchemaRuleStatementAddCheckNotValid:
-		if engine == db.Postgres {
+		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLAddCheckNotValid, nil
 		}
 	case SchemaRuleStatementDisallowAddNotNull:
-		if engine == db.Postgres {
+		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLDisallowAddNotNull, nil
 		}
 	case SchemaRuleCommentLength:
-		if engine == db.Postgres {
+		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLCommentConvention, nil
 		}
 	}

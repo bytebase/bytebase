@@ -7,7 +7,7 @@ bin = './.air/bytebase --port 8080 --data . --debug --disable-sample'
 ## Use --tags "store.db" to enable SQL query logging against our metadata db.
 cmd = """
   go build \
-  --tags "" \
+  --tags "minimal" \
   -o ./.air/bytebase ./backend/bin/server/main.go"""
 delay = 500
 exclude_dir = [

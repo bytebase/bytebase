@@ -7,36 +7,36 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // ConvertDatabaseToParserEngineType converts a database type to a parser engine type.
-func ConvertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error) {
+func ConvertDatabaseToParserEngineType(engine storepb.Engine) (storepb.Engine, error) {
 	switch engine {
-	case db.Oracle:
-		return parser.Oracle, nil
-	case db.MSSQL:
-		return parser.MSSQL, nil
-	case db.Postgres:
-		return parser.Postgres, nil
-	case db.Redshift:
-		return parser.Redshift, nil
-	case db.MySQL:
-		return parser.MySQL, nil
-	case db.TiDB:
-		return parser.TiDB, nil
-	case db.MariaDB:
-		return parser.MariaDB, nil
-	case db.OceanBase:
-		return parser.OceanBase, nil
+	case storepb.Engine_ORACLE:
+		return storepb.Engine_ORACLE, nil
+	case storepb.Engine_MSSQL:
+		return storepb.Engine_MSSQL, nil
+	case storepb.Engine_POSTGRES:
+		return storepb.Engine_POSTGRES, nil
+	case storepb.Engine_REDSHIFT:
+		return storepb.Engine_REDSHIFT, nil
+	case storepb.Engine_MYSQL:
+		return storepb.Engine_MYSQL, nil
+	case storepb.Engine_TIDB:
+		return storepb.Engine_TIDB, nil
+	case storepb.Engine_MARIADB:
+		return storepb.Engine_MARIADB, nil
+	case storepb.Engine_OCEANBASE:
+		return storepb.Engine_OCEANBASE, nil
 	}
-	return parser.EngineType("UNKNOWN"), errors.Errorf("unsupported engine type %q", engine)
+	return storepb.Engine_ENGINE_UNSPECIFIED, errors.Errorf("unsupported engine type %q", engine)
 }
 
 // GetStatementsAndSchemaGroupsFromSchemaGroups takes in a statement template and a list of schema groups, returns a list of expanded(rendered) statements and schema group names.
-func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngineType parser.EngineType, schemaGroupParent string, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, []string, error) {
+func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, engine storepb.Engine, schemaGroupParent string, schemaGroups []*store.SchemaGroupMessage, schemaGroupMatchedTables map[string][]string) ([]string, []string, error) {
 	flush := func(emptyStatementBuilder *strings.Builder, statementBuilder *strings.Builder, schemaGroup *store.SchemaGroupMessage, matchedTables []string) ([]string, []string) {
 		if statementBuilder.Len() == 0 {
 			return nil, nil
@@ -59,7 +59,7 @@ func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, parserEngine
 		return resultStatements, schemaGroupNames
 	}
 
-	singleStatements, err := parser.SplitMultiSQL(parserEngineType, statement)
+	singleStatements, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to split sql")
 	}

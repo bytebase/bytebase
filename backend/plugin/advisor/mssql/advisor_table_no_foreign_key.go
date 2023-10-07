@@ -8,10 +8,9 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
 
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MSSQL, advisor.MSSQLTableNoFK, &TableNoForeignKeyAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLTableNoFK, &TableNoForeignKeyAdvisor{})
 }
 
 // TableNoForeignKeyAdvisor is the advisor checking for table disallow foreign key..
@@ -104,7 +103,7 @@ func (l *tableNoForeignKeyChecker) EnterCreate_table(ctx *parser.Create_tableCon
 	if tableName == nil {
 		return
 	}
-	normalizedTableName := bbparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
+	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
 
 	l.tableHasForeignKey[normalizedTableName] = false
 	l.tableOriginalName[normalizedTableName] = tableName.GetText()
@@ -157,7 +156,7 @@ func (l *tableNoForeignKeyChecker) EnterAlter_table(ctx *parser.Alter_tableConte
 	if tableName == nil {
 		return
 	}
-	normalizedTableName := bbparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
+	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
 	if ctx.ADD() != nil && ctx.Column_def_table_constraints() != nil {
 		l.currentNormalizedTableName = normalizedTableName
 		l.currentConstraintAction = currentConstraintActionAdd

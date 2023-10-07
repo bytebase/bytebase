@@ -21,7 +21,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -120,7 +121,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
 	if err != nil {
 		return nil, err
@@ -139,10 +140,10 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 	}
 
 	// TODO(d): use a Redshift extraction for shared database.
-	if dbType == db.Redshift && queryContext.ShareDB {
+	if dbType == storepb.Engine_REDSHIFT && queryContext.ShareDB {
 		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
 	}
-	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
+	fieldList, err := base.ExtractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
 	}
@@ -195,8 +196,8 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 }
 
 // RunStatement runs a SQL statement in a given connection.
-func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := parser.SplitMultiSQL(engineType, statement)
+func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	singleSQLs, err := base.SplitMultiSQL(engineType, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +211,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 		if singleSQL.Empty {
 			continue
 		}
-		if parser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
+		if mysqlparser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
 			sqlResult, err := conn.ExecContext(ctx, singleSQL.Text)
 			if err != nil {
 				return nil, err

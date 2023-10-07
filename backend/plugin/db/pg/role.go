@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -362,7 +363,7 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 		); err != nil {
 			return nil, err
 		}
-		if IsSystemUser(role) {
+		if pgparser.IsSystemUser(role) {
 			continue
 		}
 

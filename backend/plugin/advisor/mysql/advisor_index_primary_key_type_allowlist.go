@@ -11,8 +11,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
 }
 
 // IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key type allowlist.
@@ -143,7 +143,7 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) addNewColumn(tableName string, lin
 	var pkDataList []pkData
 	for _, option := range colDef.Options {
 		if option.Tp == ast.ColumnOptionPrimaryKey {
-			tp := bbparser.TypeString(colDef.Tp.GetType())
+			tp := tidbparser.TypeString(colDef.Tp.GetType())
 			if _, exists := v.allowlist[strings.ToLower(tp)]; !exists {
 				pkDataList = append(pkDataList, pkData{
 					table:      tableName,
@@ -163,7 +163,7 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) changeColumn(tableName, oldColumnN
 	v.tablesNewColumns.delete(tableName, oldColumnName)
 	for _, option := range newColumnDef.Options {
 		if option.Tp == ast.ColumnOptionPrimaryKey {
-			tp := bbparser.TypeString(newColumnDef.Tp.GetType())
+			tp := tidbparser.TypeString(newColumnDef.Tp.GetType())
 			if _, exists := v.allowlist[strings.ToLower(tp)]; !exists {
 				pkDataList = append(pkDataList, pkData{
 					table:      tableName,
@@ -203,7 +203,7 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) addConstraint(tableName string, li
 // getPKColumnType gets the column type string from v.tablesNewColumns or catalog, returns empty string and non-nil error if cannot find the column in given table.
 func (v *indexPrimaryKeyTypeAllowlistChecker) getPKColumnType(tableName string, columnName string) (string, error) {
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
-		return bbparser.TypeString(colDef.Tp.GetType()), nil
+		return tidbparser.TypeString(colDef.Tp.GetType()), nil
 	}
 	column := v.catalog.Origin.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,

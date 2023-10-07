@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,10 +19,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
 }
 
 // CollationAllowlistAdvisor is the advisor checking for collation allowlist.

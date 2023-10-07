@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,10 +19,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
 }
 
 // ColumnTypeRestrictionAdvisor is the advisor checking for column type restriction.

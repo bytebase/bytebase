@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Snowflake, advisor.SnowflakeTableRequirePK, &TableRequirePkAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeTableRequirePK, &TableRequirePkAdvisor{})
 }
 
 // TableRequirePkAdvisor is the advisor checking for table require primary key.

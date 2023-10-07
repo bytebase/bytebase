@@ -9,9 +9,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Postgres, advisor.PostgreSQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
 }
 
 // IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key type allowlist.
@@ -94,7 +94,7 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) Visit(in ast.Node) ast.Visit
 
 	for _, column := range columnList {
 		if !allowType(checker.allowlist, column.Type) {
-			typeText, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, column.Type)
+			typeText, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, column.Type)
 			if err != nil {
 				slog.Warn("Failed to deparse the PostgreSQL data type",
 					slog.String("columnName", column.ColumnName),

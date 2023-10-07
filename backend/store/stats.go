@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // CountInstanceMessage is the message for counting instances.
@@ -282,9 +285,15 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	var res []*metric.InstanceCountMetric
 	for rows.Next() {
 		var metric metric.InstanceCountMetric
-		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
+		var engine string
+		if err := rows.Scan(&engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
 			return nil, err
 		}
+		engineTypeValue, ok := storepb.Engine_value[engine]
+		if !ok {
+			return nil, errors.Errorf("invalid engine %s", engine)
+		}
+		metric.Engine = storepb.Engine(engineTypeValue)
 		res = append(res, &metric)
 	}
 	if err := rows.Err(); err != nil {

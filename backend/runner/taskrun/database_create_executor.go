@@ -41,10 +41,10 @@ type DatabaseCreateExecutor struct {
 	profile      config.Profile
 }
 
-var cannotCreateDatabase = map[db.Type]bool{
-	db.Redis:  true,
-	db.Oracle: true,
-	db.DM:     true,
+var cannotCreateDatabase = map[storepb.Engine]bool{
+	storepb.Engine_REDIS:  true,
+	storepb.Engine_ORACLE: true,
+	storepb.Engine_DM:     true,
 }
 
 // RunOnce will run the database create task executor once.
@@ -123,7 +123,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 
 	var defaultDBDriver db.Driver
 	switch instance.Engine {
-	case db.MongoDB:
+	case storepb.Engine_MONGODB:
 		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
 		// And run the create collection statement later.
 		// NOTE: we have to hack the database message.
@@ -131,9 +131,9 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		if err != nil {
 			return true, nil, err
 		}
-	case db.Oracle:
+	case storepb.Engine_ORACLE:
 		return true, nil, errors.Errorf("Do not support creating databases for Oracle")
-	case db.DM:
+	case storepb.Engine_DM:
 		return true, nil, errors.Errorf("Do not support creating databases for DM")
 	default:
 		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
@@ -289,27 +289,27 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 	return schemaVersion, schema, nil
 }
 
-func getConnectionStatement(dbType db.Type, databaseName string) (string, error) {
+func getConnectionStatement(dbType storepb.Engine, databaseName string) (string, error) {
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
-	case db.MSSQL:
+	case storepb.Engine_MSSQL:
 		return fmt.Sprintf(`USE "%s";\n`, databaseName), nil
-	case db.Postgres, db.RisingWave:
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
 		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
-	case db.ClickHouse:
+	case storepb.Engine_CLICKHOUSE:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
-	case db.Snowflake:
+	case storepb.Engine_SNOWFLAKE:
 		return fmt.Sprintf("USE DATABASE %s;\n", databaseName), nil
-	case db.SQLite:
+	case storepb.Engine_SQLITE:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
-	case db.MongoDB:
+	case storepb.Engine_MONGODB:
 		// We embed mongosh to execute the mongodb statement, and `use` statement is not effective in mongosh.
 		// We will connect to the specified database by specifying the database name in the connection string.
 		return "", nil
-	case db.Redshift:
+	case storepb.Engine_REDSHIFT:
 		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
-	case db.Spanner:
+	case storepb.Engine_SPANNER:
 		return "", nil
 	}
 

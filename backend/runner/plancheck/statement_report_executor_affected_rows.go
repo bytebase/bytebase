@@ -12,7 +12,6 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -221,13 +220,13 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]any, er
 	return []any{columnNames, columnTypeNames, data}, nil
 }
 
-func getAffectedRowsForMysql(ctx context.Context, dbType db.Type, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node tidbast.StmtNode) (int64, error) {
+func getAffectedRowsForMysql(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node tidbast.StmtNode) (int64, error) {
 	switch node := node.(type) {
 	case *tidbast.InsertStmt, *tidbast.UpdateStmt, *tidbast.DeleteStmt:
 		if node, ok := node.(*tidbast.InsertStmt); ok && node.Select == nil {
 			return int64(len(node.Lists)), nil
 		}
-		if dbType == db.OceanBase {
+		if engine == storepb.Engine_OCEANBASE {
 			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", node.Text()), getAffectedRowsCountForOceanBase)
 		}
 		return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()), getAffectedRowsCountForMysql)

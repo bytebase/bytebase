@@ -16,7 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 // sslCAThreshold is the block size for splitting sslCA.
@@ -49,7 +49,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 		dumpableDbNames = []string{driver.databaseName}
 	} else {
 		for _, n := range databases {
-			if IsSystemDatabase(n.Name) {
+			if pgparser.IsSystemDatabase(n.Name) {
 				continue
 			}
 			dumpableDbNames = append(dumpableDbNames, n.Name)
@@ -262,7 +262,7 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(parser.Postgres, sc, f); err != nil {
+	if _, err := pgparser.SplitMultiSQLStream(sc, f); err != nil {
 		return err
 	}
 

@@ -14,8 +14,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -27,7 +27,7 @@ type catalogService struct {
 	finder *catalog.Finder
 }
 
-func newCatalogService(dbType advisorDB.Type) *catalogService {
+func newCatalogService(dbType storepb.Engine) *catalogService {
 	return &catalogService{
 		finder: catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false, EngineType: dbType}),
 	}
@@ -39,10 +39,10 @@ func (c *catalogService) GetFinder() *catalog.Finder {
 }
 
 type sqlCheckRequestBody struct {
-	Statement    string                      `json:"statement"`
-	DatabaseType string                      `json:"databaseType"`
-	TemplateID   advisor.SQLReviewTemplateID `json:"templateId"`
-	Override     string                      `json:"override"`
+	Statement    string `json:"statement"`
+	DatabaseType string `json:"databaseType"`
+	TemplateID   string `json:"templateId"`
+	Override     string `json:"override"`
 }
 
 func (s *Server) registerAdvisorRoutes(g *echo.Group) {
@@ -81,10 +81,11 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required template or override")
 	}
 
-	advisorDBType, err := advisorDB.ConvertToAdvisorDBType(request.DatabaseType)
-	if err != nil {
+	engineTypeValue, ok := storepb.Engine_value[request.DatabaseType]
+	if !ok {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", request.DatabaseType))
 	}
+	engineType := storepb.Engine(engineTypeValue)
 
 	ruleOverride := &advisor.SQLReviewConfigOverride{}
 	if request.Override != "" {
@@ -104,12 +105,12 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	}
 
 	adviceList, err := sqlCheck(
-		advisorDBType,
+		engineType,
 		"utf8mb4",
 		"utf8mb4_general_ci",
 		request.Statement,
 		ruleList,
-		newCatalogService(advisorDBType),
+		newCatalogService(engineType),
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
@@ -119,7 +120,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		Name:  metricAPI.SQLAdviseAPIMetricName,
 		Value: 1,
 		Labels: map[string]any{
-			"database_type": string(advisorDBType),
+			"database_type": engineType.String(),
 			"platform":      c.Request().Header.Get("X-Platform"),
 			"repository":    c.Request().Header.Get("X-Repository"),
 			"actor":         c.Request().Header.Get("X-Actor"),
@@ -132,11 +133,11 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 }
 
 func sqlCheck(
-	dbType advisorDB.Type,
+	dbType storepb.Engine,
 	dbCharacterSet string,
 	dbCollation string,
 	statement string,
-	ruleList []*advisor.SQLReviewRule,
+	ruleList []*storepb.SQLReviewRule,
 	catalog catalog.Catalog,
 ) ([]advisor.Advice, error) {
 	var adviceList []advisor.Advice

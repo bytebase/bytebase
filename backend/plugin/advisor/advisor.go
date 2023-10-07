@@ -5,16 +5,13 @@ package advisor
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"log/slog"
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Status is the advisor result status.
@@ -33,11 +30,11 @@ const (
 )
 
 // NewStatusBySQLReviewRuleLevel returns status by SQLReviewRuleLevel.
-func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
+func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRuleLevel) (Status, error) {
 	switch level {
-	case SchemaRuleLevelError:
+	case storepb.SQLReviewRuleLevel_ERROR:
 		return Error, nil
-	case SchemaRuleLevelWarning:
+	case storepb.SQLReviewRuleLevel_WARNING:
 		return Warn, nil
 	}
 	return "", errors.Errorf("unexpected rule level type: %s", level)
@@ -493,23 +490,6 @@ type Advice struct {
 	Details string `json:"details,omitempty"`
 }
 
-// SLogAdviceArray is a helper to format array of Advice.
-type SLogAdviceArray []Advice
-
-// LogValue implements the LogValuer interface.
-func (arr SLogAdviceArray) LogValue() slog.Value {
-	logArr := []string{}
-	for _, advice := range arr {
-		payload, err := json.Marshal(advice)
-		if err != nil {
-			logArr = append(logArr, err.Error())
-			continue
-		}
-		logArr = append(logArr, string(payload))
-	}
-	return slog.StringValue(strings.Join(logArr, ","))
-}
-
 // SyntaxMode is the type of syntax mode.
 type SyntaxMode int
 
@@ -528,7 +508,7 @@ type Context struct {
 
 	// SQL review rule special fields.
 	AST     any
-	Rule    *SQLReviewRule
+	Rule    *storepb.SQLReviewRule
 	Catalog *catalog.Finder
 	Driver  *sql.DB
 	Context context.Context
@@ -546,13 +526,13 @@ type Advisor interface {
 
 var (
 	advisorMu sync.RWMutex
-	advisors  = make(map[db.Type]map[Type]Advisor)
+	advisors  = make(map[storepb.Engine]map[Type]Advisor)
 )
 
 // Register makes a advisor available by the provided id.
 // If Register is called twice with the same name or if advisor is nil,
 // it panics.
-func Register(dbType db.Type, advType Type, f Advisor) {
+func Register(dbType storepb.Engine, advType Type, f Advisor) {
 	advisorMu.Lock()
 	defer advisorMu.Unlock()
 	if f == nil {
@@ -572,7 +552,7 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType db.Type, advType Type, ctx Context, statement string) (adviceList []Advice, err error) {
+func Check(dbType storepb.Engine, advType Type, ctx Context, statement string) (adviceList []Advice, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			err = errors.Errorf("panic in advisor check: %v", panicErr)
@@ -592,22 +572,4 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) (adviceL
 	}
 
 	return f.Check(ctx, statement)
-}
-
-// IsSyntaxCheckSupported checks the engine type if syntax check supports it.
-func IsSyntaxCheckSupported(dbType db.Type) bool {
-	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
-		return true
-	}
-	return false
-}
-
-// IsSQLReviewSupported checks the engine type if SQL review supports it.
-func IsSQLReviewSupported(dbType db.Type) bool {
-	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle, db.OceanBase, db.Snowflake, db.MSSQL:
-		return true
-	}
-	return false
 }

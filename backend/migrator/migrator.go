@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed migration
@@ -43,7 +44,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 	}
 	metadataDriver, err := dbdriver.Open(
 		ctx,
-		dbdriver.Postgres,
+		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		metadataConnConfig,
 		dbdriver.ConnectionContext{},
@@ -69,7 +70,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 	}
 	bytebaseDriver, err := dbdriver.Open(
 		ctx,
-		dbdriver.Postgres,
+		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		bytebaseConnConfig,
 		dbdriver.ConnectionContext{},

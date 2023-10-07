@@ -12,7 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -21,10 +21,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
 }
 
 // IndexPkTypeAdvisor is the advisor checking for correct type of PK.

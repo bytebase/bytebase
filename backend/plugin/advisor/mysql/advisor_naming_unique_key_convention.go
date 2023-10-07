@@ -9,7 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,10 +18,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
 }
 
 // NamingUKConventionAdvisor is the advisor checking for unique key naming convention.
@@ -40,7 +40,7 @@ func (*NamingUKConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 		return nil, err
 	}
 
-	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(ctx.Rule.Type), ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}

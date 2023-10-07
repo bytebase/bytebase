@@ -31,9 +31,9 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -106,6 +106,9 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
+		return nil, err
+	}
 	return convertToDatabase(database), nil
 }
 
@@ -136,6 +139,13 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	}
 	response := &v1pb.ListDatabasesResponse{}
 	for _, database := range databases {
+		if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
+			st := status.Convert(err)
+			if st.Code() == codes.PermissionDenied {
+				continue
+			}
+			return nil, err
+		}
 		response.Databases = append(response.Databases, convertToDatabase(database))
 	}
 	return response, nil
@@ -143,9 +153,6 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 
 // SearchDatabases searches all databases.
 func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.SearchDatabasesRequest) (*v1pb.SearchDatabasesResponse, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	role := ctx.Value(common.RoleContextKey).(api.Role)
-
 	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -171,12 +178,12 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 	}
 	response := &v1pb.SearchDatabasesResponse{}
 	for _, database := range databases {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.ProjectID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if !isOwnerOrDBA(role) && !isProjectMember(policy, principalID) {
-			continue
+		if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
+			st := status.Convert(err)
+			if st.Code() == codes.PermissionDenied {
+				continue
+			}
+			return nil, err
 		}
 		response.Databases = append(response.Databases, convertToDatabase(database))
 	}
@@ -210,6 +217,9 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
+		return nil, err
 	}
 
 	var project *store.ProjectMessage
@@ -311,6 +321,9 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDa
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionChangeDatabase); err != nil {
+		return nil, err
+	}
 	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		return nil, err
 	}
@@ -346,6 +359,9 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		}
 		if database == nil {
 			return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		}
+		if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
+			return nil, err
 		}
 		if projectURI != "" && projectURI != req.Database.Project {
 			return nil, status.Errorf(codes.InvalidArgument, "database should use the same project")
@@ -410,6 +426,9 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
+		return nil, err
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &database.ProjectID,
@@ -511,6 +530,9 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
+		return nil, err
+	}
 
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
@@ -562,6 +584,9 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
+		return nil, err
+	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -583,8 +608,8 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	schema := string(dbSchema.Schema)
 	if request.SdlFormat {
 		switch instance.Engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
-			sdlSchema, err := transform.SchemaTransform(parser.MySQL, schema)
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, schema)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
 			}
@@ -619,6 +644,9 @@ func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.Ge
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
+		return nil, err
 	}
 	backupSetting, err := s.store.GetBackupSettingV2(ctx, database.UID)
 	if err != nil {
@@ -657,6 +685,9 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
+		return nil, err
+	}
 	backupSetting, err := s.validateAndConvertToStoreBackupSetting(ctx, request.Setting, database)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -694,6 +725,9 @@ func (s *DatabaseService) ListBackups(ctx context.Context, request *v1pb.ListBac
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
+		return nil, err
 	}
 
 	rowStatus := api.Normal
@@ -740,6 +774,9 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
+		return nil, err
+	}
 
 	existedBackupList, err := s.store.ListBackupV2(ctx, &store.FindBackupMessage{
 		DatabaseUID: &database.UID,
@@ -785,6 +822,9 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
+		return nil, err
 	}
 
 	var limit, offset int
@@ -878,6 +918,10 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
+		return nil, err
+	}
+
 	find := &store.FindInstanceChangeHistoryMessage{
 		InstanceID: &instance.UID,
 		DatabaseID: &database.UID,
@@ -902,13 +946,13 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	}
 	if request.SdlFormat {
 		switch instance.Engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
-			sdlSchema, err := transform.SchemaTransform(parser.MySQL, converted.Schema)
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, converted.Schema)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
 			}
 			converted.Schema = sdlSchema
-			sdlSchema, err = transform.SchemaTransform(parser.MySQL, converted.PrevSchema)
+			sdlSchema, err = transform.SchemaTransform(storepb.Engine_MYSQL, converted.PrevSchema)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert previous schema to sdl format, error %v", err.Error())
 			}
@@ -935,7 +979,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 		return nil, status.Errorf(codes.Internal, "failed to get parser engine, error: %v", err)
 	}
 
-	diff, err := differ.SchemaDiff(engine, source, target, false /* ignoreCaseSensitive */)
+	diff, err := base.SchemaDiff(engine, source, target, false /* ignoreCaseSensitive */)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
 	}
@@ -992,9 +1036,9 @@ func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.Dif
 	return schema, nil
 }
 
-func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (parser.EngineType, error) {
+func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (storepb.Engine, error) {
 	var instanceID string
-	var engine parser.EngineType
+	var engine storepb.Engine
 
 	if strings.Contains(request.Name, common.ChangeHistoryPrefix) {
 		insID, _, _, err := common.GetInstanceDatabaseIDChangeHistory(request.Name)
@@ -1019,14 +1063,14 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	}
 
 	switch instance.Engine {
-	case db.Postgres:
-		engine = parser.Postgres
-	case db.MySQL, db.MariaDB, db.OceanBase:
-		engine = parser.MySQL
-	case db.TiDB:
-		engine = parser.TiDB
-	case db.Oracle:
-		engine = parser.Oracle
+	case storepb.Engine_POSTGRES:
+		engine = storepb.Engine_POSTGRES
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+		engine = storepb.Engine_MYSQL
+	case storepb.Engine_TIDB:
+		engine = storepb.Engine_TIDB
+	case storepb.Engine_ORACLE:
+		engine = storepb.Engine_ORACLE
 	default:
 		return engine, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid engine type %v", instance.Engine))
 	}
@@ -1047,10 +1091,21 @@ func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.
 }
 
 func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
-	_, version, _, err := util.FromStoredVersion(h.Version)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert stored version %q", h.Version)
+	schemaVersion := h.Version
+	if h.Version != "" {
+		_, version, _, err := util.FromStoredVersion(h.Version)
+		if err != nil {
+			slog.Error("failed to convert stored version for change history",
+				slog.String("instance", h.InstanceID),
+				slog.String("database", h.DatabaseName),
+				slog.String("history", h.UID),
+				slog.String("version", h.Version),
+				log.BBError(err))
+		} else {
+			schemaVersion = version
+		}
 	}
+
 	v1pbHistory := &v1pb.ChangeHistory{
 		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", common.InstanceNamePrefix, h.InstanceID, common.DatabaseIDPrefix, h.DatabaseName, common.ChangeHistoryPrefix, h.UID),
 		Uid:               h.UID,
@@ -1062,7 +1117,7 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		Source:            convertToChangeHistorySource(h.Source),
 		Type:              convertToChangeHistoryType(h.Type),
 		Status:            convertToChangeHistoryStatus(h.Status),
-		Version:           version,
+		Version:           schemaVersion,
 		Description:       h.Description,
 		Statement:         h.Statement,
 		Schema:            h.Schema,
@@ -1252,6 +1307,10 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
+		return nil, err
+	}
+
 	return &v1pb.ListSecretsResponse{
 		Secrets: stripeAndConvertToServiceSecrets(database.Secrets, database.InstanceID, database.DatabaseName),
 	}, nil
@@ -1294,6 +1353,9 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
+		return nil, err
 	}
 
 	// We retrieve the secret from the database, convert secrets to map, upsert the new secret and store it back.
@@ -1395,6 +1457,9 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
+	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
+		return nil, err
+	}
 
 	// We retrieve the secret from the database, convert secrets to map, upsert the new secret and store it back.
 	// But if two processes are doing this at the same time, the second one will override the first one.
@@ -1424,6 +1489,42 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID string, permission api.ProjectPermissionType) error {
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+	if isOwnerOrDBA(role) {
+		return nil
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
+	if err != nil {
+		return status.Errorf(codes.Internal, err.Error())
+	}
+
+	if permission == api.ProjectPermissionManageGeneral {
+		if !isProjectMember(policy, principalID) {
+			return status.Errorf(codes.PermissionDenied, "permission denied")
+		}
+		return nil
+	}
+
+	projectRoles := make(map[common.ProjectRole]bool)
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID == principalID {
+				projectRoles[common.ProjectRole(binding.Role)] = true
+				break
+			}
+		}
+	}
+
+	if !api.ProjectPermission(permission, s.licenseService.GetEffectivePlan(), projectRoles) {
+		return status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
+	return nil
 }
 
 type totalValue struct {
@@ -1781,6 +1882,19 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	if database.EffectiveEnvironmentID != "" {
 		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
 	}
+	schemaVersion := database.SchemaVersion
+	if database.SchemaVersion != "" {
+		_, version, _, err := util.FromStoredVersion(database.SchemaVersion)
+		if err != nil {
+			slog.Error("failed to convert stored version",
+				slog.String("instance", database.InstanceID),
+				slog.String("database", database.DatabaseName),
+				slog.String("version", database.SchemaVersion),
+				log.BBError(err))
+		} else {
+			schemaVersion = version
+		}
+	}
 	return &v1pb.Database{
 		Name:                 fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
 		Uid:                  fmt.Sprintf("%d", database.UID),
@@ -1789,7 +1903,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		Project:              fmt.Sprintf("%s%s", common.ProjectNamePrefix, database.ProjectID),
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
-		SchemaVersion:        database.SchemaVersion,
+		SchemaVersion:        schemaVersion,
 		Labels:               database.GetEffectiveLabels(),
 	}
 }
@@ -2244,16 +2358,16 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	}
 
 	switch instance.Engine {
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		return s.pgAdviseIndex(ctx, request, database)
-	case db.MySQL:
-		return s.mysqlAdviseIndex(ctx, request, database)
+	case storepb.Engine_MYSQL:
+		return s.mysqlAdviseIndex(ctx, request, instance, database)
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "AdviseIndex is not implemented for engine: %v", instance.Engine)
 	}
 }
 
-func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest, database *store.DatabaseMessage) (*v1pb.AdviseIndexResponse, error) {
+func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest, instance *store.InstanceMessage, database *store.DatabaseMessage) (*v1pb.AdviseIndexResponse, error) {
 	openaiKeyName := api.SettingPluginOpenAIKey
 	key, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &openaiKeyName})
 	if err != nil {
@@ -2265,42 +2379,42 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 
 	var schemas []*store.DBSchema
 
-	// Deal with the cross database query
-	dbList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement, "")
+	// Deal with the cross database query.
+	resources, err := base.ExtractResourceList(instance.Engine, database.DatabaseName, "", request.Statement)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract database list: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract resource list: %v", err)
 	}
-	for _, db := range dbList {
-		if db != "" && db != database.DatabaseName {
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get instance %s", database.InstanceID)
-			}
-			findDatabase := &store.FindDatabaseMessage{
-				InstanceID:          &database.InstanceID,
-				DatabaseName:        &db,
-				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-			}
-			database, err := s.store.GetDatabaseV2(ctx, findDatabase)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
-			}
-			if database == nil {
-				return nil, status.Errorf(codes.NotFound, "database %q not found", db)
-			}
-			schema, err := s.store.GetDBSchema(ctx, database.UID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
-			}
-			schemas = append(schemas, schema)
-		}
+	databaseMap := make(map[string]bool)
+	for _, resource := range resources {
+		databaseMap[resource.Database] = true
+	}
+	var databases []string
+	for database := range databaseMap {
+		databases = append(databases, database)
+	}
+	if len(databases) == 0 {
+		databases = append(databases, database.DatabaseName)
 	}
 
-	schema, err := s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
+	for _, db := range databases {
+		findDatabase := &store.FindDatabaseMessage{
+			InstanceID:          &instance.ResourceID,
+			DatabaseName:        &db,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		}
+		database, err := s.store.GetDatabaseV2(ctx, findDatabase)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
+		}
+		if database == nil {
+			return nil, status.Errorf(codes.NotFound, "database %q not found", db)
+		}
+		schema, err := s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
+		}
+		schemas = append(schemas, schema)
 	}
-	schemas = append(schemas, schema)
 
 	var compactBuf bytes.Buffer
 	for _, schema := range schemas {
@@ -2480,7 +2594,7 @@ func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.Advis
 
 		// Generate suggestion and create index statement.
 		if resp.CreateIndexStatement != "" {
-			nodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, resp.CreateIndexStatement)
+			nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, resp.CreateIndexStatement)
 			if err != nil {
 				return errors.Errorf("failed to parse create index statement: %v", err)
 			}

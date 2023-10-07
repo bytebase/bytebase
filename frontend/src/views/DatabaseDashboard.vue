@@ -41,7 +41,7 @@
           />
           <SearchBox
             :value="state.searchText"
-            :placeholder="$t('database.search-database')"
+            :placeholder="$t('database.filter-database')"
             :autofocus="true"
             @update:value="changeSearchText($event)"
           />

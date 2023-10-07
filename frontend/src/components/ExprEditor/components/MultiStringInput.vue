@@ -8,7 +8,7 @@
     :show="false"
     :consistent-menu-width="false"
     :placeholder="
-      $t('custom-approval.security-rule.condition.input-value-press-enter')
+      $t('custom-approval.risk-rule.condition.input-value-press-enter')
     "
     :disabled="!allowAdmin"
     max-tag-count="responsive"

@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MSSQL, advisor.MSSQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention..
@@ -85,7 +85,7 @@ func (l *tableDropNamingConventionChecker) EnterDrop_table(ctx *parser.Drop_tabl
 		if table == nil {
 			continue
 		}
-		normalizedTableName := bbparser.NormalizeTSQLIdentifier(table)
+		normalizedTableName := tsqlparser.NormalizeTSQLIdentifier(table)
 		if !l.format.MatchString(normalizedTableName) {
 			l.adviceList = append(l.adviceList, advisor.Advice{
 				Status:  l.level,

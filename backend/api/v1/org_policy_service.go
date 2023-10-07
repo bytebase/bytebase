@@ -20,8 +20,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -586,14 +584,19 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
 		}
-		payload, err := convertToSQLReviewPolicyPayload(policy.GetSqlReviewPolicy())
+		v1SqlReviewPolicy := policy.GetSqlReviewPolicy()
+		if err := validateSQLReviewPolicy(v1SqlReviewPolicy); err != nil {
+			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		payload, err := convertToSQLReviewPolicyPayload(v1SqlReviewPolicy)
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		if err := payload.Validate(); err != nil {
-			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", status.Errorf(codes.Internal, "failed to marshal sql review policy with error: %v", err)
 		}
-		return payload.String()
+		return string(payloadBytes), nil
 	case v1pb.PolicyType_MASKING:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
@@ -817,22 +820,20 @@ func convertToStorePBWorkspaceIAMPolicy(policy *v1pb.IamPolicy) *storepb.IamPoli
 }
 
 func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, error) {
-	payload, err := api.UnmarshalSQLReviewPolicy(
-		payloadStr,
-	)
-	if err != nil {
+	p := new(storepb.SQLReviewPolicy)
+	if err := protojson.Unmarshal([]byte(payloadStr), p); err != nil {
 		return nil, err
 	}
 
 	var rules []*v1pb.SQLReviewRule
-	for _, rule := range payload.RuleList {
+	for _, rule := range p.RuleList {
 		level := v1pb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED
 		switch rule.Level {
-		case advisor.SchemaRuleLevelError:
+		case storepb.SQLReviewRuleLevel_ERROR:
 			level = v1pb.SQLReviewRuleLevel_ERROR
-		case advisor.SchemaRuleLevelWarning:
+		case storepb.SQLReviewRuleLevel_WARNING:
 			level = v1pb.SQLReviewRuleLevel_WARNING
-		case advisor.SchemaRuleLevelDisabled:
+		case storepb.SQLReviewRuleLevel_DISABLED:
 			level = v1pb.SQLReviewRuleLevel_DISABLED
 		}
 		rules = append(rules, &v1pb.SQLReviewRule{
@@ -840,42 +841,42 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 			Type:    string(rule.Type),
 			Payload: rule.Payload,
 			Comment: rule.Comment,
-			Engine:  convertToEngine(db.Type(rule.Engine)),
+			Engine:  convertToEngine(rule.Engine),
 		})
 	}
 
 	return &v1pb.Policy_SqlReviewPolicy{
 		SqlReviewPolicy: &v1pb.SQLReviewPolicy{
-			Name:  payload.Name,
+			Name:  p.Name,
 			Rules: rules,
 		},
 	}, nil
 }
 
-func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQLReviewPolicy, error) {
-	var ruleList []*advisor.SQLReviewRule
+func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*storepb.SQLReviewPolicy, error) {
+	var ruleList []*storepb.SQLReviewRule
 	for _, rule := range policy.Rules {
-		var level advisor.SQLReviewRuleLevel
+		var level storepb.SQLReviewRuleLevel
 		switch rule.Level {
 		case v1pb.SQLReviewRuleLevel_ERROR:
-			level = advisor.SchemaRuleLevelError
+			level = storepb.SQLReviewRuleLevel_ERROR
 		case v1pb.SQLReviewRuleLevel_WARNING:
-			level = advisor.SchemaRuleLevelWarning
+			level = storepb.SQLReviewRuleLevel_WARNING
 		case v1pb.SQLReviewRuleLevel_DISABLED:
-			level = advisor.SchemaRuleLevelDisabled
+			level = storepb.SQLReviewRuleLevel_DISABLED
 		default:
 			return nil, errors.Errorf("invalid rule level %v", rule.Level)
 		}
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
+		ruleList = append(ruleList, &storepb.SQLReviewRule{
 			Level:   level,
 			Payload: rule.Payload,
-			Type:    advisor.SQLReviewRuleType(rule.Type),
+			Type:    rule.Type,
 			Comment: rule.Comment,
-			Engine:  advisorDB.Type(convertEngine(rule.Engine)),
+			Engine:  convertEngine(rule.Engine),
 		})
 	}
 
-	return &advisor.SQLReviewPolicy{
+	return &storepb.SQLReviewPolicy{
 		Name:     policy.Name,
 		RuleList: ruleList,
 	}, nil
@@ -1310,4 +1311,47 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeDisableCopyData, nil
 	}
 	return policyType, errors.Errorf("invalid policy type %v", pType)
+}
+
+// validateSQLReviewPolicy validates the SQL review rule.
+func validateSQLReviewPolicy(policy *v1pb.SQLReviewPolicy) error {
+	if policy.Name == "" || len(policy.Rules) == 0 {
+		return errors.Errorf("invalid payload, name or rule list cannot be empty")
+	}
+	for _, rule := range policy.Rules {
+		ruleType := advisor.SQLReviewRuleType(rule.Type)
+		// TODO(rebelice): add other SQL review rule validation.
+		switch ruleType {
+		case advisor.SchemaRuleTableNaming, advisor.SchemaRuleColumnNaming, advisor.SchemaRuleAutoIncrementColumnNaming:
+			if _, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleFKNaming, advisor.SchemaRuleIDXNaming, advisor.SchemaRuleUKNaming:
+			if _, _, _, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ruleType, rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleRequiredColumn:
+			if _, err := advisor.UnmarshalRequiredColumnList(rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleColumnCommentConvention, advisor.SchemaRuleTableCommentConvention:
+			if _, err := advisor.UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleIndexKeyNumberLimit, advisor.SchemaRuleStatementInsertRowLimit, advisor.SchemaRuleIndexTotalNumberLimit,
+			advisor.SchemaRuleColumnMaximumCharacterLength, advisor.SchemaRuleColumnMaximumVarcharLength, advisor.SchemaRuleColumnAutoIncrementInitialValue, advisor.SchemaRuleStatementAffectedRowLimit:
+			if _, err := advisor.UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleColumnTypeDisallowList, advisor.SchemaRuleCharsetAllowlist, advisor.SchemaRuleCollationAllowlist, advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist:
+			if _, err := advisor.UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		case advisor.SchemaRuleIdentifierCase:
+			if _, err := advisor.UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

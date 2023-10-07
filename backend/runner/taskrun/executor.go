@@ -24,7 +24,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
@@ -209,7 +208,7 @@ func executeMigration(ctx context.Context, driverCtx context.Context, stores *st
 
 	var migrationID string
 	opts := db.ExecuteOptions{}
-	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
+	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == storepb.Engine_MYSQL || instance.Engine == storepb.Engine_MARIADB) {
 		opts.BeginFunc = func(ctx context.Context, conn *sql.Conn) error {
 			updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, conn, task, stores)
 			if err != nil {
@@ -219,7 +218,7 @@ func executeMigration(ctx context.Context, driverCtx context.Context, stores *st
 			return nil
 		}
 	}
-	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.Oracle {
+	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == storepb.Engine_ORACLE {
 		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
 		opts.EndTransactionFunc = getSetOracleTransactionIDFunc(ctx, task, stores)
 	}
@@ -230,7 +229,7 @@ func executeMigration(ctx context.Context, driverCtx context.Context, stores *st
 	}
 
 	// If the migration is a data migration, enable the rollback SQL generation and the type of the driver is Oracle, we need to get the rollback SQL before the transaction is committed.
-	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == db.Oracle {
+	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == storepb.Engine_ORACLE {
 		updatedTask, err := stores.GetTaskV2ByID(ctx, task.ID)
 		if err != nil {
 			return "", "", errors.Wrapf(err, "cannot get task by id %d", task.ID)
@@ -245,7 +244,7 @@ func executeMigration(ctx context.Context, driverCtx context.Context, stores *st
 		}
 	}
 
-	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == db.MySQL || instance.Engine == db.MariaDB) {
+	if task.Type == api.TaskDatabaseDataUpdate && (instance.Engine == storepb.Engine_MYSQL || instance.Engine == storepb.Engine_MARIADB) {
 		conn, err := driver.GetDB().Conn(ctx)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to create connection")
@@ -441,8 +440,8 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 	if writebackBranch != "" {
 		// Transform the schema to standard style for SDL mode.
-		if instance.Engine == db.MySQL || instance.Engine == db.MariaDB || instance.Engine == db.OceanBase {
-			standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
+		if instance.Engine == storepb.Engine_MYSQL || instance.Engine == storepb.Engine_MARIADB || instance.Engine == storepb.Engine_OCEANBASE {
+			standardSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, schema)
 			if err != nil {
 				return true, nil, errors.Wrapf(err, "failed to transform to standard schema for database %q", database.DatabaseName)
 			}
@@ -578,7 +577,7 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 	if instance == nil {
 		return "", errors.Errorf("cannot found instance %d", task.InstanceID)
 	}
-	if instance.Engine == db.RisingWave {
+	if instance.Engine == storepb.Engine_RISINGWAVE {
 		return "", nil
 	}
 

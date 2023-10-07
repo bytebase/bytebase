@@ -8,12 +8,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // ComputeDatabaseSchemaDiff computes the diff between current database schema
@@ -34,12 +33,12 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 		return "", errors.Wrap(err, "dump old schema")
 	}
 
-	var engine parser.EngineType
+	var engine storepb.Engine
 	switch instance.Engine {
-	case db.Postgres, db.RisingWave:
-		engine = parser.Postgres
-	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
-		engine = parser.MySQL
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
+		engine = storepb.Engine_POSTGRES
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+		engine = storepb.Engine_MYSQL
 	default:
 		return "", errors.Errorf("unsupported database engine %q", instance.Engine)
 	}
@@ -48,7 +47,7 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to transform SDL format")
 	}
-	diff, err := differ.SchemaDiff(engine, sdlFormat, newSchema, store.IgnoreDatabaseAndTableCaseSensitive(instance))
+	diff, err := base.SchemaDiff(engine, sdlFormat, newSchema, store.IgnoreDatabaseAndTableCaseSensitive(instance))
 	if err != nil {
 		return "", errors.Wrapf(err, "compute schema diff")
 	}

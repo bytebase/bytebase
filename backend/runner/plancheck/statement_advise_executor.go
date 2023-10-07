@@ -11,7 +11,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -138,9 +137,8 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			policy = &advisor.SQLReviewPolicy{
-				Name:     "Default",
-				RuleList: []*advisor.SQLReviewRule{},
+			policy = &storepb.SQLReviewPolicy{
+				Name: "Default",
 			}
 		} else {
 			return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
@@ -150,11 +148,6 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, getSyntaxMode(changeType))
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
-	}
-
-	dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
-	if err != nil {
-		return nil, err
 	}
 
 	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
@@ -170,7 +163,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   dbSchema.Metadata.CharacterSet,
 		Collation: dbSchema.Metadata.Collation,
-		DbType:    dbType,
+		DbType:    instance.Engine,
 		Catalog:   catalog,
 		Driver:    connection,
 		Context:   ctx,
@@ -355,9 +348,8 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
 			if err != nil {
 				if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-					policy = &advisor.SQLReviewPolicy{
-						Name:     "Default",
-						RuleList: []*advisor.SQLReviewRule{},
+					policy = &storepb.SQLReviewPolicy{
+						Name: "Default",
 					}
 				} else {
 					return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
@@ -367,11 +359,6 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			catalog, err := e.store.NewCatalog(ctx, db.UID, instance.Engine, getSyntaxMode(changeType))
 			if err != nil {
 				return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
-			}
-
-			dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
-			if err != nil {
-				return nil, err
 			}
 
 			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
@@ -388,7 +375,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
 					Charset:   dbSchema.Metadata.CharacterSet,
 					Collation: dbSchema.Metadata.Collation,
-					DbType:    dbType,
+					DbType:    instance.Engine,
 					Catalog:   catalog,
 					Driver:    connection,
 					Context:   ctx,

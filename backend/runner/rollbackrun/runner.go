@@ -19,9 +19,9 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // NewRunner creates a new rollback runner.
@@ -119,10 +119,10 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 	}
 
 	switch instance.Engine {
-	case db.MySQL:
+	case storepb.Engine_MYSQL:
 		// TODO(d): support MariaDB.
 		r.generateMySQLRollbackSQL(ctx, task, payload, instance, project)
-	case db.Oracle:
+	case storepb.Engine_ORACLE:
 		r.generateOracleRollbackSQL(ctx, task, payload, instance, project)
 	}
 }

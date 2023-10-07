@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -295,12 +296,12 @@ func convertToInstanceRole(role *db.DatabaseRoleMessage, instance *store.Instanc
 	}
 }
 
-func validateRole(dbType db.Type, upsert *db.DatabaseRoleUpsertMessage) error {
+func validateRole(dbType storepb.Engine, upsert *db.DatabaseRoleUpsertMessage) error {
 	if upsert.Name == "" {
 		return status.Errorf(codes.InvalidArgument, "Invalid role name, role name cannot be empty")
 	}
 	switch dbType {
-	case db.Postgres, db.RisingWave:
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
 		if v := upsert.ConnectionLimit; v != nil && *v < int32(-1) {
 			return status.Errorf(codes.InvalidArgument, "Invalid connection limit, it should greater than or equal to -1")
 		}
@@ -309,7 +310,7 @@ func validateRole(dbType db.Type, upsert *db.DatabaseRoleUpsertMessage) error {
 				return status.Errorf(codes.InvalidArgument, "Invalid timestamp for valid_until, timestamp should in '2006-01-02T15:04:05+08:00' format.")
 			}
 		}
-	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		if v := upsert.ConnectionLimit; v != nil && *v < int32(0) {
 			return status.Errorf(codes.InvalidArgument, "Invalid connection limit, it should greater than or equal to -1")
 		}

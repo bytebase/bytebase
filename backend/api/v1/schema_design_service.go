@@ -14,8 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/differ"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -283,7 +282,6 @@ func (s *SchemaDesignService) checkProtectionRules(ctx context.Context, project 
 
 // UpdateSchemaDesign updates an existing schema design.
 func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-	// TODO(steven): Only allow personal draft schema design to be updated.
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.SchemaDesign.Name)
 	if err != nil {
@@ -458,6 +456,7 @@ func (*SchemaDesignService) ParseSchemaString(_ context.Context, request *v1pb.P
 
 // DeleteSchemaDesign deletes an existing schema design.
 func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -471,6 +470,31 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+	}
+	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to convert sheet to schema design: %v", err))
+	}
+	// Clear the baselineSchemaDesignId field for all schema designs which have this schema design as baseline.
+	if schemaDesign.Type == v1pb.SchemaDesign_MAIN_BRANCH {
+		filter := fmt.Sprintf("(sheet.payload->>'schemaDesign')::jsonb->>'baselineSchemaDesignId' = '%d'", sheet.UID)
+		sheets, err := s.store.ListSheets(ctx, &store.FindSheetMessage{
+			SchemaDesignFilter: &filter,
+		}, currentPrincipalID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to list sheets: %v", err))
+		}
+		for _, sheet := range sheets {
+			sheet.Payload.SchemaDesign.BaselineSchemaDesignId = ""
+			_, err := s.store.PatchSheet(ctx, &store.PatchSheetMessage{
+				UID:       sheet.UID,
+				UpdaterID: currentPrincipalID,
+				Payload:   sheet.Payload,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to patch sheet: %v", err))
+			}
+		}
 	}
 	// Find and delete the baseline sheet if it exists.
 	if sheet.Payload.SchemaDesign != nil && sheet.Payload.SchemaDesign.BaselineSheetId != "" {
@@ -515,7 +539,7 @@ func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMe
 		return nil, err
 	}
 
-	diff, err := differ.SchemaDiff(convertEngineToParserType(request.Engine), sourceSchema, targetSchema, false /* ignoreCaseSensitive */)
+	diff, err := base.SchemaDiff(convertEngine(request.Engine), sourceSchema, targetSchema, false /* ignoreCaseSensitive */)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
 	}
@@ -523,21 +547,6 @@ func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMe
 	return &v1pb.DiffMetadataResponse{
 		Diff: diff,
 	}, nil
-}
-
-func convertEngineToParserType(engine v1pb.Engine) parser.EngineType {
-	switch engine {
-	case v1pb.Engine_POSTGRES:
-		return parser.Postgres
-	case v1pb.Engine_MYSQL:
-		return parser.MySQL
-	case v1pb.Engine_TIDB:
-		return parser.TiDB
-	case v1pb.Engine_ORACLE:
-		return parser.Oracle
-	default:
-		return parser.Standard
-	}
 }
 
 func (s *SchemaDesignService) listSheets(ctx context.Context, find *store.FindSheetMessage) ([]*store.SheetMessage, error) {

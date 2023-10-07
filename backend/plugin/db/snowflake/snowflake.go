@@ -16,7 +16,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	snow "github.com/snowflakedb/gosnowflake"
@@ -29,13 +30,13 @@ var (
 )
 
 func init() {
-	db.Register(db.Snowflake, newDriver)
+	db.Register(storepb.Engine_SNOWFLAKE, newDriver)
 }
 
 // Driver is the Snowflake driver.
 type Driver struct {
 	connectionCtx db.ConnectionContext
-	dbType        db.Type
+	dbType        storepb.Engine
 	db            *sql.DB
 	databaseName  string
 }
@@ -45,7 +46,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a Snowflake driver.
-func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	dsn, loggedDSN, err := buildSnowflakeDSN(config)
 	if err != nil {
 		return nil, err
@@ -111,8 +112,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.Snowflake
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_SNOWFLAKE
 }
 
 // GetDB gets the database.
@@ -264,7 +265,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	// TODO(rebelice): support multiple queries in a single statement.
 	var results []*v1pb.QueryResult
 
-	result, err := driver.querySingleSQL(ctx, conn, parser.SingleSQL{Text: statement}, queryContext)
+	result, err := driver.querySingleSQL(ctx, conn, base.SingleSQL{Text: statement}, queryContext)
 	if err != nil {
 		results = append(results, &v1pb.QueryResult{
 			Error: err.Error(),
@@ -281,7 +282,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", stmt, limit)
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
 	stmt := statement
@@ -296,7 +297,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, db.Snowflake, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_SNOWFLAKE, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}
@@ -307,5 +308,5 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, parser.Snowflake, conn, statement)
+	return util.RunStatement(ctx, storepb.Engine_SNOWFLAKE, conn, statement)
 }

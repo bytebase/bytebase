@@ -6,6 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed config/sql-review.sample.yaml
@@ -17,31 +19,28 @@ var sqlReviewDevTemplateStr string
 //go:embed config/sql-review.prod.yaml
 var sqlReviewProdTemplateStr string
 
-// SQLReviewTemplateID is the template id for SQL review rules.
-type SQLReviewTemplateID string
-
 // SQLReviewTemplateData is the API message for SQL review rule template.
 type SQLReviewTemplateData struct {
-	ID       SQLReviewTemplateID  `yaml:"id"`
+	ID       string               `yaml:"id"`
 	RuleList []*SQLReviewRuleData `yaml:"ruleList"`
 }
 
 // SQLReviewRuleData is the API message for SQL review rule update.
 type SQLReviewRuleData struct {
-	Type    SQLReviewRuleType  `yaml:"type"`
-	Level   SQLReviewRuleLevel `yaml:"level,omitempty"`
-	Comment string             `yaml:"comment"`
-	Payload map[string]any     `yaml:"payload"`
+	Type    SQLReviewRuleType `yaml:"type"`
+	Level   string            `yaml:"level,omitempty"`
+	Comment string            `yaml:"comment"`
+	Payload map[string]any    `yaml:"payload"`
 }
 
 // SQLReviewConfigOverride is the API message for SQL review configuration override.
 type SQLReviewConfigOverride struct {
-	Template SQLReviewTemplateID  `yaml:"template"`
+	Template string               `yaml:"template"`
 	RuleList []*SQLReviewRuleData `yaml:"ruleList"`
 }
 
 // MergeSQLReviewRules will merge the input YML config into default template.
-func MergeSQLReviewRules(override *SQLReviewConfigOverride) ([]*SQLReviewRule, error) {
+func MergeSQLReviewRules(override *SQLReviewConfigOverride) ([]*storepb.SQLReviewRule, error) {
 	templateList, err := parseSQLReviewTemplateList()
 	if err != nil {
 		return nil, err
@@ -57,7 +56,7 @@ func MergeSQLReviewRules(override *SQLReviewConfigOverride) ([]*SQLReviewRule, e
 		ruleUpdateMap[rule.Type] = rule
 	}
 
-	var res []*SQLReviewRule
+	var res []*storepb.SQLReviewRule
 
 	for _, ruleTemplate := range template.RuleList {
 		ruleUpdate := ruleUpdateMap[ruleTemplate.Type]
@@ -92,7 +91,7 @@ func parseSQLReviewTemplateList() ([]*SQLReviewTemplateData, error) {
 	}, nil
 }
 
-func findTemplate(templateList []*SQLReviewTemplateData, id SQLReviewTemplateID) *SQLReviewTemplateData {
+func findTemplate(templateList []*SQLReviewTemplateData, id string) *SQLReviewTemplateData {
 	for _, template := range templateList {
 		if template.ID == id {
 			return template
@@ -101,7 +100,7 @@ func findTemplate(templateList []*SQLReviewTemplateData, id SQLReviewTemplateID)
 	return nil
 }
 
-func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*SQLReviewRule, error) {
+func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*storepb.SQLReviewRule, error) {
 	payload := source.Payload
 	level := source.Level
 	comment := source.Comment
@@ -122,10 +121,14 @@ func mergeRule(source *SQLReviewRuleData, override *SQLReviewRuleData) (*SQLRevi
 	if err != nil {
 		return nil, err
 	}
+	ruleLevelValue, ok := storepb.SQLReviewRuleLevel_value[level]
+	if !ok {
+		return nil, errors.Errorf("invalid rule level %q", level)
+	}
 
-	return &SQLReviewRule{
-		Type:    source.Type,
-		Level:   level,
+	return &storepb.SQLReviewRule{
+		Type:    string(source.Type),
+		Level:   storepb.SQLReviewRuleLevel(ruleLevelValue),
 		Comment: comment,
 		Payload: string(str),
 	}, nil
