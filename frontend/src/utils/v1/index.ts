@@ -20,3 +20,4 @@ export * from "./issue";
 export * from "./changeHistory";
 export * from "./changelist";
 export * from "./cel";
+export * from "./schemaDesign";
