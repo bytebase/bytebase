@@ -2242,7 +2242,7 @@ func TestCommentStmt(t *testing.T) {
 				Object:  &ast.ColumnNameDef{Table: &ast.TableDef{Schema: "public", Name: "tech_book"}, ColumnName: "a"},
 				Comment: "This is a comment.",
 			}},
-			statementList: []parser.SingleSQL{
+			statementList: []base.SingleSQL{
 				{
 					Text:     "COMMENT ON COLUMN public.tech_book.a IS 'This is a comment.'",
 					LastLine: 1,

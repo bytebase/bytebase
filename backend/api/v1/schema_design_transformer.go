@@ -698,6 +698,12 @@ func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.Databas
 			return "", status.Errorf(codes.Internal, "failed to generate tidb design schema: %v", err)
 		}
 		return result, nil
+	case v1pb.Engine_POSTGRES:
+		result, err := pgSchemaEngine.GetDesignSchema(baselineSchema, to)
+		if err != nil {
+			return "", status.Errorf(codes.Internal, "failed to generate postgres design schema: %v", err)
+		}
+		return result, nil
 	default:
 		return "", status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
 	}

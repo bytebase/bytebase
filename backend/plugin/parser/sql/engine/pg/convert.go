@@ -1918,7 +1918,7 @@ func convertNodeListToTableDef(in []*pgquery.Node) (*ast.TableDef, error) {
 	case 2:
 		schema, ok := in[0].Node.(*pgquery.Node_String_)
 		if !ok {
-			return nil, parser.NewConvertErrorf("expected String but found %t", in[0].Node)
+			return nil, NewConvertErrorf("expected String but found %t", in[0].Node)
 		}
 		tableDef.Schema = schema.String_.Sval
 		in = in[1:]
@@ -1926,11 +1926,11 @@ func convertNodeListToTableDef(in []*pgquery.Node) (*ast.TableDef, error) {
 	case 1:
 		table, ok := in[0].Node.(*pgquery.Node_String_)
 		if !ok {
-			return nil, parser.NewConvertErrorf("expected String but found %t", in[0].Node)
+			return nil, NewConvertErrorf("expected String but found %t", in[0].Node)
 		}
 		tableDef.Name = table.String_.Sval
 	default:
-		return nil, parser.NewConvertErrorf("failed to convert RangeVar, table name contains unexpected components: %v", in)
+		return nil, NewConvertErrorf("failed to convert RangeVar, table name contains unexpected components: %v", in)
 	}
 	return tableDef, nil
 }

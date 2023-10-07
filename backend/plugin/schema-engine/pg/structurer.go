@@ -7,7 +7,12 @@ import (
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+
+	postgres "github.com/bytebase/postgresql-parser"
+
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 
 	ast "github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -465,13 +470,13 @@ func convertToForeignKeyState(id int, foreignKey *v1pb.ForeignKeyMetadata) *fore
 }
 
 func (f *foreignKeyState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString("CONSTRAINT `"); err != nil {
+	if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(f.name); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString("` FOREIGN KEY ("); err != nil {
+	if _, err := buf.WriteString(`" FOREIGN KEY (`); err != nil {
 		return err
 	}
 	for i, column := range f.columns {
@@ -480,23 +485,29 @@ func (f *foreignKeyState) toString(buf *strings.Builder) error {
 				return err
 			}
 		}
-		if _, err := buf.WriteString("`"); err != nil {
+		if _, err := buf.WriteString("\""); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString(column); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString("`"); err != nil {
+		if _, err := buf.WriteString("\""); err != nil {
 			return err
 		}
 	}
-	if _, err := buf.WriteString(") REFERENCES `"); err != nil {
+	if _, err := buf.WriteString(`) REFERENCES "`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(f.referencedSchema); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`"."`); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(f.referencedTable); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString("` ("); err != nil {
+	if _, err := buf.WriteString(`" (`); err != nil {
 		return err
 	}
 	for i, column := range f.referencedColumns {
@@ -505,13 +516,13 @@ func (f *foreignKeyState) toString(buf *strings.Builder) error {
 				return err
 			}
 		}
-		if _, err := buf.WriteString("`"); err != nil {
+		if _, err := buf.WriteString("\""); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString(column); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString("`"); err != nil {
+		if _, err := buf.WriteString("\""); err != nil {
 			return err
 		}
 	}
@@ -552,7 +563,13 @@ func convertToIndexState(id int, index *v1pb.IndexMetadata) *indexState {
 
 func (i *indexState) toString(buf *strings.Builder) error {
 	if i.primary {
-		if _, err := buf.WriteString("PRIMARY KEY ("); err != nil {
+		if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(i.name); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`" PRIMARY KEY (`); err != nil {
 			return err
 		}
 		for i, key := range i.keys {
@@ -561,7 +578,7 @@ func (i *indexState) toString(buf *strings.Builder) error {
 					return err
 				}
 			}
-			if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
+			if _, err := buf.WriteString(fmt.Sprintf(`"%s"`, key)); err != nil {
 				return err
 			}
 		}
@@ -583,7 +600,7 @@ type columnState struct {
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf(`"%s" %s`, c.name, c.tp)); err != nil {
 		return err
 	}
 	if c.nullable {
@@ -597,11 +614,6 @@ func (c *columnState) toString(buf *strings.Builder) error {
 	}
 	if c.defaultValue != nil {
 		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", *c.defaultValue)); err != nil {
-			return err
-		}
-	}
-	if c.comment != "" {
-		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", c.comment)); err != nil {
 			return err
 		}
 	}
@@ -633,4 +645,397 @@ func convertToColumnState(id int, column *v1pb.ColumnMetadata) *columnState {
 		result.defaultValue = &column.Default.Value
 	}
 	return result
+}
+
+type designSchemaGenerator struct {
+	*postgres.BasePostgreSQLParserListener
+
+	to                  *databaseState
+	result              strings.Builder
+	currentTable        *tableState
+	firstElementInTable bool
+	columnDefine        strings.Builder
+	tableConstraints    strings.Builder
+	err                 error
+
+	lastTokenIndex int
+}
+
+// GetDesignSchema returns the schema string for the design schema.
+func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
+	toState := convertToDatabaseState(to)
+	tree, err := pgparser.ParsePostgreSQL(baselineSchema)
+	if err != nil {
+		return "", err
+	}
+
+	listener := &designSchemaGenerator{
+		lastTokenIndex: 0,
+		to:             toState,
+	}
+
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	if listener.err != nil {
+		return "", listener.err
+	}
+	return listener.result.String(), nil
+}
+
+// EnterCreatestmt is called when production createstmt is entered.
+func (g *designSchemaGenerator) EnterCreatestmt(ctx *postgres.CreatestmtContext) {
+	if g.err != nil {
+		return
+	}
+	if ctx.Opttableelementlist() == nil {
+		// Skip other create statement for now.
+		return
+	}
+	schemaName, tableName, err := pgparser.NormalizePostgreSQLQualifiedNameAsTableName(ctx.Qualified_name(0))
+	if err != nil {
+		g.err = err
+		return
+	}
+
+	schema, exists := g.to.schemas[schemaName]
+	if !exists {
+		// Skip not found schema.
+		g.lastTokenIndex = ctx.GetStop().GetTokenIndex() + 1
+		return
+	}
+
+	table, exists := schema.tables[tableName]
+	if !exists {
+		// Skip not found table.
+		g.lastTokenIndex = ctx.GetStop().GetTokenIndex() + 1
+		return
+	}
+
+	g.currentTable = table
+
+	if _, err := g.result.WriteString(
+		ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  ctx.GetStart().GetTokenIndex() - 1,
+		}),
+	); err != nil {
+		g.err = err
+		return
+	}
+
+	g.currentTable = table
+	g.firstElementInTable = true
+	g.columnDefine.Reset()
+	g.tableConstraints.Reset()
+
+	delete(schema.tables, tableName)
+	// Write the text before the table element list.
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.GetStart().GetTokenIndex(),
+		Stop:  ctx.Opttableelementlist().GetStart().GetTokenIndex() - 1,
+	})); err != nil {
+		g.err = err
+		return
+	}
+}
+
+func (g *designSchemaGenerator) ExitCreatestmt(ctx *postgres.CreatestmtContext) {
+	if g.err != nil || g.currentTable == nil {
+		return
+	}
+
+	var columnList []*columnState
+	for _, column := range g.currentTable.columns {
+		columnList = append(columnList, column)
+	}
+	sort.Slice(columnList, func(i, j int) bool {
+		return columnList[i].id < columnList[j].id
+	})
+	for _, column := range columnList {
+		if g.firstElementInTable {
+			g.firstElementInTable = false
+		} else {
+			if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
+				g.err = err
+				return
+			}
+		}
+		if err := column.toString(&g.columnDefine); err != nil {
+			g.err = err
+			return
+		}
+	}
+
+	var indexList []*indexState
+	for _, index := range g.currentTable.indexes {
+		indexList = append(indexList, index)
+	}
+	sort.Slice(indexList, func(i, j int) bool {
+		return indexList[i].id < indexList[j].id
+	})
+	for _, index := range indexList {
+		if g.firstElementInTable {
+			g.firstElementInTable = false
+		} else {
+			if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+				g.err = err
+				return
+			}
+		}
+		if err := index.toString(&g.tableConstraints); err != nil {
+			g.err = err
+			return
+		}
+	}
+
+	var fkList []*foreignKeyState
+	for _, fk := range g.currentTable.foreignKeys {
+		fkList = append(fkList, fk)
+	}
+	sort.Slice(fkList, func(i, j int) bool {
+		return fkList[i].id < fkList[j].id
+	})
+	for _, fk := range fkList {
+		if g.firstElementInTable {
+			g.firstElementInTable = false
+		} else {
+			if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+				g.err = err
+				return
+			}
+		}
+		if err := fk.toString(&g.tableConstraints); err != nil {
+			g.err = err
+			return
+		}
+	}
+
+	if _, err := g.result.WriteString(g.columnDefine.String()); err != nil {
+		g.err = err
+		return
+	}
+	if _, err := g.result.WriteString(g.tableConstraints.String()); err != nil {
+		g.err = err
+		return
+	}
+
+	g.lastTokenIndex = ctx.Opttableelementlist().GetStop().GetTokenIndex() + 1
+	g.currentTable = nil
+	g.firstElementInTable = false
+}
+
+func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
+	if g.err != nil || g.currentTable == nil {
+		return
+	}
+
+	columnName := pgparser.NormalizePostgreSQLColid(ctx.Colid())
+	column, exists := g.currentTable.columns[columnName]
+	if !exists {
+		return
+	}
+	delete(g.currentTable.columns, columnName)
+
+	if g.firstElementInTable {
+		g.firstElementInTable = false
+	} else {
+		if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
+			g.err = err
+			return
+		}
+	}
+
+	// compare column type
+	columnType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(
+		ctx.Typename(),
+	)
+	equal, err := equalType(column.tp, columnType)
+	if err != nil {
+		g.err = err
+		return
+	}
+	if !equal {
+		if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.GetStart().GetTokenIndex(),
+			Stop:  ctx.Typename().GetStart().GetTokenIndex() - 1,
+		})); err != nil {
+			g.err = err
+			return
+		}
+	} else {
+		if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.GetStart().GetTokenIndex(),
+			Stop:  ctx.Typename().GetStop().GetTokenIndex(),
+		})); err != nil {
+			g.err = err
+			return
+		}
+	}
+
+	if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.Typename().GetStop().GetTokenIndex() + 1,
+		Stop:  ctx.Colquallist().GetStart().GetTokenIndex() - 1,
+	})); err != nil {
+		g.err = err
+		return
+	}
+	startPos := ctx.Colquallist().GetStart().GetTokenIndex()
+
+	appended := false
+	if !column.nullable && nullableExists(ctx.Colquallist()) {
+		if _, err := g.columnDefine.WriteString("NOT NULL"); err != nil {
+			g.err = err
+			return
+		}
+		appended = true
+	}
+
+	if column.defaultValue != nil && defaultExists(ctx.Colquallist()) {
+		if appended {
+			if _, err := g.columnDefine.WriteString(" "); err != nil {
+				g.err = err
+				return
+			}
+		}
+		if _, err := g.columnDefine.WriteString(fmt.Sprintf("DEFAULT %s", *column.defaultValue)); err != nil {
+			g.err = err
+			return
+		}
+		appended = true
+	}
+
+	for i, item := range ctx.Colquallist().AllColconstraint() {
+		if i == 0 && appended {
+			if _, err := g.columnDefine.WriteString(" "); err != nil {
+				g.err = err
+				return
+			}
+		}
+		if item.Colconstraintelem() == nil {
+			if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
+				antlr.Interval{
+					Start: startPos,
+					Stop:  item.GetStop().GetTokenIndex(),
+				},
+			)); err != nil {
+				g.err = err
+				return
+			}
+			startPos = item.GetStop().GetTokenIndex() + 1
+			continue
+		}
+
+		constraint := item.Colconstraintelem()
+
+		switch {
+		case constraint.NULL_P() != nil:
+			sameNullable := (constraint.NOT() == nil && column.nullable) || (constraint.NOT() != nil && !column.nullable)
+			if sameNullable {
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
+					antlr.Interval{
+						Start: startPos,
+						Stop:  item.GetStop().GetTokenIndex(),
+					},
+				)); err != nil {
+					g.err = err
+					return
+				}
+			}
+		case constraint.DEFAULT() != nil:
+			defaultValue := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: constraint.B_expr().GetStart().GetTokenIndex(),
+				Stop:  constraint.B_expr().GetStop().GetTokenIndex(),
+			})
+			if column.defaultValue != nil && *column.defaultValue == defaultValue {
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
+					antlr.Interval{
+						Start: startPos,
+						Stop:  item.GetStop().GetTokenIndex(),
+					},
+				)); err != nil {
+					g.err = err
+					return
+				}
+			} else if column.defaultValue != nil {
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
+					antlr.Interval{
+						Start: startPos,
+						Stop:  constraint.B_expr().GetStart().GetTokenIndex() - 1,
+					},
+				)); err != nil {
+					g.err = err
+					return
+				}
+				if _, err := g.columnDefine.WriteString(*column.defaultValue); err != nil {
+					g.err = err
+					return
+				}
+			}
+		default:
+			if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
+				antlr.Interval{
+					Start: startPos,
+					Stop:  item.GetStop().GetTokenIndex(),
+				},
+			)); err != nil {
+				g.err = err
+				return
+			}
+		}
+		startPos = item.GetStop().GetTokenIndex() + 1
+	}
+}
+
+func defaultExists(colquallist postgres.IColquallistContext) bool {
+	if colquallist == nil {
+		return false
+	}
+
+	for _, item := range colquallist.AllColconstraint() {
+		if item.Colconstraintelem() == nil {
+			continue
+		}
+
+		if item.Colconstraintelem().DEFAULT() != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
+func nullableExists(colquallist postgres.IColquallistContext) bool {
+	if colquallist == nil {
+		return false
+	}
+
+	for _, item := range colquallist.AllColconstraint() {
+		if item.Colconstraintelem() == nil {
+			continue
+		}
+
+		if item.Colconstraintelem().NULL_P() != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
+func equalType(typeA, typeB string) (bool, error) {
+	list, err := pgrawparser.Parse(pgrawparser.ParseContext{}, fmt.Sprintf("CREATE TABLE t (a %s)", typeA))
+	if err != nil {
+		return false, err
+	}
+	if len(list) != 1 {
+		return false, errors.Errorf("failed to compare type %q and %q: more than one statement", typeA, typeB)
+	}
+	node, ok := list[0].(*ast.CreateTableStmt)
+	if !ok {
+		return false, errors.Errorf("failed to compare type %q and %q: not CreateTableStmt", typeA, typeB)
+	}
+	if len(node.ColumnList) != 1 {
+		return false, errors.Errorf("failed to compare type %q and %q: more than one column", typeA, typeB)
+	}
+	column := node.ColumnList[0]
+	return column.Type.EquivalentType(typeB), nil
 }
