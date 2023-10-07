@@ -2,9 +2,17 @@ import { isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
+import { resolveCELExpr } from "@/plugins/cel";
+import { hasFeature, usePolicyV1Store } from "@/store";
 import { ComposedDatabase, MaybeRef, PresetRoleType } from "@/types";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
+  PolicyType,
+  policyTypeToJSON,
+} from "@/types/proto/v1/org_policy_service";
+import {
+  extractEnvironmentNameListFromExpr,
   hasWorkspacePermissionV1,
   isDeveloperOfProjectV1,
   isMemberOfProjectV1,
@@ -12,6 +20,7 @@ import {
 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
+import { policyNamePrefix } from "./common";
 import { useProjectV1Store } from "./project";
 
 export const useProjectIamPolicyStore = defineStore(
@@ -178,6 +187,32 @@ export const useCurrentUserIamPolicy = () => {
       return true;
     }
 
+    // Check if the environment is open to query for all users.
+    if (hasFeature("bb.feature.access-control")) {
+      const name = `${policyNamePrefix}${policyTypeToJSON(
+        PolicyType.WORKSPACE_IAM
+      )}`;
+      const policy = usePolicyV1Store().getPolicyByName(name);
+      if (policy) {
+        const bindings = policy.workspaceIamPolicy?.bindings;
+        if (bindings) {
+          const querierBinding = bindings.find(
+            (binding) => binding.role === "roles/QUERIER"
+          );
+          if (querierBinding) {
+            const simpleExpr = resolveCELExpr(
+              querierBinding.parsedExpr?.expr || Expr.fromPartial({})
+            );
+            const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
+            if (envNameList.includes(database.effectiveEnvironment)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    // Check if the user has the permission to query the database.
     const policy = database.projectEntity.iamPolicy;
     for (const binding of policy.bindings) {
       if (
@@ -225,6 +260,8 @@ export const useCurrentUserIamPolicy = () => {
         }
       }
     }
+
+    // Otherwise, the user is not allowed to query the database.
     return false;
   };
 
