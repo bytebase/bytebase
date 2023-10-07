@@ -7,16 +7,7 @@
     </div>
     <div class="flex items-center justify-end gap-x-3">
       <template v-if="!reorderMode">
-        <NButton
-          icon
-          style="--n-padding: 0 10px"
-          :disabled="!allowEdit"
-          @click="beginReorder"
-        >
-          <template #icon>
-            <heroicons:arrows-up-down />
-          </template>
-        </NButton>
+        <ReorderButton @click="beginReorder" />
         <ExportButton />
         <NButton
           icon
@@ -28,9 +19,7 @@
             <heroicons:plus />
           </template>
         </NButton>
-        <NButton type="primary">
-          {{ $t("changelist.apply-to-database") }}
-        </NButton>
+        <ApplyToDatabaseButton />
       </template>
 
       <template v-if="reorderMode">
@@ -49,7 +38,9 @@
 import { NButton } from "naive-ui";
 import { ProjectV1Name } from "@/components/v2";
 import { useChangelistDetailContext } from "../context";
+import ApplyToDatabaseButton from "./ApplyToDatabaseButton.vue";
 import ExportButton from "./ExportButton.vue";
+import ReorderButton from "./ReorderButton.vue";
 import TitleEditor from "./TitleEditor.vue";
 import { useReorderChangelist } from "./reorder";
 

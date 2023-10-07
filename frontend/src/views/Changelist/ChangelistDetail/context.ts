@@ -20,6 +20,7 @@ export type ChangelistDetailContext = {
   reorderMode: Ref<boolean>;
   selectedChanges: Ref<Change[]>;
   showAddChangePanel: Ref<boolean>;
+  showApplyToDatabasePanel: Ref<boolean>;
   isUpdating: Ref<boolean>;
 
   events: ChangelistDetailEvents;
@@ -60,6 +61,7 @@ export const provideChangelistDetailContext = () => {
     reorderMode: ref(false),
     selectedChanges: ref([]),
     showAddChangePanel: ref(false),
+    showApplyToDatabasePanel: ref(false),
     isUpdating: ref(false),
 
     events: new Emittery(),

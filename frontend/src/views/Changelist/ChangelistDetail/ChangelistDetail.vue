@@ -32,6 +32,8 @@
       :sheet-name="state.detailRawSQLSheetName"
       @close="state.detailRawSQLSheetName = undefined"
     />
+
+    <ApplyToDatabasePanel />
   </div>
 </template>
 
@@ -47,6 +49,7 @@ import {
 } from "@/types/proto/v1/changelist_service";
 import { getChangelistChangeSourceType } from "@/utils";
 import AddChangePanel from "./AddChangePanel";
+import ApplyToDatabasePanel from "./ApplyToDatabasePanel";
 import BranchDetailPanel from "./BranchDetailPanel";
 import ChangeHistoryDetailPanel from "./ChangeHistoryDetailPanel";
 import ChangeTable from "./ChangeTable";

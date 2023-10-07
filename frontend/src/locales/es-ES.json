@@ -3061,7 +3061,8 @@
       "nothing-changed": "nada ha cambiado",
       "sql-cannot-be-empty": "Se requiere SQL",
       "select-at-least-one-change": "Seleccione al menos un cambio",
-      "select-at-least-one-change-to-export": "Seleccione al menos un cambio para exportar"
+      "select-at-least-one-change-to-export": "Seleccione al menos un cambio para exportar",
+      "add-at-least-one-change": "Añade al menos un cambio"
     },
     "apply-to-database": "Aplicar a la base de datos",
     "add-change": {

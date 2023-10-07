@@ -3063,7 +3063,8 @@
       "nothing-changed": "Nothing changed",
       "sql-cannot-be-empty": "SQL is required",
       "select-at-least-one-change": "Select at least one change",
-      "select-at-least-one-change-to-export": "Select at least one change to export"
+      "select-at-least-one-change-to-export": "Select at least one change to export",
+      "add-at-least-one-change": "Add at least one change"
     },
     "apply-to-database": "Apply to database",
     "add-change": {
