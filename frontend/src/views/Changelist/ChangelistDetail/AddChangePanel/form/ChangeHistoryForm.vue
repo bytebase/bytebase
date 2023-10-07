@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-4">
+  <div class="flex flex-col items-stretch gap-y-4 overflow-x-hidden">
     <div class="flex flex-col gap-y-2 max-w-max">
       <div
         v-if="changes.length === 0"
@@ -47,6 +47,7 @@
       :change-history-list="filteredChangeHistoryList"
       :is-fetching="state.isLoading"
       :keyword="state.keyword"
+      class="w-full"
       @click-item="state.detailChangeHistoryName = $event.name"
     />
 

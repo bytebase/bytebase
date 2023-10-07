@@ -14,7 +14,7 @@
           v-for="(column, index) in columns"
           :key="index"
           role="table-cell"
-          class="bb-grid-header-cell capitalize"
+          class="bb-grid-header-cell capitalize whitespace-nowrap"
           :class="[column.class]"
         >
           <template v-if="index === 0">
@@ -44,13 +44,13 @@
         <!-- eslint-disable-next-line vue/no-v-html -->
         <span class="whitespace-nowrap" v-html="renderVersion(changeHistory)" />
       </div>
-      <div class="bb-grid-cell">
+      <div class="bb-grid-cell whitespace-nowrap">
         <IssueUID :change-history="changeHistory" />
       </div>
       <div class="bb-grid-cell">
         <Tables :change-history="changeHistory" />
       </div>
-      <div class="bb-grid-cell whitespace-nowrap">
+      <div class="bb-grid-cell overflow-hidden">
         <SQL :change-history="changeHistory" />
       </div>
     </template>

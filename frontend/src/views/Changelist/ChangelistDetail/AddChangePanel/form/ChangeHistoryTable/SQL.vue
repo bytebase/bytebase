@@ -2,6 +2,7 @@
   <TextOverflowPopover
     :content="changeHistory.statement"
     :max-length="100"
+    content-class="whitespace-nowrap w-full truncate"
     placement="bottom"
   />
 </template>

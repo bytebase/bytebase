@@ -56,6 +56,7 @@
           :show-instance="false"
           :show-arrow="false"
           :show-production-environment-icon="false"
+          tooltip="instance"
         />
       </div>
       <div class="bb-grid-cell">
