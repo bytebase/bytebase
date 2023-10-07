@@ -1,5 +1,7 @@
+import { useChangeHistoryStore } from "@/store";
 import { Changelist_Change_Source } from "@/types";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import { getHistoryChangeType } from "./changeHistory";
 
 export const extractChangelistResourceName = (name: string) => {
   const pattern = /(?:^|\/)changelists\/([^/]+)(?:$|\/)/;
@@ -24,4 +26,28 @@ export const getChangelistChangeSourceType = (
   } else {
     return "RAW_SQL";
   }
+};
+
+export const guessChangelistChangeType = (
+  change: Change
+): "DML" | "DDL" | "-" => {
+  const type = getChangelistChangeSourceType(change);
+  if (type === "CHANGE_HISTORY") {
+    const history = useChangeHistoryStore().getChangeHistoryByName(
+      change.source
+    );
+    if (!history) {
+      return "-";
+    }
+    return getHistoryChangeType(history.type);
+  }
+  if (type === "BRANCH") {
+    return "DDL";
+  }
+  if (type === "RAW_SQL") {
+    return "-";
+  }
+
+  console.error("Should never reach this line");
+  return "-";
 };

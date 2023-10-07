@@ -3057,7 +3057,8 @@
       "sql-cannot-be-empty": "SQL 不能为空",
       "select-at-least-one-change": "选择至少一条变更",
       "select-at-least-one-change-to-export": "至少选择一项要导出的变更",
-      "add-at-least-one-change": "添加至少一项变更"
+      "add-at-least-one-change": "添加至少一项变更",
+      "select-at-least-one-database": "至少选择一个数据库"
     },
     "apply-to-database": "应用到数据库",
     "add-change": {

@@ -1,6 +1,5 @@
 <template>
   <ErrorTipsButton
-    icon
     style="--n-padding: 0 10px"
     :errors="errors"
     :button-props="{

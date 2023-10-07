@@ -3064,7 +3064,8 @@
       "sql-cannot-be-empty": "SQL is required",
       "select-at-least-one-change": "Select at least one change",
       "select-at-least-one-change-to-export": "Select at least one change to export",
-      "add-at-least-one-change": "Add at least one change"
+      "add-at-least-one-change": "Add at least one change",
+      "select-at-least-one-database": "Select at least one database"
     },
     "apply-to-database": "Apply to database",
     "add-change": {

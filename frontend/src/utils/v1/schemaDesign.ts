@@ -3,6 +3,7 @@ import { validateDatabaseMetadata } from "@/components/SchemaEditorV1/utils";
 import { convertBranchToBranchSchema } from "@/components/SchemaEditorV1/utils/branch";
 import { schemaDesignServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
+import { useDBSchemaV1Store } from "@/store";
 import { ComposedDatabase, DatabaseEdit } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
@@ -18,17 +19,11 @@ const diffViaMetadata = async (
   branch: SchemaDesign,
   database: ComposedDatabase
 ) => {
-  // const original = await useDBSchemaV1Store().getOrFetchDatabaseMetadata(
-  //   database.name,
-  //   false /* !skipCache */,
-  //   true /* silent */
-  // );
-  // const mergedMetadata = mergeSchemaEditToMetadata(
-  //   branchSchema.schemaList,
-  //   cloneDeep(original)
-  // );
-  const sourceMetadata =
-    branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({});
+  const sourceMetadata = await useDBSchemaV1Store().getOrFetchDatabaseMetadata(
+    database.name,
+    false /* !skipCache */,
+    true /* silent */
+  );
   const targetMetadata =
     branch.schemaMetadata ?? DatabaseMetadata.fromPartial({});
   const validationMessages = validateDatabaseMetadata(targetMetadata);
