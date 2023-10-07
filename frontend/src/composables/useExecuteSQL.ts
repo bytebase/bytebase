@@ -3,7 +3,6 @@ import { Status } from "nice-grpc-common";
 import { markRaw } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBNotificationStyle } from "@/bbkit/types";
-import { useSilentRequest } from "@/plugins/silent-request";
 import {
   pushNotification,
   useTabStore,
