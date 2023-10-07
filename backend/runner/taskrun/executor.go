@@ -13,6 +13,7 @@ import (
 
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -524,22 +525,19 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		}, api.SystemBotID)
 		if err != nil {
 			slog.Error("Failed to get sheet from store", slog.Int("sheetID", *sheetID), log.BBError(err))
-		} else if sheet.Payload.DatabaseConfig != nil || sheet.Payload.DatabaseConfig != nil {
+		} else if sheet.Payload != nil && (sheet.Payload.DatabaseConfig != nil || sheet.Payload.BaselineDatabaseConfig != nil) {
 			effectiveDatabaseSchema, err := stores.GetDBSchema(ctx, *task.DatabaseID)
 			if err != nil {
 				slog.Error("Failed to get database config from store", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *task.DatabaseID), log.BBError(err))
 			} else {
-				updatedDatabaseConfig, err := updateDatabaseConfig(sheet.Payload.DatabaseConfig, sheet.Payload.BaselineDatabaseConfig, effectiveDatabaseSchema.Config)
+				updatedDatabaseConfig := updateDatabaseConfig(sheet.Payload.DatabaseConfig, sheet.Payload.BaselineDatabaseConfig, effectiveDatabaseSchema.Config)
+				err = stores.UpdateDBSchema(ctx, *task.DatabaseID, &store.UpdateDBSchemaMessage{
+					Config: updatedDatabaseConfig,
+				}, api.SystemBotID)
 				if err != nil {
 					slog.Error("Failed to update database config", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *task.DatabaseID), log.BBError(err))
-				} else {
-					err = stores.UpdateDBSchema(ctx, *task.DatabaseID, &store.UpdateDBSchemaMessage{
-						Config: updatedDatabaseConfig,
-					}, api.SystemBotID)
-					if err != nil {
-						slog.Error("Failed to update database config", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *task.DatabaseID), log.BBError(err))
-					}
 				}
+
 			}
 		}
 	}
@@ -829,7 +827,261 @@ func getRepositoryAndVCS(ctx context.Context, storage *store.Store, repoUID, vcs
 	return repo, vcs, nil
 }
 
+type updateDatabaseConfigAction string
+
+const (
+	updateDatabaseConfigActionUpdate updateDatabaseConfigAction = "UPDATE"
+)
+
+type databaseConfigNode struct {
+	schemaChildren []*schemaConfigNode
+}
+
+type schemaConfigNode struct {
+	action        updateDatabaseConfigAction
+	name          string
+	tableChildren []*tableConfigNode
+}
+
+type tableConfigNode struct {
+	action updateDatabaseConfigAction
+	name   string
+
+	columnChildren []*columnConfigNode
+}
+
+type columnConfigNode struct {
+	action updateDatabaseConfigAction
+	name   string
+
+	// semanticTypeAttributeChildren is the semantic type attribute config after the migration, only be used when action is updated.
+	semanticTypeAttributeChildren *columnConfigSemanticTypeAttributeNode
+}
+
+type columnConfigSemanticTypeAttributeNode struct {
+	action updateDatabaseConfigAction
+
+	to string
+}
+
 // updateDatabaseConfig computes the migration from databaseConfig and baselineDatabaseConfig, and applies the migration to appliedTarget, returns the updated databaseConfig.
-func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget *storepb.DatabaseConfig) (*storepb.DatabaseConfig, error) {
-	return databaseConfig, nil
+func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget *storepb.DatabaseConfig) *storepb.DatabaseConfig {
+	// To avoid determining the databaseConfig, baselineDatabaseConfig and appliedTarget are nil or not, we will replace the nil with empty config at the beginning.
+	if databaseConfig == nil {
+		databaseConfig = &storepb.DatabaseConfig{}
+	}
+	if baselineDatabaseConfig == nil {
+		baselineDatabaseConfig = &storepb.DatabaseConfig{}
+	}
+	if appliedTarget == nil {
+		appliedTarget = &storepb.DatabaseConfig{}
+	}
+
+	diff := &databaseConfigNode{}
+
+	schemaConfigInBaseline := make(map[string]*storepb.SchemaConfig)
+	for _, schemaConfig := range baselineDatabaseConfig.SchemaConfigs {
+		schemaConfigInBaseline[schemaConfig.Name] = schemaConfig
+	}
+
+	// Computing the diff between databaseConfig and baselineDatabaseConfig, we only use `UPDATE` action.
+	for _, schemaConfigWanted := range databaseConfig.SchemaConfigs {
+		schemaConfigInBaseline, ok := schemaConfigInBaseline[schemaConfigWanted.Name]
+		if !ok {
+			schemaNode := &schemaConfigNode{
+				action: updateDatabaseConfigActionUpdate,
+				name:   schemaConfigWanted.Name,
+			}
+			for _, tableConfigWanted := range schemaConfigWanted.TableConfigs {
+				tableNode := &tableConfigNode{
+					action: updateDatabaseConfigActionUpdate,
+					name:   tableConfigWanted.Name,
+				}
+				for _, columnConfigWanted := range tableConfigWanted.ColumnConfigs {
+					columnNode := &columnConfigNode{
+						action: updateDatabaseConfigActionUpdate,
+						name:   columnConfigWanted.Name,
+						semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
+							action: updateDatabaseConfigActionUpdate,
+							to:     columnConfigWanted.SemanticTypeId,
+						},
+					}
+					tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
+				}
+				schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
+			}
+			diff.schemaChildren = append(diff.schemaChildren, schemaNode)
+			continue
+		}
+
+		tableConfigInBaseline := make(map[string]*storepb.TableConfig)
+		for _, tableConfig := range schemaConfigInBaseline.TableConfigs {
+			tableConfigInBaseline[tableConfig.Name] = tableConfig
+		}
+
+		for _, tableConfigWanted := range schemaConfigWanted.TableConfigs {
+			tableConfigInBaseline, ok := tableConfigInBaseline[tableConfigWanted.Name]
+			if !ok {
+				schemaNode := &schemaConfigNode{
+					action: updateDatabaseConfigActionUpdate,
+					name:   schemaConfigWanted.Name,
+				}
+				tableNode := &tableConfigNode{
+					action: updateDatabaseConfigActionUpdate,
+					name:   tableConfigWanted.Name,
+				}
+				for _, columnConfigWanted := range tableConfigWanted.ColumnConfigs {
+					columnNode := &columnConfigNode{
+						action: updateDatabaseConfigActionUpdate,
+						name:   columnConfigWanted.Name,
+						semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
+							action: updateDatabaseConfigActionUpdate,
+							to:     columnConfigWanted.SemanticTypeId,
+						},
+					}
+					tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
+				}
+				schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
+				continue
+			}
+
+			columnConfigInBaseline := make(map[string]*storepb.ColumnConfig)
+			for _, columnConfig := range tableConfigInBaseline.ColumnConfigs {
+				columnConfigInBaseline[columnConfig.Name] = columnConfig
+			}
+
+			for _, columnConfigWanted := range tableConfigWanted.ColumnConfigs {
+				columnConfigInBaseline, ok := columnConfigInBaseline[columnConfigWanted.Name]
+				if !ok {
+					schemaNode := &schemaConfigNode{
+						action: updateDatabaseConfigActionUpdate,
+						name:   schemaConfigWanted.Name,
+					}
+					tableNode := &tableConfigNode{
+						action: updateDatabaseConfigActionUpdate,
+						name:   tableConfigWanted.Name,
+					}
+					columnNode := &columnConfigNode{
+						action: updateDatabaseConfigActionUpdate,
+						name:   columnConfigWanted.Name,
+						semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
+							action: updateDatabaseConfigActionUpdate,
+							to:     columnConfigWanted.SemanticTypeId,
+						},
+					}
+					tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
+					schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
+					continue
+				}
+
+				// Compare the attribute
+				hasAttributesUpdate := false
+				if columnConfigWanted.SemanticTypeId != columnConfigInBaseline.SemanticTypeId {
+					hasAttributesUpdate = true
+				}
+
+				if hasAttributesUpdate {
+					schemaNode := &schemaConfigNode{
+						action: updateDatabaseConfigActionUpdate,
+						name:   schemaConfigWanted.Name,
+					}
+					tableNode := &tableConfigNode{
+						action: updateDatabaseConfigActionUpdate,
+						name:   tableConfigWanted.Name,
+					}
+					columnNode := &columnConfigNode{
+						action: updateDatabaseConfigActionUpdate,
+						name:   columnConfigWanted.Name,
+						semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
+							action: updateDatabaseConfigActionUpdate,
+							to:     columnConfigWanted.SemanticTypeId,
+						},
+					}
+					tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
+					schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
+					diff.schemaChildren = append(diff.schemaChildren, schemaNode)
+				}
+			}
+		}
+	}
+
+	// Applying the diff to appliedTarget.
+	result := proto.Clone(appliedTarget).(*storepb.DatabaseConfig)
+
+	// The value of the schemaConfigInTarget is the index of the schemaConfig in appliedTarget.
+	schemaConfigInTarget := make(map[string]int)
+	for idx, schemaNode := range result.SchemaConfigs {
+		schemaConfigInTarget[schemaNode.Name] = idx
+	}
+
+	for _, schemaNodeInDiff := range diff.schemaChildren {
+		schemaInTargetIdx, ok := schemaConfigInTarget[schemaNodeInDiff.name]
+		if !ok {
+			schemaNode := &storepb.SchemaConfig{
+				Name: schemaNodeInDiff.name,
+			}
+			for _, tableNodeInDiff := range schemaNodeInDiff.tableChildren {
+				tableNode := &storepb.TableConfig{
+					Name: tableNodeInDiff.name,
+				}
+				for _, columnInTarget := range tableNodeInDiff.columnChildren {
+					columnNode := &storepb.ColumnConfig{
+						Name:           columnInTarget.name,
+						SemanticTypeId: columnInTarget.semanticTypeAttributeChildren.to,
+					}
+					tableNode.ColumnConfigs = append(tableNode.ColumnConfigs, columnNode)
+				}
+				schemaNode.TableConfigs = append(schemaNode.TableConfigs, tableNode)
+			}
+			result.SchemaConfigs = append(result.SchemaConfigs, schemaNode)
+			continue
+		}
+
+		tableConfigInTarget := make(map[string]int)
+		for idx, tableNode := range result.SchemaConfigs[schemaInTargetIdx].TableConfigs {
+			tableConfigInTarget[tableNode.Name] = idx
+		}
+
+		for _, tableNodeInDiff := range schemaNodeInDiff.tableChildren {
+			tableInTargetIdx, ok := tableConfigInTarget[tableNodeInDiff.name]
+			if !ok {
+				tableNode := &storepb.TableConfig{
+					Name: tableNodeInDiff.name,
+				}
+
+				for _, columnNodeInDiff := range tableNodeInDiff.columnChildren {
+					columnNode := &storepb.ColumnConfig{
+						Name:           columnNodeInDiff.name,
+						SemanticTypeId: columnNodeInDiff.semanticTypeAttributeChildren.to,
+					}
+					tableNode.ColumnConfigs = append(tableNode.ColumnConfigs, columnNode)
+				}
+				result.SchemaConfigs[schemaInTargetIdx].TableConfigs = append(result.SchemaConfigs[schemaInTargetIdx].TableConfigs, tableNode)
+				continue
+			}
+
+			columnConfigInTarget := make(map[string]int)
+			for idx, columnNode := range result.SchemaConfigs[schemaInTargetIdx].TableConfigs[tableInTargetIdx].ColumnConfigs {
+				columnConfigInTarget[columnNode.Name] = idx
+			}
+
+			for _, columnNodeInDiff := range tableNodeInDiff.columnChildren {
+				columnInTargetIdx, ok := columnConfigInTarget[columnNodeInDiff.name]
+				if !ok {
+					columnNode := &storepb.ColumnConfig{
+						Name:           columnNodeInDiff.name,
+						SemanticTypeId: columnNodeInDiff.semanticTypeAttributeChildren.to,
+					}
+					result.SchemaConfigs[schemaInTargetIdx].TableConfigs[tableInTargetIdx].ColumnConfigs = append(result.SchemaConfigs[schemaInTargetIdx].TableConfigs[tableInTargetIdx].ColumnConfigs, columnNode)
+					continue
+				}
+
+				if columnNodeInDiff.semanticTypeAttributeChildren != nil {
+					result.SchemaConfigs[schemaInTargetIdx].TableConfigs[tableInTargetIdx].ColumnConfigs[columnInTargetIdx].SemanticTypeId = columnNodeInDiff.semanticTypeAttributeChildren.to
+				}
+			}
+		}
+	}
+
+	return result
 }
