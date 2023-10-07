@@ -51,6 +51,7 @@
     "monaco-languageclient": "4.0.1",
     "naive-ui": "2.34.4",
     "nice-grpc-common": "^2.0.2",
+    "nice-grpc-error-details": "^0.2.2",
     "nice-grpc-web": "^3.3.1",
     "node-sql-parser": "4.10.0",
     "normalize-wheel": "^1.0.1",

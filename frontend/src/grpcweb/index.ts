@@ -1,3 +1,4 @@
+import { errorDetailsClientMiddleware } from "nice-grpc-error-details";
 import {
   createChannel,
   createClientFactory,
@@ -54,6 +55,7 @@ const websocketChannel = createChannel(
 const clientFactory = createClientFactory()
   // A middleware that is attached first, will be invoked last.
   .use(authInterceptorMiddleware)
+  .use(errorDetailsClientMiddleware)
   .use(errorNotificationMiddleware);
 /**
  * Example to use error notification middleware.
