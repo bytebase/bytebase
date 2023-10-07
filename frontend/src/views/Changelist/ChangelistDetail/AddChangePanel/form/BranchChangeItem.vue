@@ -10,6 +10,7 @@
           :show-instance="false"
           :show-arrow="false"
           :show-production-environment-icon="false"
+          tooltip="instance"
         />
         <span>@</span>
         <div>

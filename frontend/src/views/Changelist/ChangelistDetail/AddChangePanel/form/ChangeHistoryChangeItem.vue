@@ -15,6 +15,7 @@
           :show-instance="false"
           :show-arrow="false"
           :show-production-environment-icon="false"
+          tooltip="instance"
         />
         <span>@</span>
         <span class="text-sm">{{ changeHistory.version }}</span>
