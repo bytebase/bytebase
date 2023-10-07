@@ -879,19 +879,19 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 
 	diff := &databaseConfigNode{}
 
-	schemaConfigInBaseline := make(map[string]*storepb.SchemaConfig)
+	schemaConfigInBaselineMap := make(map[string]*storepb.SchemaConfig)
 	for _, schemaConfig := range baselineDatabaseConfig.SchemaConfigs {
-		schemaConfigInBaseline[schemaConfig.Name] = schemaConfig
+		schemaConfigInBaselineMap[schemaConfig.Name] = schemaConfig
 	}
 
 	// Computing the diff between databaseConfig and baselineDatabaseConfig, we only use `UPDATE` action.
 	for _, schemaConfigWanted := range databaseConfig.SchemaConfigs {
-		schemaConfigInBaseline, ok := schemaConfigInBaseline[schemaConfigWanted.Name]
+		schemaNode := &schemaConfigNode{
+			action: updateDatabaseConfigActionUpdate,
+			name:   schemaConfigWanted.Name,
+		}
+		schemaConfigInBaseline, ok := schemaConfigInBaselineMap[schemaConfigWanted.Name]
 		if !ok {
-			schemaNode := &schemaConfigNode{
-				action: updateDatabaseConfigActionUpdate,
-				name:   schemaConfigWanted.Name,
-			}
 			for _, tableConfigWanted := range schemaConfigWanted.TableConfigs {
 				tableNode := &tableConfigNode{
 					action: updateDatabaseConfigActionUpdate,
@@ -914,22 +914,18 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 			continue
 		}
 
-		tableConfigInBaseline := make(map[string]*storepb.TableConfig)
+		tableConfigInBaselineMap := make(map[string]*storepb.TableConfig)
 		for _, tableConfig := range schemaConfigInBaseline.TableConfigs {
-			tableConfigInBaseline[tableConfig.Name] = tableConfig
+			tableConfigInBaselineMap[tableConfig.Name] = tableConfig
 		}
 
 		for _, tableConfigWanted := range schemaConfigWanted.TableConfigs {
-			tableConfigInBaseline, ok := tableConfigInBaseline[tableConfigWanted.Name]
+			tableNode := &tableConfigNode{
+				action: updateDatabaseConfigActionUpdate,
+				name:   tableConfigWanted.Name,
+			}
+			tableConfigInBaseline, ok := tableConfigInBaselineMap[tableConfigWanted.Name]
 			if !ok {
-				schemaNode := &schemaConfigNode{
-					action: updateDatabaseConfigActionUpdate,
-					name:   schemaConfigWanted.Name,
-				}
-				tableNode := &tableConfigNode{
-					action: updateDatabaseConfigActionUpdate,
-					name:   tableConfigWanted.Name,
-				}
 				for _, columnConfigWanted := range tableConfigWanted.ColumnConfigs {
 					columnNode := &columnConfigNode{
 						action: updateDatabaseConfigActionUpdate,
@@ -945,32 +941,24 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 				continue
 			}
 
-			columnConfigInBaseline := make(map[string]*storepb.ColumnConfig)
+			columnConfigInBaselineMap := make(map[string]*storepb.ColumnConfig)
 			for _, columnConfig := range tableConfigInBaseline.ColumnConfigs {
-				columnConfigInBaseline[columnConfig.Name] = columnConfig
+				columnConfigInBaselineMap[columnConfig.Name] = columnConfig
 			}
 
 			for _, columnConfigWanted := range tableConfigWanted.ColumnConfigs {
-				columnConfigInBaseline, ok := columnConfigInBaseline[columnConfigWanted.Name]
+				columnNode := &columnConfigNode{
+					action: updateDatabaseConfigActionUpdate,
+					name:   columnConfigWanted.Name,
+				}
+
+				columnConfigInBaseline, ok := columnConfigInBaselineMap[columnConfigWanted.Name]
 				if !ok {
-					schemaNode := &schemaConfigNode{
+					columnNode.semanticTypeAttributeChildren = &columnConfigSemanticTypeAttributeNode{
 						action: updateDatabaseConfigActionUpdate,
-						name:   schemaConfigWanted.Name,
-					}
-					tableNode := &tableConfigNode{
-						action: updateDatabaseConfigActionUpdate,
-						name:   tableConfigWanted.Name,
-					}
-					columnNode := &columnConfigNode{
-						action: updateDatabaseConfigActionUpdate,
-						name:   columnConfigWanted.Name,
-						semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
-							action: updateDatabaseConfigActionUpdate,
-							to:     columnConfigWanted.SemanticTypeId,
-						},
+						to:     columnConfigWanted.SemanticTypeId,
 					}
 					tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
-					schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
 					continue
 				}
 
@@ -981,28 +969,89 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 				}
 
 				if hasAttributesUpdate {
-					schemaNode := &schemaConfigNode{
+					columnNode.semanticTypeAttributeChildren = &columnConfigSemanticTypeAttributeNode{
 						action: updateDatabaseConfigActionUpdate,
-						name:   schemaConfigWanted.Name,
+						to:     columnConfigWanted.SemanticTypeId,
 					}
-					tableNode := &tableConfigNode{
-						action: updateDatabaseConfigActionUpdate,
-						name:   tableConfigWanted.Name,
-					}
-					columnNode := &columnConfigNode{
-						action: updateDatabaseConfigActionUpdate,
-						name:   columnConfigWanted.Name,
-						semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
-							action: updateDatabaseConfigActionUpdate,
-							to:     columnConfigWanted.SemanticTypeId,
-						},
-					}
-					tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
-					schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
-					diff.schemaChildren = append(diff.schemaChildren, schemaNode)
 				}
+
+				// Append to table node if there is any update.
+				if columnNode.semanticTypeAttributeChildren != nil {
+					tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
+				}
+				delete(columnConfigInBaselineMap, columnConfigWanted.Name)
 			}
+			for _, deletedColumnConfig := range columnConfigInBaselineMap {
+				columnNode := &columnConfigNode{
+					action: updateDatabaseConfigActionUpdate,
+					name:   deletedColumnConfig.Name,
+					// Instead of delete the column config, we will set all the fields to meaningless value.
+					semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
+						action: updateDatabaseConfigActionUpdate,
+						to:     "",
+					},
+				}
+				tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
+				schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
+				diff.schemaChildren = append(diff.schemaChildren, schemaNode)
+			}
+
+			// Append to schema node if there is any update.
+			if len(tableNode.columnChildren) > 0 {
+				schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
+			}
+			delete(tableConfigInBaselineMap, tableConfigWanted.Name)
 		}
+
+		for _, deletedTableConfig := range tableConfigInBaselineMap {
+			tableNode := &tableConfigNode{
+				action: updateDatabaseConfigActionUpdate,
+				name:   deletedTableConfig.Name,
+			}
+			for _, columnConfigInBaseline := range deletedTableConfig.ColumnConfigs {
+				columnNode := &columnConfigNode{
+					action: updateDatabaseConfigActionUpdate,
+					name:   columnConfigInBaseline.Name,
+					// Instead of delete the table config, we will set all the fields to meaningless value.
+					semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
+						action: updateDatabaseConfigActionUpdate,
+						to:     "",
+					},
+				}
+				tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
+			}
+			schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
+		}
+		if len(schemaNode.tableChildren) > 0 {
+			diff.schemaChildren = append(diff.schemaChildren, schemaNode)
+		}
+		delete(schemaConfigInBaselineMap, schemaConfigWanted.Name)
+	}
+	for _, deletedSchemaConfig := range schemaConfigInBaselineMap {
+		schemaNode := &schemaConfigNode{
+			action: updateDatabaseConfigActionUpdate,
+			name:   deletedSchemaConfig.Name,
+		}
+		for _, tableInBaseline := range deletedSchemaConfig.TableConfigs {
+			tableNode := &tableConfigNode{
+				action: updateDatabaseConfigActionUpdate,
+				name:   tableInBaseline.Name,
+			}
+			for _, columnInBaseline := range tableInBaseline.ColumnConfigs {
+				columnNode := &columnConfigNode{
+					action: updateDatabaseConfigActionUpdate,
+					name:   columnInBaseline.Name,
+					// Instead of delete the schema config, we will set all the fields to meaningless value.
+					semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
+						action: updateDatabaseConfigActionUpdate,
+						to:     "",
+					},
+				}
+				tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
+			}
+			schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
+		}
+		diff.schemaChildren = append(diff.schemaChildren, schemaNode)
 	}
 
 	// Applying the diff to appliedTarget.
