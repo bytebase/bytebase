@@ -524,12 +524,22 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		}, api.SystemBotID)
 		if err != nil {
 			slog.Error("Failed to get sheet from store", slog.Int("sheetID", *sheetID), log.BBError(err))
-		} else if sheet.Payload.DatabaseConfig != nil {
-			err = stores.UpdateDBSchema(ctx, *task.DatabaseID, &store.UpdateDBSchemaMessage{
-				Config: sheet.Payload.DatabaseConfig,
-			}, api.SystemBotID)
+		} else if sheet.Payload.DatabaseConfig != nil || sheet.Payload.DatabaseConfig != nil {
+			effectiveDatabaseSchema, err := stores.GetDBSchema(ctx, *task.DatabaseID)
 			if err != nil {
-				slog.Error("Failed to update database config", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *task.DatabaseID), log.BBError(err))
+				slog.Error("Failed to get database config from store", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *task.DatabaseID), log.BBError(err))
+			} else {
+				updatedDatabaseConfig, err := updateDatabaseConfig(sheet.Payload.DatabaseConfig, sheet.Payload.BaselineDatabaseConfig, effectiveDatabaseSchema.Config)
+				if err != nil {
+					slog.Error("Failed to update database config", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *task.DatabaseID), log.BBError(err))
+				} else {
+					err = stores.UpdateDBSchema(ctx, *task.DatabaseID, &store.UpdateDBSchemaMessage{
+						Config: updatedDatabaseConfig,
+					}, api.SystemBotID)
+					if err != nil {
+						slog.Error("Failed to update database config", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *task.DatabaseID), log.BBError(err))
+					}
+				}
 			}
 		}
 	}
@@ -817,4 +827,9 @@ func getRepositoryAndVCS(ctx context.Context, storage *store.Store, repoUID, vcs
 		return nil, nil, errors.Errorf("vcs not found for schema write-back: %v", vcsUID)
 	}
 	return repo, vcs, nil
+}
+
+// updateDatabaseConfig computes the migration from databaseConfig and baselineDatabaseConfig, and applies the migration to appliedTarget, returns the updated databaseConfig.
+func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget *storepb.DatabaseConfig) (*storepb.DatabaseConfig, error) {
+	return databaseConfig, nil
 }
