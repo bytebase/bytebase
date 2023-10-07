@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-4 px-4 relative">
+  <div class="flex flex-col items-stretch gap-y-4 px-4 relative">
     <NavBar />
 
     <ChangeTable
@@ -10,6 +10,10 @@
       @select-change="handleSelectChange($event)"
       @reorder-move="(row, delta) => handleReorderMove(row, delta)"
     />
+
+    <div class="flex flex-row">
+      <DeleteChangelistButton />
+    </div>
 
     <AddChangePanel />
 
@@ -53,6 +57,7 @@ import ApplyToDatabasePanel from "./ApplyToDatabasePanel";
 import BranchDetailPanel from "./BranchDetailPanel";
 import ChangeHistoryDetailPanel from "./ChangeHistoryDetailPanel";
 import ChangeTable from "./ChangeTable";
+import DeleteChangelistButton from "./DeleteChangelistButton.vue";
 import NavBar from "./NavBar";
 import RawSQLPanel from "./RawSQLPanel";
 import { provideChangelistDetailContext } from "./context";

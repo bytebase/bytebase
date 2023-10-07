@@ -76,6 +76,13 @@ export const useChangelistStore = defineStore("changelist", () => {
     return updated;
   };
 
+  const deleteChangelist = async (name: string) => {
+    await changelistServiceClient.deleteChangelist({
+      name,
+    });
+    changelistMapByName.delete(name);
+  };
+
   const composeChangelist = async (changelist: Changelist) => {
     const composer = new ResourceComposer();
     const { changes } = changelist;
@@ -110,5 +117,6 @@ export const useChangelistStore = defineStore("changelist", () => {
     createChangelist,
     fetchChangelists,
     patchChangelist,
+    deleteChangelist,
   };
 });

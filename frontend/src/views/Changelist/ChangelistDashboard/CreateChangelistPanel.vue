@@ -85,6 +85,7 @@ import { Status } from "nice-grpc-common";
 import { zindexable as vZindexable } from "vdirs";
 import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import {
   Drawer,
@@ -102,6 +103,7 @@ import { Changelist } from "@/types/proto/v1/changelist_service";
 import { getErrorCode } from "@/utils/grpcweb";
 import { useChangelistDashboardContext } from "./context";
 
+const router = useRouter();
 const { t } = useI18n();
 const { showCreatePanel, events } = useChangelistDashboardContext();
 
@@ -169,7 +171,7 @@ const doCreate = async () => {
   try {
     const project = useProjectV1Store().getProjectByUID(projectUID.value!);
 
-    await useChangelistStore().createChangelist({
+    const created = await useChangelistStore().createChangelist({
       parent: project.name,
       changelist: Changelist.fromPartial({
         description: title.value,
@@ -182,6 +184,7 @@ const doCreate = async () => {
       style: "SUCCESS",
       title: t("common.created"),
     });
+    router.push(created.name);
     events.emit("refresh");
   } finally {
     isLoading.value = false;

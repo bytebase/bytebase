@@ -3084,6 +3084,7 @@
       },
       "source": "Fuente"
     },
-    "confirm-remove-change": "¿Eliminar este cambio?"
+    "confirm-remove-change": "¿Eliminar este cambio?",
+    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
   }
 }
