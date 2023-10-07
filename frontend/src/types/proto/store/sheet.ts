@@ -13,7 +13,7 @@ export interface SheetPayload {
   schemaDesign:
     | SheetPayload_SchemaDesign
     | undefined;
-  /** The snapshot of the database config when creating the sheet. */
+  /** The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. */
   databaseConfig:
     | DatabaseConfig
     | undefined;

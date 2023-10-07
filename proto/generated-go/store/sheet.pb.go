@@ -126,7 +126,7 @@ type SheetPayload struct {
 	Type         SheetPayload_Type          `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.SheetPayload_Type" json:"type,omitempty"`
 	VcsPayload   *SheetPayload_VCSPayload   `protobuf:"bytes,2,opt,name=vcs_payload,json=vcsPayload,proto3" json:"vcs_payload,omitempty"`
 	SchemaDesign *SheetPayload_SchemaDesign `protobuf:"bytes,3,opt,name=schema_design,json=schemaDesign,proto3" json:"schema_design,omitempty"`
-	// The snapshot of the database config when creating the sheet.
+	// The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database.
 	DatabaseConfig *DatabaseConfig `protobuf:"bytes,4,opt,name=database_config,json=databaseConfig,proto3" json:"database_config,omitempty"`
 	// The snapshot of the baseline database config when creating the sheet.
 	BaselineDatabaseConfig *DatabaseConfig `protobuf:"bytes,5,opt,name=baseline_database_config,json=baselineDatabaseConfig,proto3" json:"baseline_database_config,omitempty"`
