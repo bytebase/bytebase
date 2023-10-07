@@ -1,5 +1,5 @@
 <template>
-  <span v-if="!allowEdit" class="text-sm ml-2">
+  <span v-if="!allowEdit" class="text-sm ml-2 py-1 leading-[34px]">
     {{ state.title }}
   </span>
   <NInput
@@ -8,9 +8,9 @@
     :style="style"
     :loading="state.isUpdating"
     :disabled="!allowEdit || state.isUpdating"
+    autosize
     size="medium"
     required
-    class="bb-issue-title-input"
     @focus="state.isEditing = true"
     @blur="onBlur"
     @keyup.enter="onEnter"
@@ -38,6 +38,7 @@ const state = reactive({
 const style = computed(() => {
   const style: CSSProperties = {
     cursor: "default",
+    minWidth: "10rem",
     "--n-color-disabled": "transparent",
     "--n-padding-left": "0.5rem",
     "--n-padding-right": "0.5rem",
