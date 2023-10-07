@@ -1,6 +1,6 @@
 <template>
-  <div class="flex-1 overflow-auto focus:outline-none" tabindex="0">
-    <main v-if="changeHistory" class="flex-1 relative pb-8 overflow-y-auto">
+  <div class="focus:outline-none" tabindex="0" v-bind="$attrs">
+    <main v-if="changeHistory" class="flex flex-col relative pb-8 gap-y-6">
       <!-- Highlight Panel -->
       <div
         class="px-4 pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
@@ -97,8 +97,8 @@
         </div>
       </div>
 
-      <div v-if="affectedTables.length > 0" class="mt-6 px-4">
-        <span class="flex items-center text-lg text-main mt-6 capitalize">
+      <div v-if="affectedTables.length > 0" class="px-4">
+        <span class="flex items-center text-lg text-main capitalize">
           {{ $t("change-history.affected-tables") }}
         </span>
         <div
@@ -121,30 +121,32 @@
         </div>
       </div>
 
-      <div class="mt-6 px-4">
-        <a
-          id="statement"
-          href="#statement"
-          class="w-auto flex items-center text-lg text-main mb-2 hover:underline"
-        >
-          {{ $t("common.statement") }}
-          <button
-            tabindex="-1"
-            class="btn-icon ml-1"
-            @click.prevent="copyStatement"
+      <div class="px-4 flex flex-col gap-y-6">
+        <div class="flex flex-col gap-y-2">
+          <a
+            id="statement"
+            href="#statement"
+            class="w-auto flex items-center text-lg text-main mb-2 hover:underline"
           >
-            <heroicons-outline:clipboard class="w-6 h-6" />
-          </button>
-        </a>
-        <highlight-code-block
-          class="border px-2 whitespace-pre-wrap w-full"
-          :code="changeHistory.statement"
-        />
-        <template v-if="showSchemaSnapshot">
+            {{ $t("common.statement") }}
+            <button
+              tabindex="-1"
+              class="btn-icon ml-1"
+              @click.prevent="copyStatement"
+            >
+              <heroicons-outline:clipboard class="w-6 h-6" />
+            </button>
+          </a>
+          <highlight-code-block
+            class="border px-2 whitespace-pre-wrap w-full"
+            :code="changeHistory.statement"
+          />
+        </div>
+        <div v-if="showSchemaSnapshot" class="flex flex-col gap-y-2">
           <a
             id="schema"
             href="#schema"
-            class="flex items-center text-lg text-main mt-6 hover:underline capitalize"
+            class="flex items-center text-lg text-main hover:underline capitalize"
           >
             Schema {{ $t("common.snapshot") }}
             <button
@@ -156,7 +158,7 @@
             </button>
           </a>
 
-          <div v-if="hasDrift" class="flex items-center space-x-2 mt-2">
+          <div v-if="hasDrift" class="flex items-center gap-x-2">
             <div class="flex items-center text-sm font-normal">
               <heroicons-outline:exclamation-circle
                 class="w-5 h-5 mr-0.5 text-error"
@@ -172,7 +174,7 @@
             </div>
           </div>
 
-          <div class="flex flex-row items-center space-x-2 mt-2">
+          <div class="flex flex-row items-center gap-x-2">
             <BBSwitch
               v-if="allowShowDiff"
               :label="$t('change-history.show-diff')"
@@ -215,15 +217,15 @@
           <template v-else>
             <highlight-code-block
               v-if="changeHistory.schema"
-              class="border mt-2 px-2 whitespace-pre-wrap w-full"
+              class="border px-2 whitespace-pre-wrap w-full"
               :code="changeHistory.schema"
               data-label="bb-change-history-code-block"
             />
-            <div v-else class="mt-2">
+            <div v-else>
               {{ $t("change-history.current-schema-empty") }}
             </div>
           </template>
-        </template>
+        </div>
       </div>
     </main>
 
