@@ -223,6 +223,10 @@
       "title": "Prohibir el cambio del orden de las columnas en una tabla",
       "description": "Modificar el orden de las columnas puede hacer que algunas aplicaciones o vistas que dependen del orden predeterminado de la tabla original produzcan resultados inesperados, como \"select *\". Nivel de error sugerido: Advertencia"
     },
+    "column-disallow-drop-in-index": {
+      "title": "Prohibir eliminar columnas en el índice",
+      "description": "Prohibir eliminar columnas en el índice. Nivel de error sugerido: Advertencia"
+    },
     "column-set-default-for-not-null": {
       "title": "Forzar un valor predeterminado en columnas \"NOT NULL\"",
       "description": "Para una columna 'NOT NULL', si no se asigna un valor a la columna al insertar una nueva fila y la columna no tiene un valor predeterminado, la base de datos rechazará la inserción de esa fila. Establecer un valor predeterminado para una nueva columna también puede garantizar la compatibilidad con la aplicación heredada. Nivel de error sugerido: Error"

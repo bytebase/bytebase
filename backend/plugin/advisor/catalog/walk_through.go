@@ -668,7 +668,7 @@ func (s *SchemaState) createIncompleteTable(name string) *TableState {
 	table := &TableState{
 		name:      name,
 		columnSet: make(columnStateMap),
-		indexSet:  make(indexStateMap),
+		indexSet:  make(IndexStateMap),
 	}
 	s.tableSet[name] = table
 	return table
@@ -995,7 +995,7 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 		collation: newEmptyStringPointer(),
 		comment:   newEmptyStringPointer(),
 		columnSet: make(columnStateMap),
-		indexSet:  make(indexStateMap),
+		indexSet:  make(IndexStateMap),
 	}
 	schema.tableSet[table.name] = table
 	hasAutoIncrement := false

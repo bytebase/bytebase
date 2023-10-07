@@ -333,6 +333,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleColumnSetDefaultForNotNull,
 		SchemaRuleColumnDisallowChange,
 		SchemaRuleColumnDisallowChangingOrder,
+		SchemaRuleColumnDisallowDropInIndex,
 		SchemaRuleColumnAutoIncrementMustInteger,
 		SchemaRuleColumnDisallowSetCharset,
 		SchemaRuleColumnAutoIncrementMustUnsigned,
