@@ -137,7 +137,7 @@ const viewMode = computed((): ViewMode => {
   if (!resultSet) {
     return "EMPTY";
   }
-  const { results, error } = resultSet;
+  const { results = [], error } = resultSet;
   if (error) {
     return "ERROR";
   }

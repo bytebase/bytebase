@@ -13,7 +13,6 @@ export * from "./principal";
 export * from "./project";
 export * from "./router";
 export * from "./stage";
-export * from "./sql";
 export * from "./sqlEditor";
 export * from "./webTerminal";
 export * from "./connectionTree";

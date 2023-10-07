@@ -1,4 +1,3 @@
-import { SQLResultSet } from "../types";
 import { SQLResultSetV1 } from "./v1/sql";
 
 export type ExecuteConfig = {
@@ -42,7 +41,6 @@ export interface TabInfo {
     option?: Partial<ExecuteOption>;
   };
   isExecutingSQL: boolean;
-  queryResult?: SQLResultSet;
   sheetName?: string;
   sqlResultSet?: SQLResultSetV1;
   isFreshNew?: boolean;
