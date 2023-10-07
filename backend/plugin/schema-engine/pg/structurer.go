@@ -9,14 +9,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	ast "github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // ParseToMetadata converts a schema string to database metadata.
 func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
-	list, err := parser.Parse(parser.Postgres, parser.ParseContext{}, schema)
+	list, err := pgrawparser.Parse(pgrawparser.ParseContext{}, schema)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 				if _, ok := table.columns[column.ColumnName]; ok {
 					return nil, errors.Errorf("column %q already exists in table %q.%q", column.ColumnName, stmt.Name.Schema, stmt.Name.Name)
 				}
-				typeText, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, column.Type)
+				typeText, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, column.Type)
 				if err != nil {
 					return nil, err
 				}
