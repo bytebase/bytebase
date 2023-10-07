@@ -14,7 +14,7 @@
       <MonacoEditor
         ref="editorRef"
         :value="statement"
-        :readonly="readonly"
+        :readonly="readonly || isSheetOversize"
         class="border w-full h-full"
         @change="$emit('update:statement', $event)"
         @ready="adjustEditorHeight"
@@ -32,6 +32,7 @@ import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 defineProps<{
   statement: string;
   readonly: boolean;
+  isSheetOversize?: boolean;
 }>();
 
 const emit = defineEmits<{

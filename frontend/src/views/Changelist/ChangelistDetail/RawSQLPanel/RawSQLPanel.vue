@@ -23,7 +23,8 @@
           <RawSQLEditor
             v-if="sheet"
             v-model:statement="statement"
-            :readonly="false"
+            :readonly="!allowEdit"
+            :is-sheet-oversize="isSheetOversize"
             class="flex-1 overflow-hidden relative"
             @upload="handleUploadEvent"
           />
@@ -44,6 +45,7 @@
           </NButton>
 
           <ErrorTipsButton
+            v-if="allowEdit"
             :errors="errors"
             :button-props="{
               type: 'primary',
@@ -69,6 +71,7 @@ import { pushNotification, useSheetV1Store } from "@/store";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { getSheetStatement, readFileAsync, setSheetStatement } from "@/utils";
 import RawSQLEditor from "../RawSQLEditor";
+import { useChangelistDetailContext } from "../context";
 
 const props = defineProps<{
   sheetName?: string;
@@ -80,6 +83,7 @@ const emit = defineEmits<{
 
 const sheetStore = useSheetV1Store();
 const { t } = useI18n();
+const { allowEdit } = useChangelistDetailContext();
 const title = ref(t("changelist.change-source.raw-sql"));
 const statement = ref("");
 const isUpdating = ref(false);
