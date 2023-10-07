@@ -1147,7 +1147,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnDisallowDropInIndex:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowDropInIndex, nil
 		}
 	case SchemaRuleColumnCommentConvention:
