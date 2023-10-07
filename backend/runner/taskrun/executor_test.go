@@ -20,172 +20,172 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 	}
 
 	testCases := []testCase{
-		// {
-		// 	description: "easy change and the target config is the same as the baseline config",
-		// 	databaseConfig: &storepb.DatabaseConfig{
-		// 		Name: "db1",
-		// 		SchemaConfigs: []*storepb.SchemaConfig{
-		// 			{
-		// 				Name: "schema1",
-		// 				TableConfigs: []*storepb.TableConfig{
-		// 					{
-		// 						Name: "table1",
-		// 						ColumnConfigs: []*storepb.ColumnConfig{
-		// 							{
-		// 								Name:           "a",
-		// 								SemanticTypeId: "id_a",
-		// 							},
-		// 							{
-		// 								Name:           "b",
-		// 								SemanticTypeId: "id_b",
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	baselineDatabaseConfig: &storepb.DatabaseConfig{
-		// 		Name: "db1",
-		// 		SchemaConfigs: []*storepb.SchemaConfig{
-		// 			{
-		// 				Name: "schema1",
-		// 				TableConfigs: []*storepb.TableConfig{
-		// 					{
-		// 						Name: "table1",
-		// 						ColumnConfigs: []*storepb.ColumnConfig{
-		// 							{
-		// 								Name:           "a",
-		// 								SemanticTypeId: "id_a",
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	targetConfig: &storepb.DatabaseConfig{
-		// 		Name: "db1",
-		// 		SchemaConfigs: []*storepb.SchemaConfig{
-		// 			{
-		// 				Name: "schema1",
-		// 				TableConfigs: []*storepb.TableConfig{
-		// 					{
-		// 						Name: "table1",
-		// 						ColumnConfigs: []*storepb.ColumnConfig{
-		// 							{
-		// 								Name:           "a",
-		// 								SemanticTypeId: "id_a",
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	expectedConfig: &storepb.DatabaseConfig{
-		// 		Name: "db1",
-		// 		SchemaConfigs: []*storepb.SchemaConfig{
-		// 			{
-		// 				Name: "schema1",
-		// 				TableConfigs: []*storepb.TableConfig{
-		// 					{
-		// 						Name: "table1",
-		// 						ColumnConfigs: []*storepb.ColumnConfig{
-		// 							{
-		// 								Name:           "a",
-		// 								SemanticTypeId: "id_a",
-		// 							},
-		// 							{
-		// 								Name:           "b",
-		// 								SemanticTypeId: "id_b",
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	description: "if the target config has changed the same column, we should overwrite it",
-		// 	databaseConfig: &storepb.DatabaseConfig{
-		// 		Name: "db1",
-		// 		SchemaConfigs: []*storepb.SchemaConfig{
-		// 			{
-		// 				Name: "schema1",
-		// 				TableConfigs: []*storepb.TableConfig{
-		// 					{
-		// 						Name: "table1",
-		// 						ColumnConfigs: []*storepb.ColumnConfig{
-		// 							{
-		// 								Name:           "a",
-		// 								SemanticTypeId: "id_b",
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	baselineDatabaseConfig: &storepb.DatabaseConfig{
-		// 		Name: "db1",
-		// 		SchemaConfigs: []*storepb.SchemaConfig{
-		// 			{
-		// 				Name: "schema1",
-		// 				TableConfigs: []*storepb.TableConfig{
-		// 					{
-		// 						Name: "table1",
-		// 						ColumnConfigs: []*storepb.ColumnConfig{
-		// 							{
-		// 								Name:           "a",
-		// 								SemanticTypeId: "id_a",
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	targetConfig: &storepb.DatabaseConfig{
-		// 		Name: "db1",
-		// 		SchemaConfigs: []*storepb.SchemaConfig{
-		// 			{
-		// 				Name: "schema1",
-		// 				TableConfigs: []*storepb.TableConfig{
-		// 					{
-		// 						Name: "table1",
-		// 						ColumnConfigs: []*storepb.ColumnConfig{
-		// 							{
-		// 								Name:           "a",
-		// 								SemanticTypeId: "id_c",
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	expectedConfig: &storepb.DatabaseConfig{
-		// 		Name: "db1",
-		// 		SchemaConfigs: []*storepb.SchemaConfig{
-		// 			{
-		// 				Name: "schema1",
-		// 				TableConfigs: []*storepb.TableConfig{
-		// 					{
-		// 						Name: "table1",
-		// 						ColumnConfigs: []*storepb.ColumnConfig{
-		// 							{
-		// 								Name:           "a",
-		// 								SemanticTypeId: "id_b",
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// },
+		{
+			description: "easy change and the target config is the same as the baseline config",
+			databaseConfig: &storepb.DatabaseConfig{
+				Name: "db1",
+				SchemaConfigs: []*storepb.SchemaConfig{
+					{
+						Name: "schema1",
+						TableConfigs: []*storepb.TableConfig{
+							{
+								Name: "table1",
+								ColumnConfigs: []*storepb.ColumnConfig{
+									{
+										Name:           "a",
+										SemanticTypeId: "id_a",
+									},
+									{
+										Name:           "b",
+										SemanticTypeId: "id_b",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			baselineDatabaseConfig: &storepb.DatabaseConfig{
+				Name: "db1",
+				SchemaConfigs: []*storepb.SchemaConfig{
+					{
+						Name: "schema1",
+						TableConfigs: []*storepb.TableConfig{
+							{
+								Name: "table1",
+								ColumnConfigs: []*storepb.ColumnConfig{
+									{
+										Name:           "a",
+										SemanticTypeId: "id_a",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			targetConfig: &storepb.DatabaseConfig{
+				Name: "db1",
+				SchemaConfigs: []*storepb.SchemaConfig{
+					{
+						Name: "schema1",
+						TableConfigs: []*storepb.TableConfig{
+							{
+								Name: "table1",
+								ColumnConfigs: []*storepb.ColumnConfig{
+									{
+										Name:           "a",
+										SemanticTypeId: "id_a",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedConfig: &storepb.DatabaseConfig{
+				Name: "db1",
+				SchemaConfigs: []*storepb.SchemaConfig{
+					{
+						Name: "schema1",
+						TableConfigs: []*storepb.TableConfig{
+							{
+								Name: "table1",
+								ColumnConfigs: []*storepb.ColumnConfig{
+									{
+										Name:           "a",
+										SemanticTypeId: "id_a",
+									},
+									{
+										Name:           "b",
+										SemanticTypeId: "id_b",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "if the target config has changed the same column, we should overwrite it",
+			databaseConfig: &storepb.DatabaseConfig{
+				Name: "db1",
+				SchemaConfigs: []*storepb.SchemaConfig{
+					{
+						Name: "schema1",
+						TableConfigs: []*storepb.TableConfig{
+							{
+								Name: "table1",
+								ColumnConfigs: []*storepb.ColumnConfig{
+									{
+										Name:           "a",
+										SemanticTypeId: "id_b",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			baselineDatabaseConfig: &storepb.DatabaseConfig{
+				Name: "db1",
+				SchemaConfigs: []*storepb.SchemaConfig{
+					{
+						Name: "schema1",
+						TableConfigs: []*storepb.TableConfig{
+							{
+								Name: "table1",
+								ColumnConfigs: []*storepb.ColumnConfig{
+									{
+										Name:           "a",
+										SemanticTypeId: "id_a",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			targetConfig: &storepb.DatabaseConfig{
+				Name: "db1",
+				SchemaConfigs: []*storepb.SchemaConfig{
+					{
+						Name: "schema1",
+						TableConfigs: []*storepb.TableConfig{
+							{
+								Name: "table1",
+								ColumnConfigs: []*storepb.ColumnConfig{
+									{
+										Name:           "a",
+										SemanticTypeId: "id_c",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedConfig: &storepb.DatabaseConfig{
+				Name: "db1",
+				SchemaConfigs: []*storepb.SchemaConfig{
+					{
+						Name: "schema1",
+						TableConfigs: []*storepb.TableConfig{
+							{
+								Name: "table1",
+								ColumnConfigs: []*storepb.ColumnConfig{
+									{
+										Name:           "a",
+										SemanticTypeId: "id_b",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 		{
 			description: "if the target config has changed, we should not overwrite the difference set",
 			databaseConfig: &storepb.DatabaseConfig{
