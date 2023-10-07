@@ -6,7 +6,6 @@ import {
   ActivitySQLEditorQueryPayload,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { useLegacySQLStore } from "./sql";
 import { useTabStore } from "./tab";
 import { useInstanceV1Store, useSQLStore, useActivityV1Store } from "./v1";
 import { useDatabaseV1Store } from "./v1/database";
@@ -52,20 +51,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       });
 
       return response;
-    },
-    async executeAdminQuery({ statement }: Pick<QueryInfo, "statement">) {
-      const { instanceId, databaseId } = useTabStore().currentTab.connection;
-      const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
-      const databaseName =
-        database.uid === String(UNKNOWN_ID) ? "" : database.databaseName;
-      const queryResult = await useLegacySQLStore().adminQuery({
-        instanceId: Number(instanceId),
-        databaseName,
-        statement: statement,
-        limit: RESULT_ROWS_LIMIT,
-      });
-
-      return queryResult;
     },
     async fetchQueryHistoryList() {
       this.setIsFetchingQueryHistory(true);

@@ -11,7 +11,7 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
 } from "@/store";
-import { ExecuteConfig, ExecuteOption } from "@/types";
+import { ExecuteConfig, ExecuteOption, SQLResultSetV1 } from "@/types";
 import {
   Advice_Status,
   advice_StatusToJSON,
@@ -89,19 +89,14 @@ const useExecuteSQL = () => {
       selectStatement = `EXPLAIN ${selectStatement}`;
     }
 
-    const fail = (error: string, status: Status | undefined = undefined) => {
-      Object.assign(tab, {
+    const fail = (result: SQLResultSetV1) => {
+      tabStore.updateTab(tab.id, {
         sqlResultSet: {
-          error,
+          error: result.error,
           results: [],
-          advices: [],
-          status,
-        },
-        // Legacy compatibility
-        queryResult: {
-          error,
-          data: null,
-          adviceList: [],
+          advices: result.advices,
+          status: result.status,
+          allowExport: false,
         },
         executeParams: {
           query,
@@ -109,6 +104,7 @@ const useExecuteSQL = () => {
           option,
         },
       });
+
       cleanup();
     };
 
@@ -163,10 +159,10 @@ const useExecuteSQL = () => {
             return cleanup();
           }
         }
-        return fail(sqlResultSet.error, sqlResultSet.status);
+        return fail(sqlResultSet);
       }
 
-      Object.assign(tab, {
+      tabStore.updateTab(tab.id, {
         sqlResultSet: markRaw(sqlResultSet),
         executeParams: {
           query,
@@ -183,70 +179,8 @@ const useExecuteSQL = () => {
     }
   };
 
-  const executeAdmin = async (
-    query: string,
-    config: ExecuteConfig,
-    option?: Partial<ExecuteOption>
-  ) => {
-    if (!preflight(query)) {
-      return cleanup();
-    }
-
-    const tab = tabStore.currentTab;
-
-    let statement = query;
-    if (option?.explain) {
-      statement = `EXPLAIN ${statement}`;
-    }
-
-    try {
-      const sqlResultSet = await useSilentRequest(() =>
-        sqlEditorStore.executeAdminQuery({
-          statement,
-        })
-      );
-
-      // use `markRaw` to prevent vue from monitoring the object change deeply
-      const queryResult = sqlResultSet ? markRaw(sqlResultSet) : undefined;
-      Object.assign(tab, {
-        queryResult,
-        adviceList: sqlResultSet.adviceList,
-        executeParams: {
-          query,
-          config,
-          option,
-        },
-      });
-      if (queryResult) {
-        // Refresh the query history list when the query executed successfully
-        // (with or without warnings).
-        sqlEditorStore.fetchQueryHistoryList();
-      }
-
-      cleanup();
-      return queryResult;
-    } catch (error: any) {
-      Object.assign(tab, {
-        queryResult: {
-          data: null,
-          error: error.response?.data?.message ?? String(error),
-          adviceList: [],
-        },
-        adviceList: undefined,
-        executeParams: {
-          query,
-          config,
-          option,
-        },
-      });
-
-      cleanup();
-    }
-  };
-
   return {
     executeReadonly,
-    executeAdmin,
   };
 };
 
