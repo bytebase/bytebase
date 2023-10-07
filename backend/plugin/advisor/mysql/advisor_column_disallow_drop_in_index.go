@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,10 +19,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
 }
 
 // ColumnDisallowDropInIndexAdvisor is the advisor checking for disallow DROP COLUMN in index.
