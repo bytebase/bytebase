@@ -56,6 +56,9 @@ message SheetPayload {
   }
   SchemaDesign schema_design = 3;
 
-  // database_config will be apply to the given database after executing statement, only be used in schema design for now.
+  // The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database.
   DatabaseConfig database_config = 4;
+
+  // The snapshot of the baseline database config when creating the sheet.
+  DatabaseConfig baseline_database_config = 5;
 }
