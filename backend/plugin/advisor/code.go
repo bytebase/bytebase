@@ -82,6 +82,7 @@ const (
 	ColumnIsReferencedByView                   Code = 421
 	VarcharLengthExceedsLimit                  Code = 422
 	InvalidColumnDefault                       Code = 423
+	DropIndexColumn                            Code = 424
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501

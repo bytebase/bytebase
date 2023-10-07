@@ -87,7 +87,7 @@ func newTableState(t *storepb.TableMetadata) *TableState {
 		collation:     newStringPointer(t.Collation),
 		comment:       newStringPointer(t.Comment),
 		columnSet:     make(columnStateMap),
-		indexSet:      make(indexStateMap),
+		indexSet:      make(IndexStateMap),
 		dependentView: make(map[string]bool),
 	}
 
@@ -146,6 +146,20 @@ type DatabaseState struct {
 	schemaSet    schemaStateMap
 	deleted      bool
 	usable       bool
+}
+
+type TableIndexFind struct {
+	SchemaName string
+	TableName  string
+}
+
+// Index returns the index map of the table.
+func (d *DatabaseState) Index(tableIndexFind *TableIndexFind) *IndexStateMap {
+	schema, exists := d.schemaSet[tableIndexFind.SchemaName]
+	if !exists {
+		return nil
+	}
+	return schema.Index(tableIndexFind)
 }
 
 // Usable returns the usable of the database state.
@@ -324,6 +338,15 @@ type SchemaState struct {
 	// All relation names in PostgreSQL must be distinct in schema level.
 	identifierMap identifierMap
 }
+
+func (d *SchemaState) Index(tableIndexFind *TableIndexFind) *IndexStateMap {
+	table, exists := d.tableSet[tableIndexFind.TableName]
+	if !exists {
+		return nil
+	}
+	return table.Index(tableIndexFind)
+}
+
 type schemaStateMap map[string]*SchemaState
 
 // TableState is the state for walk-through.
@@ -337,7 +360,7 @@ type TableState struct {
 	comment   *string
 	columnSet columnStateMap
 	// indexSet isn't supported for ClickHouse, Snowflake.
-	indexSet indexStateMap
+	indexSet IndexStateMap
 
 	// dependentView is used to record the dependent view for the table.
 	// Used to check if the table is used by any view.
@@ -347,6 +370,11 @@ type TableState struct {
 // CountIndex return the index total number.
 func (table *TableState) CountIndex() int {
 	return len(table.indexSet)
+}
+
+// Index return the index map of table.
+func (table *TableState) Index(_ *TableIndexFind) *IndexStateMap {
+	return &table.indexSet
 }
 
 func (table *TableState) copy() *TableState {
@@ -416,10 +444,10 @@ func (idx *IndexState) ExpressionList() []string {
 	return idx.expressionList
 }
 
-type indexStateMap map[string]*IndexState
+type IndexStateMap map[string]*IndexState
 
-func (m indexStateMap) copy() indexStateMap {
-	res := make(indexStateMap)
+func (m IndexStateMap) copy() IndexStateMap {
+	res := make(IndexStateMap)
 	for k, v := range m {
 		res[k] = v.copy()
 	}
