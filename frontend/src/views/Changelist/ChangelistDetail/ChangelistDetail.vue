@@ -42,9 +42,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useTitle } from "@vueuse/core";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { pushNotification, useChangelistStore } from "@/store";
 import {
@@ -63,6 +63,7 @@ import RawSQLPanel from "./RawSQLPanel";
 import { provideChangelistDetailContext } from "./context";
 
 const { t } = useI18n();
+const route = useRoute();
 const { changelist, reorderMode, selectedChanges, isUpdating, events } =
   provideChangelistDetailContext();
 
@@ -124,9 +125,20 @@ const handleReorderMove = (row: number, delta: -1 | 1) => {
 };
 
 const documentTitle = computed(() => {
+  if (route.name !== "workspace.changelist.detail") {
+    return undefined;
+  }
   return changelist.value.description;
 });
-useTitle(documentTitle);
+watch(
+  documentTitle,
+  (title) => {
+    if (title) {
+      document.title = title;
+    }
+  },
+  { immediate: true }
+);
 
 useEmitteryEventListener(events, "reorder-cancel", () => {
   state.changes = [...changelist.value.changes];
