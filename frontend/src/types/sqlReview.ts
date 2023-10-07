@@ -119,6 +119,7 @@ export type RuleType =
   | "column.comment"
   | "column.type-disallow-list"
   | "column.disallow-change-type"
+  | "column.disallow-drop-in-index"
   | "column.set-default-for-not-null"
   | "column.disallow-change"
   | "column.disallow-changing-order"
