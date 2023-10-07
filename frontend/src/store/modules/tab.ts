@@ -250,6 +250,7 @@ export const useTabStore = defineStore("tab", () => {
     getTabById,
     addTab,
     removeTab,
+    updateTab,
     updateCurrentTab,
     setCurrentTabId,
     selectOrAddTempTab,
