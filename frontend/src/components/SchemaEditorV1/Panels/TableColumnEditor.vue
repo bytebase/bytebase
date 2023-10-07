@@ -1,35 +1,35 @@
 <template>
   <!-- column table -->
-  <div
+  <BBGrid
     id="table-editor-container"
-    class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto border"
+    class="border"
+    :column-list="columnHeaderList"
+    :data-source="shownColumnList"
+    :custom-header="true"
+    :row-clickable="false"
   >
-    <!-- column table header -->
-    <div
-      class="sticky top-0 z-10 border-b grid w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
-      :class="gridColumnClass"
-    >
-      <span
-        v-for="header in columnHeaderList"
-        :key="header.key"
-        class="table-header-item-container"
-        >{{ header.label }}</span
-      >
-      <span></span>
-    </div>
-    <!-- column table body -->
-    <div class="w-full">
+    <template #header>
+      <div role="table-row" class="bb-grid-row bb-grid-header-row group">
+        <div
+          v-for="(column, index) in columnHeaderList"
+          :key="index"
+          role="table-cell"
+          class="bb-grid-header-cell"
+        >
+          {{ column.title }}
+        </div>
+      </div>
+    </template>
+    <template #item="{ item: column, row }: { item: Column, row: number }">
       <div
-        v-for="(column, index) in shownColumnList"
-        :key="`${index}-${column.id}`"
-        class="grid gr text-sm even:bg-gray-50"
-        :class="[
-          gridColumnClass,
-          `column-${column.id}`,
-          getColumnItemComputedClassList(column),
-        ]"
+        row="table-row"
+        class="bb-grid-row group"
+        :class="`column-${column.id}`"
       >
-        <div class="table-body-item-container">
+        <div
+          class="bb-grid-cell !pl-0.5 column-cell"
+          :class="getColumnClassList(column, row)"
+        >
           <input
             v-model="column.name"
             :disabled="readonly || disableAlterColumn(column)"
@@ -40,7 +40,8 @@
         </div>
         <div
           v-if="classificationConfig"
-          class="table-body-item-container flex items-center gap-x-2 ml-3 text-sm"
+          class="bb-grid-cell flex items-center gap-x-2 ml-3 text-sm"
+          :class="getColumnClassList(column, row)"
         >
           <ClassificationLevelBadge
             v-if="column.classification"
@@ -64,7 +65,8 @@
           </div>
         </div>
         <div
-          class="table-body-item-container flex flex-row justify-between items-center"
+          class="bb-grid-cell flex flex-row justify-between items-center relative column-cell"
+          :class="getColumnClassList(column, row)"
         >
           <input
             v-model="column.type"
@@ -91,7 +93,8 @@
           </NDropdown>
         </div>
         <div
-          class="table-body-item-container flex flex-row justify-between items-center"
+          class="bb-grid-cell flex flex-row justify-between items-center relative column-cell"
+          :class="getColumnClassList(column, row)"
         >
           <input
             v-model="column.default"
@@ -117,7 +120,10 @@
             </button>
           </NDropdown>
         </div>
-        <div class="table-body-item-container">
+        <div
+          class="bb-grid-cell column-cell"
+          :class="getColumnClassList(column, row)"
+        >
           <input
             v-model="column.userComment"
             :disabled="readonly || disableAlterColumn(column)"
@@ -126,7 +132,10 @@
             type="text"
           />
         </div>
-        <div class="table-body-item-container flex justify-start items-center">
+        <div
+          class="bb-grid-cell flex justify-start items-center column-cell"
+          :class="getColumnClassList(column, row)"
+        >
           <BBCheckbox
             class="ml-3"
             :value="!column.nullable"
@@ -138,7 +147,10 @@
             @toggle="(value) => (column.nullable = !value)"
           />
         </div>
-        <div class="table-body-item-container flex justify-start items-center">
+        <div
+          class="bb-grid-cell flex justify-start items-center column-cell"
+          :class="getColumnClassList(column, row)"
+        >
           <BBCheckbox
             class="ml-3"
             :value="isColumnPrimaryKey(column)"
@@ -148,7 +160,8 @@
         </div>
         <div
           v-if="showForeignKey"
-          class="table-body-item-container foreign-key-field flex justify-start items-center"
+          class="bb-grid-cell foreign-key-field flex justify-start items-center column-cell"
+          :class="getColumnClassList(column, row)"
         >
           <span
             v-if="checkColumnHasForeignKey(column)"
@@ -169,7 +182,10 @@
             <heroicons:pencil-square class="w-4 h-auto text-gray-400" />
           </button>
         </div>
-        <div class="table-body-item-container flex justify-end items-center">
+        <div
+          class="bb-grid-cell flex justify-end items-center"
+          :class="getColumnClassList(column, row)"
+        >
           <template v-if="!readonly">
             <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
               <template #trigger>
@@ -198,8 +214,8 @@
           </template>
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </BBGrid>
 
   <SelectClassificationDrawer
     v-if="classificationConfig"
@@ -286,59 +302,57 @@ const classificationConfig = computed(() => {
 const columnHeaderList = computed(() => {
   const list = [
     {
-      key: "name",
-      label: t("schema-editor.column.name"),
-      class: "6rem",
+      title: t("schema-editor.column.name"),
+      width: "6rem",
     },
     {
-      key: "type",
-      label: t("schema-editor.column.type"),
-      class: "minmax(0,_0.8fr)",
+      title: t("schema-editor.column.type"),
+      width: "minmax(auto, 0.8fr)",
     },
     {
-      key: "default",
-      label: t("schema-editor.column.default"),
-      class: "minmax(0,_0.8fr)",
+      title: t("schema-editor.column.default"),
+      width: "minmax(auto, 0.8fr)",
     },
     {
-      key: "comment",
-      label: t("schema-editor.column.comment"),
-      class: "minmax(0,_0.8fr)",
+      title: t("schema-editor.column.comment"),
+      width: "minmax(auto, 0.8fr)",
     },
     {
-      key: "nullable",
-      label: t("schema-editor.column.not-null"),
-      class: "80px",
+      title: t("schema-editor.column.not-null"),
+      width: "80px",
     },
     {
-      key: "primary",
-      label: t("schema-editor.column.primary"),
-      class: "80px",
+      title: t("schema-editor.column.primary"),
+      width: "80px",
     },
   ];
   if (classificationConfig.value) {
     list.splice(1, 0, {
-      key: "classification",
-      label: t("schema-editor.column.classification"),
-      class: "minmax(0,_1.5fr)",
+      title: t("schema-editor.column.classification"),
+      width: "minmax(auto, 1.5fr)",
     });
   }
   if (props.showForeignKey) {
     list.push({
-      key: "foreign_key",
-      label: t("schema-editor.column.foreign-key"),
-      class: "minmax(0,_7rem)",
+      title: t("schema-editor.column.foreign-key"),
+      width: "minmax(auto, 7rem)",
     });
   }
+  list.push({
+    title: "",
+    width: "30px",
+  });
 
   return list;
 });
 
-const gridColumnClass = computed(() => {
-  return `grid-cols-[${columnHeaderList.value
-    .map((col) => col.class)
-    .join("_")}_20px]`;
-});
+const getColumnClassList = (column: Column, index: number): string[] => {
+  const classList = props.getColumnItemComputedClassList(column);
+  if (index % 2 === 1) {
+    classList.push("bg-gray-50");
+  }
+  return classList;
+};
 
 const shownColumnList = computed(() => {
   return props.table.columnList.filter(props.filterColumn);
@@ -422,11 +436,8 @@ watchEffect(() => {
 </script>
 
 <style scoped>
-.table-header-item-container {
-  @apply py-2 px-3;
-}
-.table-body-item-container {
-  @apply w-full h-10 box-border p-px pr-2 relative;
+.column-cell {
+  @apply !py-0.5 !px-0.5;
 }
 .column-field-input {
   @apply w-full pr-1 box-border border-transparent truncate select-none rounded bg-transparent text-sm placeholder:italic placeholder:text-gray-400 focus:bg-white focus:text-black;
