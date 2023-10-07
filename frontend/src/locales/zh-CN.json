@@ -3058,7 +3058,8 @@
       "select-at-least-one-change": "选择至少一条变更",
       "select-at-least-one-change-to-export": "至少选择一项要导出的变更",
       "add-at-least-one-change": "添加至少一项变更",
-      "select-at-least-one-database": "至少选择一个数据库"
+      "select-at-least-one-database": "至少选择一个数据库",
+      "you-are-not-allowed-to-perform-this-action": "你无权执行此操作"
     },
     "apply-to-database": "应用到数据库",
     "add-change": {

@@ -5,7 +5,6 @@
     :button-props="{
       type: 'primary',
     }"
-    :disabled="!allowEdit"
     @click="showApplyToDatabasePanel = true"
   >
     {{ $t("changelist.apply-to-database") }}
@@ -19,8 +18,7 @@ import { ErrorTipsButton } from "@/components/v2";
 import { useChangelistDetailContext } from "../context";
 
 const { t } = useI18n();
-const { allowEdit, changelist, showApplyToDatabasePanel } =
-  useChangelistDetailContext();
+const { changelist, showApplyToDatabasePanel } = useChangelistDetailContext();
 
 const errors = computed(() => {
   const errors: string[] = [];

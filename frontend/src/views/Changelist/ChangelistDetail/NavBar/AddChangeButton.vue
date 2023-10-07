@@ -1,7 +1,12 @@
 <template>
-  <ErrorTipsButton icon style="--n-padding: 0 10px" :errors="errors">
+  <ErrorTipsButton
+    icon
+    style="--n-padding: 0 10px"
+    :errors="errors"
+    @click="showAddChangePanel = true"
+  >
     <template #icon>
-      <heroicons:arrows-up-down />
+      <heroicons:plus />
     </template>
   </ErrorTipsButton>
 </template>
@@ -13,7 +18,7 @@ import { ErrorTipsButton } from "@/components/v2";
 import { useChangelistDetailContext } from "../context";
 
 const { t } = useI18n();
-const { allowEdit, changelist } = useChangelistDetailContext();
+const { allowEdit, showAddChangePanel } = useChangelistDetailContext();
 
 const errors = computed(() => {
   const errors: string[] = [];
@@ -22,9 +27,6 @@ const errors = computed(() => {
       t("changelist.error.you-are-not-allowed-to-perform-this-action")
     );
     return errors;
-  }
-  if (changelist.value.changes.length === 0) {
-    errors.push(t("changelist.error.add-at-least-one-change"));
   }
   return errors;
 });

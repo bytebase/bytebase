@@ -1,12 +1,21 @@
 import Emittery from "emittery";
 import { InjectionKey, Ref, computed, inject, provide, ref } from "vue";
 import { useRoute } from "vue-router";
-import { useChangelistStore, useProjectV1Store } from "@/store";
+import {
+  useChangelistStore,
+  useCurrentUserV1,
+  useProjectV1Store,
+} from "@/store";
 import { ComposedProject, unknownChangelist } from "@/types";
 import {
   Changelist,
   Changelist_Change as Change,
 } from "@/types/proto/v1/changelist_service";
+import {
+  extractUserResourceName,
+  hasWorkspacePermissionV1,
+  isOwnerOfProjectV1,
+} from "@/utils";
 
 export type ChangelistDetailEvents = Emittery<{
   "reorder-cancel": undefined;
@@ -35,6 +44,7 @@ export const useChangelistDetailContext = () => {
 };
 
 export const provideChangelistDetailContext = () => {
+  const me = useCurrentUserV1();
   const route = useRoute();
   const name = computed(() => {
     return `projects/${route.params.projectName}/changelists/${route.params.changelistName}`;
@@ -51,7 +61,25 @@ export const provideChangelistDetailContext = () => {
     );
   });
   const allowEdit = computed(() => {
-    return true; // TODO
+    if (
+      hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-issue",
+        me.value.userRole
+      )
+    ) {
+      // Allow workspace high-privileged user to edit all changelists.
+      return true;
+    }
+    if (isOwnerOfProjectV1(project.value.iamPolicy, me.value)) {
+      // Allow project owners to edit all changelists in the project.
+      return true;
+    }
+    if (extractUserResourceName(changelist.value.creator) === me.value.email) {
+      // Allow the initial creator of the changelist to edit it.
+      return true;
+    }
+    // Disallowed to edit otherwise.
+    return false;
   });
 
   const context: ChangelistDetailContext = {

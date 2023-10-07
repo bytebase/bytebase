@@ -35,7 +35,11 @@ export const generateSQLForChangeToDatabase = async (
     if (!branch) {
       return "";
     }
-    const diffResult = await generateDDLByBranchAndDatabase(branch, database);
+    const diffResult = await generateDDLByBranchAndDatabase(
+      branch,
+      database,
+      false /* !silent */
+    );
     return diffResult.statement;
   }
 

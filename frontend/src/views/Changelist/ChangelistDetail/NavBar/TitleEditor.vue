@@ -1,5 +1,9 @@
 <template>
+  <span v-if="!allowEdit" class="text-sm ml-2">
+    {{ state.title }}
+  </span>
   <NInput
+    v-else
     :value="state.title"
     :style="style"
     :loading="state.isUpdating"

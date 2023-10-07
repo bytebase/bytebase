@@ -6,7 +6,7 @@
     :button-props="{
       loading: isExporting,
     }"
-    :disabled="!allowEdit || isExporting"
+    :disabled="isExporting"
     @click="handleExport"
   >
     <template #icon>
@@ -27,7 +27,7 @@ import { useChangelistDetailContext } from "../context";
 import { zipFileForChange } from "./export";
 
 const { t } = useI18n();
-const { allowEdit, changelist, selectedChanges } = useChangelistDetailContext();
+const { changelist, selectedChanges } = useChangelistDetailContext();
 const isExporting = ref(false);
 
 const errors = computed(() => {

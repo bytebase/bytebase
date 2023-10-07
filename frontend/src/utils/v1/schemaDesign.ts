@@ -17,12 +17,13 @@ import {
 
 const diffViaMetadata = async (
   branch: SchemaDesign,
-  database: ComposedDatabase
+  database: ComposedDatabase,
+  silent = false
 ) => {
   const sourceMetadata = await useDBSchemaV1Store().getOrFetchDatabaseMetadata(
     database.name,
     false /* !skipCache */,
-    true /* silent */
+    silent /* silent */
   );
   const targetMetadata =
     branch.schemaMetadata ?? DatabaseMetadata.fromPartial({});
@@ -41,7 +42,7 @@ const diffViaMetadata = async (
         engine: database.instanceEntity.engine,
       },
       {
-        silent: true,
+        silent,
       }
     );
     if (diff.length === 0) {
@@ -64,16 +65,14 @@ const diffViaMetadata = async (
 
 const diffViaDatabaseEdit = async (
   branch: SchemaDesign,
-  database: ComposedDatabase
+  database: ComposedDatabase,
+  silent = false
 ) => {
   const branchSchema = convertBranchToBranchSchema(branch);
 
   const databaseEdit = calcDatabaseEditFromBranchSchema(branchSchema, database);
 
-  const databaseEditResult = await postDatabaseEdit(
-    databaseEdit,
-    true /* silent */
-  );
+  const databaseEditResult = await postDatabaseEdit(databaseEdit, silent);
   if (databaseEditResult.validateResultList.length > 0) {
     return {
       errors: databaseEditResult.validateResultList.map((v) => v.message),
@@ -129,13 +128,14 @@ const calcDatabaseEditFromBranchSchema = (
 
 export const generateDDLByBranchAndDatabase = async (
   branch: SchemaDesign,
-  database: ComposedDatabase
+  database: ComposedDatabase,
+  silent = false
 ) => {
   // Use `SchemaDesignService.DiffMetadata` for MySQL as we only support MySQL for now.
   if (database.instanceEntity.engine === Engine.MYSQL) {
-    return await diffViaMetadata(branch, database);
+    return await diffViaMetadata(branch, database, silent);
   } else {
     // Use legacy `DatabaseEdit` for non-MySQL databases.
-    return await diffViaDatabaseEdit(branch, database);
+    return await diffViaDatabaseEdit(branch, database, silent);
   }
 };

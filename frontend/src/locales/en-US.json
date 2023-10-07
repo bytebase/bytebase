@@ -3065,7 +3065,8 @@
       "select-at-least-one-change": "Select at least one change",
       "select-at-least-one-change-to-export": "Select at least one change to export",
       "add-at-least-one-change": "Add at least one change",
-      "select-at-least-one-database": "Select at least one database"
+      "select-at-least-one-database": "Select at least one database",
+      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action"
     },
     "apply-to-database": "Apply to database",
     "add-change": {
