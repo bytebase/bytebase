@@ -1,9 +1,43 @@
 import { ClientError, Status } from "nice-grpc-common";
+import { RichClientError } from "nice-grpc-error-details";
 import { defineStore } from "pinia";
 import { sqlServiceClient } from "@/grpcweb";
 import { SQLResultSetV1 } from "@/types";
-import { ExportRequest, QueryRequest } from "@/types/proto/v1/sql_service";
+import { PlanCheckRun_Result_SqlReviewReport } from "@/types/proto/v1/rollout_service";
+import {
+  ExportRequest,
+  QueryRequest,
+  Advice,
+  Advice_Status,
+} from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+
+const getSqlReviewReports = (err: unknown): Advice[] => {
+  const advices: Advice[] = [];
+  if (err instanceof RichClientError) {
+    for (const extra of err.extra) {
+      if (
+        extra.$type === "google.protobuf.Any" &&
+        extra.typeUrl.endsWith("SqlReviewReport")
+      ) {
+        const sqlReviewReport = PlanCheckRun_Result_SqlReviewReport.decode(
+          extra.value
+        );
+        advices.push({
+          status: Advice_Status.ERROR,
+          code: sqlReviewReport.code,
+          title: "",
+          content: sqlReviewReport.detail,
+          detail: sqlReviewReport.detail,
+          line: sqlReviewReport.line,
+          column: sqlReviewReport.column,
+        });
+      }
+    }
+  }
+
+  return advices;
+};
 
 export const useSQLStore = defineStore("sql", () => {
   const queryReadonly = async (
@@ -22,14 +56,12 @@ export const useSQLStore = defineStore("sql", () => {
         ...response,
       };
     } catch (err) {
-      const error = extractGrpcErrorMessage(err);
-      const status = err instanceof ClientError ? err.code : Status.UNKNOWN;
       return {
-        error,
+        error: extractGrpcErrorMessage(err),
         results: [],
-        advices: [],
+        advices: getSqlReviewReports(err),
         allowExport: false,
-        status,
+        status: err instanceof ClientError ? err.code : Status.UNKNOWN,
       };
     }
   };

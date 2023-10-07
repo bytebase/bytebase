@@ -130,7 +130,7 @@ message QueryRequest {
   int32 limit = 4;
 
   // The timeout for the request.
-  google.protobuf.Duration timeout = 5;
+  optional google.protobuf.Duration timeout = 5;
 }
 
 message QueryResponse {

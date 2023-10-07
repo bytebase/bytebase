@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
 
 settings:
   autoInstallPeers: true
@@ -116,6 +116,9 @@ dependencies:
   nice-grpc-common:
     specifier: ^2.0.2
     version: 2.0.2
+  nice-grpc-error-details:
+    specifier: ^0.2.2
+    version: 0.2.2
   nice-grpc-web:
     specifier: ^3.3.1
     version: 3.3.1(ws@8.14.1)
@@ -1061,46 +1064,36 @@ packages:
 
   /@protobufjs/aspromise@1.1.2:
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
-    dev: true
 
   /@protobufjs/base64@1.1.2:
     resolution: {integrity: sha512-AZkcAA5vnN/v4PDqKyMR5lx7hZttPDgClv83E//FMNhR2TMcLUhfRUBHCmSl0oi9zMgDDqRUJkSxO3wm85+XLg==}
-    dev: true
 
   /@protobufjs/codegen@2.0.4:
     resolution: {integrity: sha512-YyFaikqM5sH0ziFZCN3xDC7zeGaB/d0IUb9CATugHWbd1FRFwWwt4ld4OYMPWu5a3Xe01mGAULCdqhMlPl29Jg==}
-    dev: true
 
   /@protobufjs/eventemitter@1.1.0:
     resolution: {integrity: sha512-j9ednRT81vYJ9OfVuXG6ERSTdEL1xVsNgqpkxMsbIabzSo3goCjDIveeGv5d03om39ML71RdmrGNjG5SReBP/Q==}
-    dev: true
 
   /@protobufjs/fetch@1.1.0:
     resolution: {integrity: sha512-lljVXpqXebpsijW71PZaCYeIcE5on1w5DlQy5WH6GLbFryLUrBD4932W/E2BSpfRJWseIL4v/KPgBFxDOIdKpQ==}
     dependencies:
       '@protobufjs/aspromise': 1.1.2
       '@protobufjs/inquire': 1.1.0
-    dev: true
 
   /@protobufjs/float@1.0.2:
     resolution: {integrity: sha512-Ddb+kVXlXst9d+R9PfTIxh1EdNkgoRe5tOX6t01f1lYWOvJnSPDBlG241QLzcyPdoNTsblLUdujGSE4RzrTZGQ==}
-    dev: true
 
   /@protobufjs/inquire@1.1.0:
     resolution: {integrity: sha512-kdSefcPdruJiFMVSbn801t4vFK7KB/5gd2fYvrxhuJYg8ILrmn9SKSX2tZdV6V+ksulWqS7aXjBcRXl3wHoD9Q==}
-    dev: true
 
   /@protobufjs/path@1.1.2:
     resolution: {integrity: sha512-6JOcJ5Tm08dOHAbdR3GrvP+yUUfkjG5ePsHYczMFLq3ZmMkAD98cDgcT2iA1lJ9NVwFd4tH/iSSoe44YWkltEA==}
-    dev: true
 
   /@protobufjs/pool@1.1.0:
     resolution: {integrity: sha512-0kELaGSIDBKvcgS4zkjz1PeddatrjYcmMWOlAuAPwAeccUrPHdUqo/J6LiymHHEiJT5NrF1UVwxY14f+fy4WQw==}
-    dev: true
 
   /@protobufjs/utf8@1.1.0:
     resolution: {integrity: sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==}
-    dev: true
 
   /@rollup/plugin-yaml@4.1.1(rollup@3.29.2):
     resolution: {integrity: sha512-firWc3X2Ea5CWx2tOh/MzrsdxoX8ZUtG8RC+NQ7T04/cOereC64tDo4v1L+adTIJlmNko/Oaqn+uCol/t0qvbw==}
@@ -1466,7 +1459,6 @@ packages:
 
   /@types/node@18.17.17:
     resolution: {integrity: sha512-cOxcXsQ2sxiwkykdJqvyFS+MLQPLvIdwh5l6gNg8qF6s+C7XSkEWOZjK+XhUZd+mYvHV/180g2cnCcIl4l06Pw==}
-    dev: true
 
   /@types/normalize-wheel@1.0.1:
     resolution: {integrity: sha512-3YBVyWfiwIGDcQY+2ZeT3LxyApYnV3PrysjIKeNkQtT9Q9eq2mcPPcqSCYR4v/FhYJ9xtZNhXMKNxCn6ukLsXQ==}
@@ -3926,7 +3918,6 @@ packages:
 
   /long@5.2.3:
     resolution: {integrity: sha512-lcHwpNoggQTObv5apGNCTdJrO69eHOZMi4BNC+rTLER8iHAqGrUVeLh/irVIM7zTw2bOXA8T6uNPeujwOLg/2Q==}
-    dev: true
 
   /loupe@2.3.6:
     resolution: {integrity: sha512-RaPMZKiMy8/JruncMU5Bt6na1eftNoo++R4Y+N2FrxkDVTrGvcyzFTsaGif4QTeKESheMGegbhw6iUAq+5A8zA==}
@@ -4191,6 +4182,14 @@ packages:
     resolution: {integrity: sha512-7RNWbls5kAL1QVUOXvBsv1uO0wPQK3lHv+cY1gwkTzirnG1Nop4cBJZubpgziNbaVc/bl9QJcyvsf/NQxa3rjQ==}
     dependencies:
       ts-error: 1.0.6
+    dev: false
+
+  /nice-grpc-error-details@0.2.2:
+    resolution: {integrity: sha512-qfBLyKIe+MYzNorOhWHaGc7JloJ7w5xM4soZvDJG80RYUk4VBg8w1WJOKt2OlXOHtNnWOKWiKqqevt/6njam4Q==}
+    dependencies:
+      long: 5.2.3
+      nice-grpc-common: 2.0.2
+      protobufjs: 7.2.5
     dev: false
 
   /nice-grpc-web@3.3.1(ws@8.14.1):
@@ -4723,7 +4722,6 @@ packages:
       '@protobufjs/utf8': 1.1.0
       '@types/node': 18.17.17
       long: 5.2.3
-    dev: true
 
   /proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
