@@ -11,11 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-
-	// Register pingcap parser driver.
-	_ "github.com/pingcap/tidb/types/parser_driver"
 
 	// Register postgresql parser driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -37,7 +33,7 @@ func TestMySQLWalkThrough(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		runWalkThroughTest(t, test, db.MySQL, originDatabase, false /* record */)
+		runWalkThroughTest(t, test, storepb.Engine_MYSQL, originDatabase, false /* record */)
 	}
 }
 
@@ -47,7 +43,7 @@ func TestMySQLWalkThroughForIncomplete(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		runWalkThroughTest(t, test, db.MySQL, nil, false /* record */)
+		runWalkThroughTest(t, test, storepb.Engine_MYSQL, nil, false /* record */)
 	}
 }
 
@@ -101,7 +97,7 @@ func TestPostgreSQLWalkThrough(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		runWalkThroughTest(t, test, db.Postgres, originDatabase, false /* record */)
+		runWalkThroughTest(t, test, storepb.Engine_POSTGRES, originDatabase, false /* record */)
 	}
 }
 
@@ -113,7 +109,7 @@ func convertInterfaceSliceToStringSlice(slice []any) []string {
 	return res
 }
 
-func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDatabase *storepb.DatabaseSchemaMetadata, record bool) {
+func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, originDatabase *storepb.DatabaseSchemaMetadata, record bool) {
 	tests := []testData{}
 	filepath := filepath.Join("test", file+".yaml")
 	yamlFile, err := os.Open(filepath)

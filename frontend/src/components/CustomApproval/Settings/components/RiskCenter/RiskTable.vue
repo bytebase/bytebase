@@ -28,7 +28,7 @@
         </NButton>
         <SpinnerButton
           size="small"
-          :tooltip="$t('custom-approval.security-rule.delete')"
+          :tooltip="$t('custom-approval.risk-rule.delete')"
           :disabled="!allowAdmin"
           :on-confirm="() => deleteRisk(risk)"
         >
@@ -60,12 +60,12 @@ const { hasFeature, showFeatureModal, allowAdmin } = context;
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
     {
-      title: t("custom-approval.security-rule.risk.self"),
+      title: t("custom-approval.risk-rule.risk.self"),
       width: "6rem",
     },
     { title: t("common.name"), width: "1fr" },
     {
-      title: t("custom-approval.security-rule.active"),
+      title: t("custom-approval.risk-rule.active"),
       width: "6rem",
       class: "justify-center",
     },

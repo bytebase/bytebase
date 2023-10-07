@@ -18,7 +18,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -27,7 +29,7 @@ var (
 )
 
 func init() {
-	db.Register(db.DM, newDriver)
+	db.Register(storepb.Engine_DM, newDriver)
 }
 
 // Driver is the DM driver.
@@ -41,7 +43,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a DM driver.
-func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
@@ -70,8 +72,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.DM
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_DM
 }
 
 // GetDB gets the database.
@@ -114,7 +116,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	}
 
 	// use oracle sql parser
-	if _, err := parser.SplitMultiSQLStream(parser.Oracle, strings.NewReader(statement), f); err != nil {
+	if _, err := plsqlparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
 
@@ -132,7 +134,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.Oracle, statement)
+	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +161,7 @@ func getDMStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit)
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
 	stmt := statement
@@ -172,8 +174,22 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 		queryContext.ReadOnly = false
 	}
 
+	if queryContext.SensitiveSchemaInfo != nil {
+		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
+			if len(database.SchemaList) == 0 {
+				continue
+			}
+			if len(database.SchemaList) > 1 {
+				return nil, errors.Errorf("DM schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
+			}
+			if database.SchemaList[0].Name != database.Name {
+				return nil, errors.Errorf("DM schema info should have the same database name and schema name, but got %s and %s", database.Name, database.SchemaList[0].Name)
+			}
+		}
+	}
+
 	startTime := time.Now()
-	result, err := util.Query(ctx, db.DM, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_DM, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}
@@ -185,5 +201,5 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 // RunStatement runs a SQL statement in a given connection.
 // and like usual,use Oracle sql parser.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, parser.Oracle, conn, statement)
+	return util.RunStatement(ctx, storepb.Engine_ORACLE, conn, statement)
 }

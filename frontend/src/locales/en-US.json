@@ -570,11 +570,12 @@
         "network": "Network",
         "external-url": {
           "self": "External URL",
-          "description": "The external URL where user visits Bytebase, must start with http:// or https://. {viewDoc}"
+          "description": "The external URL where user visits Bytebase, must start with http:// or https://."
         },
         "gitops-webhook-url": {
           "self": "GitOps Webhook URL",
-          "description": "The URL used for sending GitOps webhooks to the Bytebase instance."
+          "description": "The URL used for sending GitOps webhooks to the Bytebase instance.",
+          "default-to-external-url": "Default to External URL"
         },
         "sign-in-frequency": {
           "self": "Sign-in frequency",
@@ -614,6 +615,7 @@
         },
         "announcement-text": {
           "self": "Title",
+          "description": "To hide the announcement, leave it empty.",
           "placeholder": "Input announcement title"
         },
         "extra-link": {
@@ -1148,7 +1150,7 @@
     "successfully-connected-instance": "Successfully connected instance.",
     "failed-to-connect-instance": "Failed to connect instance.",
     "failed-to-connect-instance-localhost": "Failed to connect instance.\nIf you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
-    "search-instance-name": "Search instance name",
+    "filter-instance-name": "Filter instance name",
     "grants": "Grants",
     "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
     "create-gcp-credentials": "To create Credentials, see",
@@ -1313,8 +1315,8 @@
     "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
-    "search-database-name": "Search database name",
-    "search-database": "Search database",
+    "filter-database-name": "Filter database name",
+    "filter-database": "Filter database",
     "database-backup": "database backup",
     "transfer-project": "Transfer Project",
     "edit-schema": "Edit Schema",
@@ -1606,7 +1608,7 @@
         "cancel": "Dismiss",
         "confirm": "Do not show again"
       },
-      "search-bar-placeholder": "Search project name"
+      "filter-project-name": "Filter project name"
     },
     "table": {
       "key": "@:common.key",
@@ -2671,9 +2673,9 @@
   },
   "custom-approval": {
     "self": "Custom Approval",
-    "security-rule": {
-      "self": "Security rule",
-      "security-rules": "Security rules",
+    "risk-rule": {
+      "self": "Risk rule",
+      "risk-rules": "Risk rules",
       "x-risk-rules": {
         "low": "Low Risk Rules",
         "moderate": "Moderate Risk Rules",
@@ -2682,7 +2684,7 @@
       "active": "Active",
       "add-rule": "Add rule",
       "edit-rule": "Edit rule",
-      "delete": "Delete security rule",
+      "delete": "Delete Risk rule",
       "default-rules": {
         "self": "Default rules",
         "description": "The default rules will be executed when an issue fails to comply with the custom rules."

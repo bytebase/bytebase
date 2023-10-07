@@ -568,8 +568,8 @@
         },
         "network": "Red",
         "external-url": {
-          "self": "URL externa",
-          "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://. {viewDoc}"
+          "self": "URL Externa",
+          "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://."
         },
         "config-updated": "La configuración se ha actualizado.",
         "plugin": {
@@ -602,6 +602,7 @@
         },
         "announcement-text": {
           "self": "Título",
+          "description": "Para ocultar el anuncio, déjelo vacío.",
           "placeholder": "Título del anuncio de entrada"
         },
         "extra-link": {
@@ -610,7 +611,8 @@
         },
         "gitops-webhook-url": {
           "self": "URL del webhook GitOps",
-          "description": "La URL utilizada para enviar webhooks de GitOps a la instancia de Bytebase."
+          "description": "La URL utilizada para enviar webhooks de GitOps a la instancia de Bytebase.",
+          "default-to-external-url": "Predeterminado a URL Externa"
         },
         "sign-in-frequency": {
           "self": "Frecuencia de inicio de sesión",
@@ -1147,7 +1149,7 @@
     "successfully-connected-instance": "Instancia conectada correctamente.",
     "failed-to-connect-instance": "Error al conectar la instancia.",
     "failed-to-connect-instance-localhost": "Error al conectar la instancia.\nSi ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
-    "search-instance-name": "Buscar nombre de instancia",
+    "filter-instance-name": "Filtrar nombre de instancia",
     "grants": "Concesiones",
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
     "create-gcp-credentials": "Para crear credenciales, consulte",
@@ -1312,8 +1314,8 @@
     "no-anomalies-detected": "No se detectaron anomalías",
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",
-    "search-database-name": "Buscar nombre de la base de datos",
-    "search-database": "Buscar base de datos",
+    "filter-database-name": "Filtrar nombre de base de datos",
+    "filter-database": "Filtrar base de datos",
     "database-backup": "copia de seguridad de la base de datos",
     "transfer-project": "Transferir proyecto",
     "edit-schema": "Modificar esquema",
@@ -1605,7 +1607,7 @@
         "cancel": "Descartar",
         "confirm": "No volver a mostrar"
       },
-      "search-bar-placeholder": "Buscar nombre del proyecto"
+      "filter-project-name": "Filtrar nombre del proyecto"
     },
     "table": {
       "key": "@:common.key",
@@ -2668,9 +2670,9 @@
   },
   "custom-approval": {
     "self": "Aprobación personalizada",
-    "security-rule": {
+    "risk-rule": {
       "self": "Regla de seguridad",
-      "security-rules": "Reglas de seguridad",
+      "risk-rules": "Reglas de seguridad",
       "x-risk-rules": {
         "low": "Reglas de riesgo bajo",
         "moderate": "Reglas de riesgo moderado",

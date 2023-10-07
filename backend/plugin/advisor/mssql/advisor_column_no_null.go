@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MSSQL, advisor.MSSQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLColumnNoNull, &ColumnNoNullAdvisor{})
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value..
@@ -86,7 +86,7 @@ func (l *columnNoNullChecker) EnterCreate_table(ctx *parser.Create_tableContext)
 	if tableName == nil {
 		return
 	}
-	normalizedTableName := bbparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
+	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
 
 	l.currentNormalizedTableName = normalizedTableName
 }
@@ -122,7 +122,7 @@ func (l *columnNoNullChecker) EnterTable_constraint(ctx *parser.Table_constraint
 	if ctx.PRIMARY() != nil {
 		allColumns := ctx.Column_name_list_with_order().AllId_()
 		for _, column := range allColumns {
-			columnName := bbparser.NormalizeTSQLIdentifier(column)
+			columnName := tsqlparser.NormalizeTSQLIdentifier(column)
 			l.isCurrentTableColumnNullable[columnName] = false
 		}
 	}
@@ -137,7 +137,7 @@ func (l *columnNoNullChecker) EnterColumn_definition(ctx *parser.Column_definiti
 	default:
 		return
 	}
-	columnName := bbparser.NormalizeTSQLIdentifier(ctx.Id_())
+	columnName := tsqlparser.NormalizeTSQLIdentifier(ctx.Id_())
 	l.isCurrentTableColumnNullable[columnName] = true
 	l.currentTableColumnIsNullableLine[columnName] = ctx.Id_().GetStart().GetLine()
 	allColumnDefinitionElements := ctx.AllColumn_definition_element()
@@ -162,7 +162,7 @@ func (l *columnNoNullChecker) EnterAlter_table(ctx *parser.Alter_tableContext) {
 		return
 	}
 	if (len(ctx.AllALTER()) == 2 && ctx.COLUMN() != nil) /* ALTER COLUMN */ || (len(ctx.AllALTER()) == 1 && ctx.ADD() != nil && ctx.WITH() == nil) /* ALTER */ {
-		normalizedTableName := bbparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
+		normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
 		l.currentNormalizedTableName = normalizedTableName
 	}
 }

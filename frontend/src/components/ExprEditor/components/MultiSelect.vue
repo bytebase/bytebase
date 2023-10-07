@@ -4,7 +4,7 @@
     :options="options"
     :multiple="true"
     :consistent-menu-width="false"
-    :placeholder="$t('custom-approval.security-rule.condition.select-value')"
+    :placeholder="$t('custom-approval.risk-rule.condition.select-value')"
     :disabled="!allowAdmin"
     max-tag-count="responsive"
     size="small"

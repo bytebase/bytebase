@@ -12,7 +12,7 @@
       </div>
       <div class="bb-grid-cell gap-x-1 !pl-1 !pr-2">
         <NButton size="tiny" @click="applyTemplate(tpl)">
-          {{ $t("custom-approval.security-rule.template.load") }}
+          {{ $t("custom-approval.risk-rule.template.load") }}
         </NButton>
         <NButton size="tiny" @click="viewTemplate = tpl">
           {{ $t("common.view") }}
@@ -23,12 +23,12 @@
 
   <BBModal
     v-if="viewTemplate"
-    :title="$t('custom-approval.security-rule.template.view')"
+    :title="$t('custom-approval.risk-rule.template.view')"
     class="!w-auto lg:!max-w-[36rem]"
     @close="viewTemplate = undefined"
   >
     <template #header>
-      <div>{{ $t("custom-approval.security-rule.template.view") }}</div>
+      <div>{{ $t("custom-approval.risk-rule.template.view") }}</div>
     </template>
     <template #subtitle>
       <div
@@ -50,7 +50,7 @@ import { buildCELExpr, ConditionGroupExpr } from "@/plugins/cel";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
-import { convertParsedExprToCELString, defer } from "@/utils";
+import { batchConvertParsedExprToCELString, defer } from "@/utils";
 import { useRiskCenterContext } from "../context";
 import ViewTemplate from "./ViewTemplate.vue";
 import {
@@ -80,7 +80,7 @@ const nDialog = useDialog();
 const COLUMNS = computed(() => {
   const columns: BBGridColumn[] = [
     {
-      title: t("custom-approval.security-rule.rule-name"),
+      title: t("custom-approval.risk-rule.rule-name"),
       width: "1fr",
       class: "!pl-2 !pr-1 !py-0.5",
     },
@@ -113,7 +113,7 @@ const confirmApplyTemplate = async () => {
   }
   const d = defer<boolean>();
   nDialog.warning({
-    title: t("custom-approval.security-rule.template.load-template"),
+    title: t("custom-approval.risk-rule.template.load-template"),
     content: t("common.will-override-current-data"),
     maskClosable: false,
     closeOnEsc: false,
@@ -133,13 +133,13 @@ const applyTemplate = async (template: RuleTemplate) => {
   const { expr, source, level } = template;
   const title = titleOfTemplate(template);
   const { mode } = dialog.value!;
-  const expression = await convertParsedExprToCELString(
+  const expressions = await batchConvertParsedExprToCELString([
     ParsedExpr.fromJSON({
       expr: buildCELExpr(expr),
-    })
-  );
+    }),
+  ]);
   const overrides: Partial<Risk> = {
-    condition: Expr.fromJSON({ expression }),
+    condition: Expr.fromJSON({ expression: expressions[0] }),
     level,
     title,
   };

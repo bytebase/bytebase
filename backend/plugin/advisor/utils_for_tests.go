@@ -17,7 +17,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	database "github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -135,7 +134,7 @@ func (c *testCatalog) GetFinder() *catalog.Finder {
 }
 
 // RunSQLReviewRuleTest helps to test the SQL review rule.
-func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, record bool) {
+func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.Engine, record bool) {
 	var tests []TestCase
 
 	fileName := strings.Map(func(r rune) rune {
@@ -158,7 +157,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 
 	for i, tc := range tests {
 		database := MockMySQLDatabase
-		if dbType == db.Postgres {
+		if dbType == storepb.Engine_POSTGRES {
 			database = MockPostgreSQLDatabase
 		}
 		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType})
@@ -166,10 +165,10 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)
 
-		ruleList := []*SQLReviewRule{
+		ruleList := []*storepb.SQLReviewRule{
 			{
-				Type:    rule,
-				Level:   SchemaRuleLevelWarning,
+				Type:    string(rule),
+				Level:   storepb.SQLReviewRuleLevel_WARNING,
 				Payload: string(payload),
 			},
 		}
@@ -216,7 +215,7 @@ type MockDriver struct {
 }
 
 // Open implements the Driver interface.
-func (d *MockDriver) Open(_ context.Context, _ database.Type, _ database.ConnectionConfig, _ database.ConnectionContext) (database.Driver, error) {
+func (d *MockDriver) Open(_ context.Context, _ storepb.Engine, _ database.ConnectionConfig, _ database.ConnectionContext) (database.Driver, error) {
 	return d, nil
 }
 
@@ -231,8 +230,8 @@ func (*MockDriver) Ping(_ context.Context) error {
 }
 
 // GetType implements the Driver interface.
-func (*MockDriver) GetType() database.Type {
-	return database.Type("MOCK")
+func (*MockDriver) GetType() storepb.Engine {
+	return storepb.Engine_ENGINE_UNSPECIFIED
 }
 
 // GetDB gets the database.
@@ -311,7 +310,7 @@ func (*MockDriver) CheckSlowQueryLogEnabled(_ context.Context) error {
 }
 
 // SetDefaultSQLReviewRulePayload sets the default payload for this rule.
-func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType db.Type) (string, error) {
+func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Engine) (string, error) {
 	var payload []byte
 	var err error
 	switch ruleTp {
@@ -360,9 +359,9 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType db.Type) (s
 	case SchemaRuleColumnNaming:
 		format := "^[a-z]+(_[a-z]+)*$"
 		maxLength := 64
-		if dbType == db.Snowflake {
+		if dbType == storepb.Engine_SNOWFLAKE {
 			format = "^[A-Z]+(_[A-Z]+)*$"
-		} else if dbType == db.MSSQL {
+		} else if dbType == storepb.Engine_MSSQL {
 			format = "^[A-Z]([_A-Za-z])*$"
 		}
 		payload, err = json.Marshal(NamingRulePayload{

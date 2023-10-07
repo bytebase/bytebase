@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"google.golang.org/api/iterator"
@@ -35,7 +36,7 @@ var (
 )
 
 func init() {
-	db.Register(db.Spanner, newDriver)
+	db.Register(storepb.Engine_SPANNER, newDriver)
 }
 
 // Driver is the Spanner driver.
@@ -55,7 +56,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 
 // Open opens a Spanner driver. It must connect to a specific database.
 // If database isn't provided, part of the driver cannot function.
-func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	if config.Host == "" {
 		return nil, errors.New("host cannot be empty")
 	}
@@ -104,8 +105,8 @@ func (d *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.Spanner
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_SPANNER
 }
 
 // GetDB gets the database.

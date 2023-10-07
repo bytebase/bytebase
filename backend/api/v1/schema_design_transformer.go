@@ -13,7 +13,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	pgSchemaEngine "github.com/bytebase/bytebase/backend/plugin/schema-engine/pg"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -48,7 +48,7 @@ func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) 
 }
 
 func parseMySQLSchemaStringToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
-	list, err := parser.ParseMySQL(schema)
+	list, err := mysqlparser.ParseMySQL(schema)
 	if err != nil {
 		return nil, err
 	}
@@ -517,7 +517,7 @@ func (t *mysqlTransformer) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	if t.err != nil {
 		return
 	}
-	databaseName, tableName := parser.NormalizeMySQLTableName(ctx.TableName())
+	databaseName, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	if databaseName != "" {
 		if t.state.name == "" {
 			t.state.name = databaseName
@@ -563,9 +563,9 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 		case "FOREIGN":
 			var name string
 			if ctx.ConstraintName() != nil && ctx.ConstraintName().Identifier() != nil {
-				name = parser.NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
+				name = mysqlparser.NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
 			} else if ctx.IndexName() != nil {
-				name = parser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+				name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
 			}
 			keys := extractKeyList(ctx.KeyList())
 			table := t.state.schemas[""].tables[t.currentTable]
@@ -587,7 +587,7 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 }
 
 func extractReference(ctx mysql.IReferencesContext) (string, []string) {
-	_, table := parser.NormalizeMySQLTableRef(ctx.TableRef())
+	_, table := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 	if ctx.IdentifierListWithParentheses() != nil {
 		columns := extractIdentifierList(ctx.IdentifierListWithParentheses().IdentifierList())
 		return table, columns
@@ -598,7 +598,7 @@ func extractReference(ctx mysql.IReferencesContext) (string, []string) {
 func extractIdentifierList(ctx mysql.IIdentifierListContext) []string {
 	var result []string
 	for _, identifier := range ctx.AllIdentifier() {
-		result = append(result, parser.NormalizeMySQLIdentifier(identifier))
+		result = append(result, mysqlparser.NormalizeMySQLIdentifier(identifier))
 	}
 	return result
 }
@@ -617,7 +617,7 @@ func extractKeyListWithExpression(ctx mysql.IKeyListWithExpressionContext) []str
 	var result []string
 	for _, key := range ctx.AllKeyPartOrExpression() {
 		if key.KeyPart() != nil {
-			keyText := parser.NormalizeMySQLIdentifier(key.KeyPart().Identifier())
+			keyText := mysqlparser.NormalizeMySQLIdentifier(key.KeyPart().Identifier())
 			result = append(result, keyText)
 		} else if key.ExprWithParentheses() != nil {
 			keyText := key.GetParser().GetTokenStream().GetTextFromRuleContext(key.ExprWithParentheses())
@@ -630,7 +630,7 @@ func extractKeyListWithExpression(ctx mysql.IKeyListWithExpressionContext) []str
 func extractKeyList(ctx mysql.IKeyListContext) []string {
 	var result []string
 	for _, key := range ctx.AllKeyPart() {
-		keyText := parser.NormalizeMySQLIdentifier(key.Identifier())
+		keyText := mysqlparser.NormalizeMySQLIdentifier(key.Identifier())
 		result = append(result, keyText)
 	}
 	return result
@@ -642,7 +642,7 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 		return
 	}
 
-	_, _, columnName := parser.NormalizeMySQLColumnName(ctx.ColumnName())
+	_, _, columnName := mysqlparser.NormalizeMySQLColumnName(ctx.ColumnName())
 	dataType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.FieldDefinition().DataType())
 	table := t.state.schemas[""].tables[t.currentTable]
 	if _, ok := table.columns[columnName]; ok {
@@ -705,7 +705,7 @@ func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.Databas
 
 func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
-	list, err := parser.ParseMySQL(baselineSchema)
+	list, err := mysqlparser.ParseMySQL(baselineSchema)
 	if err != nil {
 		return "", err
 	}
@@ -790,7 +790,7 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 	if g.err != nil {
 		return
 	}
-	databaseName, tableName := parser.NormalizeMySQLTableName(ctx.TableName())
+	databaseName, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	if databaseName != "" && g.to.name != "" && databaseName != g.to.name {
 		g.err = errors.New("multiple database names found: " + g.to.name + ", " + databaseName)
 		return
@@ -1052,9 +1052,9 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 	case "FOREIGN":
 		var name string
 		if ctx.ConstraintName() != nil && ctx.ConstraintName().Identifier() != nil {
-			name = parser.NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
+			name = mysqlparser.NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
 		} else if ctx.IndexName() != nil {
-			name = parser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+			name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
 		}
 		if g.currentTable.foreignKeys[name] != nil {
 			if g.firstElementInTable {
@@ -1118,7 +1118,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 		return
 	}
 
-	_, _, columnName := parser.NormalizeMySQLColumnName(ctx.ColumnName())
+	_, _, columnName := mysqlparser.NormalizeMySQLColumnName(ctx.ColumnName())
 	column, ok := g.currentTable.columns[columnName]
 	if !ok {
 		return
@@ -1445,6 +1445,6 @@ func checkColumnType(engine v1pb.Engine, tp string) bool {
 }
 
 func checkMySQLColumnType(tp string) bool {
-	_, err := parser.ParseMySQL(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
+	_, err := mysqlparser.ParseMySQL(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
 	return err == nil
 }

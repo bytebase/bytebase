@@ -15,7 +15,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Snowflake, advisor.%AdvisorType, &%AdvisorName{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.%AdvisorType, &%AdvisorName{})
 }
 
 // %AdvisorName is the advisor checking for %AdvisorComment

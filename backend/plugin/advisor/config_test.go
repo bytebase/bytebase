@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var mockConfigOverrideYAMLStr = `
@@ -42,13 +44,13 @@ func TestConfigOverride(t *testing.T) {
 	for _, rule := range ruleList {
 		switch rule.Type {
 		case "statement.select.no-select-all":
-			assert.Equal(t, SchemaRuleLevelDisabled, rule.Level)
+			assert.Equal(t, storepb.SQLReviewRuleLevel_DISABLED, rule.Level)
 		case "table.drop-naming-convention":
-			assert.Equal(t, SchemaRuleLevelWarning, rule.Level)
+			assert.Equal(t, storepb.SQLReviewRuleLevel_WARNING, rule.Level)
 		case "table.require-pk":
-			assert.Equal(t, SchemaRuleLevelError, rule.Level)
+			assert.Equal(t, storepb.SQLReviewRuleLevel_ERROR, rule.Level)
 		case "naming.table":
-			assert.Equal(t, SchemaRuleLevelWarning, rule.Level)
+			assert.Equal(t, storepb.SQLReviewRuleLevel_WARNING, rule.Level)
 
 			var nr NamingRulePayload
 			err := json.Unmarshal([]byte(rule.Payload), &nr)
@@ -57,7 +59,7 @@ func TestConfigOverride(t *testing.T) {
 			assert.Equal(t, "^table_[a-z]+(_[a-z]+)*$", nr.Format)
 			assert.Equal(t, 63, nr.MaxLength)
 		case "naming.column":
-			assert.Equal(t, SchemaRuleLevelWarning, rule.Level)
+			assert.Equal(t, storepb.SQLReviewRuleLevel_WARNING, rule.Level)
 
 			var nr NamingRulePayload
 			err := json.Unmarshal([]byte(rule.Payload), &nr)
@@ -66,7 +68,7 @@ func TestConfigOverride(t *testing.T) {
 			assert.Equal(t, "^[a-z]+(_[a-z]+)*$", nr.Format)
 			assert.Equal(t, 24, nr.MaxLength)
 		case "column.required":
-			assert.Equal(t, SchemaRuleLevelError, rule.Level)
+			assert.Equal(t, storepb.SQLReviewRuleLevel_ERROR, rule.Level)
 
 			var payload StringArrayTypeRulePayload
 			err := json.Unmarshal([]byte(rule.Payload), &payload)

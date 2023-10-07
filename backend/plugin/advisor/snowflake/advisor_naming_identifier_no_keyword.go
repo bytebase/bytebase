@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Snowflake, advisor.SnowflakeIdentifierNamingNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeIdentifierNamingNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
 }
 
 // NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier naming convention without keyword.
@@ -107,8 +107,8 @@ func (l *namingIdentifierNoKeywordChecker) EnterColumn_decl_item_list(ctx *parse
 	for _, item := range allItems {
 		if fullColDecl := item.Full_col_decl(); fullColDecl != nil {
 			originalID := fullColDecl.Col_decl().Column_name().Id_()
-			originalColName := bbparser.NormalizeSnowSQLObjectNamePart(originalID)
-			if bbparser.IsSnowflakeKeyword(originalColName, false) {
+			originalColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(originalID)
+			if snowsqlparser.IsSnowflakeKeyword(originalColName, false) {
 				l.adviceList = append(l.adviceList, advisor.Advice{
 					Status:  l.level,
 					Code:    advisor.NameIsKeywordIdentifier,
@@ -128,8 +128,8 @@ func (l *namingIdentifierNoKeywordChecker) EnterAlter_table(ctx *parser.Alter_ta
 	}
 	l.currentOriginalTableName = ctx.Object_name(0).GetText()
 	renameToID := ctx.Table_column_action().Column_name(1).Id_()
-	renameToColName := bbparser.NormalizeSnowSQLObjectNamePart(renameToID)
-	if bbparser.IsSnowflakeKeyword(renameToColName, false) {
+	renameToColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(renameToID)
+	if snowsqlparser.IsSnowflakeKeyword(renameToColName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,

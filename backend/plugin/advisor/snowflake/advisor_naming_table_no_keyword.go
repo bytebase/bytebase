@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Snowflake, advisor.SnowflakeTableNamingNoKeyword, &NamingTableNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeTableNamingNoKeyword, &NamingTableNoKeywordAdvisor{})
 }
 
 // NamingTableNoKeywordAdvisor is the advisor checking for table naming convention without keyword.
@@ -72,8 +72,8 @@ func (l *namingTableNoKeywordChecker) generateAdvice() ([]advisor.Advice, error)
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
-	tableName := bbparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name().GetO())
-	if bbparser.IsSnowflakeKeyword(tableName, false) {
+	tableName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name().GetO())
+	if snowsqlparser.IsSnowflakeKeyword(tableName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,
@@ -89,8 +89,8 @@ func (l *namingTableNoKeywordChecker) EnterAlter_table(ctx *parser.Alter_tableCo
 		return
 	}
 
-	tableName := bbparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name(1).GetO())
-	if bbparser.IsSnowflakeKeyword(tableName, false) {
+	tableName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name(1).GetO())
+	if snowsqlparser.IsSnowflakeKeyword(tableName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,

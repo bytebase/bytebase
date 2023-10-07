@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -29,7 +30,7 @@ var (
 )
 
 func init() {
-	db.Register(db.Redis, newDriver)
+	db.Register(storepb.Engine_REDIS, newDriver)
 }
 
 // Driver is the redis driver.
@@ -44,7 +45,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 }
 
 // Open opens the redis driver.
-func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
@@ -131,8 +132,8 @@ func (d *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns redis.
-func (*Driver) GetType() db.Type {
-	return db.Redis
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_REDIS
 }
 
 // GetDB gets the database.

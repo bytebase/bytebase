@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	sql "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Oracle, advisor.OracleIdentifierNamingNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.OracleIdentifierNamingNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
 }
 
 // NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier naming convention without keyword.
@@ -73,7 +73,7 @@ func (l *namingIdentifierNoKeywordListener) generateAdvice() ([]advisor.Advice, 
 // EnterId_expression is called when production id_expression is entered.
 func (l *namingIdentifierNoKeywordListener) EnterId_expression(ctx *parser.Id_expressionContext) {
 	identifier := normalizeIDExpression(ctx)
-	if sql.IsOracleKeyword(identifier) {
+	if plsqlparser.IsOracleKeyword(identifier) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,

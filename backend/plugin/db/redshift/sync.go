@@ -17,8 +17,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -678,7 +678,7 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 			return nil, err
 		}
 
-		nodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+		nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 		if err != nil {
 			return nil, err
 		}

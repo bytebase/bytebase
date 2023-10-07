@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Snowflake, advisor.SnowflakeTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.
@@ -79,7 +79,7 @@ func (l *tableDropNamingConventionChecker) generateAdvice() ([]advisor.Advice, e
 }
 
 func (l *tableDropNamingConventionChecker) EnterDrop_table(ctx *parser.Drop_tableContext) {
-	normalizedObjectName := bbparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name().GetO())
+	normalizedObjectName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name().GetO())
 	if !l.format.MatchString(normalizedObjectName) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

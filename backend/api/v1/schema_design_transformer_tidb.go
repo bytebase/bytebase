@@ -13,12 +13,12 @@ import (
 	tidbmysql "github.com/pingcap/tidb/parser/mysql"
 	tidbtypes "github.com/pingcap/tidb/parser/types"
 
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func checkTiDBColumnType(tp string) bool {
-	_, err := parser.ParseTiDB(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp), "", "")
+	_, err := tidbparser.ParseTiDB(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp), "", "")
 	return err == nil
 }
 
@@ -30,7 +30,7 @@ type tidbTransformer struct {
 }
 
 func parseTiDBSchemaStringToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
-	stmts, err := parser.ParseTiDB(schema, "", "")
+	stmts, err := tidbparser.ParseTiDB(schema, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +250,7 @@ func (*tidbTransformer) Leave(in tidbast.Node) (tidbast.Node, bool) {
 
 func getTiDBDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
-	stmts, err := parser.ParseTiDB(baselineSchema, "", "")
+	stmts, err := tidbparser.ParseTiDB(baselineSchema, "", "")
 	if err != nil {
 		return "", err
 	}

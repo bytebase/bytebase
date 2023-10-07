@@ -18,9 +18,10 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -117,7 +118,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 	renderedStatement := utils.RenderStatement(statement, materials)
 
 	switch instance.Engine {
-	case db.Postgres:
+	case storepb.Engine_POSTGRES:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 		if err != nil {
 			return nil, err
@@ -126,7 +127,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		sqlDB := driver.GetDB()
 
 		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-	case db.MySQL, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 		if err != nil {
 			return nil, err
@@ -135,7 +136,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		sqlDB := driver.GetDB()
 
 		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-	case db.Oracle:
+	case storepb.Engine_ORACLE, storepb.Engine_DM:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
 			adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
@@ -274,7 +275,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			renderedStatement := utils.RenderStatement(statement, materials)
 			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
 				switch instance.Engine {
-				case db.Postgres:
+				case storepb.Engine_POSTGRES:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 					if err != nil {
 						return nil, err
@@ -283,7 +284,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					sqlDB := driver.GetDB()
 
 					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-				case db.MySQL, db.OceanBase:
+				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 					if err != nil {
 						return nil, err
@@ -292,7 +293,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					sqlDB := driver.GetDB()
 
 					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-				case db.Oracle:
+				case storepb.Engine_ORACLE, storepb.Engine_DM:
 					schema := ""
 					if instance.Options == nil || !instance.Options.SchemaTenantMode {
 						adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
@@ -335,7 +336,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 }
 
 func reportForOracle(databaseName string, schemaName string, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.Oracle, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_ORACLE, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -353,13 +354,13 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 		}, nil
 	}
 
-	var changedResources []parser.SchemaResource
+	var changedResources []base.SchemaResource
 
 	for _, stmt := range singleSQLs {
 		if stmt.Empty || stmt.Text == "" {
 			continue
 		}
-		resources, err := getChangedResourcesForOracle(databaseName, schemaName, stmt.Text)
+		resources, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, stmt.Text)
 		if err != nil {
 			slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
 		} else {
@@ -383,15 +384,11 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 	}, nil
 }
 
-func getChangedResourcesForOracle(databaseName string, schemaName string, statement string) ([]parser.SchemaResource, error) {
-	return parser.ExtractChangedResources(parser.Oracle, databaseName, schemaName, statement)
-}
-
-func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
 	charset := dbMetadata.CharacterSet
 	collation := dbMetadata.Collation
 
-	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
+	singleSQLs, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -411,7 +408,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 
 	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
-	var changedResources []parser.SchemaResource
+	var changedResources []base.SchemaResource
 
 	p := tidbparser.New()
 	p.EnableWindowFunc(true)
@@ -420,7 +417,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 		if stmt.Empty {
 			continue
 		}
-		if parser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			continue
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
@@ -436,8 +433,8 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
 		sqlTypeSet[sqlType] = struct{}{}
 		if !isDML(sqlType) {
-			if dbType != db.TiDB {
-				resources, err := getStatementChangedResourcesForMySQL(databaseName, stmt.Text)
+			if engine != storepb.Engine_TIDB {
+				resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
 				if err != nil {
 					slog.Error("failed to get statement changed resources", log.BBError(err))
 				} else {
@@ -448,7 +445,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, dbType db.Type, database
 			}
 		}
 
-		affectedRows, err := getAffectedRowsForMysql(ctx, dbType, sqlDB, dbMetadata, root[0])
+		affectedRows, err := getAffectedRowsForMysql(ctx, engine, sqlDB, dbMetadata, root[0])
 		if err != nil {
 			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
 		} else {
@@ -486,7 +483,7 @@ func isDML(tp string) bool {
 	}
 }
 
-func convertToChangedResources(resources []parser.SchemaResource) *storepb.ChangedResources {
+func convertToChangedResources(resources []base.SchemaResource) *storepb.ChangedResources {
 	meta := &storepb.ChangedResources{}
 	// resources is ordered by (db, schema, table)
 	for _, resource := range resources {
@@ -503,12 +500,8 @@ func convertToChangedResources(resources []parser.SchemaResource) *storepb.Chang
 	return meta
 }
 
-func getStatementChangedResourcesForMySQL(currentDatabase, statement string) ([]parser.SchemaResource, error) {
-	return parser.ExtractChangedResources(parser.MySQL, currentDatabase, "" /* currentSchema */, statement)
-}
-
 func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
-	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+	stmts, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -528,7 +521,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 
 	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
-	var changedResources []parser.SchemaResource
+	var changedResources []base.SchemaResource
 
 	for _, stmt := range stmts {
 		sqlType, resources := getStatementTypeAndResourcesFromAstNode(database, "public", stmt)
@@ -571,7 +564,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 	}, nil
 }
 
-func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]parser.SchemaResource, error) {
+func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]base.SchemaResource, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
@@ -589,7 +582,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 					if err != nil {
 						return nil, err
 					}
-					resource := parser.SchemaResource{
+					resource := base.SchemaResource{
 						Database: database,
 						Schema:   schemaName,
 						Table:    tableName,
@@ -597,12 +590,12 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 					if resource.Schema == "" {
 						resource.Schema = defaultSchema
 					}
-					return []parser.SchemaResource{resource}, nil
+					return []base.SchemaResource{resource}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
 			case pgquery.ObjectType_OBJECT_TABCONSTRAINT:
-				resource := parser.SchemaResource{
+				resource := base.SchemaResource{
 					Database: database,
 					Schema:   defaultSchema,
 				}
@@ -616,12 +609,12 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 						resource.Schema = schemaName
 					}
 					resource.Table = tableName
-					return []parser.SchemaResource{resource}, nil
+					return []base.SchemaResource{resource}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
 			case pgquery.ObjectType_OBJECT_TABLE:
-				resource := parser.SchemaResource{
+				resource := base.SchemaResource{
 					Database: database,
 					Schema:   defaultSchema,
 				}
@@ -635,7 +628,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 						resource.Schema = schemaName
 					}
 					resource.Table = tableName
-					return []parser.SchemaResource{resource}, nil
+					return []base.SchemaResource{resource}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
@@ -703,8 +696,8 @@ func convertColumnName(node *pgquery.Node_List) (string, string, string, error) 
 	}
 }
 
-func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (string, []parser.SchemaResource) {
-	var result []parser.SchemaResource
+func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (string, []base.SchemaResource) {
+	var result []base.SchemaResource
 	switch n := node.(type) {
 	// DDL
 
@@ -714,7 +707,7 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 	case *tidbast.CreateIndexStmt:
 		return "CREATE_INDEX", result
 	case *tidbast.CreateTableStmt:
-		resource := parser.SchemaResource{
+		resource := base.SchemaResource{
 			Database: n.Table.Schema.L,
 			Table:    n.Table.Name.L,
 		}
@@ -735,7 +728,7 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 		return "DROP_INDEX", result
 	case *tidbast.DropTableStmt:
 		for _, table := range n.Tables {
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: table.Schema.L,
 				Table:    table.Name.L,
 			}
@@ -754,7 +747,7 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 
 	// ALTER
 	case *tidbast.AlterTableStmt:
-		resource := parser.SchemaResource{
+		resource := base.SchemaResource{
 			Database: n.Table.Schema.L,
 			Table:    n.Table.Name.L,
 		}
@@ -775,7 +768,7 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 	// RENAME
 	case *tidbast.RenameTableStmt:
 		for _, pair := range n.TableToTables {
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: pair.OldTable.Schema.L,
 				Table:    pair.OldTable.Name.L,
 			}
@@ -784,7 +777,7 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 			}
 			result = append(result, resource)
 
-			newResource := parser.SchemaResource{
+			newResource := base.SchemaResource{
 				Database: pair.NewTable.Schema.L,
 				Table:    pair.NewTable.Name.L,
 			}
@@ -810,8 +803,8 @@ func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (st
 	return "UNKNOWN", result
 }
 
-func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []parser.SchemaResource) {
-	result := []parser.SchemaResource{}
+func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []base.SchemaResource) {
+	result := []base.SchemaResource{}
 	switch node := node.(type) {
 	// DDL
 
@@ -823,7 +816,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 		case ast.TableTypeView:
 			return "CREATE_VIEW", result
 		case ast.TableTypeBaseTable:
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: node.Name.Database,
 				Schema:   node.Name.Schema,
 				Table:    node.Name.Name,
@@ -875,7 +868,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 		return "DROP_SEQUENCE", result
 	case *ast.DropTableStmt:
 		for _, table := range node.TableList {
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: table.Database,
 				Schema:   table.Schema,
 				Table:    table.Name,
@@ -905,7 +898,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 		case ast.TableTypeView:
 			return "ALTER_VIEW", result
 		case ast.TableTypeBaseTable:
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: node.Table.Database,
 				Schema:   node.Table.Schema,
 				Table:    node.Table.Name,
@@ -941,7 +934,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 		case ast.TableTypeView:
 			return "RENAME_VIEW", result
 		case ast.TableTypeBaseTable:
-			resource := parser.SchemaResource{
+			resource := base.SchemaResource{
 				Database: node.Table.Database,
 				Schema:   node.Table.Schema,
 				Table:    node.Table.Name,
@@ -954,7 +947,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			}
 			result = append(result, resource)
 
-			newResource := parser.SchemaResource{
+			newResource := base.SchemaResource{
 				Database: resource.Database,
 				Schema:   resource.Schema,
 				Table:    node.NewName,

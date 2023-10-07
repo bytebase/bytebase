@@ -21,7 +21,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -35,17 +37,17 @@ var (
 )
 
 func init() {
-	db.Register(db.MySQL, newDriver)
-	db.Register(db.TiDB, newDriver)
-	db.Register(db.MariaDB, newDriver)
-	db.Register(db.OceanBase, newDriver)
+	db.Register(storepb.Engine_MYSQL, newDriver)
+	db.Register(storepb.Engine_TIDB, newDriver)
+	db.Register(storepb.Engine_MARIADB, newDriver)
+	db.Register(storepb.Engine_OCEANBASE, newDriver)
 }
 
 // Driver is the MySQL driver.
 type Driver struct {
 	connectionCtx db.ConnectionContext
 	connCfg       db.ConnectionConfig
-	dbType        db.Type
+	dbType        storepb.Engine
 	dbBinDir      string
 	binlogDir     string
 	db            *sql.DB
@@ -64,7 +66,7 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
@@ -89,7 +91,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 	if err != nil {
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
-	tlsKey := "db.mysql.tls"
+	tlsKey := "storepb.Engine_MYSQL.tls"
 	if tlsConfig != nil {
 		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
 			return nil, errors.Wrap(err, "sql: failed to register tls config")
@@ -133,7 +135,7 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (driver *Driver) GetType() db.Type {
+func (driver *Driver) GetType() storepb.Engine {
 	return driver.dbType
 }
 
@@ -157,7 +159,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opts db.ExecuteOptions) (int64, error) {
-	statement, err := parser.DealWithDelimiter(statement)
+	statement, err := mysqlparser.DealWithDelimiter(statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to deal with delimiter")
 	}
@@ -199,7 +201,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +224,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	if singleSQL.Empty {
 		return nil, nil
 	}
@@ -238,10 +240,24 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		}
 	}
 
-	if driver.dbType == db.TiDB && queryContext.ReadOnly {
+	if driver.dbType == storepb.Engine_TIDB && queryContext.ReadOnly {
 		// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
 		// https://github.com/pingcap/tidb/issues/34626
 		queryContext.ReadOnly = false
+	}
+
+	if queryContext.SensitiveSchemaInfo != nil {
+		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
+			if len(database.SchemaList) == 0 {
+				continue
+			}
+			if len(database.SchemaList) > 1 {
+				return nil, errors.Errorf("MySQL schema info should only have one schema per database, but got %d, %v", len(database.SchemaList), database.SchemaList)
+			}
+			if database.SchemaList[0].Name != "" {
+				return nil, errors.Errorf("MySQL schema info should have empty schema name, but got %s", database.SchemaList[0].Name)
+			}
+		}
 	}
 
 	startTime := time.Now()
@@ -251,7 +267,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
 	result.Statement = statement
-	if isExplain && driver.dbType == db.TiDB {
+	if isExplain && driver.dbType == storepb.Engine_TIDB {
 		if err := updateTiDBExplainResult(result); err != nil {
 			return nil, err
 		}
@@ -283,5 +299,5 @@ func updateTiDBExplainResult(result *v1pb.QueryResult) error {
 
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, parser.MySQL, conn, statement)
+	return util.RunStatement(ctx, storepb.Engine_MYSQL, conn, statement)
 }

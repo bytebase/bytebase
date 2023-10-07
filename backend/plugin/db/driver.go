@@ -15,50 +15,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// Type is the type of a database.
-// nolint
-type Type string
-
 const (
-	// ClickHouse is the database type for CLICKHOUSE.
-	ClickHouse Type = "CLICKHOUSE"
-	// MySQL is the database type for MYSQL.
-	MySQL Type = "MYSQL"
-	// OceanBase is the database type for OCEANBASE.
-	OceanBase Type = "OCEANBASE"
-	// Postgres is the database type for POSTGRES.
-	Postgres Type = "POSTGRES"
-	// Snowflake is the database type for SNOWFLAKE.
-	Snowflake Type = "SNOWFLAKE"
-	// SQLite is the database type for SQLite.
-	SQLite Type = "SQLITE"
-	// TiDB is the database type for TiDB.
-	TiDB Type = "TIDB"
-	// MongoDB is the database type for MongoDB.
-	MongoDB Type = "MONGODB"
-	// Spanner is the database type for Spanner.
-	Spanner Type = "SPANNER"
-	// Redis is the database type for Redis.
-	Redis Type = "REDIS"
-	// Oracle is the database type for Oracle.
-	Oracle Type = "ORACLE"
-	// MSSQL is the database type for MS SQL Server.
-	MSSQL Type = "MSSQL"
-	// Redshift is the database type for Redshift.
-	Redshift Type = "REDSHIFT"
-	// MariaDB is the database type for MariaDB.
-	MariaDB Type = "MARIADB"
-	// DM is the database type for DM.
-	DM Type = "DM"
-	// RisingWave is the database type for RisingWave.
-	RisingWave Type = "RISINGWAVE"
-	// UnknownType is the database type for UNKNOWN.
-	UnknownType Type = "UNKNOWN"
-
 	// SlowQueryMaxLen is the max length of slow query.
 	SlowQueryMaxLen = 2048
 	// SlowQueryMaxSamplePerFingerprint is the max number of slow query samples per fingerprint.
@@ -97,7 +59,7 @@ type IndexKey struct {
 
 var (
 	driversMu sync.RWMutex
-	drivers   = make(map[Type]driverFunc)
+	drivers   = make(map[storepb.Engine]driverFunc)
 )
 
 // DriverConfig is the driver configuration.
@@ -409,7 +371,7 @@ type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
 	Limit               int
 	ReadOnly            bool
-	SensitiveSchemaInfo *SensitiveSchemaInfo
+	SensitiveSchemaInfo *base.SensitiveSchemaInfo
 	// EnableSensitive will set to be true if the database instance has license.
 	EnableSensitive bool
 
@@ -450,11 +412,11 @@ type Driver interface {
 	// General execution
 	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
 	// So we pass the dbType to tell the exact engine.
-	Open(ctx context.Context, dbType Type, config ConnectionConfig, connCtx ConnectionContext) (Driver, error)
+	Open(ctx context.Context, dbType storepb.Engine, config ConnectionConfig, connCtx ConnectionContext) (Driver, error)
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
-	GetType() Type
+	GetType() storepb.Engine
 	GetDB() *sql.DB
 	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, createDatabase bool, opts ExecuteOptions) (int64, error)
@@ -501,20 +463,20 @@ type Driver interface {
 // Register makes a database driver available by the provided type.
 // If Register is called twice with the same name or if driver is nil,
 // it panics.
-func Register(dbType Type, f driverFunc) {
+func Register(dbType storepb.Engine, f driverFunc) {
 	driversMu.Lock()
 	defer driversMu.Unlock()
 	if f == nil {
 		panic("db: Register driver is nil")
 	}
 	if _, dup := drivers[dbType]; dup {
-		panic("db: Register called twice for driver " + dbType)
+		panic(fmt.Sprintf("db: Register called twice for driver %s", dbType))
 	}
 	drivers[dbType] = f
 }
 
 // Open opens a database specified by its database driver type and connection config without verifying the connection.
-func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig, connCtx ConnectionContext) (Driver, error) {
+func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig, connectionConfig ConnectionConfig, connCtx ConnectionContext) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]
 	driversMu.RUnlock()
@@ -534,77 +496,4 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 type ExecuteOptions struct {
 	BeginFunc          func(ctx context.Context, conn *sql.Conn) error
 	EndTransactionFunc func(tx *sql.Tx) error
-}
-
-// FormatParamNameInQuestionMark formats the param name in question mark.
-// For example, it will be WHERE hello = ? AND world = ?.
-func FormatParamNameInQuestionMark(paramNames []string) string {
-	if len(paramNames) == 0 {
-		return ""
-	}
-	for i, param := range paramNames {
-		if !strings.Contains(param, "?") {
-			paramNames[i] = param + " = ?"
-		}
-	}
-	return fmt.Sprintf("WHERE %s ", strings.Join(paramNames, " AND "))
-}
-
-// FormatParamNameInNumberedPosition formats the param name in numbered positions.
-func FormatParamNameInNumberedPosition(paramNames []string) string {
-	if len(paramNames) == 0 {
-		return ""
-	}
-	var parts []string
-	for i, param := range paramNames {
-		idx := fmt.Sprintf("$%d", i+1)
-		param = param + "=" + idx
-		parts = append(parts, param)
-	}
-	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
-}
-
-// SensitiveSchemaInfo is the schema info using to extract sensitive fields.
-type SensitiveSchemaInfo struct {
-	// IgnoreCaseSensitive is the flag to ignore case sensitive.
-	// IMPORTANT: This flag is ONLY for database names, table names and view names in MySQL-like database.
-	IgnoreCaseSensitive bool
-	DatabaseList        []DatabaseSchema
-}
-
-// DatabaseSchema is the database schema using to extract sensitive fields.
-type DatabaseSchema struct {
-	Name       string
-	SchemaList []SchemaSchema
-}
-
-// SchemaSchema is the schema of the schema using to extract sensitive fields.
-type SchemaSchema struct {
-	Name      string
-	TableList []TableSchema
-	ViewList  []ViewSchema
-}
-
-// ViewSchema is the view schema using to extract sensitive fields.
-type ViewSchema struct {
-	Name       string
-	Definition string
-}
-
-// TableSchema is the table schema using to extract sensitive fields.
-type TableSchema struct {
-	Name       string
-	ColumnList []ColumnInfo
-}
-
-// ColumnInfo is the column info using to extract sensitive fields.
-type ColumnInfo struct {
-	Name         string
-	MaskingLevel storepb.MaskingLevel
-}
-
-// SensitiveField is the struct about SELECT fields.
-type SensitiveField struct {
-	Name         string
-	MaskingLevel storepb.MaskingLevel
 }

@@ -2,6 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { DatabaseConfig } from "./database";
 import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.store";
@@ -9,7 +10,15 @@ export const protobufPackage = "bytebase.store";
 export interface SheetPayload {
   type: SheetPayload_Type;
   vcsPayload: SheetPayload_VCSPayload | undefined;
-  schemaDesign: SheetPayload_SchemaDesign | undefined;
+  schemaDesign:
+    | SheetPayload_SchemaDesign
+    | undefined;
+  /** The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. */
+  databaseConfig:
+    | DatabaseConfig
+    | undefined;
+  /** The snapshot of the baseline database config when creating the sheet. */
+  baselineDatabaseConfig: DatabaseConfig | undefined;
 }
 
 /** Type of the SheetPayload. */
@@ -118,7 +127,13 @@ export interface SheetPayload_SchemaDesign_Protection {
 }
 
 function createBaseSheetPayload(): SheetPayload {
-  return { type: 0, vcsPayload: undefined, schemaDesign: undefined };
+  return {
+    type: 0,
+    vcsPayload: undefined,
+    schemaDesign: undefined,
+    databaseConfig: undefined,
+    baselineDatabaseConfig: undefined,
+  };
 }
 
 export const SheetPayload = {
@@ -131,6 +146,12 @@ export const SheetPayload = {
     }
     if (message.schemaDesign !== undefined) {
       SheetPayload_SchemaDesign.encode(message.schemaDesign, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.databaseConfig !== undefined) {
+      DatabaseConfig.encode(message.databaseConfig, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.baselineDatabaseConfig !== undefined) {
+      DatabaseConfig.encode(message.baselineDatabaseConfig, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -163,6 +184,20 @@ export const SheetPayload = {
 
           message.schemaDesign = SheetPayload_SchemaDesign.decode(reader, reader.uint32());
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.databaseConfig = DatabaseConfig.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.baselineDatabaseConfig = DatabaseConfig.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -177,6 +212,10 @@ export const SheetPayload = {
       type: isSet(object.type) ? sheetPayload_TypeFromJSON(object.type) : 0,
       vcsPayload: isSet(object.vcsPayload) ? SheetPayload_VCSPayload.fromJSON(object.vcsPayload) : undefined,
       schemaDesign: isSet(object.schemaDesign) ? SheetPayload_SchemaDesign.fromJSON(object.schemaDesign) : undefined,
+      databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
+      baselineDatabaseConfig: isSet(object.baselineDatabaseConfig)
+        ? DatabaseConfig.fromJSON(object.baselineDatabaseConfig)
+        : undefined,
     };
   },
 
@@ -187,6 +226,11 @@ export const SheetPayload = {
       (obj.vcsPayload = message.vcsPayload ? SheetPayload_VCSPayload.toJSON(message.vcsPayload) : undefined);
     message.schemaDesign !== undefined &&
       (obj.schemaDesign = message.schemaDesign ? SheetPayload_SchemaDesign.toJSON(message.schemaDesign) : undefined);
+    message.databaseConfig !== undefined &&
+      (obj.databaseConfig = message.databaseConfig ? DatabaseConfig.toJSON(message.databaseConfig) : undefined);
+    message.baselineDatabaseConfig !== undefined && (obj.baselineDatabaseConfig = message.baselineDatabaseConfig
+      ? DatabaseConfig.toJSON(message.baselineDatabaseConfig)
+      : undefined);
     return obj;
   },
 
@@ -203,6 +247,13 @@ export const SheetPayload = {
     message.schemaDesign = (object.schemaDesign !== undefined && object.schemaDesign !== null)
       ? SheetPayload_SchemaDesign.fromPartial(object.schemaDesign)
       : undefined;
+    message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
+      ? DatabaseConfig.fromPartial(object.databaseConfig)
+      : undefined;
+    message.baselineDatabaseConfig =
+      (object.baselineDatabaseConfig !== undefined && object.baselineDatabaseConfig !== null)
+        ? DatabaseConfig.fromPartial(object.baselineDatabaseConfig)
+        : undefined;
     return message;
   },
 };

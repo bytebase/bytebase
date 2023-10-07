@@ -5,9 +5,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestGetStatementsFromSchemaGroups(t *testing.T) {
@@ -16,7 +16,7 @@ func TestGetStatementsFromSchemaGroups(t *testing.T) {
 	tcs := []struct {
 		name                     string
 		statement                string
-		parserEngineType         parser.EngineType
+		parserEngineType         storepb.Engine
 		schemaGroupParent        string
 		schemaGroups             []*store.SchemaGroupMessage
 		schemaGroupMatchedTables map[string][]string
@@ -27,7 +27,7 @@ func TestGetStatementsFromSchemaGroups(t *testing.T) {
 		{
 			name:              "simple",
 			statement:         "ALTER TABLE salary ADD COLUMN num INT;",
-			parserEngineType:  parser.MySQL,
+			parserEngineType:  storepb.Engine_MYSQL,
 			schemaGroupParent: "projects/p2/databaseGroups/g1",
 			schemaGroups: []*store.SchemaGroupMessage{
 				{
@@ -44,7 +44,7 @@ func TestGetStatementsFromSchemaGroups(t *testing.T) {
 		{
 			name:              "matched but has no matched tables",
 			statement:         "ALTER TABLE salary ADD COLUMN num INT;",
-			parserEngineType:  parser.MySQL,
+			parserEngineType:  storepb.Engine_MYSQL,
 			schemaGroupParent: "projects/p2/databaseGroups/g1",
 			schemaGroups: []*store.SchemaGroupMessage{
 				{
@@ -66,7 +66,7 @@ CREATE TABLE singleton(id INT);
 ALTER TABLE person ADD COLUMN name VARCHAR(30);
 ALTER TABLE partpartially ADD COLUMN num INT;
 ALTER TABLE singleton ADD COLUMN num INT;`,
-			parserEngineType:  parser.MySQL,
+			parserEngineType:  storepb.Engine_MYSQL,
 			schemaGroupParent: "projects/p2/databaseGroups/g1",
 			schemaGroups: []*store.SchemaGroupMessage{
 				{
@@ -96,7 +96,7 @@ CREATE TABLE singleton(id INT);
 ALTER TABLE person ADD COLUMN name VARCHAR(30);
 ALTER TABLE partpartially ADD COLUMN num INT;
 ALTER TABLE singleton ADD COLUMN num INT;`,
-			parserEngineType:  parser.MySQL,
+			parserEngineType:  storepb.Engine_MYSQL,
 			schemaGroupParent: "projects/p2/databaseGroups/g1",
 			schemaGroups: []*store.SchemaGroupMessage{
 				{

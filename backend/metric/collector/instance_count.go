@@ -45,7 +45,7 @@ func (c *instanceCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 			Name:  metricAPI.InstanceCountMetricName,
 			Value: instanceCountMetric.Count,
 			Labels: map[string]any{
-				"engine":      string(instanceCountMetric.Engine),
+				"engine":      instanceCountMetric.Engine.String(),
 				"environment": env.Title,
 				"status":      string(instanceCountMetric.RowStatus),
 			},

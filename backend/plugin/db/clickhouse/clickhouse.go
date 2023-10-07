@@ -20,6 +20,8 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -38,13 +40,13 @@ var (
 )
 
 func init() {
-	db.Register(db.ClickHouse, newDriver)
+	db.Register(storepb.Engine_CLICKHOUSE, newDriver)
 }
 
 // Driver is the ClickHouse driver.
 type Driver struct {
 	connectionCtx db.ConnectionContext
-	dbType        db.Type
+	dbType        storepb.Engine
 	databaseName  string
 
 	db *sql.DB
@@ -55,7 +57,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a ClickHouse driver.
-func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	// Set SSL configuration.
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
@@ -104,8 +106,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.ClickHouse
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_CLICKHOUSE
 }
 
 // GetDB gets the database.

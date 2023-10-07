@@ -151,7 +151,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, err
 	}
 
-	return postMigration(ctx, stores, activityManager, license, task, mi, migrationID, schema)
+	return postMigration(ctx, stores, activityManager, license, task, mi, migrationID, schema, &sheetID)
 }
 
 func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext) bool {

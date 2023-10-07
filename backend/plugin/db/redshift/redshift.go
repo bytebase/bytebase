@@ -21,7 +21,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -42,7 +44,7 @@ var (
 )
 
 func init() {
-	db.Register(db.Redshift, newDriver)
+	db.Register(storepb.Engine_REDSHIFT, newDriver)
 }
 
 // Driver is the Postgres driver.
@@ -63,7 +65,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {
@@ -149,8 +151,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetType returns the database type.
-func (*Driver) GetType() db.Type {
-	return db.Redshift
+func (*Driver) GetType() storepb.Engine {
+	return storepb.Engine_REDSHIFT
 }
 
 // GetDB gets the database.
@@ -190,7 +192,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 			}
 			return nil
 		}
-		if _, err := parser.SplitMultiSQLStream(parser.Redshift, strings.NewReader(statement), f); err != nil {
+		if _, err := pgparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
 			return 0, err
 		}
 		return 0, nil
@@ -227,7 +229,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return nil
 	}
 
-	if _, err := parser.SplitMultiSQLStream(parser.Redshift, strings.NewReader(statement), f); err != nil {
+	if _, err := pgparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
 		return 0, err
 	}
 
@@ -345,7 +347,7 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	singleSQLs, err := pgparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +374,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
 
-func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
 	stmt := statement
@@ -386,7 +388,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, db.Redshift, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_REDSHIFT, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}
@@ -397,5 +399,5 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, parser.Redshift, conn, statement)
+	return util.RunStatement(ctx, storepb.Engine_REDSHIFT, conn, statement)
 }

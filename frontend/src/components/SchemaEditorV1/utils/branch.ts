@@ -33,7 +33,10 @@ export const getBaselineMetadataOfBranch = (
   branch: SchemaDesign
 ): DatabaseMetadata => {
   // For personal branches, we use its parent branch's schema as the original schema in editing state.
-  if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+  if (
+    branch.type === SchemaDesign_Type.PERSONAL_DRAFT &&
+    branch.baselineSheetName
+  ) {
     const parentBranch = useSchemaDesignStore().getSchemaDesignByName(
       branch.baselineSheetName
     );

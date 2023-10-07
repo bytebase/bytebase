@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	// install mysql driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	// register pg driver.
@@ -26,19 +27,19 @@ func getDatabase(u *dburl.URL) string {
 }
 
 func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
-	var dbType db.Type
+	var dbType storepb.Engine
 	var dbBinDir string
 	resourceDir := os.TempDir()
 	switch u.Driver {
 	case "mysql":
-		dbType = db.MySQL
+		dbType = storepb.Engine_MYSQL
 		dir, err := mysqlutil.Install(resourceDir)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot install mysqlutil in directory %q", resourceDir)
 		}
 		dbBinDir = dir
 	case "postgres":
-		dbType = db.Postgres
+		dbType = storepb.Engine_POSTGRES
 		dir, err := postgres.Install(resourceDir)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot install postgres in directory %q", resourceDir)

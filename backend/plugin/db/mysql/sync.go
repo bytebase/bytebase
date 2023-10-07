@@ -22,7 +22,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -601,7 +602,7 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (m
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
-	return analyzeSlowLog(logs)
+	return analyzeSlowLog(driver.dbType, logs)
 }
 
 func parseDuration(s string) (time.Duration, error) {
@@ -616,12 +617,12 @@ func parseDuration(s string) (time.Duration, error) {
 	return time.ParseDuration(duration)
 }
 
-func analyzeSlowLog(logs []*slowLog) (map[string]*storepb.SlowQueryStatistics, error) {
+func analyzeSlowLog(engine storepb.Engine, logs []*slowLog) (map[string]*storepb.SlowQueryStatistics, error) {
 	logMap := make(map[string]map[string]*storepb.SlowQueryStatisticsItem)
 
 	for _, log := range logs {
-		databaseList := extractDatabase(log.database, log.details.SqlText)
-		fingerprint, err := parser.GetSQLFingerprint(parser.MySQL, log.details.SqlText)
+		databaseList := extractDatabase(engine, log.database, log.details.SqlText)
+		fingerprint, err := mysqlparser.GetFingerprint(log.details.SqlText)
 		if err != nil {
 			return nil, errors.Wrapf(err, "get sql fingerprint failed, sql: %s", log.details.SqlText)
 		}
@@ -697,26 +698,25 @@ func mergeSlowLog(fingerprint string, statistics *storepb.SlowQueryStatisticsIte
 	return statistics
 }
 
-func extractDatabase(defaultDB string, sql string) []string {
-	list, err := parser.ExtractDatabaseList(parser.MySQL, sql, "")
+func extractDatabase(engne storepb.Engine, defaultDB string, sql string) []string {
+	resources, err := base.ExtractResourceList(engne, defaultDB /* currentDatabase */, "" /* currentSchema */, sql)
 	if err != nil {
 		// If we can't extract the database, we just use the default database.
 		slog.Debug("extract database failed", log.BBError(err), slog.String("sql", sql))
 		return []string{defaultDB}
 	}
-
-	var result []string
-	for _, db := range list {
-		if db == "" {
-			result = append(result, defaultDB)
-		} else {
-			result = append(result, db)
-		}
+	databaseMap := make(map[string]bool)
+	for _, resource := range resources {
+		databaseMap[resource.Database] = true
 	}
-	if len(result) == 0 {
-		result = append(result, defaultDB)
+	var databases []string
+	for database := range databaseMap {
+		databases = append(databases, database)
 	}
-	return result
+	if len(databases) == 0 {
+		databases = append(databases, defaultDB)
+	}
+	return databases
 }
 
 // CheckSlowQueryLogEnabled checks whether the slow query log is enabled.

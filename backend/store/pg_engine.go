@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register postgres driver.
 
@@ -68,7 +69,7 @@ func (db *DB) Open(ctx context.Context) error {
 		// Create the metadata database.
 		defaultDriver, err := dbdriver.Open(
 			ctx,
-			dbdriver.Postgres,
+			storepb.Engine_POSTGRES,
 			dbdriver.DriverConfig{DbBinDir: db.binDir},
 			db.ConnCfg,
 			dbdriver.ConnectionContext{},
@@ -88,7 +89,7 @@ func (db *DB) Open(ctx context.Context) error {
 	}
 	metadataDriver, err := dbdriver.Open(
 		ctx,
-		dbdriver.Postgres,
+		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: db.binDir},
 		metadataConnConfig,
 		dbdriver.ConnectionContext{},

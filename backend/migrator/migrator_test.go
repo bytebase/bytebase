@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestGetMinorMigrationVersions(t *testing.T) {
@@ -162,7 +163,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	}
 	defaultDriver, err := dbdriver.Open(
 		ctx,
-		dbdriver.Postgres,
+		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		connCfg,
 		dbdriver.ConnectionContext{},
@@ -179,7 +180,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	metadataConnConfig.StrictUseDb = true
 	metadataDriver, err := dbdriver.Open(
 		ctx,
-		dbdriver.Postgres,
+		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		metadataConnConfig,
 		dbdriver.ConnectionContext{},

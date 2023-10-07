@@ -1,12 +1,7 @@
 <template>
   <div class="space-y-3 pt-2 w-full overflow-x-auto">
     <div class="w-full flex flex-row justify-between items-center">
-      <div class="flex flex-row justify-start items-center space-x-2">
-        <NButton type="primary" @click="handleCreateBranch">
-          <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
-          <span>{{ $t("database.new-branch") }}</span>
-        </NButton>
-      </div>
+      <div class="flex flex-row justify-start items-center"></div>
       <div class="flex flex-row justify-end items-center gap-x-2">
         <NInput
           v-model:value="state.searchKeyword"
@@ -14,6 +9,10 @@
           clearable
           :placeholder="$t('schema-designer.action.filter-by-name')"
         />
+        <NButton type="primary" @click="handleCreateBranch">
+          <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
+          <span>{{ $t("database.new-branch") }}</span>
+        </NButton>
       </div>
     </div>
 
@@ -38,7 +37,7 @@ import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 
 const props = defineProps<{
-  projectId?: string;
+  projectId: string;
 }>();
 
 interface LocalState {
@@ -52,9 +51,7 @@ const state = reactive<LocalState>({
   searchKeyword: "",
 });
 
-const project = computed(() =>
-  projectV1Store.getProjectByUID(props.projectId || "")
-);
+const project = computed(() => projectV1Store.getProjectByUID(props.projectId));
 
 const filteredBranches = computed(() => {
   return orderBy(
@@ -77,6 +74,9 @@ const handleCreateBranch = () => {
     name: "workspace.branch.detail",
     params: {
       branchSlug: "new",
+    },
+    query: {
+      projectId: props.projectId,
     },
   });
 };

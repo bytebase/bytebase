@@ -12,9 +12,10 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	runnerutils "github.com/bytebase/bytebase/backend/runner/utils"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -118,13 +119,13 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 
 	var results []*storepb.PlanCheckRunResult_Result
 	switch instance.Engine {
-	case db.Postgres, db.RisingWave:
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
 		checkResults, err := postgresqlStatementTypeCheck(renderedStatement, changeType)
 		if err != nil {
 			return nil, err
 		}
 		results = append(results, checkResults...)
-	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		checkResults, err := mysqlStatementTypeCheck(renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation, changeType)
 		if err != nil {
 			return nil, err
@@ -280,13 +281,13 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
 				var results []*storepb.PlanCheckRunResult_Result
 				switch instance.Engine {
-				case db.Postgres, db.RisingWave:
+				case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
 					checkResults, err := postgresqlStatementTypeCheck(renderedStatement, changeType)
 					if err != nil {
 						return nil, err
 					}
 					results = append(results, checkResults...)
-				case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+				case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 					checkResults, err := mysqlStatementTypeCheck(renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation, changeType)
 					if err != nil {
 						return nil, err
@@ -340,14 +341,14 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 		return nil, err
 	}
 
-	list, err := parser.SplitMultiSQL(parser.MySQL, ddl)
+	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, ddl)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split SQL")
 	}
 
 	var results []*storepb.PlanCheckRunResult_Result
 	for _, stmt := range list {
-		if parser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			continue
 		}
 		nodeList, _, err := tidbparser.New().Parse(stmt.Text, "", "")
@@ -482,7 +483,7 @@ func mysqlCreateAndDropDatabaseCheck(nodeList []tidbast.StmtNode) []*storepb.Pla
 func mysqlStatementTypeCheck(statement string, charset string, collation string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
 	// Due to the limitation of TiDB parser, we should split the multi-statement into single statements, and extract
 	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
-	unsupportStmt, supportStmt, err := parser.ExtractTiDBUnsupportedStmts(statement)
+	unsupportStmt, supportStmt, err := mysqlparser.ExtractTiDBUnsupportedStmts(statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -598,7 +599,7 @@ func postgresqlCreateAndDropDatabaseCheck(nodeList []ast.Node) []*storepb.PlanCh
 }
 
 func postgresqlStatementTypeCheck(statement string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
-	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+	stmts, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{

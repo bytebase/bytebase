@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -20,10 +20,10 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
-	advisor.Register(db.MariaDB, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
-	advisor.Register(db.OceanBase, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
 }
 
 // StatementDmlDryRunAdvisor is the advisor checking for DML dry run.

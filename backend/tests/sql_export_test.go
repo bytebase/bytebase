@@ -12,17 +12,17 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestSQLExport(t *testing.T) {
 	tests := []struct {
 		databaseName      string
-		dbType            db.Type
+		dbType            storepb.Engine
 		prepareStatements string
 		query             string
 		reset             string
@@ -32,7 +32,7 @@ func TestSQLExport(t *testing.T) {
 	}{
 		{
 			databaseName:      "Test1",
-			dbType:            db.MySQL,
+			dbType:            storepb.Engine_MYSQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));",
 			query:             "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
 			reset:             "DELETE FROM tbl;",
@@ -53,7 +53,7 @@ func TestSQLExport(t *testing.T) {
 		},
 		{
 			databaseName:      "Test2",
-			dbType:            db.Postgres,
+			dbType:            storepb.Engine_POSTGRES,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));",
 			query:             "INSERT INTO tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
 			reset:             "DELETE FROM tbl;",
@@ -123,9 +123,9 @@ func TestSQLExport(t *testing.T) {
 		var instance *v1pb.Instance
 		databaseOwner := ""
 		switch tt.dbType {
-		case db.MySQL:
+		case storepb.Engine_MYSQL:
 			instance = mysqlInstance
-		case db.Postgres:
+		case storepb.Engine_POSTGRES:
 			instance = pgInstance
 			databaseOwner = "root"
 		default:
@@ -155,7 +155,7 @@ func TestSQLExport(t *testing.T) {
 		a.NoError(err)
 
 		for _, databaseNameQuery := range []string{tt.databaseName, ""} {
-			if databaseNameQuery == "" && tt.dbType != db.MySQL {
+			if databaseNameQuery == "" && tt.dbType != storepb.Engine_MYSQL {
 				// not supporting to query SQL when databaseName of PostgreSQL is empty
 				continue
 			}
