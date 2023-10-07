@@ -233,16 +233,11 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
 import DatabaseName from "@/components/DatabaseName.vue";
-import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import { useCurrentUserIamPolicy, useDatabaseV1Store } from "@/store";
 import { getScrollParent } from "@/utils";
 import { BBGridColumn } from "../bbkit/types";
 import { Database } from "../types";
-import {
-  databaseSlug,
-  isDatabaseAccessible,
-  isPITRDatabase,
-  VueClass,
-} from "../utils";
+import { databaseSlug, isPITRDatabase, VueClass } from "../utils";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import TenantIcon from "./TenantIcon.vue";
 
@@ -314,7 +309,7 @@ const props = defineProps({
 const emit = defineEmits(["select-database"]);
 
 const router = useRouter();
-const currentUserV1 = useCurrentUserV1();
+const currentUserIamPolicy = useCurrentUserIamPolicy();
 const databaseV1Store = useDatabaseV1Store();
 const { t } = useI18n();
 const state = reactive<State>({
@@ -482,7 +477,7 @@ const allowQuery = (database: Database) => {
   const composedDatabase = databaseV1Store.getDatabaseByUID(
     String(database.id)
   );
-  return isDatabaseAccessible(composedDatabase, currentUserV1.value);
+  return currentUserIamPolicy.allowToQueryDatabaseV1(composedDatabase);
 };
 
 const showTenantIcon = computed(() => {
