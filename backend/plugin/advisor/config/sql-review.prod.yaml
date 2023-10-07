@@ -124,6 +124,8 @@ ruleList:
     level: WARNING
   - type: column.disallow-change-type
     level: ERROR
+  - type: column.disallow-drop-in-index
+    level: ERROR
   - type: column.set-default-for-not-null
     level: ERROR
   - type: column.disallow-change

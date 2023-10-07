@@ -223,6 +223,10 @@
       "title": "Prohibit changing the order of columns in a table",
       "description": "Modifying the order of columns may cause some applications or views that depend on the default order of the original table to produce unexpected results, such as \"select *\". Suggested error level: Warning"
     },
+    "column-disallow-drop-in-index": {
+      "title": "Prohibit dropping columns in index",
+      "description": "Prohibit dropping columns in index. Suggested error level: Error"
+    },
     "column-set-default-for-not-null": {
       "title": "Enforce default value on \"NOT NULL\" columns",
       "description": "For a 'NOT NULL' column, if a value is not assigned to the column when inserting a new row and the column does not have a default value, the database will reject the insertion of that row. Setting a default value for a new column can also ensure compatibility with legacy application. Suggested error level: Error"
