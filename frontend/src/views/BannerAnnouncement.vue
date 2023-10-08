@@ -2,7 +2,7 @@
   <div
     v-if="showBanner"
     class="max-auto py-1 px-3 w-full flex flex-row justify-center flex-wrap text-center text-white font-medium"
-    :class="[`${bgColor}`]"
+    :class="[bgColor, bgColorHover]"
   >
     <a
       v-if="announcementLink !== ''"
@@ -39,6 +39,19 @@ const bgColor = computed(() => {
       return "bg-error";
     default:
       return "bg-info";
+  }
+});
+
+const bgColorHover = computed(() => {
+  switch (settingV1Store.workspaceProfileSetting?.announcement?.level) {
+    case Announcement_AlertLevel.ALERT_LEVEL_INFO:
+      return "hover:bg-info-hover";
+    case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
+      return "hover:bg-warning-hover";
+    case Announcement_AlertLevel.ALERT_LEVEL_CRITICAL:
+      return "hover:bg-error-hover";
+    default:
+      return "hover:bg-info-hover";
   }
 });
 
