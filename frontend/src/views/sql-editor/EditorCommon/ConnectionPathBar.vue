@@ -4,28 +4,29 @@
   >
     <div
       v-if="!tabStore.isDisconnected"
-      class="flex justify-start items-center h-8 px-4 whitespace-nowrap shrink-0"
+      class="flex justify-start items-center h-8 px-4 whitespace-nowrap shrink-0 gap-x-4"
     >
-      <NPopover v-if="showReadonlyDatasourceHint" trigger="hover">
+      <NPopover
+        v-if="selectedInstance.uid !== String(UNKNOWN_ID)"
+        :disabled="!isProductionEnvironment"
+      >
         <template #trigger>
-          <heroicons-outline:information-circle
-            class="h-5 w-5 flex-shrink-0 mr-2 text-info"
-          />
+          <div
+            class="inline-flex items-center px-2 border text-sm rounded-sm"
+            :class="[
+              isProductionEnvironment
+                ? 'border-error text-error'
+                : 'border-main text-main',
+            ]"
+          >
+            {{ selectedEnvironment.title }}
+          </div>
         </template>
-        <p class="py-1">
-          <template v-if="allowManageInstance">
-            {{ $t("instance.no-read-only-data-source-warn-for-owner-dba") }}
-            <span
-              class="underline text-accent cursor-pointer hover:opacity-80"
-              @click="gotoInstanceDetailPage"
-            >
-              {{ $t("sql-editor.create-read-only-data-source") }}
-            </span>
-          </template>
-          <template v-else>
-            {{ $t("instance.no-read-only-data-source-warn-for-developer") }}
-          </template>
-        </p>
+        <template #default>
+          <div class="max-w-[20rem]">
+            {{ $t("sql-editor.sql-execute-in-production-environment") }}
+          </div>
+        </template>
       </NPopover>
 
       <label class="flex items-center text-sm space-x-1">
@@ -33,21 +34,6 @@
           v-if="selectedInstance.uid !== String(UNKNOWN_ID)"
           class="flex items-center"
         >
-          <ProductionEnvironmentV1Icon
-            :environment="selectedEnvironment"
-            :class="[isProductionEnvironment && '~!text-yellow-700']"
-          />
-          <span class="ml-1">{{ selectedEnvironment.title }}</span>
-        </div>
-        <div
-          v-if="selectedInstance.uid !== String(UNKNOWN_ID)"
-          class="flex items-center"
-        >
-          <span class="mx-2">
-            <heroicons-solid:chevron-right
-              class="flex-shrink-0 h-4 w-4 text-control-light"
-            />
-          </span>
           <InstanceV1EngineIcon :instance="selectedInstance" show-status />
           <span class="ml-2">{{ selectedInstance.title }}</span>
         </div>
@@ -71,15 +57,8 @@
           <BatchQueryDatabasesSelector />
         </div>
       </label>
-    </div>
 
-    <div
-      v-if="isProductionEnvironment"
-      class="w-full lg:w-auto flex justify-start items-center py-1 sm:py-0 sm:h-8 px-4 text-white bg-error"
-    >
-      <EllipsisText>
-        {{ $t("sql-editor.sql-execute-in-production-environment") }}
-      </EllipsisText>
+      <ReadonlyDatasourceHint :instance="selectedInstance" />
     </div>
 
     <div
@@ -114,6 +93,7 @@ import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV1, instanceV1Slug } from "@/utils";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
+import ReadonlyDatasourceHint from "./ReadonlyDatasourceHint.vue";
 
 const router = useRouter();
 const tabStore = useTabStore();
@@ -171,22 +151,4 @@ const showBatchQuerySelector = computed(() => {
     currentTab.value.mode !== TabMode.Admin
   );
 });
-
-const currentUserV1 = useCurrentUserV1();
-const allowManageInstance = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-instance",
-    currentUserV1.value.userRole
-  );
-});
-
-const gotoInstanceDetailPage = () => {
-  const route = router.resolve({
-    name: "workspace.instance.detail",
-    params: {
-      instanceSlug: instanceV1Slug(selectedInstance.value),
-    },
-  });
-  window.open(route.href);
-};
 </script>
