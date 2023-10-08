@@ -175,7 +175,9 @@ const handleOpenAIEndpointChange = (event: InputEvent) => {
 };
 
 const updateOpenAIKeyEndpoint = async () => {
-  if (!hasFeature("bb.feature.plugin.openai")) {
+  // Always allow to unset the key.
+  const isUnset = state.openAIKey === "" && state.openAIEndpoint === "";
+  if (!isUnset && !hasFeature("bb.feature.plugin.openai")) {
     state.showFeatureModal = true;
     return;
   }
