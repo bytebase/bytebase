@@ -24,6 +24,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
@@ -417,11 +418,18 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		return true, nil, errors.Errorf("failed to find linked repository for database %q", database.DatabaseName)
 	}
 
+	storeVersion, err := util.ToStoredVersion(false, mi.Version, "")
+	if err != nil {
+		slog.Error("Convert to stored version",
+			slog.String("version", mi.Version),
+			log.BBError(err),
+		)
+	}
 	if mi.Type == db.Migrate || mi.Type == db.MigrateSDL {
 		if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 			InstanceID:    instance.ResourceID,
 			DatabaseName:  database.DatabaseName,
-			SchemaVersion: &mi.Version,
+			SchemaVersion: &storeVersion,
 		}, api.SystemBotID); err != nil {
 			return true, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 		}
