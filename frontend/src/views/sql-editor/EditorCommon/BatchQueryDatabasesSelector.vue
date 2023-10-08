@@ -1,15 +1,28 @@
 <template>
-  <NPopover placement="bottom" trigger="click">
+  <NPopover
+    placement="bottom"
+    :disabled="!hasBatchQueryFeature"
+    trigger="click"
+  >
     <template #trigger>
       <div
-        class="!ml-2 w-6 h-6 p-1 cursor-pointer rounded hover:opacity-80"
-        :class="
-          selectedLabelsValue.length > 0
-            ? 'text-accent bg-blue-50 shadow'
-            : 'text-gray-600'
-        "
+        class="flex flex-row justify-start items-center gap-1"
+        @click="handleTriggerClick"
       >
-        <Layers class="w-4 h-auto" />
+        <div
+          class="!ml-2 min-w-[1.5rem] h-6 p-1 flex flex-row justify-center items-center gap-1 cursor-pointer rounded hover:opacity-80"
+          :class="
+            selectedLabelsValue.length > 0 && hasBatchQueryFeature
+              ? 'text-accent bg-blue-50 shadow'
+              : 'text-gray-600'
+          "
+        >
+          <Layers class="w-4 h-auto" />
+          <span v-if="selectedLabelsValue.length > 0"
+            >({{ selectedLabelsValue.length }})</span
+          >
+        </div>
+        <FeatureBadge feature="bb.feature.batch-query" />
       </div>
     </template>
     <div class="w-128">
@@ -38,28 +51,44 @@
       </div>
     </div>
   </NPopover>
+
+  <FeatureModal
+    feature="bb.feature.batch-query"
+    :open="state.showFeatureModal"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { upperFirst } from "lodash-es";
 import { Layers } from "lucide-vue-next";
 import { NCheckboxGroup, NCheckbox, NPopover } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import {
+  hasFeature,
   useCurrentUserIamPolicy,
   useDatabaseV1ByUID,
   useDatabaseV1Store,
   useTabStore,
 } from "@/store/modules";
 
+interface LocalState {
+  showFeatureModal: boolean;
+}
+
 const databaseStore = useDatabaseV1Store();
 const tabStore = useTabStore();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
+const state = reactive<LocalState>({
+  showFeatureModal: false,
+});
 // Save the stringified label key-value pairs.
 const currentTab = computed(() => tabStore.currentTab);
 const connection = computed(() => currentTab.value.connection);
 const selectedLabelsValue = ref<string[]>([]);
+
+const hasBatchQueryFeature = hasFeature("bb.feature.batch-query");
 
 const { database: selectedDatabase } = useDatabaseV1ByUID(
   computed(() => String(connection.value.databaseId))
@@ -90,6 +119,12 @@ const labels = computed(() => {
     })
     .flat();
 });
+
+const handleTriggerClick = () => {
+  if (!hasBatchQueryFeature) {
+    state.showFeatureModal = true;
+  }
+};
 
 const getFilteredDatabaseLabels = (labels: { [key: string]: string }) => {
   // Filter out the environment label.

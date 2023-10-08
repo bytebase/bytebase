@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash-es";
+import { cloneDeep, isEmpty } from "lodash-es";
 import { Status } from "nice-grpc-common";
 import { markRaw } from "vue";
 import { useI18n } from "vue-i18n";
@@ -231,7 +231,7 @@ const useExecuteSQL = () => {
 
     // After all the queries are executed, we update the tab with the latest query result map.
     tabStore.updateTab(tab.id, {
-      databaseQueryResultMap: databaseQueryResultMap,
+      databaseQueryResultMap: cloneDeep(databaseQueryResultMap),
       executeParams: {
         query,
         config,

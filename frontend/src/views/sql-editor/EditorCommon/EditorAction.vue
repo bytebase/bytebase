@@ -206,8 +206,10 @@ const showClearScreen = computed(() => {
 });
 
 const queryList = computed(() => {
-  return webTerminalStore.getQueryStateByTab(tabStore.currentTab).queryItemList
-    .value;
+  return (
+    webTerminalStore.getQueryStateByTab(tabStore.currentTab).queryItemList
+      .value || []
+  );
 });
 
 const handleRunQuery = async () => {
