@@ -898,14 +898,7 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 					name:   tableConfigWanted.Name,
 				}
 				for _, columnConfigWanted := range tableConfigWanted.ColumnConfigs {
-					columnNode := &columnConfigNode{
-						action: updateDatabaseConfigActionUpdate,
-						name:   columnConfigWanted.Name,
-						semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
-							action: updateDatabaseConfigActionUpdate,
-							to:     columnConfigWanted.SemanticTypeId,
-						},
-					}
+					columnNode := buildColumnConfigUpdateNodeFromColumnConfig(columnConfigWanted)
 					tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
 				}
 				schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
@@ -927,14 +920,7 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 			tableConfigInBaseline, ok := tableConfigInBaselineMap[tableConfigWanted.Name]
 			if !ok {
 				for _, columnConfigWanted := range tableConfigWanted.ColumnConfigs {
-					columnNode := &columnConfigNode{
-						action: updateDatabaseConfigActionUpdate,
-						name:   columnConfigWanted.Name,
-						semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
-							action: updateDatabaseConfigActionUpdate,
-							to:     columnConfigWanted.SemanticTypeId,
-						},
-					}
+					columnNode := buildColumnConfigUpdateNodeFromColumnConfig(columnConfigWanted)
 					tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
 				}
 				schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
@@ -1109,6 +1095,18 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 	}
 
 	return result
+}
+
+// buildColumnConfigUpdateNodeFromColumnConfig builds the column config update node from the column config, copy all the attributes.
+func buildColumnConfigUpdateNodeFromColumnConfig(columnConfig *storepb.ColumnConfig) *columnConfigNode {
+	return &columnConfigNode{
+		action: updateDatabaseConfigActionUpdate,
+		name:   columnConfig.Name,
+		semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
+			action: updateDatabaseConfigActionUpdate,
+			to:     columnConfig.SemanticTypeId,
+		},
+	}
 }
 
 // getEmptyColumnConfigNode returns an empty column config node, whose fields are filled with meaningless value.
