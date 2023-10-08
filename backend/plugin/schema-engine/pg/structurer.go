@@ -193,6 +193,8 @@ func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 					continue
 				}
 				column.comment = stmt.Comment
+			default:
+				// Skip other comment types for now.
 			}
 		}
 	}
