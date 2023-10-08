@@ -2353,6 +2353,10 @@
         "title": "AI Augmentation",
         "desc": "AI augmented SQL Editor and index advisor features powered by OpenAI."
       },
+      "bb-feature-batch-query": {
+        "title": "Batch query",
+        "desc": "Batch query additional databases with the same label values in SQL Editor."
+      },
       "bb-feature-shared-sql-script": {
         "title": "Shared SQL script",
         "desc": "Share your SQL scripts with project teammates or make them public to all."

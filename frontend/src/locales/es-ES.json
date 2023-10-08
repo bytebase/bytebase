@@ -2341,6 +2341,10 @@
         "title": "Aumento de AI",
         "desc": "Editor de SQL aumentado con IA y características de asesoramiento de índice impulsadas por OpenAI."
       },
+      "bb-feature-batch-query": {
+        "title": "Consulta por lotes",
+        "desc": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
+      },
       "bb-feature-shared-sql-script": {
         "title": "Script SQL compartido",
         "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."

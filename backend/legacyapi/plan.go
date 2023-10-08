@@ -176,6 +176,11 @@ const (
 	// approval chain definition.
 	FeatureCustomApproval FeatureType = "bb.feature.custom-approval"
 
+	// Efficiency.
+
+	// FeatureBatchQuery enables batch query databases in SQL Editor.
+	FeatureBatchQuery FeatureType = "bb.feature.batch-query"
+
 	// Collaboration.
 
 	// FeatureSharedSQLScript enables sharing sql script.
@@ -272,6 +277,9 @@ func (e FeatureType) Name() string {
 		return "Access Control"
 	case FeatureCustomApproval:
 		return "Custom Approval"
+	// Efficiency
+	case FeatureBatchQuery:
+		return "Batch query"
 	// Collaboration
 	case FeatureSharedSQLScript:
 		return "Shared SQL script"
@@ -346,6 +354,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSensitiveData:         {false, false, true},
 	FeatureAccessControl:         {false, false, true},
 	FeatureCustomApproval:        {false, false, true},
+	// Efficiency
+	FeatureBatchQuery: {false, false, true},
 	// Collaboration
 	FeatureSharedSQLScript: {false, true, true},
 	// Plugins
