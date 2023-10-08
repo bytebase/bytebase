@@ -267,41 +267,6 @@
         }}
       </div>
     </div>
-    <div>
-      <div class="textlabel flex gap-x-1">
-        {{ $t("repository.sheet-path-template") }}
-        <FeatureBadge feature="bb.feature.vcs-sheet-sync" />
-      </div>
-      <div class="mt-1 textinfolabel">
-        {{ $t("repository.sheet-path-template-description") }}
-      </div>
-      <input
-        v-if="hasFeature('bb.feature.vcs-sheet-sync')"
-        id="sheetpathtemplate"
-        v-model="repositoryConfig.sheetPathTemplate"
-        name="sheetpathtemplate"
-        type="text"
-        class="textfield mt-2 w-full"
-        :disabled="!allowEdit"
-      />
-      <input
-        v-else
-        type="text"
-        class="textfield mt-2 w-full"
-        :value="
-          subscriptionStore.getRquiredPlanString('bb.feature.vcs-sheet-sync')
-        "
-        :disabled="true"
-      />
-      <div class="mt-2 textinfolabel capitalize">
-        <span class="text-red-600">*</span>
-        {{ $t("common.required-placeholder") }}: {{ "\{\{NAME\}\}" }};
-        <template v-if="schemaOptionalTagPlaceholder.length > 0">
-          {{ $t("common.optional-placeholder") }}: {{ "\{\{ENV_ID\}\}" }},
-          {{ "\{\{DB_NAME\}\}" }}
-        </template>
-      </div>
-    </div>
     <div v-if="canEnableSQLReview">
       <div class="textlabel flex gap-x-1">
         {{ $t("repository.sql-review-ci") }}
