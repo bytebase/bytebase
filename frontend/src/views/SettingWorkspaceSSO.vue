@@ -34,13 +34,12 @@
         <div class="text-center flex flex-col justify-center items-center">
           <img src="@/assets/illustration/no-data.webp" class="w-52" />
           <div class="mt-6">
-            <button
-              type="button"
-              class="btn-primary"
-              @click="handleCreateSSO"
-            >
+            <button type="button" class="btn-primary" @click="handleCreateSSO">
               {{ $t("settings.sso.create") }}
-              <FeatureBadge :feature="'bb.feature.sso'" custom-class="ml-2 !text-white" />
+              <FeatureBadge
+                :feature="'bb.feature.sso'"
+                custom-class="ml-2 !text-white"
+              />
             </button>
           </div>
         </div>
