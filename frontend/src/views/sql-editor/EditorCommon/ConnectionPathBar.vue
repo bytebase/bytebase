@@ -75,17 +75,14 @@
 <script lang="ts" setup>
 import { NPopover } from "naive-ui";
 import { computed } from "vue";
-import { useRouter } from "vue-router";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
 import ReadonlyDatasourceHint from "./ReadonlyDatasourceHint.vue";
 
-const router = useRouter();
 const tabStore = useTabStore();
 const currentTab = computed(() => tabStore.currentTab);
 const connection = computed(() => currentTab.value.connection);
@@ -112,26 +109,6 @@ const isProductionEnvironment = computed(() => {
   }
 
   return selectedEnvironment.value.tier === EnvironmentTier.PROTECTED;
-});
-
-const isAdminMode = computed(() => {
-  return tabStore.currentTab.mode === TabMode.Admin;
-});
-
-const hasReadonlyDataSource = computed(() => {
-  return (
-    selectedInstance.value.dataSources.findIndex(
-      (ds) => ds.type === DataSourceType.READ_ONLY
-    ) !== -1
-  );
-});
-
-const showReadonlyDatasourceHint = computed(() => {
-  return (
-    !isAdminMode.value &&
-    selectedInstance.value.uid !== String(UNKNOWN_ID) &&
-    !hasReadonlyDataSource.value
-  );
 });
 
 const showBatchQuerySelector = computed(() => {
