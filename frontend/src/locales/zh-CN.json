@@ -206,6 +206,7 @@
     "pitr": "PITR",
     "fix": "修复",
     "go-now": "立即前往",
+    "sync": "同步",
     "sync-now": "现在同步",
     "show-help": "查看帮助",
     "success": "成功",
@@ -1327,6 +1328,7 @@
     "select-branch": "选择一个分支",
     "delete-this-branch": "删除这个分支",
     "table-detail": "表详情",
+    "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
     "database-backup": "数据库备份",
     "backup-name": "备份名称",
@@ -1424,6 +1426,7 @@
     "unassigned-databases": "未分配的数据库",
     "restore-database": "恢复数据库",
     "selected-n-databases": "已选择 {n} 个数据库",
+    "select-databases-from-same-project": "请选择同一个项目下的数据库",
     "sync-schema": {
       "title": "库表同步",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。",

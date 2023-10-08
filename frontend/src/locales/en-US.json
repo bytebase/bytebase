@@ -206,6 +206,7 @@
     "pitr": "PITR",
     "fix": "Fix",
     "go-now": "Go now",
+    "sync": "Sync",
     "sync-now": "Sync Now",
     "show-help": "Show help",
     "success": "Succeed",
@@ -1331,6 +1332,7 @@
     "select-branch": "Select a branch",
     "delete-this-branch": "Delete this branch",
     "table-detail": "Table detail",
+    "batch-action-disabled": "Can not {action} for the databases from different projects",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "backup-name": "Backup name",
     "create-backup": "Create backup",
@@ -1427,6 +1429,7 @@
     "unassigned-databases": "Unassigned databases",
     "restore-database": "Restore database",
     "selected-n-databases": "{n} database selected | {n} databases selected",
+    "select-databases-from-same-project": "Please select databases from the same project",
     "sync-schema": {
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases.",
