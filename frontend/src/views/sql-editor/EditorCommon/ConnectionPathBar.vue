@@ -76,22 +76,12 @@
 import { NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import EllipsisText from "@/components/EllipsisText.vue";
-import {
-  InstanceV1EngineIcon,
-  ProductionEnvironmentV1Icon,
-} from "@/components/v2";
-import {
-  useTabStore,
-  useDatabaseV1ByUID,
-  useInstanceV1ByUID,
-  useCurrentUserV1,
-} from "@/store";
+import { InstanceV1EngineIcon } from "@/components/v2";
+import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { hasWorkspacePermissionV1, instanceV1Slug } from "@/utils";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
 import ReadonlyDatasourceHint from "./ReadonlyDatasourceHint.vue";
 
