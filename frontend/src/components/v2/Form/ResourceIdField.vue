@@ -85,7 +85,8 @@ type ResourceType =
   | "idp"
   | "role"
   | "database-group"
-  | "schema-group";
+  | "schema-group"
+  | "changelist";
 
 const props = withDefaults(
   defineProps<{

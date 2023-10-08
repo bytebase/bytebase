@@ -200,12 +200,12 @@ import {
   sheetNameOfTaskV1,
   useInstanceV1EditorLanguage,
 } from "@/utils";
+import { readFileAsync } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import { useAutoEditorHeight } from "./useAutoEditorHeight";
 import { useEditorAutoCompletion } from "./useEditorAutoCompletion";
 import { EditState, useTempEditState } from "./useTempEditState";
-import { readFileAsync } from "./utils";
 
 type LocalState = EditState & {
   showFeatureModal: boolean;
