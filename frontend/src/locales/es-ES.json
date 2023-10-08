@@ -2044,7 +2044,10 @@
         }
       }
     },
-    "filter-by-name": "Filtrar por nombre"
+    "filter-by-name": "Filtrar por nombre",
+    "batch-query": {
+      "description": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
+    }
   },
   "schema-editor": {
     "self": "Editor de esquema",

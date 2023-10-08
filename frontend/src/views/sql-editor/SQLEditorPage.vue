@@ -75,7 +75,7 @@
                     <SecondaryGutterBar />
                   </div>
                 </Pane>
-                <Pane v-if="!isDisconnected" :size="40">
+                <Pane v-if="!isDisconnected" class="relative" :size="40">
                   <ResultPanel />
                 </Pane>
               </Splitpanes>

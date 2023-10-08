@@ -10,7 +10,13 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
 } from "@/store";
-import { ExecuteConfig, ExecuteOption, SQLResultSetV1 } from "@/types";
+import {
+  ComposedDatabase,
+  ExecuteConfig,
+  ExecuteOption,
+  SQLResultSetV1,
+  UNKNOWN_ID,
+} from "@/types";
 import {
   Advice_Status,
   advice_StatusToJSON,
@@ -88,94 +94,154 @@ const useExecuteSQL = () => {
       selectStatement = `EXPLAIN ${selectStatement}`;
     }
 
-    const fail = (result: SQLResultSetV1) => {
-      tabStore.updateTab(tab.id, {
-        sqlResultSet: {
-          error: result.error,
-          results: [],
-          advices: result.advices,
-          status: result.status,
-          allowExport: false,
-        },
-        executeParams: {
-          query,
-          config,
-          option,
-        },
-      });
+    const batchQueryContext = tab.batchQueryContext;
+    const selectedDatabase = useDatabaseV1Store().getDatabaseByUID(
+      tab.connection.databaseId
+    );
+    const databaseName =
+      selectedDatabase.uid === String(UNKNOWN_ID)
+        ? ""
+        : selectedDatabase.databaseName;
+    const batchQueryDatabases: ComposedDatabase[] = [selectedDatabase];
 
-      cleanup();
-    };
-
-    try {
-      const sqlResultSet = await sqlEditorStore.executeQuery({
-        statement: selectStatement,
-      });
-      // TODO(steven): use BBModel instead of notify to show the advice from SQL review.
-      let adviceStatus: "SUCCESS" | "ERROR" | "WARNING" = "SUCCESS";
-      let adviceNotifyMessage = "";
-      for (const advice of sqlResultSet.advices) {
-        if (advice.status === Advice_Status.SUCCESS) {
+    // Check if the user selects multiple databases to query.
+    if (
+      databaseName &&
+      batchQueryContext &&
+      batchQueryContext.selectedLabels.length > 0
+    ) {
+      const databases = useDatabaseV1Store().databaseListByProject(
+        selectedDatabase.project
+      );
+      for (const database of databases) {
+        if (database.name === selectedDatabase.name) {
           continue;
         }
-
-        if (advice.status === Advice_Status.ERROR) {
-          adviceStatus = "ERROR";
-        } else if (adviceStatus !== "ERROR") {
-          adviceStatus = "WARNING";
-        }
-
-        adviceNotifyMessage += `${advice_StatusToJSON(advice.status)}: ${
-          advice.title
-        }\n`;
-        if (advice.content) {
-          adviceNotifyMessage += `${advice.content}\n`;
-        }
-      }
-      if (adviceStatus !== "SUCCESS") {
-        const notifyStyle = adviceStatus === "ERROR" ? "CRITICAL" : "WARN";
-        notify(
-          notifyStyle,
-          t("sql-editor.sql-review-result"),
-          adviceNotifyMessage
-        );
-      }
-
-      if (sqlResultSet.error) {
-        // The error message should be consistent with the one from the backend.
-        if (
-          sqlResultSet.error === "Support SELECT sql statement only" &&
-          sqlResultSet.status === Status.INVALID_ARGUMENT
-        ) {
-          const { databaseId } = tab.connection;
-          const database = databaseStore.getDatabaseByUID(databaseId);
-          // Only show the warning if the database is alterable.
-          // AKA, the current user has the permission to alter the database.
-          if (isDatabaseV1Alterable(database, currentUser.value)) {
-            sqlEditorStore.setSQLEditorState({
-              isShowExecutingHint: true,
+        const matched = batchQueryContext.selectedLabels.find((labelString) => {
+          // Filter out the environment label.
+          const keys = Object.keys(database.labels).filter((key) => {
+            return key !== "bb.environment";
+          });
+          return keys
+            .map((key) => {
+              return {
+                key,
+                value: database.labels[key],
+              };
+            })
+            .find((label) => {
+              return `${label.key}-${label.value}` === labelString;
             });
-            return cleanup();
+        });
+        if (matched) {
+          batchQueryDatabases.push(database);
+        }
+      }
+    }
+
+    const databaseQueryResultMap = new Map<string, SQLResultSetV1>();
+    for (const database of batchQueryDatabases) {
+      databaseQueryResultMap.set(database.name, {
+        error: "",
+        results: [],
+        advices: [],
+        allowExport: false,
+      });
+    }
+    tabStore.updateCurrentTab({
+      databaseQueryResultMap,
+    });
+
+    const fail = (database: ComposedDatabase, result: SQLResultSetV1) => {
+      databaseQueryResultMap.set(database.name, {
+        error: result.error,
+        results: [],
+        advices: result.advices,
+        status: result.status,
+        allowExport: false,
+      });
+    };
+
+    for (const database of batchQueryDatabases) {
+      const isUnknownDatabase = database.uid === String(UNKNOWN_ID);
+      try {
+        const sqlResultSet = await sqlEditorStore.executeQuery({
+          instanceId: isUnknownDatabase
+            ? tab.connection.instanceId
+            : database.instanceEntity.uid,
+          databaseName: isUnknownDatabase ? "" : database.databaseName,
+          statement: selectStatement,
+        });
+        let adviceStatus: "SUCCESS" | "ERROR" | "WARNING" = "SUCCESS";
+        let adviceNotifyMessage = "";
+        for (const advice of sqlResultSet.advices) {
+          if (advice.status === Advice_Status.SUCCESS) {
+            continue;
+          }
+
+          if (advice.status === Advice_Status.ERROR) {
+            adviceStatus = "ERROR";
+          } else if (adviceStatus !== "ERROR") {
+            adviceStatus = "WARNING";
+          }
+
+          adviceNotifyMessage += `${advice_StatusToJSON(advice.status)}: ${
+            advice.title
+          }\n`;
+          if (advice.content) {
+            adviceNotifyMessage += `${advice.content}\n`;
           }
         }
-        return fail(sqlResultSet);
-      }
 
-      tabStore.updateTab(tab.id, {
-        sqlResultSet: markRaw(sqlResultSet),
-        executeParams: {
-          query,
-          config,
-          option,
-        },
-      });
-      // Refresh the query history list when the query executed successfully
-      // (with or without warnings).
-      sqlEditorStore.fetchQueryHistoryList();
-      cleanup();
-    } catch (error: any) {
-      fail(error.response?.data?.message ?? String(error));
+        if (adviceStatus !== "SUCCESS") {
+          const notifyStyle = adviceStatus === "ERROR" ? "CRITICAL" : "WARN";
+          notify(
+            notifyStyle,
+            t("sql-editor.sql-review-result"),
+            adviceNotifyMessage
+          );
+        }
+
+        if (sqlResultSet.error) {
+          // The error message should be consistent with the one from the backend.
+          if (
+            sqlResultSet.error === "Support SELECT sql statement only" &&
+            sqlResultSet.status === Status.INVALID_ARGUMENT
+          ) {
+            const { databaseId } = tab.connection;
+            const database = databaseStore.getDatabaseByUID(databaseId);
+            // Only show the warning if the database is alterable.
+            // AKA, the current user has the permission to alter the database.
+            if (isDatabaseV1Alterable(database, currentUser.value)) {
+              sqlEditorStore.setSQLEditorState({
+                isShowExecutingHint: true,
+              });
+              cleanup();
+            }
+          } else {
+            fail(database, sqlResultSet);
+          }
+        } else {
+          databaseQueryResultMap.set(database.name, markRaw(sqlResultSet));
+        }
+      } catch (error: any) {
+        fail(database, error.response?.data?.message ?? String(error));
+      }
     }
+
+    // After all the queries are executed, we update the tab with the latest query result map.
+    tabStore.updateTab(tab.id, {
+      databaseQueryResultMap: databaseQueryResultMap,
+      executeParams: {
+        query,
+        config,
+        option,
+      },
+    });
+    // Refresh the query history list when the query executed successfully
+    // (with or without warnings).
+    sqlEditorStore.fetchQueryHistoryList();
+    cleanup();
   };
 
   return {

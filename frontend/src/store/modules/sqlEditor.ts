@@ -6,9 +6,7 @@ import {
   ActivitySQLEditorQueryPayload,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { useTabStore } from "./tab";
 import { useInstanceV1Store, useSQLStore, useActivityV1Store } from "./v1";
-import { useDatabaseV1Store } from "./v1/database";
 
 // set the limit to 1000 temporarily to avoid the query timeout and page crash
 export const RESULT_ROWS_LIMIT = 1000;
@@ -37,15 +35,17 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     setIsFetchingQueryHistory(payload: boolean) {
       this.isFetchingQueryHistory = payload;
     },
-    async executeQuery({ statement }: Pick<QueryInfo, "statement">) {
-      const { instanceId, databaseId } = useTabStore().currentTab.connection;
-      const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
-      const databaseName =
-        database.uid === String(UNKNOWN_ID) ? "" : database.databaseName;
-      const instance = useInstanceV1Store().getInstanceByUID(instanceId);
+    async executeQuery({
+      instanceId,
+      databaseName,
+      statement,
+    }: Pick<QueryInfo, "instanceId" | "databaseName" | "statement">) {
+      const instance = useInstanceV1Store().getInstanceByUID(
+        String(instanceId)
+      );
       const response = await useSQLStore().queryReadonly({
         name: instance.name,
-        connectionDatabase: databaseName,
+        connectionDatabase: databaseName || "",
         statement,
         limit: RESULT_ROWS_LIMIT,
       });
