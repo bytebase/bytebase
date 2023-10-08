@@ -1,7 +1,13 @@
-import { useChangeHistoryStore } from "@/store";
-import { Changelist_Change_Source } from "@/types";
+import {
+  useChangeHistoryStore,
+  useSchemaDesignStore,
+  useSheetV1Store,
+} from "@/store";
+import { Changelist_Change_Source, ComposedDatabase } from "@/types";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { getHistoryChangeType } from "./changeHistory";
+import { generateDDLByBranchAndDatabase } from "./schemaDesign";
+import { getSheetStatement } from "./sheet";
 
 export const extractChangelistResourceName = (name: string) => {
   const pattern = /(?:^|\/)changelists\/([^/]+)(?:$|\/)/;
@@ -50,4 +56,39 @@ export const guessChangelistChangeType = (
 
   console.error("Should never reach this line");
   return "-";
+};
+
+export const generateSQLForChangeToDatabase = async (
+  change: Change,
+  database: ComposedDatabase
+) => {
+  const type = getChangelistChangeSourceType(change);
+  if (type === "CHANGE_HISTORY" || type === "RAW_SQL") {
+    const sheet = await useSheetV1Store().fetchSheetByName(
+      change.sheet,
+      true /* raw */
+    );
+    if (!sheet) {
+      return "";
+    }
+
+    return getSheetStatement(sheet);
+  }
+  if (type === "BRANCH") {
+    const branch = await useSchemaDesignStore().getOrFetchSchemaDesignByName(
+      change.source
+    );
+    if (!branch) {
+      return "";
+    }
+    const diffResult = await generateDDLByBranchAndDatabase(
+      branch,
+      database,
+      false /* !silent */
+    );
+    return diffResult.statement;
+  }
+
+  console.error("Should never reach this line");
+  return "";
 };

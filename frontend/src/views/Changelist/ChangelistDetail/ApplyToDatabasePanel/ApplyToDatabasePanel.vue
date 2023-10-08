@@ -100,7 +100,7 @@ import {
   instanceV1HasAlterSchema,
   sortDatabaseV1List,
 } from "@/utils";
-import { generateIssueName, generateSQLForChangeToDatabase } from "../common";
+import { generateIssueName } from "../common";
 import { useChangelistDetailContext } from "../context";
 
 type LocalState = ProjectStandardViewState & {
@@ -204,38 +204,23 @@ const handleSelectDatabase = (db: ComposedDatabase) => {
 const handleClickNext = async () => {
   state.isGenerating = true;
   try {
-    const { changes } = changelist.value;
-
-    const selectedDatabaseIdList = [...flattenSelectedDatabaseUidList.value];
-    const selectedDatabaseList = selectedDatabaseIdList.map(
-      (id) => schemaDatabaseList.value.find((db) => db.uid === id)!
+    const databaseUIDList = [...flattenSelectedDatabaseUidList.value];
+    const databaseList = databaseUIDList.map((uid) =>
+      databaseStore.getDatabaseByUID(uid)
     );
-    const databaseUIDList: string[] = [];
-    const sqlList: string[] = [];
 
-    for (let i = 0; i < selectedDatabaseList.length; i++) {
-      const db = selectedDatabaseList[i];
-      for (let j = 0; j < changes.length; j++) {
-        const change = changes[j];
-        const statement = await generateSQLForChangeToDatabase(change, db);
-        databaseUIDList.push(db.uid);
-        sqlList.push(statement);
-      }
-    }
     const query: Record<string, any> = {
       template:
         guessedDatabaseChangeType.value === "DDL"
           ? "bb.issue.database.schema.update"
           : "bb.issue.database.data.update",
       name: generateIssueName(
-        selectedDatabaseList.map((db) => db.databaseName),
+        databaseList.map((db) => db.databaseName),
         changelist.value
       ),
       project: project.value.uid,
-      // The server-side will sort the databases by environment.
-      // So we need not to sort them here.
+      changelist: changelist.value.name,
       databaseList: databaseUIDList.join(","),
-      sqlList: JSON.stringify(sqlList),
     };
 
     router.push({
