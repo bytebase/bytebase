@@ -1622,7 +1622,6 @@
     "create-modal": {
       "project-name": "@:common.project @:common.name",
       "key": "@:common.key",
-      "key-hint": "(Letras mayúsculas que identifican tu proyecto)",
       "cancel": "@:common.cancel",
       "confirm": "@:common.create",
       "success-prompt": "Proyecto {name} creado exitosamente."
@@ -1764,7 +1763,8 @@
       "project-owner": "Requerir LGTM del propietario del proyecto"
     },
     "successfully-updated-db-name-template": "Plantilla de nombre de base de datos actualizada con éxito.",
-    "all": "Todos los proyectos"
+    "all": "Todos los proyectos",
+    "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto.."
   },
   "inbox": {
     "mark-all-as-read": "Marcar todo como leído",

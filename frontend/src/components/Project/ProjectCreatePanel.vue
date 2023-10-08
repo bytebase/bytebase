@@ -33,13 +33,16 @@
         <div class="col-span-1">
           <label
             for="name"
-            class="text-base leading-6 font-medium text-control"
+            class="flex text-base leading-6 font-medium text-control"
           >
             {{ $t("project.create-modal.key") }}
+            <NTooltip>
+              <template #trigger>
+                <heroicons-outline:information-circle class="ml-1 w-4 h-auto" />
+              </template>
+              {{ $t("project.key-hint") }}
+            </NTooltip>
             <span class="text-red-600">*</span>
-            <span class="ml-1 text-sm font-normal">
-              {{ $t("project.create-modal.key-hint") }}
-            </span>
           </label>
           <BBTextField
             class="mt-4 w-full uppercase"
