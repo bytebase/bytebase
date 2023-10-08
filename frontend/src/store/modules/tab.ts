@@ -32,6 +32,7 @@ const PERSISTENT_TAB_FIELDS = [
   "statement",
   "sheetName",
   "mode",
+  "batchQueryContext",
 ] as const;
 type PersistentTabInfo = Pick<TabInfo, typeof PERSISTENT_TAB_FIELDS[number]>;
 
@@ -155,6 +156,7 @@ export const useTabStore = defineStore("tab", () => {
       () => tab.name,
       () => tab.sheetName,
       () => tab.statement,
+      () => tab.batchQueryContext,
     ];
     watch(dirtyFields, () => {
       tab.isFreshNew = false;

@@ -25,6 +25,10 @@ export type TabSheetType =
 
 export type EditMode = "SQL-EDITOR" | "CHAT-TO-SQL";
 
+export interface BatchQueryContext {
+  selectedLabels: string[];
+}
+
 export interface TabInfo {
   id: string;
   name: string;
@@ -42,8 +46,13 @@ export interface TabInfo {
   };
   isExecutingSQL: boolean;
   sheetName?: string;
-  sqlResultSet?: SQLResultSetV1;
   isFreshNew?: boolean;
+  // batchQueryContext saves the context of batch query, including the selected labels.
+  batchQueryContext?: BatchQueryContext;
+  // databaseQueryResultMap is used to store the query result of each database.
+  // It's used for the case that the user selects multiple databases to query.
+  // The key is the databaseName. Format: instances/{instance}/databases/{database}
+  databaseQueryResultMap?: Map<string, SQLResultSetV1>;
 }
 
 export type CoreTabInfo = Pick<TabInfo, "connection" | "sheetName" | "mode">;

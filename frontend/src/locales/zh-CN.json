@@ -2043,7 +2043,10 @@
         }
       }
     },
-    "filter-by-name": "根据名称过滤"
+    "filter-by-name": "根据名称过滤",
+    "batch-query": {
+      "description": "批量查询具有相同标签值的其他数据库。"
+    }
   },
   "schema-editor": {
     "self": "Schema 编辑器",

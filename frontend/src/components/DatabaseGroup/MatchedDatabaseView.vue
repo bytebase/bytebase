@@ -1,6 +1,6 @@
 <template>
-  <div class="mb-2 flex flex-row items-center">
-    <span class="text-lg mr-2">{{ $t("common.databases") }}</span>
+  <div v-if="!hideTitle" class="mb-2 flex flex-row items-center">
+    <span class="text-base mr-2">{{ $t("common.databases") }}</span>
     <BBLoader v-show="loading" class="opacity-60" />
   </div>
   <div
@@ -78,11 +78,20 @@
       >
         <NEllipsis class="text-sm" line-clamp="1">
           {{ database.databaseName }}
-          ({{ database.effectiveEnvironmentEntity.title }})
         </NEllipsis>
-        <div class="flex flex-row justify-end items-center shrink-0">
-          <NEllipsis class="ml-1 text-sm text-gray-400" line-clamp="1">
-            <InstanceV1Name :instance="database.instanceEntity" :link="false" />
+        <div class="flex-1 flex flex-row justify-end items-center shrink-0">
+          <FeatureBadge
+            feature="bb.feature.database-grouping"
+            custom-class="mr-2"
+            :instance="database.instanceEntity"
+          />
+          <InstanceV1EngineIcon :instance="database.instanceEntity" />
+          <NEllipsis
+            class="ml-1 text-sm text-gray-400 max-w-[124px]"
+            line-clamp="1"
+          >
+            ({{ database.effectiveEnvironmentEntity.title }})
+            {{ database.instanceEntity.title }}
           </NEllipsis>
         </div>
       </div>
@@ -103,9 +112,10 @@ interface LocalState {
 }
 
 defineProps<{
-  loading: boolean;
   matchedDatabaseList: ComposedDatabase[];
   unmatchedDatabaseList: ComposedDatabase[];
+  loading?: boolean;
+  hideTitle?: boolean;
 }>();
 
 const state = reactive<LocalState>({
