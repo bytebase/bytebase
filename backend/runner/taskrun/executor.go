@@ -537,7 +537,6 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 				if err != nil {
 					slog.Error("Failed to update database config", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *task.DatabaseID), log.BBError(err))
 				}
-
 			}
 		}
 	}
