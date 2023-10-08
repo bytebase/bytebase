@@ -14,7 +14,7 @@
 <script lang="ts" setup>
 import { last } from "lodash-es";
 import { computed } from "vue";
-import { useCurrentUserV1, useTabStore, useWebTerminalStore } from "@/store";
+import { useCurrentUserV1, useTabStore, useWebTerminalV1Store } from "@/store";
 import { TabMode } from "@/types";
 import {
   getSuggestedTabNameFromConnection,
@@ -62,7 +62,8 @@ const enterAdminMode = () => {
     statement,
   });
   const queryItem = last(
-    useWebTerminalStore().getQueryListByTab(tabStore.currentTab)
+    useWebTerminalV1Store().getQueryStateByTab(tabStore.currentTab)
+      .queryItemList.value
   );
   if (queryItem) {
     queryItem.sql = statement;

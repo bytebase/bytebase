@@ -14,7 +14,6 @@ export * from "./project";
 export * from "./router";
 export * from "./stage";
 export * from "./sqlEditor";
-export * from "./webTerminal";
 export * from "./connectionTree";
 export * from "./tab";
 export * from "./task";
