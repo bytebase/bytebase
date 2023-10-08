@@ -43,8 +43,8 @@ type columnConfigSemanticTypeAttributeNode struct {
 	to string
 }
 
-// updateDatabaseConfig computes the migration from databaseConfig and baselineDatabaseConfig, and applies the migration to appliedTarget, returns the updated databaseConfig.
-func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget *storepb.DatabaseConfig) *storepb.DatabaseConfig {
+// mergeDatabaseConfig computes the migration from databaseConfig and baselineDatabaseConfig, and applies the migration to appliedTarget, returns the updated databaseConfig.
+func mergeDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget *storepb.DatabaseConfig) *storepb.DatabaseConfig {
 	// To avoid determining the databaseConfig, baselineDatabaseConfig and appliedTarget are nil or not, we will replace the nil with empty config at the beginning.
 	if databaseConfig == nil {
 		databaseConfig = &storepb.DatabaseConfig{}
