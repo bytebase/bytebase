@@ -656,6 +656,33 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			Comment: in.CommentStmt.Comment,
 		}
 
+		switch in.CommentStmt.Objtype {
+		case pgquery.ObjectType_OBJECT_COLUMN:
+			commentStmt.Type = ast.ObjectTypeColumn
+			switch node := in.CommentStmt.Object.Node.(type) {
+			case *pgquery.Node_List:
+				columnDef, err := ConvertNodeListToColumnNameDef(node.List.Items)
+				if err != nil {
+					return nil, err
+				}
+				commentStmt.Object = columnDef
+			default:
+				return nil, errors.Errorf("expect to get a list node but got %T", node)
+			}
+		case pgquery.ObjectType_OBJECT_TABLE:
+			commentStmt.Type = ast.ObjectTypeTable
+			switch node := in.CommentStmt.Object.Node.(type) {
+			case *pgquery.Node_List:
+				tableDef, err := convertNodeListToTableDef(node.List.Items)
+				if err != nil {
+					return nil, err
+				}
+				commentStmt.Object = tableDef
+			default:
+				return nil, errors.Errorf("expect to get a list node but got %T", node)
+			}
+		}
+
 		return &commentStmt, nil
 	case *pgquery.Node_CreatedbStmt:
 		createDatabaseStmt := ast.CreateDatabaseStmt{
@@ -1881,4 +1908,29 @@ func ConvertNodeListToColumnNameDef(in []*pgquery.Node) (*ast.ColumnNameDef, err
 		return nil, NewConvertErrorf("failed to convert ColumnRef, column name contains unexpected components: %v", in)
 	}
 	return columnName, nil
+}
+
+func convertNodeListToTableDef(in []*pgquery.Node) (*ast.TableDef, error) {
+	tableDef := &ast.TableDef{
+		Type: ast.TableTypeUnknown,
+	}
+	switch len(in) {
+	case 2:
+		schema, ok := in[0].Node.(*pgquery.Node_String_)
+		if !ok {
+			return nil, NewConvertErrorf("expected String but found %t", in[0].Node)
+		}
+		tableDef.Schema = schema.String_.Sval
+		in = in[1:]
+		fallthrough
+	case 1:
+		table, ok := in[0].Node.(*pgquery.Node_String_)
+		if !ok {
+			return nil, NewConvertErrorf("expected String but found %t", in[0].Node)
+		}
+		tableDef.Name = table.String_.Sval
+	default:
+		return nil, NewConvertErrorf("failed to convert RangeVar, table name contains unexpected components: %v", in)
+	}
+	return tableDef, nil
 }

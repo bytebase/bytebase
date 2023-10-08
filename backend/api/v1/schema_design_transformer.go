@@ -14,6 +14,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	pgSchemaEngine "github.com/bytebase/bytebase/backend/plugin/schema-engine/pg"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -31,6 +32,8 @@ func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) 
 		switch engine {
 		case v1pb.Engine_MYSQL:
 			return parseMySQLSchemaStringToDatabaseMetadata(schema)
+		case v1pb.Engine_POSTGRES:
+			return pgSchemaEngine.ParseToMetadata(schema)
 		case v1pb.Engine_TIDB:
 			return parseTiDBSchemaStringToDatabaseMetadata(schema)
 		default:
@@ -693,6 +696,12 @@ func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.Databas
 		result, err := getTiDBDesignSchema(baselineSchema, to)
 		if err != nil {
 			return "", status.Errorf(codes.Internal, "failed to generate tidb design schema: %v", err)
+		}
+		return result, nil
+	case v1pb.Engine_POSTGRES:
+		result, err := pgSchemaEngine.GetDesignSchema(baselineSchema, to)
+		if err != nil {
+			return "", status.Errorf(codes.Internal, "failed to generate postgres design schema: %v", err)
 		}
 		return result, nil
 	default:
