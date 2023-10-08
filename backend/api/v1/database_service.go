@@ -1796,11 +1796,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	if database.SchemaVersion != "" {
 		_, version, _, err := util.FromStoredVersion(database.SchemaVersion)
 		if err != nil {
-			slog.Error("failed to convert stored version",
-				slog.String("instance", database.InstanceID),
-				slog.String("database", database.DatabaseName),
-				slog.String("version", database.SchemaVersion),
-				log.BBError(err))
+			schemaVersion = database.SchemaVersion
 		} else {
 			schemaVersion = version
 		}
