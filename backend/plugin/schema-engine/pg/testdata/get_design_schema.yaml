@@ -1,0 +1,211 @@
+- baseline: |-
+    CREATE TABLE public."t" (
+      "a" int,
+      CONSTRAINT t_a_check CHECK ("a" > 0)
+    );
+    ALTER TABLE public."t" ADD CONSTRAINT fk_t_a_t2_b FOREIGN KEY ("a") REFERENCES public."t2" ("b");
+    CREATE TABLE public."t3" (
+      "a" int
+    );
+    CREATE TABLE public.t4 (
+      a int,
+      c int,
+      d int,
+      e char(10) NOT NULL DEFAULT 'NULL'
+    );
+    ALTER TABLE public.t4 ADD CONSTRAINT pk_t4_a_c_d PRIMARY KEY (a, c, d);
+    ALTER TABLE public.t4 ADD CONSTRAINT fk_t4_a_t2_b FOREIGN KEY (a) REFERENCES public.t2 (b);
+  target:
+    name: ""
+    schemas:
+        - name: public
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys: []
+            - name: t4
+              columns:
+                - name: a
+                  position: 0
+                  default:
+                    value: '''default value'''
+                  nullable: false
+                  type: varchar(10)
+                  characterset: ""
+                  collation: ""
+                  comment: this is comment, aha
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+                - name: b
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: char(10)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+                - name: c
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+                - name: e
+                  position: 0
+                  default: null
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+              indexes:
+                - name: pk_t4_a_c_d
+                  expressions:
+                    - a
+                    - b
+                    - c
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys:
+                - name: fk_t4_a_t2_b
+                  columns:
+                    - b
+                  referencedschema: public
+                  referencedtable: t2
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default: null
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+                - name: a
+                  position: 0
+                  default: null
+                  nullable: true
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys:
+                - name: fk_t2_b_t4_b
+                  columns:
+                    - b
+                  referencedschema: public
+                  referencedtable: t4
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+          views: []
+          functions: []
+          streams: []
+          tasks: []
+    characterset: ""
+    collation: ""
+    extensions: []
+    schemaconfigs: []
+  result: |+
+    CREATE TABLE public."t" (
+      "a" int NOT NULL,
+      CONSTRAINT t_a_check CHECK ("a" > 0)
+    );
+
+    CREATE TABLE public.t4 (
+      a varchar(10) NOT NULL DEFAULT 'default value',
+      c int NOT NULL,
+      e int ,
+      "b" char(10) NOT NULL
+    );
+    ALTER TABLE public.t4 ADD CONSTRAINT pk_t4_a_c_d PRIMARY KEY ("a", "b", "c");
+    ALTER TABLE public.t4 ADD CONSTRAINT fk_t4_a_t2_b FOREIGN KEY ("b") REFERENCES "public"."t2"("b");CREATE TABLE "public"."t2" (
+      "b" int NULL,
+      "a" int NULL
+    );
+    ALTER TABLE ONLY "public"."t2"
+        ADD CONSTRAINT "PRIMARY" PRIMARY KEY ("b");
+
+    ALTER TABLE ONLY "public"."t2"
+        ADD CONSTRAINT "fk_t2_b_t4_b" FOREIGN KEY ("b") REFERENCES "public"."t4"("b");
+
