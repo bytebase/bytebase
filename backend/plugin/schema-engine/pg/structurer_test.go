@@ -53,3 +53,45 @@ func TestParseToMetadata(t *testing.T) {
 		a.NoError(err)
 	}
 }
+
+type getSchemaDesignTest struct {
+	Baseline string
+	Target   *v1pb.DatabaseMetadata
+	Result   string
+}
+
+func TestGetSchemaDesign(t *testing.T) {
+	const (
+		record = true
+	)
+	var (
+		filepath = "testdata/get_design_schema.yaml"
+	)
+
+	a := require.New(t)
+	yamlFile, err := os.Open(filepath)
+	a.NoError(err)
+
+	tests := []getSchemaDesignTest{}
+	byteValue, err := io.ReadAll(yamlFile)
+	a.NoError(yamlFile.Close())
+	a.NoError(err)
+	a.NoError(yaml.Unmarshal(byteValue, &tests))
+
+	for i, t := range tests {
+		result, err := GetDesignSchema(t.Baseline, t.Target)
+		a.NoError(err)
+		if record {
+			tests[i].Result = result
+		} else {
+			a.Equal(t.Result, result)
+		}
+	}
+
+	if record {
+		byteValue, err := yaml.Marshal(tests)
+		a.NoError(err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		a.NoError(err)
+	}
+}

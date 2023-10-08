@@ -285,6 +285,7 @@ func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
 }
 
 type tableState struct {
+	ignoreTable bool
 	id          int
 	name        string
 	columns     map[string]*columnState
@@ -305,24 +306,29 @@ func (t *tableState) removeUnsupportedIndex() {
 	}
 }
 
-func (t *tableState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
-		return err
-	}
-	columns := []*columnState{}
-	for _, column := range t.columns {
-		columns = append(columns, column)
-	}
-	sort.Slice(columns, func(i, j int) bool {
-		return columns[i].id < columns[j].id
-	})
-	for i, column := range columns {
-		if i > 0 {
-			if _, err := buf.WriteString(",\n  "); err != nil {
+func (t *tableState) toString(buf *strings.Builder, schemaName string) error {
+	if !t.ignoreTable {
+		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE \"%s\".\"%s\" (\n  ", schemaName, t.name)); err != nil {
+			return err
+		}
+		columns := []*columnState{}
+		for _, column := range t.columns {
+			columns = append(columns, column)
+		}
+		sort.Slice(columns, func(i, j int) bool {
+			return columns[i].id < columns[j].id
+		})
+		for i, column := range columns {
+			if i > 0 {
+				if _, err := buf.WriteString(",\n  "); err != nil {
+					return err
+				}
+			}
+			if err := column.toString(buf); err != nil {
 				return err
 			}
 		}
-		if err := column.toString(buf); err != nil {
+		if _, err := buf.WriteString("\n);\n"); err != nil {
 			return err
 		}
 	}
@@ -336,13 +342,11 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		return indexes[i].id < indexes[j].id
 	})
 
-	for i, index := range indexes {
-		if i+len(columns) > 0 {
-			if _, err := buf.WriteString(",\n  "); err != nil {
-				return err
-			}
+	for _, index := range indexes {
+		if err := index.toString(buf, schemaName, t.name); err != nil {
+			return err
 		}
-		if err := index.toString(buf); err != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
 	}
@@ -355,20 +359,15 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		return foreignKeys[i].id < foreignKeys[j].id
 	})
 
-	for i, fk := range foreignKeys {
-		if i+len(columns)+len(indexes) > 0 {
-			if _, err := buf.WriteString(",\n  "); err != nil {
-				return err
-			}
+	for _, fk := range foreignKeys {
+		if err := fk.toString(buf, schemaName, t.name); err != nil {
+			return err
 		}
-		if err := fk.toString(buf); err != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
 	}
 
-	if _, err := buf.WriteString("\n);\n"); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -464,13 +463,26 @@ func convertToForeignKeyState(id int, foreignKey *v1pb.ForeignKeyMetadata) *fore
 		id:                id,
 		name:              foreignKey.Name,
 		columns:           foreignKey.Columns,
+		referencedSchema:  foreignKey.ReferencedSchema,
 		referencedTable:   foreignKey.ReferencedTable,
 		referencedColumns: foreignKey.ReferencedColumns,
 	}
 }
 
-func (f *foreignKeyState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
+func (f *foreignKeyState) toString(buf *strings.Builder, schemaName, tableName string) error {
+	if _, err := buf.WriteString("ALTER TABLE ONLY \""); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(schemaName); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("\".\""); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(tableName); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("\"\n    ADD CONSTRAINT \""); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(f.name); err != nil {
@@ -507,7 +519,7 @@ func (f *foreignKeyState) toString(buf *strings.Builder) error {
 	if _, err := buf.WriteString(f.referencedTable); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(`" (`); err != nil {
+	if _, err := buf.WriteString(`"(`); err != nil {
 		return err
 	}
 	for i, column := range f.referencedColumns {
@@ -526,7 +538,7 @@ func (f *foreignKeyState) toString(buf *strings.Builder) error {
 			return err
 		}
 	}
-	if _, err := buf.WriteString(")"); err != nil {
+	if _, err := buf.WriteString(");\n"); err != nil {
 		return err
 	}
 	return nil
@@ -561,15 +573,9 @@ func convertToIndexState(id int, index *v1pb.IndexMetadata) *indexState {
 	}
 }
 
-func (i *indexState) toString(buf *strings.Builder) error {
+func (i *indexState) toString(buf *strings.Builder, schemaName, tableName string) error {
 	if i.primary {
-		if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
-			return err
-		}
-		if _, err := buf.WriteString(i.name); err != nil {
-			return err
-		}
-		if _, err := buf.WriteString(`" PRIMARY KEY (`); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE ONLY \"%s\".\"%s\"\n    ADD CONSTRAINT \"%s\" PRIMARY KEY (", schemaName, tableName, i.name)); err != nil {
 			return err
 		}
 		for i, key := range i.keys {
@@ -578,11 +584,17 @@ func (i *indexState) toString(buf *strings.Builder) error {
 					return err
 				}
 			}
-			if _, err := buf.WriteString(fmt.Sprintf(`"%s"`, key)); err != nil {
+			if _, err := buf.WriteString("\""); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString(key); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString("\""); err != nil {
 				return err
 			}
 		}
-		if _, err := buf.WriteString(")"); err != nil {
+		if _, err := buf.WriteString(");\n"); err != nil {
 			return err
 		}
 	}
@@ -678,6 +690,35 @@ func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, 
 	if listener.err != nil {
 		return "", listener.err
 	}
+	root, ok := tree.(*postgres.RootContext)
+	if !ok {
+		return "", errors.Errorf("failed to convert to RootContext")
+	}
+	if _, err := listener.result.WriteString(root.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: listener.lastTokenIndex,
+		Stop:  root.GetStop().GetTokenIndex(),
+	})); err != nil {
+		return "", err
+	}
+
+	// Follow the order of the input schema.
+	for _, schema := range to.Schemas {
+		schemaState, exists := listener.to.schemas[schema.Name]
+		if !exists {
+			continue
+		}
+		// Follow the order of the input table.
+		for _, table := range schema.Tables {
+			tableState, exists := schemaState.tables[table.Name]
+			if !exists {
+				continue
+			}
+			if err := tableState.toString(&listener.result, schema.Name); err != nil {
+				return "", err
+			}
+		}
+	}
+
 	return listener.result.String(), nil
 }
 
@@ -699,14 +740,14 @@ func (g *designSchemaGenerator) EnterCreatestmt(ctx *postgres.CreatestmtContext)
 	schema, exists := g.to.schemas[schemaName]
 	if !exists {
 		// Skip not found schema.
-		g.lastTokenIndex = ctx.GetStop().GetTokenIndex() + 1
+		g.lastTokenIndex = skipFollowingSemiIndex(ctx.GetParser().GetTokenStream(), ctx.GetStop().GetTokenIndex()+1)
 		return
 	}
 
 	table, exists := schema.tables[tableName]
 	if !exists {
 		// Skip not found table.
-		g.lastTokenIndex = ctx.GetStop().GetTokenIndex() + 1
+		g.lastTokenIndex = skipFollowingSemiIndex(ctx.GetParser().GetTokenStream(), ctx.GetStop().GetTokenIndex()+1)
 		return
 	}
 
@@ -727,7 +768,7 @@ func (g *designSchemaGenerator) EnterCreatestmt(ctx *postgres.CreatestmtContext)
 	g.columnDefine.Reset()
 	g.tableConstraints.Reset()
 
-	delete(schema.tables, tableName)
+	table.ignoreTable = true
 	// Write the text before the table element list.
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: ctx.GetStart().GetTokenIndex(),
@@ -765,50 +806,6 @@ func (g *designSchemaGenerator) ExitCreatestmt(ctx *postgres.CreatestmtContext) 
 		}
 	}
 
-	var indexList []*indexState
-	for _, index := range g.currentTable.indexes {
-		indexList = append(indexList, index)
-	}
-	sort.Slice(indexList, func(i, j int) bool {
-		return indexList[i].id < indexList[j].id
-	})
-	for _, index := range indexList {
-		if g.firstElementInTable {
-			g.firstElementInTable = false
-		} else {
-			if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
-				g.err = err
-				return
-			}
-		}
-		if err := index.toString(&g.tableConstraints); err != nil {
-			g.err = err
-			return
-		}
-	}
-
-	var fkList []*foreignKeyState
-	for _, fk := range g.currentTable.foreignKeys {
-		fkList = append(fkList, fk)
-	}
-	sort.Slice(fkList, func(i, j int) bool {
-		return fkList[i].id < fkList[j].id
-	})
-	for _, fk := range fkList {
-		if g.firstElementInTable {
-			g.firstElementInTable = false
-		} else {
-			if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
-				g.err = err
-				return
-			}
-		}
-		if err := fk.toString(&g.tableConstraints); err != nil {
-			g.err = err
-			return
-		}
-	}
-
 	if _, err := g.result.WriteString(g.columnDefine.String()); err != nil {
 		g.err = err
 		return
@@ -818,9 +815,277 @@ func (g *designSchemaGenerator) ExitCreatestmt(ctx *postgres.CreatestmtContext) 
 		return
 	}
 
-	g.lastTokenIndex = ctx.Opttableelementlist().GetStop().GetTokenIndex() + 1
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.Opttableelementlist().GetStop().GetTokenIndex() + 1,
+		Stop:  ctx.GetStop().GetTokenIndex(),
+	})); err != nil {
+		g.err = err
+		return
+	}
+	g.lastTokenIndex = ctx.GetStop().GetTokenIndex() + 1
 	g.currentTable = nil
 	g.firstElementInTable = false
+}
+
+func skipFollowingSemiIndex(stream antlr.TokenStream, index int) int {
+	for i := index; i < stream.Size(); i++ {
+		token := stream.Get(i)
+		if token.GetTokenType() == postgres.PostgreSQLParserSEMI {
+			return i + 1
+		}
+		if token.GetTokenType() == postgres.PostgreSQLParserEOF {
+			return i
+		}
+	}
+	return index
+}
+
+func (g *designSchemaGenerator) EnterAltertablestmt(ctx *postgres.AltertablestmtContext) {
+	if g.err != nil {
+		return
+	}
+
+	if ctx.TABLE() == nil || ctx.Alter_table_cmds() == nil || len(ctx.Alter_table_cmds().AllAlter_table_cmd()) != 1 {
+		// Skip other alter table statement for now.
+		return
+	}
+
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: g.lastTokenIndex,
+		Stop:  ctx.GetStart().GetTokenIndex() - 1,
+	})); err != nil {
+		g.err = err
+		return
+	}
+	g.lastTokenIndex = skipFollowingSemiIndex(ctx.GetParser().GetTokenStream(), ctx.GetStop().GetTokenIndex()+1)
+
+	schemaName, tableName, err := pgparser.NormalizePostgreSQLQualifiedNameAsTableName(ctx.Relation_expr().Qualified_name())
+	if err != nil {
+		g.err = err
+		return
+	}
+
+	schema, exists := g.to.schemas[schemaName]
+	if !exists {
+		// Skip not found schema.
+		return
+	}
+
+	table, exists := schema.tables[tableName]
+	if !exists {
+		// Skip not found table.
+		return
+	}
+
+	cmd := ctx.Alter_table_cmds().Alter_table_cmd(0)
+	switch {
+	case cmd.ADD_P() != nil && cmd.Tableconstraint() != nil:
+		constraint := cmd.Tableconstraint().Constraintelem()
+		switch {
+		case constraint.PRIMARY() != nil && constraint.KEY() != nil:
+			name := cmd.Tableconstraint().Name()
+			if name == nil {
+				g.err = errors.Errorf("primary key constraint must have a name")
+				return
+			}
+			nameText := pgparser.NormalizePostgreSQLColid(name.Colid())
+			index, exists := table.indexes[nameText]
+			if !exists {
+				// Skip not found primary key.
+				return
+			}
+			delete(table.indexes, nameText)
+			keys := extractColumnList(constraint.Columnlist())
+			if equalKeys(keys, index.keys) {
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: ctx.GetStart().GetTokenIndex(),
+					Stop:  g.lastTokenIndex - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+			} else {
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: ctx.GetStart().GetTokenIndex(),
+					Stop:  constraint.Columnlist().GetStart().GetTokenIndex() - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+				newKeys := []string{}
+				for _, key := range index.keys {
+					newKeys = append(newKeys, fmt.Sprintf(`"%s"`, key))
+				}
+				if _, err := g.result.WriteString(strings.Join(newKeys, ", ")); err != nil {
+					g.err = err
+					return
+				}
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: constraint.Columnlist().GetStop().GetTokenIndex() + 1,
+					Stop:  g.lastTokenIndex - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+			}
+		case constraint.FOREIGN() != nil && constraint.KEY() != nil:
+			name := cmd.Tableconstraint().Name()
+			if name == nil {
+				g.err = errors.Errorf("foreign key constraint must have a name")
+				return
+			}
+			nameText := pgparser.NormalizePostgreSQLColid(name.Colid())
+			fk, exists := table.foreignKeys[nameText]
+			if !exists {
+				// Skip not found foreign key.
+				return
+			}
+			delete(table.foreignKeys, nameText)
+			columns := extractColumnList(constraint.Columnlist())
+			referencedSchemaName, referencedTableName, err := pgparser.NormalizePostgreSQLQualifiedNameAsTableName(constraint.Qualified_name())
+			if err != nil {
+				g.err = err
+				return
+			}
+			referencedColumns := extractColumnList(constraint.Opt_column_list().Columnlist())
+			equal := equalKeys(columns, fk.columns) && equalKeys(referencedColumns, fk.referencedColumns) && referencedSchemaName == fk.referencedSchema && referencedTableName == fk.referencedTable
+			if equal {
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: ctx.GetStart().GetTokenIndex(),
+					Stop:  g.lastTokenIndex - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+			} else {
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: ctx.GetStart().GetTokenIndex(),
+					Stop:  constraint.Columnlist().GetStart().GetTokenIndex() - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+				newColumns := []string{}
+				for _, column := range fk.columns {
+					newColumns = append(newColumns, fmt.Sprintf(`"%s"`, column))
+				}
+				if _, err := g.result.WriteString(strings.Join(newColumns, ", ")); err != nil {
+					g.err = err
+					return
+				}
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: constraint.Columnlist().GetStop().GetTokenIndex() + 1,
+					Stop:  constraint.Qualified_name().GetStart().GetTokenIndex() - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+				if _, err := g.result.WriteString(fmt.Sprintf(`"%s"."%s"(`, fk.referencedSchema, fk.referencedTable)); err != nil {
+					g.err = err
+					return
+				}
+				newReferencedColumns := []string{}
+				for _, column := range fk.referencedColumns {
+					newReferencedColumns = append(newReferencedColumns, fmt.Sprintf(`"%s"`, column))
+				}
+				if _, err := g.result.WriteString(strings.Join(newReferencedColumns, ", ")); err != nil {
+					g.err = err
+					return
+				}
+				if _, err := g.result.WriteString(")"); err != nil {
+					g.err = err
+					return
+				}
+				if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: constraint.Opt_column_list().GetStop().GetTokenIndex() + 1,
+					Stop:  g.lastTokenIndex - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+			}
+		default:
+			if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: ctx.GetStart().GetTokenIndex(),
+				Stop:  g.lastTokenIndex - 1,
+			})); err != nil {
+				g.err = err
+				return
+			}
+		}
+	default:
+		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.GetStart().GetTokenIndex(),
+			Stop:  g.lastTokenIndex - 1,
+		})); err != nil {
+			g.err = err
+			return
+		}
+	}
+}
+
+func equalKeys(keys1, keys2 []string) bool {
+	if len(keys1) != len(keys2) {
+		return false
+	}
+	for i, key := range keys1 {
+		if key != keys2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func extractColumnList(columnList postgres.IColumnlistContext) []string {
+	result := []string{}
+	for _, item := range columnList.AllColumnElem() {
+		result = append(result, pgparser.NormalizePostgreSQLColid(item.Colid()))
+	}
+	return result
+}
+
+func (g *designSchemaGenerator) EnterTableconstraint(ctx *postgres.TableconstraintContext) {
+	if g.err != nil || g.currentTable == nil {
+		return
+	}
+
+	if g.firstElementInTable {
+		g.firstElementInTable = false
+	} else {
+		if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+			g.err = err
+			return
+		}
+	}
+	if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.GetStart().GetTokenIndex(),
+		Stop:  ctx.GetStop().GetTokenIndex(),
+	})); err != nil {
+		g.err = err
+		return
+	}
+}
+
+func (g *designSchemaGenerator) EnterTablelikeclause(ctx *postgres.TablelikeclauseContext) {
+	if g.err != nil || g.currentTable == nil {
+		return
+	}
+
+	if g.firstElementInTable {
+		g.firstElementInTable = false
+	} else {
+		if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+			g.err = err
+			return
+		}
+	}
+	if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.GetStart().GetTokenIndex(),
+		Stop:  ctx.GetStop().GetTokenIndex(),
+	})); err != nil {
+		g.err = err
+		return
+	}
 }
 
 func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
@@ -861,6 +1126,10 @@ func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 			g.err = err
 			return
 		}
+		if _, err := g.columnDefine.WriteString(column.tp); err != nil {
+			g.err = err
+			return
+		}
 	} else {
 		if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 			Start: ctx.GetStart().GetTokenIndex(),
@@ -870,27 +1139,38 @@ func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 			return
 		}
 	}
+	needOneSpace := false
 
-	if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-		Start: ctx.Typename().GetStop().GetTokenIndex() + 1,
-		Stop:  ctx.Colquallist().GetStart().GetTokenIndex() - 1,
-	})); err != nil {
-		g.err = err
-		return
+	// if there are other tokens between column type and column constraint, write them.
+	if ctx.Colquallist().GetStop().GetTokenIndex() > ctx.Colquallist().GetStart().GetTokenIndex() {
+		if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.Typename().GetStop().GetTokenIndex() + 1,
+			Stop:  ctx.Colquallist().GetStart().GetTokenIndex() - 1,
+		})); err != nil {
+			g.err = err
+			return
+		}
+	} else {
+		needOneSpace = true
 	}
 	startPos := ctx.Colquallist().GetStart().GetTokenIndex()
 
-	appended := false
-	if !column.nullable && nullableExists(ctx.Colquallist()) {
+	if !column.nullable && !nullableExists(ctx.Colquallist()) {
+		if needOneSpace {
+			if _, err := g.columnDefine.WriteString(" "); err != nil {
+				g.err = err
+				return
+			}
+		}
 		if _, err := g.columnDefine.WriteString("NOT NULL"); err != nil {
 			g.err = err
 			return
 		}
-		appended = true
+		needOneSpace = true
 	}
 
-	if column.defaultValue != nil && defaultExists(ctx.Colquallist()) {
-		if appended {
+	if column.defaultValue != nil && !defaultExists(ctx.Colquallist()) {
+		if needOneSpace {
 			if _, err := g.columnDefine.WriteString(" "); err != nil {
 				g.err = err
 				return
@@ -900,11 +1180,11 @@ func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 			g.err = err
 			return
 		}
-		appended = true
+		needOneSpace = true
 	}
 
 	for i, item := range ctx.Colquallist().AllColconstraint() {
-		if i == 0 && appended {
+		if i == 0 && needOneSpace {
 			if _, err := g.columnDefine.WriteString(" "); err != nil {
 				g.err = err
 				return
