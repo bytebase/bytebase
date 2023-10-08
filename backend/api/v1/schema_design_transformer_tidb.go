@@ -159,7 +159,7 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 	return in, false
 }
 
-// getIntOrBigIntStr returns the type string of tp.
+// columnTypeStr returns the type string of tp.
 func columnTypeStr(tp *tidbtypes.FieldType) string {
 	switch tp.GetType() {
 	// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLong
@@ -171,6 +171,13 @@ func columnTypeStr(tp *tidbtypes.FieldType) string {
 		// tp.String() return bigint(20)
 		return "bigint"
 	default:
+		str := tp.String()
+		if strings.Contains(str, "binary") {
+			tp.SetFlag(tidbmysql.BinaryFlag)
+			tp.SetCharset("binary")
+			tp.SetCollate("binary")
+			return tp.CompactStr()
+		}
 		return tp.String()
 	}
 }
@@ -225,6 +232,9 @@ func tidbRestoreNodeDefault(node tidbast.Node) (string, error) {
 }
 
 func tidbRestoreFieldType(fieldType *tidbtypes.FieldType) (string, error) {
+	if strings.Contains(fieldType.String(), "binary") {
+		return fieldType.CompactStr(), nil
+	}
 	var buffer strings.Builder
 	flag := tidbformat.RestoreKeyWordLowercase
 	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
@@ -870,6 +880,11 @@ func tidbNewFieldType(tp string) *tidbtypes.FieldType {
 	decimalInt, _ := strconv.Atoi(string(decimal))
 	if decimalInt > 0 {
 		ft.SetDecimal(decimalInt)
+	}
+	if strings.Contains(tpStr, "binary") {
+		ft.SetFlag(tidbmysql.BinaryFlag)
+		ft.SetCharset("binary")
+		ft.SetCollate("binary")
 	}
 	return ft
 }
