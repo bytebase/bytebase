@@ -77,17 +77,6 @@
                 'font-semibold': isAssigneeAttentionOn(issue),
               }"
             >
-              <template
-                v-if="
-                  issue.projectEntity.workflow == Workflow.VCS &&
-                  issue.creatorEntity.name === SYSTEM_BOT_USER_NAME
-                "
-              >
-                <VCSIcon
-                  custom-class="h-4 mr-2 w-auto"
-                  :type="getIssueVCSType(issue)"
-                />
-              </template>
               <span
                 v-for="(item, index) in issueHighlightSections(
                   issue.title,
@@ -177,11 +166,7 @@ import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1
 import IssueStatusIcon from "@/components/IssueV1/components/IssueStatusIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { useCurrentUserV1, useRepositoryV1Store, useVCSV1Store } from "@/store";
-import { type ComposedIssue, SYSTEM_BOT_USER_NAME } from "@/types";
-import {
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
+import { type ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Workflow } from "@/types/proto/v1/project_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
@@ -280,16 +265,6 @@ const issueTaskStatus = (issue: ComposedIssue) => {
   }
 
   return activeTaskInRollout(issue.rolloutEntity).status;
-};
-
-const getIssueVCSType = (issue: ComposedIssue): ExternalVersionControl_Type => {
-  const repository = repositoryV1Store.getRepositoryByProject(
-    issue.projectEntity.name
-  );
-  const vcs =
-    vcsV1Store.getVCSByUid(repository?.vcsUid ?? "") ??
-    ({} as ExternalVersionControl);
-  return vcs.type;
 };
 
 watchEffect(async () => {
