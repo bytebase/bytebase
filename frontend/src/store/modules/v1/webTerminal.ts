@@ -209,6 +209,7 @@ const createStreamingQueryController = (tab: TabInfo) => {
         events.emit("result", {
           error: "",
           advices: [],
+          allowExport: false,
           ...response,
         });
       },

@@ -8,6 +8,7 @@
       <template v-if="viewMode === 'SINGLE-RESULT'">
         <SingleResultViewV1
           :params="executeParams"
+          :sql-result-set="resultSet"
           :result="resultSet.results[0]"
           :set-index="0"
         />
@@ -26,6 +27,7 @@
           >
             <SingleResultViewV1
               :params="executeParams"
+              :sql-result-set="resultSet"
               :result="result"
               :set-index="i"
             />

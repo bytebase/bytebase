@@ -2045,7 +2045,10 @@
         }
       }
     },
-    "filter-by-name": "Filter by name"
+    "filter-by-name": "Filter by name",
+    "batch-query": {
+      "description": "Batch query additional databases with the same label values."
+    }
   },
   "schema-editor": {
     "self": "Schema Editor",
