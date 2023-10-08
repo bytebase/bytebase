@@ -263,7 +263,10 @@
     "merge": "Combinar",
     "info": "Información",
     "minutes": "Minutos",
-    "go-to-configure": "Configurar"
+    "go-to-configure": "Configurar",
+    "updated-at-by": "Actualizado {time} por {user}",
+    "created-at-by": "Creado {time} por {user}",
+    "filter-by-name": "Filtrar por nombre"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2557,7 +2560,8 @@
     "idp": "Proveedor de Identidad",
     "role": "Rol",
     "database-group": "grupo de bases de datos",
-    "schema-group": "grupo de mesas"
+    "schema-group": "grupo de mesas",
+    "changelist": "Lista de cambios"
   },
   "resource-id": {
     "self": "ID de {resource}",
@@ -3042,5 +3046,45 @@
       "column_name": "Nombre de columna",
       "classification_level": "Nivel de clasificación"
     }
+  },
+  "changelist": {
+    "self": "Lista de cambios",
+    "changelists": "Listas de cambios",
+    "change-center": "Centro de cambios",
+    "new": "Nueva lista de cambios",
+    "name": "Nombre de la lista de cambios",
+    "name-placeholder": "Mi lista de cambios",
+    "error": {
+      "project-is-required": "Se requiere proyecto",
+      "name-is-required": "El nombre de la lista de cambios es obligatorio",
+      "invalid-resource-id": "ID de recurso no válido",
+      "nothing-changed": "nada ha cambiado",
+      "sql-cannot-be-empty": "Se requiere SQL",
+      "select-at-least-one-change": "Seleccione al menos un cambio",
+      "select-at-least-one-change-to-export": "Seleccione al menos un cambio para exportar",
+      "add-at-least-one-change": "Añade al menos un cambio",
+      "select-at-least-one-database": "Seleccione al menos una base de datos",
+      "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción."
+    },
+    "apply-to-database": "Aplicar a la base de datos",
+    "add-change": {
+      "self": "Agregar cambio",
+      "change-history": {
+        "select-at-least-one-history-below": "Seleccione al menos un historial a continuación"
+      },
+      "branch": {
+        "select-at-least-one-branch-below": "Seleccione al menos una sucursal a continuación"
+      }
+    },
+    "change-source": {
+      "self": "Cambiar fuente",
+      "raw-sql": "SQL sin formato",
+      "change-history": {
+        "tables": "Mesas"
+      },
+      "source": "Fuente"
+    },
+    "confirm-remove-change": "¿Eliminar este cambio?",
+    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
   }
 }

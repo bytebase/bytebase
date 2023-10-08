@@ -5,6 +5,7 @@ import { type _RouteLocationBase } from "vue-router";
 import { rolloutServiceClient } from "@/grpcweb";
 import { TemplateType } from "@/plugins";
 import {
+  useChangelistStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
@@ -29,6 +30,7 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import {
   extractSheetUID,
+  generateSQLForChangeToDatabase,
   getSheetStatement,
   setSheetNameForTask,
   setSheetStatement,
@@ -100,7 +102,14 @@ export const buildPlan = async (params: CreateIssueParams) => {
     uid: nextUID(),
   });
   plan.name = `${project.name}/plans/${plan.uid}`;
-  if (route.query.mode === "tenant") {
+  if (route.query.changelist) {
+    // build plan for changelist
+    plan.steps = await buildStepsViaChangelist(
+      databaseUIDList,
+      route.query.changelist as string,
+      params
+    );
+  } else if (route.query.mode === "tenant") {
     // in tenant mode, all specs share a unique sheet
     const sheetUID = nextUID();
     // build tenant plan
@@ -122,11 +131,7 @@ export const buildPlan = async (params: CreateIssueParams) => {
     }
   } else {
     // build standard plan
-    plan.steps = await buildSteps(
-      databaseUIDList,
-      params,
-      undefined // each spec should has an independent sheet
-    );
+    plan.steps = await buildSteps(databaseUIDList, params, undefined);
   }
   return plan;
 };
@@ -216,6 +221,60 @@ export const buildStepsViaDeploymentConfig = async (
     specs: [spec],
   });
   return [step];
+};
+
+export const buildStepsViaChangelist = async (
+  databaseUIDList: string[],
+  changelistResourceName: string,
+  params: CreateIssueParams
+) => {
+  const changelist = await useChangelistStore().getOrFetchChangelistByName(
+    changelistResourceName
+  );
+  const { changes } = changelist;
+
+  const databaseList = databaseUIDList.map((uid) =>
+    useDatabaseV1Store().getDatabaseByUID(uid)
+  );
+
+  const databaseListGroupByEnvironment = groupBy(
+    databaseList,
+    (db) => db.effectiveEnvironment
+  );
+  const stageList = orderBy(
+    Object.keys(databaseListGroupByEnvironment).map((env) => {
+      const environment = useEnvironmentV1Store().getEnvironmentByName(env);
+      const databases = databaseListGroupByEnvironment[env];
+      return {
+        environment,
+        databases,
+      };
+    }),
+    [(stage) => stage.environment?.order],
+    ["asc"]
+  );
+
+  const steps: Plan_Step[] = [];
+  for (let i = 0; i < stageList.length; i++) {
+    const step = Plan_Step.fromJSON({});
+    const { databases } = stageList[i];
+    for (let j = 0; j < databases.length; j++) {
+      const db = databases[j];
+      for (let k = 0; k < changes.length; k++) {
+        const change = changes[k];
+        const statement = await generateSQLForChangeToDatabase(change, db);
+        const sheetUID = nextUID();
+        const sheetName = `${params.project.name}/sheets/${sheetUID}`;
+        const sheet = getLocalSheetByName(sheetName);
+        setSheetStatement(sheet, statement);
+        const spec = await buildSpecForTarget(db.name, params, sheetUID);
+        step.specs.push(spec);
+      }
+    }
+    steps.push(step);
+  }
+
+  return steps;
 };
 
 export const buildSpecForTarget = async (

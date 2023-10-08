@@ -39,6 +39,7 @@ import {
   useInstanceV1Store,
   useDatabaseV1Store,
   useChangeHistoryStore,
+  useChangelistStore,
 } from "@/store";
 import {
   DEFAULT_PROJECT_ID,
@@ -234,6 +235,35 @@ const routes: Array<RouteRecordRaw> = [
             components: {
               content: () =>
                 import("../views/SlowQuery/SlowQueryDashboard.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
+            path: "changelists",
+            name: "workspace.changelist.dashboard",
+            meta: { title: () => t("changelist.changelists") },
+            components: {
+              content: () => import("../views/Changelist/ChangelistDashboard/"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
+            path: "/projects/:projectName/changelists/:changelistName",
+            name: "workspace.changelist.detail",
+            meta: {
+              allowBookmark: true,
+              overrideTitle: true,
+            },
+            components: {
+              content: () => import("../views/Changelist/ChangelistDetail/"),
               leftSidebar: DashboardSidebar,
             },
             props: {
@@ -1293,6 +1323,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
     to.name === "workspace.slow-query" ||
+    to.name === "workspace.changelist.dashboard" ||
     to.name === "workspace.sync-schema" ||
     to.name === "workspace.export-center" ||
     to.name === "workspace.anomaly-center" ||
@@ -1598,6 +1629,31 @@ router.beforeEach((to, from, next) => {
         .then(() => next())
         .catch(() => next());
     }
+    return;
+  }
+
+  if (to.name === "workspace.changelist.detail") {
+    const name = `projects/${to.params.projectName}/changelists/${to.params.changelistName}`;
+    useChangelistStore()
+      .fetchChangelistByName(name)
+      .then((changelist) => {
+        if (changelist) {
+          next();
+        } else {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          return;
+        }
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
     return;
   }
 
