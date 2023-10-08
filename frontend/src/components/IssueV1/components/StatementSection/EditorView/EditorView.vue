@@ -135,7 +135,7 @@
   </div>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
+    :open="state.showFeatureModal"
     feature="bb.feature.sql-review"
     @cancel="state.showFeatureModal = false"
   />

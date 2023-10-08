@@ -272,8 +272,8 @@
   />
 
   <FeatureModal
-    :open="state.showFeatureModal && state.feature"
-    :feature="state.feature"
+    :open="state.showFeatureModal && !!state.feature"
+    :feature="(state.feature as FeatureType)"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -299,7 +299,7 @@ import {
   useProjectV1ListByCurrentUser,
   useSubscriptionV1Store,
 } from "@/store";
-import { QuickActionType } from "@/types";
+import { QuickActionType, FeatureType } from "@/types";
 import { idFromSlug } from "@/utils";
 
 interface LocalState {
