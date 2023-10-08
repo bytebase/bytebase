@@ -206,6 +206,7 @@
     "pitr": "PITR",
     "fix": "Corregir",
     "go-now": "Ir ahora",
+    "sync": "Sincronizar",
     "sync-now": "Sincronizar ahora",
     "show-help": "Mostrar ayuda",
     "success": "Éxito",
@@ -1333,6 +1334,7 @@
     "select-branch": "Seleccione una rama",
     "delete-this-branch": "Eliminar esta rama",
     "table-detail": "Detalle de la tabla",
+    "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
     "backup-name": "Nombre de la copia de seguridad",
     "create-backup": "Crear copia de seguridad",
@@ -1429,6 +1431,7 @@
     "unassigned-databases": "Bases de datos no asignadas",
     "restore-database": "Restaurar base de datos",
     "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
+    "select-databases-from-same-project": "Por favor seleccione bases de datos del mismo proyecto",
     "sync-schema": {
       "title": "Sincronizar esquema",
       "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino",

@@ -112,7 +112,7 @@
   <template v-else>
     <!-- single stage view -->
     <slot name="header"></slot>
-    <DatabaseTable
+    <DatabaseV1Table
       mode="PROJECT_SHORT"
       table-class="border"
       :custom-click="true"
