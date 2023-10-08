@@ -6,6 +6,7 @@ import { fromEventPattern, map, Observable, Subscription } from "rxjs";
 import { markRaw, ref } from "vue";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import {
+  ComposedDatabase,
   SQLResultSetV1,
   StreamingQueryController,
   TabInfo,
@@ -24,6 +25,7 @@ import {
   extractGrpcErrorMessage,
   getErrorCode as extractGrpcStatusCode,
 } from "@/utils/grpcweb";
+import { databaseNamePrefix } from "./common";
 import { useDatabaseV1Store } from "./database";
 import { useInstanceV1Store } from "./instance";
 
@@ -93,10 +95,9 @@ const createStreamingQueryController = (tab: TabInfo) => {
   };
 
   events.on("query", (params) => {
-    const request = mapRequest(tab, params);
-    console.debug("query", request);
-
-    if (status.value === "DISCONNECTED") {
+    const requests = mapRequests(tab, params);
+    console.debug("query", requests);
+    for (const request of requests) {
       $ws.value = connect(request);
     }
   });
@@ -104,7 +105,16 @@ const createStreamingQueryController = (tab: TabInfo) => {
   const connect = (
     initialRequest: AdminExecuteRequest | undefined = undefined
   ) => {
-    const request$ = input$.pipe(map((params) => mapRequest(tab, params)));
+    const databaseName = `${initialRequest?.name}/${databaseNamePrefix}${initialRequest?.connectionDatabase}`;
+    const request$ = input$.pipe(
+      map((params) =>
+        mapRequests(tab, params).find(
+          (request) =>
+            request.name === initialRequest?.name &&
+            request.connectionDatabase === initialRequest?.connectionDatabase
+        )
+      )
+    );
     const abortController = new AbortController();
 
     const url = new URL(`${window.location.origin}${ENDPOINT}`);
@@ -136,7 +146,9 @@ const createStreamingQueryController = (tab: TabInfo) => {
         }
         requestSubscription = request$.subscribe({
           next(request) {
-            send(request);
+            if (request) {
+              send(request);
+            }
           },
         });
       });
@@ -206,11 +218,15 @@ const createStreamingQueryController = (tab: TabInfo) => {
             Object.assign(result, mockAffectedV1Rows0());
           }
         });
-        events.emit("result", {
+        const result = {
           error: "",
           advices: [],
           allowExport: false,
           ...response,
+        };
+        events.emit("resultOfDatabase", {
+          databaseName: databaseName,
+          result: result,
         });
       },
       error(error) {
@@ -227,7 +243,10 @@ const createStreamingQueryController = (tab: TabInfo) => {
           result.error = "Aborted";
         }
 
-        events.emit("result", result);
+        events.emit("resultOfDatabase", {
+          databaseName: databaseName,
+          result: result,
+        });
         status.value = "DISCONNECTED";
       },
     });
@@ -268,11 +287,28 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
     activeQuery().status = "RUNNING";
   });
 
-  qs.controller.events.on("result", (resultSet) => {
-    console.debug("event resultSet", resultSet);
-    activeQuery().resultSet = resultSet;
-    cleanup();
-  });
+  qs.controller.events.on(
+    "resultOfDatabase",
+    ({
+      databaseName,
+      result,
+    }: {
+      databaseName: string;
+      result: SQLResultSetV1;
+    }) => {
+      if (!activeQuery().databaseQueryResultMap) {
+        activeQuery().databaseQueryResultMap = new Map();
+      }
+      activeQuery().databaseQueryResultMap?.set(databaseName, result);
+      const batchQueryDatabases = getBatchQueryDatabasesFromTab(qs.tab);
+      if (
+        activeQuery().databaseQueryResultMap?.size ===
+        batchQueryDatabases.length
+      ) {
+        cleanup();
+      }
+    }
+  );
 };
 
 export const mockAffectedV1Rows0 = (): QueryResult => {
@@ -294,22 +330,77 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
   });
 };
 
-const mapRequest = (
+const mapRequests = (
   tab: TabInfo,
   params: WebTerminalQueryParamsV1
-): AdminExecuteRequest => {
+): AdminExecuteRequest[] => {
   const { option, query } = params;
-
   const { instanceId, databaseId } = tab.connection;
   const instance = useInstanceV1Store().getInstanceByUID(instanceId);
   const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
-  const request = AdminExecuteRequest.fromJSON({
-    name: instance.name,
-    connectionDatabase:
-      database.uid === String(UNKNOWN_ID) ? "" : database.databaseName,
-    statement: option?.explain ? `EXPLAIN ${query}` : query,
+  const databaseName =
+    database.uid === String(UNKNOWN_ID) ? "" : database.databaseName;
+  const batchQueryDatabases = getBatchQueryDatabasesFromTab(tab);
+  const requests = batchQueryDatabases.map((database) => {
+    const isUnknownDatabase = database.uid === String(UNKNOWN_ID);
+    return AdminExecuteRequest.fromPartial({
+      name: isUnknownDatabase ? instance.name : database.instanceEntity.name,
+      connectionDatabase: isUnknownDatabase
+        ? databaseName
+        : database.databaseName,
+      statement: option?.explain ? `EXPLAIN ${query}` : query,
+    });
   });
-  return request;
+  return requests;
+};
+
+const getBatchQueryDatabasesFromTab = (tab: TabInfo) => {
+  const batchQueryContext = tab.batchQueryContext;
+  const selectedDatabase = useDatabaseV1Store().getDatabaseByUID(
+    tab.connection.databaseId
+  );
+  const databaseName =
+    selectedDatabase.uid === String(UNKNOWN_ID)
+      ? ""
+      : selectedDatabase.databaseName;
+  const batchQueryDatabases: ComposedDatabase[] = [selectedDatabase];
+
+  // Check if the user selects multiple databases to query.
+  if (
+    databaseName &&
+    batchQueryContext &&
+    batchQueryContext.selectedLabels.length > 0
+  ) {
+    const databases = useDatabaseV1Store().databaseListByProject(
+      selectedDatabase.project
+    );
+    for (const database of databases) {
+      if (database.name === selectedDatabase.name) {
+        continue;
+      }
+      const matched = batchQueryContext.selectedLabels.find((labelString) => {
+        // Filter out the environment label.
+        const keys = Object.keys(database.labels).filter((key) => {
+          return key !== "bb.environment";
+        });
+        return keys
+          .map((key) => {
+            return {
+              key,
+              value: database.labels[key],
+            };
+          })
+          .find((label) => {
+            return `${label.key}-${label.value}` === labelString;
+          });
+      });
+      if (matched) {
+        batchQueryDatabases.push(database);
+      }
+    }
+  }
+
+  return batchQueryDatabases;
 };
 
 export const parseDuration = (str: string): Duration | undefined => {

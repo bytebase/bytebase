@@ -28,7 +28,10 @@ export type WebTerminalQueryItemV1 = {
   id: string;
   sql: string;
   params?: WebTerminalQueryParamsV1;
-  resultSet?: SQLResultSetV1;
+  // databaseQueryResultMap is used to store the query result of each database.
+  // It's used for the case that the user selects multiple databases to query.
+  // The key is the databaseName. Format: instances/{instance}/databases/{database}
+  databaseQueryResultMap?: Map<string, SQLResultSetV1>;
   status: "IDLE" | "RUNNING" | "FINISHED";
 };
 
@@ -42,6 +45,10 @@ export type QueryTimer = {
 export type QueryEvents = Emittery<{
   query: WebTerminalQueryParamsV1;
   result: SQLResultSetV1;
+  resultOfDatabase: {
+    databaseName: string;
+    result: SQLResultSetV1;
+  };
 }>;
 
 export type StreamingQueryController = {

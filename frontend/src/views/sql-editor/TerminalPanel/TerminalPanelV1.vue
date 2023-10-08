@@ -28,20 +28,16 @@
             @history="handleHistory"
             @clear-screen="handleClearScreen"
           />
-          <ResultViewV1
-            v-if="query.params && query.resultSet"
-            class="max-h-[20rem] flex-1 flex flex-col overflow-hidden"
-            :execute-params="query.params"
-            :result-set="query.resultSet"
-            :loading="query.status === 'RUNNING'"
-            :dark="true"
-          />
-
           <div
-            v-if="query.resultSet?.error"
-            class="p-2 pb-1 text-md font-normal text-[var(--color-matrix-green-hover)]"
+            class="relative max-h-[20rem] flex-1 flex flex-col overflow-hidden"
           >
-            {{ $t("sql-editor.connection-lost") }}
+            <ResultPanel
+              v-if="query.params && query.databaseQueryResultMap"
+              :key="query.id"
+              :database-query-result-map="query.databaseQueryResultMap"
+              :execute-params="query.params"
+              :dark="true"
+            />
           </div>
 
           <div
@@ -73,8 +69,8 @@ import {
   EditorAction,
   ConnectionPathBar,
   ConnectionHolder,
-  ResultViewV1,
 } from "../EditorCommon";
+import ResultPanel from "../ResultPanel";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import { useAttractFocus } from "./useAttractFocus";
 import { useHistory } from "./useHistory";

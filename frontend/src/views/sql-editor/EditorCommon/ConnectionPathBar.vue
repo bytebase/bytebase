@@ -165,11 +165,7 @@ const showReadonlyDatasourceHint = computed(() => {
 });
 
 const showBatchQuerySelector = computed(() => {
-  return (
-    selectedProject.value.tenantMode === TenantMode.TENANT_MODE_ENABLED &&
-    // TODO(steven): implement batch query in admin mode.
-    currentTab.value.mode !== TabMode.Admin
-  );
+  return selectedProject.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
 const currentUserV1 = useCurrentUserV1();

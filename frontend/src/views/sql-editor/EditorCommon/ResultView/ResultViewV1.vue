@@ -1,9 +1,5 @@
 <template>
-  <NConfigProvider
-    v-bind="naiveUIConfig"
-    class="relative flex flex-col justify-start items-start p-2 pb-1"
-    :class="dark && 'dark bg-dark-bg'"
-  >
+  <div class="relative flex flex-col justify-start items-start p-2 pb-1">
     <template v-if="executeParams && resultSet && !showPlaceholder">
       <template v-if="viewMode === 'SINGLE-RESULT'">
         <SingleResultViewV1
@@ -71,15 +67,14 @@
     >
       <DetailPanel v-if="detail.show" :result-set="resultSet" />
     </Drawer>
-  </NConfigProvider>
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { darkTheme, NConfigProvider, NTabs, NTabPane } from "naive-ui";
+import { NTabs, NTabPane } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, PropType, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
-import { darkThemeOverrides } from "@/../naive-ui.config";
 import { Drawer } from "@/components/v2";
 import {
   useCurrentUserV1,
@@ -150,13 +145,6 @@ const viewMode = computed((): ViewMode => {
     return "SINGLE-RESULT";
   }
   return "MULTI-RESULT";
-});
-
-const naiveUIConfig = computed(() => {
-  if (props.dark) {
-    return { theme: darkTheme, themeOverrides: darkThemeOverrides.value };
-  }
-  return {};
 });
 
 const showPlaceholder = computed(() => {

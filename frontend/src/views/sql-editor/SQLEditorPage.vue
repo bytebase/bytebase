@@ -42,7 +42,7 @@
 
         <div class="w-full flex-1 overflow-hidden">
           <template v-if="allowAccess">
-            <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
+            <template v-if="currentTab.mode === TabMode.ReadOnly">
               <Splitpanes
                 v-if="allowReadOnlyMode"
                 horizontal
@@ -76,7 +76,14 @@
                   </div>
                 </Pane>
                 <Pane v-if="!isDisconnected" class="relative" :size="40">
-                  <ResultPanel />
+                  <ResultPanel
+                    :key="currentTab.id"
+                    class="absolute inset-0"
+                    :database-query-result-map="
+                      currentTab.databaseQueryResultMap
+                    "
+                    :execute-params="currentTab.executeParams"
+                  />
                 </Pane>
               </Splitpanes>
 
@@ -101,9 +108,7 @@
               </div>
             </template>
 
-            <TerminalPanelV1
-              v-if="tabStore.currentTab.mode === TabMode.Admin"
-            />
+            <TerminalPanelV1 v-if="currentTab.mode === TabMode.Admin" />
           </template>
           <div
             v-else
@@ -210,8 +215,10 @@ const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
 
 const { width: windowWidth } = useWindowSize();
 
+const currentTab = computed(() => tabStore.currentTab);
+
 const allowAccess = computed(() => {
-  const { databaseId } = tabStore.currentTab.connection;
+  const { databaseId } = currentTab.value.connection;
   const database = databaseStore.getDatabaseByUID(databaseId);
   if (database.uid === String(UNKNOWN_ID)) {
     // Allowed if connected to an instance
@@ -221,7 +228,7 @@ const allowAccess = computed(() => {
 });
 
 const { instance } = useInstanceV1ByUID(
-  computed(() => tabStore.currentTab.connection.instanceId)
+  computed(() => currentTab.value.connection.instanceId)
 );
 
 const allowReadOnlyMode = computed(() => {

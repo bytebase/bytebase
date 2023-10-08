@@ -25,6 +25,12 @@ export type TabSheetType =
 
 export type EditMode = "SQL-EDITOR" | "CHAT-TO-SQL";
 
+export interface ExecuteParams {
+  query: string;
+  config: ExecuteConfig;
+  option?: Partial<ExecuteOption>;
+}
+
 export interface BatchQueryContext {
   selectedLabels: string[];
 }
@@ -39,11 +45,7 @@ export interface TabInfo {
   selectedStatement: string;
   mode: TabMode;
   editMode: EditMode;
-  executeParams?: {
-    query: string;
-    config: ExecuteConfig;
-    option?: Partial<ExecuteOption>;
-  };
+  executeParams?: ExecuteParams;
   isExecutingSQL: boolean;
   sheetName?: string;
   isFreshNew?: boolean;
