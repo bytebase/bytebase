@@ -1,6 +1,6 @@
 <template>
-  <!-- it is recommended by naive-ui that we leave the local to null when the language is en -->
   <NConfigProvider
+    v-if="initialized"
     :key="key"
     :locale="generalLang"
     :date-locale="dateLang"
@@ -27,10 +27,18 @@
 </template>
 
 <script lang="ts" setup>
+import { useLocalStorage } from "@vueuse/core";
 import { NConfigProvider, NDialogProvider } from "naive-ui";
 import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
-import { reactive, watchEffect, onErrorCaptured, watch } from "vue";
+import {
+  reactive,
+  watchEffect,
+  onErrorCaptured,
+  watch,
+  onMounted,
+  ref,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import HelpDrawer from "@/components/HelpDrawer";
 import Watermark from "@/components/misc/Watermark.vue";
@@ -70,12 +78,30 @@ const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const route = useRoute();
 const router = useRouter();
+const initialized = ref(false);
 
 const state = reactive<LocalState>({
   notificationList: [],
   prevLoggedIn: authStore.isLoggedIn(),
   helpTimer: undefined,
   RouteMapList: null,
+});
+
+onMounted(() => {
+  const searchParams = new URLSearchParams(window.location.search);
+  let colorAccent = searchParams.get("colorAccent") || "";
+  const cachedColorAccent = useLocalStorage<string>(
+    "bb.theme.color-accent",
+    ""
+  );
+  if (!colorAccent && cachedColorAccent.value) {
+    colorAccent = cachedColorAccent.value;
+  }
+  if (colorAccent) {
+    cachedColorAccent.value = colorAccent;
+    document.documentElement.style.setProperty("--color-accent", colorAccent);
+  }
+  initialized.value = true;
 });
 
 setInterval(() => {
