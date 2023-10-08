@@ -262,7 +262,10 @@
     "merge": "合并",
     "info": "信息",
     "minutes": "分钟",
-    "go-to-configure": "去配置"
+    "go-to-configure": "去配置",
+    "updated-at-by": "由 {user} 更新于 {time}",
+    "created-at-by": "由 {user} 创建于 {time}",
+    "filter-by-name": "按名称过滤"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2043,7 +2046,10 @@
         }
       }
     },
-    "filter-by-name": "根据名称过滤"
+    "filter-by-name": "根据名称过滤",
+    "batch-query": {
+      "description": "批量查询具有相同标签值的其他数据库。"
+    }
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2560,7 +2566,8 @@
     "idp": "身份提供商",
     "role": "角色",
     "database-group": "数据库分组",
-    "schema-group": "表分组"
+    "schema-group": "表分组",
+    "changelist": "变更列表"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -3040,5 +3047,45 @@
       "column_name": "字段名称",
       "classification_level": "数据分级"
     }
+  },
+  "changelist": {
+    "self": "变更列表",
+    "changelists": "变更列表",
+    "change-center": "变更中心",
+    "new": "新建变更列表",
+    "name": "变更列表名称",
+    "name-placeholder": "我的变更列表",
+    "error": {
+      "project-is-required": "项目不能为空",
+      "name-is-required": "变更列表名称不能为空",
+      "invalid-resource-id": "无效的资源 ID",
+      "nothing-changed": "无任何改变",
+      "sql-cannot-be-empty": "SQL 不能为空",
+      "select-at-least-one-change": "选择至少一条变更",
+      "select-at-least-one-change-to-export": "至少选择一项要导出的变更",
+      "add-at-least-one-change": "添加至少一项变更",
+      "select-at-least-one-database": "至少选择一个数据库",
+      "you-are-not-allowed-to-perform-this-action": "你无权执行此操作"
+    },
+    "apply-to-database": "应用到数据库",
+    "add-change": {
+      "self": "添加变更",
+      "change-history": {
+        "select-at-least-one-history-below": "请在下方选择至少一条记录"
+      },
+      "branch": {
+        "select-at-least-one-branch-below": "请在下方选择至少一条记录"
+      }
+    },
+    "change-source": {
+      "self": "变更来源",
+      "raw-sql": "SQL 语句",
+      "change-history": {
+        "tables": "表"
+      },
+      "source": "来源"
+    },
+    "confirm-remove-change": "移除这项变更？",
+    "confirm-delete-changelist": "删除变更列表？"
   }
 }

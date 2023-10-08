@@ -192,6 +192,7 @@ const props = defineProps<{
     config: ExecuteConfig;
     option?: Partial<ExecuteOption> | undefined;
   };
+  sqlResultSet: SQLResultSetV1;
   result: QueryResult;
   setIndex: number;
 }>();
@@ -255,7 +256,7 @@ const allowToExportData = computed(() => {
     return true;
   }
 
-  return currentTab.value.sqlResultSet?.allowExport || false;
+  return props.sqlResultSet?.allowExport || false;
 });
 
 // use a debounced value to improve performance when typing rapidly
@@ -352,13 +353,13 @@ const showVisualizeButton = computed((): boolean => {
 
 const visualizeExplain = () => {
   try {
-    const { executeParams, sqlResultSet } = tabStore.currentTab;
-    if (!executeParams || !sqlResultSet) return;
+    const { executeParams } = tabStore.currentTab;
+    if (!executeParams || !props.sqlResultSet) return;
 
     const statement = executeParams.query || "";
     if (!statement) return;
 
-    const explain = explainFromSQLResultSetV1(sqlResultSet);
+    const explain = explainFromSQLResultSetV1(props.sqlResultSet);
     if (!explain) return;
 
     const token = createExplainToken(statement, explain);

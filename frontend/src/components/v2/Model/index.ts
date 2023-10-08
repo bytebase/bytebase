@@ -9,12 +9,14 @@ import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 import ProjectName from "./ProjectName.vue";
 import ProjectV1Name from "./ProjectV1Name.vue";
 import ProjectV1Table from "./ProjectV1Table.vue";
+import RichDatabaseName from "./RichDatabaseName.vue";
 
 export * from "./Instance";
 export * from "./User";
 export {
   DatabaseName,
   DatabaseV1Name,
+  RichDatabaseName,
   DatabaseV1Table,
   EnvironmentName,
   EnvironmentV1Name,

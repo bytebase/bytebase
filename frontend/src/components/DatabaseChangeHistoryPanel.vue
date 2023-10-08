@@ -120,7 +120,7 @@ import { BBTableSectionDataSource } from "@/bbkit/types";
 import { ChangeHistoryTable } from "@/components/ChangeHistory";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
-import { AffectedTable } from "@/types/changeHistory";
+import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
 import {
   ChangeHistory,
   ChangeHistory_Status,
@@ -133,12 +133,6 @@ import {
   instanceV1HasAlterSchema,
   getHistoryChangeType,
 } from "@/utils";
-
-const EmptyAffectedTable: AffectedTable = {
-  schema: "",
-  table: "",
-  dropped: false,
-};
 
 interface LocalState {
   showBaselineModal: boolean;

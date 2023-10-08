@@ -3,7 +3,8 @@
     <InstanceV1Name
       :instance="database.instanceEntity"
       :plain="true"
-      text-class="hover:underline"
+      :link="link"
+      :text-class="link ? 'hover:underline' : ''"
     >
       <template
         v-if="
@@ -15,7 +16,8 @@
           :environment="database.instanceEntity.environmentEntity"
           :plain="true"
           :show-icon="false"
-          text-class="hover:underline text-control-light"
+          :link="link"
+          :text-class="`text-control-light ${link ? 'hover:underline' : ''}`"
         />
       </template>
     </InstanceV1Name>
@@ -30,13 +32,15 @@
           :environment="database.effectiveEnvironmentEntity"
           :plain="true"
           :show-icon="false"
-          text-class="hover:underline text-control-light"
+          :link="link"
+          :text-class="`text-control-light ${link ? 'hover:underline' : ''}`"
         />
 
         <DatabaseV1Name
           :database="database"
           :plain="true"
-          class="hover:underline"
+          :link="link"
+          :text-class="link ? 'hover:underline' : ''"
         />
       </template>
 
@@ -50,8 +54,14 @@ import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
 import { ComposedDatabase } from "@/types";
 
-defineProps<{
-  database: ComposedDatabase;
-  showSQLEditorButton?: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    database: ComposedDatabase;
+    showSQLEditorButton?: boolean;
+    link?: boolean;
+  }>(),
+  {
+    link: true,
+  }
+);
 </script>

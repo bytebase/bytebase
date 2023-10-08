@@ -1,13 +1,13 @@
 import { computed, unref, watch } from "vue";
 import { useTabStore, useWebTerminalV1Store } from "@/store";
-import { TabMode, WebTerminalQueryItem } from "@/types";
+import { TabMode, WebTerminalQueryItemV1 } from "@/types";
 import { minmax } from "@/utils";
 
 const MAX_HISTORY_ITEM_COUNT = 1000;
 
 type HistoryState = {
   index: number;
-  list: WebTerminalQueryItem[];
+  list: WebTerminalQueryItemV1[];
 };
 
 export const useHistory = () => {
@@ -39,7 +39,7 @@ export const useHistory = () => {
     return initial;
   };
 
-  const push = (query: WebTerminalQueryItem) => {
+  const push = (query: WebTerminalQueryItemV1) => {
     const stack = currentStack();
     if (!stack) return;
     const { list } = stack;
