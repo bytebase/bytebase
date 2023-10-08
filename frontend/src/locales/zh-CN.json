@@ -2344,6 +2344,10 @@
         "title": "AI 增强",
         "desc": "AI 增强的 SQL 编辑器和索引建议功能，基于 OpenAI 技术驱动。"
       },
+      "bb-feature-batch-query": {
+        "title": "批量查询",
+        "desc": "在 SQL Editor 中对同构数据库进行批量查询。"
+      },
       "bb-feature-shared-sql-script": {
         "title": "共享 SQL 脚本",
         "desc": "将 SQL 脚本分享给项目成员，或者公开给所有人。"
