@@ -31,7 +31,6 @@ export * from "./vcs";
 export * from "./label";
 export * from "./sqlEditor";
 export * from "./connectionTree";
-export * from "./webTerminal";
 export * from "./tab";
 export * from "./sheet";
 export * from "./sqlReview";
