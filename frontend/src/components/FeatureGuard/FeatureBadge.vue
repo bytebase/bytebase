@@ -15,10 +15,7 @@
       </span>
     </NTooltip>
   </div>
-  <div 
-    v-else-if="!hasFeature"
-    :class="['text-accent', customClass]"
-    >
+  <div v-else-if="!hasFeature" :class="['text-accent', customClass]">
     <NTooltip :show-arrow="true">
       <template #trigger>
         <router-link
