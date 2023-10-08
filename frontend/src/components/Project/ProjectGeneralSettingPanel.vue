@@ -29,8 +29,15 @@
       </dl>
 
       <dl class="">
-        <dt class="text-sm font-medium text-control-light">
-          {{ $t("common.key") }} <span class="text-red-600">*</span>
+        <dt class="flex text-sm font-medium text-control-light">
+          {{ $t("common.key") }}
+          <NTooltip>
+            <template #trigger>
+              <heroicons-outline:information-circle class="ml-1 w-4 h-auto" />
+            </template>
+            {{ $t("project.key-hint") }}
+          </NTooltip>
+          <span class="text-red-600">*</span>
         </dt>
         <dd class="mt-1 text-sm text-main">
           <input
@@ -104,6 +111,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty } from "lodash-es";
+import { NTooltip } from "naive-ui";
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
