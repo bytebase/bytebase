@@ -5,7 +5,7 @@
         class="!ml-2 w-6 h-6 p-1 cursor-pointer rounded hover:opacity-80"
         :class="
           selectedLabelsValue.length > 0
-            ? 'text-blue-600 bg-blue-100 shadow'
+            ? 'text-accent bg-blue-50 shadow'
             : 'text-gray-600'
         "
       >
