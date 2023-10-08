@@ -37,6 +37,26 @@
                 comment: "ID"
                 classification: ""
                 usercomment: ""
+              - name: age
+                position: 0
+                default: null
+                nullable: true
+                type: varbinary(500)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: name
+                position: 0
+                default: null
+                nullable: true
+                type: binary
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
             indexes:
               - name: PRIMARY
                 expressions:
@@ -218,6 +238,8 @@
     );
     CREATE TABLE `users` (
       `id` int(11) NOT NULL COMMENT 'ID',
+      `age` varbinary(500) NULL,
+      `name` binary NULL,
       PRIMARY KEY(`id`) CLUSTERED
     ) ENGINE = InnoDB DEFAULT CHARACTER SET = UTF8MB4 DEFAULT COLLATE = UTF8MB4_BIN;
 
