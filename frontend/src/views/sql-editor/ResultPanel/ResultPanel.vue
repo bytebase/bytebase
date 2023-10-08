@@ -19,6 +19,9 @@
         >
           <template #trigger>
             <NButton
+              secondary
+              strong
+              size="small"
               :type="selectedDatabase === database ? 'primary' : 'default'"
               @click="selectedDatabase = database"
             >

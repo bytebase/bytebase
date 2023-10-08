@@ -63,7 +63,7 @@ const enterAdminMode = () => {
   });
   const queryItem = last(
     useWebTerminalV1Store().getQueryStateByTab(tabStore.currentTab)
-      .queryItemList.value
+      .queryItemList.value || []
   );
   if (queryItem) {
     queryItem.sql = statement;
