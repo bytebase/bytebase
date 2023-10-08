@@ -182,7 +182,7 @@ watchEffect(prepare);
 </script>
 
 <style lang="postcss" scoped>
-.bb-project-select ::v-deep .n-base-selection-input:focus {
+.bb-project-select :deep(.n-base-selection-input:focus) {
   @apply !ring-0;
 }
 </style>

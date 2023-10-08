@@ -263,7 +263,10 @@
     "merge": "Merge",
     "info": "Info",
     "minutes": "Minutes",
-    "go-to-configure": "Configure"
+    "go-to-configure": "Configure",
+    "updated-at-by": "Updated {time} by {user}",
+    "created-at-by": "Created {time} by {user}",
+    "filter-by-name": "Filter by name"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2561,7 +2564,8 @@
     "idp": "Identity Provider",
     "role": "Role",
     "database-group": "Database Group",
-    "schema-group": "Table Group"
+    "schema-group": "Table Group",
+    "changelist": "Changelist"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -3044,5 +3048,45 @@
       "column_name": "Column name",
       "classification_level": "Classification level"
     }
+  },
+  "changelist": {
+    "self": "Changelist",
+    "changelists": "Changelists",
+    "change-center": "Change Center",
+    "new": "New Changelist",
+    "name": "Changelist name",
+    "name-placeholder": "My changelist",
+    "error": {
+      "project-is-required": "Project is required",
+      "name-is-required": "Changelist name is required",
+      "invalid-resource-id": "Invalid resource Id",
+      "nothing-changed": "Nothing changed",
+      "sql-cannot-be-empty": "SQL is required",
+      "select-at-least-one-change": "Select at least one change",
+      "select-at-least-one-change-to-export": "Select at least one change to export",
+      "add-at-least-one-change": "Add at least one change",
+      "select-at-least-one-database": "Select at least one database",
+      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action"
+    },
+    "apply-to-database": "Apply to database",
+    "add-change": {
+      "self": "Add Change",
+      "change-history": {
+        "select-at-least-one-history-below": "Select at least one history below"
+      },
+      "branch": {
+        "select-at-least-one-branch-below": "Select at least one branch below"
+      }
+    },
+    "change-source": {
+      "self": "Change source",
+      "raw-sql": "Raw SQL",
+      "change-history": {
+        "tables": "Tables"
+      },
+      "source": "Source"
+    },
+    "confirm-remove-change": "Remove this change?",
+    "confirm-delete-changelist": "Delete this changelist?"
   }
 }

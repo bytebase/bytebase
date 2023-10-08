@@ -3,3 +3,9 @@ export interface AffectedTable {
   table: string;
   dropped: boolean;
 }
+
+export const EmptyAffectedTable: AffectedTable = {
+  schema: "",
+  table: "",
+  dropped: false,
+};

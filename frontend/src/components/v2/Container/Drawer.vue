@@ -4,7 +4,7 @@
     :show="show"
     :auto-focus="false"
     :trap-focus="false"
-    :close-on-esc="true"
+    :close-on-esc="closeOnEsc"
     v-bind="$attrs"
     @update:show="onUpdateShow"
   >
@@ -16,12 +16,14 @@
 import { useEventListener } from "@vueuse/core";
 import { NDrawer } from "naive-ui";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     show?: boolean;
+    closeOnEsc?: boolean;
   }>(),
   {
     show: true,
+    closeOnEsc: true,
   }
 );
 const emit = defineEmits<{
@@ -39,6 +41,7 @@ const onUpdateShow = (show: boolean) => {
 
 useEventListener("keydown", (e) => {
   if (e.code == "Escape") {
+    if (!props.closeOnEsc) return;
     emit("update:show", false);
     emit("close");
   }
