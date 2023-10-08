@@ -2,7 +2,7 @@
   <div
     v-if="showBanner"
     class="max-auto py-1 px-3 w-full flex flex-row justify-center flex-wrap text-center text-white font-medium"
-    :class="[`${bgColor} ${bgColorHover}`]"
+    :class="[bgColor, bgColorHover]"
   >
     <a
       v-if="announcementLink !== ''"
