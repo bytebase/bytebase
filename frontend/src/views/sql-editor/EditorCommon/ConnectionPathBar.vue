@@ -63,6 +63,13 @@
           <heroicons-outline:database />
           <span class="ml-2">{{ selectedDatabaseV1.databaseName }}</span>
         </div>
+
+        <div
+          v-if="showBatchQuerySelector"
+          class="relative ml-2 flex items-center"
+        >
+          <BatchQueryDatabasesSelector />
+        </div>
       </label>
     </div>
 
@@ -104,7 +111,9 @@ import {
 import { TabMode, UNKNOWN_ID } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV1, instanceV1Slug } from "@/utils";
+import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
 
 const router = useRouter();
 const tabStore = useTabStore();
@@ -118,6 +127,8 @@ const { instance: selectedInstance } = useInstanceV1ByUID(
 const { database: selectedDatabaseV1 } = useDatabaseV1ByUID(
   computed(() => String(connection.value.databaseId))
 );
+
+const selectedProject = computed(() => selectedDatabaseV1.value.projectEntity);
 
 const selectedEnvironment = computed(() => {
   return connection.value.databaseId === `${UNKNOWN_ID}`
@@ -150,6 +161,14 @@ const showReadonlyDatasourceHint = computed(() => {
     !isAdminMode.value &&
     selectedInstance.value.uid !== String(UNKNOWN_ID) &&
     !hasReadonlyDataSource.value
+  );
+});
+
+const showBatchQuerySelector = computed(() => {
+  return (
+    selectedProject.value.tenantMode === TenantMode.TENANT_MODE_ENABLED &&
+    // TODO(steven): implement batch query in admin mode.
+    currentTab.value.mode !== TabMode.Admin
   );
 });
 
